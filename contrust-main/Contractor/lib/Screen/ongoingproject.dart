@@ -1,9 +1,10 @@
 // ignore_for_file: library_private_types_in_public_api
 
+import 'package:contractor/SharedState.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../SharedState.dart';
+
 
 class Ongoingproject extends StatefulWidget {
   const Ongoingproject({super.key});

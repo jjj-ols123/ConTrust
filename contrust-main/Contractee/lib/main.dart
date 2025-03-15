@@ -1,6 +1,8 @@
 import 'dart:ui';
-import 'package:contractee/pages/launch_page.dart';
+import 'package:contractee/pages/home_page.dart';
+import 'package:contractee/pages/welcome_page.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AppScrollBehavior extends MaterialScrollBehavior {
@@ -15,20 +17,26 @@ class AppScrollBehavior extends MaterialScrollBehavior {
 Future<void> main() async {
   await Supabase.initialize(
     url: 'https://bgihfdqruamnjionhkeq.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJnaWhmZHFydWFtbmppb25oa2VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4NzIyODksImV4cCI6MjA1NjQ0ODI4OX0.-GRaolUVu1hW6NUaEAwJuYJo8C2X5_1wZ-qB4a-9Txs',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJnaWhmZHFydWFtbmppb25oa2VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4NzIyODksImV4cCI6MjA1NjQ0ODI4OX0.-GRaolUVu1hW6NUaEAwJuYJo8C2X5_1wZ-qB4a-9Txs',
   );
-  runApp(MyApp());
+
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  bool isFirstOpen = prefs.getBool('isFirstOpen') ?? true;
+  runApp(MyApp(isFirstOpen: isFirstOpen));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool isFirstOpen;
+
+  const MyApp({super.key, required this.isFirstOpen});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       scrollBehavior: AppScrollBehavior(),
       debugShowCheckedModeBanner: false,
-      home: LaunchPage(),
+      home: isFirstOpen ? WelcomePage() : HomePage(),
     );
   }
 }

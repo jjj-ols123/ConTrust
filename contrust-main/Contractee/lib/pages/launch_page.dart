@@ -30,7 +30,7 @@ class _LaunchPageState extends State<LaunchPage> {
       backgroundColor: Colors.yellow[700],
       body: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+         mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset(
               'logo.png',
@@ -41,7 +41,7 @@ class _LaunchPageState extends State<LaunchPage> {
             const Text(
               'CONTRUST',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: 35,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 2,
                 color: Colors.black,

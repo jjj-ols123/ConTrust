@@ -21,8 +21,6 @@ class LoginScreen extends StatelessWidget {
               fit: BoxFit.cover,
             ),
           ),
-
-        
           Column(
             children: [
               Container(

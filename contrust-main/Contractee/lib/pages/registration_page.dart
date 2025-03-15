@@ -1,8 +1,8 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
-import 'package:backend/auth_service.dart';
+import 'package:contractee/blocs/signup_bloc.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+
 
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({super.key});
@@ -18,57 +18,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-
-  
-
-  final authService = AuthService();
-
-  void signUp() async { 
-
-    final email = _emailController.text;
-    final password = _passwordController.text;
-    final confirmPass = _confirmPasswordController.text;
-
-    if (password != confirmPass) { 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Passwords do not match'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return; 
-    }
-
-    try { 
-
-      if (_validateFields(context)) { 
-        await authService.signUp(email: email, password: password, data: {
-            'full_name' : '${_fNameController.text} ${_lNameController.text}',
-            'user_type' : 'contractee',
-        });
-        Navigator.pop(context);
-      }
-    } 
-    
-    on PostgrestException catch (error) { 
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Error: ${error.message}'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          } 
-    
-    catch (e) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Unexpected error: $e'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-  
-  }
 
    @override
   Widget build(BuildContext context) {
@@ -178,7 +127,17 @@ class _RegistrationPageState extends State<RegistrationPage> {
 
       ElevatedButton(
         onPressed: () async{
-            signUp();
+            final signUpContractee = SignUpContractee(); 
+            signUpContractee.signUpUser(
+              context,
+              _emailController.text, 
+              _confirmPasswordController.text, 
+              {
+                'userType': 'Contractee',
+                'fullName': '${_fNameController.text} ${_lNameController.text}',
+              },
+              _validateFields
+            );
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.yellow,
@@ -195,7 +154,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
     ];
   }
 
-  bool _validateFields(BuildContext context) {
+  bool _validateFields() {
     if (_fNameController.text.isEmpty ||
         _lNameController.text.isEmpty ||
         _emailController.text.isEmpty ||
@@ -208,8 +167,19 @@ class _RegistrationPageState extends State<RegistrationPage> {
       );
       return false;
     }
-    return true;
-  }
+    
+    if (_passwordController.text != _confirmPasswordController.text) { 
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Passwords do not match'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return false; 
+    }
+
+    return true; 
+  }  
 }
 
 

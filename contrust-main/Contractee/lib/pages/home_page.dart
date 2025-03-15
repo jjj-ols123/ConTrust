@@ -1,7 +1,4 @@
-
-
 import 'package:flutter/material.dart';
-
 import 'package:contractee/pages/about_page.dart';
 import 'package:contractee/pages/transaction_page.dart';
 import 'package:contractee/pages/buildingmaterial_page.dart';

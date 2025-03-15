@@ -1,9 +1,8 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
-import 'package:backend/auth_service.dart';
-import 'package:contractee/pages/home_page.dart';
+import 'package:contractee/blocs/signin_bloc.dart';
 import 'package:contractee/pages/registration_page.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -18,40 +17,6 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  final authService = AuthService();
-
-  void login() async { 
-
-  final email = _emailController.text;
-  final password = _passwordController.text;
-
-  try { 
-    if (!_validateFields(context)) { 
-      await authService.signIn(email: email, password: password);
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomePage()),
-      );
-    }
-  } 
-  on PostgrestException catch (error) { 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Error: ${error.message}'),
-        backgroundColor: Colors.red,
-      ),
-    );
-  } 
-  catch (e) { 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Error: $e'),
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
-}
-  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -166,6 +131,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         const SizedBox(height: 25),
         TextFormField(
+          controller: _emailController,
           keyboardType: TextInputType.emailAddress,
           decoration: const InputDecoration(
             labelText: 'Email',
@@ -175,6 +141,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         const SizedBox(height: 20),
         TextFormField(
+          controller: _passwordController,
           keyboardType: TextInputType.visiblePassword,
           obscureText: true,
           decoration: const InputDecoration(
@@ -185,8 +152,14 @@ class _LoginPageState extends State<LoginPage> {
         ),
         const SizedBox(height: 25),
         ElevatedButton(
-          onPressed: () {
-              login();
+          onPressed: () async {
+              final signInContractee = SignInContractee();
+              signInContractee.signInUser(
+                context,
+                _emailController.text,
+                _passwordController.text,
+                _validateFields
+              );
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.teal,
@@ -237,7 +210,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  bool _validateFields(BuildContext context) { 
+  bool _validateFields() { 
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) { 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

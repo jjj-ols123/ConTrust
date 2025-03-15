@@ -1,10 +1,26 @@
-// ignore_for_file: file_names, deprecated_member_use
+// ignore_for_file: file_names, deprecated_member_use, library_private_types_in_public_api, use_build_context_synchronously
 
+
+import 'package:contractor/blocs/signup_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class RegisterScreen extends StatelessWidget {
+
+class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
+
+  @override 
+  _RegisterScreenState createState() => _RegisterScreenState();
+
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+
+  final _firmNameController = TextEditingController();
+  final _contactNumberController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController= TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -102,7 +118,7 @@ class RegisterScreen extends StatelessWidget {
                         SizedBox(height: 20),
 
                         // Firm Name
-                        _buildTextField('Firm Name'),
+                        _buildTextField('Firm Name', controller: _firmNameController),
                         SizedBox(height: 10),
 
                         // Contact Number & Email
@@ -112,10 +128,11 @@ class RegisterScreen extends StatelessWidget {
                               child: _buildTextField(
                                 'Contact Number',
                                 isNumber: true,
+                                controller: _contactNumberController,
                               ),
                             ),
                             SizedBox(width: 10),
-                            Expanded(child: _buildTextField('Email Address')),
+                            Expanded(child: _buildTextField('Email Address', controller: _emailController)),
                           ],
                         ),
                         SizedBox(height: 10),
@@ -127,6 +144,7 @@ class RegisterScreen extends StatelessWidget {
                               child: _buildTextField(
                                 'Password',
                                 isPassword: true,
+                                controller: _passwordController,
                               ),
                             ),
                             SizedBox(width: 10),
@@ -134,6 +152,7 @@ class RegisterScreen extends StatelessWidget {
                               child: _buildTextField(
                                 'Confirm password',
                                 isPassword: true,
+                                controller: _confirmPasswordController,
                               ),
                             ),
                           ],
@@ -146,7 +165,7 @@ class RegisterScreen extends StatelessWidget {
                           children: [
                             ElevatedButton(
                               onPressed: () {
-                                // Verification 
+                               
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.amber,
@@ -162,7 +181,18 @@ class RegisterScreen extends StatelessWidget {
                             ),
                             ElevatedButton(
                               onPressed: () {
-                                // Registration 
+                                final signUpContractor = SignUpContractor();
+                                signUpContractor.signUpUser(
+                                   context, 
+                                  _emailController.text, 
+                                  _passwordController.text, 
+                                  {
+                                  'firmName': _firmNameController.text,
+                                  'contactNumber': _contactNumberController.text,
+                                  'user_type': 'contractor',
+                                  }, 
+                                  _validateFields
+                                );
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.green,
@@ -194,7 +224,8 @@ class RegisterScreen extends StatelessWidget {
   Widget _buildTextField(
     String label, {
     bool isPassword = false,
-    bool isNumber = false,
+    bool isNumber = false, 
+    required TextEditingController controller,
   }) {
     return TextField(
       obscureText: isPassword,
@@ -207,5 +238,33 @@ class RegisterScreen extends StatelessWidget {
         fillColor: Colors.white.withOpacity(0.9),
       ),
     );
+  }
+
+   bool _validateFields() { 
+    if (_firmNameController.text.isEmpty || 
+        _contactNumberController.text.isEmpty || 
+        _emailController.text.isEmpty || 
+        _passwordController.text.isEmpty || 
+        _confirmPasswordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please fill in all fields'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return false;
+    }
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Passwords do not match'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return false;
+    }
+
+    return true;
   }
 }

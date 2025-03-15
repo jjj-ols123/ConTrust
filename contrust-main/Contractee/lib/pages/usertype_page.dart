@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'registration_page.dart';
 
@@ -164,7 +166,6 @@ class _UsertypePageState extends State<UsertypePage> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => RegistrationPage(
-                            userType: selectedUserType!,
                           ),
                         ),
                       );
