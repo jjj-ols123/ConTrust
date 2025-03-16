@@ -93,7 +93,7 @@ class _ClientHistoryScreenState extends State<ClientHistoryScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.notifications, color: Colors.black),
-            onPressed: () {}, // Notification 
+            onPressed: () {}, // Notification
           ),
           Padding(
             padding: const EdgeInsets.only(left: 5),
@@ -108,7 +108,7 @@ class _ClientHistoryScreenState extends State<ClientHistoryScreen> {
             // Top Navigation Bar
             Container(
               padding: EdgeInsets.all(10),
-              color: Colors.amber.shade200, 
+              color: Colors.amber.shade200,
               child: Row(
                 children: [
                   GestureDetector(

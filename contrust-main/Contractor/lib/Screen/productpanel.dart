@@ -60,7 +60,7 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
             // Top Navigation Bar
             Container(
               padding: EdgeInsets.all(10),
-              color: Colors.amber.shade200, 
+              color: Colors.amber.shade200,
               child: Row(
                 children: [
                   GestureDetector(
@@ -169,10 +169,7 @@ class InventoryPanel extends StatelessWidget {
       title: Text("Inventory"),
       content: Column(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          Text("Inventory management here..."),
-        
-        ],
+        children: [Text("Inventory management here...")],
       ),
       actions: [
         TextButton(
@@ -194,10 +191,7 @@ class ProductDetailsPanel extends StatelessWidget {
       title: Text(productName),
       content: Column(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          Text("Details for $productName"),
-      
-        ],
+        children: [Text("Details for $productName")],
       ),
       actions: [
         TextButton(

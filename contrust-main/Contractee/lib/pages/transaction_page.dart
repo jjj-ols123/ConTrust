@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 
-
 class TransactionPage extends StatelessWidget {
   const TransactionPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-
     final List<Map<String, dynamic>> transactions = [
       {
         'companyName': 'Pau Construction Firm',
@@ -68,7 +66,8 @@ class TransactionPage extends StatelessWidget {
                       const SizedBox(width: 5),
                       Text(
                         'Contractor: ${transaction['contractorName'] ?? 'Unknown'}',
-                        style: const TextStyle(fontSize: 14, color: Colors.black),
+                        style:
+                            const TextStyle(fontSize: 14, color: Colors.black),
                       ),
                     ],
                   ),

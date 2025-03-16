@@ -1,26 +1,22 @@
 // ignore_for_file: file_names, deprecated_member_use, library_private_types_in_public_api, use_build_context_synchronously
 
-
 import 'package:contractor/blocs/signup_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
-  @override 
+  @override
   _RegisterScreenState createState() => _RegisterScreenState();
-
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-
   final _firmNameController = TextEditingController();
   final _contactNumberController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmPasswordController= TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -42,21 +38,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
           // Background Image
           Positioned.fill(
             child: Image.asset(
-              'bgloginscreen.jpg', 
+              'bgloginscreen.jpg',
               color: Colors.black.withOpacity(0.3),
               colorBlendMode: BlendMode.darken,
               fit: BoxFit.cover,
             ),
           ),
 
-          // Left Side 
+          // Left Side
           Row(
             children: [
               Container(
-                width: screenWidth * 0.3, 
-                color: Colors.amber.withOpacity(
-                  0.3,
-                ), 
+                width: screenWidth * 0.3,
+                color: Colors.amber.withOpacity(0.3),
                 child: Padding(
                   padding: EdgeInsets.all(20),
                   child: Stack(
@@ -65,16 +59,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Spacer(),
-                          Image.asset(
-                            'logo3.png', 
-                            width: screenWidth * 0.50, 
-                          ),
+                          Image.asset('logo3.png', width: screenWidth * 0.50),
                           Spacer(),
                         ],
                       ),
                       Positioned(
-                        bottom:
-                            180, 
+                        bottom: 180,
                         left: 80,
                         right: 60,
                         child: Text(
@@ -118,7 +108,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         SizedBox(height: 20),
 
                         // Firm Name
-                        _buildTextField('Firm Name', controller: _firmNameController),
+                        _buildTextField(
+                          'Firm Name',
+                          controller: _firmNameController,
+                        ),
                         SizedBox(height: 10),
 
                         // Contact Number & Email
@@ -132,7 +125,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                             ),
                             SizedBox(width: 10),
-                            Expanded(child: _buildTextField('Email Address', controller: _emailController)),
+                            Expanded(
+                              child: _buildTextField(
+                                'Email Address',
+                                controller: _emailController,
+                              ),
+                            ),
                           ],
                         ),
                         SizedBox(height: 10),
@@ -164,9 +162,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             ElevatedButton(
-                              onPressed: () {
-                               
-                              },
+                              onPressed: () {},
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.amber,
                                 padding: EdgeInsets.symmetric(
@@ -183,15 +179,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               onPressed: () {
                                 final signUpContractor = SignUpContractor();
                                 signUpContractor.signUpUser(
-                                   context, 
-                                  _emailController.text, 
-                                  _passwordController.text, 
+                                  context,
+                                  _emailController.text,
+                                  _passwordController.text,
                                   {
-                                  'firmName': _firmNameController.text,
-                                  'contactNumber': _contactNumberController.text,
-                                  'user_type': 'contractor',
-                                  }, 
-                                  _validateFields
+                                    'firmName': _firmNameController.text,
+                                    'contactNumber':
+                                        _contactNumberController.text,
+                                    'user_type': 'contractor',
+                                  },
+                                  _validateFields,
                                 );
                               },
                               style: ElevatedButton.styleFrom(
@@ -224,7 +221,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _buildTextField(
     String label, {
     bool isPassword = false,
-    bool isNumber = false, 
+    bool isNumber = false,
     required TextEditingController controller,
   }) {
     return TextField(
@@ -240,11 +237,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-   bool _validateFields() { 
-    if (_firmNameController.text.isEmpty || 
-        _contactNumberController.text.isEmpty || 
-        _emailController.text.isEmpty || 
-        _passwordController.text.isEmpty || 
+  bool _validateFields() {
+    if (_firmNameController.text.isEmpty ||
+        _contactNumberController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _passwordController.text.isEmpty ||
         _confirmPasswordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

@@ -3,23 +3,21 @@
 import 'package:contractee/blocs/signup_bloc.dart';
 import 'package:flutter/material.dart';
 
-
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({super.key});
 
-   @override
+  @override
   State<RegistrationPage> createState() => _RegistrationPageState();
 }
 
 class _RegistrationPageState extends State<RegistrationPage> {
-
   final _fNameController = TextEditingController();
   final _lNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-   @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
@@ -89,55 +87,48 @@ class _RegistrationPageState extends State<RegistrationPage> {
     );
   }
 
- List<Widget> _buildRegistrationFields(BuildContext context) {
+  List<Widget> _buildRegistrationFields(BuildContext context) {
     return [
       TextField(
-        controller: _fNameController, 
-        decoration: const InputDecoration(labelText: 'First Name'), 
-        style: const TextStyle(color: Colors.white)
-      ), 
+          controller: _fNameController,
+          decoration: const InputDecoration(labelText: 'First Name'),
+          style: const TextStyle(color: Colors.white)),
       const SizedBox(height: 10),
       TextField(
-        controller: _lNameController,  
-        decoration: const InputDecoration(labelText: 'Last Name'), 
-        style: const TextStyle(color: Colors.white)
-      ),
+          controller: _lNameController,
+          decoration: const InputDecoration(labelText: 'Last Name'),
+          style: const TextStyle(color: Colors.white)),
       const SizedBox(height: 10),
       TextField(
-        controller: _emailController, 
-        decoration: const InputDecoration(labelText: 'Email'), 
-        keyboardType: TextInputType.emailAddress,  
-        style: const TextStyle(color: Colors.white)
-      ),
+          controller: _emailController,
+          decoration: const InputDecoration(labelText: 'Email'),
+          keyboardType: TextInputType.emailAddress,
+          style: const TextStyle(color: Colors.white)),
       const SizedBox(height: 10),
       TextField(
-        controller: _passwordController, 
-        decoration: const InputDecoration(labelText: 'Password'), 
-        obscureText: true,  
-        style: const TextStyle(color: Colors.white)
-      ),
+          controller: _passwordController,
+          decoration: const InputDecoration(labelText: 'Password'),
+          obscureText: true,
+          style: const TextStyle(color: Colors.white)),
       const SizedBox(height: 20),
       TextField(
-        controller: _confirmPasswordController, 
-        decoration: const InputDecoration(labelText: 'Confirm Password'), 
-        obscureText: true,  
-        style: const TextStyle(color: Colors.white)
-      ),
+          controller: _confirmPasswordController,
+          decoration: const InputDecoration(labelText: 'Confirm Password'),
+          obscureText: true,
+          style: const TextStyle(color: Colors.white)),
       const SizedBox(height: 20),
-
       ElevatedButton(
-        onPressed: () async{
-            final signUpContractee = SignUpContractee(); 
-            signUpContractee.signUpUser(
+        onPressed: () async {
+          final signUpContractee = SignUpContractee();
+          signUpContractee.signUpUser(
               context,
-              _emailController.text, 
-              _confirmPasswordController.text, 
+              _emailController.text,
+              _confirmPasswordController.text,
               {
                 'userType': 'Contractee',
                 'fullName': '${_fNameController.text} ${_lNameController.text}',
               },
-              _validateFields
-            );
+              _validateFields);
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.yellow,
@@ -149,7 +140,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
         child: const Text(
           'Sign Up',
           style: TextStyle(color: Colors.black, fontSize: 16),
-        ), 
+        ),
       ),
     ];
   }
@@ -167,21 +158,17 @@ class _RegistrationPageState extends State<RegistrationPage> {
       );
       return false;
     }
-    
-    if (_passwordController.text != _confirmPasswordController.text) { 
+
+    if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Passwords do not match'),
           backgroundColor: Colors.red,
         ),
       );
-      return false; 
+      return false;
     }
 
-    return true; 
-  }  
+    return true;
+  }
 }
-
-
-
-

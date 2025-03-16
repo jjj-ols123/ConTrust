@@ -1,117 +1,45 @@
-// ignore_for_file: deprecated_member_use, use_build_context_synchronously
+
+// ignore_for_file: deprecated_member_use
+
 import 'package:contractee/blocs/signin_bloc.dart';
 import 'package:contractee/pages/registration_page.dart';
 import 'package:flutter/material.dart';
 
-
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  final BuildContext modalContext;
+  const LoginPage({super.key, required this.modalContext});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
-
 }
 
 class _LoginPageState extends State<LoginPage> {
-
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          Container(
-            color: Colors.yellow[700],
-          ),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isWideScreen = constraints.maxWidth > 600;
-
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: constraints.maxHeight,
-                  ),
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Container(
-                        constraints: const BoxConstraints(maxWidth: 1000),
-                        child: isWideScreen
-                            ? Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Expanded(
-                                    flex: 3,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(20),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.9),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color:
-                                                Colors.black.withOpacity(0.2),
-                                            blurRadius: 10,
-                                            offset: const Offset(0, 5),
-                                          ),
-                                        ],
-                                      ),
-                                      child: _buildLoginForm(context),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 15),
-                                  Expanded(
-                                    flex: 2,
-                                    child: Container(
-                                      height: 450,
-                                      decoration: BoxDecoration(
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color:
-                                                Colors.black.withOpacity(0.2),
-                                            blurRadius: 10,
-                                            offset: const Offset(0, 5),
-                                          ),
-                                        ],
-                                      ),
-                                      child: ClipRRect(
-                                        child: Image.asset(
-                                          'side_image.jpg',
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : Column(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(20),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.9),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.2),
-                                          blurRadius: 10,
-                                          offset: const Offset(0, 5),
-                                        ),
-                                      ],
-                                    ),
-                                    child: _buildLoginForm(context),
-                                  ),
-                                ],
-                              ),
-                      ),
-                    ),
-                  ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
                 ),
-              );
-            },
+              ],
+            ),
+            child: _buildLoginForm(context),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -153,13 +81,9 @@ class _LoginPageState extends State<LoginPage> {
         const SizedBox(height: 25),
         ElevatedButton(
           onPressed: () async {
-              final signInContractee = SignInContractee();
-              signInContractee.signInUser(
-                context,
-                _emailController.text,
-                _passwordController.text,
-                _validateFields
-              );
+            final signInContractee = SignInContractee();
+            signInContractee.signInUser(context, _emailController.text,
+                _passwordController.text, _validateFields);
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.teal,
@@ -210,15 +134,15 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  bool _validateFields() { 
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) { 
+  bool _validateFields() {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please fill in all fields'),
           backgroundColor: Colors.red,
         ),
       );
-      return false;  
+      return false;
     }
     return true;
   }

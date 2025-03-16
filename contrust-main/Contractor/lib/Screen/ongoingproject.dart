@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
-
 class Ongoingproject extends StatefulWidget {
   const Ongoingproject({super.key});
 
@@ -74,7 +73,7 @@ class _OngoingProjectScreenState extends State<OngoingProgressScreen> {
             // Top Navigation Bar
             Container(
               padding: EdgeInsets.all(10),
-              color: Colors.amber.shade200, 
+              color: Colors.amber.shade200,
               child: Row(
                 children: [
                   GestureDetector(
@@ -183,10 +182,7 @@ class InventoryPanel extends StatelessWidget {
       title: Text("Inventory"),
       content: Column(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          Text("Inventory management here..."),
-          
-        ],
+        children: [Text("Inventory management here...")],
       ),
       actions: [
         TextButton(
@@ -208,10 +204,7 @@ class ProductDetailsPanel extends StatelessWidget {
       title: Text(productName),
       content: Column(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          Text("Details for $productName"),
-        
-        ],
+        children: [Text("Details for $productName")],
       ),
       actions: [
         TextButton(
@@ -310,11 +303,7 @@ class _OngoingProgressScreenState extends State<OngoingProgressScreen> {
   }
 
   void _completeProject() {
-    SharedState().addClient(
-      'Jikashi Luna',
-      'Project Name', 
-      'Completed',
-    );
+    SharedState().addClient('Jikashi Luna', 'Project Name', 'Completed');
     Navigator.pushNamed(context, '/clienthistory');
   }
 
@@ -350,7 +339,7 @@ class _OngoingProgressScreenState extends State<OngoingProgressScreen> {
             // Top Navigation Bar
             Container(
               padding: EdgeInsets.all(10),
-              color: Colors.amber.shade200, 
+              color: Colors.amber.shade200,
               child: Row(
                 children: [
                   GestureDetector(
@@ -391,7 +380,6 @@ class _OngoingProgressScreenState extends State<OngoingProgressScreen> {
             Expanded(
               child: Row(
                 children: [
-                  
                   Expanded(
                     flex: 2,
                     child: Card(
@@ -481,7 +469,7 @@ class _OngoingProgressScreenState extends State<OngoingProgressScreen> {
                       ),
                     ),
                   ),
-                  //right side 
+                  //right side
                   Expanded(
                     flex: 1,
                     child: Column(
@@ -522,7 +510,7 @@ class _OngoingProgressScreenState extends State<OngoingProgressScreen> {
                           ),
                         ),
                         SizedBox(height: 10),
-                        // Cost Breakdown 
+                        // Cost Breakdown
                         Card(
                           color: Colors.amber[100],
                           child: Padding(

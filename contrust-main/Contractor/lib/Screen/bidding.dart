@@ -2,12 +2,42 @@ import 'package:flutter/material.dart';
 
 class BiddingScreen extends StatelessWidget {
   final List<Map<String, dynamic>> bids = [
-    {"title": "Kitchen", "description": "Description of project", "timeLeft": "23:20:00", "currentBid": "₱100,000.00"},
-    {"title": "Garage", "description": "Description of project", "timeLeft": "10:20:00", "currentBid": "₱150,000.00"},
-    {"title": "House", "description": "Description of project", "timeLeft": "05:15:00", "currentBid": "₱1,000,000.00"},
-    {"title": "Hotel", "description": "Description of project", "timeLeft": "12:45:30", "currentBid": "₱500,000.00"},
-    {"title": "Bedroom, House", "description": "Description of project", "timeLeft": "08:30:00", "currentBid": "₱200,000.00"},
-    {"title": "Kitchen, House", "description": "Description of project", "timeLeft": "15:10:20", "currentBid": "₱120,000.00"},
+    {
+      "title": "Kitchen",
+      "description": "Description of project",
+      "timeLeft": "23:20:00",
+      "currentBid": "₱100,000.00",
+    },
+    {
+      "title": "Garage",
+      "description": "Description of project",
+      "timeLeft": "10:20:00",
+      "currentBid": "₱150,000.00",
+    },
+    {
+      "title": "House",
+      "description": "Description of project",
+      "timeLeft": "05:15:00",
+      "currentBid": "₱1,000,000.00",
+    },
+    {
+      "title": "Hotel",
+      "description": "Description of project",
+      "timeLeft": "12:45:30",
+      "currentBid": "₱500,000.00",
+    },
+    {
+      "title": "Bedroom, House",
+      "description": "Description of project",
+      "timeLeft": "08:30:00",
+      "currentBid": "₱200,000.00",
+    },
+    {
+      "title": "Kitchen, House",
+      "description": "Description of project",
+      "timeLeft": "15:10:20",
+      "currentBid": "₱120,000.00",
+    },
   ];
 
   BiddingScreen({super.key});
@@ -84,18 +114,27 @@ class BiddingScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("Bidding", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                Text(
+                  "Bidding",
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                ),
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 10),
                   width: 180,
-                  decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(20)),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                   child: Row(
                     children: [
                       Icon(Icons.filter_list, color: Colors.black54),
                       SizedBox(width: 5),
                       Expanded(
                         child: TextField(
-                          decoration: InputDecoration(hintText: "Search", border: InputBorder.none),
+                          decoration: InputDecoration(
+                            hintText: "Search",
+                            border: InputBorder.none,
+                          ),
                         ),
                       ),
                       Icon(Icons.search, color: Colors.black54),
@@ -134,7 +173,9 @@ class BiddingScreen extends StatelessWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
           title: Text(
             bid["title"],
             textAlign: TextAlign.center,
@@ -151,15 +192,27 @@ class BiddingScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text("Time left:", style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(
+                    "Time left:",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   Text(bid["timeLeft"], style: TextStyle(color: Colors.orange)),
                 ],
               ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text("Current Bid:", style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(bid["currentBid"], style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                  Text(
+                    "Current Bid:",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    bid["currentBid"],
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -182,9 +235,7 @@ class BiddingScreen extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: Column(
         children: [
-          Expanded(
-            child: Image.asset("kitchen.jpg", fit: BoxFit.cover),
-          ),
+          Expanded(child: Image.asset("kitchen.jpg", fit: BoxFit.cover)),
           Container(
             padding: EdgeInsets.all(10),
             decoration: BoxDecoration(
@@ -196,24 +247,51 @@ class BiddingScreen extends StatelessWidget {
             ),
             child: Column(
               children: [
-                Text(bid["title"], style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                Text(bid["description"], style: TextStyle(fontSize: 14, color: Colors.black54)),
+                Text(
+                  bid["title"],
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  bid["description"],
+                  style: TextStyle(fontSize: 14, color: Colors.black54),
+                ),
                 SizedBox(height: 5),
                 Divider(color: Colors.black38),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("Time left:", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black)),
-                    Text(bid["timeLeft"], style: TextStyle(fontSize: 14, color: Colors.orange)),
+                    Text(
+                      "Time left:",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    Text(
+                      bid["timeLeft"],
+                      style: TextStyle(fontSize: 14, color: Colors.orange),
+                    ),
                   ],
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("Current Bid:", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black)),
+                    Text(
+                      "Current Bid:",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
                     Text(
                       bid["currentBid"],
-                      style: TextStyle(fontSize: 14, color: Colors.red, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),

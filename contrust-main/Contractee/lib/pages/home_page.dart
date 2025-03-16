@@ -1,3 +1,4 @@
+import 'package:contractee/blocs/checkuseracc.dart';
 import 'package:flutter/material.dart';
 import 'package:contractee/pages/about_page.dart';
 import 'package:contractee/pages/transaction_page.dart';
@@ -70,7 +71,8 @@ class HomePage extends StatelessWidget {
                   MaterialPageRoute(builder: (context) => Buildingmaterial()),
                 );
               },
-            ),ListTile(
+            ),
+            ListTile(
               leading: const Icon(Icons.info),
               title: const Text('About'),
               onTap: () {
@@ -112,9 +114,9 @@ class HomePage extends StatelessWidget {
                   child: ListView(
                     scrollDirection: Axis.horizontal,
                     children: [
-                      _buildContractorCard(),
-                      _buildContractorCard(),
-                      _buildContractorCard(),
+                      _buildContractorCard(context),
+                      _buildContractorCard(context),
+                      _buildContractorCard(context),
                     ],
                   ),
                 ),
@@ -127,7 +129,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildContractorCard() {
+  Widget _buildContractorCard(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(right: 10),
       width: 200,
@@ -142,7 +144,9 @@ class HomePage extends StatelessWidget {
       child: Align(
         alignment: Alignment.bottomCenter,
         child: ElevatedButton(
-          onPressed: () {},
+          onPressed: () {
+            CheckUserLogin().checkUserLogin(context);
+          },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.white,
           ),

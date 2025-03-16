@@ -3,16 +3,20 @@ import 'package:contractor/Screen/dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class SignInContractee { 
-  
-  void signInUser(BuildContext context, String email, String password, bool Function() validateFields) async {
+class SignInContractee {
+  void signInUser(
+    BuildContext context,
+    String email,
+    String password,
+    bool Function() validateFields,
+  ) async {
     final authService = AuthService();
 
     if (!validateFields()) {
       return;
     }
 
-     try {
+    try {
       final signInResponse = await authService.signIn(
         email: email,
         password: password,
@@ -27,9 +31,10 @@ class SignInContractee {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pushReplacement(context,
-        MaterialPageRoute(builder: (context) => DashboardScreen()),
-      ); 
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => DashboardScreen()),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -38,8 +43,7 @@ class SignInContractee {
           ),
         );
       }
-    }
-    on PostgrestException catch (error) {
+    } on PostgrestException catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

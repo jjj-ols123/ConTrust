@@ -2,8 +2,6 @@ import 'package:contractee/pages/welcome_page.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
-
-
 class LaunchPage extends StatefulWidget {
   const LaunchPage({super.key});
 
@@ -30,7 +28,7 @@ class _LaunchPageState extends State<LaunchPage> {
       backgroundColor: Colors.yellow[700],
       body: Center(
         child: Column(
-         mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset(
               'logo.png',

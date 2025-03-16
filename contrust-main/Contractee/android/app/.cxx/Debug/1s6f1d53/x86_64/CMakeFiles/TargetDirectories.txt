@@ -1,0 +1,2 @@
+C:/Users/asus/Downloads/ConTrust/contrust-main/Contractee/android/app/.cxx/Debug/1s6f1d53/x86_64/CMakeFiles/edit_cache.dir
+C:/Users/asus/Downloads/ConTrust/contrust-main/Contractee/android/app/.cxx/Debug/1s6f1d53/x86_64/CMakeFiles/rebuild_cache.dir

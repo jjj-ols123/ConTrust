@@ -74,14 +74,12 @@ class DashboardScreen extends StatelessWidget {
             ),
             SizedBox(height: 10),
 
-            
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2, // yung dami ng cards na magksama
                 crossAxisSpacing: 15,
                 mainAxisSpacing: 15,
-                childAspectRatio:
-                    2.75, // ratio
+                childAspectRatio: 2.75, // ratio
                 children: [
                   _buildDashboardCard(context, 'User Profile', 'user.png', () {
                     Navigator.pushNamed(context, '/profile');
@@ -129,10 +127,7 @@ class DashboardScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(
-              imagePath,
-              width: 125,
-            ), 
+            Image.asset(imagePath, width: 125),
             SizedBox(height: 5),
             Text(
               title,
@@ -140,7 +135,7 @@ class DashboardScreen extends StatelessWidget {
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
-              ), 
+              ),
             ),
           ],
         ),

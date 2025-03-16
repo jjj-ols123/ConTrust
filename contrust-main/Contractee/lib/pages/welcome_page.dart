@@ -1,7 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:contractee/pages/home_page.dart';
-import 'package:contractee/pages/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
@@ -23,7 +22,7 @@ class _WelcomePageState extends State<WelcomePage> {
         children: [
           PageView(
             controller: _pageController,
-            children: [
+            children: [ 
               buildPage(
                 color: Colors.yellow[700]!,
                 title: "Welcome",
@@ -33,8 +32,7 @@ class _WelcomePageState extends State<WelcomePage> {
               buildPage(
                 color: Colors.yellow[700]!,
                 title: "Connect",
-                description:
-                    "Easily find and connect with reliable contractors.",
+                description: "Easily find and connect with reliable contractors.",
               ),
               buildPage(
                 color: Colors.yellow[700]!,
@@ -101,25 +99,24 @@ class _WelcomePageState extends State<WelcomePage> {
             if (context != null && title == "Design")
               ElevatedButton(
                 onPressed: () async {
-                  SharedPreferences prefs =
-                      await SharedPreferences.getInstance();
+                  SharedPreferences prefs = await SharedPreferences.getInstance();
                   await prefs.setBool('isFirstOpen', false);
 
                   Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => HomePage()),
-                  );
-
+                        context,
+                        MaterialPageRoute(builder: (context) => HomePage()),
+                      );
+                      
                   // try {sett9ngs
                   //   final authService = AuthService();
                   //   final response = await authService.signInAnonymously();
                   //   final user = response.user;
                   //   if (user != null && mounted) {
                   //     Navigator.push(
-                  //       context,
+                  //       context, 
                   //       MaterialPageRoute(builder: (context) => const LoginPage()),
                   //     );
-                  //   }
+                  //   } 
                   // } catch (e) {
                   //     ScaffoldMessenger.of(context).showSnackBar(
                   //     SnackBar(content: Text('Failed to sign in anonymously: $e'))
@@ -128,8 +125,8 @@ class _WelcomePageState extends State<WelcomePage> {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.teal,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 24, vertical: 12),
                 ),
                 child: const Text(
                   "Let's Go!",

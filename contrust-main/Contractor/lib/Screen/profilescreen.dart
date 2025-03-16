@@ -74,7 +74,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             // Top Navigation Bar
             Container(
               padding: EdgeInsets.all(10),
-              color: Colors.amber.shade200, 
+              color: Colors.amber.shade200,
               child: Row(
                 children: [
                   GestureDetector(
@@ -116,7 +116,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    
                     SizedBox(
                       height: MediaQuery.of(context).size.height * 0.2,
                       width: double.infinity,
@@ -157,7 +156,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                   SizedBox(height: 10),
                                   ElevatedButton(
                                     onPressed: () {
-                                      // Save Bio 
+                                      // Save Bio
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(
@@ -256,8 +255,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                   ),
                                   SizedBox(height: 10),
                                   SizedBox(
-                                    height:
-                                        200, 
+                                    height: 200,
                                     child: GridView.builder(
                                       shrinkWrap: true,
                                       gridDelegate:

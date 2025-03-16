@@ -15,26 +15,17 @@ class LoginScreen extends StatelessWidget {
           // Background Image
           Positioned.fill(
             child: Image.asset(
-                'bgloginscreen.jpg', 
-                color: Colors.black.withOpacity(0.3),
-                colorBlendMode: BlendMode.darken,
+              'bgloginscreen.jpg',
+              color: Colors.black.withOpacity(0.3),
+              colorBlendMode: BlendMode.darken,
               fit: BoxFit.cover,
             ),
           ),
           Column(
             children: [
-              Container(
-                height: 40,
-                color: Colors.amber,
-              ),
-              Container(
-                height: 5,
-                color: Colors.white,
-              ),
-              Container(
-                height: 5,
-                color: Colors.amber,
-              ),
+              Container(height: 40, color: Colors.amber),
+              Container(height: 5, color: Colors.white),
+              Container(height: 5, color: Colors.amber),
             ],
           ),
 
@@ -44,10 +35,7 @@ class LoginScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Logo and Title
-                Image.asset(
-                  'logo3.png', 
-                  width: screenWidth * 0.2,
-                ),
+                Image.asset('logo3.png', width: screenWidth * 0.2),
                 SizedBox(height: 20),
 
                 // Login Box
@@ -55,13 +43,15 @@ class LoginScreen extends StatelessWidget {
                   width: screenWidth * 0.3,
                   padding: EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.8),
+                    color: const Color.fromARGB(
+                      255,
+                      255,
+                      255,
+                      255,
+                    ).withOpacity(0.8),
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 5,
-                      ),
+                      BoxShadow(color: Colors.black26, blurRadius: 5),
                     ],
                   ),
                   child: Column(
@@ -69,7 +59,10 @@ class LoginScreen extends StatelessWidget {
                     children: [
                       Text(
                         'Welcome',
-                        style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       SizedBox(height: 5),
                       Text(
@@ -87,7 +80,10 @@ class LoginScreen extends StatelessWidget {
                           backgroundColor: Colors.blueAccent,
                           minimumSize: Size(double.infinity, 40),
                         ),
-                        child: Text('Login', style: TextStyle(color: Colors.white)),
+                        child: Text(
+                          'Login',
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ),
 
                       SizedBox(height: 10),
@@ -110,7 +106,6 @@ class LoginScreen extends StatelessWidget {
             ),
           ),
         ],
-        
       ),
     );
   }

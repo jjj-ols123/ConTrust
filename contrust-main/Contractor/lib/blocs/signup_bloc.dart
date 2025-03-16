@@ -3,7 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SignUpContractor {
-  void signUpUser(BuildContext context, String email, String password, Map<String, dynamic>? data, bool Function() validateFields) async {
+  void signUpUser(
+    BuildContext context,
+    String email,
+    String password,
+    Map<String, dynamic>? data,
+    bool Function() validateFields,
+  ) async {
     final authService = AuthService();
 
     if (!validateFields()) {

@@ -1,4 +1,3 @@
-
 // ignore_for_file: file_names
 
 class SharedState {
@@ -13,10 +12,6 @@ class SharedState {
   final List<Map<String, String>> clients = [];
 
   void addClient(String name, String project, String status) {
-    clients.add({
-      'name': name,
-      'project': project,
-      'status': status,
-    });
+    clients.add({'name': name, 'project': project, 'status': status});
   }
 }

@@ -17,7 +17,7 @@ class _UsertypePageState extends State<UsertypePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor:Colors.yellow,
+        backgroundColor: Colors.yellow,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
@@ -165,8 +165,7 @@ class _UsertypePageState extends State<UsertypePage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => RegistrationPage(
-                          ),
+                          builder: (context) => RegistrationPage(),
                         ),
                       );
                     },
