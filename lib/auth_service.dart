@@ -3,14 +3,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class AuthService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  //sign-in
   Future<AuthResponse> signIn(
       {required String email, required String password}) async {
     return await _supabase.auth
         .signInWithPassword(email: email, password: password);
   }
 
-  //sign-up
   Future<AuthResponse> signUp({
     required String email,
     required String password,
@@ -20,14 +18,19 @@ class AuthService {
         .signUp(email: email, password: password, data: data);
   }
 
-  //sign-out
-
   Future<void> signOut() async {
     await _supabase.auth.signOut();
   }
 
-  //anonymous sign-in
   Future<AuthResponse> signInAnonymously() async {
     return await _supabase.auth.signInAnonymously();
+  }
+
+  Future<Map<String, dynamic>?> getUserProfile(String userId) async { 
+    final response = await Supabase.instance.client
+      .rpc('get_auth_user', params: {'user_id': userId})
+      .single();
+
+    return response;
   }
 }
