@@ -17,14 +17,15 @@ class DashboardScreen extends StatelessWidget {
             color: Colors.black,
           ),
         ),
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             icon: Icon(Icons.notifications, color: Colors.black),
-            onPressed: () {}, // notif sa right side
+            onPressed: () {},
           ),
           Padding(
             padding: const EdgeInsets.only(left: 5),
-            child: Image.asset('logo3.png', width: 100), // company logo
+            child: Image.asset('logo3.png', width: 100, height: 50, fit: BoxFit.contain),
           ),
         ],
       ),
@@ -32,114 +33,141 @@ class DashboardScreen extends StatelessWidget {
         padding: const EdgeInsets.all(10),
         child: Column(
           children: [
-            // Top Navigation Bar
             Container(
               padding: EdgeInsets.all(10),
-              color: Colors.amber.shade200, // yung kulay ng navigation bar
+              color: Colors.amber.shade200,
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        '/dashboard',
-                        (Route<dynamic> route) => false,
-                      ); // paglipat sa dashboard
-                    },
-                    child: Text(
-                      "Home",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+                  _buildPathLabel(context, "Home", '/dashboard'),
                   SizedBox(width: 10),
                   Text("|", style: TextStyle(fontSize: 16)),
                   SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(context, '/productpanel');
-                    },
-                    child: Text(
-                      "Product Panel",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+                  _buildPathLabel(context, "Product Panel", '/productpanel'),
                 ],
               ),
             ),
             SizedBox(height: 10),
-
             Expanded(
-              child: GridView.count(
-                crossAxisCount: 2, // yung dami ng cards na magksama
-                crossAxisSpacing: 15,
-                mainAxisSpacing: 15,
-                childAspectRatio: 2.75, // ratio
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  int crossAxisCount = constraints.maxWidth > 1200
+                      ? 4
+                      : constraints.maxWidth > 800
+                          ? 3
+                          : 2;
+
+                  return GridView.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      crossAxisSpacing: 15,
+                      mainAxisSpacing: 15,
+                      childAspectRatio: 1.5,
+                    ),
+                    itemCount: dashboardItems.length,
+                    itemBuilder: (context, index) {
+                      return _buildDashboardCard(
+                        context,
+                        dashboardItems[index]['title']!,
+                        dashboardItems[index]['imagePath']!,
+                        dashboardItems[index]['route']!,
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+ 
+  Widget _buildPathLabel(BuildContext context, String text, String route) {
+    bool isHovered = false;
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return MouseRegion(
+          onEnter: (_) => setState(() => isHovered = true),
+          onExit: (_) => setState(() => isHovered = false),
+          child: GestureDetector(
+            onTap: () {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                route,
+                (Route<dynamic> route) => false,
+              );
+            },
+            child: AnimatedContainer(
+              duration: Duration(milliseconds: 150),
+              padding: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(5),
+                color: isHovered ? Colors.amber.shade300 : Colors.transparent,
+                boxShadow: isHovered
+                    ? [BoxShadow(color: Colors.black26, blurRadius: 5)]
+                    : [],
+              ),
+              child: Text(
+                text,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+ 
+  Widget _buildDashboardCard(BuildContext context, String title, String imagePath, String route) {
+    
+    bool isHovered = false;
+    return StatefulBuilder(
+      builder: (context, setState) {
+  
+        return MouseRegion(
+          onEnter: (_) => setState(() => isHovered = true),
+          onExit: (_) => setState(() => isHovered = false),
+          child: GestureDetector(
+            onTap: () {
+              Navigator.pushNamed(context, route);
+            },
+            child: AnimatedContainer(
+              duration: Duration(milliseconds: 200),
+              constraints: BoxConstraints(maxWidth: 300),
+              decoration: BoxDecoration(
+                color: isHovered ? Colors.amber.shade300 : Colors.amber.shade100,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: isHovered
+                    ? [BoxShadow(color: Colors.black45, blurRadius: 8)]
+                    : [],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildDashboardCard(context, 'User Profile', 'user.png', () {
-                    Navigator.pushNamed(context, '/profile');
-                  }),
-                  _buildDashboardCard(
-                    context,
-                    'Ongoing Projects',
-                    'ongoing.png',
-                    () {
-                      Navigator.pushNamed(context, '/ongoingproject');
-                    },
-                  ),
-                  _buildDashboardCard(context, 'Bidding', 'bidding.png', () {
-                    Navigator.pushNamed(context, '/bidding');
-                  }),
-                  _buildDashboardCard(
-                    context,
-                    'Client History',
-                    'history.png',
-                    () {
-                      Navigator.pushNamed(context, '/clienthistory');
-                    },
+                  Image.asset(imagePath, width: 80, height: 80, fit: BoxFit.contain),
+                  SizedBox(height: 5),
+                  Text(
+                    title,
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDashboardCard(
-    BuildContext context,
-    String title,
-    String imagePath,
-    VoidCallback onTap,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Card(
-        color: Colors.amber.shade100, // yellow
-        elevation: 5,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(imagePath, width: 125),
-            SizedBox(height: 5),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
+
+final List<Map<String, String>> dashboardItems = [
+  {'title': 'User Profile', 'imagePath': 'user.png', 'route': '/profile'},
+  {'title': 'Ongoing Projects', 'imagePath': 'ongoing.png', 'route': '/ongoingproject'},
+  {'title': 'Bidding', 'imagePath': 'bidding.png', 'route': '/bidding'},
+  {'title': 'Client History', 'imagePath': 'history.png', 'route': '/clienthistory'},
+];

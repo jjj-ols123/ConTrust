@@ -1,6 +1,6 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
-import 'package:contractee/blocs/signup_bloc.dart';
+import 'package:contractee/blocs/signupcontractee_bloc.dart';
 import 'package:flutter/material.dart';
 
 class RegistrationPage extends StatefulWidget {
@@ -120,7 +120,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
       ElevatedButton(
         onPressed: () async {
           final signUpContractee = SignUpContractee();
-          signUpContractee.signUpUser(
+          signUpContractee.signUpContractee(
               context,
               _emailController.text,
               _confirmPasswordController.text,

@@ -1,7 +1,7 @@
 
 // ignore_for_file: deprecated_member_use
 
-import 'package:contractee/blocs/signin_bloc.dart';
+import 'package:contractee/blocs/signincontractee_bloc.dart';
 import 'package:contractee/pages/registration_page.dart';
 import 'package:flutter/material.dart';
 
@@ -82,7 +82,7 @@ class _LoginPageState extends State<LoginPage> {
         ElevatedButton(
           onPressed: () async {
             final signInContractee = SignInContractee();
-            signInContractee.signInUser(context, _emailController.text,
+            signInContractee.signInContractee(context, _emailController.text,
                 _passwordController.text, _validateFields);
           },
           style: ElevatedButton.styleFrom(

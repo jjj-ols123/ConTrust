@@ -145,7 +145,16 @@ class HomePage extends StatelessWidget {
         alignment: Alignment.bottomCenter,
         child: ElevatedButton(
           onPressed: () {
-            CheckUserLogin().checkUserLogin(context);
+             CheckUserLogin.isLoggedIn(
+            context: context,
+            onAuthenticated: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => TransactionPage()),
+              );
+            },
+              
+          );
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.white,

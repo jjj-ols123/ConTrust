@@ -2,13 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
-
-void main() {
-  runApp(
-    MaterialApp(home: UserProfileScreen(), debugShowCheckedModeBanner: false),
-  );
-}
+import 'dart:typed_data';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -18,32 +12,43 @@ class UserProfileScreen extends StatefulWidget {
 }
 
 class _UserProfileScreenState extends State<UserProfileScreen> {
-  TextEditingController firmNameController = TextEditingController(
-    text: "Pau Construction Firm",
-  );
-  TextEditingController bioController = TextEditingController(
-    text: "Specializes in:\n- House Construction\n- Roof\n- Swimming Pool",
-  );
-  TextEditingController usernameController = TextEditingController();
-  TextEditingController contactController = TextEditingController();
-  TextEditingController emailController = TextEditingController();
-  TextEditingController passwordController = TextEditingController();
+  String firmName = "Pau Construction Firm";
+  String bio = "Specializes in:\n- House Construction\n- Roof\n- Swimming Pool";
   double rating = 4.5;
-  List<File> pastProjects = [];
+  List<Uint8List> pastProjects = [];
+  Uint8List? profileImage;
+
+  Future<void> pickProfileImage() async {
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      final bytes = await pickedFile.readAsBytes();
+      setState(() {
+        profileImage = bytes;
+      });
+    }
+  }
 
   Future<void> pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-    );
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
+      final bytes = await pickedFile.readAsBytes();
       setState(() {
-        pastProjects.add(File(pickedFile.path));
+        pastProjects.add(bytes);
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width;
+
+    // Determine number of grid columns based on screen width
+    int crossAxisCount = screenWidth > 1000
+        ? 4 // Large screens
+        : screenWidth > 600
+            ? 3 // Medium screens (Tablets)
+            : 2; // Small screens (Mobile)
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.amber,
@@ -59,237 +64,192 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.notifications, color: Colors.black),
-            onPressed: () {}, // Notif
+            onPressed: () {},
           ),
           Padding(
             padding: const EdgeInsets.only(left: 5),
-            child: Image.asset('logo3.png', width: 100), // Company logo
+            child: Image.asset('logo3.png', width: 100),
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          children: [
-            // Top Navigation Bar
-            Container(
-              padding: EdgeInsets.all(10),
-              color: Colors.amber.shade200,
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        '/dashboard',
-                        (Route<dynamic> route) => false,
-                      ); // Navigator to dashboard
-                    },
-                    child: Text(
-                      "Home",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  Text("|", style: TextStyle(fontSize: 16)),
-                  SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(context, '/productpanel');
-                    },
-                    child: Text(
-                      "Product Panel",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
+      body: SingleChildScrollView( // Make screen scrollable
+        physics: BouncingScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Column(
+            children: [
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.2,
+                width: double.infinity,
+                child: Image.asset(
+                  'bgloginscreen.jpg',
+                  fit: BoxFit.cover,
+                ),
               ),
-            ),
-            SizedBox(height: 10),
-            Expanded(
-              child: SingleChildScrollView(
+              Padding(
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
-                    SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.2,
-                      width: double.infinity,
-                      child: Image.asset(
-                        'bgloginscreen.jpg',
-                        fit: BoxFit.cover,
+                    Card(
+                      elevation: 5,
+                      color: Colors.amber.shade100,
+                      child: Padding(
+                        padding: EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            GestureDetector(
+                              onTap: pickProfileImage,
+                              child: CircleAvatar(
+                                radius: 50,
+                                backgroundColor: Colors.grey.shade300,
+                                child: profileImage != null
+                                    ? ClipOval(
+                                        child: Image.memory(
+                                          profileImage!,
+                                          fit: BoxFit.cover,
+                                          width: 100,
+                                          height: 100,
+                                        ),
+                                      )
+                                    : Icon(
+                                        Icons.camera_alt,
+                                        size: 40,
+                                        color: Colors.white,
+                                      ),
+                              ),
+                            ),
+                            SizedBox(height: 10),
+                            Text(
+                              "Construction Firm Name",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              firmName,
+                              style: TextStyle(fontSize: 14),
+                            ),
+                            SizedBox(height: 10),
+                            Text(
+                              "Bio",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              bio,
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: 10),
+                            Text(
+                              "Rating:",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(5, (index) {
+                                return Icon(
+                                  index < rating ? Icons.star : Icons.star_border,
+                                  color: Colors.orange,
+                                );
+                              }),
+                            ),
+                            SizedBox(height: 20),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  '/editprofile',
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 15,
+                                ),
+                              ),
+                              child: Text(
+                                "Edit Profile",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        children: [
-                          // personal info and security
-                          Card(
-                            elevation: 5,
-                            color: Colors.amber.shade100,
-                            child: Padding(
-                              padding: EdgeInsets.all(12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  TextField(
-                                    controller: firmNameController,
-                                    decoration: InputDecoration(
-                                      labelText: "Construction Firm Name",
-                                      border: OutlineInputBorder(),
-                                    ),
-                                  ),
-                                  SizedBox(height: 10),
-                                  TextField(
-                                    controller: bioController,
-                                    maxLines: 3,
-                                    decoration: InputDecoration(
-                                      labelText: "Bio",
-                                      border: OutlineInputBorder(),
-                                    ),
-                                  ),
-                                  SizedBox(height: 10),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      // Save Bio
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(content: Text("Bio Updated!")),
-                                      );
-                                    },
-                                    child: Text("Save Bio"),
-                                  ),
-                                  SizedBox(height: 10),
-                                  Text(
-                                    "Rating:",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Row(
-                                    children: List.generate(5, (index) {
-                                      return Icon(
-                                        index < rating
-                                            ? Icons.star
-                                            : Icons.star_border,
-                                        color: Colors.orange,
-                                      );
-                                    }),
-                                  ),
-                                  SizedBox(height: 20),
-                                  TextField(
-                                    controller: usernameController,
-                                    decoration: InputDecoration(
-                                      labelText: "Username",
-                                      border: OutlineInputBorder(),
-                                    ),
-                                  ),
-                                  SizedBox(height: 10),
-                                  TextField(
-                                    controller: contactController,
-                                    decoration: InputDecoration(
-                                      labelText: "Contact Number",
-                                      border: OutlineInputBorder(),
-                                    ),
-                                  ),
-                                  SizedBox(height: 10),
-                                  TextField(
-                                    controller: emailController,
-                                    decoration: InputDecoration(
-                                      labelText: "Email Address",
-                                      border: OutlineInputBorder(),
-                                    ),
-                                  ),
-                                  SizedBox(height: 10),
-                                  TextField(
-                                    controller: passwordController,
-                                    obscureText: true,
-                                    decoration: InputDecoration(
-                                      labelText: "Password",
-                                      border: OutlineInputBorder(),
-                                      suffixIcon: Icon(Icons.visibility_off),
-                                    ),
-                                  ),
-                                  SizedBox(height: 10),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      // Save Security Details
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            "Security Details Updated!",
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    child: Text("Save Security Settings"),
-                                  ),
-                                ],
+                    Card(
+                      elevation: 5,
+                      color: Colors.amber.shade100,
+                      child: Padding(
+                        padding: EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Photos of Past Projects",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
                               ),
                             ),
-                          ),
+                            SizedBox(height: 10),
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                double availableHeight = 
+                                    MediaQuery.of(context).size.height * 0.4; // Set height dynamically
 
-                          // Past Projects Section
-                          Card(
-                            elevation: 5,
-                            color: Colors.amber.shade100,
-                            child: Padding(
-                              padding: EdgeInsets.all(12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Photos of Past Projects",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  SizedBox(height: 10),
-                                  SizedBox(
-                                    height: 200,
-                                    child: GridView.builder(
-                                      shrinkWrap: true,
-                                      gridDelegate:
-                                          SliverGridDelegateWithFixedCrossAxisCount(
-                                            crossAxisCount: 2,
+                                return SizedBox(
+                                  height: pastProjects.isEmpty ? 50 : availableHeight,
+                                  child: pastProjects.isEmpty
+                                      ? Center(
+                                          child: Text(
+                                            "No project photos yet.",
+                                            style: TextStyle(color: Colors.grey),
+                                          ),
+                                        )
+                                      : GridView.builder(
+                                          shrinkWrap: true, // Important: Prevent infinite height
+                                          physics: NeverScrollableScrollPhysics(), // Prevent nested scrolling
+                                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                            crossAxisCount: crossAxisCount,
                                             crossAxisSpacing: 8,
                                             mainAxisSpacing: 8,
+                                            childAspectRatio: 1,
                                           ),
-                                      itemCount: pastProjects.length,
-                                      itemBuilder: (context, index) {
-                                        return Image.file(
-                                          pastProjects[index],
-                                          fit: BoxFit.cover,
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  SizedBox(height: 10),
-                                  ElevatedButton(
-                                    onPressed: pickImage,
-                                    child: Text("Upload Project Photo"),
-                                  ),
-                                ],
-                              ),
+                                          itemCount: pastProjects.length,
+                                          itemBuilder: (context, index) {
+                                            return ClipRRect(
+                                              borderRadius: BorderRadius.circular(8),
+                                              child: Image.memory(
+                                                pastProjects[index],
+                                                fit: BoxFit.cover,
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                );
+                              },
                             ),
-                          ),
-                        ],
+                            SizedBox(height: 10),
+                            ElevatedButton(
+                              onPressed: pickImage,
+                              child: Text("Upload Project Photo"),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

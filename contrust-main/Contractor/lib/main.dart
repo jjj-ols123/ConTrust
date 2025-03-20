@@ -1,6 +1,8 @@
 import 'package:contractor/Screen/bidding.dart';
 import 'package:contractor/Screen/clienthistory.dart';
 import 'package:contractor/Screen/dashboard_screen.dart';
+import 'package:contractor/Screen/editprofile.dart';
+import 'package:contractor/Screen/logginginscreen.dart';
 import 'package:contractor/Screen/loginscreen.dart';
 import 'package:contractor/Screen/ongoingproject.dart';
 import 'package:contractor/Screen/productpanel.dart';
@@ -29,7 +31,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Contrust',
-      home: LoginScreen(), // Start with the login screen
+      home: LoginScreen(), 
       routes: {
         '/dashboard': (context) => DashboardScreen(),
         '/register': (context) => RegisterScreen(),
@@ -38,6 +40,8 @@ class MyApp extends StatelessWidget {
         '/productpanel': (context) => ProductPanelScreen(),
         '/ongoingproject': (context) => OngoingProgressScreen(),
         '/clienthistory': (context) => ClientHistoryScreen(),
+        '/editprofile': (context) => EditProfileScreen(),
+        '/login': (context) => ToLoginScreen()
       },
     );
   }

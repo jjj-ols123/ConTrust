@@ -1,27 +1,30 @@
-// ignore_for_file: unused_element
+// ignore_for_file: use_build_context_synchronously
 
-import 'package:contractee/pages/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:contractee/pages/login_page.dart'; 
 
-class CheckUserLogin { 
-  
-  void checkUserLogin(BuildContext context) {
+class CheckUserLogin {
+  static void isLoggedIn({
+    required BuildContext context,
+    required VoidCallback onAuthenticated,
+  }) async {
+    final supabase = Supabase.instance.client;
 
-    if (!isLoggedIn()) {
+    final session = supabase.auth.currentSession;
+
+    if (session != null) {
+      onAuthenticated();
+    } else {
       showModalBottomSheet(
-        shape: CircleBorder(),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
         builder: (modalContext) => LoginPage(modalContext: modalContext),
       );
+    }
   }
-  }
-
-  bool isLoggedIn() {
-    final supabase = Supabase.instance.client;
-    return supabase.auth.currentUser != null;
-  }
-
 }

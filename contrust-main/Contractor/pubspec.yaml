@@ -38,6 +38,7 @@ dependencies:
   supabase_flutter: ^2.8.4
   backend: 
     path: C:/Users/asus/Downloads/ConTrust/contrust-main/Back-End
+  shared_preferences: ^2.5.2
 
 dev_dependencies:
   flutter_test:

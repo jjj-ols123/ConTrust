@@ -1,5 +1,7 @@
-// ignore_for_file: deprecated_member_use, file_names
+// ignore_for_file: deprecated_member_use
 
+import 'package:contractor/Screen/logginginscreen.dart';
+import 'package:contractor/blocs/pagetransition.dart';
 import 'package:flutter/material.dart';
 
 class LoginScreen extends StatelessWidget {
@@ -15,17 +17,28 @@ class LoginScreen extends StatelessWidget {
           // Background Image
           Positioned.fill(
             child: Image.asset(
-              'bgloginscreen.jpg',
-              color: Colors.black.withOpacity(0.3),
-              colorBlendMode: BlendMode.darken,
+                'bgloginscreen.jpg', 
+                color: Colors.black.withOpacity(0.3),
+                colorBlendMode: BlendMode.darken,
               fit: BoxFit.cover,
             ),
           ),
+
+        
           Column(
             children: [
-              Container(height: 40, color: Colors.amber),
-              Container(height: 5, color: Colors.white),
-              Container(height: 5, color: Colors.amber),
+              Container(
+                height: 40,
+                color: Colors.amber,
+              ),
+              Container(
+                height: 5,
+                color: Colors.white,
+              ),
+              Container(
+                height: 5,
+                color: Colors.amber,
+              ),
             ],
           ),
 
@@ -35,23 +48,24 @@ class LoginScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Logo and Title
-                Image.asset('logo3.png', width: screenWidth * 0.2),
+                Image.asset(
+                  'logo3.png', 
+                  width: screenWidth * 0.2,
+                ),
                 SizedBox(height: 20),
 
                 // Login Box
                 Container(
-                  width: screenWidth * 0.3,
+                  width: screenWidth * 0.8,
                   padding: EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: const Color.fromARGB(
-                      255,
-                      255,
-                      255,
-                      255,
-                    ).withOpacity(0.8),
+                    color: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.8),
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
-                      BoxShadow(color: Colors.black26, blurRadius: 5),
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 5,
+                      ),
                     ],
                   ),
                   child: Column(
@@ -59,31 +73,26 @@ class LoginScreen extends StatelessWidget {
                     children: [
                       Text(
                         'Welcome',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                       ),
                       SizedBox(height: 5),
                       Text(
                         'Simplify your contracts.Secure results!',
                         style: TextStyle(fontSize: 14),
+                        textAlign: TextAlign.center,
                       ),
                       SizedBox(height: 20),
 
                       // Login Button
                       ElevatedButton(
                         onPressed: () {
-                          Navigator.pushNamed(context, '/dashboard');
+                          navigateWithSlideTransition(context, ToLoginScreen());
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blueAccent,
                           minimumSize: Size(double.infinity, 40),
                         ),
-                        child: Text(
-                          'Login',
-                          style: TextStyle(color: Colors.white),
-                        ),
+                        child: Text('Login', style: TextStyle(color: Colors.white)),
                       ),
 
                       SizedBox(height: 10),
@@ -106,6 +115,7 @@ class LoginScreen extends StatelessWidget {
             ),
           ),
         ],
+        
       ),
     );
   }

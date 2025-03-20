@@ -1,6 +1,8 @@
 // ignore_for_file: file_names, deprecated_member_use, library_private_types_in_public_api, use_build_context_synchronously
 
-import 'package:contractor/blocs/signup_bloc.dart';
+
+
+import 'package:contractor/blocs/signupcontractor_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -12,11 +14,11 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final _firmNameController = TextEditingController();
-  final _contactNumberController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
+  final TextEditingController _firmNameController = TextEditingController();
+  final TextEditingController _contactNumberController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -122,6 +124,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 'Contact Number',
                                 isNumber: true,
                                 controller: _contactNumberController,
+                                maxLength: 11,
                               ),
                             ),
                             SizedBox(width: 10),
@@ -176,17 +179,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                             ),
                             ElevatedButton(
-                              onPressed: () {
+                              onPressed: () async {
                                 final signUpContractor = SignUpContractor();
                                 signUpContractor.signUpUser(
-                                  context,
+                                  context, 
                                   _emailController.text,
-                                  _passwordController.text,
+                                  _confirmPasswordController.text,
                                   {
+                                    'userType': 'Contractor',
                                     'firmName': _firmNameController.text,
-                                    'contactNumber':
-                                        _contactNumberController.text,
-                                    'user_type': 'contractor',
+                                    'contactNumber': _contactNumberController.text,
                                   },
                                   _validateFields,
                                 );
@@ -223,11 +225,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
     bool isPassword = false,
     bool isNumber = false,
     required TextEditingController controller,
+    int? maxLength,
   }) {
     return TextField(
       obscureText: isPassword,
       keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-      inputFormatters: isNumber ? [FilteringTextInputFormatter.digitsOnly] : [],
+      inputFormatters: isNumber ? [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(maxLength)] : [],
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(),

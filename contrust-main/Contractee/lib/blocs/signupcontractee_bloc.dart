@@ -2,14 +2,15 @@ import 'package:backend/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class SignUpContractor {
-  void signUpUser(
-    BuildContext context,
-    String email,
+class SignUpContractee {
+  void signUpContractee(
+    BuildContext context, 
+    String email, 
     String password,
-    Map<String, dynamic>? data,
-    bool Function() validateFields,
-  ) async {
+    Map<String, dynamic>? data, 
+    bool Function() validateFields
+    ) async {
+      
     final authService = AuthService();
 
     if (!validateFields()) {
@@ -41,7 +42,7 @@ class SignUpContractor {
           ),
         );
       }
-    } on PostgrestException catch (error) {
+    } on AuthException catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

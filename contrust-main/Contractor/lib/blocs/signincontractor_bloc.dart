@@ -3,8 +3,8 @@ import 'package:contractor/Screen/dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class SignInContractee {
-  void signInUser(
+class SignInContractor { 
+  void signInContractor(
     BuildContext context,
     String email,
     String password,
@@ -35,7 +35,9 @@ class SignInContractee {
           context,
           MaterialPageRoute(builder: (context) => DashboardScreen()),
         );
+        
       } else {
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Error logging in'),
@@ -43,7 +45,9 @@ class SignInContractee {
           ),
         );
       }
+
     } on PostgrestException catch (error) {
+
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -51,7 +55,9 @@ class SignInContractee {
           backgroundColor: Colors.red,
         ),
       );
+
     } catch (e) {
+
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -59,6 +65,7 @@ class SignInContractee {
           backgroundColor: Colors.red,
         ),
       );
+
     }
   }
 }

@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SignInContractee {
-  void signInUser(BuildContext modalContext, String email, String password,
+  void signInContractee(BuildContext modalContext, String email, String password,
       bool Function() validateFields) async {
     final authService = AuthService();
 
@@ -24,6 +24,14 @@ class SignInContractee {
         throw AuthException('Invalid email or password');
       }
 
+      final userProfile = await authService.getUserProfile(signInResponse.user!.id);
+      final userType = userProfile?['user_type'];
+
+      if (userType != 'contractee') {
+        throw AuthException('Access denied: Not a contractee');
+      }
+
+
       Navigator.pop(modalContext); 
 
       Navigator.pushReplacement(
@@ -39,7 +47,7 @@ class SignInContractee {
           ),
         );
       });
-    } on AuthException catch (error) {
+    } on PostgrestException catch (error) {
       ScaffoldMessenger.of(modalContext).showSnackBar(
         SnackBar(
           content: Text('Error: ${error.message}'),
