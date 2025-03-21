@@ -1,3 +1,4 @@
+import 'package:backend/pagetransition.dart';
 import 'package:flutter/material.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -92,11 +93,7 @@ class DashboardScreen extends StatelessWidget {
           onExit: (_) => setState(() => isHovered = false),
           child: GestureDetector(
             onTap: () {
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                route,
-                (Route<dynamic> route) => false,
-              );
+              transitionBuilder(context, getScreenFromRoute(route));
             },
             child: AnimatedContainer(
               duration: Duration(milliseconds: 150),
@@ -134,7 +131,7 @@ class DashboardScreen extends StatelessWidget {
           onExit: (_) => setState(() => isHovered = false),
           child: GestureDetector(
             onTap: () {
-              Navigator.pushNamed(context, route);
+              transitionBuilder(context, getScreenFromRoute(route));
             },
             child: AnimatedContainer(
               duration: Duration(milliseconds: 200),

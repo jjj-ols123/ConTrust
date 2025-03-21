@@ -105,23 +105,7 @@ class _WelcomePageState extends State<WelcomePage> {
                   Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => HomePage()),
-                      );
-                      
-                  // try {sett9ngs
-                  //   final authService = AuthService();
-                  //   final response = await authService.signInAnonymously();
-                  //   final user = response.user;
-                  //   if (user != null && mounted) {
-                  //     Navigator.push(
-                  //       context, 
-                  //       MaterialPageRoute(builder: (context) => const LoginPage()),
-                  //     );
-                  //   } 
-                  // } catch (e) {
-                  //     ScaffoldMessenger.of(context).showSnackBar(
-                  //     SnackBar(content: Text('Failed to sign in anonymously: $e'))
-                  //     );
-                  // }
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.teal,

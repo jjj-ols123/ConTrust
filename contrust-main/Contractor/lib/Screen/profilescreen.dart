@@ -42,13 +42,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
 
-    // Determine number of grid columns based on screen width
     int crossAxisCount = screenWidth > 1000
-        ? 4 // Large screens
+        ? 4 
         : screenWidth > 600
-            ? 3 // Medium screens (Tablets)
-            : 2; // Small screens (Mobile)
-
+            ? 3 
+            : 2; 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.amber,
@@ -72,7 +70,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView( // Make screen scrollable
+      body: SingleChildScrollView( 
         physics: BouncingScrollPhysics(),
         child: Padding(
           padding: const EdgeInsets.all(10),
@@ -202,7 +200,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             LayoutBuilder(
                               builder: (context, constraints) {
                                 double availableHeight = 
-                                    MediaQuery.of(context).size.height * 0.4; // Set height dynamically
+                                    MediaQuery.of(context).size.height * 0.4; 
 
                                 return SizedBox(
                                   height: pastProjects.isEmpty ? 50 : availableHeight,
@@ -214,8 +212,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                           ),
                                         )
                                       : GridView.builder(
-                                          shrinkWrap: true, // Important: Prevent infinite height
-                                          physics: NeverScrollableScrollPhysics(), // Prevent nested scrolling
+                                          shrinkWrap: true,
+                                          physics: NeverScrollableScrollPhysics(), 
                                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                                             crossAxisCount: crossAxisCount,
                                             crossAxisSpacing: 8,

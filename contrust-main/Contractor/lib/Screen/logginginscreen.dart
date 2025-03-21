@@ -1,5 +1,7 @@
 // ignore_for_file: file_names, use_build_context_synchronously, deprecated_member_use, library_private_types_in_public_api
 
+import 'package:contractor/blocs/signincontractor_bloc.dart';
+import 'package:contractor/blocs/validatefields.dart';
 import 'package:flutter/material.dart';
 
 class ToLoginScreen extends StatefulWidget {
@@ -112,8 +114,12 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
                           'Login',
                           Colors.green,
                           Colors.white,
-                          () {
-                            // Implement login functionality here
+                          () async {
+                            final signInContractor = SignInContractor(); 
+                            signInContractor.signInContractor(context, _emailController.text,
+                            _passwordController.text, 
+                            () => validateFieldsLogin(context, _emailController.text, _passwordController.text)
+                            );
                           },
                         ),
                         const SizedBox(height: 10),
@@ -144,6 +150,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
     required TextEditingController controller,
   }) {
     return TextField(
+      controller: controller,
       obscureText: isPassword,
       keyboardType: TextInputType.emailAddress,
       decoration: InputDecoration(

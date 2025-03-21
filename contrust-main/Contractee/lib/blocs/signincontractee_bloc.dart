@@ -24,11 +24,11 @@ class SignInContractee {
         throw AuthException('Invalid email or password');
       }
 
-      final userProfile = await authService.getUserProfile(signInResponse.user!.id);
-      final userType = userProfile?['user_type'];
-
-      if (userType != 'contractee') {
+       final userType = signInResponse.user?.userMetadata?['user_type'];
+      
+      if (userType?.toLowerCase() != 'contractee') {
         throw AuthException('Access denied: Not a contractee');
+        
       }
 
 

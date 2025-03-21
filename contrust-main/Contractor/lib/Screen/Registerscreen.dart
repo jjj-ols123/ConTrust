@@ -1,6 +1,7 @@
 // ignore_for_file: file_names, deprecated_member_use, library_private_types_in_public_api, use_build_context_synchronously
 
 import 'package:contractor/blocs/signupcontractor_bloc.dart';
+import 'package:contractor/blocs/validatefields.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -171,7 +172,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       'firmName': _firmNameController.text,
                                       'contactNumber': _contactNumberController.text,
                                     },
-                                    _validateFields,
+                                    () => validateFieldsContractor(context, _emailController.text, _contactNumberController.text,
+                                    _emailController.text, _passwordController.text, _confirmPasswordController.text
+                                    )
                                   );
                                 },
                               ),
@@ -191,13 +194,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildTextField(
-    String label, {
-    bool isPassword = false,
+    String label, 
+    {bool isPassword = false,
     bool isNumber = false,
-    required TextEditingController controller,
-    int? maxLength,
-  }) {
+    TextEditingController? controller,
+    int? maxLength,}
+  ) {
     return TextField(
+      controller: controller,
       obscureText: isPassword,
       keyboardType: isNumber ? TextInputType.number : TextInputType.text,
       inputFormatters: isNumber
@@ -230,33 +234,5 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
       child: Center(child: Text(text, style: TextStyle(color: textColor))),
     );
-  }
-
-  bool _validateFields() {
-    if (_firmNameController.text.isEmpty ||
-        _contactNumberController.text.isEmpty ||
-        _emailController.text.isEmpty ||
-        _passwordController.text.isEmpty ||
-        _confirmPasswordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill in all fields'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return false;
-    }
-
-    if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Passwords do not match'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return false;
-    }
-
-    return true;
   }
 }

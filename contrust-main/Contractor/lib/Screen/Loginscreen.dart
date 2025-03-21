@@ -1,8 +1,8 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:backend/pagetransition.dart';
 import 'package:contractor/Screen/Registerscreen.dart';
 import 'package:contractor/Screen/logginginscreen.dart';
-import 'package:contractor/blocs/pagetransition.dart';
 import 'package:flutter/material.dart';
 
 class LoginScreen extends StatelessWidget {
@@ -87,7 +87,7 @@ class LoginScreen extends StatelessWidget {
                       // Login Button
                       ElevatedButton(
                         onPressed: () {
-                          navigateWithSlideTransition(context, ToLoginScreen());
+                          transitionBuilder(context, ToLoginScreen());
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blueAccent,
@@ -101,7 +101,7 @@ class LoginScreen extends StatelessWidget {
                       // Sign Up Button
                       OutlinedButton(
                         onPressed: () {
-                           navigateWithSlideTransition(context, RegisterScreen());
+                           transitionBuilder(context, RegisterScreen());
                         },
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(color: Colors.black),

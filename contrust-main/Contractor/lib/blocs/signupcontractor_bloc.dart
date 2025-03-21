@@ -1,4 +1,6 @@
 import 'package:backend/auth_service.dart';
+import 'package:backend/pagetransition.dart';
+import 'package:contractor/Screen/loginscreen.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -32,7 +34,7 @@ class SignUpContractor {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pop(context);
+        transitionBuilder(context, LoginScreen());
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
