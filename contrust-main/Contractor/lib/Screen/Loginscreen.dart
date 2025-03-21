@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:contractor/Screen/Registerscreen.dart';
 import 'package:contractor/Screen/logginginscreen.dart';
 import 'package:contractor/blocs/pagetransition.dart';
 import 'package:flutter/material.dart';
@@ -100,7 +101,7 @@ class LoginScreen extends StatelessWidget {
                       // Sign Up Button
                       OutlinedButton(
                         onPressed: () {
-                          Navigator.pushNamed(context, '/register');
+                           navigateWithSlideTransition(context, RegisterScreen());
                         },
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(color: Colors.black),
