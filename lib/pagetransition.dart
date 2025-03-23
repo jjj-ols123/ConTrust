@@ -26,10 +26,11 @@ void transitionBuilder(BuildContext context, Widget destination) {
 }
 
 // ignore: unused_element
-Widget getScreenFromRoute(String route) {
+Widget getScreenFromRoute(BuildContext context, String route) {
   switch (route) {
     case '/profile':
-      return UserProfileScreen(); 
+      final contractorId = ModalRoute.of(context)!.settings.arguments as String;
+      return UserProfileScreen(contractorId: contractorId);
     case '/ongoingproject':
       return OngoingProgressScreen();
     case '/bidding':
