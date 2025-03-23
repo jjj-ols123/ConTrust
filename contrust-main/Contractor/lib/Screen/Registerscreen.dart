@@ -1,7 +1,8 @@
 // ignore_for_file: file_names, deprecated_member_use, library_private_types_in_public_api, use_build_context_synchronously
 
+
+import 'package:backend/validatefields.dart';
 import 'package:contractor/blocs/signupcontractor_bloc.dart';
-import 'package:contractor/blocs/validatefields.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -163,18 +164,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 Colors.white,
                                 () async {
                                   final signUpContractor = SignUpContractor();
-                                  signUpContractor.signUpUser(
+                                  signUpContractor.signUpContractor(
                                     context,
                                     _emailController.text,
                                     _confirmPasswordController.text,
+                                    "contractor",
                                     {
-                                      'userType': 'Contractor',
+                                      'user_type': "contractor",
                                       'firmName': _firmNameController.text,
                                       'contactNumber': _contactNumberController.text,
                                     },
-                                    () => validateFieldsContractor(context, _emailController.text, _contactNumberController.text,
-                                    _emailController.text, _passwordController.text, _confirmPasswordController.text
-                                    )
+                                    () => validateFieldsContractor(
+                                      context,
+                                      _emailController.text,
+                                      _contactNumberController.text,
+                                      _emailController.text,
+                                      _passwordController.text,
+                                      _confirmPasswordController.text,
+                                    ),
                                   );
                                 },
                               ),

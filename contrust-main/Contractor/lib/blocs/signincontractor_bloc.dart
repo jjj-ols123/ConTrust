@@ -4,15 +4,10 @@ import 'package:backend/auth_service.dart';
 import 'package:backend/pagetransition.dart';
 import 'package:contractor/Screen/dashboard_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-class SignInContractor { 
-  void signInContractor(
-    BuildContext context,
-    String email,
-    String password,
-    bool Function() validateFields,
-  ) async {
+class SignInContractor {
+  void signInContractor(BuildContext context, String email, String password,
+      bool Function() validateFields) async {
     final authService = AuthService();
 
     if (!validateFields()) {
@@ -25,55 +20,45 @@ class SignInContractor {
         password: password,
       );
 
-      if (!context.mounted) return;
-
       if (signInResponse.user == null) {
-        throw AuthException('Invalid email or password');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invalid email or password'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return; 
       }
 
       final userType = signInResponse.user?.userMetadata?['user_type'];
       
       if (userType?.toLowerCase() != 'contractor') {
-        throw AuthException('Access denied: Not a contractor');
-        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Not a contractee...'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return; 
       }
 
-      if (signInResponse.user != null) {
+      transitionBuilder(context, DashboardScreen());
+
+      Future.delayed(const Duration(milliseconds: 500), () {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Successfully logged in'),
             backgroundColor: Colors.green,
           ),
         );
-          transitionBuilder(context, DashboardScreen());
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error logging in'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } on PostgrestException catch (error) {
-
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: ${error.message}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-
+      });
     } catch (e) {
-
-      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Unexpected error: $e'),
           backgroundColor: Colors.red,
         ),
       );
-
     }
   }
 }
