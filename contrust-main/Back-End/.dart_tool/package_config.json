@@ -56,6 +56,12 @@
       "languageVersion": "3.4"
     },
     {
+      "name": "contractee",
+      "rootUri": "file:///C:/Users/asus/Downloads/ConTrust/contrust-main/Contractee",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
       "name": "contractor",
       "rootUri": "file:///C:/Users/asus/Downloads/ConTrust/contrust-main/Contractor",
       "packageUri": "lib/",
@@ -578,7 +584,7 @@
       "languageVersion": "3.6"
     }
   ],
-  "generated": "2025-03-21T03:00:15.308223Z",
+  "generated": "2025-03-21T08:57:03.325903Z",
   "generator": "pub",
   "generatorVersion": "3.7.2",
   "flutterRoot": "file:///C:/Users/asus/OneDrive/flutter",
