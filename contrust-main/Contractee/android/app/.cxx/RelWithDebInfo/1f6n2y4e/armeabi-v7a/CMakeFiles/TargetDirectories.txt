@@ -1,0 +1,2 @@
+C:/Users/asus/Downloads/ConTrust/contrust-main/Contractee/android/app/.cxx/RelWithDebInfo/1f6n2y4e/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/asus/Downloads/ConTrust/contrust-main/Contractee/android/app/.cxx/RelWithDebInfo/1f6n2y4e/armeabi-v7a/CMakeFiles/rebuild_cache.dir

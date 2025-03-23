@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
+import 'package:backend/validatefields.dart';
 import 'package:contractee/blocs/signupcontractee_bloc.dart';
 import 'package:flutter/material.dart';
 
@@ -124,11 +125,21 @@ class _RegistrationPageState extends State<RegistrationPage> {
               context,
               _emailController.text,
               _confirmPasswordController.text,
+              'contractee',
               {
-                'userType': 'Contractee',
-                'fullName': '${_fNameController.text} ${_lNameController.text}',
+                'user_type': 'contractee',
+                'address': 'address',
+                'full_name': '${_fNameController.text} ${_lNameController.text}',
               },
-              _validateFields);
+             () => validateFieldsContractee(
+                context,
+                _fNameController.text,
+                _lNameController.text, 
+                _emailController.text,
+                _passwordController.text,
+                _confirmPasswordController.text,
+              ),
+          );
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.yellow,
@@ -145,30 +156,4 @@ class _RegistrationPageState extends State<RegistrationPage> {
     ];
   }
 
-  bool _validateFields() {
-    if (_fNameController.text.isEmpty ||
-        _lNameController.text.isEmpty ||
-        _emailController.text.isEmpty ||
-        _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill in all fields'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return false;
-    }
-
-    if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Passwords do not match'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return false;
-    }
-
-    return true;
-  }
 }

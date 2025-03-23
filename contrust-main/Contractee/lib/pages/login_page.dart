@@ -1,6 +1,7 @@
 
 // ignore_for_file: deprecated_member_use
 
+import 'package:backend/validatefields.dart';
 import 'package:contractee/blocs/signincontractee_bloc.dart';
 import 'package:contractee/pages/registration_page.dart';
 import 'package:flutter/material.dart';
@@ -82,8 +83,12 @@ class _LoginPageState extends State<LoginPage> {
         ElevatedButton(
           onPressed: () async {
             final signInContractee = SignInContractee();
-            signInContractee.signInContractee(context, _emailController.text,
-                _passwordController.text, _validateFields);
+            signInContractee.signInContractee(
+              context, 
+              _emailController.text,
+              _passwordController.text, 
+              () => validateFieldsLogin(context, _emailController.text, _passwordController.text)
+              );
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.teal,
@@ -134,16 +139,4 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  bool _validateFields() {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill in all fields'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return false;
-    }
-    return true;
-  }
 }
