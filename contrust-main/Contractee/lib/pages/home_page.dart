@@ -1,11 +1,55 @@
-import 'package:contractee/blocs/checkuseracc.dart';
+// ignore_for_file: deprecated_member_use, library_private_types_in_public_api
+
+import 'package:backend/pagetransition.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:contractee/blocs/checkuseracc.dart';
+import 'package:contractee/pages/buildingmaterial_page.dart';
 import 'package:contractee/pages/about_page.dart';
 import 'package:contractee/pages/transaction_page.dart';
-import 'package:contractee/pages/buildingmaterial_page.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final supabase = Supabase.instance.client;
+  List<Map<String, dynamic>> contractors = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchContractors();
+  }
+
+  Future<void> fetchContractors() async {
+    try {
+      final response = await supabase
+          .from('Contractor')
+          .select('contractor_id, firm_name, profile_photo');
+          
+
+        print("Fetched Contractors: ${response.length}"); // Debugging
+        print("Contractor Data: $response"); // Debugging
+
+
+      if (response.isNotEmpty) {
+        setState(() {
+          contractors = List<Map<String, dynamic>>.from(response);
+          isLoading = false;
+        });
+      } else {
+        setState(() => isLoading = false);
+      }
+    } catch (e) {
+      print("Error fetching contractors: $e");
+      setState(() => isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,9 +77,7 @@ class HomePage extends StatelessWidget {
           padding: EdgeInsets.zero,
           children: [
             const DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.yellow,
-              ),
+              decoration: BoxDecoration(color: Colors.yellow),
               child: Text(
                 '',
                 style: TextStyle(
@@ -48,39 +90,22 @@ class HomePage extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.home),
               title: const Text('Home'),
-              onTap: () {
-                Navigator.pop(context);
-              },
+              onTap: () => Navigator.pop(context),
             ),
             ListTile(
               leading: const Icon(Icons.book),
               title: const Text('Transaction History'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => TransactionPage()),
-                );
-              },
+              onTap: () => transitionBuilder(context, TransactionPage()),
             ),
             ListTile(
               leading: const Icon(Icons.handyman),
               title: const Text('Materials'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => Buildingmaterial()),
-                );
-              },
+              onTap: () => transitionBuilder(context, Buildingmaterial()),
             ),
             ListTile(
               leading: const Icon(Icons.info),
               title: const Text('About'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => AboutPage()),
-                );
-              },
+              onTap: () => transitionBuilder(context, AboutPage()),
             ),
           ],
         ),
@@ -111,14 +136,26 @@ class HomePage extends StatelessWidget {
                 const SizedBox(height: 20),
                 SizedBox(
                   height: 300,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: [
-                      _buildContractorCard(context),
-                      _buildContractorCard(context),
-                      _buildContractorCard(context),
-                    ],
-                  ),
+                  child: isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : contractors.isEmpty
+                          ? const Center(child: Text("No contractors found"))
+                          : ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: contractors.length,
+                              itemBuilder: (context, index) {
+                                final contractor = contractors[index];
+
+                                print("Rendering Contractor: ${contractor['firm_name']}");
+
+                                return _buildContractorCard(
+                                  context,
+                                  contractor['contractor_id'] ?? '',
+                                  contractor['firm_name'] ?? 'Unknown',
+                                  contractor['profile_photo'] ?? '',
+                                );
+                              },
+                            ),
                 ),
               ],
             ),
@@ -129,38 +166,53 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildContractorCard(BuildContext context) {
+  Widget _buildContractorCard(
+      BuildContext context, String id, String name, String profileImage) {
     return Container(
       margin: const EdgeInsets.only(right: 10),
       width: 200,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         color: Colors.grey[200],
-        image: const DecorationImage(
-          image: NetworkImage('https://via.placeholder.com/150'),
-          fit: BoxFit.cover,
-        ),
+        image: profileImage.isNotEmpty
+            ? DecorationImage(
+                image: NetworkImage(profileImage),
+                fit: BoxFit.cover,
+              )
+            : const DecorationImage(
+                image: NetworkImage('https://via.placeholder.com/150'),
+                fit: BoxFit.cover,
+              ),
       ),
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: ElevatedButton(
-          onPressed: () {
-             CheckUserLogin.isLoggedIn(
-            context: context,
-            onAuthenticated: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => TransactionPage()),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Container(
+            width: double.infinity,
+            color: Colors.white.withOpacity(0.7),
+            padding: const EdgeInsets.all(8),
+            child: Text(
+              name,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              CheckUserLogin.isLoggedIn(
+                context: context,
+                onAuthenticated: () {
+                  transitionBuilder(context, getScreenFromRoute(context, '/contractorprofile'));
+                },
               );
             },
-              
-          );
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
+            child: const Text("View", style: TextStyle(color: Colors.black)),
           ),
-          child: const Text("View", style: TextStyle(color: Colors.black)),
-        ),
+        ],
       ),
     );
   }

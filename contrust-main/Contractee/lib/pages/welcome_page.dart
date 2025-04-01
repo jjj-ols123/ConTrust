@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'package:backend/pagetransition.dart';
 import 'package:contractee/pages/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,6 +18,7 @@ class _WelcomePageState extends State<WelcomePage> {
 
   @override
   Widget build(BuildContext context) {
+    
     return Scaffold(
       body: Stack(
         children: [
@@ -102,10 +104,7 @@ class _WelcomePageState extends State<WelcomePage> {
                   SharedPreferences prefs = await SharedPreferences.getInstance();
                   await prefs.setBool('isFirstOpen', false);
 
-                  Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => HomePage()),
-                  );
+                 transitionBuilder(context, HomePage(), replace: true);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.teal,

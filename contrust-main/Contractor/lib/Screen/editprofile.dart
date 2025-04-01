@@ -1,25 +1,62 @@
-// ignore_for_file: library_private_types_in_public_api
+// ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
 
+import 'package:contractor/blocs/userprofile.dart';
 import 'package:flutter/material.dart';
 
+
 class EditProfileScreen extends StatefulWidget {
-  const EditProfileScreen({super.key});
+  final String contractorId;
+
+  const EditProfileScreen({super.key, required this.contractorId});
 
   @override
   _EditProfileScreenState createState() => _EditProfileScreenState();
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
-  TextEditingController usernameController = TextEditingController(
-    text: "Contrust",
-  );
-  TextEditingController contactNumberController = TextEditingController(
-    text: "+1234567890",
-  );
-  TextEditingController emailController = TextEditingController(
-    text: "Contrust@gmail.com",
-  );
-  TextEditingController passwordController = TextEditingController();
+  final UserService userService = UserService();
+  TextEditingController firmController = TextEditingController();
+  TextEditingController bioController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchContractorData();
+  }
+
+  Future<void> _fetchContractorData() async {
+    final contractorData = await userService.fetchContractorData(
+      widget.contractorId,
+    );
+    if (contractorData != null) {
+      setState(() {
+        firmController.text = contractorData['firm_name'] ?? "";
+        bioController.text = contractorData['bio'] ?? "";
+      });
+    }
+  } 
+
+  Future<void> _updateProfile() async {
+    bool success = await userService.updateContractorProfile(
+      widget.contractorId,
+      firmController.text,
+      bioController.text,
+    );
+
+    if (success) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Profile Updated Successfully")));
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Failed to update profile"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,152 +65,37 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         backgroundColor: Colors.amber,
         centerTitle: true,
         title: Text(
-          'Security Settings',
+          'Edit Profile',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.notifications, color: Colors.black),
-            onPressed: () {}, 
-          ),
-          Padding(
-            padding: const EdgeInsets.only(left: 5),
-            child: Image.asset('logo3.png', width: 100), 
-          ),
-        ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Top Navigation Bar
-            Container(
-              padding: EdgeInsets.all(10),
-              color: Colors.amber.shade200,
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        '/dashboard',
-                        (Route<dynamic> route) => false,
-                      ); // Navi
-                    },
-                    child: Text(
-                      "Home",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  Text("|", style: TextStyle(fontSize: 16)),
-                  SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(context, '/profile');
-                    },
-                    child: Text(
-                      "Profile",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
+            TextField(
+              controller: firmController,
+              decoration: InputDecoration(
+                labelText: "Firm Name",
+                border: OutlineInputBorder(),
               ),
             ),
             SizedBox(height: 10),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.2,
-                      width: double.infinity,
-                      child: Image.asset(
-                        'bgloginscreen.jpg',
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        children: [
-                          // Security Settings Section
-                          Card(
-                            elevation: 5,
-                            color: Colors.amber.shade100,
-                            child: Padding(
-                              padding: EdgeInsets.all(12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  TextField(
-                                    controller: usernameController,
-                                    decoration: InputDecoration(
-                                      labelText: "Username",
-                                      border: OutlineInputBorder(),
-                                    ),
-                                  ),
-                                  SizedBox(height: 10),
-                                  TextField(
-                                    controller: contactNumberController,
-                                    decoration: InputDecoration(
-                                      labelText: "Contact Number",
-                                      border: OutlineInputBorder(),
-                                    ),
-                                  ),
-                                  SizedBox(height: 10),
-                                  TextField(
-                                    controller: emailController,
-                                    decoration: InputDecoration(
-                                      labelText: "Email Address",
-                                      border: OutlineInputBorder(),
-                                    ),
-                                  ),
-                                  SizedBox(height: 10),
-                                  TextField(
-                                    controller: passwordController,
-                                    obscureText: true,
-                                    decoration: InputDecoration(
-                                      labelText: "Password",
-                                      border: OutlineInputBorder(),
-                                    ),
-                                  ),
-                                  SizedBox(height: 10),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      // Save Security Settings
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            "Profile Saved",
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    child: Text("Save Profile"),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+            TextField(
+              controller: bioController,
+              decoration: InputDecoration(
+                labelText: "Bio",
+                border: OutlineInputBorder(),
               ),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _updateProfile,
+              child: Text("Save Profile"),
             ),
           ],
         ),

@@ -1,8 +1,6 @@
-// ignore_for_file: use_build_context_synchronously
-
-import 'package:backend/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:backend/auth_service.dart';
 
 class SignUpContractor {
   void signUpContractor(
@@ -14,6 +12,7 @@ class SignUpContractor {
     bool Function() validateFields,
   ) async {
     final authService = AuthService();
+    final supabase = Supabase.instance.client;
 
     if (!validateFields()) {
       return;
@@ -46,35 +45,17 @@ class SignUpContractor {
           'created_at': DateTime.now().toUtc().toIso8601String(),
         };
 
-        try {
-          await Supabase.instance.client
-              .from('Contractor')
-              .insert(contractorData);
-        } catch (e) {
-          try {
-            await Supabase.instance.client.auth.admin.deleteUser(
-              signUpResponse.user!.id,
-            );
-          } catch (e) {
-            ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error Deleting Account'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          }
+        final insertResponse = await supabase
+            .from('Contractor')
+            .insert(contractorData)
+            .select(); 
 
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error saving contractor data: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
+        if (insertResponse.isEmpty) {
+          throw Exception("Error saving contractor data");
         }
       }
 
+     
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

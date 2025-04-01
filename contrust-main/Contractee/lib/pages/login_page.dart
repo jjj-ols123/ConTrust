@@ -1,6 +1,7 @@
 
 // ignore_for_file: deprecated_member_use
 
+import 'package:backend/pagetransition.dart';
 import 'package:backend/validatefields.dart';
 import 'package:contractee/blocs/signincontractee_bloc.dart';
 import 'package:contractee/pages/registration_page.dart';
@@ -117,12 +118,7 @@ class _LoginPageState extends State<LoginPage> {
         const SizedBox(height: 20),
         GestureDetector(
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => RegistrationPage(),
-              ),
-            );
+            transitionBuilder(context, RegistrationPage());
           },
           child: const Text(
             "Doesn't have an account? Sign up",

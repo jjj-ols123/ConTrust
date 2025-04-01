@@ -1,3 +1,6 @@
+import 'package:backend/pagetransition.dart';
+import 'package:contractor/Screen/dashboard_screen.dart';
+import 'package:contractor/Screen/productpanel.dart';
 import 'package:flutter/material.dart';
 
 class BiddingScreen extends StatelessWidget {
@@ -78,11 +81,7 @@ class BiddingScreen extends StatelessWidget {
                 children: [
                   GestureDetector(
                     onTap: () {
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        '/dashboard',
-                        (Route<dynamic> route) => false,
-                      ); // Navigate to Dashboard
+                      transitionBuilder(context, DashboardScreen());
                     },
                     child: Text(
                       "Home",
@@ -97,7 +96,7 @@ class BiddingScreen extends StatelessWidget {
                   SizedBox(width: 10),
                   GestureDetector(
                     onTap: () {
-                      Navigator.pushNamed(context, '/productpanel');
+                      transitionBuilder(context, ProductPanelScreen());
                     },
                     child: Text(
                       "Product Panel",

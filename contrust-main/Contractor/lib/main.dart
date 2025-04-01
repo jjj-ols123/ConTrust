@@ -13,7 +13,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 final url = 'https://bgihfdqruamnjionhkeq.supabase.co';
 final key =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJnaWhmZHFydWFtbmppb25oa2VxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MDg3MjI4OSwiZXhwIjoyMDU2NDQ4Mjg5fQ.0VxCNZKhvrHOMQhk37Ej3igkxUAyUGvLp_vJrE-ZFd4';
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJnaWhmZHFydWFtbmppb25oa2VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4NzIyODksImV4cCI6MjA1NjQ0ODI4OX0.-GRaolUVu1hW6NUaEAwJuYJo8C2X5_1wZ-qB4a-9Txs';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,8 +41,10 @@ class MyApp extends StatelessWidget {
         '/productpanel': (context) => ProductPanelScreen(),
         '/ongoingproject': (context) => OngoingProgressScreen(),
         '/clienthistory': (context) => ClientHistoryScreen(),
-        '/editprofile': (context) => EditProfileScreen(),
-        '/login': (context) => ToLoginScreen()
+        '/editprofile': (context) => EditProfileScreen(contractorId: 
+          ModalRoute.of(context)!.settings.arguments as String),
+        '/login': (context) => ToLoginScreen(),
+        '/first': (context) => LoginScreen()
       },
     );
   }

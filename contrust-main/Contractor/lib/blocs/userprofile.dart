@@ -7,25 +7,26 @@ class UserService {
   final SupabaseClient supabase = Supabase.instance.client;
 
   Future<Map<String, dynamic>?> fetchContractorData(String contractorId) async {
-  try {
-    final response = await supabase
-        .from('Contractor')
-        .select()
-        .eq('contractor_id', contractorId)
-        .single();
+    try {
+      final response =
+          await supabase
+              .from('Contractor')
+              .select()
+              .eq('contractor_id', contractorId)
+              .single();
 
-    return {
-      'firm_name': response['firm_name'] ?? "No firm name",
-      'bio': response['bio'] ?? "No bio available",
-      'rating': (response['rating'] ?? 4.5).toDouble(),
-      'profile_photo': response['profile_photo'] ?? 'default_image_url', 
-      'past_projects': List<String>.from(response['past_projects'] ?? []), 
-    };
-  } catch (error) {
-    print("Error fetching contractor data: $error");
-    return null;
+      return {
+        'firm_name': response['firm_name'] ?? "No firm name",
+        'bio': response['bio'] ?? "No bio available",
+        'rating': (response['rating'] ?? 4.5).toDouble(),
+        'profile_photo': response['profile_photo'] ?? 'default_image_url',
+        'past_projects': List<String>.from(response['past_projects'] ?? []),
+      };
+    } catch (error) {
+      print("Error fetching contractor data: $error");
+      return null;
+    }
   }
-}
 
   Future<String?> uploadImage(Uint8List imageBytes, String bucketName) async {
     try {
@@ -85,6 +86,23 @@ class UserService {
       return true;
     } catch (error) {
       print("Error updating past projects: $error");
+      return false;
+    }
+  }
+
+  Future<bool> updateContractorProfile(
+    String contractorId,
+    String firmName,
+    String bio,
+  ) async {
+    try {
+      await supabase
+          .from('Contractor')
+          .update({'firm_name': firmName, 'bio': bio})
+          .eq('contractor_id', contractorId);
+      return true;
+    } catch (error) {
+      print("Error updating profile: $error");
       return false;
     }
   }

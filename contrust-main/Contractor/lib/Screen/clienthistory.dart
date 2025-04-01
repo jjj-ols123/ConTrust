@@ -1,5 +1,7 @@
 // ignore_for_file: library_private_types_in_public_api
 
+import 'package:backend/pagetransition.dart';
+import 'package:contractor/Screen/productpanel.dart';
 import 'package:flutter/material.dart';
 
 class ClientHistoryScreen extends StatefulWidget {
@@ -132,7 +134,7 @@ class _ClientHistoryScreenState extends State<ClientHistoryScreen> {
                   SizedBox(width: 10),
                   GestureDetector(
                     onTap: () {
-                      Navigator.pushNamed(context, '/productpanel');
+                      transitionBuilder(context, ProductPanelScreen());
                     },
                     child: Text(
                       "Product Panel",

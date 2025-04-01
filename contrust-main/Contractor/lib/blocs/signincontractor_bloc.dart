@@ -2,12 +2,15 @@
 
 import 'package:backend/auth_service.dart';
 import 'package:backend/pagetransition.dart';
-import 'package:contractor/Screen/dashboard_screen.dart';
 import 'package:flutter/material.dart';
 
 class SignInContractor {
-  void signInContractor(BuildContext context, String email, String password,
-      bool Function() validateFields) async {
+  void signInContractor(
+    BuildContext context,
+    String email,
+    String password,
+    bool Function() validateFields,
+  ) async {
     final authService = AuthService();
 
     if (!validateFields()) {
@@ -27,11 +30,11 @@ class SignInContractor {
             backgroundColor: Colors.red,
           ),
         );
-        return; 
+        return;
       }
 
       final userType = signInResponse.user?.userMetadata?['user_type'];
-      
+
       if (userType?.toLowerCase() != 'contractor') {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -39,18 +42,19 @@ class SignInContractor {
             backgroundColor: Colors.red,
           ),
         );
-        return; 
+        return;
       }
 
-      transitionBuilder(context, DashboardScreen());
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Successfully logged in'),
+          backgroundColor: Colors.green,
+        ),
+      );
 
-      Future.delayed(const Duration(milliseconds: 500), () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Successfully logged in'),
-            backgroundColor: Colors.green,
-          ),
-        );
+      Future.delayed(const Duration(milliseconds: 1000), () {
+        transitionBuilder(context, getScreenFromRoute(context, '/dashboard'), replace: true);
+
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

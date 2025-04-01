@@ -1,5 +1,8 @@
-// ignore_for_file: library_private_types_in_public_api
+// ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
 
+import 'package:backend/pagetransition.dart';
+import 'package:contractor/Screen/editprofile.dart';
+import 'package:contractor/blocs/contractorId.dart';
 import 'package:contractor/blocs/userprofile.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -200,8 +203,26 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             ),
                             SizedBox(height: 20),
                             ElevatedButton(
-                              onPressed: () {
-                                Navigator.pushNamed(context, '/editprofile');
+                              onPressed: () async {
+                                String? contractorId = await getContractorId();
+
+                                if (contractorId != null) {
+                                  transitionBuilder(
+                                    context,
+                                    EditProfileScreen(
+                                      contractorId: contractorId,
+                                    ),
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Failed to get contractor ID',
+                                      ),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.blue,

@@ -1,3 +1,4 @@
+import 'package:backend/pagetransition.dart';
 import 'package:contractee/pages/welcome_page.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
@@ -15,10 +16,7 @@ class _LaunchPageState extends State<LaunchPage> {
   void initState() {
     super.initState();
     Timer(Duration(seconds: 2), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => WelcomePage()),
-      );
+      transitionBuilder(context, WelcomePage());
     });
   }
 
