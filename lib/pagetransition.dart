@@ -78,8 +78,7 @@ Widget getScreenFromRoute(BuildContext context, String route, {Object? arguments
     case '/about':
       return AboutPage();
     case '/buildingmaterials': 
-      return Buildingmaterial();
-    
+      return Buildingmaterial();  
     case '/contractorprofile':
       if (arguments == null || arguments is! String) {
         return Scaffold(
