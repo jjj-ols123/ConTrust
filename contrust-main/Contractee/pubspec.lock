@@ -81,7 +81,7 @@ packages:
     source: hosted
     version: "1.19.1"
   contractor:
-    dependency: transitive
+    dependency: "direct main"
     description:
       path: "C:/Users/asus/Downloads/ConTrust/contrust-main/Contractor"
       relative: false

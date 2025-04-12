@@ -1,9 +1,7 @@
-// ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
+// ignore_for_file: library_private_types_in_public_api
 
-// ignore: depend_on_referenced_packages
 import 'package:contractor/blocs/userprofile.dart';
 import 'package:flutter/material.dart';
-import 'dart:typed_data';
 
 class ContractorProfileScreen extends StatefulWidget {
   final String contractorId;
@@ -16,12 +14,14 @@ class ContractorProfileScreen extends StatefulWidget {
 
 class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
   final UserService userService = UserService();
-
+  
   String firmName = "Firm Name";
   String bio = "No Bio";
   double rating = 4.5;
-  List<Uint8List> pastProjects = [];
+  List<String> pastProjects = [];
   String? profileImage;
+  bool isLoading = true;
+  bool isHiring = false;
 
   @override
   void initState() {
@@ -30,17 +30,19 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
   }
 
   Future<void> _loadContractorData() async {
-    final contractorData = await userService.fetchContractorData(
-      widget.contractorId,
-    );
-    if (contractorData != null) {
-      setState(() {
-        firmName = contractorData['firm_name'] ?? "No firm name";
-        bio = contractorData['bio'] ?? "No bio available";
-        rating = contractorData['rating'] ?? 4.5;
-        profileImage = contractorData['profile_photo'] ?? 'default_image_url';
-      });
-    } else {
+    try {
+      final contractorData = await userService.fetchContractorData(widget.contractorId);
+      if (contractorData != null) {
+        setState(() {
+          firmName = contractorData['firm_name'] ?? "No firm name";
+          bio = contractorData['bio'] ?? "No bio available";
+          rating = contractorData['rating']?.toDouble() ?? 4.5;
+          profileImage = contractorData['profile_photo'];
+          pastProjects = List<String>.from(contractorData['past_projects'] ?? []);
+          isLoading = false;
+        });
+      }
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -49,128 +51,258 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
           ),
         );
       }
+      setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> _handleHireContractor() async {
+    setState(() => isHiring = true);
+    
+    try {
+      await Future.delayed(const Duration(seconds: 2));
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Successfully initiated hiring process with $firmName!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to hire contractor'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => isHiring = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
-    // ignore: unused_local_variable
-    int crossAxisCount =
-        screenWidth > 1000
-            ? 4
-            : screenWidth > 600
-            ? 3
-            : 2;
+    int crossAxisCount = screenWidth > 1000 ? 4 : screenWidth > 600 ? 3 : 2;
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.amber,
         centerTitle: true,
-        title: Text(
-          'Home',
+        title: const Text(
+          'Contractor Profile',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.notifications, color: Colors.black),
-            onPressed: () {},
-          ),
-          Padding(
-            padding: const EdgeInsets.only(left: 5),
-            child: Image.asset('logo3.png', width: 100),
-          ),
-        ],
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
-      body: SingleChildScrollView(
-        physics: BouncingScrollPhysics(),
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Column(
-            children: [
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.2,
-                width: double.infinity,
-                child: Image.asset('bgloginscreen.jpg', fit: BoxFit.cover),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Padding(
+                padding: const EdgeInsets.all(10),
                 child: Column(
                   children: [
-                    Card(
-                      elevation: 5,
-                      color: Colors.amber.shade100,
-                      child: Padding(
-                        padding: EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            CircleAvatar(
-                              radius: 50,
-                              backgroundColor: Colors.grey.shade300,
-                              child: profileImage != null
-                                  ? ClipOval(
-                                      child: Image.network(
-                                        profileImage!,
-                                        fit: BoxFit.cover,
-                                        width: 100,
-                                        height: 100,
-                                      ),
-                                    )
-                                  : Icon(
-                                      Icons.person,
-                                      size: 40,
-                                      color: Colors.white,
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.2,
+                      width: double.infinity,
+                      child: Image.asset(
+                        'bgloginscreen.jpg',
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => 
+                          Container(color: Colors.grey[200]),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          
+                          Card(
+                            elevation: 5,
+                            color: Colors.amber.shade100,
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 50,
+                                    backgroundColor: Colors.grey.shade300,
+                                    backgroundImage: profileImage != null
+                                        ? NetworkImage(profileImage!)
+                                        : null,
+                                    child: profileImage == null
+                                        ? const Icon(
+                                            Icons.business,
+                                            size: 40,
+                                            color: Colors.white,
+                                          )
+                                        : null,
+                                  ),
+                                  const SizedBox(height: 10),
+                                  const Text(
+                                    "Construction Firm Name",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
                                     ),
-                            ),
-                            SizedBox(height: 10),
-                            Text(
-                              "Construction Firm Name",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                                  ),
+                                  Text(
+                                    firmName,
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  const Text(
+                                    "Bio",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    bio,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 10),
+                                  const Text(
+                                    "Rating:",
+                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: List.generate(5, (index) {
+                                      return Icon(
+                                        index < rating.floor()
+                                            ? Icons.star
+                                            : Icons.star_border,
+                                        color: Colors.orange,
+                                      );
+                                    }),
+                                  ),
+                                ],
                               ),
                             ),
-                            Text(firmName, style: TextStyle(fontSize: 14)),
-                            SizedBox(height: 10),
-                            Text(
-                              "Bio",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                          ),
+                          const SizedBox(height: 20),
+                         
+                          Card(
+                            elevation: 5,
+                            color: Colors.amber.shade100,
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    "Photos of Past Projects",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      double availableHeight =
+                                          MediaQuery.of(context).size.height * 0.4;
+                                      return SizedBox(
+                                        height: pastProjects.isEmpty ? 50 : availableHeight,
+                                        child: pastProjects.isEmpty
+                                            ? const Center(
+                                                child: Text(
+                                                  "No project photos available.",
+                                                  style: TextStyle(
+                                                    color: Colors.grey,
+                                                  ),
+                                                ),
+                                              )
+                                            : GridView.builder(
+                                                shrinkWrap: true,
+                                                physics: const NeverScrollableScrollPhysics(),
+                                                gridDelegate:
+                                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                                  crossAxisCount: crossAxisCount,
+                                                  crossAxisSpacing: 8,
+                                                  mainAxisSpacing: 8,
+                                                  childAspectRatio: 1,
+                                                ),
+                                                itemCount: pastProjects.length,
+                                                itemBuilder: (context, index) {
+                                                  return ClipRRect(
+                                                    borderRadius: BorderRadius.circular(8),
+                                                    child: Image.network(
+                                                      pastProjects[index],
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder: (context, error, stackTrace) => 
+                                                        Container(color: Colors.grey[300]),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                      );
+                                    },
+                                  ),
+                                ],
                               ),
                             ),
-                            Text(bio, textAlign: TextAlign.center),
-                            SizedBox(height: 10),
-                            Text(
-                              "Rating:",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(5, (index) {
-                                return Icon(
-                                  index < rating
-                                      ? Icons.star
-                                      : Icons.star_border,
-                                  color: Colors.orange,
-                                );
-                              }),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.white,
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: isHiring ? null : _handleHireContractor,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green[700],
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: isHiring
+                    ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 3,
+                        ),
+                      )
+                    : const Text(
+                        "HIRE THIS CONTRACTOR",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

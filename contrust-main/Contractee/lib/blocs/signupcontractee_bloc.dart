@@ -11,7 +11,9 @@ class SignUpContractee {
     Map<String, dynamic>? data,
     bool Function() validateFields,
   ) async {
+    
     final authService = AuthService();
+    final supabase = Supabase.instance.client;
     int project = 0;
 
     if (!validateFields()) {
@@ -40,40 +42,19 @@ class SignUpContractee {
       if (userType == 'contractee') {
         final contracteeData = {
           'contractee_id': signUpResponse.user!.id,
-          'full_name': data?['fullName'],
+          'full_name': data?['full_name'],
           'address': data?['address'] ?? '',
           'created_at': DateTime.now().toIso8601String(),
           'project_history_count': project,
         };
 
-        try {
-          await Supabase.instance.client
-              .from('Contractee')
-              .insert(contracteeData);
-        } catch (e) {
-          try {
-            await Supabase.instance.client.auth.admin.deleteUser(
-              signUpResponse.user!.id,
-            );
-          } catch (e) {
-            if (!context.mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Error deleting user: $e'),
-                backgroundColor: Colors.red,
-              ),
-            );
-            return;
-          }
+        final insertResponse = await supabase
+            .from('Contractee')
+            .insert(contracteeData)
+            .select(); 
 
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error saving contractee data: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
+        if (insertResponse.isEmpty) {
+          throw Exception("Error saving contractee data");
         }
       }
 

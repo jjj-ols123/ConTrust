@@ -1,9 +1,13 @@
 // ignore_for_file: deprecated_member_use, library_private_types_in_public_api
 
 import 'package:backend/pagetransition.dart';
+import 'package:contractee/blocs/checkuseracc.dart';
+import 'package:contractee/blocs/modalsheet.dart';
+import 'package:contractee/pages/contractor_profile.dart';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:contractee/blocs/checkuseracc.dart';
+
 import 'package:contractee/pages/buildingmaterial_page.dart';
 import 'package:contractee/pages/about_page.dart';
 import 'package:contractee/pages/transaction_page.dart';
@@ -16,9 +20,18 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final modalSheet = ModalClass();
   final supabase = Supabase.instance.client;
   List<Map<String, dynamic>> contractors = [];
   bool isLoading = true;
+
+  final TextEditingController _minBudgetController = TextEditingController();
+  final TextEditingController _maxBudgetController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _typeConstructionController =
+      TextEditingController();
+  final TextEditingController _bidTimeController = TextEditingController();
 
   @override
   void initState() {
@@ -31,12 +44,6 @@ class _HomePageState extends State<HomePage> {
       final response = await supabase
           .from('Contractor')
           .select('contractor_id, firm_name, profile_photo');
-          
-
-        print("Fetched Contractors: ${response.length}"); // Debugging
-        print("Contractor Data: $response"); // Debugging
-
-
       if (response.isNotEmpty) {
         setState(() {
           contractors = List<Map<String, dynamic>>.from(response);
@@ -46,7 +53,6 @@ class _HomePageState extends State<HomePage> {
         setState(() => isLoading = false);
       }
     } catch (e) {
-      print("Error fetching contractors: $e");
       setState(() => isLoading = false);
     }
   }
@@ -145,9 +151,6 @@ class _HomePageState extends State<HomePage> {
                               itemCount: contractors.length,
                               itemBuilder: (context, index) {
                                 final contractor = contractors[index];
-
-                                print("Rendering Contractor: ${contractor['firm_name']}");
-
                                 return _buildContractorCard(
                                   context,
                                   contractor['contractor_id'] ?? '',
@@ -163,6 +166,51 @@ class _HomePageState extends State<HomePage> {
           const Spacer(),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          try {
+            CheckUserLogin.isLoggedIn(
+              context: context,
+              onAuthenticated: () async {
+                if (!context.mounted) return;
+
+                final userId = Supabase.instance.client.auth.currentUser?.id;
+                if (userId == null) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('User not authenticated')),
+                  );
+                  return;
+                }
+
+                if (!context.mounted) return;
+
+                _clearControllers();
+
+                await ModalClass.show(
+                  context: context,
+                  contracteeId: userId,
+                  constructionTypeController: _typeConstructionController,
+                  minBudgetController: _minBudgetController,
+                  maxBudgetController: _maxBudgetController,
+                  locationController: _locationController,
+                  descriptionController: _descriptionController,
+                  bidTimeController: _bidTimeController,
+                );
+              },
+            );
+          } catch (e) {
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error: ${e.toString()}')),
+            );
+          }
+        },
+        backgroundColor: Colors.yellow[700],
+        foregroundColor: Colors.black,
+        hoverColor: Colors.yellow[800],
+        child: const Icon(Icons.construction, color: Colors.black),
+      ),
     );
   }
 
@@ -170,50 +218,85 @@ class _HomePageState extends State<HomePage> {
       BuildContext context, String id, String name, String profileImage) {
     return Container(
       margin: const EdgeInsets.only(right: 10),
-      width: 200,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        color: Colors.grey[200],
-        image: profileImage.isNotEmpty
-            ? DecorationImage(
-                image: NetworkImage(profileImage),
+      width: 180,
+      height: 220,
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(12)),
+              child: Image.network(
+                profileImage.isNotEmpty
+                    ? profileImage
+                    : 'assets/Portrait_Placeholder.png',
+                height: 200,
                 fit: BoxFit.cover,
-              )
-            : const DecorationImage(
-                image: NetworkImage('https://via.placeholder.com/150'),
-                fit: BoxFit.cover,
-              ),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Container(
-            width: double.infinity,
-            color: Colors.white.withOpacity(0.7),
-            padding: const EdgeInsets.all(8),
-            child: Text(
-              name,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
               ),
             ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              CheckUserLogin.isLoggedIn(
-                context: context,
-                onAuthenticated: () {
-                  transitionBuilder(context, getScreenFromRoute(context, '/contractorprofile'));
-                },
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
-            child: const Text("View", style: TextStyle(color: Colors.black)),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+              child: Column(
+                children: [
+                  Text(
+                    name,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      CheckUserLogin.isLoggedIn(
+                        context: context,
+                        onAuthenticated: () async {
+                          if (!context.mounted) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ContractorProfileScreen(
+                                contractorId: id,
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.yellow[700],
+                      foregroundColor: Colors.black,
+                      minimumSize: const Size.fromHeight(40),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text("View"),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+
+  void _clearControllers() {
+    _typeConstructionController.clear();
+    _minBudgetController.clear();
+    _maxBudgetController.clear();
+    _locationController.clear();
+    _descriptionController.clear();
+    _bidTimeController.clear();
+  }
+  
 }
