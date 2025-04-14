@@ -33,9 +33,9 @@ dependencies:
   smooth_page_indicator: ^1.2.0+3
   supabase_flutter: ^2.8.4
   contractor: 
-    path: C:/Users/asus/Downloads/ConTrust/contrust-main/Contractor
+    path: ../Contractor
   contractee: 
-    path: C:/Users/asus/Downloads/ConTrust/contrust-main/Contractee
+    path: ../Contractee
 
 
   # The following adds the Cupertino Icons font to your application.

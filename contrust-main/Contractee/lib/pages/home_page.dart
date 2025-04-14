@@ -202,7 +202,7 @@ class _HomePageState extends State<HomePage> {
           } catch (e) {
             if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error: ${e.toString()}')),
+              SnackBar(content: Text('Error showing modal')),
             );
           }
         },
@@ -298,5 +298,5 @@ class _HomePageState extends State<HomePage> {
     _descriptionController.clear();
     _bidTimeController.clear();
   }
-  
+
 }
