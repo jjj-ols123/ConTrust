@@ -70,8 +70,7 @@ bool validateFieldsContractee(context, String fName, String lName, String email,
   return true;
 }
 
-bool validateFieldsPostRequest(
-  BuildContext context, String constructionType, String minBudget, String maxBudget, String startDate, 
+bool validateFieldsPostRequest(BuildContext context, String constructionType, String minBudget, String maxBudget, String startDate, 
   String location, String description, String duration) {
   if (constructionType.isEmpty ||
       minBudget.isEmpty ||
@@ -108,6 +107,32 @@ bool validateFieldsPostRequest(
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Bid duration must be between 1 and 30 days'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    return false;
+  }
+
+  return true;
+}
+
+bool validateBidRequest(BuildContext context, String bidAmount, String message) {
+  if (bidAmount.isEmpty || message.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Please fill in all fields'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    return false;
+  }
+
+  int bidAmountInt = int.tryParse(bidAmount) ?? 0;
+
+  if (bidAmountInt < 1) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Bid amount must be greater than zero'),
         backgroundColor: Colors.red,
       ),
     );
