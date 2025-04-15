@@ -100,17 +100,17 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        _buildTextField('Email Address', controller: _emailController),
+                        _textField('Email Address', controller: _emailController),
                         const SizedBox(height: 10),
 
-                        _buildTextField(
+                        _textField(
                           'Password',
                           isPassword: true,
                           controller: _passwordController,
                         ),
                         const SizedBox(height: 20),
 
-                        _buildButton(
+                        _button(
                           'Login',
                           Colors.green,
                           Colors.white,
@@ -146,7 +146,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
     );
   }
 
-  Widget _buildTextField(
+  Widget _textField(
     String label, {
     bool isPassword = false,
     required TextEditingController controller,
@@ -164,7 +164,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
     );
   }
 
-  Widget _buildButton(
+  Widget _button(
     String text,
     Color bgColor,
     Color textColor,

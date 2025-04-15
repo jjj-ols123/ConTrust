@@ -276,8 +276,7 @@ class ModalClass {
                                 maxBudget: max_budget,
                                 duration: duration,
                                 startDate: start_date,
-                                context: context,
-                              );
+                                context: context);
                               Navigator.pop(context);
                             }
                           } catch (e) {

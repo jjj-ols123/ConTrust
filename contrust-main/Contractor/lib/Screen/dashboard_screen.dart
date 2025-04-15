@@ -30,7 +30,7 @@ class DashboardScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(left: 5),
             child: Image.asset(
-              'logo3.png',
+              'logo.png',
               width: 100,
               height: 50,
               fit: BoxFit.contain,
@@ -75,7 +75,7 @@ class DashboardScreen extends StatelessWidget {
                     ),
                     itemCount: dashboardItems.length,
                     itemBuilder: (context, index) {
-                      return _buildDashboardCard(
+                      return _dashboardCard(
                         context,
                         dashboardItems[index]['title']!,
                         dashboardItems[index]['imagePath']!,
@@ -125,7 +125,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDashboardCard(
+  Widget _dashboardCard(
     BuildContext context,
     String title,
     String imagePath,
@@ -139,7 +139,7 @@ class DashboardScreen extends StatelessWidget {
           onExit: (_) => setState(() => isHovered = false),
           child: GestureDetector(
             onTap: () async {
-              if (route == '/profile') {
+              if (title == 'User Profile') {
                 String? contractorId = await getContractorId();
 
                 if (contractorId != null) {
@@ -198,15 +198,7 @@ class DashboardScreen extends StatelessWidget {
 
 final List<Map<String, String>> dashboardItems = [
   {'title': 'User Profile', 'imagePath': 'user.png', 'route': '/profile'},
-  {
-    'title': 'Ongoing Projects',
-    'imagePath': 'ongoing.png',
-    'route': '/ongoingproject',
-  },
+  {'title': 'Ongoing Projects', 'imagePath': 'ongoing.png', 'route': '/ongoingproject'},
   {'title': 'Bidding', 'imagePath': 'bidding.png', 'route': '/bidding'},
-  {
-    'title': 'Client History',
-    'imagePath': 'history.png',
-    'route': '/clienthistory',
-  },
+  {'title': 'Client History', 'imagePath': 'history.png', 'route': '/clienthistory'},
 ];

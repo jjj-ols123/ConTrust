@@ -1,49 +1,53 @@
+// ignore_for_file: use_build_context_synchronously
+
+import 'package:backend/enterdata.dart';
+import 'package:backend/validatefields.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/pagetransition.dart';
 import 'package:contractor/Screen/dashboard_screen.dart';
 import 'package:contractor/Screen/productpanel.dart';
-import 'package:flutter/material.dart';
 
-class BiddingScreen extends StatelessWidget {
-  final List<Map<String, dynamic>> bids = [
-    {
-      "title": "Kitchen",
-      "description": "Description of project",
-      "timeLeft": "23:20:00",
-      "currentBid": "₱100,000.00",
-    },
-    {
-      "title": "Garage",
-      "description": "Description of project",
-      "timeLeft": "10:20:00",
-      "currentBid": "₱150,000.00",
-    },
-    {
-      "title": "House",
-      "description": "Description of project",
-      "timeLeft": "05:15:00",
-      "currentBid": "₱1,000,000.00",
-    },
-    {
-      "title": "Hotel",
-      "description": "Description of project",
-      "timeLeft": "12:45:30",
-      "currentBid": "₱500,000.00",
-    },
-    {
-      "title": "Bedroom, House",
-      "description": "Description of project",
-      "timeLeft": "08:30:00",
-      "currentBid": "₱200,000.00",
-    },
-    {
-      "title": "Kitchen, House",
-      "description": "Description of project",
-      "timeLeft": "15:10:20",
-      "currentBid": "₱120,000.00",
-    },
-  ];
+class BiddingScreen extends StatefulWidget {
+  const BiddingScreen({super.key});
 
-  BiddingScreen({super.key});
+  @override
+  State<BiddingScreen> createState() => _BiddingScreenState();
+}
+
+class _BiddingScreenState extends State<BiddingScreen> {
+  final supabase = Supabase.instance.client;
+
+  List<Map<String, dynamic>> projects = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchProjects();
+  }
+
+  Future<void> fetchProjects() async {
+    try {
+      final response = await supabase
+          .from('Projects')
+          .select(
+            'project_id, type, description, duration, min_budget, max_budget',
+          );
+
+      if (response.isNotEmpty) {
+        setState(() {
+          projects = List<Map<String, dynamic>>.from(response);
+          isLoading = false;
+        });
+      } else {
+        setState(() => isLoading = false);
+      }
+    } catch (e) {
+      setState(() => isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,11 +66,11 @@ class BiddingScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: Icon(Icons.notifications, color: Colors.black),
-            onPressed: () {}, // notif
+            onPressed: () {},
           ),
           Padding(
             padding: const EdgeInsets.only(left: 5),
-            child: Image.asset('logo3.png', width: 100), // Company logo
+            child: Image.asset('logo.png', width: 100),
           ),
         ],
       ),
@@ -76,13 +80,11 @@ class BiddingScreen extends StatelessWidget {
           children: [
             Container(
               padding: EdgeInsets.all(10),
-              color: Colors.amber.shade200, //yellow 200 para maganda tignan
+              color: Colors.amber.shade200,
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () {
-                      transitionBuilder(context, DashboardScreen());
-                    },
+                    onTap: () => transitionBuilder(context, DashboardScreen()),
                     child: Text(
                       "Home",
                       style: TextStyle(
@@ -95,9 +97,8 @@ class BiddingScreen extends StatelessWidget {
                   Text("|", style: TextStyle(fontSize: 16)),
                   SizedBox(width: 10),
                   GestureDetector(
-                    onTap: () {
-                      transitionBuilder(context, ProductPanelScreen());
-                    },
+                    onTap:
+                        () => transitionBuilder(context, ProductPanelScreen()),
                     child: Text(
                       "Product Panel",
                       style: TextStyle(
@@ -144,22 +145,32 @@ class BiddingScreen extends StatelessWidget {
             ),
             SizedBox(height: 10),
             Expanded(
-              child: GridView.builder(
-                itemCount: bids.length,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 15,
-                  mainAxisSpacing: 15,
-                  childAspectRatio: 1.3,
-                ),
-                itemBuilder: (context, index) {
-                  final bid = bids[index];
-                  return GestureDetector(
-                    onTap: () => _showBidDetails(context, bid), // float window
-                    child: _buildBiddingCard(bid),
-                  );
-                },
-              ),
+              child:
+                  isLoading
+                      ? Center(child: CircularProgressIndicator())
+                      : projects.isEmpty
+                      ? Center(child: Text("No projects available"))
+                      : GridView.builder(
+                        itemCount: projects.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 15,
+                          mainAxisSpacing: 15,
+                          childAspectRatio: 1.3,
+                        ),
+                        itemBuilder: (context, index) {
+                          final project = projects[index];
+                          return GestureDetector(
+                            onTap: () => _showDetails(project),
+                            child: _contracteeProjects(
+                              projectId: project['project_id'].toString(),
+                              type: project['type'] ?? 'Unknown',
+                              duration: project['duration'] ?? '',
+                              imagePath: 'kitchen.jpg',
+                            ),
+                          );
+                        },
+                      ),
             ),
           ],
         ),
@@ -167,137 +178,257 @@ class BiddingScreen extends StatelessWidget {
     );
   }
 
-  void _showBidDetails(BuildContext context, Map<String, dynamic> bid) {
+  void _showDetails(Map<String, dynamic> project) {
+    final TextEditingController bidController = TextEditingController();
+    final TextEditingController messageController = TextEditingController();
+
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-          title: Text(
-            bid["title"],
-            textAlign: TextAlign.center,
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Image.asset("kitchen.jpg", height: 150, fit: BoxFit.cover),
-              SizedBox(height: 10),
-              Text(bid["description"], textAlign: TextAlign.center),
-              SizedBox(height: 10),
-              Divider(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Time left:",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(bid["timeLeft"], style: TextStyle(color: Colors.orange)),
-                ],
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Current Bid:",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    bid["currentBid"],
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text("Close"),
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
             ),
-          ],
-        );
-      },
+            contentPadding: EdgeInsets.zero,
+            content: SingleChildScrollView(
+              child: Container(
+                padding: EdgeInsets.all(20),
+                width: MediaQuery.of(context).size.width * 0.9,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(15),
+                      ),
+                      child: Image.asset(
+                        "kitchen.jpg",
+                        height: 180,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    SizedBox(height: 15),
+                    Text(
+                      project["type"] ?? "Project",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      project["description"] ?? "",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    SizedBox(height: 15),
+                    Divider(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Time left:",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          project["duration"] ?? "",
+                          style: TextStyle(color: Colors.orange),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Minimum Budget:",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          "₱${project["min_budget"]}",
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Maximum Budget:",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          "₱${project["max_budget"]}",
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 20),
+                    TextField(
+                      controller: bidController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: "Enter your bid",
+                        prefixText: "₱",
+                        border: OutlineInputBorder(),
+                      ),
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    ),
+                    SizedBox(height: 50),
+                    TextField(
+                      controller: messageController,
+                      decoration: InputDecoration(
+                        labelText: "Enter your message",
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          child: Text("Close"),
+                        ),
+                        SizedBox(width: 10),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.amber,
+                            foregroundColor: Colors.black,
+                          ),
+                          onPressed: () async {
+                            final enterData = EnterDatatoDatabase();
+                            final user =
+                                Supabase.instance.client.auth.currentUser?.id;
+                            if (user == null) {
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('User not authenticated'),
+                                ),
+                              );
+                              return;
+                            }
+
+                            final bidAmount = bidController.text.trim();
+                            final message = messageController.text.trim();
+
+                            if (validateBidRequest(
+                              context,
+                              bidAmount,
+                              message,
+                            )) {
+                              await enterData.postBid(
+                                contractorId: user,
+                                projectId: project['project_id'],
+                                bidAmount: bidAmount,
+                                message: message,
+                                context: context,
+                              );
+                            }
+                          },
+                          child: Text("Bid"),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
     );
   }
 
-  Widget _buildBiddingCard(Map<String, dynamic> bid) {
-    return Card(
-      color: Colors.amber.shade200,
-      elevation: 5,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Column(
-        children: [
-          Expanded(child: Image.asset("kitchen.jpg", fit: BoxFit.cover)),
-          Container(
-            padding: EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(10),
-                bottomRight: Radius.circular(10),
+  Widget _contracteeProjects({
+    required String projectId,
+    required String type,
+    required String duration,
+    required String imagePath,
+  }) {
+    return SizedBox(
+      height: 250,
+      child: Card(
+        color: Colors.amber.shade200,
+        elevation: 5,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Image.asset(
+                imagePath,
+                fit: BoxFit.cover,
+                width: double.infinity,
               ),
             ),
-            child: Column(
-              children: [
-                Text(
-                  bid["title"],
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Container(
+              padding: EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(10),
                 ),
-                Text(
-                  bid["description"],
-                  style: TextStyle(fontSize: 14, color: Colors.black54),
-                ),
-                SizedBox(height: 5),
-                Divider(color: Colors.black38),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "Time left:",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    type,
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 5),
+                  Divider(color: Colors.black38),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Time left:",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
                       ),
-                    ),
-                    Text(
-                      bid["timeLeft"],
-                      style: TextStyle(fontSize: 14, color: Colors.orange),
-                    ),
-                  ],
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "Current Bid:",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                      Text(
+                        duration,
+                        style: TextStyle(fontSize: 14, color: Colors.orange),
                       ),
-                    ),
-                    Text(
-                      bid["currentBid"],
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
+                    ],
+                  ),
+                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Highest Bid:",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      Text(
+                        duration,
+                        style: TextStyle(fontSize: 14, color: Colors.orange),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

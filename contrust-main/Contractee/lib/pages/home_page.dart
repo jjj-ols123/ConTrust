@@ -174,8 +174,8 @@ class _HomePageState extends State<HomePage> {
               onAuthenticated: () async {
                 if (!context.mounted) return;
 
-                final userId = Supabase.instance.client.auth.currentUser?.id;
-                if (userId == null) {
+                final user = Supabase.instance.client.auth.currentUser?.id;
+                if (user == null) {
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('User not authenticated')),
@@ -189,7 +189,7 @@ class _HomePageState extends State<HomePage> {
 
                 await ModalClass.show(
                   context: context,
-                  contracteeId: userId,
+                  contracteeId: user,
                   constructionTypeController: _typeConstructionController,
                   minBudgetController: _minBudgetController,
                   maxBudgetController: _maxBudgetController,

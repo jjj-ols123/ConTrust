@@ -104,13 +104,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        _buildTextField('Firm Name', controller: _firmNameController),
+                        _textField('Firm Name', controller: _firmNameController),
                         const SizedBox(height: 10),
 
                         Row(
                           children: [
                             Expanded(
-                              child: _buildTextField(
+                              child: _textField(
                                 'Contact Number',
                                 isNumber: true,
                                 controller: _contactNumberController,
@@ -119,7 +119,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                             const SizedBox(width: 10),
                             Expanded(
-                              child: _buildTextField('Email Address', controller: _emailController),
+                              child: _textField('Email Address', controller: _emailController),
                             ),
                           ],
                         ),
@@ -128,7 +128,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         Row(
                           children: [
                             Expanded(
-                              child: _buildTextField(
+                              child: _textField(
                                 'Password',
                                 isPassword: true,
                                 controller: _passwordController,
@@ -136,7 +136,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                             const SizedBox(width: 10),
                             Expanded(
-                              child: _buildTextField(
+                              child: _textField(
                                 'Confirm Password',
                                 isPassword: true,
                                 controller: _confirmPasswordController,
@@ -149,7 +149,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         Row(
                           children: [
                             Expanded(
-                              child: _buildButton(
+                              child: _button(
                                 'Verify(ID)',
                                 Colors.amber,
                                 Colors.black,
@@ -158,7 +158,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                             const SizedBox(width: 10),
                             Expanded(
-                              child: _buildButton(
+                              child: _button(
                                 'Sign Up',
                                 Colors.green,
                                 Colors.white,
@@ -200,7 +200,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildTextField(
+  Widget _textField(
     String label, 
     {bool isPassword = false,
     bool isNumber = false,
@@ -226,7 +226,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildButton(
+  Widget _button(
     String text,
     Color bgColor,
     Color textColor,
