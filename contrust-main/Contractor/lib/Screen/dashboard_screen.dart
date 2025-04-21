@@ -1,43 +1,19 @@
 // ignore_for_file: use_build_context_synchronously, avoid_print
 
+import 'package:backend/appbar.dart';
+import 'package:backend/getuserid.dart';
 import 'package:backend/pagetransition.dart';
-import 'package:contractor/blocs/contractorId.dart';
 import 'package:flutter/material.dart';
 
 class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
+  DashboardScreen({super.key});
+
+  final GetUserId getUserId = GetUserId();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.amber,
-        centerTitle: true,
-        title: Text(
-          'Home',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.notifications, color: Colors.black),
-            onPressed: () {},
-          ),
-          Padding(
-            padding: const EdgeInsets.only(left: 5),
-            child: Image.asset(
-              'logo.png',
-              width: 100,
-              height: 50,
-              fit: BoxFit.contain,
-            ),
-          ),
-        ],
-      ),
+      appBar: ConTrustAppBar(headline: "Home"),
       body: Padding(
         padding: const EdgeInsets.all(10),
         child: Column(
@@ -140,18 +116,8 @@ class DashboardScreen extends StatelessWidget {
           child: GestureDetector(
             onTap: () async {
               if (title == 'User Profile') {
-                String? contractorId = await getContractorId();
-
-                if (contractorId != null) {
-                  Navigator.pushNamed(context, route, arguments: contractorId);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text("Error: No contractor ID found"),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
+                String? contractorId = await getUserId.getContractorId();
+                Navigator.pushNamed(context, route, arguments: contractorId);
               } else {
                 transitionBuilder(context, getScreenFromRoute(context, route));
               }
@@ -198,7 +164,15 @@ class DashboardScreen extends StatelessWidget {
 
 final List<Map<String, String>> dashboardItems = [
   {'title': 'User Profile', 'imagePath': 'user.png', 'route': '/profile'},
-  {'title': 'Ongoing Projects', 'imagePath': 'ongoing.png', 'route': '/ongoingproject'},
+  {
+    'title': 'Ongoing Projects',
+    'imagePath': 'ongoing.png',
+    'route': '/ongoingproject',
+  },
   {'title': 'Bidding', 'imagePath': 'bidding.png', 'route': '/bidding'},
-  {'title': 'Client History', 'imagePath': 'history.png', 'route': '/clienthistory'},
+  {
+    'title': 'Client History',
+    'imagePath': 'history.png',
+    'route': '/clienthistory',
+  },
 ];

@@ -1,16 +1,12 @@
 // ignore_for_file: deprecated_member_use, library_private_types_in_public_api
 
-import 'package:backend/pagetransition.dart';
+import 'package:backend/appbar.dart';
 import 'package:contractee/blocs/checkuseracc.dart';
 import 'package:contractee/blocs/modalsheet.dart';
 import 'package:contractee/pages/contractor_profile.dart';
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-import 'package:contractee/pages/buildingmaterial_page.dart';
-import 'package:contractee/pages/about_page.dart';
-import 'package:contractee/pages/transaction_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -60,62 +56,8 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.yellow[700],
-        title: const Text(
-          "CONTRUST",
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: Colors.black),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.yellow),
-              child: Text(
-                '',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.home),
-              title: const Text('Home'),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.book),
-              title: const Text('Transaction History'),
-              onTap: () => transitionBuilder(context, TransactionPage()),
-            ),
-            ListTile(
-              leading: const Icon(Icons.handyman),
-              title: const Text('Materials'),
-              onTap: () => transitionBuilder(context, Buildingmaterial()),
-            ),
-            ListTile(
-              leading: const Icon(Icons.info),
-              title: const Text('About'),
-              onTap: () => transitionBuilder(context, AboutPage()),
-            ),
-          ],
-        ),
-      ),
+      appBar: ConTrustAppBar(headline: "Home"),
+      drawer: const MenuDrawer(),
       body: Column(
         children: [
           Padding(

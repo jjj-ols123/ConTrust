@@ -1,5 +1,6 @@
 // ignore_for_file: library_private_types_in_public_api
 
+import 'package:backend/appbar.dart';
 import 'package:contractor/blocs/userprofile.dart';
 import 'package:flutter/material.dart';
 
@@ -91,22 +92,8 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
     int crossAxisCount = screenWidth > 1000 ? 4 : screenWidth > 600 ? 3 : 2;
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.amber,
-        centerTitle: true,
-        title: const Text(
-          'Contractor Profile',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      appBar: ConTrustAppBar(headline: 'Contractor Profile'),
+      drawer: const MenuDrawer(),
       body: Column(
         children: [
           Expanded(

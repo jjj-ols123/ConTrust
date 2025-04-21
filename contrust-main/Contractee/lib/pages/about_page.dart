@@ -1,3 +1,4 @@
+import 'package:backend/appbar.dart';
 import 'package:flutter/material.dart';
 
 class AboutPage extends StatelessWidget {
@@ -6,18 +7,8 @@ class AboutPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.yellow[700],
-        title: const Text(
-          "CONTRUST",
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-      ),
+      appBar: const ConTrustAppBar(headline: "About"),
+      drawer: const MenuDrawer(),
       body: const Center(
         child: Text(
           '',

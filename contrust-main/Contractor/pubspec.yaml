@@ -39,6 +39,8 @@ dependencies:
   backend: 
     path: ../Back-End
   shared_preferences: ^2.5.2
+  contractee: 
+    path: ../Contractee
 
 dev_dependencies:
   flutter_test:

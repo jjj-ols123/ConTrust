@@ -257,6 +257,8 @@ class ModalClass {
                                 descriptionController.text.trim();
                             String duration = bidTimeController.text.trim();
 
+                            DateTime startdate_format = DateTime.parse(start_date);
+
                             if (validateFieldsPostRequest(
                               context,
                               construction_type,
@@ -275,7 +277,7 @@ class ModalClass {
                                 minBudget: min_budget,
                                 maxBudget: max_budget,
                                 duration: duration,
-                                startDate: start_date,
+                                startDate: startdate_format,
                                 context: context);
                               Navigator.pop(context);
                             }

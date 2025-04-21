@@ -1,7 +1,10 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:backend/enterdata.dart';
+import 'package:backend/getuserid.dart';
+import 'package:backend/notification.dart';
 import 'package:backend/validatefields.dart';
+import 'package:contractor/blocs/projectbidding.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -18,14 +21,17 @@ class BiddingScreen extends StatefulWidget {
 
 class _BiddingScreenState extends State<BiddingScreen> {
   final supabase = Supabase.instance.client;
+  final Set<String> _finalizedProjects = {};
 
   List<Map<String, dynamic>> projects = [];
+  Map<String, double> highestBids = {};
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
     fetchProjects();
+    fetchHighestBids();
   }
 
   Future<void> fetchProjects() async {
@@ -33,7 +39,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
       final response = await supabase
           .from('Projects')
           .select(
-            'project_id, type, description, duration, min_budget, max_budget',
+            'project_id, type, description, duration, min_budget, max_budget, created_at',
           );
 
       if (response.isNotEmpty) {
@@ -48,6 +54,14 @@ class _BiddingScreenState extends State<BiddingScreen> {
       setState(() => isLoading = false);
     }
   }
+
+  Future<void> fetchHighestBids() async {
+    final highestBidsData = await getHighestBid();
+    setState(() {
+      highestBids = highestBidsData;
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -158,15 +172,23 @@ class _BiddingScreenState extends State<BiddingScreen> {
                           mainAxisSpacing: 15,
                           childAspectRatio: 1.3,
                         ),
+
                         itemBuilder: (context, index) {
                           final project = projects[index];
+                          final projectId = project['project_id'].toString();
+                          final highestBid = highestBids[projectId] ?? 0.0;
+
                           return GestureDetector(
                             onTap: () => _showDetails(project),
                             child: _contracteeProjects(
-                              projectId: project['project_id'].toString(),
+                              projectId: projectId,
                               type: project['type'] ?? 'Unknown',
-                              duration: project['duration'] ?? '',
+                              durationDays: project['duration'] ?? 0,
                               imagePath: 'kitchen.jpg',
+                              highestBid: highestBid,
+                              createdAt: DateTime.parse(
+                                project['created_at'].toString(),
+                              )..toIso8601String(),
                             ),
                           );
                         },
@@ -233,7 +255,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         Text(
-                          project["duration"] ?? "",
+                          project["duration"].toString(),
                           style: TextStyle(color: Colors.orange),
                         ),
                       ],
@@ -320,6 +342,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
                             }
 
                             final bidAmount = bidController.text.trim();
+                            num bidAmountNum = int.parse(bidAmount);
                             final message = messageController.text.trim();
 
                             if (validateBidRequest(
@@ -330,9 +353,30 @@ class _BiddingScreenState extends State<BiddingScreen> {
                               await enterData.postBid(
                                 contractorId: user,
                                 projectId: project['project_id'],
-                                bidAmount: bidAmount,
+                                bidAmount: bidAmountNum,
                                 message: message,
                                 context: context,
+                              );
+
+                              final NotificationConTrust notif =
+                                  NotificationConTrust();
+                              final GetUserId getUser = GetUserId();
+
+                              final contracteeId = await getUser.getContractreeId();
+
+                              await notif.createNotification(
+                                receiverId: contracteeId,
+                                receiverType: 'contractee',
+                                senderId: user,
+                                senderType: 'contractor',
+                                type:
+                                    'bid_placed',
+                                message:
+                                    'New bid placed on your project: ${project['type']}',
+                                information: {
+                                  'bid_amount': bidAmountNum,
+                                  
+                                },
                               );
                             }
                           },
@@ -351,8 +395,10 @@ class _BiddingScreenState extends State<BiddingScreen> {
   Widget _contracteeProjects({
     required String projectId,
     required String type,
-    required String duration,
+    required int durationDays,
     required String imagePath,
+    required double highestBid,
+    required DateTime createdAt,
   }) {
     return SizedBox(
       height: 250,
@@ -401,17 +447,64 @@ class _BiddingScreenState extends State<BiddingScreen> {
                           color: Colors.black,
                         ),
                       ),
-                      Text(
-                        duration,
-                        style: TextStyle(fontSize: 14, color: Colors.orange),
+                      StreamBuilder<Duration>(
+                        stream: countdownStream(createdAt, durationDays),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return Text(
+                              "Loading...",
+                              style: TextStyle(fontSize: 14),
+                            );
+                          }
+
+                          final remaining = snapshot.data!;
+
+                          if (remaining.isNegative &&
+                              !_finalizedProjects.contains(projectId)) {
+                            _finalizedProjects.add(projectId);
+                            finalizeBidding(projectId);
+                          }
+
+                          if (remaining.isNegative) {
+                            return Text(
+                              "Ended",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.redAccent,
+                              ),
+                            );
+                          }
+
+                          final days = remaining.inDays;
+                          final hours = remaining.inHours
+                              .remainder(24)
+                              .toString()
+                              .padLeft(2, '0');
+                          final minutes = remaining.inMinutes
+                              .remainder(60)
+                              .toString()
+                              .padLeft(2, '0');
+                          final seconds = remaining.inSeconds
+                              .remainder(60)
+                              .toString()
+                              .padLeft(2, '0');
+
+                          return Text(
+                            '$days d $hours:$minutes:$seconds',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.orange,
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
-                   Row(
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "Highest Bid:",
+                        "Highest Bid: ",
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -419,7 +512,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
                         ),
                       ),
                       Text(
-                        duration,
+                        "₱${highestBid.toStringAsFixed(2)}",
                         style: TextStyle(fontSize: 14, color: Colors.orange),
                       ),
                     ],
@@ -431,5 +524,25 @@ class _BiddingScreenState extends State<BiddingScreen> {
         ),
       ),
     );
+  }
+
+  Duration getRemainingDuration(DateTime createdAt, int durationInDays) {
+    final endTime = createdAt.add(Duration(days: durationInDays));
+    final now = DateTime.now();
+    return endTime.difference(now);
+  }
+
+  Stream<Duration> countdownStream(
+    DateTime createdAt,
+    int durationInDays,
+  ) async* {
+    final endTime = createdAt.add(Duration(days: durationInDays));
+    while (true) {
+      final now = DateTime.now();
+      final remaining = endTime.difference(now);
+      if (remaining.isNegative) break;
+      yield remaining;
+      await Future.delayed(Duration(seconds: 1));
+    }
   }
 }

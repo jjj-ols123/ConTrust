@@ -1,8 +1,9 @@
 // ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
 
+import 'package:backend/appbar.dart';
+import 'package:backend/getuserid.dart';
 import 'package:backend/pagetransition.dart';
 import 'package:contractor/Screen/editprofile.dart';
-import 'package:contractor/blocs/contractorId.dart';
 import 'package:contractor/blocs/userprofile.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -19,6 +20,7 @@ class UserProfileScreen extends StatefulWidget {
 
 class _UserProfileScreenState extends State<UserProfileScreen> {
   final UserService userService = UserService();
+  GetUserId getUserId = GetUserId();
 
   String firmName = "Firm Name";
   String bio = "No Bio";
@@ -100,28 +102,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             : 2;
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.amber,
-        centerTitle: true,
-        title: Text(
-          'Home',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.notifications, color: Colors.black),
-            onPressed: () {},
-          ),
-          Padding(
-            padding: const EdgeInsets.only(left: 5),
-            child: Image.asset('logo3.png', width: 100),
-          ),
-        ],
-      ),
+      appBar: ConTrustAppBar(headline: "Profile"),
       body: SingleChildScrollView(
         physics: BouncingScrollPhysics(),
         child: Padding(
@@ -204,25 +185,15 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             SizedBox(height: 20),
                             ElevatedButton(
                               onPressed: () async {
-                                String? contractorId = await getContractorId();
+                                String? contractorId =
+                                    await getUserId.getContractorId();
 
-                                if (contractorId != null) {
-                                  transitionBuilder(
-                                    context,
-                                    EditProfileScreen(
-                                      contractorId: contractorId,
-                                    ),
-                                  );
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Failed to get contractor ID',
-                                      ),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
+                                transitionBuilder(
+                                  context,
+                                  EditProfileScreen(
+                                    contractorId: contractorId ?? '',
+                                  ),
+                                );
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.blue,

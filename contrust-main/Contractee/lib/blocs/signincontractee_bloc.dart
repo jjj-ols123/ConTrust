@@ -6,8 +6,13 @@ import 'package:contractee/pages/home_page.dart';
 import 'package:flutter/material.dart';
 
 class SignInContractee {
-  void signInContractee(BuildContext modalContext, String email, String password,
-      bool Function() validateFields) async {
+  void signInContractee(
+    BuildContext modalContext, 
+    String email, 
+    String password,
+    bool Function() validateFields
+    ) async {
+      
     final authService = AuthService();
 
     if (!validateFields()) {
