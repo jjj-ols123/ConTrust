@@ -12,7 +12,7 @@ class EnterDatatoDatabase {
     required String minBudget,
     required String maxBudget,
     required String duration,
-    required String startDate,
+    required DateTime startDate,
     required BuildContext context,
   }) async {
     try {
@@ -28,7 +28,7 @@ class EnterDatatoDatabase {
         'max_budget': maxBudget,
         'status': 'pending',
         'duration': duration,
-        'start_date': DateTime.parse(startDate),
+        'start_date': startDate.toIso8601String(),
       }, onConflict: 'contractee_id');
 
       if (context.mounted) {
@@ -58,7 +58,7 @@ class EnterDatatoDatabase {
   Future<void> postBid({
     required String contractorId,
     required String projectId,
-    required String bidAmount,
+    required num bidAmount,
     required String message,
     required BuildContext context,
   }) async {
@@ -81,10 +81,19 @@ class EnterDatatoDatabase {
       }
     } catch (e) {
       if (context.mounted) {
-        print('Error inserting data: $e');
+        if (e is PostgrestException && e.code == '23505') {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error inserting data: $e')),
+          const SnackBar(
+            content: Text('You can only submit one bid per project.'),
+            backgroundColor: Colors.red,
+          ),
         );
+      } else {
+          print('Error inserting data: $e');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error inserting data: $e')),
+          );
+        }
       }
       rethrow;
     }
