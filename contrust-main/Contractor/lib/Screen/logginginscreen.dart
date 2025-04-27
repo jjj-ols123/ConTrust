@@ -1,7 +1,8 @@
 // ignore_for_file: file_names, use_build_context_synchronously, deprecated_member_use, library_private_types_in_public_api
 
-import 'package:backend/validatefields.dart';
-import 'package:contractor/blocs/signincontractor_bloc.dart';
+
+import 'package:backend/utils/validatefields.dart';
+import 'package:contractor/services/signincontractor_bloc.dart';
 import 'package:flutter/material.dart';
 
 class ToLoginScreen extends StatefulWidget {

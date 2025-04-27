@@ -1,7 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
-import 'package:backend/auth_service.dart';
-import 'package:backend/pagetransition.dart';
+import 'package:backend/services/auth_service.dart';
+import 'package:backend/utils/pagetransition.dart';
 import 'package:contractee/pages/home_page.dart';
 import 'package:flutter/material.dart';
 
@@ -13,7 +13,7 @@ class SignInContractee {
     bool Function() validateFields
     ) async {
       
-    final authService = AuthService();
+    final AuthService authService = AuthService();
 
     if (!validateFields()) {
       return;
@@ -36,7 +36,7 @@ class SignInContractee {
       }
 
       final userType = signInResponse.user?.userMetadata?['user_type'];
-      
+
       if (userType?.toLowerCase() != 'contractee') {
         ScaffoldMessenger.of(modalContext).showSnackBar(
           const SnackBar(

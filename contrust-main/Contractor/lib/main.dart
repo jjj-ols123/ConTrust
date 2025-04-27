@@ -41,8 +41,8 @@ class MyApp extends StatelessWidget {
         '/productpanel': (context) => ProductPanelScreen(),
         '/ongoingproject': (context) => OngoingProgressScreen(),
         '/clienthistory': (context) => ClientHistoryScreen(),
-        '/editprofile': (context) => EditProfileScreen(contractorId: 
-          ModalRoute.of(context)!.settings.arguments as String),
+        '/editprofile': (context) => EditProfileScreen(userId: 
+          ModalRoute.of(context)!.settings.arguments as String, isContractor: true),
         '/login': (context) => ToLoginScreen(),
         '/first': (context) => LoginScreen()
       },

@@ -1,7 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
-import 'package:backend/auth_service.dart';
-import 'package:backend/pagetransition.dart';
+import 'package:backend/services/auth_service.dart';
+import 'package:backend/utils/pagetransition.dart';
 import 'package:flutter/material.dart';
 
 class SignInContractor {
@@ -11,7 +11,7 @@ class SignInContractor {
     String password,
     bool Function() validateFields,
   ) async {
-    final authService = AuthService();
+    final AuthService authService = AuthService();
 
     if (!validateFields()) {
       return;

@@ -1,9 +1,10 @@
+
+import 'package:backend/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:backend/auth_service.dart';
 
-class SignUpContractor {
-  void signUpContractor(
+class SignUpContractee {
+  void signUpContractee(
     BuildContext context,
     String email,
     String password,
@@ -11,8 +12,10 @@ class SignUpContractor {
     Map<String, dynamic>? data,
     bool Function() validateFields,
   ) async {
-    final authService = AuthService();
+    
+    final AuthService authService = AuthService();
     final supabase = Supabase.instance.client;
+    int project = 0;
 
     if (!validateFields()) {
       return;
@@ -34,28 +37,28 @@ class SignUpContractor {
             backgroundColor: Colors.red,
           ),
         );
-        return;
+        return; 
       }
 
-      if (userType == 'contractor') {
-        final contractorData = {
-          'contractor_id': signUpResponse.user!.id,
-          'firm_name': data?['firmName'],
-          'contact_number': data?['contactNumber'],
-          'created_at': DateTime.now().toUtc().toIso8601String(),
+      if (userType == 'contractee') {
+        final contracteeData = {
+          'contractee_id': signUpResponse.user!.id,
+          'full_name': data?['full_name'],
+          'address': data?['address'] ?? '',
+          'created_at': DateTime.now().toIso8601String(),
+          'project_history_count': project,
         };
 
         final insertResponse = await supabase
-            .from('Contractor')
-            .insert(contractorData)
+            .from('Contractee')
+            .insert(contracteeData)
             .select(); 
 
         if (insertResponse.isEmpty) {
-          throw Exception("Error saving contractor data");
+          throw Exception("Error saving contractee data");
         }
       }
 
-     
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

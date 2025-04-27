@@ -1,7 +1,7 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
-import 'package:backend/validatefields.dart';
-import 'package:contractee/blocs/signupcontractee_bloc.dart';
+import 'package:backend/utils/validatefields.dart';
+import 'package:contractee/services/signupcontractee_bloc.dart';
 import 'package:flutter/material.dart';
 
 class RegistrationPage extends StatefulWidget {

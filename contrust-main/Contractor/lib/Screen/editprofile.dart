@@ -1,13 +1,17 @@
 // ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
 
-import 'package:contractor/blocs/userprofile.dart';
+import 'package:backend/services/userprofile.dart';
 import 'package:flutter/material.dart';
 
-
 class EditProfileScreen extends StatefulWidget {
-  final String contractorId;
+  final String userId;
+  final bool isContractor;
 
-  const EditProfileScreen({super.key, required this.contractorId});
+  const EditProfileScreen({
+    super.key,
+    required this.userId,
+    required this.isContractor,
+  });
 
   @override
   _EditProfileScreenState createState() => _EditProfileScreenState();
@@ -15,43 +19,53 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final UserService userService = UserService();
-  TextEditingController firmController = TextEditingController();
-  TextEditingController bioController = TextEditingController();
+  TextEditingController firstController = TextEditingController();
+  TextEditingController secondController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _fetchContractorData();
+    _fetchUserData();
   }
 
-  Future<void> _fetchContractorData() async {
-    final contractorData = await userService.fetchContractorData(
-      widget.contractorId,
+  Future<void> _fetchUserData() async {
+    final userData = await userService.fetchUserData(
+      widget.userId,
+      isContractor: widget.isContractor,
     );
-    if (contractorData != null) {
+
+    if (userData != null) {
       setState(() {
-        firmController.text = contractorData['firm_name'] ?? "";
-        bioController.text = contractorData['bio'] ?? "";
+        firstController.text = widget.isContractor
+            ? userData['firm_name'] ?? ""
+            : userData['full_name'] ?? "";
+        secondController.text = widget.isContractor
+            ? userData['bio'] ?? ""
+            : userData['address'] ?? "";
       });
     }
-  } 
+  }
 
   Future<void> _updateProfile() async {
-    bool success = await userService.updateContractorProfile(
-      widget.contractorId,
-      firmController.text,
-      bioController.text,
+    final success = await userService.updateUserProfile(
+      widget.userId,
+      firstController.text,
+      secondController.text,
+      isContractor: widget.isContractor,
     );
 
-    if (success) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Profile Updated Successfully")));
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile updated successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
       Navigator.pop(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Failed to update profile"),
+        const SnackBar(
+          content: Text('Failed to update profile'),
           backgroundColor: Colors.red,
         ),
       );
@@ -64,7 +78,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       appBar: AppBar(
         backgroundColor: Colors.amber,
         centerTitle: true,
-        title: Text(
+        title: const Text(
           'Edit Profile',
           style: TextStyle(
             fontSize: 20,
@@ -78,24 +92,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         child: Column(
           children: [
             TextField(
-              controller: firmController,
+              controller: firstController,
               decoration: InputDecoration(
-                labelText: "Firm Name",
-                border: OutlineInputBorder(),
+                labelText:
+                    widget.isContractor ? "Firm Name" : "Full Name",
+                border: const OutlineInputBorder(),
               ),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             TextField(
-              controller: bioController,
+              controller: secondController,
               decoration: InputDecoration(
-                labelText: "Bio",
-                border: OutlineInputBorder(),
+                labelText: widget.isContractor ? "Bio" : "Address",
+                border: const OutlineInputBorder(),
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _updateProfile,
-              child: Text("Save Profile"),
+              child: const Text("Save Profile"),
             ),
           ],
         ),

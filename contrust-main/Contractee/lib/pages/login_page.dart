@@ -1,9 +1,9 @@
 
 // ignore_for_file: deprecated_member_use
 
-import 'package:backend/pagetransition.dart';
-import 'package:backend/validatefields.dart';
-import 'package:contractee/blocs/signincontractee_bloc.dart';
+import 'package:backend/utils/pagetransition.dart';
+import 'package:backend/utils/validatefields.dart';
+import 'package:contractee/services/signincontractee_bloc.dart';
 import 'package:contractee/pages/registration_page.dart';
 import 'package:flutter/material.dart';
 

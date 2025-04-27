@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
-import 'package:backend/pagetransition.dart';
+
+import 'package:backend/utils/pagetransition.dart';
 import 'package:contractor/Screen/Registerscreen.dart';
 import 'package:contractor/Screen/logginginscreen.dart';
 import 'package:flutter/material.dart';

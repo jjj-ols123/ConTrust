@@ -1,6 +1,7 @@
 // ignore_for_file: library_private_types_in_public_api
 
-import 'package:backend/pagetransition.dart';
+
+import 'package:backend/utils/pagetransition.dart';
 import 'package:contractor/Screen/productpanel.dart';
 import 'package:flutter/material.dart';
 

@@ -1,8 +1,8 @@
 // ignore_for_file: file_names, deprecated_member_use, library_private_types_in_public_api, use_build_context_synchronously
 
 
-import 'package:backend/validatefields.dart';
-import 'package:contractor/blocs/signupcontractor_bloc.dart';
+import 'package:backend/utils/validatefields.dart';
+import 'package:contractor/services/signupcontractor_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -14,11 +14,11 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final TextEditingController _firmNameController = TextEditingController();
-  final TextEditingController _contactNumberController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController firmNameController = TextEditingController();
+  final TextEditingController contactNumberController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController confirmPasswordController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -104,7 +104,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        _textField('Firm Name', controller: _firmNameController),
+                        _textField('Firm Name', controller: firmNameController),
                         const SizedBox(height: 10),
 
                         Row(
@@ -113,13 +113,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               child: _textField(
                                 'Contact Number',
                                 isNumber: true,
-                                controller: _contactNumberController,
+                                controller: contactNumberController,
                                 maxLength: 11,
                               ),
                             ),
                             const SizedBox(width: 10),
                             Expanded(
-                              child: _textField('Email Address', controller: _emailController),
+                              child: _textField('Email Address', controller: emailController),
                             ),
                           ],
                         ),
@@ -131,7 +131,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               child: _textField(
                                 'Password',
                                 isPassword: true,
-                                controller: _passwordController,
+                                controller: passwordController,
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -139,7 +139,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               child: _textField(
                                 'Confirm Password',
                                 isPassword: true,
-                                controller: _confirmPasswordController,
+                                controller: confirmPasswordController,
                               ),
                             ),
                           ],
@@ -166,21 +166,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   final signUpContractor = SignUpContractor();
                                   signUpContractor.signUpContractor(
                                     context,
-                                    _emailController.text,
-                                    _confirmPasswordController.text,
+                                    emailController.text,
+                                    confirmPasswordController.text,
                                     "contractor",
                                     {
                                       'user_type': "contractor",
-                                      'firmName': _firmNameController.text,
-                                      'contactNumber': _contactNumberController.text,
+                                      'firmName': firmNameController.text,
+                                      'contactNumber': contactNumberController.text,
                                     },
                                     () => validateFieldsContractor(
                                       context,
-                                      _emailController.text,
-                                      _contactNumberController.text,
-                                      _emailController.text,
-                                      _passwordController.text,
-                                      _confirmPasswordController.text,
+                                      emailController.text,
+                                      contactNumberController.text,
+                                      emailController.text,
+                                      passwordController.text,
+                                      confirmPasswordController.text,
                                     ),
                                   );
                                 },

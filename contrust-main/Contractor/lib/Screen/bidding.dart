@@ -1,14 +1,15 @@
 // ignore_for_file: use_build_context_synchronously
 
-import 'package:backend/enterdata.dart';
-import 'package:backend/getuserid.dart';
-import 'package:backend/notification.dart';
-import 'package:backend/validatefields.dart';
-import 'package:contractor/blocs/projectbidding.dart';
+
+import 'package:backend/services/enterdata.dart';
+import 'package:backend/services/getuserdata.dart';
+import 'package:backend/services/notification.dart';
+import 'package:backend/utils/pagetransition.dart';
+import 'package:backend/utils/validatefields.dart';
+import 'package:contractor/services/projectbidding.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:backend/pagetransition.dart';
 import 'package:contractor/Screen/dashboard_screen.dart';
 import 'package:contractor/Screen/productpanel.dart';
 
@@ -358,11 +359,11 @@ class _BiddingScreenState extends State<BiddingScreen> {
                                 context: context,
                               );
 
-                              final NotificationConTrust notif =
-                                  NotificationConTrust();
+                              final NotificationService notif =
+                                  NotificationService();
                               final GetUserId getUser = GetUserId();
 
-                              final contracteeId = await getUser.getContractreeId();
+                              final contracteeId = await getUser.getContracteeId();
 
                               await notif.createNotification(
                                 receiverId: contracteeId,

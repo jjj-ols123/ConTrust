@@ -1,8 +1,8 @@
 // ignore_for_file: use_build_context_synchronously, avoid_print
 
-import 'package:backend/appbar.dart';
-import 'package:backend/getuserid.dart';
-import 'package:backend/pagetransition.dart';
+import 'package:backend/models/appbar.dart';
+import 'package:backend/services/getuserdata.dart';
+import 'package:backend/utils/pagetransition.dart';
 import 'package:flutter/material.dart';
 
 class DashboardScreen extends StatelessWidget {

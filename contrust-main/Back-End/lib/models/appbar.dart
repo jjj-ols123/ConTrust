@@ -1,13 +1,15 @@
 import 'dart:async';
-import 'package:contractee/blocs/checkuseracc.dart';
+
+import 'package:backend/services/getuserdata.dart';
+import 'package:backend/services/notification.dart';
+import 'package:backend/utils/pagetransition.dart';
 import 'package:contractee/pages/about_page.dart';
 import 'package:contractee/pages/buildingmaterial_page.dart';
+import 'package:contractee/pages/contractee_notification.dart';
 import 'package:contractee/pages/transaction_page.dart';
+import 'package:contractee/services/checkuseracc.dart';
+import 'package:contractor/Screen/contractornotification.dart';
 import 'package:flutter/material.dart';
-import 'package:backend/getuserid.dart';
-import 'package:backend/notification.dart';
-import 'package:backend/pagetransition.dart';
-import 'package:contractee/pages/notication_page.dart';
 
 class ConTrustAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String headline;
@@ -25,11 +27,11 @@ class ConTrustAppBar extends StatefulWidget implements PreferredSizeWidget {
 }
 
 class _ConTrustAppBarState extends State<ConTrustAppBar> {
-  // ignore: unused_field
-  late StreamSubscription<List<Map<String, dynamic>>> _notificationSub;
-  final NotificationConTrust notif = NotificationConTrust();
+  StreamSubscription<List<Map<String, dynamic>>>? _notificationSub;
+  final NotificationService notif = NotificationService();
   final GetUserId getUserId = GetUserId();
   int _unreadCount = 0;
+  // ignore: unused_field
   String? _receiverId;
 
   @override
@@ -40,7 +42,7 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
 
   Future<void> _loadReceiverId() async {
     try {
-      final id = await getUserId.getContractreeId();
+      final id = await getUserId.getContracteeId();
       if (id == null || !mounted) return;
 
       setState(() => _receiverId = id);
@@ -61,10 +63,18 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
   }
 
   @override
+  void dispose() {
+    _notificationSub?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return AppBar(
       backgroundColor: Colors.amber,
       centerTitle: true,
+      automaticallyImplyLeading: false,
+      elevation: 4,
       title: Text(
         widget.headline,
         style: const TextStyle(
@@ -73,61 +83,71 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
           color: Colors.black,
         ),
       ),
-      automaticallyImplyLeading: false,
       actions: [
         Stack(
           children: [
             IconButton(
-              icon: const Icon(Icons.notifications),
-              onPressed: () {
+              icon: const Icon(Icons.notifications, color: Colors.black),
+              onPressed: () async {
                 CheckUserLogin.isLoggedIn(
-                    context: context,
-                    onAuthenticated: () async {
-                      
-                      if (!context.mounted) return;
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => NotificationPage(
-                            receiverId: _receiverId!,
-                          ),
-                        ),
+                  context: context,
+                  onAuthenticated: () async {
+
+                    if (!context.mounted) return;
+
+                    GetUserId getUserId = GetUserId();
+                    String? userType = await getUserId.getCurrentUserType();
+
+                    if (userType == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('User type not found')),
                       );
-                    });
+                      return;
+                    }
+
+                    if (!context.mounted) return;
+
+                    if (userType.toLowerCase() == 'contractee') {
+                      transitionBuilder(context, ContracteeNotificationPage());
+                    } else if (userType.toLowerCase() == 'contractor') {
+                      transitionBuilder(context, ContractorNotificationPage());
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Unknown user type')),
+                      );
+                    }
+                  },
+                );
               },
             ),
             if (_unreadCount > 0)
               Positioned(
-                right: 10,
-                top: 10,
+                right: 8,
+                top: 8,
                 child: Container(
-                  padding: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.all(3),
                   decoration: const BoxDecoration(
                     color: Colors.red,
                     shape: BoxShape.circle,
                   ),
-                  constraints: const BoxConstraints(
-                    minWidth: 20,
-                    minHeight: 20,
-                  ),
                   child: Text(
                     '$_unreadCount',
                     style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
                       color: Colors.white,
-                      fontSize: 12,
                     ),
-                    textAlign: TextAlign.center,
                   ),
                 ),
               ),
           ],
         ),
         Padding(
-          padding: const EdgeInsets.only(left: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
           child: Image.asset(
             'logo.png',
-            width: 100,
-            height: 50,
+            width: 90,
+            height: 40,
             fit: BoxFit.contain,
           ),
         ),

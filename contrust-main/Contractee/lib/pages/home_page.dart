@@ -1,8 +1,8 @@
 // ignore_for_file: deprecated_member_use, library_private_types_in_public_api
 
-import 'package:backend/appbar.dart';
-import 'package:contractee/blocs/checkuseracc.dart';
-import 'package:contractee/blocs/modalsheet.dart';
+import 'package:backend/models/appbar.dart';
+import 'package:contractee/services/checkuseracc.dart';
+import 'package:contractee/models/modalsheet.dart';
 import 'package:contractee/pages/contractor_profile.dart';
 
 import 'package:flutter/material.dart';
@@ -56,7 +56,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: ConTrustAppBar(headline: "Home"),
+      appBar: const ConTrustAppBar(headline: "Home"),
       drawer: const MenuDrawer(),
       body: Column(
         children: [

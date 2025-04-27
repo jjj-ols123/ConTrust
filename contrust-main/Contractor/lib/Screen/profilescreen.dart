@@ -1,12 +1,11 @@
 // ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
 
-import 'package:backend/appbar.dart';
-import 'package:backend/getuserid.dart';
-import 'package:backend/pagetransition.dart';
+import 'package:backend/models/appbar.dart';
+import 'package:backend/services/getuserdata.dart';
+import 'package:backend/utils/pagetransition.dart';
 import 'package:contractor/Screen/editprofile.dart';
-import 'package:contractor/blocs/userprofile.dart';
+import 'package:backend/services/userprofile.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 
 class UserProfileScreen extends StatefulWidget {
@@ -35,8 +34,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   Future<void> _loadContractorData() async {
-    final contractorData = await userService.fetchContractorData(
+    final contractorData = await userService.fetchUserData(
       widget.contractorId,
+      isContractor: true,
     );
     if (contractorData != null) {
       setState(() {
@@ -54,40 +54,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           ),
         );
       }
-    }
-  }
-
-  Future<void> pickProfileImage() async {
-    final pickedFile = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-    );
-    if (pickedFile != null) {
-      Uint8List fileBytes = await pickedFile.readAsBytes();
-
-      String? imageUrl = await userService.uploadImage(
-        fileBytes,
-        'profilephotos',
-      );
-
-      if (imageUrl != null) {
-        setState(() {
-          profileImage = imageUrl;
-        });
-
-        await userService.updateProfilePhoto(widget.contractorId, imageUrl);
-      }
-    }
-  }
-
-  Future<void> pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-    );
-    if (pickedFile != null) {
-      final bytes = await pickedFile.readAsBytes();
-      setState(() {
-        pastProjects.add(bytes);
-      });
     }
   }
 
@@ -127,7 +93,24 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             GestureDetector(
-                              onTap: pickProfileImage,
+                              onTap: () async {
+                                Uint8List? imageBytes =
+                                    await userService.pickImage();
+
+                                if (imageBytes != null) {
+                                  final String? imageUrl = await userService
+                                      .uploadImage(imageBytes, 'profilephotos');
+
+                                  if (imageUrl != null) {
+                                    await userService
+                                        .updateProfilePhoto(
+                                          widget.contractorId,
+                                          imageUrl,
+                                          isContractor: true,
+                                        );
+                                  }
+                                }
+                              },
                               child: CircleAvatar(
                                 radius: 50,
                                 backgroundColor: Colors.grey.shade300,
@@ -191,7 +174,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                 transitionBuilder(
                                   context,
                                   EditProfileScreen(
-                                    contractorId: contractorId ?? '',
+                                    userId: contractorId ?? '',
+                                    isContractor: true,
                                   ),
                                 );
                               },
@@ -275,7 +259,36 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             ),
                             SizedBox(height: 10),
                             ElevatedButton(
-                              onPressed: pickImage,
+                              onPressed: () async {
+                                Uint8List? imageBytes =
+                                    await userService.pickImage();
+
+                                if (imageBytes != null) {
+                                  bool success = await userService
+                                      .addPastProjectPhoto(
+                                        widget.contractorId,
+                                        imageBytes,
+                                      );
+
+                                  if (success && mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Project photo uploaded successfully',
+                                        ),
+                                      ),
+                                    );
+                                  } else if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Failed to upload project photo',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
                               child: Text("Upload Project Photo"),
                             ),
                           ],

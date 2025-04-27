@@ -1,7 +1,7 @@
 // ignore_for_file: library_private_types_in_public_api
 
-import 'package:backend/appbar.dart';
-import 'package:contractor/blocs/userprofile.dart';
+import 'package:backend/models/appbar.dart';
+import 'package:backend/services/userprofile.dart';
 import 'package:flutter/material.dart';
 
 class ContractorProfileScreen extends StatefulWidget {
@@ -15,7 +15,7 @@ class ContractorProfileScreen extends StatefulWidget {
 
 class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
   final UserService userService = UserService();
-  
+
   String firmName = "Firm Name";
   String bio = "No Bio";
   double rating = 4.5;
@@ -32,16 +32,21 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
 
   Future<void> _loadContractorData() async {
     try {
-      final contractorData = await userService.fetchContractorData(widget.contractorId);
+      final contractorData = await userService
+          .fetchUserData(widget.contractorId, isContractor: true);
       if (contractorData != null) {
         setState(() {
           firmName = contractorData['firm_name'] ?? "No firm name";
           bio = contractorData['bio'] ?? "No bio available";
           rating = contractorData['rating']?.toDouble() ?? 4.5;
           profileImage = contractorData['profile_photo'];
-          pastProjects = List<String>.from(contractorData['past_projects'] ?? []);
+          pastProjects = List<String>.from(
+            contractorData['past_projects'] ?? [],
+          );
           isLoading = false;
         });
+      } else {
+        setState(() => isLoading = false);
       }
     } catch (e) {
       if (mounted) {
@@ -56,16 +61,17 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
     }
   }
 
-  Future<void> _handleHireContractor() async {
+  Future<void> _hireContractor() async {
     setState(() => isHiring = true);
-    
+
     try {
       await Future.delayed(const Duration(seconds: 2));
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Successfully initiated hiring process with $firmName!'),
+            content:
+                Text('Successfully initiated hiring process with $firmName!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -88,8 +94,23 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Show loading indicator until data is fetched
+    if (isLoading) {
+      return Scaffold(
+        appBar: ConTrustAppBar(headline: 'Contractor Profile'),
+        drawer: const MenuDrawer(),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     double screenWidth = MediaQuery.of(context).size.width;
-    int crossAxisCount = screenWidth > 1000 ? 4 : screenWidth > 600 ? 3 : 2;
+    int crossAxisCount = screenWidth > 1000
+        ? 4
+        : screenWidth > 600
+            ? 3
+            : 2;
 
     return Scaffold(
       appBar: ConTrustAppBar(headline: 'Contractor Profile'),
@@ -109,15 +130,14 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                       child: Image.asset(
                         'bgloginscreen.jpg',
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => 
-                          Container(color: Colors.grey[200]),
+                        errorBuilder: (context, error, stackTrace) =>
+                            Container(color: Colors.grey[200]),
                       ),
                     ),
                     Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
                         children: [
-                          
                           Card(
                             elevation: 5,
                             color: Colors.amber.shade100,
@@ -129,14 +149,19 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                                   CircleAvatar(
                                     radius: 50,
                                     backgroundColor: Colors.grey.shade300,
-                                    backgroundImage: profileImage != null
+                                    backgroundImage: (profileImage != null &&
+                                            profileImage!.isNotEmpty)
                                         ? NetworkImage(profileImage!)
                                         : null,
-                                    child: profileImage == null
-                                        ? const Icon(
-                                            Icons.business,
-                                            size: 40,
-                                            color: Colors.white,
+                                    child: (profileImage == null ||
+                                            profileImage!.isEmpty)
+                                        ? ClipOval(
+                                            child: Image.asset(
+                                              'Portrait_Placeholder.png',
+                                              width: 100,
+                                              height: 100,
+                                              fit: BoxFit.cover,
+                                            ),
                                           )
                                         : null,
                                   ),
@@ -167,7 +192,8 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                                   const SizedBox(height: 10),
                                   const Text(
                                     "Rating:",
-                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold),
                                   ),
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -185,7 +211,6 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                             ),
                           ),
                           const SizedBox(height: 20),
-                         
                           Card(
                             elevation: 5,
                             color: Colors.amber.shade100,
@@ -205,9 +230,12 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                                   LayoutBuilder(
                                     builder: (context, constraints) {
                                       double availableHeight =
-                                          MediaQuery.of(context).size.height * 0.4;
+                                          MediaQuery.of(context).size.height *
+                                              0.4;
                                       return SizedBox(
-                                        height: pastProjects.isEmpty ? 50 : availableHeight,
+                                        height: pastProjects.isEmpty
+                                            ? 50
+                                            : availableHeight,
                                         child: pastProjects.isEmpty
                                             ? const Center(
                                                 child: Text(
@@ -220,8 +248,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                                             : GridView.builder(
                                                 shrinkWrap: true,
                                                 physics: const NeverScrollableScrollPhysics(),
-                                                gridDelegate:
-                                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                                                   crossAxisCount: crossAxisCount,
                                                   crossAxisSpacing: 8,
                                                   mainAxisSpacing: 8,
@@ -234,8 +261,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                                                     child: Image.network(
                                                       pastProjects[index],
                                                       fit: BoxFit.cover,
-                                                      errorBuilder: (context, error, stackTrace) => 
-                                                        Container(color: Colors.grey[300]),
+                                                      errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey[300]),
                                                     ),
                                                   );
                                                 },
@@ -261,7 +287,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: isHiring ? null : _handleHireContractor,
+                onPressed: isHiring ? null : _hireContractor,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green[700],
                   padding: const EdgeInsets.symmetric(vertical: 16),
