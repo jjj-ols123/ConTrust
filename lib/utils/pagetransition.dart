@@ -8,7 +8,7 @@ import 'package:contractee/pages/transaction_page.dart';
 //contractor
 import 'package:contractor/Screen/bidding.dart';
 import 'package:contractor/Screen/clienthistory.dart';
-import 'package:contractor/Screen/dashboard_screen.dart';
+import 'package:contractor/Screen/dashboardscreen.dart';
 import 'package:contractor/Screen/logginginscreen.dart';
 import 'package:contractor/Screen/loginscreen.dart';
 import 'package:contractor/Screen/ongoingproject.dart';

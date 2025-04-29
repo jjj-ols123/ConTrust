@@ -22,7 +22,7 @@ class UserService {
           'bio': response['bio'] ?? "No bio available",
           'rating': (response['rating'] ?? 4.5).toDouble(),
           'profile_photo':
-              response['profile_photo'] ?? 'Portrait_Placeholder.png',
+              response['profile_photo'] ?? 'defaultpic.png',
           'past_projects': List<String>.from(response['past_projects'] ?? []),
         };
       } else {
@@ -30,7 +30,7 @@ class UserService {
           'full_name': response['full_name'] ?? "No full name",
           'address': response['address'] ?? "No address available",
           'profile_photo':
-              response['profile_photo'] ?? 'Portrait_Placeholder.png',
+              response['profile_photo'] ?? 'defaultpic.png',
           'project_history_count':
               (response['project_history_count'] ?? 0).toInt(),
         };
