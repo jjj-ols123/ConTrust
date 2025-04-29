@@ -43,7 +43,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         firmName = contractorData['firm_name'] ?? "No firm name";
         bio = contractorData['bio'] ?? "No bio available";
         rating = contractorData['rating'] ?? 4.5;
-        profileImage = contractorData['profile_photo'] ?? 'default_image_url';
+        profileImage = contractorData['profile_photo'] ?? 'defaultpic.png';
       });
     } else {
       if (mounted) {

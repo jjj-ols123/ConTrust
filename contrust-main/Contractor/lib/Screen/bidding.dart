@@ -6,11 +6,11 @@ import 'package:backend/services/getuserdata.dart';
 import 'package:backend/services/notification.dart';
 import 'package:backend/utils/pagetransition.dart';
 import 'package:backend/utils/validatefields.dart';
-import 'package:contractor/services/projectbidding.dart';
+import 'package:backend/services/projectbidding.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:contractor/Screen/dashboard_screen.dart';
+import 'package:contractor/Screen/dashboardscreen.dart';
 import 'package:contractor/Screen/productpanel.dart';
 
 class BiddingScreen extends StatefulWidget {
@@ -57,10 +57,12 @@ class _BiddingScreenState extends State<BiddingScreen> {
   }
 
   Future<void> fetchHighestBids() async {
-    final highestBidsData = await getHighestBid();
+    final highestBidsData = await highestBid();
     setState(() {
       highestBids = highestBidsData;
     });
+
+    debugPrint("Highest Bids: $highestBids");
   }
 
 
@@ -525,25 +527,5 @@ class _BiddingScreenState extends State<BiddingScreen> {
         ),
       ),
     );
-  }
-
-  Duration getRemainingDuration(DateTime createdAt, int durationInDays) {
-    final endTime = createdAt.add(Duration(days: durationInDays));
-    final now = DateTime.now();
-    return endTime.difference(now);
-  }
-
-  Stream<Duration> countdownStream(
-    DateTime createdAt,
-    int durationInDays,
-  ) async* {
-    final endTime = createdAt.add(Duration(days: durationInDays));
-    while (true) {
-      final now = DateTime.now();
-      final remaining = endTime.difference(now);
-      if (remaining.isNegative) break;
-      yield remaining;
-      await Future.delayed(Duration(seconds: 1));
-    }
   }
 }

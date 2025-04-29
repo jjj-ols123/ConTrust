@@ -94,7 +94,6 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Show loading indicator until data is fetched
     if (isLoading) {
       return Scaffold(
         appBar: ConTrustAppBar(headline: 'Contractor Profile'),
@@ -157,7 +156,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                                             profileImage!.isEmpty)
                                         ? ClipOval(
                                             child: Image.asset(
-                                              'Portrait_Placeholder.png',
+                                              'defaultpic.png',
                                               width: 100,
                                               height: 100,
                                               fit: BoxFit.cover,

@@ -31,7 +31,9 @@ class _ContracteeNotificationPageState
   @override
   Widget build(BuildContext context) {
     if (contracteeId == null) {
-      return const Center(child: CircularProgressIndicator());
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
     return Scaffold(
@@ -41,6 +43,11 @@ class _ContracteeNotificationPageState
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: notificationService.listenNotification(contracteeId!),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('Error loading notifications: ${snapshot.error}'),
+            );
+          }
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -51,8 +58,9 @@ class _ContracteeNotificationPageState
           final notifications =
               snapshot.data!.map((e) => NotificationModel.fromMap(e)).toList();
 
-          return ListView.builder(
+          return ListView.separated(
             itemCount: notifications.length,
+            separatorBuilder: (context, index) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final notif = notifications[index];
               return ListTile(

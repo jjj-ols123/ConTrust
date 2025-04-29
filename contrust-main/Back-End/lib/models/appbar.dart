@@ -73,7 +73,13 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
     return AppBar(
       backgroundColor: Colors.amber,
       centerTitle: true,
-      automaticallyImplyLeading: false,
+      automaticallyImplyLeading: true,
+      leading: Builder(
+        builder: (context) => IconButton(
+          icon: const Icon(Icons.menu, color: Colors.black),
+          onPressed: () => Scaffold.of(context).openDrawer(),
+        ),
+      ),
       elevation: 4,
       title: Text(
         widget.headline,
@@ -92,7 +98,6 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
                 CheckUserLogin.isLoggedIn(
                   context: context,
                   onAuthenticated: () async {
-
                     if (!context.mounted) return;
 
                     GetUserId getUserId = GetUserId();

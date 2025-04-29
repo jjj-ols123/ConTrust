@@ -4,7 +4,7 @@ class NotificationService {
   final SupabaseClient supabase = Supabase.instance.client;
 
   Future<void> createNotification({
-    required String? receiverId, 
+    required String? receiverId,
     required String receiverType,
     required String senderId,
     required String senderType,
@@ -29,8 +29,10 @@ class NotificationService {
           .from('Notifications')
           .insert(notificationData)
           .select();
-          
-      if (response.isEmpty) throw Exception('Failed to create notification');
+
+      if (response.isEmpty) {
+        throw Exception('Failed to create notification');
+      }
     } catch (e) {
       throw Exception('Notification error: ${e.toString()}');
     }
@@ -42,16 +44,13 @@ class NotificationService {
         .stream(primaryKey: ['notification_id'])
         .eq('receiver_id', receiverId)
         .order('created_at', ascending: false);
-
-        
   }
 
   Future<void> readNotification(String notificationId) async {
     try {
       await supabase
           .from('Notifications')
-          .update({'is_read': true})
-          .eq('notification_id', notificationId);
+          .update({'is_read': true}).eq('notification_id', notificationId);
     } catch (e) {
       throw Exception('Failed to mark as read: ${e.toString()}');
     }
