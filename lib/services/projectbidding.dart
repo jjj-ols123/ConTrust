@@ -1,80 +1,85 @@
+// ignore_for_file: unnecessary_type_check
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-Future<Map<String, double>> highestBid() async {
+class ProjectBidding {
   final supabase = Supabase.instance.client;
 
-  try {
-    final response = await supabase
-        .from('Bids')
-        .select('project_id, bid_amount');
+  Future<Map<String, double>> highestBid() async {
+    try {
+      final response = await supabase
+          .from('Bids')
+          .select('project_id, bid_amount')
+          .order('bid_amount', ascending: false);
 
-    Map<String, double> highestBids = {};
- 
-    if (response.isNotEmpty) {
-      for (var bid in response) {
+      final Map<String, double> highestBids = {};
+
+      for (final bid in response) {
         final projectId = bid['project_id'].toString();
-        final bidAmount = double.tryParse(bid['bid_amount'].toString()) ?? 0.0;
+        final amount = (bid['bid_amount'] as num).toDouble();
 
-        if (!highestBids.containsKey(projectId) || bidAmount > highestBids[projectId]!) {
-          highestBids[projectId] = bidAmount;
+        if (!highestBids.containsKey(projectId)) {
+          highestBids[projectId] = amount;
         }
       }
-    }
-  
-    return highestBids;
-  } catch (e) {
+
+      return highestBids;
+    } catch (e) {
       return {};
+    }
   }
-}
 
-Future<void> finalizeBidding(String projectId) async {
-  final supabase = Supabase.instance.client;
+  Future<List<Map<String, dynamic>>> fetchBids(String projectId) async {
+    final response = await supabase
+        .from('Bids')
+        .select(
+            'bid_id, contractor_id, bid_amount, message, created_at, contractor:Contractor(firm_name, profile_photo)')
+        .eq('project_id', projectId)
+        .order('bid_amount', ascending: false);
+    if (response is List) {
+      return List<Map<String, dynamic>>.from(response);
+    }
+    return [];
+  }
 
-  final bids = await supabase
-      .from('Bids')
-      .select()
-      .eq('project_id', projectId)
-      .order('amount', ascending: false);
+  Future<void> finalizeBidding(String projectId) async {
+    final bids = await supabase
+        .from('Bids')
+        .select()
+        .eq('project_id', projectId)
+        .order('amount', ascending: false);
 
-  if (bids.isEmpty) return;
+    if (bids.isEmpty) return;
 
-  final bidWinner = bids.first;
-  final bidWinnerId = bidWinner['bid_id'];
-  final contractorId = bidWinner['contractor_id'];
+    final bidWinner = bids.first;
+    final bidWinnerId = bidWinner['bid_id'];
+    final contractorId = bidWinner['contractor_id'];
 
-  final projectResponse =
-      await supabase
-          .from('Projects')
-          .select()
-          .eq('project_id', projectId)
-          .single();
+    final projectResponse = await supabase
+        .from('Projects')
+        .select()
+        .eq('project_id', projectId)
+        .single();
 
-  if (projectResponse.isEmpty) return;
+    if (projectResponse.isEmpty) return;
 
-  await supabase
-      .from('Projects')
-      .update({
-        'status': 'active',
-        'accepted_bid_id': bidWinnerId,
-        'contractor_id': contractorId,
-      })
-      .eq('project_id', projectId);
+    await supabase.from('Projects').update({
+      'status': 'active',
+      'accepted_bid_id': bidWinnerId,
+      'contractor_id': contractorId,
+    }).eq('project_id', projectId);
 
-  final losingBidIds = bids.skip(1).map((bid) => bid['id']).toList();
-  if (losingBidIds.isNotEmpty) {
+    final losingBidIds = bids.skip(1).map((bid) => bid['bid_id']).toList();
+    if (losingBidIds.isNotEmpty) {
+      await supabase.from('Bids').delete().inFilter('bid_id', losingBidIds);
+    }
+
     await supabase
-      .from('Bids')
-      .delete()
-      .inFilter('id', losingBidIds);
+        .from('Bids')
+        .update({'status': 'accepted'}).eq('bid_id', bidWinnerId);
   }
 
-  await supabase
-      .from('Bids')
-      .update({'status': 'accepted'})
-      .eq('bid_id', bidWinnerId);
-}
-
- Duration getRemainingDuration(DateTime createdAt, int durationInDays) {
+  Duration getRemainingDuration(DateTime createdAt, int durationInDays) {
     final endTime = createdAt.add(Duration(days: durationInDays));
     final now = DateTime.now();
     return endTime.difference(now);
@@ -93,4 +98,4 @@ Future<void> finalizeBidding(String projectId) async {
       await Future.delayed(Duration(seconds: 1));
     }
   }
-
+}

@@ -1,0 +1,52 @@
+import 'package:backend/services/projectbidding.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class FetchClass {
+  final supabase = Supabase.instance.client;
+  final projectbidding = ProjectBidding();
+
+  Future<List<Map<String, dynamic>>> fetchContractors() async {
+    try {
+      final response = await supabase
+          .from('Contractor')
+          .select('contractor_id, firm_name, profile_photo');
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchProjects() async {
+    try {
+      final userId = supabase.auth.currentUser?.id;
+      if (userId == null) return [];
+      final response = await supabase
+          .from('Projects')
+          .select(
+            'project_id, type, description, duration, min_budget, max_budget, created_at, status',
+          )
+          .eq('contractee_id', userId);
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      return [];
+    }
+  }
+
+   Future<Map<String, double>> fetchHighestBids() async {
+    final highestBidsData = await projectbidding.highestBid();
+    return highestBidsData;
+  }
+
+  Future<Map<String, dynamic>?> fetchContractorData(String contractorId) async {
+    try {
+      final response = await supabase
+          .from('Contractor')
+          .select()
+          .eq('contractor_id', contractorId)
+          .single();
+      return Map<String, dynamic>.from(response);
+    } catch (e) {
+      return null;
+    }
+  }
+}

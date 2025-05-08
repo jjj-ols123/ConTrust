@@ -52,7 +52,7 @@ Widget getScreenFromRoute(BuildContext context, String route, {Object? arguments
           body: Center(child: Text("Error: Contractor ID is missing")),
         );
       }
-      return UserProfileScreen(contractorId: arguments);
+      return ContractorUserProfileScreen(contractorId: arguments);
       
     // Contractor Pages
     case '/ongoingproject':

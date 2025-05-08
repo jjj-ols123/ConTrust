@@ -1,0 +1,389 @@
+// ignore_for_file: deprecated_member_use
+
+import 'package:backend/services/projectbidding.dart';
+import 'package:contractee/models/expandable_button.dart';
+import 'package:contractee/models/modalsheet.dart';
+import 'package:flutter/material.dart';
+import 'package:contractee/services/checkuseracc.dart';
+import 'package:contractee/pages/contractor_profile.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class ContractorsView extends StatelessWidget {
+  final String id;
+  final String name;
+  final String profileImage;
+
+  const ContractorsView({
+    Key? key,
+    required this.id,
+    required this.name,
+    required this.profileImage,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(right: 12),
+      width: 180,
+      height: 220,
+      child: Card(
+        elevation: 6,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        shadowColor: Colors.amber.shade200,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
+              child: Image.network(
+                profileImage.isNotEmpty
+                    ? profileImage
+                    : 'assets/defaultpic.png',
+                height: 160,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const Center(child: CircularProgressIndicator());
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return Image.asset(
+                    'assets/defaultpic.png',
+                    height: 160,
+                    fit: BoxFit.cover,
+                  );
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Column(
+                children: [
+                  Text(
+                    name,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: () {
+                      CheckUserLogin.isLoggedIn(
+                        context: context,
+                        onAuthenticated: () async {
+                          if (!context.mounted) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ContractorProfileScreen(
+                                contractorId: id,
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber[700],
+                      foregroundColor: Colors.black,
+                      minimumSize: const Size.fromHeight(40),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 4,
+                    ),
+                    child: const Text("View"),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ProjectView extends StatelessWidget {
+  final Map<String, dynamic> project;
+  final String projectId;
+  final double highestBid;
+  final int duration;
+  final DateTime createdAt;
+  final Function() onTap;
+  final Function(String) handleFinalizeBidding;
+
+  const ProjectView({
+    Key? key,
+    required this.project,
+    required this.projectId,
+    required this.highestBid,
+    required this.duration,
+    required this.createdAt,
+    required this.onTap,
+    required this.handleFinalizeBidding,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    Color statusColor;
+    switch ((project['status'] ?? '').toString().toLowerCase()) {
+      case 'active':
+        statusColor = Colors.green;
+        break;
+      case 'pending':
+        statusColor = Colors.orange;
+        break;
+      case 'closed':
+      case 'ended':
+        statusColor = Colors.redAccent;
+        break;
+      default:
+        statusColor = Colors.grey;
+    }
+
+    return InkWell(
+      onTap: onTap,
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 18),
+        elevation: 6,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        shadowColor: Colors.amber.shade100,
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    project['type'] ?? 'No type specified',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      "₱${project['min_budget']} - ₱${project['max_budget']}",
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                project['description'] ?? 'No description',
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 16, color: Colors.black87),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  const Icon(Icons.info_outline, size: 18, color: Colors.grey),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      "Status: ${project['status'] ?? 'Unknown'}",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: statusColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  const Icon(Icons.timer_outlined,
+                      size: 18, color: Colors.grey),
+                  const SizedBox(width: 6),
+                  StreamBuilder<Duration>(
+                    stream:
+                        ProjectBidding().countdownStream(createdAt, duration),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const Text(
+                          "Loading...",
+                          style: TextStyle(fontSize: 14),
+                        );
+                      }
+
+                      final remaining = snapshot.data!;
+
+                      if (remaining.isNegative) {
+                        handleFinalizeBidding(projectId);
+                      }
+
+                      if (remaining.isNegative) {
+                        return Text(
+                          "Closed",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        );
+                      }
+
+                      final days = remaining.inDays;
+                      final hours = remaining.inHours
+                          .remainder(24)
+                          .toString()
+                          .padLeft(2, '0');
+                      final minutes = remaining.inMinutes
+                          .remainder(60)
+                          .toString()
+                          .padLeft(2, '0');
+                      final seconds = remaining.inSeconds
+                          .remainder(60)
+                          .toString()
+                          .padLeft(2, '0');
+
+                      return Text(
+                        '$days d $hours:$minutes:$seconds',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.green,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  const Icon(Icons.attach_money_outlined,
+                      size: 18, color: Colors.grey),
+                  const SizedBox(width: 6),
+                  Text(
+                    "₱${highestBid.toStringAsFixed(2)}",
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.green,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class ExpandableFloatingButton extends StatelessWidget {
+  final VoidCallback clearControllers;
+  final TextEditingController typeConstruction;
+  final TextEditingController minBudget;
+  final TextEditingController maxBudget;
+  final TextEditingController location;
+  final TextEditingController description;
+  final TextEditingController bidTime;
+
+  const ExpandableFloatingButton({
+    Key? key,
+    required this.clearControllers,
+    required this.typeConstruction,
+    required this.minBudget,
+    required this.maxBudget,
+    required this.location,
+    required this.description,
+    required this.bidTime,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return ExpandableFloating(
+      distance: 80.0,
+      children: [
+        FloatingActionButton(
+          heroTag: 'mainButton',
+          onPressed: () async {
+            try {
+              CheckUserLogin.isLoggedIn(
+                context: context,
+                onAuthenticated: () async {
+                  if (!context.mounted) return;
+
+                  final user = Supabase.instance.client.auth.currentUser?.id;
+                  if (user == null) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('User not authenticated')),
+                    );
+                    return;
+                  }
+
+                  if (!context.mounted) return;
+
+                  clearControllers();
+
+                  await ProjectModal.show(
+                    context: context,
+                    contracteeId: user,
+                    constructionTypeController: typeConstruction,
+                    minBudgetController: minBudget,
+                    maxBudgetController: maxBudget,
+                    locationController: location,
+                    descriptionController: description,
+                    bidTimeController: bidTime,
+                  );
+                },
+              );
+            } catch (e) {
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Error showing modal')),
+              );
+            }
+          },
+          backgroundColor: Colors.amber[700],
+          foregroundColor: Colors.black,
+          hoverColor: Colors.amber[800],
+          child: const Icon(Icons.construction, color: Colors.black),
+        ),
+        FloatingActionButton(
+          heroTag: 'cameraButton',
+          onPressed: () {},
+          backgroundColor: Colors.amber[700],
+          foregroundColor: Colors.black,
+          hoverColor: Colors.amber[800],
+          child: const Icon(Icons.camera_alt, color: Colors.black),
+        ),
+      ],
+    );
+  }
+}
