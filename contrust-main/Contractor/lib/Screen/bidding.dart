@@ -22,6 +22,7 @@ class BiddingScreen extends StatefulWidget {
 
 class _BiddingScreenState extends State<BiddingScreen> {
   final supabase = Supabase.instance.client;
+  final projectbidding = ProjectBidding();
   final Set<String> _finalizedProjects = {};
 
   List<Map<String, dynamic>> projects = [];
@@ -57,7 +58,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
   }
 
   Future<void> fetchHighestBids() async {
-    final highestBidsData = await highestBid();
+    final highestBidsData = await projectbidding.highestBid();
     setState(() {
       highestBids = highestBidsData;
     });
@@ -451,7 +452,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
                         ),
                       ),
                       StreamBuilder<Duration>(
-                        stream: countdownStream(createdAt, durationDays),
+                        stream: projectbidding.countdownStream(createdAt, durationDays),
                         builder: (context, snapshot) {
                           if (!snapshot.hasData) {
                             return Text(
@@ -465,7 +466,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
                           if (remaining.isNegative &&
                               !_finalizedProjects.contains(projectId)) {
                             _finalizedProjects.add(projectId);
-                            finalizeBidding(projectId);
+                            projectbidding.finalizeBidding(projectId);
                           }
 
                           if (remaining.isNegative) {

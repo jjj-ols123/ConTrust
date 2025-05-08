@@ -26,10 +26,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       body: LayoutBuilder(
         builder: (context, constraints) {
           bool isMobile = constraints.maxWidth < 600;
-
           return Stack(
             children: [
-              // Background Image
               Positioned.fill(
                 child: Image.asset(
                   'bgloginscreen.jpg',
@@ -38,8 +36,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   fit: BoxFit.cover,
                 ),
               ),
-
-              // Back Button
               Positioned(
                 top: 50,
                 left: 30,
@@ -78,7 +74,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ],
                 ),
               ),
-
               Center(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
@@ -103,10 +98,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
                         const SizedBox(height: 20),
-
                         _textField('Firm Name', controller: firmNameController),
                         const SizedBox(height: 10),
-
                         Row(
                           children: [
                             Expanded(
@@ -124,7 +117,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ],
                         ),
                         const SizedBox(height: 10),
-
                         Row(
                           children: [
                             Expanded(
@@ -145,7 +137,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ],
                         ),
                         const SizedBox(height: 20),
-
                         Row(
                           children: [
                             Expanded(

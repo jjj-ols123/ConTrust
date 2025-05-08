@@ -16,7 +16,6 @@ class LoginScreen extends StatelessWidget {
     return Scaffold(
       body: Stack(
         children: [
-          // Background Image
           Positioned.fill(
             child: Image.asset(
                 'bgloginscreen.jpg', 
@@ -25,8 +24,6 @@ class LoginScreen extends StatelessWidget {
               fit: BoxFit.cover,
             ),
           ),
-
-        
           Column(
             children: [
               Container(
@@ -43,20 +40,15 @@ class LoginScreen extends StatelessWidget {
               ),
             ],
           ),
-
-          // Center Content
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo and Title
                 Image.asset(
                   'logo3.png', 
                   width: screenWidth * 0.2,
                 ),
                 SizedBox(height: 20),
-
-                // Login Box
                 Container(
                   width: screenWidth * 0.8,
                   padding: EdgeInsets.all(20),
@@ -84,8 +76,6 @@ class LoginScreen extends StatelessWidget {
                         textAlign: TextAlign.center,
                       ),
                       SizedBox(height: 20),
-
-                      // Login Button
                       ElevatedButton(
                         onPressed: () {
                           transitionBuilder(context, ToLoginScreen());
@@ -96,10 +86,7 @@ class LoginScreen extends StatelessWidget {
                         ),
                         child: Text('Login', style: TextStyle(color: Colors.white)),
                       ),
-
                       SizedBox(height: 10),
-
-                      // Sign Up Button
                       OutlinedButton(
                         onPressed: () {
                            transitionBuilder(context, RegisterScreen());
@@ -117,7 +104,6 @@ class LoginScreen extends StatelessWidget {
             ),
           ),
         ],
-        
       ),
     );
   }

@@ -8,16 +8,18 @@ import 'package:backend/services/userprofile.dart';
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
 
-class UserProfileScreen extends StatefulWidget {
+class ContractorUserProfileScreen extends StatefulWidget {
   final String contractorId;
 
-  const UserProfileScreen({super.key, required this.contractorId});
+  const ContractorUserProfileScreen({super.key, required this.contractorId});
 
   @override
-  _UserProfileScreenState createState() => _UserProfileScreenState();
+  _ContractorUserProfileScreenState createState() =>
+      _ContractorUserProfileScreenState();
 }
 
-class _UserProfileScreenState extends State<UserProfileScreen> {
+class _ContractorUserProfileScreenState
+    extends State<ContractorUserProfileScreen> {
   final UserService userService = UserService();
   GetUserId getUserId = GetUserId();
 
@@ -68,9 +70,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             : 2;
 
     return Scaffold(
-      appBar: ConTrustAppBar(headline: "Profile"),
+      appBar: const ConTrustAppBar(headline: "Profile"),
       body: SingleChildScrollView(
-        physics: BouncingScrollPhysics(),
+        physics: const BouncingScrollPhysics(),
         child: Padding(
           padding: const EdgeInsets.all(10),
           child: Column(
@@ -78,7 +80,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               SizedBox(
                 height: MediaQuery.of(context).size.height * 0.2,
                 width: double.infinity,
-                child: Image.asset('bgloginscreen.jpg', fit: BoxFit.cover),
+                child: Image.asset(
+                  'assets/bgloginscreen.jpg',
+                  fit: BoxFit.cover,
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -88,48 +93,43 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                       elevation: 5,
                       color: Colors.amber.shade100,
                       child: Padding(
-                        padding: EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(12),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            GestureDetector(
-                              onTap: () async {
-                                Uint8List? imageBytes =
-                                    await userService.pickImage();
-
-                                if (imageBytes != null) {
-                                  final String? imageUrl = await userService
-                                      .uploadImage(imageBytes, 'profilephotos');
-
-                                  if (imageUrl != null) {
-                                    await userService
-                                        .updateProfilePhoto(
-                                          widget.contractorId,
-                                          imageUrl,
-                                          isContractor: true,
-                                        );
-                                  }
-                                }
-                              },
-                              child: CircleAvatar(
-                                radius: 50,
-                                backgroundColor: Colors.grey.shade300,
-                                child:
-                                    profileImage != null
-                                        ? ClipOval(
-                                          child: Image.network(
-                                            profileImage!,
-                                            fit: BoxFit.cover,
-                                            width: 100,
-                                            height: 100,
-                                          ),
-                                        )
-                                        : Icon(
-                                          Icons.camera_alt,
-                                          size: 40,
-                                          color: Colors.white,
+                            CircleAvatar(
+                              radius: 50,
+                              backgroundColor: Colors.grey.shade300,
+                              child:
+                                  profileImage != null &&
+                                          profileImage!.isNotEmpty
+                                      ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(50),
+                                        child: Image.network(
+                                          profileImage!,
+                                          width: 100,
+                                          height: 100,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (
+                                            context,
+                                            error,
+                                            stackTrace,
+                                          ) {
+                                            return Image.asset(
+                                              'defaultpic.png',
+                                              width: 100,
+                                              height: 100,
+                                              fit: BoxFit.cover,
+                                            );
+                                          },
                                         ),
-                              ),
+                                      )
+                                      : Image.asset(
+                                        'defaultpic.png',
+                                        width: 100,
+                                        height: 100,
+                                        fit: BoxFit.cover,
+                                      ),
                             ),
                             SizedBox(height: 10),
                             Text(

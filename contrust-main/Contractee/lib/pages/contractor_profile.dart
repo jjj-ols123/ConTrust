@@ -1,6 +1,7 @@
 // ignore_for_file: library_private_types_in_public_api
 
 import 'package:backend/models/appbar.dart';
+import 'package:backend/services/fetchmethods.dart';
 import 'package:backend/services/userprofile.dart';
 import 'package:flutter/material.dart';
 
@@ -15,6 +16,7 @@ class ContractorProfileScreen extends StatefulWidget {
 
 class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
   final UserService userService = UserService();
+  final fetchClass = FetchClass();
 
   String firmName = "Firm Name";
   String bio = "No Bio";
@@ -30,10 +32,9 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
     _loadContractorData();
   }
 
-  Future<void> _loadContractorData() async {
+Future<void> _loadContractorData() async {
     try {
-      final contractorData = await userService
-          .fetchUserData(widget.contractorId, isContractor: true);
+      final contractorData = await fetchClass.fetchContractorData(widget.contractorId);
       if (contractorData != null) {
         setState(() {
           firmName = contractorData['firm_name'] ?? "No firm name";

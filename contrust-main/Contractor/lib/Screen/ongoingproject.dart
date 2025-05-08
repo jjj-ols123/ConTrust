@@ -82,7 +82,7 @@ class _OngoingProjectScreenState extends State<OngoingProgressScreen> {
                         context,
                         '/dashboard',
                         (Route<dynamic> route) => false,
-                      ); // Navigator sa dashboard
+                      ); 
                     },
                     child: Text(
                       "Home",
@@ -111,7 +111,6 @@ class _OngoingProjectScreenState extends State<OngoingProgressScreen> {
               ),
             ),
             SizedBox(height: 10),
-            // inven and search
             Container(
               padding: EdgeInsets.all(10),
               decoration: BoxDecoration(

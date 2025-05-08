@@ -36,7 +36,7 @@ class MyApp extends StatelessWidget {
         '/dashboard': (context) => DashboardScreen(),
         '/register': (context) => RegisterScreen(),
         '/bidding': (context) => BiddingScreen(),
-        '/profile': (context) => UserProfileScreen(contractorId: 
+        '/profile': (context) => ContractorUserProfileScreen(contractorId: 
           ModalRoute.of(context)!.settings.arguments as String),
         '/productpanel': (context) => ProductPanelScreen(),
         '/ongoingproject': (context) => OngoingProgressScreen(),
