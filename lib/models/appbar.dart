@@ -1,3 +1,5 @@
+// ignore_for_file: unused_field
+
 import 'dart:async';
 
 import 'package:backend/services/getuserdata.dart';
@@ -13,10 +15,12 @@ import 'package:flutter/material.dart';
 
 class ConTrustAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String headline;
+  final List<Widget>? actions; 
 
   const ConTrustAppBar({
     super.key,
     required this.headline,
+    this.actions, 
   });
 
   @override
@@ -31,7 +35,6 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
   final NotificationService notif = NotificationService();
   final GetUserId getUserId = GetUserId();
   int _unreadCount = 0;
-  // ignore: unused_field
   String? _receiverId;
 
   @override
@@ -90,6 +93,7 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
         ),
       ),
       actions: [
+        if (widget.actions != null) ...widget.actions!,
         Stack(
           children: [
             IconButton(

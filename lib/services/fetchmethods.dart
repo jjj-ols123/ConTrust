@@ -32,7 +32,7 @@ class FetchClass {
     }
   }
 
-   Future<Map<String, double>> fetchHighestBids() async {
+  Future<Map<String, double>> fetchHighestBids() async {
     final highestBidsData = await projectbidding.highestBid();
     return highestBidsData;
   }
@@ -49,4 +49,21 @@ class FetchClass {
       return null;
     }
   }
+
+ Future<List<Map<String, dynamic>>> fetchActiveProjects() async {
+  try {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) return [];
+    final response = await supabase
+        .from('Projects')
+        .select(
+          'project_id, type, description, duration, min_budget, max_budget, created_at, status, contractee:Contractee(full_name)',
+        )
+        .eq('contractor_id', userId)
+        .eq('status', 'active');
+    return List<Map<String, dynamic>>.from(response);
+  } catch (e) {
+    return [];
+  }
+}
 }
