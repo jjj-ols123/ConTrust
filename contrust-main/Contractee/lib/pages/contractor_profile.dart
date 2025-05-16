@@ -3,7 +3,9 @@
 import 'package:backend/models/appbar.dart';
 import 'package:backend/services/fetchmethods.dart';
 import 'package:backend/services/userprofile.dart';
+import 'package:contractee/pages/message_page.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ContractorProfileScreen extends StatefulWidget {
   final String contractorId;
@@ -11,7 +13,8 @@ class ContractorProfileScreen extends StatefulWidget {
   const ContractorProfileScreen({super.key, required this.contractorId});
 
   @override
-  _ContractorProfileScreenState createState() => _ContractorProfileScreenState();
+  _ContractorProfileScreenState createState() =>
+      _ContractorProfileScreenState();
 }
 
 class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
@@ -26,21 +29,26 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
   bool isLoading = true;
   bool isHiring = false;
 
+  static const String profileUrl =
+      'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
+
   @override
   void initState() {
     super.initState();
     _loadContractorData();
   }
 
-Future<void> _loadContractorData() async {
+  Future<void> _loadContractorData() async {
     try {
-      final contractorData = await fetchClass.fetchContractorData(widget.contractorId);
+      final contractorData =
+          await fetchClass.fetchContractorData(widget.contractorId);
       if (contractorData != null) {
         setState(() {
           firmName = contractorData['firm_name'] ?? "No firm name";
           bio = contractorData['bio'] ?? "No bio available";
           rating = contractorData['rating']?.toDouble() ?? 4.5;
-          profileImage = contractorData['profile_photo'];
+          final photo = contractorData['profile_photo'];
+          profileImage = (photo == null || photo.isEmpty) ? profileUrl : photo;
           pastProjects = List<String>.from(
             contractorData['past_projects'] ?? [],
           );
@@ -95,9 +103,34 @@ Future<void> _loadContractorData() async {
 
   @override
   Widget build(BuildContext context) {
+    final messageButton = IconButton(
+      icon: const Icon(Icons.message, color: Colors.black),
+      tooltip: 'Message Contractor',
+      onPressed: () {
+        final currentUserId =
+            Supabase.instance.client.auth.currentUser?.id ?? '';
+        final chatRoomId = '${widget.contractorId}_$currentUserId';
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MessagePageContractee(
+              chatRoomId: chatRoomId,
+              contracteeId: currentUserId,
+              contractorId: widget.contractorId,
+              contractorName: firmName,
+              contractorProfile: profileImage,
+            ),
+          ),
+        );
+      },
+    );
+
     if (isLoading) {
       return Scaffold(
-        appBar: ConTrustAppBar(headline: 'Contractor Profile'),
+        appBar: ConTrustAppBar(
+          headline: 'Contractor Profile',
+          actions: [messageButton],
+        ),
         drawer: const MenuDrawer(),
         body: const Center(
           child: CircularProgressIndicator(),
@@ -113,7 +146,10 @@ Future<void> _loadContractorData() async {
             : 2;
 
     return Scaffold(
-      appBar: ConTrustAppBar(headline: 'Contractor Profile'),
+      appBar: ConTrustAppBar(
+        headline: 'Contractor Profile',
+        actions: [messageButton],
+      ),
       drawer: const MenuDrawer(),
       body: Column(
         children: [
@@ -152,18 +188,7 @@ Future<void> _loadContractorData() async {
                                     backgroundImage: (profileImage != null &&
                                             profileImage!.isNotEmpty)
                                         ? NetworkImage(profileImage!)
-                                        : null,
-                                    child: (profileImage == null ||
-                                            profileImage!.isEmpty)
-                                        ? ClipOval(
-                                            child: Image.asset(
-                                              'defaultpic.png',
-                                              width: 100,
-                                              height: 100,
-                                              fit: BoxFit.cover,
-                                            ),
-                                          )
-                                        : null,
+                                        : NetworkImage(profileUrl),
                                   ),
                                   const SizedBox(height: 10),
                                   const Text(
@@ -247,9 +272,12 @@ Future<void> _loadContractorData() async {
                                               )
                                             : GridView.builder(
                                                 shrinkWrap: true,
-                                                physics: const NeverScrollableScrollPhysics(),
-                                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                                  crossAxisCount: crossAxisCount,
+                                                physics:
+                                                    const NeverScrollableScrollPhysics(),
+                                                gridDelegate:
+                                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                                  crossAxisCount:
+                                                      crossAxisCount,
                                                   crossAxisSpacing: 8,
                                                   mainAxisSpacing: 8,
                                                   childAspectRatio: 1,
@@ -257,11 +285,18 @@ Future<void> _loadContractorData() async {
                                                 itemCount: pastProjects.length,
                                                 itemBuilder: (context, index) {
                                                   return ClipRRect(
-                                                    borderRadius: BorderRadius.circular(8),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
                                                     child: Image.network(
                                                       pastProjects[index],
                                                       fit: BoxFit.cover,
-                                                      errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey[300]),
+                                                      errorBuilder: (context,
+                                                              error,
+                                                              stackTrace) =>
+                                                          Container(
+                                                              color: Colors
+                                                                  .grey[300]),
                                                     ),
                                                   );
                                                 },

@@ -9,8 +9,8 @@ class CheckUserLogin {
     required BuildContext context,
     required VoidCallback onAuthenticated,
   }) async {
-    final supabase = Supabase.instance.client;
 
+    final supabase = Supabase.instance.client;
     final session = supabase.auth.currentSession;
 
     if (session != null) {

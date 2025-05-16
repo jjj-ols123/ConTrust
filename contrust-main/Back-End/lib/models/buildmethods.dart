@@ -13,6 +13,9 @@ class ContractorsView extends StatelessWidget {
   final String name;
   final String profileImage;
 
+  static const String profileUrl =
+      'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
+
   const ContractorsView({
     Key? key,
     required this.id,
@@ -39,9 +42,7 @@ class ContractorsView extends StatelessWidget {
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(16)),
               child: Image.network(
-                profileImage.isNotEmpty
-                    ? profileImage
-                    : 'assets/defaultpic.png',
+                (profileImage.isNotEmpty) ? profileImage : profileUrl,
                 height: 160,
                 fit: BoxFit.cover,
                 loadingBuilder: (context, child, loadingProgress) {
@@ -49,8 +50,8 @@ class ContractorsView extends StatelessWidget {
                   return const Center(child: CircularProgressIndicator());
                 },
                 errorBuilder: (context, error, stackTrace) {
-                  return Image.asset(
-                    'assets/defaultpic.png',
+                  return Image.network(
+                    profileUrl,
                     height: 160,
                     fit: BoxFit.cover,
                   );

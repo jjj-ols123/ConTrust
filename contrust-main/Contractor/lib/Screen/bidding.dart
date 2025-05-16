@@ -466,7 +466,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
                           if (remaining.isNegative &&
                               !_finalizedProjects.contains(projectId)) {
                             _finalizedProjects.add(projectId);
-                            projectbidding.finalizeBidding(projectId);
+                            projectbidding.durationBidding(projectId);
                           }
 
                           if (remaining.isNegative) {

@@ -1,4 +1,3 @@
-// ignore_for_file: deprecated_member_use
 
 import 'package:backend/models/appbar.dart';
 import 'package:contractee/models/modalsheet.dart';
@@ -20,7 +19,7 @@ class _HomePageState extends State<HomePage> {
   final projectbidding = ProjectBidding();
   final fetchClass = FetchClass();
   Map<String, double> highestBids = {};
-
+  Map<String, String?> acceptedBidIds = {};
 
   final supabase = Supabase.instance.client;
 
@@ -35,6 +34,9 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _typeConstructionController =
       TextEditingController();
   final TextEditingController _bidTimeController = TextEditingController();
+
+  static const String profileUrl =
+      'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
 
   @override
   void initState() {
@@ -69,13 +71,14 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _loadFinalizeBidding(String projectId) async {
+  void _loadAcceptBidding(String projectId, String bidId) async {
     try {
-      await projectbidding.finalizeBidding(projectId);
+      await projectbidding.acceptBidding(projectId, bidId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Bid has been accepted successfully.')),
         );
+        _loadData();
       }
     } catch (e) {
       if (mounted) {
@@ -132,10 +135,14 @@ class _HomePageState extends State<HomePage> {
                             itemCount: contractors.length,
                             itemBuilder: (context, index) {
                               final contractor = contractors[index];
+                              final profilePhoto = contractor['profile_photo'];
+                              final profileImage = (profilePhoto == null || profilePhoto.isEmpty)
+                                  ? profileUrl
+                                  : profilePhoto;
                               return ContractorsView(
                                 id: contractor['contractor_id'] ?? '',
                                 name: contractor['firm_name'] ?? 'Unknown',
-                                profileImage: contractor['profile_photo'] ?? '',
+                                profileImage: profileImage,
                               );
                             },
                           ),
@@ -184,16 +191,28 @@ class _HomePageState extends State<HomePage> {
                               projectId: projectId,
                               highestBid: highestBid,
                               duration: project['duration'] ?? 0,
-                              createdAt:
-                                  DateTime.parse(project['created_at'].toString()),
-                              onTap: () {
-                                BidsModal.show(
+                              createdAt: DateTime.parse(
+                                  project['created_at'].toString()),
+                              onTap: () async {
+                                await BidsModal.show(
                                   context: context,
                                   projectId: projectId,
-                                  finalizeBidding: projectbidding.finalizeBidding,
+                                  acceptBidding: (projectId, bidId) async {
+                                    _loadAcceptBidding(projectId, bidId);
+                                    setState(() {
+                                      acceptedBidIds[projectId] = bidId;
+                                    });
+                                  },
+                                  initialAcceptedBidId:
+                                      acceptedBidIds[projectId],
                                 );
                               },
-                              handleFinalizeBidding: _loadFinalizeBidding
+                              handleFinalizeBidding: (bidId) {
+                                return projectbidding.acceptBidding(
+                                  projectId,
+                                  bidId,
+                                );
+                              },
                             );
                           },
                         ),
@@ -201,15 +220,15 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-    floatingActionButton: ExpandableFloatingButton(
-      clearControllers: _clearControllers,
-      typeConstruction: _typeConstructionController,
-      minBudget: _minBudgetController,
-      maxBudget: _maxBudgetController,
-      location: _locationController,
-      description: _descriptionController,
-      bidTime: _bidTimeController,
-    ),
+      floatingActionButton: ExpandableFloatingButton(
+        clearControllers: _clearControllers,
+        typeConstruction: _typeConstructionController,
+        minBudget: _minBudgetController,
+        maxBudget: _maxBudgetController,
+        location: _locationController,
+        description: _descriptionController,
+        bidTime: _bidTimeController,
+      ),
     );
   }
 
@@ -222,4 +241,3 @@ class _HomePageState extends State<HomePage> {
     _bidTimeController.clear();
   }
 }
-

@@ -117,7 +117,7 @@ class DashboardScreen extends StatelessWidget {
             onTap: () async {
               if (title == 'User Profile') {
                 String? contractorId = await getUserId.getContractorId();
-                Navigator.pushNamed(context, route, arguments: contractorId);
+                transitionBuilder(context, getScreenFromRoute(context, route, arguments: contractorId));
               } else {
                 transitionBuilder(context, getScreenFromRoute(context, route));
               }

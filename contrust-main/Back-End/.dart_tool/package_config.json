@@ -236,6 +236,12 @@
       "languageVersion": "2.19"
     },
     {
+      "name": "intl",
+      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/intl-0.18.1",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
       "name": "jwt_decode",
       "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/jwt_decode-0.3.1",
       "packageUri": "lib/",
@@ -584,7 +590,7 @@
       "languageVersion": "3.6"
     }
   ],
-  "generated": "2025-04-20T03:03:00.327310Z",
+  "generated": "2025-05-09T07:30:53.554618Z",
   "generator": "pub",
   "generatorVersion": "3.7.2",
   "flutterRoot": "file:///C:/Users/asus/OneDrive/flutter",

@@ -42,7 +42,7 @@ class ProjectBidding {
     return [];
   }
 
-  Future<void> finalizeBidding(String projectId) async {
+  Future<void> durationBidding(String projectId) async {
     final bids = await supabase
         .from('Bids')
         .select()
@@ -65,7 +65,7 @@ class ProjectBidding {
 
     await supabase.from('Projects').update({
       'status': 'active',
-      'accepted_bid_id': bidWinnerId,
+      'bid_id': bidWinnerId,
       'contractor_id': contractorId,
     }).eq('project_id', projectId);
 
@@ -76,8 +76,63 @@ class ProjectBidding {
 
     await supabase
         .from('Bids')
-        .update({'status': 'accepted'}).eq('bid_id', bidWinnerId);
+        .update({'status': 'active'}).eq('bid_id', bidWinnerId);
   }
+
+  Future<void> acceptBidding(String projectId, String bidId) async {
+    final bidResponse =
+        await supabase
+          .from('Bids')
+          .select()
+          .eq('bid_id', bidId)
+          .single();
+
+    if (bidResponse.isEmpty) return;
+
+    final contractorId = bidResponse['contractor_id'];
+
+    final projectResponse = await supabase
+        .from('Projects')
+        .select()
+        .eq('project_id', projectId)
+        .single();
+
+    if (projectResponse.isEmpty) return;
+
+    await supabase.from('Projects')
+      .update({
+        'status': 'active',
+        'bid_id': bidId,
+        'contractor_id': contractorId,
+      }).eq('project_id', projectId);
+
+    final allBids =
+        await supabase
+          .from('Bids')
+          .select()
+          .eq('project_id', projectId);
+
+    final losingBidIds = allBids
+        .where((bid) => bid['bid_id'] != bidId)
+        .map((bid) => bid['bid_id'])
+        .toList();
+
+    if (losingBidIds.isNotEmpty) {
+      await supabase.from('Bids').delete().inFilter('bid_id', losingBidIds);
+    }
+
+    await supabase
+        .from('Projects')
+        .update({'status': 'active'})
+        .eq('bid_id', bidId);
+  }
+
+Future<void> deleteBid(String bidId) async {
+    await supabase
+      .from('Bids')
+      .delete()
+      .eq('bid_id', bidId);
+}
 
   Duration getRemainingDuration(DateTime createdAt, int durationInDays) {
     final endTime = createdAt.add(Duration(days: durationInDays));

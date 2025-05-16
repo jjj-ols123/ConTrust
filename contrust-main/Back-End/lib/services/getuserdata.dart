@@ -2,7 +2,6 @@
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-//get user id
 class GetUserId {
   Future<String?> getContractorId() async {
     final user = Supabase.instance.client.auth.currentUser;
@@ -14,7 +13,7 @@ class GetUserId {
           .eq('contractor_id', user.id)
           .maybeSingle();
 
-      return response?['contractor_id'] as String?;
+      return response?['contractor_id'].toString();
     } catch (error) {
       return null;
     }

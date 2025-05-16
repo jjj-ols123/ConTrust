@@ -5,14 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
-class Ongoingproject extends StatefulWidget {
-  const Ongoingproject({super.key});
+class OngoingProjectScreen extends StatefulWidget {
+  const OngoingProjectScreen({super.key});
 
   @override
   _OngoingProjectScreenState createState() => _OngoingProjectScreenState();
 }
 
-class _OngoingProjectScreenState extends State<OngoingProgressScreen> {
+class _OngoingProjectScreenState extends State<OngoingProjectScreen> {
   void _showInventoryPanel() {
     showDialog(
       context: context,

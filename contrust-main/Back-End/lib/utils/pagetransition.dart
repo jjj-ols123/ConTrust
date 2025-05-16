@@ -56,7 +56,7 @@ Widget getScreenFromRoute(BuildContext context, String route, {Object? arguments
       
     // Contractor Pages
     case '/ongoingproject':
-      return OngoingProgressScreen();
+      return OngoingProjectScreen();
     case '/bidding':
       return BiddingScreen();
     case '/clienthistory':
