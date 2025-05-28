@@ -2,7 +2,7 @@
 
 
 import 'package:backend/utils/validatefields.dart';
-import 'package:contractor/services/signupcontractor_bloc.dart';
+import 'package:contractor/services/cor_signup.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 

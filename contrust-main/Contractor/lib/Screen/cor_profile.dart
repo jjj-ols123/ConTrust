@@ -3,7 +3,7 @@
 import 'package:backend/models/appbar.dart';
 import 'package:backend/services/getuserdata.dart';
 import 'package:backend/utils/pagetransition.dart';
-import 'package:contractor/Screen/editprofile.dart';
+import 'package:contractor/Screen/cor_editprofile.dart';
 import 'package:backend/services/userprofile.dart';
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
@@ -29,6 +29,9 @@ class _ContractorUserProfileScreenState
   List<Uint8List> pastProjects = [];
   String? profileImage;
 
+  static const String profileUrl =
+      'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
+
   @override
   void initState() {
     super.initState();
@@ -45,7 +48,7 @@ class _ContractorUserProfileScreenState
         firmName = contractorData['firm_name'] ?? "No firm name";
         bio = contractorData['bio'] ?? "No bio available";
         rating = contractorData['rating'] ?? 4.5;
-        profileImage = contractorData['profile_photo'] ?? 'defaultpic.png';
+        profileImage = contractorData['profile_photo'];
       });
     } else {
       if (mounted) {
@@ -100,36 +103,9 @@ class _ContractorUserProfileScreenState
                             CircleAvatar(
                               radius: 50,
                               backgroundColor: Colors.grey.shade300,
-                              child:
-                                  profileImage != null &&
-                                          profileImage!.isNotEmpty
-                                      ? ClipRRect(
-                                        borderRadius: BorderRadius.circular(50),
-                                        child: Image.network(
-                                          profileImage!,
-                                          width: 100,
-                                          height: 100,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (
-                                            context,
-                                            error,
-                                            stackTrace,
-                                          ) {
-                                            return Image.asset(
-                                              'defaultpic.png',
-                                              width: 100,
-                                              height: 100,
-                                              fit: BoxFit.cover,
-                                            );
-                                          },
-                                        ),
-                                      )
-                                      : Image.asset(
-                                        'defaultpic.png',
-                                        width: 100,
-                                        height: 100,
-                                        fit: BoxFit.cover,
-                                      ),
+                              backgroundImage: (profileImage != null && profileImage!.isNotEmpty)
+                                  ? NetworkImage(profileImage!)
+                                  : NetworkImage(profileUrl),
                             ),
                             SizedBox(height: 10),
                             Text(

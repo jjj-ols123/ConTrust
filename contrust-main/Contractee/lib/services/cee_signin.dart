@@ -2,7 +2,7 @@
 
 import 'package:backend/services/auth_service.dart';
 import 'package:backend/utils/pagetransition.dart';
-import 'package:contractee/pages/home_page.dart';
+import 'package:contractee/pages/cee_home.dart';
 import 'package:flutter/material.dart';
 
 class SignInContractee {

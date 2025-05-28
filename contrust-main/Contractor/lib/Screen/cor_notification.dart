@@ -1,19 +1,19 @@
 import 'package:backend/services/getuserdata.dart';
 import 'package:backend/services/notification.dart';
-import 'package:contractee/models/notification_model.dart';
+import 'package:backend/models/notificationmodal.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-class ContracteeNotificationPage extends StatefulWidget {
-  const ContracteeNotificationPage({super.key});
+class ContractorNotificationPage extends StatefulWidget {
+  const ContractorNotificationPage({super.key});
 
   @override
-  State<ContracteeNotificationPage> createState() =>
-      _ContracteeNotificationPageState();
+  State<ContractorNotificationPage> createState() =>
+      _ContractorNotificationPageState();
 }
 
-class _ContracteeNotificationPageState
-    extends State<ContracteeNotificationPage> {
+class _ContractorNotificationPageState
+    extends State<ContractorNotificationPage> {
   final NotificationService notificationService = NotificationService();
   String? contracteeId;
 
@@ -24,16 +24,14 @@ class _ContracteeNotificationPageState
   }
 
   Future<void> initReceiverId() async {
-    final id = await GetUserId().getContracteeId();
+    final id = await GetUserId().getContractorId();
     setState(() => contracteeId = id);
   }
 
   @override
   Widget build(BuildContext context) {
     if (contracteeId == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     return Scaffold(
@@ -43,11 +41,6 @@ class _ContracteeNotificationPageState
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: notificationService.listenNotification(contracteeId!),
         builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(
-              child: Text('Error loading notifications: ${snapshot.error}'),
-            );
-          }
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -58,9 +51,8 @@ class _ContracteeNotificationPageState
           final notifications =
               snapshot.data!.map((e) => NotificationModel.fromMap(e)).toList();
 
-          return ListView.separated(
+          return ListView.builder(
             itemCount: notifications.length,
-            separatorBuilder: (context, index) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final notif = notifications[index];
               return ListTile(

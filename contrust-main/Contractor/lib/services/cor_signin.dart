@@ -1,7 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:backend/services/auth_service.dart';
-import 'package:backend/utils/pagetransition.dart';
+import 'package:contractor/Screen/cor_dashboard.dart';
 import 'package:flutter/material.dart';
 
 class SignInContractor {
@@ -30,7 +30,7 @@ class SignInContractor {
             backgroundColor: Colors.red,
           ),
         );
-        return;
+        return; 
       }
 
       final userType = signInResponse.user?.userMetadata?['user_type'];
@@ -52,9 +52,12 @@ class SignInContractor {
         ),
       );
 
-      Future.delayed(const Duration(milliseconds: 1000), () {
-        transitionBuilder(context, getScreenFromRoute(context, '/dashboard'), replace: true);
-
+      Future.delayed(const Duration(milliseconds: 500), () {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => DashboardScreen()),
+          (route) => false,
+        );
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

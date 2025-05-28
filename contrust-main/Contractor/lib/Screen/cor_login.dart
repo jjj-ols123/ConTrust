@@ -2,8 +2,8 @@
 
 
 import 'package:backend/utils/pagetransition.dart';
-import 'package:contractor/Screen/Registerscreen.dart';
-import 'package:contractor/Screen/logginginscreen.dart';
+import 'package:contractor/Screen/cor_registration.dart';
+import 'package:contractor/Screen/cor_startup.dart';
 import 'package:flutter/material.dart';
 
 class LoginScreen extends StatelessWidget {

@@ -10,8 +10,8 @@ import 'package:backend/services/projectbidding.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:contractor/Screen/dashboardscreen.dart';
-import 'package:contractor/Screen/productpanel.dart';
+import 'package:contractor/Screen/cor_dashboard.dart';
+import 'package:contractor/Screen/cor_product.dart';
 
 class BiddingScreen extends StatefulWidget {
   const BiddingScreen({super.key});
@@ -209,6 +209,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
     final TextEditingController messageController = TextEditingController();
 
     showDialog(
+      barrierDismissible: true,
       context: context,
       builder:
           (context) => AlertDialog(

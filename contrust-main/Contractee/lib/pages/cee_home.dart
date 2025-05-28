@@ -1,6 +1,6 @@
 
 import 'package:backend/models/appbar.dart';
-import 'package:contractee/models/modalsheet.dart';
+import 'package:contractee/models/cee_modal.dart';
 import 'package:backend/services/projectbidding.dart';
 import 'package:backend/services/fetchmethods.dart';
 import 'package:backend/models/buildmethods.dart';

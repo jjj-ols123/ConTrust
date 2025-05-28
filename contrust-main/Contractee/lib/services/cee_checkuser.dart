@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:contractee/pages/login_page.dart'; 
+import 'package:contractee/pages/cee_login.dart'; 
 
 class CheckUserLogin {
   static void isLoggedIn({

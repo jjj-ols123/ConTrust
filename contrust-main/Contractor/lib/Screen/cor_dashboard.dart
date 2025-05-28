@@ -3,6 +3,7 @@
 import 'package:backend/models/appbar.dart';
 import 'package:backend/services/getuserdata.dart';
 import 'package:backend/utils/pagetransition.dart';
+import 'package:contractor/Screen/cor_chathistory.dart';
 import 'package:flutter/material.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -14,6 +15,7 @@ class DashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: ConTrustAppBar(headline: "Home"),
+      drawer: const MenuDrawer(),
       body: Padding(
         padding: const EdgeInsets.all(10),
         child: Column(
@@ -51,11 +53,43 @@ class DashboardScreen extends StatelessWidget {
                     ),
                     itemCount: dashboardItems.length,
                     itemBuilder: (context, index) {
-                      return _dashboardCard(
-                        context,
-                        dashboardItems[index]['title']!,
-                        dashboardItems[index]['imagePath']!,
-                        dashboardItems[index]['route']!,
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(10),
+                        onTap: () async {
+                          final item = dashboardItems[index];
+                          if (item['title'] == 'User Profile') {
+                            String? contractorId = await getUserId.getContractorId();
+                            transitionBuilder(
+                              context,
+                              getScreenFromRoute(context, item['route'], arguments: contractorId),
+                            );
+                          } else {
+                            transitionBuilder(
+                              context,
+                              getScreenFromRoute(context, item['route']),
+                            );
+                          }
+                        },
+                        child: Card(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                dashboardItems[index]['icon'],
+                                size: 60,
+                                color: Colors.amber[700],
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                dashboardItems[index]['title'],
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       );
                     },
                   );
@@ -65,6 +99,20 @@ class DashboardScreen extends StatelessWidget {
           ],
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'contractorMessageButton',
+        backgroundColor: Colors.amber[700],
+        foregroundColor: Colors.black,
+        hoverColor: Colors.amber[800],
+        child: const Icon(Icons.message),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => ContractorChatHistoryPage()),
+          );
+        },
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -100,79 +148,11 @@ class DashboardScreen extends StatelessWidget {
       },
     );
   }
-
-  Widget _dashboardCard(
-    BuildContext context,
-    String title,
-    String imagePath,
-    String route,
-  ) {
-    bool isHovered = false;
-    return StatefulBuilder(
-      builder: (context, setState) {
-        return MouseRegion(
-          onEnter: (_) => setState(() => isHovered = true),
-          onExit: (_) => setState(() => isHovered = false),
-          child: GestureDetector(
-            onTap: () async {
-              if (title == 'User Profile') {
-                String? contractorId = await getUserId.getContractorId();
-                transitionBuilder(context, getScreenFromRoute(context, route, arguments: contractorId));
-              } else {
-                transitionBuilder(context, getScreenFromRoute(context, route));
-              }
-            },
-            child: AnimatedContainer(
-              duration: Duration(milliseconds: 200),
-              constraints: BoxConstraints(maxWidth: 300),
-              decoration: BoxDecoration(
-                color:
-                    isHovered ? Colors.amber.shade300 : Colors.amber.shade100,
-                borderRadius: BorderRadius.circular(10),
-                boxShadow:
-                    isHovered
-                        ? [BoxShadow(color: Colors.black45, blurRadius: 8)]
-                        : [],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Image.asset(
-                    imagePath,
-                    width: 80,
-                    height: 80,
-                    fit: BoxFit.contain,
-                  ),
-                  SizedBox(height: 5),
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
 }
 
-final List<Map<String, String>> dashboardItems = [
-  {'title': 'User Profile', 'imagePath': 'user.png', 'route': '/profile'},
-  {
-    'title': 'Ongoing Projects',
-    'imagePath': 'ongoing.png',
-    'route': '/ongoingproject',
-  },
-  {'title': 'Bidding', 'imagePath': 'bidding.png', 'route': '/bidding'},
-  {
-    'title': 'Client History',
-    'imagePath': 'history.png',
-    'route': '/clienthistory',
-  },
+final List<Map<String, dynamic>> dashboardItems = [
+  {'title': 'User Profile', 'icon': Icons.person, 'route': '/profile'},
+  {'title': 'Ongoing Projects', 'icon': Icons.work, 'route': '/ongoingproject'},
+  {'title': 'Bidding', 'icon': Icons.gavel, 'route': '/bidding'},
+  {'title': 'Client History', 'icon': Icons.history, 'route': '/clienthistory'},
 ];

@@ -1,9 +1,9 @@
-// ignore_for_file: library_private_types_in_public_api
+// ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
 
 import 'package:backend/models/appbar.dart';
 import 'package:backend/services/fetchmethods.dart';
 import 'package:backend/services/userprofile.dart';
-import 'package:contractee/pages/message_page.dart';
+import 'package:contractee/pages/cee_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -106,10 +106,32 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
     final messageButton = IconButton(
       icon: const Icon(Icons.message, color: Colors.black),
       tooltip: 'Message Contractor',
-      onPressed: () {
-        final currentUserId =
-            Supabase.instance.client.auth.currentUser?.id ?? '';
-        final chatRoomId = '${widget.contractorId}_$currentUserId';
+      onPressed: () async {
+        final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
+        final supabase = Supabase.instance.client;
+
+        final existing = await supabase
+            .from('ChatRoom')
+            .select('chatroom_id')
+            .eq('contractor_id', widget.contractorId)
+            .eq('contractee_id', currentUserId)
+            .maybeSingle();
+
+        String chatRoomId;
+        if (existing != null && existing['chatroom_id'] != null) {
+          chatRoomId = existing['chatroom_id'];
+        } else {
+          final response = await supabase
+              .from('ChatRoom')
+              .insert({
+                'contractor_id': widget.contractorId,
+                'contractee_id': currentUserId,
+              })
+              .select('chatroom_id')
+              .single();
+          chatRoomId = response['chatroom_id'];
+        }
+
         Navigator.push(
           context,
           MaterialPageRoute(

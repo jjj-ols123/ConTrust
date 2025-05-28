@@ -50,20 +50,35 @@ class FetchClass {
     }
   }
 
- Future<List<Map<String, dynamic>>> fetchActiveProjects() async {
-  try {
-    final userId = supabase.auth.currentUser?.id;
-    if (userId == null) return [];
-    final response = await supabase
-        .from('Projects')
-        .select(
-          'project_id, type, description, duration, min_budget, max_budget, created_at, status, contractee:Contractee(full_name)',
-        )
-        .eq('contractor_id', userId)
-        .eq('status', 'active');
-    return List<Map<String, dynamic>>.from(response);
-  } catch (e) {
-    return [];
+  Future<List<Map<String, dynamic>>> fetchActiveProjects() async {
+    try {
+      final userId = supabase.auth.currentUser?.id;
+      if (userId == null) return [];
+      final response = await supabase
+          .from('Projects')
+          .select(
+            'project_id, type, description, duration, min_budget, max_budget, created_at, status, contractee:Contractee(full_name)',
+          )
+          .eq('contractor_id', userId)
+          .eq('status', 'active');
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      return [];
+    }
   }
-}
+
+  Future<List<Map<String, dynamic>>> fetchCompletedProjects() async {
+    try {
+      final userId = supabase.auth.currentUser?.id;
+      if (userId == null) return [];
+      final response = await supabase
+          .from('Projects')
+          .select('project_id, type, description, status, contractee:Contractee(full_name)')
+          .eq('contractor_id', userId)
+          .eq('status', 'completed');
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      return [];
+    }
+  }
 }
