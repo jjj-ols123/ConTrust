@@ -1,11 +1,12 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:backend/services/projectbidding.dart';
-import 'package:contractee/models/expandable_button.dart';
-import 'package:contractee/models/modalsheet.dart';
+import 'package:contractee/models/cee_expandable.dart';
+import 'package:contractee/models/cee_modal.dart';
+import 'package:contractee/pages/cee_chathistory.dart';
+import 'package:contractee/pages/cee_torprofile.dart';
 import 'package:flutter/material.dart';
-import 'package:contractee/services/checkuseracc.dart';
-import 'package:contractee/pages/contractor_profile.dart';
+import 'package:contractee/services/cee_checkuser.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ContractorsView extends StatelessWidget {
@@ -328,10 +329,10 @@ class ExpandableFloatingButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ExpandableFloating(
-      distance: 80.0,
+      distance: 120,
       children: [
         FloatingActionButton(
-          heroTag: 'mainButton',
+          heroTag: 'projectButton',
           onPressed: () async {
             try {
               CheckUserLogin.isLoggedIn(
@@ -383,6 +384,20 @@ class ExpandableFloatingButton extends StatelessWidget {
           foregroundColor: Colors.black,
           hoverColor: Colors.amber[800],
           child: const Icon(Icons.camera_alt, color: Colors.black),
+        ),
+        FloatingActionButton(
+          heroTag: 'messageButton',
+          backgroundColor: Colors.amber[700],
+          foregroundColor: Colors.black,
+          hoverColor: Colors.amber[800],
+          child: const Icon(Icons.message),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ContracteeChatHistoryPage()
+              ),
+            );
+          },
         ),
       ],
     );

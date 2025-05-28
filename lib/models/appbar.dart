@@ -5,12 +5,12 @@ import 'dart:async';
 import 'package:backend/services/getuserdata.dart';
 import 'package:backend/services/notification.dart';
 import 'package:backend/utils/pagetransition.dart';
-import 'package:contractee/pages/about_page.dart';
-import 'package:contractee/pages/buildingmaterial_page.dart';
-import 'package:contractee/pages/contractee_notification.dart';
-import 'package:contractee/pages/transaction_page.dart';
-import 'package:contractee/services/checkuseracc.dart';
-import 'package:contractor/Screen/contractornotification.dart';
+import 'package:contractee/pages/cee_about.dart';
+import 'package:contractee/pages/cee_materials.dart';
+import 'package:contractee/pages/cee_notification.dart';
+import 'package:contractee/pages/cee_transaction.dart';
+import 'package:contractee/services/cee_checkuser.dart';
+import 'package:contractor/Screen/cor_notification.dart';
 import 'package:flutter/material.dart';
 
 class ConTrustAppBar extends StatefulWidget implements PreferredSizeWidget {
@@ -77,12 +77,17 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
       backgroundColor: Colors.amber,
       centerTitle: true,
       automaticallyImplyLeading: true,
-      leading: Builder(
-        builder: (context) => IconButton(
-          icon: const Icon(Icons.menu, color: Colors.black),
-          onPressed: () => Scaffold.of(context).openDrawer(),
-        ),
-      ),
+      leading: Navigator.canPop(context)
+          ? IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.black),
+              onPressed: () => Navigator.of(context).pop(),
+            )
+          : Builder(
+              builder: (context) => IconButton(
+                icon: const Icon(Icons.menu, color: Colors.black),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
+            ),
       elevation: 4,
       title: Text(
         widget.headline,

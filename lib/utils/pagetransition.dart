@@ -1,19 +1,20 @@
 //contractee
-import 'package:contractee/pages/about_page.dart';
-import 'package:contractee/pages/buildingmaterial_page.dart';
-import 'package:contractee/pages/contractor_profile.dart';
-import 'package:contractee/pages/home_page.dart';
-import 'package:contractee/pages/transaction_page.dart';
+
 
 //contractor
-import 'package:contractor/Screen/bidding.dart';
-import 'package:contractor/Screen/clienthistory.dart';
-import 'package:contractor/Screen/dashboardscreen.dart';
-import 'package:contractor/Screen/logginginscreen.dart';
-import 'package:contractor/Screen/loginscreen.dart';
-import 'package:contractor/Screen/ongoingproject.dart';
-import 'package:contractor/Screen/productpanel.dart';
-import 'package:contractor/Screen/profilescreen.dart';
+import 'package:contractee/pages/cee_about.dart';
+import 'package:contractee/pages/cee_home.dart';
+import 'package:contractee/pages/cee_materials.dart';
+import 'package:contractee/pages/cee_torprofile.dart';
+import 'package:contractee/pages/cee_transaction.dart';
+import 'package:contractor/Screen/cor_bidding.dart';
+import 'package:contractor/Screen/cor_dashboard.dart';
+import 'package:contractor/Screen/cor_ongoing.dart';
+import 'package:contractor/Screen/cor_product.dart';
+import 'package:contractor/Screen/cor_profile.dart';
+import 'package:contractor/Screen/cor_clienthistory.dart';
+import 'package:contractor/Screen/cor_login.dart';
+import 'package:contractor/Screen/cor_startup.dart';
 import 'package:flutter/material.dart';
 
 
@@ -23,16 +24,14 @@ Future<void> transitionBuilder(
   bool replace = false, 
 }) async {
   final route = PageRouteBuilder(
-    transitionDuration: const Duration(milliseconds: 500),
+    transitionDuration: const Duration(milliseconds: 150), 
     pageBuilder: (context, animation, secondaryAnimation) => destination,
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       const begin = Offset(1.0, 0.0);
       const end = Offset.zero;
       const curve = Curves.easeInOut;
-
       var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
       var offsetAnimation = animation.drive(tween);
-
       return SlideTransition(position: offsetAnimation, child: child);
     },
   );
@@ -48,12 +47,11 @@ Widget getScreenFromRoute(BuildContext context, String route, {Object? arguments
   switch (route) {
     case '/profile':
       if (arguments == null || arguments is! String) {
-        return Scaffold(
-          body: Center(child: Text("Error: Contractor ID is missing")),
-        );
+
+        return DashboardScreen();
       }
       return ContractorUserProfileScreen(contractorId: arguments);
-      
+
     // Contractor Pages
     case '/ongoingproject':
       return OngoingProjectScreen();
@@ -81,9 +79,7 @@ Widget getScreenFromRoute(BuildContext context, String route, {Object? arguments
       return Buildingmaterial();  
     case '/contractorprofile':
       if (arguments == null || arguments is! String) {
-        return Scaffold(
-          body: Center(child: Text("Error: Contractor not found")),
-        );
+        return DashboardScreen();
       }
       return ContractorProfileScreen(contractorId: arguments);
 
