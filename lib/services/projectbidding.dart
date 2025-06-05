@@ -5,7 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class ProjectBidding {
   final supabase = Supabase.instance.client;
 
-  Future<Map<String, double>> highestBid() async {
+  Future<Map<String, double>> projectHighestBid() async {
     try {
       final response = await supabase
           .from('Bids')
@@ -29,20 +29,7 @@ class ProjectBidding {
     }
   }
 
-  Future<List<Map<String, dynamic>>> fetchBids(String projectId) async {
-    final response = await supabase
-        .from('Bids')
-        .select(
-            'bid_id, contractor_id, bid_amount, message, created_at, contractor:Contractor(firm_name, profile_photo)')
-        .eq('project_id', projectId)
-        .order('bid_amount', ascending: false);
-    if (response is List) {
-      return List<Map<String, dynamic>>.from(response);
-    }
-    return [];
-  }
-
-  Future<void> durationBidding(String projectId) async {
+  Future<void> projectDurationBidding(String projectId) async {
     final bids = await supabase
         .from('Bids')
         .select()
@@ -64,7 +51,7 @@ class ProjectBidding {
     if (projectResponse.isEmpty) return;
 
     await supabase.from('Projects').update({
-      'status': 'active',
+      'status': 'awaiting_contract',
       'bid_id': bidWinnerId,
       'contractor_id': contractorId,
     }).eq('project_id', projectId);
@@ -76,10 +63,10 @@ class ProjectBidding {
 
     await supabase
         .from('Bids')
-        .update({'status': 'active'}).eq('bid_id', bidWinnerId);
+        .update({'status': 'awaiting_contract'}).eq('bid_id', bidWinnerId);
   }
 
-  Future<void> acceptBidding(String projectId, String bidId) async {
+  Future<void> projectAcceptBidding(String projectId, String bidId) async {
     final bidResponse =
         await supabase
           .from('Bids')
@@ -101,7 +88,7 @@ class ProjectBidding {
 
     await supabase.from('Projects')
       .update({
-        'status': 'active',
+        'status': 'awaiting_contract',
         'bid_id': bidId,
         'contractor_id': contractorId,
       }).eq('project_id', projectId);
@@ -123,11 +110,11 @@ class ProjectBidding {
 
     await supabase
         .from('Projects')
-        .update({'status': 'active'})
+        .update({'status': 'awaiting_contract'})
         .eq('bid_id', bidId);
   }
 
-Future<void> deleteBid(String bidId) async {
+Future<void> projectDeleteBidding(String bidId) async {
     await supabase
       .from('Bids')
       .delete()

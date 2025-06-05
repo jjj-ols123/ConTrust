@@ -33,7 +33,7 @@ class ConTrustAppBar extends StatefulWidget implements PreferredSizeWidget {
 class _ConTrustAppBarState extends State<ConTrustAppBar> {
   StreamSubscription<List<Map<String, dynamic>>>? _notificationSub;
   final NotificationService notif = NotificationService();
-  final GetUserId getUserId = GetUserId();
+  final GetUserData getUserId = GetUserData();
   int _unreadCount = 0;
   String? _receiverId;
 
@@ -109,7 +109,7 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
                   onAuthenticated: () async {
                     if (!context.mounted) return;
 
-                    GetUserId getUserId = GetUserId();
+                    GetUserData getUserId = GetUserData();
                     String? userType = await getUserId.getCurrentUserType();
 
                     if (userType == null) {
