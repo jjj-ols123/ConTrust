@@ -134,21 +134,6 @@ class ProjectView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color statusColor;
-    switch ((project['status'] ?? '').toString().toLowerCase()) {
-      case 'active':
-        statusColor = Colors.green;
-        break;
-      case 'pending':
-        statusColor = Colors.orange;
-        break;
-      case 'closed':
-      case 'ended':
-        statusColor = Colors.redAccent;
-        break;
-      default:
-        statusColor = Colors.grey;
-    }
 
     return InkWell(
       onTap: onTap,
@@ -205,18 +190,17 @@ class ProjectView extends StatelessWidget {
                   const Icon(Icons.info_outline, size: 18, color: Colors.grey),
                   const SizedBox(width: 6),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.15),
+                      color: getStatusColor(project['status']).withOpacity(0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      "Status: ${project['status'] ?? 'Unknown'}",
+                      "Status: ${getStatusLabel(project['status'])}",
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: statusColor,
+                        color: getStatusColor(project['status']),
                       ),
                     ),
                   ),
@@ -304,6 +288,41 @@ class ProjectView extends StatelessWidget {
       ),
     );
   }
+
+  String getStatusLabel(String? status) {
+    switch ((status ?? '').toLowerCase()) {
+      case 'active':
+        return 'Active';
+      case 'pending':
+        return 'Pending';
+      case 'awaiting_contract':
+        return 'Awaiting for Contract';
+      case 'closed':
+        return 'Closed';
+      case 'ended':
+        return 'Ended';
+      default:
+        return 'Unknown';
+    }
+  }
+
+  Color getStatusColor(String? status) {
+  switch ((status ?? '').toLowerCase()) {
+    case 'active':
+      return Colors.green;
+    case 'pending':
+      return Colors.orange;
+    case 'awaiting_contract':
+      return Colors.blue;
+    case 'closed':
+      return Colors.redAccent;
+    case 'ended':
+      return Colors.grey;
+    default:
+      return Colors.grey;
+  }
+}
+
 }
 
 class ExpandableFloatingButton extends StatelessWidget {
@@ -379,7 +398,12 @@ class ExpandableFloatingButton extends StatelessWidget {
         ),
         FloatingActionButton(
           heroTag: 'cameraButton',
-          onPressed: () {},
+          onPressed: () {
+            CheckUserLogin.isLoggedIn(
+              context: context,
+              onAuthenticated: () async {},
+            );
+          },
           backgroundColor: Colors.amber[700],
           foregroundColor: Colors.black,
           hoverColor: Colors.amber[800],
@@ -392,10 +416,16 @@ class ExpandableFloatingButton extends StatelessWidget {
           hoverColor: Colors.amber[800],
           child: const Icon(Icons.message),
           onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => ContracteeChatHistoryPage()
-              ),
+            CheckUserLogin.isLoggedIn(
+              context: context,
+              onAuthenticated: () async {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ContracteeChatHistoryPage(),
+                  ),
+                );
+              },
             );
           },
         ),

@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 class DashboardScreen extends StatelessWidget {
   DashboardScreen({super.key});
 
-  final GetUserId getUserId = GetUserId();
+  final GetUserData getUserId = GetUserData();
 
   @override
   Widget build(BuildContext context) {

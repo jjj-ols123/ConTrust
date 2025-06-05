@@ -99,7 +99,6 @@ class _OngoingProjectScreenState extends State<OngoingProjectScreen> {
   }
 
   void _saveProjectInfo() {
-    // Here you can add logic to save the info to your backend if needed
     setState(() {
       isEditing = false;
     });

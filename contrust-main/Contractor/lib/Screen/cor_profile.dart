@@ -21,7 +21,7 @@ class ContractorUserProfileScreen extends StatefulWidget {
 class _ContractorUserProfileScreenState
     extends State<ContractorUserProfileScreen> {
   final UserService userService = UserService();
-  GetUserId getUserId = GetUserId();
+  GetUserData getUserId = GetUserData();
 
   String firmName = "Firm Name";
   String bio = "No Bio";

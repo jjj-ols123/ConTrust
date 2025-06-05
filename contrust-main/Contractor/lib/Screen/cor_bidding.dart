@@ -1,9 +1,9 @@
 // ignore_for_file: use_build_context_synchronously
 
-
 import 'package:backend/services/enterdata.dart';
 import 'package:backend/services/getuserdata.dart';
 import 'package:backend/services/notification.dart';
+import 'package:backend/utils/cor_cee_constraint.dart';
 import 'package:backend/utils/pagetransition.dart';
 import 'package:backend/utils/validatefields.dart';
 import 'package:backend/services/projectbidding.dart';
@@ -41,7 +41,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
       final response = await supabase
           .from('Projects')
           .select(
-            'project_id, type, description, duration, min_budget, max_budget, created_at',
+            'project_id, type, description, duration, min_budget, max_budget, created_at, contractee_id',
           );
 
       if (response.isNotEmpty) {
@@ -58,14 +58,11 @@ class _BiddingScreenState extends State<BiddingScreen> {
   }
 
   Future<void> fetchHighestBids() async {
-    final highestBidsData = await projectbidding.highestBid();
+    final highestBidsData = await projectbidding.projectHighestBid();
     setState(() {
       highestBids = highestBidsData;
     });
-
-    debugPrint("Highest Bids: $highestBids");
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -190,9 +187,14 @@ class _BiddingScreenState extends State<BiddingScreen> {
                               durationDays: project['duration'] ?? 0,
                               imagePath: 'kitchen.jpg',
                               highestBid: highestBid,
-                              createdAt: DateTime.parse(
-                                project['created_at'].toString(),
-                              )..toIso8601String(),
+                              createdAt:
+                                  (project['created_at'] != null &&
+                                          project['created_at']
+                                              .toString()
+                                              .isNotEmpty)
+                                      ? DateTime.parse(
+                                        project['created_at'].toString()).toLocal()
+                                      : DateTime.now(),
                             ),
                           );
                         },
@@ -333,6 +335,34 @@ class _BiddingScreenState extends State<BiddingScreen> {
                             foregroundColor: Colors.black,
                           ),
                           onPressed: () async {
+                            final contractorId =
+                                Supabase.instance.client.auth.currentUser?.id;
+                            final contracteeId = project['contractee_id'];
+
+                            if (contractorId == null || contracteeId == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Missing user IDs'),
+                                ),
+                              );
+                              return;
+                            }
+
+                            final alreadyBid = await hasAlreadyBid(
+                              contractorId,
+                              project['project_id'].toString(),
+                            );
+                            if (alreadyBid) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'You have already placed a bid on this project',
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+
                             final enterData = EnterDatatoDatabase();
                             final user =
                                 Supabase.instance.client.auth.currentUser?.id;
@@ -365,23 +395,20 @@ class _BiddingScreenState extends State<BiddingScreen> {
 
                               final NotificationService notif =
                                   NotificationService();
-                              final GetUserId getUser = GetUserId();
+                              final GetUserData getUser = GetUserData();
 
-                              final contracteeId = await getUser.getContracteeId();
+                              final contracteeId =
+                                  await getUser.getContracteeId();
 
                               await notif.createNotification(
                                 receiverId: contracteeId,
                                 receiverType: 'contractee',
                                 senderId: user,
                                 senderType: 'contractor',
-                                type:
-                                    'bid_placed',
+                                type: 'bid_placed',
                                 message:
                                     'New bid placed on your project: ${project['type']}',
-                                information: {
-                                  'bid_amount': bidAmountNum,
-                                  
-                                },
+                                information: {'bid_amount': bidAmountNum},
                               );
                             }
                           },
@@ -453,7 +480,10 @@ class _BiddingScreenState extends State<BiddingScreen> {
                         ),
                       ),
                       StreamBuilder<Duration>(
-                        stream: projectbidding.countdownStream(createdAt, durationDays),
+                        stream: projectbidding.countdownStream(
+                          createdAt,
+                          durationDays,
+                        ),
                         builder: (context, snapshot) {
                           if (!snapshot.hasData) {
                             return Text(
@@ -467,7 +497,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
                           if (remaining.isNegative &&
                               !_finalizedProjects.contains(projectId)) {
                             _finalizedProjects.add(projectId);
-                            projectbidding.durationBidding(projectId);
+                            projectbidding.projectDurationBidding(projectId);
                           }
 
                           if (remaining.isNegative) {

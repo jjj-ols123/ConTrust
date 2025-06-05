@@ -2,6 +2,7 @@
 // ignore_for_file: non_constant_identifier_names, use_build_context_synchronously, unnecessary_type_check, deprecated_member_use
 
 import 'package:backend/services/enterdata.dart';
+import 'package:backend/services/fetchmethods.dart';
 import 'package:backend/services/projectbidding.dart';
 import 'package:backend/utils/validatefields.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +20,16 @@ class ProjectModal {
     required TextEditingController descriptionController,
     required TextEditingController bidTimeController,
   }) async {
+    final List<String> constructionTypes = [
+      'House',
+      'Building',
+      'Renovation',
+      'Extension',
+      'Interior',
+      'Exterior',
+      'Other',
+    ];
+
     final startDateController = TextEditingController();
     final formKey = GlobalKey<FormState>();
     final enterData = EnterDatatoDatabase();
@@ -80,13 +91,27 @@ class ProjectModal {
                             const SizedBox(height: 8),
                             _buildLabeledField(
                               label: 'Type of Construction',
-                              child: TextFormField(
-                                controller: constructionTypeController,
+                              child: DropdownButtonFormField<String>(
+                                value: constructionTypeController.text.isNotEmpty
+                                    ? constructionTypeController.text
+                                    : null,
+                                items: constructionTypes
+                                    .map((type) => DropdownMenuItem(
+                                          value: type,
+                                          child: Text(type),
+                                        ))
+                                    .toList(),
+                                onChanged: (value) {
+                                  constructionTypeController.text = value ?? '';
+                                },
                                 decoration: const InputDecoration(
-                                  hintText:
-                                      'Enter construction type (e.g., House)',
+                                  hintText: 'Select construction type',
                                   border: OutlineInputBorder(),
                                 ),
+                                validator: (value) =>
+                                    (value == null || value.isEmpty)
+                                        ? 'Please select a type'
+                                        : null,
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -174,15 +199,51 @@ class ProjectModal {
                             const SizedBox(height: 16),
                             _buildLabeledField(
                               label: 'Bid Duration (in days)',
-                              child: TextFormField(
-                                controller: bidTimeController,
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
-                                  hintText: 'Enter number of days (1–30)',
-                                  border: OutlineInputBorder(),
-                                ),
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly,
+                              child: Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.remove),
+                                    onPressed: () {
+                                      int current =
+                                          int.tryParse(bidTimeController.text) ?? 1;
+                                      if (current > 1) {
+                                        current--;
+                                        bidTimeController.text = current.toString();
+                                      }
+                                    },
+                                  ),
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: bidTimeController,
+                                      keyboardType: TextInputType.number,
+                                      decoration: const InputDecoration(
+                                        hintText: 'Enter number of days (1–20)',
+                                        border: OutlineInputBorder(),
+                                      ),
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.digitsOnly,
+                                      ],
+                                      onChanged: (value) {
+                                        int? val = int.tryParse(value);
+                                        if (val == null || val < 1) {
+                                          bidTimeController.text = '1';
+                                        } else if (val > 20) {
+                                          bidTimeController.text = '20';
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.add),
+                                    onPressed: () {
+                                      int current =
+                                          int.tryParse(bidTimeController.text) ?? 1;
+                                      if (current < 20) {
+                                        current++;
+                                        bidTimeController.text = current.toString();
+                                      }
+                                    },
+                                  ),
                                 ],
                               ),
                             ),
@@ -299,7 +360,8 @@ class ProjectModal {
 class BidsModal {
   static const String profileUrl =
       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
-
+  static FetchClass fetchClass = FetchClass();
+  
   static Future<void> show({
     required BuildContext context,
     required String projectId,
@@ -310,11 +372,11 @@ class BidsModal {
     final projectBidding = ProjectBidding();
     String? acceptedBidId = initialAcceptedBidId;
     Future<List<Map<String, dynamic>>> bidsFuture =
-        projectBidding.fetchBids(projectId);
+        fetchClass.fetchBids(projectId);
 
     await showDialog(
       context: context,
-      barrierDismissible: false, 
+      barrierDismissible: false,
       builder: (context) {
         return Center(
           child: Material(
@@ -326,277 +388,280 @@ class BidsModal {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Stack(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 40.0),
-                    child: FutureBuilder<List<Map<String, dynamic>>>(
-                      future: bidsFuture,
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const SizedBox(
-                            height: 400,
-                            child: Center(child: CircularProgressIndicator()),
-                          );
-                        }
-                        if (snapshot.hasError) {
-                          return SizedBox(
-                            height: 400,
-                            child: Center(
-                              child:
-                                  Text('Error loading bids: ${snapshot.error}'),
-                            ),
-                          );
-                        }
-                        final bids = snapshot.data ?? [];
-                        if (bids.isEmpty) {
-                          return const SizedBox(
-                            height: 400,
-                            child: Center(
-                                child: Text('No bids for this project yet.')),
-                          );
-                        }
-                        return SizedBox(
-                          height: 500,
-                          child: ListView.separated(
-                            itemCount: bids.length,
-                            separatorBuilder: (context, index) =>
-                                const Divider(height: 1),
-                            itemBuilder: (context, index) {
-                              final bid = bids[index];
-                              final contractor = bid['contractor'] ?? {};
-                              final dynamic profilePhotoRaw =
-                                  contractor['profile_photo'];
-                              final String profilePhoto =
-                                  profilePhotoRaw is String
-                                      ? profilePhotoRaw
-                                      : profilePhotoRaw?.toString() ?? '';
-                              final firmName =
-                                  contractor['firm_name'] as String? ??
-                                      'Unknown Firm';
-                              final bidAmount = bid['bid_amount'] ?? 0;
-                              final message = bid['message'] as String? ?? '';
-                              final createdAtStr =
-                                  bid['created_at'] as String? ?? '';
-                              DateTime? createdAt;
-                              try {
-                                createdAt = DateTime.parse(createdAtStr);
-                              } catch (_) {
-                                createdAt = null;
-                              }
-                              final isAccepted = acceptedBidId == bid['bid_id'];
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 8),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    border: Border.all(
-                                        color: Colors.grey.shade800, width: 2),
-                                    borderRadius: BorderRadius.circular(14),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.1),
-                                        blurRadius: 6,
-                                        offset: const Offset(0, 3),
-                                      ),
-                                    ],
-                                  ),
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          CircleAvatar(
-                                            radius: 32,
-                                            backgroundImage:
-                                                profilePhoto.isNotEmpty
-                                                    ? NetworkImage(profilePhoto)
-                                                    : NetworkImage(profileUrl),
-                                          ),
-                                          const SizedBox(width: 16),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  firmName,
-                                                  style: const TextStyle(
-                                                    fontWeight: FontWeight.w700,
-                                                    fontSize: 18,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 6),
-                                                Text(
-                                                  'Bid Amount: ₱$bidAmount',
-                                                  style: const TextStyle(
-                                                    fontSize: 15,
-                                                    fontWeight: FontWeight.w500,
-                                                    color: Colors.black87,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 6),
-                                                Text(
-                                                  message,
-                                                  style: const TextStyle(
-                                                    fontSize: 14,
-                                                    color: Colors.black87,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 6),
-                                                Text(
-                                                  createdAt != null
-                                                      ? DateFormat.yMMMd()
-                                                          .add_jm()
-                                                          .format(createdAt)
-                                                      : '',
-                                                  style: const TextStyle(
-                                                    fontSize: 12,
-                                                    color: Colors.grey,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
+              child: StatefulBuilder(
+                builder: (context, setState) {
+                  return Stack(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 40.0),
+                        child: FutureBuilder<List<Map<String, dynamic>>>(
+                          future: bidsFuture,
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const SizedBox(
+                                height: 400,
+                                child: Center(child: CircularProgressIndicator()),
+                              );
+                            }
+                            if (snapshot.hasError) {
+                              return SizedBox(
+                                height: 400,
+                                child: Center(
+                                  child: Text('Error loading bids: ${snapshot.error}'),
+                                ),
+                              );
+                            }
+                            final bids = snapshot.data ?? [];
+                            if (bids.isEmpty) {
+                              return const SizedBox(
+                                height: 400,
+                                child: Center(
+                                    child: Text('No bids for this project yet.')),
+                              );
+                            }
+                            return SizedBox(
+                              height: 500,
+                              child: ListView.separated(
+                                itemCount: bids.length,
+                                separatorBuilder: (context, index) =>
+                                    const Divider(height: 1),
+                                itemBuilder: (context, index) {
+                                  final bid = bids[index];
+                                  final contractor = bid['contractor'] ?? {};
+                                  final dynamic profilePhotoRaw =
+                                      contractor['profile_photo'];
+                                  final String profilePhoto =
+                                      profilePhotoRaw is String
+                                          ? profilePhotoRaw
+                                          : profilePhotoRaw?.toString() ?? '';
+                                  final firmName =
+                                      contractor['firm_name'] as String? ??
+                                          'Unknown Firm';
+                                  final bidAmount = bid['bid_amount'] ?? 0;
+                                  final message = bid['message'] as String? ?? '';
+                                  final createdAtStr =
+                                      bid['created_at'] as String? ?? '';
+                                  final isAccepted = acceptedBidId == bid['bid_id'];
+                                  DateTime? createdAt;
+                                  if (createdAtStr.isNotEmpty) {
+                                    try {
+                                      createdAt = DateTime.parse(createdAtStr).toLocal();
+                                    } catch (_) {
+                                      createdAt = null;
+                                    }
+                                  }
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        border: Border.all(
+                                            color: Colors.grey.shade800, width: 2),
+                                        borderRadius: BorderRadius.circular(14),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.1),
+                                            blurRadius: 6,
+                                            offset: const Offset(0, 3),
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 12),
-                                      isAccepted
-                                          ? Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      vertical: 8,
-                                                      horizontal: 12),
-                                              decoration: BoxDecoration(
-                                                color: Colors.green.shade600,
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              CircleAvatar(
+                                                radius: 32,
+                                                backgroundImage:
+                                                    profilePhoto.isNotEmpty
+                                                        ? NetworkImage(profilePhoto)
+                                                        : NetworkImage(profileUrl),
                                               ),
-                                              child: const Text(
-                                                'Accepted Bid',
-                                                style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 16,
+                                              const SizedBox(width: 16),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      firmName,
+                                                      style: const TextStyle(
+                                                        fontWeight: FontWeight.w700,
+                                                        fontSize: 18,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 6),
+                                                    Text(
+                                                      'Bid Amount: ₱$bidAmount',
+                                                      style: const TextStyle(
+                                                        fontSize: 15,
+                                                        fontWeight: FontWeight.w500,
+                                                        color: Colors.black87,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 6),
+                                                    Text(
+                                                      message,
+                                                      style: const TextStyle(
+                                                        fontSize: 14,
+                                                        color: Colors.black87,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 6),
+                                                    Text(
+                                                      createdAt != null
+                                                          ? DateFormat.yMMMd().add_jm().format(createdAt)
+                                                          : '',
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                        color: Colors.grey,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
-                                            )
-                                          : Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.end,
-                                              children: [
-                                                TextButton(
-                                                  onPressed: () async {
-                                                    await projectBidding
-                                                        .deleteBid(
-                                                            bid['bid_id']);
-                                                    if (context.mounted) {
-                                                      bidsFuture =
-                                                          projectBidding
-                                                              .fetchBids(
-                                                                  projectId);
-                                                      (context as Element)
-                                                          .markNeedsBuild();
-                                                    }
-                                                  },
-                                                  style: TextButton.styleFrom(
-                                                    backgroundColor:
-                                                        Colors.red.shade700,
-                                                    foregroundColor:
-                                                        Colors.white,
-                                                    side: BorderSide(
-                                                        color:
+                                            ],
+                                          ),
+                                          const SizedBox(height: 12),
+                                          isAccepted
+                                              ? Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                          vertical: 8,
+                                                          horizontal: 12),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.green.shade600,
+                                                    borderRadius:
+                                                        BorderRadius.circular(8),
+                                                  ),
+                                                  child: const Text(
+                                                    'Accepted Bid',
+                                                    style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 16,
+                                                    ),
+                                                  ),
+                                                )
+                                              : Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.end,
+                                                  children: [
+                                                    TextButton(
+                                                      onPressed: () async {
+                                                        await projectBidding
+                                                            .projectDeleteBidding(
+                                                                bid['bid_id']);
+                                                        if (context.mounted) {
+                                                          setState(() {
+                                                            bidsFuture =
+                                                                fetchClass
+                                                                    .fetchBids(
+                                                                        projectId);
+                                                          });
+                                                        }
+                                                      },
+                                                      style: TextButton.styleFrom(
+                                                        backgroundColor:
                                                             Colors.red.shade700,
-                                                        width: 2),
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                        horizontal: 20,
-                                                        vertical: 12),
-                                                    shape:
-                                                        RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8),
+                                                        foregroundColor:
+                                                            Colors.white,
+                                                        side: BorderSide(
+                                                            color:
+                                                                Colors.red.shade700,
+                                                            width: 2),
+                                                        padding: const EdgeInsets
+                                                            .symmetric(
+                                                            horizontal: 20,
+                                                            vertical: 12),
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                        textStyle: const TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 16,
+                                                        ),
+                                                      ),
+                                                      child: const Text('Reject'),
                                                     ),
-                                                    textStyle: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 16,
+                                                    const SizedBox(width: 12),
+                                                    ElevatedButton(
+                                                      onPressed: () async {
+                                                        await acceptBidding(
+                                                            projectId,
+                                                            bid['bid_id']);
+                                                        if (context.mounted) {
+                                                          acceptedBidId =
+                                                              bid['bid_id'];
+                                                          setState(() {
+                                                            bidsFuture =
+                                                                fetchClass
+                                                                    .fetchBids(
+                                                                        projectId);
+                                                          });
+                                                        }
+                                                      },
+                                                      style:
+                                                          ElevatedButton.styleFrom(
+                                                        backgroundColor:
+                                                            Colors.green.shade700,
+                                                        side: BorderSide(
+                                                            color: Colors
+                                                                .green.shade700,
+                                                            width: 2),
+                                                        foregroundColor:
+                                                            Colors.white,
+                                                        padding: const EdgeInsets
+                                                            .symmetric(
+                                                            horizontal: 20,
+                                                            vertical: 12),
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                        textStyle: const TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 16,
+                                                        ),
+                                                      ),
+                                                      child: const Text('Accept'),
                                                     ),
-                                                  ),
-                                                  child: const Text('Reject'),
+                                                  ],
                                                 ),
-                                                const SizedBox(width: 12),
-                                                ElevatedButton(
-                                                  onPressed: () async {
-                                                    await acceptBidding(
-                                                        projectId,
-                                                        bid['bid_id']);
-                                                    if (context.mounted) {
-                                                      acceptedBidId =
-                                                          bid['bid_id'];
-                                                      bidsFuture =
-                                                          projectBidding
-                                                              .fetchBids(
-                                                                  projectId);
-                                                      (context as Element)
-                                                          .markNeedsBuild();
-                                                    }
-                                                  },
-                                                  style:
-                                                      ElevatedButton.styleFrom(
-                                                    backgroundColor:
-                                                        Colors.green.shade700,
-                                                    side: BorderSide(
-                                                        color: Colors
-                                                            .green.shade700,
-                                                        width: 2),
-                                                    foregroundColor:
-                                                        Colors.white,
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                        horizontal: 20,
-                                                        vertical: 12),
-                                                    shape:
-                                                        RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8),
-                                                    ),
-                                                    textStyle: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 16,
-                                                    ),
-                                                  ),
-                                                  child: const Text('Accept'),
-                                                ),
-                                              ],
-                                            ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: IconButton(
-                      icon: const Icon(Icons.close, size: 28),
-                      onPressed: () => Navigator.of(context).pop(),
-                      tooltip: 'Close',
-                    ),
-                  ),
-                ],
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            );
+                          }
+                        ),
+                      ),
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: IconButton(
+                          icon: const Icon(Icons.close, size: 28),
+                          onPressed: () => Navigator.of(context).pop(),
+                          tooltip: 'Close',
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),

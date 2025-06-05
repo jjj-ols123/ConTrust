@@ -24,7 +24,7 @@ class _ContractorNotificationPageState
   }
 
   Future<void> initReceiverId() async {
-    final id = await GetUserId().getContractorId();
+    final id = await GetUserData().getContractorId();
     setState(() => contracteeId = id);
   }
 

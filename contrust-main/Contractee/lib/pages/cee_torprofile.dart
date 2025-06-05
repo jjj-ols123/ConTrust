@@ -3,6 +3,7 @@
 import 'package:backend/models/appbar.dart';
 import 'package:backend/services/fetchmethods.dart';
 import 'package:backend/services/userprofile.dart';
+import 'package:backend/utils/cor_cee_constraint.dart';
 import 'package:contractee/pages/cee_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -28,6 +29,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
   String? profileImage;
   bool isLoading = true;
   bool isHiring = false;
+  bool canChat = false;
 
   static const String profileUrl =
       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
@@ -36,6 +38,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
   void initState() {
     super.initState();
     _loadContractorData();
+    _checkProjectStatus();
   }
 
   Future<void> _loadContractorData() async {
@@ -68,6 +71,12 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
       }
       setState(() => isLoading = false);
     }
+  }
+
+  Future<void> _checkProjectStatus() async {
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    canChat = await functionConstraint(widget.contractorId, currentUserId);
+    setState(() {});
   }
 
   Future<void> _hireContractor() async {
@@ -107,7 +116,17 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
       icon: const Icon(Icons.message, color: Colors.black),
       tooltip: 'Message Contractor',
       onPressed: () async {
-        final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
+        if (!canChat) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'You should have a project with this contractor to chat.'),
+            ),
+          );
+          return;
+        }
+        final currentUserId =
+            Supabase.instance.client.auth.currentUser?.id ?? '';
         final supabase = Supabase.instance.client;
 
         final existing = await supabase

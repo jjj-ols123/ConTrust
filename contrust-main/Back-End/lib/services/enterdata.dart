@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:backend/services/getuserdata.dart';
 
 class EnterDatatoDatabase {
   final SupabaseClient _supabase = Supabase.instance.client;
+  final GetUserData _getUserData = GetUserData();
 
   Future<void> postProject({
     required String contracteeId,
@@ -17,7 +19,7 @@ class EnterDatatoDatabase {
   }) async {
     try {
 
-      await checkContracteeId(contracteeId);
+      await _getUserData.checkContracteeId(contracteeId);
 
       await _supabase.from('Projects').upsert({
         'contractee_id': contracteeId,
@@ -63,7 +65,7 @@ class EnterDatatoDatabase {
     required BuildContext context,
   }) async {
     try {
-      await checkContractorId(contractorId);
+      await _getUserData.checkContractorId(contractorId);
 
       await _supabase.from('Bids').upsert({
         'contractor_id': contractorId,
@@ -96,30 +98,6 @@ class EnterDatatoDatabase {
         }
       }
       rethrow;
-    }
-  }
-
-  Future<void> checkContracteeId(String userId) async {
-    final response = await _supabase
-        .from('Contractee')
-        .select()
-        .eq('contractee_id', userId)
-        .maybeSingle();
-
-    if (response == null) {
-      throw Exception('Contractee not found');
-    }
-  }
-
-   Future<void> checkContractorId(String userId) async {
-    final response = await _supabase
-        .from('Contractor')
-        .select()
-        .eq('contractor_id', userId)
-        .maybeSingle();
-
-    if (response == null) {
-      throw Exception('Contractor not found');
     }
   }
 }

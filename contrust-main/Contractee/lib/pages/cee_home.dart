@@ -1,4 +1,3 @@
-
 import 'package:backend/models/appbar.dart';
 import 'package:contractee/models/cee_modal.dart';
 import 'package:backend/services/projectbidding.dart';
@@ -73,7 +72,7 @@ class _HomePageState extends State<HomePage> {
 
   void _loadAcceptBidding(String projectId, String bidId) async {
     try {
-      await projectbidding.acceptBidding(projectId, bidId);
+      await projectbidding.projectAcceptBidding(projectId, bidId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Bid has been accepted successfully.')),
@@ -136,9 +135,10 @@ class _HomePageState extends State<HomePage> {
                             itemBuilder: (context, index) {
                               final contractor = contractors[index];
                               final profilePhoto = contractor['profile_photo'];
-                              final profileImage = (profilePhoto == null || profilePhoto.isEmpty)
-                                  ? profileUrl
-                                  : profilePhoto;
+                              final profileImage =
+                                  (profilePhoto == null || profilePhoto.isEmpty)
+                                      ? profileUrl
+                                      : profilePhoto;
                               return ContractorsView(
                                 id: contractor['contractor_id'] ?? '',
                                 name: contractor['firm_name'] ?? 'Unknown',
@@ -208,7 +208,7 @@ class _HomePageState extends State<HomePage> {
                                 );
                               },
                               handleFinalizeBidding: (bidId) {
-                                return projectbidding.acceptBidding(
+                                return projectbidding.projectAcceptBidding(
                                   projectId,
                                   bidId,
                                 );

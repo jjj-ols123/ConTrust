@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_type_check
+
 import 'package:backend/services/projectbidding.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -33,7 +35,7 @@ class FetchClass {
   }
 
   Future<Map<String, double>> fetchHighestBids() async {
-    final highestBidsData = await projectbidding.highestBid();
+    final highestBidsData = await projectbidding.projectHighestBid();
     return highestBidsData;
   }
 
@@ -81,4 +83,18 @@ class FetchClass {
       return [];
     }
   }
+
+  Future<List<Map<String, dynamic>>> fetchBids(String projectId) async {
+    final response = await supabase
+        .from('Bids')
+        .select(
+            'bid_id, contractor_id, bid_amount, message, created_at, contractor:Contractor(firm_name, profile_photo)')
+        .eq('project_id', projectId)
+        .order('bid_amount', ascending: false);
+    if (response is List) {
+      return List<Map<String, dynamic>>.from(response);
+    }
+    return [];
+  }
+  
 }

@@ -2,7 +2,10 @@
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class GetUserId {
+class GetUserData {
+
+  SupabaseClient get _supabase => Supabase.instance.client;
+
   Future<String?> getContractorId() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return null;
@@ -47,4 +50,29 @@ class GetUserId {
     final type = user?.userMetadata?['user_type'];
     return type?.toString();
   }
+
+  Future<void> checkContracteeId(String userId) async {
+    final response = await _supabase
+        .from('Contractee')
+        .select()
+        .eq('contractee_id', userId)
+        .maybeSingle();
+
+    if (response == null) {
+      throw Exception('Contractee not found');
+    }
+  }
+
+   Future<void> checkContractorId(String userId) async {
+    final response = await _supabase
+        .from('Contractor')
+        .select()
+        .eq('contractor_id', userId)
+        .maybeSingle();
+
+    if (response == null) {
+      throw Exception('Contractor not found');
+    }
+  }
+
 }
