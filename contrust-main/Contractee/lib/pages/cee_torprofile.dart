@@ -129,22 +129,43 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
             Supabase.instance.client.auth.currentUser?.id ?? '';
         final supabase = Supabase.instance.client;
 
-        final existing = await supabase
+        final project = await supabase
+            .from('Projects')
+            .select('project_id')
+            .eq('contractor_id', widget.contractorId)
+            .eq('contractee_id', currentUserId)
+            .order('created_at', ascending: false)
+            .maybeSingle();
+
+        final projectId = project?['project_id'];
+        if (projectId == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No project found for this chat.')),
+          );
+          return;
+        }
+
+        // Check if chatroom already exists
+        final existingChatroom = await supabase
             .from('ChatRoom')
             .select('chatroom_id')
             .eq('contractor_id', widget.contractorId)
             .eq('contractee_id', currentUserId)
+            .eq('project_id', projectId)
             .maybeSingle();
 
         String chatRoomId;
-        if (existing != null && existing['chatroom_id'] != null) {
-          chatRoomId = existing['chatroom_id'];
+        if (existingChatroom != null) {
+          // Use existing chatroom
+          chatRoomId = existingChatroom['chatroom_id'];
         } else {
+          // Create new chatroom
           final response = await supabase
               .from('ChatRoom')
               .insert({
                 'contractor_id': widget.contractorId,
                 'contractee_id': currentUserId,
+                'project_id': projectId,
               })
               .select('chatroom_id')
               .single();

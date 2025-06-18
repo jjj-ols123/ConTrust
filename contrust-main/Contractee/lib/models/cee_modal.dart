@@ -365,12 +365,11 @@ class BidsModal {
   static Future<void> show({
     required BuildContext context,
     required String projectId,
-    required Future<void> Function(String projectId, String bidId)
-        acceptBidding,
+    required Future<void> Function(String projectId, String bidId) acceptBidding,
     String? initialAcceptedBidId,
   }) async {
     final projectBidding = ProjectBidding();
-    String? acceptedBidId = initialAcceptedBidId;
+    String? acceptedBidId = initialAcceptedBidId; 
     Future<List<Map<String, dynamic>>> bidsFuture =
         fetchClass.fetchBids(projectId);
 
@@ -451,6 +450,7 @@ class BidsModal {
                                       createdAt = null;
                                     }
                                   }
+
                                   return Padding(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 16, vertical: 8),
@@ -600,13 +600,12 @@ class BidsModal {
                                                             projectId,
                                                             bid['bid_id']);
                                                         if (context.mounted) {
-                                                          acceptedBidId =
-                                                              bid['bid_id'];
                                                           setState(() {
+                                                            acceptedBidId =
+                                                                bid['bid_id']; 
                                                             bidsFuture =
-                                                                fetchClass
-                                                                    .fetchBids(
-                                                                        projectId);
+                                                                fetchClass.fetchBids(
+                                                                    projectId);
                                                           });
                                                         }
                                                       },
@@ -668,5 +667,57 @@ class BidsModal {
         );
       },
     );
+  }
+}
+
+class _DialogLifecycleWatcher extends StatefulWidget {
+  final Widget child;
+
+  const _DialogLifecycleWatcher({required this.child});
+
+  @override
+  __DialogLifecycleWatcherState createState() => __DialogLifecycleWatcherState();
+}
+
+class __DialogLifecycleWatcherState extends State<_DialogLifecycleWatcher> {
+  bool _dialogShown = false;
+
+  void _checkForDialog() {
+    if (!_dialogShown) {
+      _dialogShown = true;
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Contract Agreement'),
+          content: const Text('Do you agree to proceed with the contract?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('Agree'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('Not now'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _dialogShown = false; 
+    _checkForDialog();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
   }
 }

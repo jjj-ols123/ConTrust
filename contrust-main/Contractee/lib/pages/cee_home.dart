@@ -171,51 +171,65 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
               const SizedBox(height: 15),
-              isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : projects.isEmpty
-                      ? const Center(
-                          child: Text("You haven't posted any projects yet"),
-                        )
-                      : ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: projects.length,
-                          itemBuilder: (context, index) {
-                            final project = projects[index];
-                            final projectId = project['project_id'].toString();
-                            final highestBid = highestBids[projectId] ?? 0.0;
+isLoading
+    ? const Center(child: CircularProgressIndicator())
+    : projects.isEmpty
+        ? const Center(
+            child: Text("You haven't posted any projects yet"),
+          )
+        : ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: projects.length,
+            itemBuilder: (context, index) {
+              final project = projects[index];
+              final projectId = project['project_id'].toString();
+              final highestBid = highestBids[projectId] ?? 0.0;
 
-                            return ProjectView(
-                              project: project,
-                              projectId: projectId,
-                              highestBid: highestBid,
-                              duration: project['duration'] ?? 0,
-                              createdAt: DateTime.parse(
-                                  project['created_at'].toString()),
-                              onTap: () async {
-                                await BidsModal.show(
-                                  context: context,
-                                  projectId: projectId,
-                                  acceptBidding: (projectId, bidId) async {
-                                    _loadAcceptBidding(projectId, bidId);
-                                    setState(() {
-                                      acceptedBidIds[projectId] = bidId;
-                                    });
-                                  },
-                                  initialAcceptedBidId:
-                                      acceptedBidIds[projectId],
-                                );
-                              },
-                              handleFinalizeBidding: (bidId) {
-                                return projectbidding.projectAcceptBidding(
-                                  projectId,
-                                  bidId,
-                                );
-                              },
-                            );
-                          },
-                        ),
+              return FutureBuilder<Map<String, dynamic>>(
+                future: supabase
+                    .from('Projects')
+                    .select('bid_id')
+                    .eq('project_id', projectId)
+                    .single(),
+                    
+                builder: (context, snapshot) {
+                  String? acceptedBidId;
+                  if (snapshot.connectionState == ConnectionState.done &&
+                      snapshot.hasData) {
+                    acceptedBidId = snapshot.data?['bid_id'];
+                  }
+                  return ProjectView(
+                    project: project,
+                    projectId: projectId,
+                    highestBid: highestBid,
+                    duration: project['duration'] ?? 0,
+                    createdAt: DateTime.parse(
+                        project['created_at'].toString()),
+                    onTap: () async {
+                      await BidsModal.show(
+                        context: context,
+                        projectId: projectId,
+                        acceptBidding: (projectId, bidId) async {
+                          _loadAcceptBidding(projectId, bidId);
+                          setState(() {
+                            acceptedBidIds[projectId] = bidId;
+                          });
+                        },
+                        initialAcceptedBidId: acceptedBidId,
+                      );
+                    },
+                    handleFinalizeBidding: (bidId) {
+                      return projectbidding.projectAcceptBidding(
+                        projectId,
+                        bidId,
+                      );
+                    },
+                  );
+                },
+              );
+            },
+          ),
             ],
           ),
         ),

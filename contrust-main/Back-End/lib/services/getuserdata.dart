@@ -75,4 +75,22 @@ class GetUserData {
     }
   }
 
+    Future<String?>   getProjectId(String chatRoomId) async {
+    final chatRoom = await _supabase
+        .from('ChatRoom')
+        .select('project_id')
+        .eq('chatroom_id', chatRoomId)
+        .maybeSingle();
+    return chatRoom?['project_id'];
+  }
+
+  Future<Map<String, dynamic>?> getProjectInfo(String projectId) async {
+    return await _supabase
+        .from('Projects')
+        .select('contract_started, contractor_agree, contractee_agree')
+        .eq('project_id', projectId)
+        .maybeSingle();
+  }
+
+
 }

@@ -156,15 +156,6 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
               ),
           ],
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: Image.asset(
-            'logo.png',
-            width: 90,
-            height: 40,
-            fit: BoxFit.contain,
-          ),
-        ),
       ],
     );
   }

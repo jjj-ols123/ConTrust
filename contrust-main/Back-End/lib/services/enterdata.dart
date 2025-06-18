@@ -72,6 +72,7 @@ class EnterDatatoDatabase {
         'project_id': projectId,
         'bid_amount': bidAmount,
         'message': message,
+        'status': 'pending',
       });
 
       if (context.mounted) {

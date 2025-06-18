@@ -1,5 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:backend/models/buildmethods.dart';
+import 'package:backend/services/fetchmethods.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -30,6 +32,16 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
 
   static const String profileUrl =
       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
+
+  late Future<String> _projectStatus;
+
+  FetchClass fetchMethod = FetchClass();
+
+  @override
+  void initState() {
+    super.initState();
+    _projectStatus = fetchMethod.fetchProjectStatus(widget.chatRoomId);
+  }
 
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
@@ -102,6 +114,25 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
       ),
       body: Column(
         children: [
+          FutureBuilder<String>(
+            future: _projectStatus,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              } else if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              } else {
+                final projectStatus = snapshot.data ?? 'pending';
+                if (projectStatus == 'awaiting_contract') {
+                  return ContractAgreementBanner(
+                    chatRoomId: widget.chatRoomId,
+                    userRole: 'contractor',
+                  );
+                }
+              }
+              return Container();
+            },
+          ),
           Expanded(
             child: StreamBuilder<List<Map<String, dynamic>>>(
               stream: supabase
