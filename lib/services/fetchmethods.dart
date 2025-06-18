@@ -75,7 +75,8 @@ class FetchClass {
       if (userId == null) return [];
       final response = await supabase
           .from('Projects')
-          .select('project_id, type, description, status, contractee:Contractee(full_name)')
+          .select(
+              'project_id, type, description, status, contractee:Contractee(full_name)')
           .eq('contractor_id', userId)
           .eq('status', 'completed');
       return List<Map<String, dynamic>>.from(response);
@@ -96,5 +97,40 @@ class FetchClass {
     }
     return [];
   }
-  
+
+  Future<String> fetchProjectStatus(String chatRoomId) async {
+    final chatRoom = await supabase
+        .from('ChatRoom')
+        .select('project_id')
+        .eq('chatroom_id', chatRoomId)
+        .maybeSingle();
+
+    final projectId = chatRoom?['project_id'];
+    if (projectId == null) return 'pending';
+
+    final project = await supabase
+        .from('Projects')
+        .select('status')
+        .eq('project_id', projectId)
+        .maybeSingle();
+
+    return project?['status'] ?? 'pending';
+  }
+
+  Future<List<Map<String, dynamic>>> fetchContractTypes() async {
+    final response = await supabase
+        .from('ContractTypes')
+        .select('template_name, template_description');
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<List<Map<String, dynamic>>> fetchCreatedContracts(
+      String contractorId) async {
+    final response = await supabase
+        .from('Contracts')
+        .select('title, contract_type, created_at')
+        .eq('contractor_id', contractorId)
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
 }

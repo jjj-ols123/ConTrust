@@ -109,6 +109,11 @@ class ProjectBidding {
     }
 
     await supabase
+      .from('Bids')
+      .update({'status': 'accepted'})
+      .eq('bid_id', bidId);
+
+    await supabase
         .from('Projects')
         .update({'status': 'awaiting_contract'})
         .eq('bid_id', bidId);
