@@ -1,5 +1,6 @@
 // ignore_for_file: library_private_types_in_public_api
 
+import 'package:backend/models/appbar.dart';
 import 'package:flutter/material.dart';
 
 class ProductPanelScreen extends StatefulWidget {
@@ -10,7 +11,7 @@ class ProductPanelScreen extends StatefulWidget {
 }
 
 class _ProductPanelScreenState extends State<ProductPanelScreen> {
-  // Add this products list:
+
   final List<Map<String, dynamic>> products = [
     {'name': 'Wood', 'icon': Icons.forest},
     {'name': 'Steel', 'icon': Icons.construction},
@@ -46,7 +47,6 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Responsive crossAxisCount based on screen width
     final width = MediaQuery.of(context).size.width;
     int crossAxisCount;
     if (width > 1200) {
@@ -60,36 +60,12 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.amber,
-        centerTitle: true,
-        elevation: 2,
-        title: const Text(
-          'Product Panel',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-            letterSpacing: 1.2,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications, color: Colors.black),
-            onPressed: () {}, // Notification action
-          ),
-          Padding(
-            padding: const EdgeInsets.only(left: 5, right: 10),
-            child: Image.asset('logo.png', width: 80), // Company logo
-          ),
-        ],
-      ),
+      appBar: const ConTrustAppBar(headline: "Products"),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top Navigation Bar
             Container(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
               decoration: BoxDecoration(
@@ -135,7 +111,6 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            // Inventory and Search Bar
             Container(
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
               decoration: BoxDecoration(
@@ -172,7 +147,6 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
                         fillColor: Colors.white,
                       ),
                       onChanged: (value) {
-                        // Implement search logic if needed
                       },
                     ),
                   ),
@@ -180,7 +154,6 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            // Product Grid
             Expanded(
               child: GridView.builder(
                 padding: const EdgeInsets.all(4),

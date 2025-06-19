@@ -2,7 +2,7 @@
 
 
 import 'package:backend/models/appbar.dart';
-import 'package:backend/services/fetchmethods.dart'; // Import your fetch class
+import 'package:backend/services/fetchmethods.dart'; 
 import 'package:backend/utils/pagetransition.dart';
 import 'package:contractor/Screen/cor_product.dart';
 import 'package:flutter/material.dart';
@@ -24,11 +24,11 @@ class _ClientHistoryScreenState extends State<ClientHistoryScreen> {
   @override
   void initState() {
     super.initState();
-    _loadCompletedProjects();
+    loadCompletedProjects();
     searchController.addListener(_onSearchChanged);
   }
 
-  Future<void> _loadCompletedProjects() async {
+  Future<void> loadCompletedProjects() async {
     final projects = await fetchClass.fetchCompletedProjects();
     setState(() {
       completedProjects = projects;
@@ -72,18 +72,7 @@ class _ClientHistoryScreenState extends State<ClientHistoryScreen> {
     }
 
     return Scaffold(
-      appBar: ConTrustAppBar(headline: "Client History",
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications, color: Colors.black),
-            onPressed: () {},
-          ),
-          Padding(
-            padding: const EdgeInsets.only(left: 5),
-            child: Image.asset('logo3.png', width: 100),
-          ),
-        ],
-      ),
+      appBar: const ConTrustAppBar(headline: "Client History"),
       body: Padding(
         padding: const EdgeInsets.all(10),
         child: Column(

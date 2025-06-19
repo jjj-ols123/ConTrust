@@ -3,19 +3,39 @@
 import 'package:backend/models/appbar.dart';
 import 'package:backend/services/getuserdata.dart';
 import 'package:backend/utils/pagetransition.dart';
-import 'package:contractor/Screen/cor_chathistory.dart';
 import 'package:flutter/material.dart';
 
-class DashboardScreen extends StatelessWidget {
-  DashboardScreen({super.key});
+class DashboardScreen extends StatefulWidget {
+  const DashboardScreen({super.key});
 
-  final GetUserData getUserId = GetUserData();
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  final GetUserData getUser = GetUserData();
+  String? contractorId;
+
+  @override
+  void initState() {
+    super.initState();
+    loadContractorId();
+  }
+
+  Future<void> loadContractorId() async {
+    final id = await getUser.getContractorId();
+    setState(() {
+      contractorId = id;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: ConTrustAppBar(headline: "Home"),
-      drawer: const MenuDrawer(),
+      appBar: const ConTrustAppBar(headline: "Home"),
+      drawer: contractorId == null
+          ? null
+          : MenuDrawerContractor(contractorId: contractorId!),
       body: Padding(
         padding: const EdgeInsets.all(10),
         child: Column(
@@ -58,7 +78,6 @@ class DashboardScreen extends StatelessWidget {
                         onTap: () async {
                           final item = dashboardItems[index];
                           if (item['title'] == 'User Profile') {
-                            String? contractorId = await getUserId.getContractorId();
                             transitionBuilder(
                               context,
                               getScreenFromRoute(context, item['route'], arguments: contractorId),
@@ -99,20 +118,6 @@ class DashboardScreen extends StatelessWidget {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'contractorMessageButton',
-        backgroundColor: Colors.amber[700],
-        foregroundColor: Colors.black,
-        hoverColor: Colors.amber[800],
-        child: const Icon(Icons.message),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => ContractorChatHistoryPage()),
-          );
-        },
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 

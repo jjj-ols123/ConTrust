@@ -10,7 +10,11 @@ import 'package:contractee/pages/cee_materials.dart';
 import 'package:contractee/pages/cee_notification.dart';
 import 'package:contractee/pages/cee_transaction.dart';
 import 'package:contractee/services/cee_checkuser.dart';
+import 'package:contractor/Screen/cor_chathistory.dart';
+import 'package:contractor/Screen/cor_clienthistory.dart';
+import 'package:contractor/Screen/cor_contracttype.dart';
 import 'package:contractor/Screen/cor_notification.dart';
+import 'package:contractor/Screen/cor_ongoing.dart';
 import 'package:flutter/material.dart';
 
 class ConTrustAppBar extends StatefulWidget implements PreferredSizeWidget {
@@ -161,8 +165,8 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
   }
 }
 
-class MenuDrawer extends StatelessWidget {
-  const MenuDrawer({super.key});
+class MenuDrawerContractee extends StatelessWidget {
+  const MenuDrawerContractee({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -200,6 +204,74 @@ class MenuDrawer extends StatelessWidget {
             leading: const Icon(Icons.info),
             title: const Text('About'),
             onTap: () => transitionBuilder(context, const AboutPage()),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class MenuDrawerContractor extends StatelessWidget {
+
+  final String contractorId; 
+
+  const MenuDrawerContractor({super.key, required this.contractorId});
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Colors.blue[700],
+            ),
+            child: const Text(
+              'Contractor Menu',
+              style: TextStyle(color: Colors.white, fontSize: 24),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.message),
+            title: const Text('Messages'),
+            onTap: () {
+              transitionBuilder(context, ContractorChatHistoryPage());
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.assignment),
+            title: const Text('Contract Types'),
+            onTap: () {
+              transitionBuilder(context, ContractType(contractorId: contractorId));
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.work),
+            title: const Text('Ongoing Projects'),
+            onTap: () {
+              transitionBuilder(context, OngoingProjectScreen());
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.history),
+            title: const Text('Client History'),
+            onTap: () {
+              transitionBuilder(context, ClientHistoryScreen());
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.notifications),
+            title: const Text('Notifications'),
+            onTap: () {
+              transitionBuilder(context, ContractorNotificationPage());
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.info),
+            title: const Text('About'),
+            onTap: () {
+            },
           ),
         ],
       ),

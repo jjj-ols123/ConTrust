@@ -93,7 +93,7 @@ class _HomePageState extends State<HomePage> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: const ConTrustAppBar(headline: "Home"),
-      drawer: const MenuDrawer(),
+      drawer: const MenuDrawerContractee(),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),

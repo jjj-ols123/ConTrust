@@ -21,7 +21,7 @@ class ContractorUserProfileScreen extends StatefulWidget {
 class _ContractorUserProfileScreenState
     extends State<ContractorUserProfileScreen> {
   final UserService userService = UserService();
-  GetUserData getUserId = GetUserData();
+  GetUserData getUser = GetUserData();
 
   String firmName = "Firm Name";
   String bio = "No Bio";
@@ -35,10 +35,10 @@ class _ContractorUserProfileScreenState
   @override
   void initState() {
     super.initState();
-    _loadContractorData();
+    loadContractorData();
   }
 
-  Future<void> _loadContractorData() async {
+  Future<void> loadContractorData() async {
     final contractorData = await userService.fetchUserData(
       widget.contractorId,
       isContractor: true,
@@ -74,6 +74,9 @@ class _ContractorUserProfileScreenState
 
     return Scaffold(
       appBar: const ConTrustAppBar(headline: "Profile"),
+      drawer: MenuDrawerContractor(
+        contractorId: widget.contractorId,
+      ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: Padding(
@@ -145,7 +148,7 @@ class _ContractorUserProfileScreenState
                             ElevatedButton(
                               onPressed: () async {
                                 String? contractorId =
-                                    await getUserId.getContractorId();
+                                    await getUser.getContractorId();
 
                                 transitionBuilder(
                                   context,

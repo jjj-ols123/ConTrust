@@ -193,7 +193,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
           headline: 'Contractor Profile',
           actions: [messageButton],
         ),
-        drawer: const MenuDrawer(),
+        drawer: const MenuDrawerContractee(),
         body: const Center(
           child: CircularProgressIndicator(),
         ),
@@ -212,7 +212,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
         headline: 'Contractor Profile',
         actions: [messageButton],
       ),
-      drawer: const MenuDrawer(),
+      drawer: const MenuDrawerContractee(),
       body: Column(
         children: [
           Expanded(

@@ -1,3 +1,4 @@
+import 'package:backend/services/getuserdata.dart';
 import 'package:backend/utils/cor_cee_constraint.dart';
 import 'package:contractor/Screen/cor_messages.dart';
 import 'package:flutter/material.dart';
@@ -14,18 +15,20 @@ class ContractorChatHistoryPage extends StatefulWidget {
 class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
   final supabase = Supabase.instance.client;
   String? contractorId;
+  GetUserData getUser = GetUserData();
 
   @override
   void initState() {
     super.initState();
-    _loadContractorId();
+    loadContractorId();
   }
 
-  Future<void> _loadContractorId() async {
-    setState(() {
-      contractorId = supabase.auth.currentUser?.id;
-    });
-  }
+  Future<void> loadContractorId() async {
+  final id = await getUser.getContractorId();
+  setState(() {
+    contractorId = id;
+  });
+}
 
   Future<Map<String, dynamic>?> loadContracteeData(String contracteeId) async {
     final response = await supabase
@@ -40,7 +43,6 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const ConTrustAppBar(headline: "Chat History"),
-      drawer: const MenuDrawer(),
       body: contractorId == null
           ? const Center(child: CircularProgressIndicator())
           : StreamBuilder<List<Map<String, dynamic>>>(

@@ -41,7 +41,7 @@ class _ContracteeChatHistoryPageState extends State<ContracteeChatHistoryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const ConTrustAppBar(headline: "Chat History"),
-      drawer: const MenuDrawer(),
+      drawer: const MenuDrawerContractee(),
       body: contracteeId == null
           ? const Center(child: CircularProgressIndicator())
           : StreamBuilder<List<Map<String, dynamic>>>(

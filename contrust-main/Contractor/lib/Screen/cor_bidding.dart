@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'package:backend/models/appbar.dart';
 import 'package:backend/services/enterdata.dart';
 import 'package:backend/services/getuserdata.dart';
 import 'package:backend/services/notification.dart';
@@ -28,15 +29,25 @@ class _BiddingScreenState extends State<BiddingScreen> {
   List<Map<String, dynamic>> projects = [];
   Map<String, double> highestBids = {};
   bool isLoading = true;
+  String? contractorId;
+  GetUserData getUser = GetUserData();
 
   @override
   void initState() {
     super.initState();
-    fetchProjects();
-    fetchHighestBids();
+    loadContractorId();
+    loadProjects();
+    loadHighestBids();
   }
 
-  Future<void> fetchProjects() async {
+  Future<void> loadContractorId() async {
+    final id = await getUser.getContractorId();
+    setState(() {
+      contractorId = id;
+    });
+  }
+
+  Future<void> loadProjects() async {
     try {
       final response = await supabase
           .from('Projects')
@@ -57,7 +68,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
     }
   }
 
-  Future<void> fetchHighestBids() async {
+  Future<void> loadHighestBids() async {
     final highestBidsData = await projectbidding.projectHighestBid();
     setState(() {
       highestBids = highestBidsData;
@@ -67,28 +78,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.amber,
-        centerTitle: true,
-        title: Text(
-          'Bidding',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.notifications, color: Colors.black),
-            onPressed: () {},
-          ),
-          Padding(
-            padding: const EdgeInsets.only(left: 5),
-            child: Image.asset('logo.png', width: 100),
-          ),
-        ],
-      ),
+      appBar: const ConTrustAppBar(headline: "Bidding"),
       body: Padding(
         padding: const EdgeInsets.all(10),
         child: Column(
@@ -193,7 +183,8 @@ class _BiddingScreenState extends State<BiddingScreen> {
                                               .toString()
                                               .isNotEmpty)
                                       ? DateTime.parse(
-                                        project['created_at'].toString()).toLocal()
+                                        project['created_at'].toString(),
+                                      ).toLocal()
                                       : DateTime.now(),
                             ),
                           );

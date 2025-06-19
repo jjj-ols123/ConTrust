@@ -8,7 +8,7 @@ class AboutPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const ConTrustAppBar(headline: "About"),
-      drawer: const MenuDrawer(),
+      drawer: const MenuDrawerContractee(),
       body: const Center(
         child: Text(
           '',

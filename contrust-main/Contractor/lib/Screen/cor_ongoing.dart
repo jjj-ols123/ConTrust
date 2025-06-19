@@ -12,6 +12,7 @@ class OngoingProjectScreen extends StatefulWidget {
 }
 
 class _OngoingProjectScreenState extends State<OngoingProjectScreen> {
+  
   double progress = 0.5;
   List<Map<String, dynamic>> tasks = [
     {'task': 'Clear and level the site.', 'done': true},
@@ -173,13 +174,12 @@ class _OngoingProjectScreenState extends State<OngoingProjectScreen> {
     ];
 
     return Scaffold(
-      appBar: ConTrustAppBar(headline: "Ongoing Project"),
+      appBar: const ConTrustAppBar(headline: "Ongoing Projects"),
       body: Padding(
         padding: const EdgeInsets.all(12),
         child: isWide
             ? Row(
                 children: [
-                  // Left: Project Info & Tasks
                   Expanded(
                     flex: 2,
                     child: Card(
@@ -243,7 +243,6 @@ class _OngoingProjectScreenState extends State<OngoingProjectScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  // Right: Photos & Cost Breakdown
                   Expanded(
                     flex: 1,
                     child: Column(

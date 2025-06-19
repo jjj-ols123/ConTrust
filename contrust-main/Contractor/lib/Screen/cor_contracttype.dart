@@ -2,6 +2,7 @@ import 'package:backend/services/fetchmethods.dart';
 import 'package:flutter/material.dart';
 
 
+  
 class ContractType extends StatefulWidget {
   final String contractorId;
 
