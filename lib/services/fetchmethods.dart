@@ -127,8 +127,8 @@ class FetchClass {
   Future<List<Map<String, dynamic>>> fetchCreatedContracts(
       String contractorId) async {
     final response = await supabase
-        .from('ContractsDetails')
-        .select('title, contract_type, created_at')
+        .from('ContractDetails')
+        .select('contract_id, project_id, contractor_id, contractee_id, contract_type_id, start_date, end_date, total_amount, status, contract_status, cee_signature, tor_signature, created_at, updated_at, signed_at, terms')
         .eq('contractor_id', contractorId)
         .order('created_at', ascending: false);
     return List<Map<String, dynamic>>.from(response);
