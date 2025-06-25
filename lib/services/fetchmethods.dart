@@ -120,7 +120,7 @@ class FetchClass {
   Future<List<Map<String, dynamic>>> fetchContractTypes() async {
     final response = await supabase
         .from('ContractTypes')
-        .select('template_name, template_description');
+        .select('template_name, template_content, template_description');
     return List<Map<String, dynamic>>.from(response);
   }
 
