@@ -37,7 +37,7 @@ dependencies:
   shared_preferences: ^2.5.2
   contractor: 
     path: ../Contractor
-  intl: ^0.18.1
+  intl: ^0.19.0
     
 
   # The following adds the Cupertino Icons font to your application.

@@ -2,6 +2,7 @@
 
 import 'dart:ui';
 import 'package:backend/services/fetchmethods.dart';
+import 'package:contractor/Screen/cor_createcontract.dart';
 import 'package:flutter/material.dart';
 
 class ContractType extends StatefulWidget {
@@ -51,7 +52,9 @@ class _ContractTypeState extends State<ContractType> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text('No contract types available.'));
+                  return const Center(
+                    child: Text('No contract types available.'),
+                  );
                 }
                 final contractTypes = snapshot.data!;
                 return ScrollConfiguration(
@@ -73,7 +76,18 @@ class _ContractTypeState extends State<ContractType> {
                         color: Colors.transparent,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(20),
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => CreateContractPage(
+                                      contractType: template,
+                                      contractorId: widget.contractorId,
+                                    ),
+                              ),
+                            );
+                          },
                           child: Container(
                             width: 200,
                             margin: const EdgeInsets.only(right: 18),
@@ -87,19 +101,31 @@ class _ContractTypeState extends State<ContractType> {
                                   offset: const Offset(0, 8),
                                 ),
                               ],
-                              border: Border.all(color: Colors.amber[100]!, width: 1.2),
+                              border: Border.all(
+                                color: Colors.amber[100]!,
+                                width: 1.2,
+                              ),
                             ),
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 22),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 22,
+                              ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.description_outlined, size: 38, color: Colors.amber[700]),
+                                  Icon(
+                                    Icons.description_outlined,
+                                    size: 38,
+                                    color: Colors.amber[700],
+                                  ),
                                   const SizedBox(height: 18),
                                   Text(
                                     template['template_name'] ?? '',
-                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.titleMedium?.copyWith(
                                       fontWeight: FontWeight.bold,
                                       color: Colors.black87,
                                     ),
@@ -111,9 +137,10 @@ class _ContractTypeState extends State<ContractType> {
                                   Text(
                                     template['template_description'] ?? '',
                                     textAlign: TextAlign.center,
-                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: Colors.grey[700],
-                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(color: Colors.grey[700]),
                                     maxLines: 3,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -164,28 +191,48 @@ class _ContractTypeState extends State<ContractType> {
                   }
                   final contracts = snapshot.data!;
                   if (contracts.isEmpty) {
-                    return const Center(child: Text('No contracts created yet.'));
+                    return const Center(
+                      child: Text('No contracts created yet.'),
+                    );
                   }
                   return ListView.separated(
                     itemCount: contracts.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.amberAccent, thickness: 0.7),
+                    separatorBuilder:
+                        (_, __) => const Divider(
+                          height: 1,
+                          color: Colors.amberAccent,
+                          thickness: 0.7,
+                        ),
                     itemBuilder: (context, index) {
                       final contract = contracts[index];
                       return ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 6,
+                        ),
                         leading: CircleAvatar(
                           backgroundColor: Colors.amber[100],
-                          child: Icon(Icons.assignment_turned_in, color: Colors.amber[700]),
+                          child: Icon(
+                            Icons.assignment_turned_in,
+                            color: Colors.amber[700],
+                          ),
                         ),
                         title: Text(
                           contract['title'] ?? 'Untitled Contract',
-                          style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         subtitle: Text(
                           '${contract['total_amount'] ?? ''} • ${contract['created_at'] ?? ''}',
-                          style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[700]),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.grey[700],
+                          ),
                         ),
-                        trailing: Icon(Icons.chevron_right, color: Colors.amber[700]),
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: Colors.amber[700],
+                        ),
                         onTap: () {},
                       );
                     },
