@@ -15,6 +15,7 @@ class ContractType extends StatefulWidget {
 }
 
 class _ContractTypeState extends State<ContractType> {
+  
   FetchClass fetchMethod = FetchClass();
 
   @override
