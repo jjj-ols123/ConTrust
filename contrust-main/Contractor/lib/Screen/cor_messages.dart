@@ -1,7 +1,6 @@
 // ignore_for_file: deprecated_member_use
-
-import 'package:backend/models/buildmethods.dart';
-import 'package:backend/services/fetchmethods.dart';
+import 'package:backend/models/be_UIapp.dart';
+import 'package:backend/services/be_fetchservice.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -33,14 +32,12 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
   static const String profileUrl =
       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
 
-  late Future<String> _projectStatus;
-
-  FetchClass fetchMethod = FetchClass();
+  late Future<String?> _projectStatus;
 
   @override
   void initState() {
     super.initState();
-    _projectStatus = fetchMethod.fetchProjectStatus(widget.chatRoomId);
+    _projectStatus = FetchService().fetchProjectStatus(widget.chatRoomId);
   }
 
   Future<void> _sendMessage() async {
@@ -114,7 +111,7 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
       ),
       body: Column(
         children: [
-          FutureBuilder<String>(
+          FutureBuilder<String?>(
             future: _projectStatus,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {

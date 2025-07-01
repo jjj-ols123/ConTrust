@@ -1,7 +1,5 @@
 // ignore_for_file: deprecated_member_use
-
-
-import 'package:backend/utils/pagetransition.dart';
+import 'package:backend/utils/be_pagetransition.dart';
 import 'package:contractor/Screen/cor_registration.dart';
 import 'package:contractor/Screen/cor_startup.dart';
 import 'package:flutter/material.dart';

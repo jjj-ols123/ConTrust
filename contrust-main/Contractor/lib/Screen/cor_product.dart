@@ -1,12 +1,11 @@
-// ignore_for_file: library_private_types_in_public_api
-
-import 'package:backend/models/appbar.dart';
+import 'package:backend/models/be_appbar.dart';
 import 'package:flutter/material.dart';
 
 class ProductPanelScreen extends StatefulWidget {
   const ProductPanelScreen({super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
   _ProductPanelScreenState createState() => _ProductPanelScreenState();
 }
 

@@ -1,8 +1,5 @@
-
-// ignore_for_file: deprecated_member_use
-
-import 'package:backend/utils/pagetransition.dart';
-import 'package:backend/utils/validatefields.dart';
+import 'package:backend/utils/be_pagetransition.dart';
+import 'package:backend/utils/be_validation.dart';
 import 'package:contractee/services/cee_signin.dart';
 import 'package:contractee/pages/cee_registration.dart';
 import 'package:flutter/material.dart';

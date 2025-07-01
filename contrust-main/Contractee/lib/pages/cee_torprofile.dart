@@ -1,9 +1,8 @@
-// ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously
 
-import 'package:backend/models/appbar.dart';
-import 'package:backend/services/fetchmethods.dart';
-import 'package:backend/services/userprofile.dart';
-import 'package:backend/utils/cor_cee_constraint.dart';
+import 'package:backend/models/be_appbar.dart';
+import 'package:backend/services/be_fetchservice.dart';
+import 'package:backend/utils/be_constraint.dart';
 import 'package:contractee/pages/cee_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -19,8 +18,6 @@ class ContractorProfileScreen extends StatefulWidget {
 }
 
 class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
-  final UserService userService = UserService();
-  final fetchClass = FetchClass();
 
   String firmName = "Firm Name";
   String bio = "No Bio";
@@ -44,7 +41,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
   Future<void> _loadContractorData() async {
     try {
       final contractorData =
-          await fetchClass.fetchContractorData(widget.contractorId);
+          await FetchService().fetchContractorData(widget.contractorId);
       if (contractorData != null) {
         setState(() {
           firmName = contractorData['firm_name'] ?? "No firm name";
@@ -145,7 +142,6 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
           return;
         }
 
-        // Check if chatroom already exists
         final existingChatroom = await supabase
             .from('ChatRoom')
             .select('chatroom_id')
@@ -156,10 +152,8 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
 
         String chatRoomId;
         if (existingChatroom != null) {
-          // Use existing chatroom
           chatRoomId = existingChatroom['chatroom_id'];
         } else {
-          // Create new chatroom
           final response = await supabase
               .from('ChatRoom')
               .insert({

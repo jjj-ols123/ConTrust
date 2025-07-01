@@ -1,4 +1,4 @@
-import 'package:backend/services/auth_service.dart';
+import 'package:backend/services/be_user_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -11,7 +11,6 @@ class SignUpContractor {
     Map<String, dynamic>? data,
     bool Function() validateFields,
   ) async {
-    final authService = AuthService();
     final supabase = Supabase.instance.client;
 
     if (!validateFields()) {
@@ -19,7 +18,7 @@ class SignUpContractor {
     }
 
     try {
-      final signUpResponse = await authService.signUp(
+      final signUpResponse = await UserService().signUp(
         email: email,
         password: password,
         data: data,

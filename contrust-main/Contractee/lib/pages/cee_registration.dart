@@ -1,6 +1,6 @@
-// ignore_for_file: use_build_context_synchronously, deprecated_member_use
+// ignore_for_file: deprecated_member_use
 
-import 'package:backend/utils/validatefields.dart';
+import 'package:backend/utils/be_validation.dart';
 import 'package:contractee/services/cee_signup.dart';
 import 'package:flutter/material.dart';
 

@@ -1,7 +1,6 @@
 // ignore_for_file: deprecated_member_use
-
 import 'dart:ui';
-import 'package:backend/services/fetchmethods.dart';
+import 'package:backend/services/be_fetchservice.dart';
 import 'package:contractor/Screen/cor_createcontract.dart';
 import 'package:flutter/material.dart';
 
@@ -15,8 +14,6 @@ class ContractType extends StatefulWidget {
 }
 
 class _ContractTypeState extends State<ContractType> {
-  
-  FetchClass fetchMethod = FetchClass();
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +44,7 @@ class _ContractTypeState extends State<ContractType> {
           SizedBox(
             height: 220,
             child: FutureBuilder<List<Map<String, dynamic>>>(
-              future: fetchMethod.fetchContractTypes(),
+              future: FetchService().fetchContractTypes(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -83,7 +80,8 @@ class _ContractTypeState extends State<ContractType> {
                               MaterialPageRoute(
                                 builder:
                                     (context) => CreateContractPage(
-                                      contractType: template,
+                                      contractType : template['template_name'] ?? '',
+                                      template: template,
                                       contractorId: widget.contractorId,
                                     ),
                               ),
@@ -185,7 +183,7 @@ class _ContractTypeState extends State<ContractType> {
                 ],
               ),
               child: FutureBuilder<List<Map<String, dynamic>>>(
-                future: fetchMethod.fetchCreatedContracts(widget.contractorId),
+                future: FetchService().fetchCreatedContracts(widget.contractorId),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());

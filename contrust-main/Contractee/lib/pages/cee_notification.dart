@@ -1,8 +1,6 @@
-import 'package:backend/services/getuserdata.dart';
-import 'package:backend/services/notification.dart';
-import 'package:backend/models/notificationmodal.dart';
+import 'package:backend/services/be_notification_service.dart';
+import 'package:backend/services/be_user_service.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 class ContracteeNotificationPage extends StatefulWidget {
   const ContracteeNotificationPage({super.key});
@@ -14,7 +12,6 @@ class ContracteeNotificationPage extends StatefulWidget {
 
 class _ContracteeNotificationPageState
     extends State<ContracteeNotificationPage> {
-  final NotificationService notificationService = NotificationService();
   String? contracteeId;
 
   @override
@@ -24,7 +21,7 @@ class _ContracteeNotificationPageState
   }
 
   Future<void> initReceiverId() async {
-    final id = await GetUserData().getContracteeId();
+    final id = await UserService().getContracteeId();
     setState(() => contracteeId = id);
   }
 
@@ -41,7 +38,7 @@ class _ContracteeNotificationPageState
         title: const Text("Notifications"),
       ),
       body: StreamBuilder<List<Map<String, dynamic>>>(
-        stream: notificationService.listenNotification(contracteeId!),
+        stream: NotificationService().listenToNotifications(contracteeId!),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(
@@ -54,36 +51,13 @@ class _ContracteeNotificationPageState
           if (snapshot.data!.isEmpty) {
             return const Center(child: Text("No notifications yet"));
           }
-
-          final notifications =
-              snapshot.data!.map((e) => NotificationModel.fromMap(e)).toList();
-
-          return ListView.separated(
-            itemCount: notifications.length,
-            separatorBuilder: (context, index) => const Divider(height: 1),
+          return ListView.builder(
+            itemCount: snapshot.data!.length,
             itemBuilder: (context, index) {
-              final notif = notifications[index];
+              final notification = snapshot.data![index];
               return ListTile(
-                title: Text(
-                  notif.headline,
-                  style: TextStyle(
-                    fontWeight:
-                        notif.isRead ? FontWeight.normal : FontWeight.bold,
-                  ),
-                ),
-                subtitle:
-                    Text(DateFormat.yMMMd().add_jm().format(notif.createdAt)),
-                trailing: notif.isRead
-                    ? const Icon(Icons.mark_email_read_outlined,
-                        color: Colors.grey)
-                    : const Icon(Icons.mark_email_unread_outlined,
-                        color: Colors.blue),
-                onTap: () async {
-                  if (!notif.isRead) {
-                    await notificationService.readNotification(notif.id);
-                    setState(() {});
-                  }
-                },
+                title: Text(notification['title'] ?? 'No Title'),
+                subtitle: Text(notification['body'] ?? 'No Body'),
               );
             },
           );

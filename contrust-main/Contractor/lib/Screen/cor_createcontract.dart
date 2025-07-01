@@ -1,4 +1,5 @@
-import 'package:backend/services/createcontract.dart';
+import 'package:backend/models/be_UIcontract.dart';
+import 'package:backend/services/be_contract_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_quill/quill_delta.dart';
@@ -6,12 +7,14 @@ import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
 import 'package:flutter_quill_delta_from_html/flutter_quill_delta_from_html.dart';
 
 class CreateContractPage extends StatefulWidget {
-  final Map<String, dynamic>? contractType;
+  final String? contractType;
+  final Map<String, dynamic>? template;
   final String contractorId;
 
   const CreateContractPage({
     super.key,
-    this.contractType,
+    this.template,
+    required this.contractType,
     required this.contractorId,
   });
 
@@ -20,6 +23,7 @@ class CreateContractPage extends StatefulWidget {
 }
 
 class _CreateContractPageState extends State<CreateContractPage> {
+
   final QuillController _controller = QuillController.basic();
   final FocusNode _editorFocusNode = FocusNode();
   final ScrollController _editorScrollController = ScrollController();
@@ -32,10 +36,10 @@ class _CreateContractPageState extends State<CreateContractPage> {
   }
 
   void _loadContractType() {
-    final contractType = widget.contractType;
+    final template = widget.template;
 
-    if (contractType != null && contractType['template_content'] != null) {
-      String htmlTemplate = contractType['template_content'];
+    if (template != null && template['template_content'] != null) {
+      String htmlTemplate = template['template_content'];
 
       htmlTemplate = _replacePlaceholders(htmlTemplate);
 
@@ -49,7 +53,7 @@ class _CreateContractPageState extends State<CreateContractPage> {
       } catch (e) {
         String plainText = _stripHtmlTags(htmlTemplate);
         _controller.document.insert(0, plainText);
-        CreateContract.applyFormatting(_controller);
+        ContractService.applyFormatting(_controller);
       }
     }
   }
@@ -65,8 +69,8 @@ class _CreateContractPageState extends State<CreateContractPage> {
       return;
     }
 
-    final contractTypeId = widget.contractType?['contract_type_id'];
- 
+    final contractTypeId = widget.template?['contract_type_id'];
+
     setState(() {
       _isSaving = true;
     });
@@ -78,13 +82,12 @@ class _CreateContractPageState extends State<CreateContractPage> {
       final contractData = await _showSaveDialog();
       
       if (contractData != null) {
-        await CreateContract.saveContract(
+        await ContractService.saveContract(
           projectId: contractData['projectId']!,
           contractTypeId: contractTypeId,
           title: contractData['title']!,
           content: contractContent,
           deltaContent: contractDelta,
-          totalAmount: contractData['totalAmount'],
         );
 
         if (mounted) {
@@ -116,35 +119,22 @@ class _CreateContractPageState extends State<CreateContractPage> {
   }
 
   Future<Map<String, dynamic>?> _showSaveDialog() async {
-    return CreateContract.showSaveDialog(context, widget.contractorId);
+    return UIContract.showSaveDialog(context, widget.contractorId);
   }
 
   String _replacePlaceholders(String template) {
-    return CreateContract.replacePlaceholders(template, widget.contractorId, widget.contractType);
+    return ContractService.replacePlaceholders(template, widget.contractorId, widget.template);
   }
 
   String _stripHtmlTags(String htmlString) {
-    return CreateContract.stripHtmlTags(htmlString);
+    return ContractService.stripHtmlTags(htmlString);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Create Contract"),
-        actions: [
-          IconButton(
-            onPressed: _isSaving ? null : _saveContract,
-            icon: _isSaving 
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.save),
-            tooltip: 'Save Contract',
-          ),
-        ],
+        title: const Text("Create Contract"), 
       ),
       body: Column(
         children: [
@@ -191,5 +181,106 @@ class _CreateContractPageState extends State<CreateContractPage> {
     _editorScrollController.dispose();
     _editorFocusNode.dispose();
     super.dispose();
+  }
+}
+
+extension CreateContractDialog on ContractService {
+  static Future<Map<String, dynamic>?> showSaveDialog(BuildContext context, String contractorId) async {
+    final titleController = TextEditingController();
+    String? selectedProjectId;
+    
+    return showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Save Contract'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(
+                        labelText: 'Contract Title *',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    FutureBuilder<List<Map<String, dynamic>>>(
+                      future: ContractService.getContractorProjectInfo(contractorId),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const CircularProgressIndicator();
+                        }
+                        
+                        if (snapshot.hasError) {
+                          return Text('Error: ${snapshot.error}');
+                        }
+                        
+                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return const Text('No projects found. Create a project first.');
+                        }
+                        
+                        return DropdownButtonFormField<String>(
+                          value: selectedProjectId,
+                          decoration: const InputDecoration(
+                            labelText: 'Select Project *',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: snapshot.data!.map((project) => DropdownMenuItem<String>(
+                            value: project['project_id'],
+                            child: Text(
+                              project['description'] ?? 'No Description',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          )).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              selectedProjectId = value;
+                            });
+                          },
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (titleController.text.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Title is required')),
+                      );
+                      return;
+                    }
+                    
+                    if (selectedProjectId == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Project is required')),
+                      );
+                      return;
+                    }
+                    
+                    Navigator.of(dialogContext).pop({
+                      'title': titleController.text,
+                      'projectId': selectedProjectId,
+                    });
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 }

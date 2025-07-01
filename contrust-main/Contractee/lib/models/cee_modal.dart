@@ -1,10 +1,9 @@
 // request_modal.dart
 // ignore_for_file: non_constant_identifier_names, use_build_context_synchronously, unnecessary_type_check, deprecated_member_use
 
-import 'package:backend/services/enterdata.dart';
-import 'package:backend/services/fetchmethods.dart';
-import 'package:backend/services/projectbidding.dart';
-import 'package:backend/utils/validatefields.dart';
+import 'package:backend/services/be_bidding_service.dart';
+import 'package:backend/services/be_project_service.dart';
+import 'package:backend/utils/be_validation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -32,7 +31,6 @@ class ProjectModal {
 
     final startDateController = TextEditingController();
     final formKey = GlobalKey<FormState>();
-    final enterData = EnterDatatoDatabase();
 
     Future<void> selectStartDate() async {
       final DateTime? picked = await showDatePicker(
@@ -270,7 +268,7 @@ class ProjectModal {
                                       descriptionController.text.trim(),
                                       bidTimeController.text.trim(),
                                     )) {
-                                      await enterData.postProject(
+                                      await ProjectService().postProject(
                                         contracteeId: contracteeId,
                                         type: constructionTypeController.text
                                             .trim(),
@@ -360,7 +358,6 @@ class ProjectModal {
 class BidsModal {
   static const String profileUrl =
       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
-  static FetchClass fetchClass = FetchClass();
   
   static Future<void> show({
     required BuildContext context,
@@ -368,10 +365,10 @@ class BidsModal {
     required Future<void> Function(String projectId, String bidId) acceptBidding,
     String? initialAcceptedBidId,
   }) async {
-    final projectBidding = ProjectBidding();
+
     String? acceptedBidId = initialAcceptedBidId; 
     Future<List<Map<String, dynamic>>> bidsFuture =
-        fetchClass.fetchBids(projectId);
+        BiddingService().getBidsForProject(projectId);
 
     await showDialog(
       context: context,
@@ -554,14 +551,13 @@ class BidsModal {
                                                   children: [
                                                     TextButton(
                                                       onPressed: () async {
-                                                        await projectBidding
-                                                            .projectDeleteBidding(
-                                                                bid['bid_id']);
+                                                        await BiddingService()
+                                                            .deleteBid(bid['bid_id']);
                                                         if (context.mounted) {
                                                           setState(() {
                                                             bidsFuture =
-                                                                fetchClass
-                                                                    .fetchBids(
+                                                                BiddingService()
+                                                                    .getBidsForProject(
                                                                         projectId);
                                                           });
                                                         }
@@ -604,8 +600,9 @@ class BidsModal {
                                                             acceptedBidId =
                                                                 bid['bid_id']; 
                                                             bidsFuture =
-                                                                fetchClass.fetchBids(
-                                                                    projectId);
+                                                                BiddingService()
+                                                                    .getBidsForProject(
+                                                                        projectId);
                                                           });
                                                         }
                                                       },

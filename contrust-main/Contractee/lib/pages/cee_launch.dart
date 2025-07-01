@@ -1,4 +1,4 @@
-import 'package:backend/utils/pagetransition.dart';
+import 'package:backend/utils/be_pagetransition.dart';
 import 'package:contractee/pages/cee_welcome.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
@@ -7,7 +7,6 @@ class LaunchPage extends StatefulWidget {
   const LaunchPage({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
   _LaunchPageState createState() => _LaunchPageState();
 }
 

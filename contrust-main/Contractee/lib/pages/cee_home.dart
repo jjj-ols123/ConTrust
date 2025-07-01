@@ -1,8 +1,8 @@
-import 'package:backend/models/appbar.dart';
+import 'package:backend/models/be_UIapp.dart';
+import 'package:backend/models/be_appbar.dart';
+import 'package:backend/services/be_bidding_service.dart';
+import 'package:backend/services/be_fetchservice.dart';
 import 'package:contractee/models/cee_modal.dart';
-import 'package:backend/services/projectbidding.dart';
-import 'package:backend/services/fetchmethods.dart';
-import 'package:backend/models/buildmethods.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -15,8 +15,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final modalSheet = ProjectModal();
-  final projectbidding = ProjectBidding();
-  final fetchClass = FetchClass();
+
   Map<String, double> highestBids = {};
   Map<String, String?> acceptedBidIds = {};
 
@@ -49,9 +48,9 @@ class _HomePageState extends State<HomePage> {
     });
 
     try {
-      final fetchedContractors = await fetchClass.fetchContractors();
-      final fetchedProjects = await fetchClass.fetchProjects();
-      final fetchedHighestBids = await fetchClass.fetchHighestBids();
+      final fetchedContractors = await FetchService().fetchContractors();
+      final fetchedProjects = await FetchService().fetchUserProjects();
+      final fetchedHighestBids = await BiddingService().getProjectHighestBids();
 
       setState(() {
         contractors = fetchedContractors;
@@ -72,7 +71,7 @@ class _HomePageState extends State<HomePage> {
 
   void _loadAcceptBidding(String projectId, String bidId) async {
     try {
-      await projectbidding.projectAcceptBidding(projectId, bidId);
+      await BiddingService().acceptProjectBid(projectId, bidId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Bid has been accepted successfully.')),
@@ -220,7 +219,7 @@ isLoading
                       );
                     },
                     handleFinalizeBidding: (bidId) {
-                      return projectbidding.projectAcceptBidding(
+                      return BiddingService().acceptProjectBid(
                         projectId,
                         bidId,
                       );

@@ -1,13 +1,11 @@
 // ignore_for_file: use_build_context_synchronously
-
-import 'package:backend/models/appbar.dart';
-import 'package:backend/services/enterdata.dart';
-import 'package:backend/services/getuserdata.dart';
-import 'package:backend/services/notification.dart';
-import 'package:backend/utils/cor_cee_constraint.dart';
-import 'package:backend/utils/pagetransition.dart';
-import 'package:backend/utils/validatefields.dart';
-import 'package:backend/services/projectbidding.dart';
+import 'package:backend/models/be_appbar.dart';
+import 'package:backend/services/be_bidding_service.dart';
+import 'package:backend/services/be_notification_service.dart';
+import 'package:backend/services/be_user_service.dart';
+import 'package:backend/utils/be_constraint.dart';
+import 'package:backend/utils/be_pagetransition.dart';
+import 'package:backend/utils/be_validation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -23,14 +21,12 @@ class BiddingScreen extends StatefulWidget {
 
 class _BiddingScreenState extends State<BiddingScreen> {
   final supabase = Supabase.instance.client;
-  final projectbidding = ProjectBidding();
   final Set<String> _finalizedProjects = {};
 
   List<Map<String, dynamic>> projects = [];
   Map<String, double> highestBids = {};
   bool isLoading = true;
   String? contractorId;
-  GetUserData getUser = GetUserData();
 
   @override
   void initState() {
@@ -41,7 +37,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
   }
 
   Future<void> loadContractorId() async {
-    final id = await getUser.getContractorId();
+    final id = await UserService().getContractorId();
     setState(() {
       contractorId = id;
     });
@@ -69,7 +65,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
   }
 
   Future<void> loadHighestBids() async {
-    final highestBidsData = await projectbidding.projectHighestBid();
+    final highestBidsData = await BiddingService().getProjectHighestBids();
     setState(() {
       highestBids = highestBidsData;
     });
@@ -354,7 +350,6 @@ class _BiddingScreenState extends State<BiddingScreen> {
                               return;
                             }
 
-                            final enterData = EnterDatatoDatabase();
                             final user =
                                 Supabase.instance.client.auth.currentUser?.id;
                             if (user == null) {
@@ -376,7 +371,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
                               bidAmount,
                               message,
                             )) {
-                              await enterData.postBid(
+                              await BiddingService().postBid(
                                 contractorId: user,
                                 projectId: project['project_id'],
                                 bidAmount: bidAmountNum,
@@ -384,14 +379,11 @@ class _BiddingScreenState extends State<BiddingScreen> {
                                 context: context,
                               );
 
-                              final NotificationService notif =
-                                  NotificationService();
-                              final GetUserData getUser = GetUserData();
 
                               final contracteeId =
-                                  await getUser.getContracteeId();
+                                  await UserService().getContracteeId();
 
-                              await notif.createNotification(
+                              await NotificationService().createNotification(
                                 receiverId: contracteeId,
                                 receiverType: 'contractee',
                                 senderId: user,
@@ -471,7 +463,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
                         ),
                       ),
                       StreamBuilder<Duration>(
-                        stream: projectbidding.countdownStream(
+                        stream: BiddingService().getBiddingCountdownStream(
                           createdAt,
                           durationDays,
                         ),
@@ -488,7 +480,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
                           if (remaining.isNegative &&
                               !_finalizedProjects.contains(projectId)) {
                             _finalizedProjects.add(projectId);
-                            projectbidding.projectDurationBidding(projectId);
+                            BiddingService().processBiddingDurationExpiry(projectId);
                           }
 
                           if (remaining.isNegative) {

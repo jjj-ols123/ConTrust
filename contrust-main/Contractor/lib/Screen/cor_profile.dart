@@ -1,10 +1,8 @@
 // ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
-
-import 'package:backend/models/appbar.dart';
-import 'package:backend/services/getuserdata.dart';
-import 'package:backend/utils/pagetransition.dart';
+import 'package:backend/models/be_appbar.dart';
+import 'package:backend/services/be_user_service.dart';
+import 'package:backend/utils/be_pagetransition.dart';
 import 'package:contractor/Screen/cor_editprofile.dart';
-import 'package:backend/services/userprofile.dart';
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
 
@@ -20,8 +18,6 @@ class ContractorUserProfileScreen extends StatefulWidget {
 
 class _ContractorUserProfileScreenState
     extends State<ContractorUserProfileScreen> {
-  final UserService userService = UserService();
-  GetUserData getUser = GetUserData();
 
   String firmName = "Firm Name";
   String bio = "No Bio";
@@ -39,7 +35,7 @@ class _ContractorUserProfileScreenState
   }
 
   Future<void> loadContractorData() async {
-    final contractorData = await userService.fetchUserData(
+    final contractorData = await UserService().fetchUserData(
       widget.contractorId,
       isContractor: true,
     );
@@ -148,7 +144,7 @@ class _ContractorUserProfileScreenState
                             ElevatedButton(
                               onPressed: () async {
                                 String? contractorId =
-                                    await getUser.getContractorId();
+                                    await UserService().getContractorId();
 
                                 transitionBuilder(
                                   context,
@@ -240,10 +236,10 @@ class _ContractorUserProfileScreenState
                             ElevatedButton(
                               onPressed: () async {
                                 Uint8List? imageBytes =
-                                    await userService.pickImage();
+                                    await UserService().pickImage();
 
                                 if (imageBytes != null) {
-                                  bool success = await userService
+                                  bool success = await UserService()
                                       .addPastProjectPhoto(
                                         widget.contractorId,
                                         imageBytes,

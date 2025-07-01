@@ -1,7 +1,7 @@
-// ignore_for_file: deprecated_member_use, unused_local_variable
+// ignore_for_file: deprecated_member_use
 
-import 'package:backend/models/buildmethods.dart';
-import 'package:backend/services/fetchmethods.dart';
+import 'package:backend/models/be_UIapp.dart';
+import 'package:backend/services/be_fetchservice.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -35,15 +35,13 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
 
   bool _canSend = false;
 
-  late Future<String> _projectStatus;
-
-  FetchClass fetchMethod = FetchClass();
+  late Future<String?> _projectStatus;
 
   @override
   void initState() {
     super.initState();
     setState(() {
-      _projectStatus = fetchMethod.fetchProjectStatus(widget.chatRoomId);
+      _projectStatus = FetchService().fetchProjectStatus(widget.chatRoomId);
     });
     _messageController.addListener(() {
       setState(() {
@@ -97,7 +95,6 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -132,7 +129,7 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
       ),
       body: Column(
         children: [
-          FutureBuilder<String>(
+          FutureBuilder<String?>(
             future: _projectStatus,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {

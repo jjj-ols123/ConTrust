@@ -1,7 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
-
-import 'package:backend/services/auth_service.dart';
-import 'package:backend/utils/pagetransition.dart';
+import 'package:backend/services/be_user_service.dart';
+import 'package:backend/utils/be_pagetransition.dart';
 import 'package:contractee/pages/cee_home.dart';
 import 'package:flutter/material.dart';
 
@@ -12,15 +11,13 @@ class SignInContractee {
     String password,
     bool Function() validateFields
     ) async {
-      
-    final AuthService authService = AuthService();
 
     if (!validateFields()) {
       return;
     }
 
     try {
-      final signInResponse = await authService.signIn(
+      final signInResponse = await UserService().signIn(
         email: email,
         password: password,
       );

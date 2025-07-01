@@ -1,6 +1,5 @@
 // ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
-
-import 'package:backend/services/userprofile.dart';
+import 'package:backend/services/be_user_service.dart';
 import 'package:flutter/material.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -18,7 +17,6 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
-  final UserService userService = UserService();
   TextEditingController firstController = TextEditingController();
   TextEditingController secondController = TextEditingController();
 
@@ -29,7 +27,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _fetchUserData() async {
-    final userData = await userService.fetchUserData(
+    final userData = await UserService().fetchUserData(
       widget.userId,
       isContractor: widget.isContractor,
     );
@@ -47,7 +45,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _updateProfile() async {
-    final success = await userService.updateUserProfile(
+    final success = await UserService().updateUserProfile(
       widget.userId,
       firstController.text,
       secondController.text,

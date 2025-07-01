@@ -1,9 +1,7 @@
 // ignore_for_file: library_private_types_in_public_api
-
-
-import 'package:backend/models/appbar.dart';
-import 'package:backend/services/fetchmethods.dart'; 
-import 'package:backend/utils/pagetransition.dart';
+import 'package:backend/models/be_appbar.dart';
+import 'package:backend/services/be_fetchservice.dart';
+import 'package:backend/utils/be_pagetransition.dart'; 
 import 'package:contractor/Screen/cor_product.dart';
 import 'package:flutter/material.dart';
 
@@ -16,7 +14,7 @@ class ClientHistoryScreen extends StatefulWidget {
 }
 
 class _ClientHistoryScreenState extends State<ClientHistoryScreen> {
-  final FetchClass fetchClass = FetchClass();
+
   List<Map<String, dynamic>> completedProjects = [];
   List<Map<String, dynamic>> filteredProjects = [];
   TextEditingController searchController = TextEditingController();
@@ -29,7 +27,7 @@ class _ClientHistoryScreenState extends State<ClientHistoryScreen> {
   }
 
   Future<void> loadCompletedProjects() async {
-    final projects = await fetchClass.fetchCompletedProjects();
+    final projects = await FetchService().fetchCompletedProjects();
     setState(() {
       completedProjects = projects;
       filteredProjects = projects;

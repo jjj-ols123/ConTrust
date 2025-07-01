@@ -1,9 +1,10 @@
-import 'package:backend/services/getuserdata.dart';
-import 'package:backend/utils/cor_cee_constraint.dart';
+import 'package:backend/models/be_appbar.dart';
+import 'package:backend/services/be_user_service.dart';
+import 'package:backend/utils/be_constraint.dart';
 import 'package:contractor/Screen/cor_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:backend/models/appbar.dart';
+
 
 class ContractorChatHistoryPage extends StatefulWidget {
   const ContractorChatHistoryPage({super.key});
@@ -15,7 +16,6 @@ class ContractorChatHistoryPage extends StatefulWidget {
 class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
   final supabase = Supabase.instance.client;
   String? contractorId;
-  GetUserData getUser = GetUserData();
 
   @override
   void initState() {
@@ -24,7 +24,7 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
   }
 
   Future<void> loadContractorId() async {
-  final id = await getUser.getContractorId();
+  final id = await UserService().getContractorId();
   setState(() {
     contractorId = id;
   });

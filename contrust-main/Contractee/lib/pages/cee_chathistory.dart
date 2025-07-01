@@ -1,5 +1,5 @@
-import 'package:backend/models/appbar.dart';
-import 'package:backend/utils/cor_cee_constraint.dart';
+import 'package:backend/models/be_appbar.dart';
+import 'package:backend/utils/be_constraint.dart';
 import 'package:contractee/pages/cee_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';

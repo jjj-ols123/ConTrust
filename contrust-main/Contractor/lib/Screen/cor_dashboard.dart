@@ -1,8 +1,7 @@
 // ignore_for_file: use_build_context_synchronously, avoid_print
-
-import 'package:backend/models/appbar.dart';
-import 'package:backend/services/getuserdata.dart';
-import 'package:backend/utils/pagetransition.dart';
+import 'package:backend/models/be_appbar.dart';
+import 'package:backend/services/be_user_service.dart';
+import 'package:backend/utils/be_pagetransition.dart';
 import 'package:flutter/material.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -13,7 +12,6 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  final GetUserData getUser = GetUserData();
   String? contractorId;
 
   @override
@@ -23,7 +21,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> loadContractorId() async {
-    final id = await getUser.getContractorId();
+    final id = await UserService().getContractorId();
     setState(() {
       contractorId = id;
     });
