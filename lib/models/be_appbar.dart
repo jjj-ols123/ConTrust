@@ -1,10 +1,8 @@
 // ignore_for_file: unused_field
-
 import 'dart:async';
-
-import 'package:backend/services/getuserdata.dart';
-import 'package:backend/services/notification.dart';
-import 'package:backend/utils/pagetransition.dart';
+import 'package:backend/services/be_notification_service.dart';
+import 'package:backend/services/be_user_service.dart';
+import 'package:backend/utils/be_pagetransition.dart';
 import 'package:contractee/pages/cee_about.dart';
 import 'package:contractee/pages/cee_materials.dart';
 import 'package:contractee/pages/cee_notification.dart';
@@ -36,8 +34,6 @@ class ConTrustAppBar extends StatefulWidget implements PreferredSizeWidget {
 
 class _ConTrustAppBarState extends State<ConTrustAppBar> {
   StreamSubscription<List<Map<String, dynamic>>>? _notificationSub;
-  final NotificationService notif = NotificationService();
-  final GetUserData getUserId = GetUserData();
   int _unreadCount = 0;
   String? _receiverId;
 
@@ -49,7 +45,7 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
 
   Future<void> _loadReceiverId() async {
     try {
-      final id = await getUserId.getContracteeId();
+      final id = await UserService().getContracteeId();
       if (id == null || !mounted) return;
 
       setState(() => _receiverId = id);
@@ -60,7 +56,7 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
   }
 
   void _initializeNotifications(String receiverId) {
-    _notificationSub = notif.listenNotification(receiverId).listen((notifs) {
+    _notificationSub = NotificationService().listenToNotifications(receiverId).listen((notifs) {
       if (mounted) {
         setState(() {
           _unreadCount = notifs.where((n) => n['is_read'] == false).length;
@@ -113,8 +109,7 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
                   onAuthenticated: () async {
                     if (!context.mounted) return;
 
-                    GetUserData getUserId = GetUserData();
-                    String? userType = await getUserId.getCurrentUserType();
+                    String? userType = await UserService().getCurrentUserType();
 
                     if (userType == null) {
                       ScaffoldMessenger.of(context).showSnackBar(

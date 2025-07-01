@@ -1,9 +1,8 @@
 // ignore_for_file: deprecated_member_use
 
 import 'dart:async';
-
-import 'package:backend/services/getuserdata.dart';
-import 'package:backend/services/projectbidding.dart';
+import 'package:backend/services/be_bidding_service.dart';
+import 'package:backend/services/be_project_service.dart';
 import 'package:contractee/models/cee_expandable.dart';
 import 'package:contractee/models/cee_modal.dart';
 import 'package:contractee/pages/cee_chathistory.dart';
@@ -219,7 +218,7 @@ class ProjectView extends StatelessWidget {
                   const SizedBox(width: 6),
                   StreamBuilder<Duration>(
                     stream:
-                        ProjectBidding().countdownStream(createdAt, duration),
+                        BiddingService().getBiddingCountdownStream(createdAt, duration),
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) {
                         return const Text(
@@ -455,7 +454,6 @@ class ContractAgreementBanner extends StatefulWidget {
 
 class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
   final supabase = Supabase.instance.client;
-  GetUserData _getUserData = GetUserData();
   bool _dialogShown = false;
 
   late final StreamSubscription _projectSubscription;
@@ -467,7 +465,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
   }
 
   void _checkProject() async {
-    final projectId = await _getUserData.getProjectId(widget.chatRoomId);
+    final projectId = await ProjectService().getProjectId(widget.chatRoomId);
     if (projectId == null) return;
 
     _projectSubscription = supabase
@@ -533,7 +531,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
   }
 
   Future<void> _handleProceed() async {
-    final projectId = await _getUserData.getProjectId(widget.chatRoomId);
+    final projectId = await ProjectService().getProjectId(widget.chatRoomId);
     if (projectId == null) return;
 
     await supabase
