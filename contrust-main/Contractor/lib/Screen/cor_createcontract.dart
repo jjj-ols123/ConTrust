@@ -69,7 +69,7 @@ class _CreateContractPageState extends State<CreateContractPage> {
       return;
     }
 
-    final contractTypeId = widget.template?['contract_type_id'];
+    final contractTypeId = widget.template?['contract_type_id'];  
 
     setState(() {
       _isSaving = true;
@@ -83,10 +83,11 @@ class _CreateContractPageState extends State<CreateContractPage> {
       
       if (contractData != null) {
         await ContractService.saveContract(
-          projectId: contractData['projectId']!,
+          projectId:   contractData['projectId']!,
+          contractorId: widget.contractorId,
           contractTypeId: contractTypeId,
-          title: contractData['title']!,
-          content: contractContent,
+          title:       contractData['title']!,
+          content:     contractContent,
           deltaContent: contractDelta,
         );
 
