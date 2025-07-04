@@ -7,13 +7,26 @@ class ContractService {
 
   static Future<void> saveContract({
     required String projectId,
+    required String contractorId,
     required String contractTypeId,
     required String title,
     required String content,
     required List<dynamic> deltaContent,
   }) async {
+    final proj = await _supabase
+        .from('Projects')
+        .select('contractee_id')
+        .eq('project_id', projectId)
+        .single();
+    final contracteeId = proj['contractee_id'] as String?;
+    if (contracteeId == null) {
+      throw Exception('Project has no contractee assigned');
+    }
+
     await _supabase.from('Contracts').insert({
       'project_id': projectId,
+      'contractor_id': contractorId,
+      'contractee_id': contracteeId,
       'contract_type_id': contractTypeId,
       'title': title,
       'content': content,
