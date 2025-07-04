@@ -7,9 +7,10 @@ class FetchService {
     try {
       final response = await _supabase
           .from('Contractor')
-          .select('contractor_id, firm_name, profile_photo, rating, bio');
+          .select('contractor_id, firm_name, profile_photo, bio');
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
+      print('Error fetching contractors: $e');
       return [];
     }
   }
