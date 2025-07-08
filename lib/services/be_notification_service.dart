@@ -18,9 +18,8 @@ class NotificationService {
         'receiver_type': receiverType,
         'sender_id': senderId,
         'sender_type': senderType,
-        'type': type,
-        'message': message,
-        'extra_data': information ?? {},
+        'headline': type,
+        'information': information ?? {},
         'is_read': false,
         'created_at': DateTime.now().toIso8601String(),
       };
@@ -34,7 +33,7 @@ class NotificationService {
         throw Exception('Failed to create notification');
       }
     } catch (e) {
-      throw Exception('Notification error: ${e.toString()}');
+      throw Exception('Notification error');
     }
   }
 
@@ -140,7 +139,7 @@ class NotificationService {
           .from('Notifications')
           .select()
           .eq('receiver_id', receiverId)
-          .eq('type', type)
+          .eq('headline', type)
           .order('created_at', ascending: false);
 
       return List<Map<String, dynamic>>.from(response);
@@ -253,12 +252,12 @@ class NotificationService {
     try {
       final response = await _supabase
           .from('Notifications')
-          .select('type')
+          .select('headline')
           .eq('receiver_id', receiverId);
 
       Map<String, int> stats = {};
       for (var notification in response) {
-        String type = notification['type'] ?? 'unknown';
+        String type = notification['headline'] ?? 'unknown';
         stats[type] = (stats[type] ?? 0) + 1;
       }
 

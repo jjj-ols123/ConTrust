@@ -46,9 +46,8 @@ class ProjectService {
             const SnackBar(content: Text('You can only post one project')),
           );
         } else {
-          print('Error inserting data: $e');
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error inserting data: $e')),
+            SnackBar(content: Text('Error inserting data')),
           );
         }
       }
@@ -161,13 +160,5 @@ class ProjectService {
         .eq('chatroom_id', chatRoomId)
         .maybeSingle();
     return chatRoom?['project_id'];
-  }
-
-  Future<Map<String, dynamic>?> getProjectInfo(String projectId) async {
-    return await _supabase
-        .from('Projects')
-        .select('contract_started, contractor_agree, contractee_agree')
-        .eq('project_id', projectId)
-        .maybeSingle();
   }
 }

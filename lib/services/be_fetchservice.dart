@@ -10,7 +10,6 @@ class FetchService {
           .select('contractor_id, firm_name, profile_photo, bio');
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('Error fetching contractors: $e');
       return [];
     }
   }

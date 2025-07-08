@@ -1,15 +1,16 @@
 // ignore_for_file: deprecated_member_use
 
-import 'package:backend/services/be_fetchservice.dart';
+import 'package:backend/services/be_contract_service.dart';
 import 'package:flutter/material.dart';
 
 class UIContract {
-  
   static Future<Map<String, dynamic>?> showSaveDialog(
-      BuildContext context, String contractorId) async {
-    final titleController = TextEditingController();
-    String? selectedProjectId;
-
+    BuildContext context,
+    String contractorId, {
+    required TextEditingController titleController,
+    String? initialProjectId,
+  }) async {
+    String? selectedProjectId = initialProjectId;
     return showDialog<Map<String, dynamic>>(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -30,38 +31,30 @@ class UIContract {
                     ),
                     const SizedBox(height: 16),
                     FutureBuilder<List<Map<String, dynamic>>>(
-                      future: FetchService().fetchContractorProjectInfo(contractorId),
+                      future: ContractService.getContractorProjectInfo(contractorId),
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
                           return const CircularProgressIndicator();
                         }
-
                         if (snapshot.hasError) {
-                          return Text('Error: ${snapshot.error}');
+                          return Text('Error getting projects');
                         }
-
                         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                          return const Text(
-                              'No projects found. Create a project first.');
+                          return const Text('No projects found. Create a project first.');
                         }
-
                         return DropdownButtonFormField<String>(
                           value: selectedProjectId,
                           decoration: const InputDecoration(
                             labelText: 'Select Project *',
                             border: OutlineInputBorder(),
                           ),
-                          items: snapshot.data!
-                              .map((project) => DropdownMenuItem<String>(
-                                    value: project['project_id'],
-                                    child: Text(
-                                      project['description'] ??
-                                          'No Description',
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ))
-                              .toList(),
+                          items: snapshot.data!.map((project) => DropdownMenuItem<String>(
+                                value: project['project_id'] as String,
+                                child: Text(
+                                  project['description'] ?? 'No Description',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              )).toList(),
                           onChanged: (value) {
                             setState(() {
                               selectedProjectId = value;
@@ -86,16 +79,14 @@ class UIContract {
                       );
                       return;
                     }
-
                     if (selectedProjectId == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Project is required')),
                       );
                       return;
                     }
-
                     Navigator.of(dialogContext).pop({
-                      'title': titleController.text,
+                      'title': titleController.text.trim(),
                       'projectId': selectedProjectId,
                     });
                   },
