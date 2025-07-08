@@ -1,5 +1,5 @@
 // ignore_for_file: deprecated_member_use
-import 'package:backend/models/be_UIapp.dart';
+import 'package:backend/models/be_UImessage.dart';
 import 'package:backend/services/be_fetchservice.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -117,7 +117,7 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               } else if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
+                return Center(child: Text('Error fetching status'));
               } else {
                 final projectStatus = snapshot.data ?? 'pending';
                 if (projectStatus == 'awaiting_contract') {
@@ -158,44 +158,11 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
                   itemBuilder: (context, index) {
                     final msg = messages[index];
                     final isMe = msg['sender_id'] == widget.contractorId;
-                    return Align(
-                      alignment:
-                          isMe ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
-                        margin: EdgeInsets.only(
-                          top: 4,
-                          bottom: 4,
-                          left: isMe ? 40 : 0,
-                          right: isMe ? 0 : 40,
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 10,
-                          horizontal: 16,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isMe ? Colors.amber[300] : Colors.white,
-                          borderRadius: BorderRadius.only(
-                            topLeft: const Radius.circular(16),
-                            topRight: const Radius.circular(16),
-                            bottomLeft: Radius.circular(isMe ? 16 : 4),
-                            bottomRight: Radius.circular(isMe ? 4 : 16),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.15),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          msg['message'] ?? '',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: isMe ? Colors.black : Colors.grey[900],
-                          ),
-                        ),
-                      ),
+                    return UIMessage.buildMessageBubble(
+                      context,
+                      msg,
+                      isMe,
+                      widget.contractorId,
                     );
                   },
                 );

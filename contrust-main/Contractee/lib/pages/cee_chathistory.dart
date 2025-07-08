@@ -28,7 +28,7 @@ class _ContracteeChatHistoryPageState extends State<ContracteeChatHistoryPage> {
     });
   }
 
-  Future<Map<String, dynamic>?> loadContractorData(String contractorId) async {
+  Future<Map<String, dynamic>?> _loadContractorData(String contractorId) async {
     final response = await supabase
         .from('Contractor')
         .select('firm_name, profile_photo')
@@ -77,7 +77,7 @@ class _ContracteeChatHistoryPageState extends State<ContracteeChatHistoryPage> {
                         final canChat = snapshot.data ?? false;
 
                         return FutureBuilder<Map<String, dynamic>?>(
-                          future: loadContractorData(contractorId),
+                          future: _loadContractorData(contractorId),
                           builder: (context, snapshot) {
                             final contractorName =
                                 snapshot.data?['firm_name'] ?? 'Contractor';

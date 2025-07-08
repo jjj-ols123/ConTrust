@@ -22,7 +22,6 @@ class ContractService {
     if (contracteeId == null) {
       throw Exception('Project has no contractee assigned');
     }
-
     await _supabase.from('Contracts').insert({
       'project_id': projectId,
       'contractor_id': contractorId,
@@ -33,6 +32,36 @@ class ContractService {
       'delta_content': deltaContent,
       'status': 'draft',
     });
+  }
+
+  static Future<void> updateContract({
+    required String contractId,
+    required String projectId,
+    required String contractorId,
+    required String contractTypeId,
+    required String title,
+    required String content,
+    required List<dynamic> deltaContent,
+  }) async {
+    final proj = await _supabase
+        .from('Projects')
+        .select('contractee_id')
+        .eq('project_id', projectId)
+        .single();
+    final contracteeId = proj['contractee_id'] as String?;
+    if (contracteeId == null) {
+      throw Exception('Project has no contractee assigned');
+    }
+    await _supabase.from('Contracts').update({
+      'project_id': projectId,
+      'contractor_id': contractorId,
+      'contractee_id': contracteeId,
+      'contract_type_id': contractTypeId,
+      'title': title,
+      'content': content,
+      'delta_content': deltaContent,
+      'updated_at': DateTime.now().toIso8601String(),
+    }).eq('contract_id', contractId);
   }
 
   static Future<List<Map<String, dynamic>>> getContractorProjectInfo(
@@ -48,12 +77,44 @@ class ContractService {
 
   static Future<void> sendContractToContractee({
     required String contractId,
-    String? message,
+    required String contracteeId,
+    required String message,
   }) async {
-    await _supabase.from('Contracts').update({
-      'status': 'sent',
-      'sent_at': DateTime.now().toIso8601String(),
-    }).eq('id', contractId);
+    try {
+      final contractData = await _supabase
+          .from('Contracts')
+          .select('*, contractor_id, project_id')
+          .eq('contract_id', contractId)
+          .single();
+
+      final chatRoomData = await _supabase
+          .from('ChatRoom')
+          .select('chatroom_id')
+          .eq('project_id', contractData['project_id'])
+          .single();
+
+      await _supabase.from('Contracts').update({
+        'status': 'sent',
+        'sent_at': DateTime.now().toIso8601String(),
+      }).eq('contract_id', contractId);
+
+      await _supabase.from('Messages').insert({
+        'chatroom_id': chatRoomData['chatroom_id'],
+        'sender_id': contractData['contractor_id'],
+        'receiver_id': contracteeId,
+        'message': message,
+        'timestamp': DateTime.now().toIso8601String(),
+        'message_type': 'contract',
+        'contract_id': contractId,
+      });
+
+      await _supabase.from('ChatRoom').update({
+        'last_message': '📄 Contract sent: $message',
+        'last_message_time': DateTime.now().toIso8601String(),
+      }).eq('chatroom_id', chatRoomData['chatroom_id']);
+    } catch (e) {
+      rethrow;
+    }
   }
 
   static Future<void> updateContractStatus({
@@ -290,5 +351,54 @@ class ContractService {
     } catch (e) {
       return 'Invalid date';
     }
+  }
+
+  static Future<void> viewContract(
+      BuildContext context, String contractId) async {
+    try {
+      final contractData = await getContractById(contractId);
+
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(contractData['title'] ?? 'Contract'),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Status: ${contractData['status']}'),
+                  const SizedBox(height: 8),
+                  Text('Content:'),
+                  const SizedBox(height: 4),
+                  Text(contractData['content'] ?? 'No content'),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading contract')),
+        );
+      }
+    }
+  }
+
+  static Future<Map<String, dynamic>> getContractById(String contractId) async {
+    return await _supabase
+        .from('Contracts')
+        .select('*')
+        .eq('contract_id', contractId)
+        .single();
   }
 }

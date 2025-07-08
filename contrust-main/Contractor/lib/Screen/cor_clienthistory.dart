@@ -22,11 +22,11 @@ class _ClientHistoryScreenState extends State<ClientHistoryScreen> {
   @override
   void initState() {
     super.initState();
-    loadCompletedProjects();
+    _loadCompletedProjects();
     searchController.addListener(_onSearchChanged);
   }
 
-  Future<void> loadCompletedProjects() async {
+  Future<void> _loadCompletedProjects() async {
     final projects = await FetchService().fetchCompletedProjects();
     setState(() {
       completedProjects = projects;

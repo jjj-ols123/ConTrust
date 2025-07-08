@@ -1,3 +1,4 @@
+import 'package:backend/services/be_notification_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/services/be_user_service.dart';
@@ -24,6 +25,51 @@ class BiddingService {
         'status': 'pending',
       });
 
+      try {
+        final projectResponse = await _supabase
+            .from('Projects')
+            .select('contractee_id, type')
+            .eq('project_id', projectId)
+            .single();
+
+        if (projectResponse.isNotEmpty) {
+          final contracteeId = projectResponse['contractee_id'];
+          final projectType = projectResponse['type'];
+
+          final contractorResponse = await _supabase
+              .from('Contractor')
+              .select('firm_name, profile_photo')
+              .eq('contractor_id', contractorId)
+              .single();
+
+          final contractorName =
+              contractorResponse['firm_name'] ?? 'Unknown Contractor';
+          final contractorPhoto = contractorResponse['profile_photo'] ?? '';
+
+          final notificationService = NotificationService();
+
+          await notificationService.createNotification(
+            receiverId: contracteeId,
+            receiverType: 'contractee',
+            senderId: contractorId,
+            senderType: 'contractor',
+            type: 'New Bid',
+            message:
+                '$contractorName submitted a bid of ₱$bidAmount for your $projectType project',
+            information: {
+              'bid_amount': bidAmount,
+              'project_type': projectType,
+              'contractor_name': contractorName,
+              'contractor_photo': contractorPhoto,
+            },
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error sending notification')),
+        );
+      }
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Bid created successfully!')),
@@ -40,9 +86,8 @@ class BiddingService {
             ),
           );
         } else {
-          print('Error inserting data: $e');
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error inserting data: $e')),
+            SnackBar(content: Text('Error posting bid')),
           );
         }
       }
@@ -88,11 +133,8 @@ class BiddingService {
   }
 
   Future<void> acceptProjectBid(String projectId, String bidId) async {
-    final bidResponse = await _supabase
-        .from('Bids')
-        .select()
-        .eq('bid_id', bidId)
-        .single();
+    final bidResponse =
+        await _supabase.from('Bids').select().eq('bid_id', bidId).single();
 
     if (bidResponse.isEmpty) return;
 
@@ -112,10 +154,8 @@ class BiddingService {
       'contractor_id': contractorId,
     }).eq('project_id', projectId);
 
-    final allBids = await _supabase
-        .from('Bids')
-        .select()
-        .eq('project_id', projectId);
+    final allBids =
+        await _supabase.from('Bids').select().eq('project_id', projectId);
 
     final losingBidIds = allBids
         .where((bid) => bid['bid_id'] != bidId)
@@ -125,19 +165,48 @@ class BiddingService {
     if (losingBidIds.isNotEmpty) {
       await _supabase
           .from('Bids')
-          .update({'status': 'rejected'})
-          .inFilter('bid_id', losingBidIds);
+          .update({'status': 'rejected'}).inFilter('bid_id', losingBidIds);
     }
 
     await _supabase
         .from('Bids')
-        .update({'status': 'accepted'})
-        .eq('bid_id', bidId);
+        .update({'status': 'accepted'}).eq('bid_id', bidId);
 
     await _supabase
         .from('Projects')
-        .update({'status': 'awaiting_contract'})
-        .eq('project_id', projectId);
+        .update({'status': 'awaiting_contract'}).eq('project_id', projectId);
+
+    try {
+      final contracteeId = projectResponse['contractee_id'];
+      final projectType = projectResponse['type'];
+
+      final contracteeResponse = await _supabase
+          .from('Contractee')
+          .select('full_name, profile_photo')
+          .eq('contractee_id', contracteeId)
+          .single();
+
+      final contracteeName = contracteeResponse['full_name'] ?? 'Unknown';
+      final contracteePhoto = contracteeResponse['profile_photo'] ?? '';
+
+      final notificationService = NotificationService();
+
+      await notificationService.createNotification(
+        receiverId: contractorId,
+        receiverType: 'contractor',
+        senderId: contracteeId,
+        senderType: 'contractee',
+        type: 'Bid Accepted',
+        message:
+            'Congratulations! Your bid for the $projectType project has been accepted',
+        information: {
+          'project_type': projectType,
+          'bid_id': bidId,
+          'full_name': contracteeName,
+          'profile_photo': contracteePhoto,
+        },
+      );
+    } catch (e) {}
   }
 
   Future<void> processBiddingDurationExpiry(String projectId) async {
@@ -171,64 +240,26 @@ class BiddingService {
     if (losingBidIds.isNotEmpty) {
       await _supabase
           .from('Bids')
-          .update({'status': 'expired'})
-          .inFilter('bid_id', losingBidIds);
+          .update({'status': 'expired'}).inFilter('bid_id', losingBidIds);
     }
 
     await _supabase
         .from('Bids')
-        .update({'status': 'accepted'})
-        .eq('bid_id', bidWinnerId);
+        .update({'status': 'accepted'}).eq('bid_id', bidWinnerId);
   }
 
   Future<void> deleteBid(String bidId) async {
-    await _supabase
-        .from('Bids')
-        .delete()
-        .eq('bid_id', bidId);
+    await _supabase.from('Bids').delete().eq('bid_id', bidId);
   }
 
-  Future<void> cancelAllProjectBids(String projectId) async {
-    await _supabase
-        .from('Bids')
-        .update({'status': 'cancelled'})
-        .eq('project_id', projectId);
-  }
-
-  Future<void> updateBidStatus(String bidId, String status) async {
-    await _supabase
-        .from('Bids')
-        .update({'status': status})
-        .eq('bid_id', bidId);
-  }
-
-  Future<void> acceptBid(String bidId, String projectId, String contractorId) async {
-    await updateBidStatus(bidId, 'accepted');
-
-    await _supabase
-        .from('Projects')
-        .update({
-          'contractor_id': contractorId,
-          'status': 'in_progress',
-        })
-        .eq('project_id', projectId);
-
-    await _supabase
-        .from('Bids')
-        .update({'status': 'rejected'})
-        .neq('bid_id', bidId)
-        .eq('project_id', projectId);
-  }
- 
   Future<List<Map<String, dynamic>>> getBidsForProject(String projectId) async {
     try {
       final response = await _supabase
           .from('Bids')
           .select('''
             *,
-            Contractor:contractor_id (
+            contractor:contractor_id (
               firm_name,
-              rating,
               profile_photo
             )
           ''')
@@ -239,34 +270,6 @@ class BiddingService {
     } catch (e) {
       return [];
     }
-  }
-
-  Future<List<Map<String, dynamic>>> getBidsByContractor(String contractorId) async {
-    try {
-      final response = await _supabase
-          .from('Bids')
-          .select('''
-            *,
-            Projects:project_id (
-              type,
-              description,
-              location,
-              status
-            )
-          ''')
-          .eq('contractor_id', contractorId)
-          .order('created_at', ascending: false);
-
-      return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
-      return [];
-    }
-  }
-
-  Duration getRemainingBiddingDuration(DateTime createdAt, int durationInDays) {
-    final endTime = createdAt.add(Duration(days: durationInDays));
-    final now = DateTime.now();
-    return endTime.difference(now);
   }
 
   Stream<Duration> getBiddingCountdownStream(
@@ -283,30 +286,26 @@ class BiddingService {
     }
   }
 
-  String getFormattedTimeRemaining(DateTime createdAt, int durationInDays) {
-    final remaining = getRemainingBiddingDuration(createdAt, durationInDays);
+   static String formatNotificationTime(String? createdAt) {
+    if (createdAt == null) return '';
     
-    if (remaining.isNegative) {
-      return "Expired";
-    }
-
-    final days = remaining.inDays;
-    final hours = remaining.inHours % 24;
-    final minutes = remaining.inMinutes % 60;
-    final seconds = remaining.inSeconds % 60;
-
-    if (days > 0) {
-      return "${days}d ${hours}h ${minutes}m";
-    } else if (hours > 0) {
-      return "${hours}h ${minutes}m ${seconds}s";
-    } else if (minutes > 0) {
-      return "${minutes}m ${seconds}s";
-    } else {
-      return "${seconds}s";
+    try {
+      final dateTime = DateTime.parse(createdAt);
+      final now = DateTime.now();
+      final difference = now.difference(dateTime);
+      
+      if (difference.inDays > 0) {
+        return '${difference.inDays}d ago';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours}h ago';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes}m ago';
+      } else {
+        return 'Just now';
+      }
+    } catch (e) {
+      return '';
     }
   }
-  
-  bool isValidBidAmount(double bidAmount, double minBudget, double maxBudget) {
-    return bidAmount >= minBudget && bidAmount <= maxBudget;
-  }
+
 }

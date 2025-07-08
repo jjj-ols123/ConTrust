@@ -59,7 +59,7 @@ class SignInContractor {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Unexpected error: $e'),
+          content: Text('Error signing in'),
           backgroundColor: Colors.red,
         ),
       );

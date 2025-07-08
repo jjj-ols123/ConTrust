@@ -22,7 +22,7 @@ class ConTrustAppBar extends StatefulWidget implements PreferredSizeWidget {
   const ConTrustAppBar({
     super.key,
     required this.headline,
-    this.actions, 
+    this.actions,  
   });
 
   @override
@@ -51,7 +51,9 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
       setState(() => _receiverId = id);
       _initializeNotifications(id);
     } catch (e) {
-      debugPrint('Error loading receiver ID: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to load notifications')),
+      );
     }
   }
 

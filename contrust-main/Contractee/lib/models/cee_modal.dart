@@ -404,7 +404,7 @@ class BidsModal {
                               return SizedBox(
                                 height: 400,
                                 child: Center(
-                                  child: Text('Error loading bids: ${snapshot.error}'),
+                                  child: Text('Error loading bids'),
                                 ),
                               );
                             }

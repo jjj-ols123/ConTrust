@@ -1,21 +1,26 @@
+// ignore_for_file: use_build_context_synchronously
+
+import 'dart:convert';
 import 'package:backend/models/be_UIcontract.dart';
 import 'package:backend/services/be_contract_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_quill/quill_delta.dart';
-import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
 import 'package:flutter_quill_delta_from_html/flutter_quill_delta_from_html.dart';
+import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
 
 class CreateContractPage extends StatefulWidget {
   final String? contractType;
   final Map<String, dynamic>? template;
   final String contractorId;
+  final Map<String, dynamic>? existingContract; 
 
   const CreateContractPage({
     super.key,
     this.template,
     required this.contractType,
     required this.contractorId,
+    this.existingContract,
   });
 
   @override
@@ -23,39 +28,72 @@ class CreateContractPage extends StatefulWidget {
 }
 
 class _CreateContractPageState extends State<CreateContractPage> {
-
-  final QuillController _controller = QuillController.basic();
+  
+  late final QuillController _controller;
   final FocusNode _editorFocusNode = FocusNode();
   final ScrollController _editorScrollController = ScrollController();
   bool _isSaving = false;
+  late final TextEditingController _titleController;
+  String? _initialProjectId; 
 
   @override
   void initState() {
     super.initState();
+
+    if (widget.existingContract != null) {
+      final deltaData = widget.existingContract!['delta_content'];
+      Document document;
+      if (deltaData != null) {
+        try {
+          final List<dynamic> deltaJson = deltaData is String
+              ? jsonDecode(deltaData)
+              : deltaData;
+          document = Document.fromDelta(Delta.fromJson(deltaJson));
+        } catch (e) {
+          document = Document()..insert(0, widget.existingContract!['content'] as String? ?? '');
+        }
+      } else {
+        document = Document()..insert(0, widget.existingContract!['content'] as String? ?? '');
+      }
+      _controller = QuillController(
+        document: document,
+        selection: const TextSelection.collapsed(offset: 0),
+      );
+      _titleController = TextEditingController(
+          text: widget.existingContract!['title'] as String? ?? '');
+      _initialProjectId = widget.existingContract!['project_id'] as String?;
+    } else {
+      _controller = QuillController.basic();
+      _titleController = TextEditingController();
+      _initialProjectId = null;
+    }
     _loadContractType();
   }
 
   void _loadContractType() {
     final template = widget.template;
-
     if (template != null && template['template_content'] != null) {
       String htmlTemplate = template['template_content'];
-
-      htmlTemplate = _replacePlaceholders(htmlTemplate);
-
+      htmlTemplate = ContractService.replacePlaceholders(htmlTemplate, widget.contractorId, widget.template);
       try {
         final converter = HtmlToDelta();
         final delta = converter.convert(htmlTemplate);
-
         final document = Document.fromDelta(Delta.fromJson(delta as List));
-        _controller.document = document;
-
+        if (widget.existingContract == null) {
+          _controller.document = document;
+        }
       } catch (e) {
-        String plainText = _stripHtmlTags(htmlTemplate);
-        _controller.document.insert(0, plainText);
-        ContractService.applyFormatting(_controller);
+        String plainText = ContractService.stripHtmlTags(htmlTemplate);
+        if (widget.existingContract == null) {
+          _controller.document.insert(0, plainText);
+        }
       }
     }
+  }
+
+  Future<Map<String, dynamic>?> _showSaveDialog() async {
+    String? selectedProjectId = _initialProjectId;
+    return UIContract.showSaveDialog(context, widget.contractorId, titleController: _titleController, initialProjectId: selectedProjectId);
   }
 
   Future<void> _saveContract() async {
@@ -68,44 +106,54 @@ class _CreateContractPageState extends State<CreateContractPage> {
       );
       return;
     }
-
-    final contractTypeId = widget.template?['contract_type_id'];  
-
+    final contractTypeId = widget.template?['contract_type_id'] as String;
     setState(() {
       _isSaving = true;
     });
-
     try {
       final contractContent = _controller.document.toPlainText();
       final contractDelta = _controller.document.toDelta().toJson();
-      
       final contractData = await _showSaveDialog();
-      
       if (contractData != null) {
-        await ContractService.saveContract(
-          projectId:   contractData['projectId']!,
-          contractorId: widget.contractorId,
-          contractTypeId: contractTypeId,
-          title:       contractData['title']!,
-          content:     contractContent,
-          deltaContent: contractDelta,
-        );
-
-        if (mounted) {
+        if (widget.existingContract != null) {
+          await ContractService.updateContract(
+            contractId: widget.existingContract!['contract_id'] as String,
+            projectId: contractData['projectId'] as String,
+            contractorId: widget.contractorId,
+            contractTypeId: contractTypeId,
+            title: contractData['title'] as String,
+            content: contractContent,
+            deltaContent: contractDelta,
+          );
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Contract updated successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          await ContractService.saveContract(
+            projectId: contractData['projectId'] as String,
+            contractorId: widget.contractorId,
+            contractTypeId: contractTypeId,
+            title: contractData['title'] as String,
+            content: contractContent,
+            deltaContent: contractDelta,
+          );
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Contract saved successfully!'),
               backgroundColor: Colors.green,
             ),
           );
-          Navigator.pop(context);
         }
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error saving contract: $e'),
+            content: Text('Error saving contract'),
             backgroundColor: Colors.red,
           ),
         );
@@ -119,31 +167,15 @@ class _CreateContractPageState extends State<CreateContractPage> {
     }
   }
 
-  Future<Map<String, dynamic>?> _showSaveDialog() async {
-    return UIContract.showSaveDialog(context, widget.contractorId);
-  }
-
-  String _replacePlaceholders(String template) {
-    return ContractService.replacePlaceholders(template, widget.contractorId, widget.template);
-  }
-
-  String _stripHtmlTags(String htmlString) {
-    return ContractService.stripHtmlTags(htmlString);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Create Contract"), 
-      ),
+      appBar: AppBar(title: const Text("Create Contract")),
       body: Column(
         children: [
           QuillSimpleToolbar(
             controller: _controller,
-            config: QuillSimpleToolbarConfig(
-              embedButtons: FlutterQuillEmbeds.toolbarButtons(),
-            ),
+            config: QuillSimpleToolbarConfig(embedButtons: FlutterQuillEmbeds.toolbarButtons()),
           ),
           Expanded(
             child: Container(
@@ -164,13 +196,13 @@ class _CreateContractPageState extends State<CreateContractPage> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _isSaving ? null : _saveContract,
-        icon: _isSaving 
-          ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-            )
-          : const Icon(Icons.save),
+        icon: _isSaving
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              )
+            : const Icon(Icons.save),
         label: Text(_isSaving ? 'Saving...' : 'Save Contract'),
       ),
     );
@@ -181,14 +213,15 @@ class _CreateContractPageState extends State<CreateContractPage> {
     _controller.dispose();
     _editorScrollController.dispose();
     _editorFocusNode.dispose();
+    _titleController.dispose();
     super.dispose();
   }
 }
 
 extension CreateContractDialog on ContractService {
-  static Future<Map<String, dynamic>?> showSaveDialog(BuildContext context, String contractorId) async {
-    final titleController = TextEditingController();
-    String? selectedProjectId;
+  static Future<Map<String, dynamic>?> showSaveDialog(BuildContext context, String contractorId, {TextEditingController? titleController, String? initialProjectId}) async {
+    String? selectedProjectId = initialProjectId;
+    titleController ??= TextEditingController();
     
     return showDialog<Map<String, dynamic>>(
       context: context,
@@ -218,7 +251,7 @@ extension CreateContractDialog on ContractService {
                         }
                         
                         if (snapshot.hasError) {
-                          return Text('Error: ${snapshot.error}');
+                          return Text('Error getting projects info');
                         }
                         
                         if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -256,7 +289,7 @@ extension CreateContractDialog on ContractService {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    if (titleController.text.isEmpty) {
+                    if (titleController!.text.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Title is required')),
                       );

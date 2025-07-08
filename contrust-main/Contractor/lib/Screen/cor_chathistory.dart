@@ -20,17 +20,17 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
   @override
   void initState() {
     super.initState();
-    loadContractorId();
+    _loadContractorId();
   }
 
-  Future<void> loadContractorId() async {
+  Future<void> _loadContractorId() async {
   final id = await UserService().getContractorId();
   setState(() {
     contractorId = id;
   });
 }
 
-  Future<Map<String, dynamic>?> loadContracteeData(String contracteeId) async {
+  Future<Map<String, dynamic>?> _loadContracteeData(String contracteeId) async {
     final response = await supabase
         .from('Contractees')
         .select('full_name, profile_photo')
@@ -78,7 +78,7 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
                         final canChat = snapshot.data ?? false;
 
                         return FutureBuilder<Map<String, dynamic>?>(
-                          future: loadContracteeData(contractorId),
+                          future: _loadContracteeData(contractorId),
                           builder: (context, snapshot) {
                             final contractorName = snapshot.data?['firm_name'] ?? 'Contractor';
                             final contractorProfile = snapshot.data?['profile_photo'];

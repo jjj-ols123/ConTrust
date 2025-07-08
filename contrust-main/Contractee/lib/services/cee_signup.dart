@@ -65,11 +65,11 @@ class SignUpContractee {
         ),
       );
       Navigator.pop(context);
-    } on AuthException catch (error) {
+    } on AuthException {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: ${error.message}'),
+          content: Text('Error creating account'),
           backgroundColor: Colors.red,
         ),
       );
@@ -77,7 +77,7 @@ class SignUpContractee {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Unexpected error: $e'),
+          content: Text('Unexpected error'),
           backgroundColor: Colors.red,
         ),
       );

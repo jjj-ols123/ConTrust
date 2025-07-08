@@ -2,7 +2,12 @@
 import 'package:backend/models/be_appbar.dart';
 import 'package:backend/services/be_user_service.dart';
 import 'package:backend/utils/be_pagetransition.dart';
+import 'package:contractor/Screen/cor_ongoing.dart';
+import 'package:contractor/Screen/cor_profile.dart';
 import 'package:flutter/material.dart';
+import 'package:contractor/Screen/cor_product.dart';
+import 'package:contractor/Screen/cor_bidding.dart';
+import 'package:contractor/Screen/cor_clienthistory.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -74,18 +79,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       return InkWell(
                         borderRadius: BorderRadius.circular(10),
                         onTap: () async {
+                          if (contractorId == null) return;
+                          
                           final item = dashboardItems[index];
-                          if (item['title'] == 'User Profile') {
-                            transitionBuilder(
-                              context,
-                              getScreenFromRoute(context, item['route'], arguments: contractorId),
-                            );
-                          } else {
-                            transitionBuilder(
-                              context,
-                              getScreenFromRoute(context, item['route']),
-                            );
+                          Widget destination;
+                          
+                          switch (item['route']) {
+                            case '/profile':
+                              destination = ContractorUserProfileScreen(contractorId: contractorId!);
+                              break;
+                            case '/ongoingproject':
+                              destination = OngoingProjectScreen();
+                              break;
+                            case '/bidding':
+                              destination = BiddingScreen(contractorId: contractorId!);
+                              break;
+                            case '/clienthistory':
+                              destination = ClientHistoryScreen();
+                              break;
+                            default:
+                              return;
                           }
+                          
+                          transitionBuilder(context, destination);
                         },
                         child: Card(
                           child: Column(
@@ -128,7 +144,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
           onExit: (_) => setState(() => isHovered = false),
           child: GestureDetector(
             onTap: () {
-              transitionBuilder(context, getScreenFromRoute(context, route));
+              Widget destination;
+              switch (route) {
+                case '/dashboard':
+                  return; 
+                case '/productpanel':
+                  destination = ProductPanelScreen();
+                  break;
+                default:
+                  return;
+              }
+              transitionBuilder(context, destination);
             },
             child: AnimatedContainer(
               duration: Duration(milliseconds: 150),

@@ -31,10 +31,10 @@ class _ContractorUserProfileScreenState
   @override
   void initState() {
     super.initState();
-    loadContractorData();
+    _loadContractorData();
   }
 
-  Future<void> loadContractorData() async {
+  Future<void> _loadContractorData() async {
     final contractorData = await UserService().fetchUserData(
       widget.contractorId,
       isContractor: true,

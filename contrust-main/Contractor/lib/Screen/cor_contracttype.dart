@@ -1,6 +1,8 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
 import 'dart:ui';
+import 'package:backend/services/be_contract_service.dart';
 import 'package:backend/services/be_fetchservice.dart';
+import 'package:backend/services/be_project_service.dart';
 import 'package:contractor/Screen/cor_createcontract.dart';
 import 'package:flutter/material.dart';
 
@@ -228,9 +230,79 @@ class _ContractTypeState extends State<ContractType> {
                             color: Colors.grey[700],
                           ),
                         ),
-                        trailing: Icon(
-                          Icons.chevron_right,
-                          color: Colors.amber[700],
+                        trailing: Builder(
+                          builder: (buttonContext) {
+                            return IconButton(
+                              icon: const Icon(Icons.more_vert),
+                              onPressed: () {
+                                final RenderBox button = buttonContext.findRenderObject() as RenderBox;
+                                final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+                                final RelativeRect position = RelativeRect.fromRect(
+                                  Rect.fromPoints(
+                                    button.localToGlobal(Offset.zero, ancestor: overlay),
+                                    button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
+                                  ),
+                                  Offset.zero & overlay.size,
+                                );
+                                
+                                showMenu<String>(
+                                  context: context,
+                                  position: position,
+                                  items: [
+                                    const PopupMenuItem(value: 'send', child: Text('Send to Contractee')),
+                                    const PopupMenuItem(value: 'edit', child: Text('Edit Contract')),
+                                  ],
+                                ).then((choice) async {
+                                  if (choice != null) {
+                                    final contract = contracts[index];
+                                    switch (choice) {
+                                      case 'send':
+                                        try {
+
+                                          String? contracteeId = contract['contractee_id'] as String? ?? 
+                                              (await ProjectService().getProjectDetails(contract['project_id'] as String))?['contractee_id'] as String?;
+                                       
+                                          await ContractService.sendContractToContractee(
+                                            contractId: contract['contract_id'] as String,
+                                            contracteeId: contracteeId!,
+                                            message: 'Please review and sign.',
+                                          );
+                                          
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('Sent to contractee')),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text('Error sending contract')),
+                                            );
+                                          }
+                                        }
+                                        break;
+                                      case 'edit':
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => CreateContractPage(
+                                              template: {
+                                                'contract_type_id': contract['contract_type_id'],
+                                                'template_content': contract['content'],
+                                              },
+                                              contractType: contract['contract_type_id'] as String,
+                                              contractorId: widget.contractorId,
+                                              existingContract: contract, 
+                                            ),
+                                          ),
+                                        );
+                                        break;
+                                    }
+                                  }
+                                });
+                              },
+                            );
+                          },
                         ),
                         onTap: () {},
                       );

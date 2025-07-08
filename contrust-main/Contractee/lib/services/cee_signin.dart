@@ -1,17 +1,11 @@
 // ignore_for_file: use_build_context_synchronously
 import 'package:backend/services/be_user_service.dart';
-import 'package:backend/utils/be_pagetransition.dart';
 import 'package:contractee/pages/cee_home.dart';
 import 'package:flutter/material.dart';
 
 class SignInContractee {
-  void signInContractee(
-    BuildContext modalContext, 
-    String email, 
-    String password,
-    bool Function() validateFields
-    ) async {
-
+  void signInContractee(BuildContext modalContext, String email,
+      String password, bool Function() validateFields) async {
     if (!validateFields()) {
       return;
     }
@@ -29,7 +23,7 @@ class SignInContractee {
             backgroundColor: Colors.red,
           ),
         );
-        return; 
+        return;
       }
 
       final userType = signInResponse.user?.userMetadata?['user_type'];
@@ -41,13 +35,14 @@ class SignInContractee {
             backgroundColor: Colors.red,
           ),
         );
-        return; 
+        return;
       }
 
-      Navigator.pop(modalContext); 
-
-      transitionBuilder(modalContext, HomePage());
-
+      Navigator.pushAndRemoveUntil(
+        modalContext,
+        MaterialPageRoute(builder: (context) => HomePage()),
+        (route) => false,
+      );
       Future.delayed(const Duration(milliseconds: 500), () {
         ScaffoldMessenger.of(modalContext).showSnackBar(
           const SnackBar(
@@ -59,7 +54,7 @@ class SignInContractee {
     } catch (e) {
       ScaffoldMessenger.of(modalContext).showSnackBar(
         SnackBar(
-          content: Text('Unexpected error: $e'),
+          content: Text('Error logging in'),
           backgroundColor: Colors.red,
         ),
       );

@@ -64,7 +64,7 @@ class _HomePageState extends State<HomePage> {
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading data: $e')),
+        SnackBar(content: Text('Error loading Data')),
       );
     }
   }
@@ -81,7 +81,7 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error in bidding: $e')),
+          SnackBar(content: Text('Error in accepting bid')),
         );
       }
     }
