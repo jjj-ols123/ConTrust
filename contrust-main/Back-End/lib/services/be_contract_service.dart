@@ -117,6 +117,16 @@ class ContractService {
     }
   }
 
+  static Future<void> deleteContract({
+    required String contractId,
+  }) async {
+    try {
+      await _supabase.from('Contracts').delete().eq('contract_id', contractId);
+    } catch (e) {
+      throw Exception('Error deleting contract: $e');
+    }
+  }
+
   static Future<void> updateContractStatus({
     required String contractId,
     required String status,

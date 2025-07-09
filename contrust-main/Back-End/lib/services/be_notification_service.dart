@@ -210,16 +210,10 @@ class NotificationService {
         .from('Notifications')
         .stream(primaryKey: ['notification_id'])
         .eq('receiver_id', receiverId)
-        .order('created_at', ascending: false);
+        .order('created_at', ascending: false)
+        .distinct(); 
  }
 
-  Stream<int> listenToUnreadCount(String receiverId) {
-    return _supabase
-        .from('Notifications')
-        .stream(primaryKey: ['notification_id'])
-        .eq('receiver_id', receiverId)
-        .map((data) => data.where((notification) => notification['is_read'] == false).length);
-  }
 
   Future<int> getUnreadCount(String receiverId) async {
     try {

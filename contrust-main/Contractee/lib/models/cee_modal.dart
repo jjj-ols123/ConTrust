@@ -12,6 +12,7 @@ class ProjectModal {
   static Future<void> show({
     required BuildContext context,
     required String contracteeId,
+    required TextEditingController titleController,
     required TextEditingController constructionTypeController,
     required TextEditingController minBudgetController,
     required TextEditingController maxBudgetController,
@@ -87,6 +88,21 @@ class ProjectModal {
                               ),
                             ),
                             const SizedBox(height: 8),
+                            _buildLabeledField(
+                              label: 'Project Title',
+                              child: TextFormField(
+                                controller: titleController,
+                                decoration: const InputDecoration(
+                                  hintText: 'Enter project title',
+                                  border: OutlineInputBorder(),
+                                ),
+                                validator: (value) =>
+                                    (value == null || value.trim().isEmpty)
+                                        ? 'Please enter a project title'
+                                        : null,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
                             _buildLabeledField(
                               label: 'Type of Construction',
                               child: DropdownButtonFormField<String>(
@@ -260,6 +276,7 @@ class ProjectModal {
                                         startDateController.text.trim());
                                     if (validateFieldsPostRequest(
                                       context,
+                                      titleController.text.trim(),
                                       constructionTypeController.text.trim(),
                                       minBudgetController.text.trim(),
                                       maxBudgetController.text.trim(),
@@ -270,6 +287,7 @@ class ProjectModal {
                                     )) {
                                       await ProjectService().postProject(
                                         contracteeId: contracteeId,
+                                        title: titleController.text.trim(),
                                         type: constructionTypeController.text
                                             .trim(),
                                         description:

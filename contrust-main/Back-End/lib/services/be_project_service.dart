@@ -8,6 +8,7 @@ class ProjectService {
 
   Future<void> postProject({
     required String contracteeId,
+    required String title, 
     required String type,
     required String description,
     required String location,
@@ -23,6 +24,7 @@ class ProjectService {
       await _supabase.from('Projects').upsert({
         'contractee_id': contracteeId,
         'type': type,
+        'title': title,  
         'description': description,
         'location': location,
         'min_budget': minBudget,

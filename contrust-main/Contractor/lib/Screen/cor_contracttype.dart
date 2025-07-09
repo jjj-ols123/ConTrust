@@ -251,6 +251,7 @@ class _ContractTypeState extends State<ContractType> {
                                   items: [
                                     const PopupMenuItem(value: 'send', child: Text('Send to Contractee')),
                                     const PopupMenuItem(value: 'edit', child: Text('Edit Contract')),
+                                    const PopupMenuItem(value: 'delete', child: Text('Delete Contract')),
                                   ],
                                 ).then((choice) async {
                                   if (choice != null) {
@@ -265,7 +266,7 @@ class _ContractTypeState extends State<ContractType> {
                                           await ContractService.sendContractToContractee(
                                             contractId: contract['contract_id'] as String,
                                             contracteeId: contracteeId!,
-                                            message: 'Please review and sign.',
+                                            message: 'Please review the following contract.',
                                           );
                                           
                                           if (mounted) {
@@ -296,6 +297,22 @@ class _ContractTypeState extends State<ContractType> {
                                             ),
                                           ),
                                         );
+                                        break;
+                                      case 'delete':
+                                        try {
+                                          await ContractService.deleteContract(contractId: contract['contract_id'] as String);
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('Contract deleted')),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text('Error deleting contract')),
+                                            );
+                                          }
+                                        }
                                         break;
                                     }
                                   }

@@ -32,6 +32,7 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _typeConstructionController =
       TextEditingController();
   final TextEditingController _bidTimeController = TextEditingController();
+  final TextEditingController _titleController = TextEditingController();
 
   static const String profileUrl =
       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
@@ -235,6 +236,7 @@ isLoading
       ),
       floatingActionButton: ExpandableFloatingButton(
         clearControllers: _clearControllers,
+        title: _titleController,
         typeConstruction: _typeConstructionController,
         minBudget: _minBudgetController,
         maxBudget: _maxBudgetController,
@@ -246,6 +248,7 @@ isLoading
   }
 
   void _clearControllers() {
+    _titleController.clear();
     _typeConstructionController.clear();
     _minBudgetController.clear();
     _maxBudgetController.clear();
