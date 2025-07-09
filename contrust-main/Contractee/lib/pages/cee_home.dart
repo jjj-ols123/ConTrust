@@ -236,6 +236,7 @@ isLoading
       ),
       floatingActionButton: ExpandableFloatingButton(
         clearControllers: _clearControllers,
+        onRefresh: _loadData,
         title: _titleController,
         typeConstruction: _typeConstructionController,
         minBudget: _minBudgetController,

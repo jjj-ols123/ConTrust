@@ -326,6 +326,7 @@ class ProjectView extends StatelessWidget {
 
 class ExpandableFloatingButton extends StatelessWidget {
   final VoidCallback clearControllers;
+  final VoidCallback? onRefresh; 
   final TextEditingController title;
   final TextEditingController typeConstruction;
   final TextEditingController minBudget;
@@ -337,6 +338,7 @@ class ExpandableFloatingButton extends StatelessWidget {
   const ExpandableFloatingButton({
     Key? key,
     required this.clearControllers,
+    this.onRefresh, 
     required this.title,
     required this.typeConstruction,
     required this.minBudget,
@@ -384,6 +386,7 @@ class ExpandableFloatingButton extends StatelessWidget {
                     descriptionController: description,
                     bidTimeController: bidTime,
                   );
+                  onRefresh?.call();
                 },
               );
             } catch (e) {

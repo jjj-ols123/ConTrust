@@ -29,9 +29,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
   @override
   void initState() {
     super.initState();
-    _loadContractorId();
-    _loadProjects();
-    _loadHighestBids();
+    _loadData();
   }
 
   Future<void> _loadContractorId() async {
@@ -69,6 +67,32 @@ class _BiddingScreenState extends State<BiddingScreen> {
     });
   }
 
+  Future<void> _loadData() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      await Future.wait([
+        _loadContractorId(),
+        _loadProjects(),
+        _loadHighestBids(),
+      ]);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error loading data')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -96,8 +120,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
                   Text("|", style: TextStyle(fontSize: 16)),
                   SizedBox(width: 10),
                   GestureDetector(
-                    onTap:
-                        () => transitionBuilder(context, ProductPanelScreen()),
+                    onTap: () => transitionBuilder(context, ProductPanelScreen()),
                     child: Text(
                       "Product Panel",
                       style: TextStyle(
@@ -117,65 +140,78 @@ class _BiddingScreenState extends State<BiddingScreen> {
                   "Bidding",
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10),
-                  width: 180,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.filter_list, color: Colors.black54),
-                      SizedBox(width: 5),
-                      Expanded(
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: "Search",
-                            border: InputBorder.none,
-                          ),
+                Row(
+                  children: [
+                    TextButton(
+                      onPressed: _loadData,
+                      child: Text(
+                        "Refresh",
+                        style: TextStyle(
+                          color: Colors.amber[700],
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Icon(Icons.search, color: Colors.black54),
-                    ],
-                  ),
+                    ),
+                    SizedBox(width: 10),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 10),
+                      width: 180,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.filter_list, color: Colors.black54),
+                          SizedBox(width: 5),
+                          Expanded(
+                            child: TextField(
+                              decoration: InputDecoration(
+                                hintText: "Search",
+                                border: InputBorder.none,
+                              ),
+                            ),
+                          ),
+                          Icon(Icons.search, color: Colors.black54),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
             SizedBox(height: 10),
             Expanded(
-              child:
-                  isLoading
-                      ? Center(child: CircularProgressIndicator())
-                      : projects.isEmpty
-                      ? Center(child: Text("No projects available"))
-                      : GridView.builder(
-                        itemCount: projects.length,
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 15,
-                          mainAxisSpacing: 15,
-                          childAspectRatio: 1.3,
+              child: isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : projects.isEmpty
+                  ? Center(child: Text("No projects available"))
+                  : GridView.builder(
+                    itemCount: projects.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 15,
+                      mainAxisSpacing: 15,
+                      childAspectRatio: 1.3,
+                    ),
+                    itemBuilder: (context, index) {
+                      final project = projects[index];
+                      return GestureDetector(
+                        onTap: () => UIBidding.showDetails(context, project, hasAlreadyBid),
+                        child: UIBidding.contracteeProjects(
+                          projectId: project['project_id'].toString(),
+                          type: project['type'] ?? 'Unknown',
+                          durationDays: project['duration'] ?? 0,
+                          imagePath: 'kitchen.jpg',
+                          highestBid: highestBids[project['project_id'].toString()] ?? 0.0,
+                          createdAt: (project['created_at'] != null && project['created_at'].toString().isNotEmpty)
+                              ? DateTime.parse(project['created_at'].toString()).toLocal()
+                              : DateTime.now(),
+                          finalizedProjects: _finalizedProjects,
                         ),
-
-                        itemBuilder: (context, index) {
-                          final project = projects[index];
-                          return GestureDetector(
-                            onTap: () => UIBidding.showDetails(context, project, hasAlreadyBid),
-                            child: UIBidding.contracteeProjects(
-                              projectId: project['project_id'].toString(),
-                              type: project['type'] ?? 'Unknown',
-                              durationDays: project['duration'] ?? 0,
-                              imagePath: 'kitchen.jpg',
-                              highestBid: highestBids[project['project_id'].toString()] ?? 0.0,
-                              createdAt: (project['created_at'] != null && project['created_at'].toString().isNotEmpty)
-                                  ? DateTime.parse(project['created_at'].toString()).toLocal()
-                                  : DateTime.now(),
-                              finalizedProjects: _finalizedProjects,
-                            ),
-                          );
-                        },
-                      ),
+                      );
+                    },
+                  ),
             ),
           ],
         ),
