@@ -151,7 +151,7 @@ class ProjectView extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    project['type'] ?? 'No type specified',
+                    project['title'] ?? 'No title given',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 20,
@@ -326,6 +326,7 @@ class ProjectView extends StatelessWidget {
 
 class ExpandableFloatingButton extends StatelessWidget {
   final VoidCallback clearControllers;
+  final TextEditingController title;
   final TextEditingController typeConstruction;
   final TextEditingController minBudget;
   final TextEditingController maxBudget;
@@ -336,6 +337,7 @@ class ExpandableFloatingButton extends StatelessWidget {
   const ExpandableFloatingButton({
     Key? key,
     required this.clearControllers,
+    required this.title,
     required this.typeConstruction,
     required this.minBudget,
     required this.maxBudget,
@@ -374,6 +376,7 @@ class ExpandableFloatingButton extends StatelessWidget {
                   await ProjectModal.show(
                     context: context,
                     contracteeId: user,
+                    titleController: title,
                     constructionTypeController: typeConstruction,
                     minBudgetController: minBudget,
                     maxBudgetController: maxBudget,

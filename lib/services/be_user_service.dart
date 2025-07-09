@@ -53,6 +53,10 @@ class UserService {
     }
   }
 
+  Future<String?> getCurrentUserId() async { 
+    return _supabase.auth.currentUser?.id; 
+  }
+
   Future<String?> getContracteeId() async {
     final user = _supabase.auth.currentUser;
     if (user == null) return null;

@@ -33,7 +33,7 @@ class ConTrustAppBar extends StatefulWidget implements PreferredSizeWidget {
 }
 
 class _ConTrustAppBarState extends State<ConTrustAppBar> {
-  StreamSubscription<List<Map<String, dynamic>>>? _notificationSub;
+  Timer? _badgeTimer;
   int _unreadCount = 0;
   String? _receiverId;
 
@@ -49,27 +49,39 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
       if (id == null || !mounted) return;
 
       setState(() => _receiverId = id);
-      _initializeNotifications(id);
+      
+      _refreshBadge();
+      
+      _badgeTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+        _refreshBadge();
+      });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to load notifications')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to load notifications')),
+        );
+      }
     }
   }
 
-  void _initializeNotifications(String receiverId) {
-    _notificationSub = NotificationService().listenToNotifications(receiverId).listen((notifs) {
+  Future<void> _refreshBadge() async {
+    if (_receiverId == null || !mounted) return;
+    
+    try {
+      final count = await NotificationService().getUnreadCount(_receiverId!);
       if (mounted) {
-        setState(() {
-          _unreadCount = notifs.where((n) => n['is_read'] == false).length;
-        });
+        setState(() => _unreadCount = count);
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _unreadCount = 0);
+      }
+    }
   }
 
   @override
   void dispose() {
-    _notificationSub?.cancel();
+    _badgeTimer?.cancel();
     super.dispose();
   }
 

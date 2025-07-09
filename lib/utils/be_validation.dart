@@ -70,7 +70,7 @@ bool validateFieldsContractee(context, String fName, String lName, String email,
   return true;
 }
 
-bool validateFieldsPostRequest(BuildContext context, String constructionType, String minBudget, String maxBudget, String startDate, 
+bool validateFieldsPostRequest(BuildContext context, String title, String constructionType, String minBudget, String maxBudget, String startDate, 
   String location, String description, String duration) {
   if (constructionType.isEmpty ||
       minBudget.isEmpty ||
