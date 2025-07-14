@@ -1,3 +1,5 @@
+import 'package:backend/services/be_fetchservice.dart';
+import 'package:backend/services/be_notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/be_user_service.dart';
@@ -8,7 +10,7 @@ class ProjectService {
 
   Future<void> postProject({
     required String contracteeId,
-    required String title, 
+    required String title,
     required String type,
     required String description,
     required String location,
@@ -24,7 +26,7 @@ class ProjectService {
       await _supabase.from('Projects').upsert({
         'contractee_id': contracteeId,
         'type': type,
-        'title': title,  
+        'title': title,
         'description': description,
         'location': location,
         'min_budget': minBudget,
@@ -60,10 +62,12 @@ class ProjectService {
   Future<void> updateProjectStatus(String projectId, String status) async {
     await _supabase
         .from('Projects')
-        .update({'status': status})
-        .eq('project_id', projectId);
+        .update({'status': status}).eq('project_id', projectId);
   }
 
+  Future<void> deleteProject(String projectId) async {
+    await _supabase.from('Projects').delete().eq('project_id', projectId);
+  }
 
   Future<Map<String, dynamic>?> getProjectDetails(String projectId) async {
     try {
@@ -78,7 +82,8 @@ class ProjectService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getProjectsByContractee(String contracteeId) async {
+  Future<List<Map<String, dynamic>>> getProjectsByContractee(
+      String contracteeId) async {
     try {
       final response = await _supabase
           .from('Projects')
@@ -90,71 +95,6 @@ class ProjectService {
     }
   }
 
-  Future<void> finalizeContractAgreement({
-    required String projectId,
-    required String contractId,
-    required String contractTypeId,
-    required String contracteeId,
-    required String contractorId,
-    required Map<String, dynamic> terms,
-    required String contracteeSignature,
-    required String contractorSignature,
-  }) async {
-    final now = DateTime.now().toUtc().toIso8601String();
-
-    await _supabase
-        .from('Projects')
-        .update({'status': 'active'})
-        .eq('project_id', projectId);
-
-    await _supabase
-        .from('Contracts')
-        .update({
-          'status': 'active',
-          'contractee_signature': contracteeSignature,
-          'contractor_signature': contractorSignature,
-          'signed_at': now,
-          'updated_at': now,
-          'terms': terms,
-        })
-        .eq('contract_id', contractId);
-
-    await _supabase
-        .from('ContractDetails')
-        .update({'contract_type_id': contractTypeId})
-        .eq('contract_id', contractId);
-
-    await _supabase
-        .from('ContractTypes')
-        .update({'updated_at': now})
-        .eq('contract_type_id', contractTypeId);
-  }
-
-  Future<void> completeProject(String projectId) async {
-    final now = DateTime.now().toUtc().toIso8601String();
-    
-    await _supabase
-        .from('Projects')
-        .update({
-          'status': 'completed',
-          'completed_at': now,
-        })
-        .eq('project_id', projectId);
-  }
-
-  Future<void> cancelProject(String projectId, String reason) async {
-    final now = DateTime.now().toUtc().toIso8601String();
-    
-    await _supabase
-        .from('Projects')
-        .update({
-          'status': 'cancelled',
-          'cancelled_at': now,
-          'cancellation_reason': reason,
-        })
-        .eq('project_id', projectId);
-  }
-
   Future<String?> getProjectId(String chatRoomId) async {
     final chatRoom = await _supabase
         .from('ChatRoom')
@@ -162,5 +102,159 @@ class ProjectService {
         .eq('chatroom_id', chatRoomId)
         .maybeSingle();
     return chatRoom?['project_id'];
+  }
+
+  Future<void> notifyContractor({
+    required String contractorId,
+    required String contracteeId,
+    required String title,
+    required String type,
+    required String description,
+    required String location,
+  }) async {
+    try {
+      final projectResponse = await _supabase
+          .from('Projects')
+          .insert({
+            'contractee_id': contracteeId,
+            'title': title,
+            'type': type,
+            'description': description,
+            'location': location,
+            'status': 'pending',
+            'created_at': DateTime.now().toIso8601String(),
+          })
+          .select()
+          .single();
+
+      final projectId = projectResponse['project_id'];
+
+      final contracteeData =
+          await FetchService().fetchContracteeData(contracteeId);
+      final contracteeName = contracteeData?['full_name'] ?? 'A contractee';
+
+      await NotificationService().createNotification(
+        receiverId: contractorId,
+        receiverType: 'contractor',
+        senderId: contracteeId,
+        senderType: 'contractee',
+        type: 'Hiring Request',
+        message:
+            '$contracteeName wants to hire your construction firm for: $title',
+        information: {
+          'contractee_id': contracteeId,
+          'full_name': contracteeName,
+          'project_id': projectId,
+          'project_title': title, 
+          'project_type': type,
+          'project_location': location, 
+          'project_description': description,
+          'action': 'hire_request',
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+    } catch (e) {
+      throw Exception('Failed to send notification: $e');
+    }
+  }
+
+  Future<void> acceptHiring({
+    required String notificationId,
+    required String contractorId,
+    required String contracteeId,
+    required String projectId,
+  }) async {
+    try {
+      final currentNotification = await _supabase
+          .from('Notifications')
+          .select('information')
+          .eq('notification_id', notificationId)
+          .single();
+
+      await _supabase.from('Projects').update({
+        'contractor_id': contractorId,
+        'status': 'awaiting_contract',
+      }).eq('project_id', projectId);
+
+      final currentInfo =
+          Map<String, dynamic>.from(currentNotification['information'] ?? {});
+      currentInfo['status'] = 'accepted';
+      currentInfo['updated_at'] = DateTime.now().toIso8601String();
+
+      await _supabase.from('Notifications').update({
+        'information': currentInfo,
+      }).eq('notification_id', notificationId);
+
+      final contractorData =
+          await FetchService().fetchContractorData(contractorId);
+      final contractorName = contractorData?['firm_name'] ?? 'A contractor';
+      final contactorPhoto = contractorData?['profile_photo'] ?? '';
+
+      await NotificationService().createNotification(
+        receiverId: contracteeId,
+        receiverType: 'contractee',
+        senderId: contractorId,
+        senderType: 'contractor',
+        type: 'Hiring Response',
+        message: 'Your hiring request has been accepted!',
+        information: {
+          'contractor_id': contractorId,
+          'contractor_name': contractorName,
+          'contractor_photo': contactorPhoto,
+          'action': 'hire_accepted',
+          'original_notification_id': notificationId,
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+    } catch (e) {
+      throw Exception('Failed to accept hiring request: $e');
+    }
+  }
+
+  Future<void> declineHiring({
+    required String notificationId,
+    required String contractorId,
+    required String contracteeId,
+  }) async {
+    try {
+      final currentNotification = await _supabase
+          .from('Notifications')
+          .select('information')
+          .eq('notification_id', notificationId)
+          .single();
+
+      final currentInfo =
+          Map<String, dynamic>.from(currentNotification['information'] ?? {});
+      currentInfo['status'] = 'declined';
+      currentInfo['updated_at'] = DateTime.now().toIso8601String();
+
+      await _supabase.from('Notifications').update({
+        'information': currentInfo,
+      }).eq('notification_id', notificationId);
+
+      final contractorData =
+          await FetchService().fetchContractorData(contractorId);
+      final contractorName = contractorData?['firm_name'] ?? 'A contractor';
+      final contractorPhoto = contractorData?['profile_photo'] ?? '';
+
+      await NotificationService().createNotification(
+        receiverId: contracteeId,
+        receiverType: 'contractee',
+        senderId: contractorId,
+        senderType: 'contractor',
+        type: 'Hiring Response',
+        message: 'Your hiring request has been declined.',
+        information: {
+          'contractor_id': contractorId,
+          'contractor_name': contractorName,
+          'contractor_photo': contractorPhoto,
+          'action': 'hire_declined',
+          'original_notification_id': notificationId,
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+    } catch (e) {
+      throw Exception('Failed to decline hiring request: $e');
+    }
   }
 }

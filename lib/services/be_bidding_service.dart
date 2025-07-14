@@ -172,10 +172,6 @@ class BiddingService {
         .from('Bids')
         .update({'status': 'accepted'}).eq('bid_id', bidId);
 
-    await _supabase
-        .from('Projects')
-        .update({'status': 'awaiting_contract'}).eq('project_id', projectId);
-
     try {
       final contracteeId = projectResponse['contractee_id'];
       final projectType = projectResponse['type'];
