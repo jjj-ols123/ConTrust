@@ -14,6 +14,8 @@ class AppScrollBehavior extends MaterialScrollBehavior {
       };
 }
 
+final String bgScreen = "https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/app//bgloginscreen.jpg";
+
 Future<void> main() async {
   await Supabase.initialize(
     url: 'https://bgihfdqruamnjionhkeq.supabase.co',
@@ -38,6 +40,9 @@ class MyApp extends StatelessWidget {
       scrollBehavior: AppScrollBehavior(),
       debugShowCheckedModeBanner: false,
       home: isFirstOpen ? WelcomePage() : HomePage(),
+      routes: {
+        '/home': (context) => HomePage(),
+      },
     );
   }
 }

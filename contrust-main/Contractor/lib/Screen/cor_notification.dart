@@ -1,6 +1,8 @@
-import 'dart:convert'; // 🔥 add this
+import 'dart:convert';
 import 'package:backend/services/be_notification_service.dart';
+import 'package:backend/services/be_project_service.dart';
 import 'package:backend/services/be_user_service.dart';
+import 'package:contractor/models/cor_UInotif.dart';
 import 'package:flutter/material.dart';
 
 class ContractorNotificationPage extends StatefulWidget {
@@ -24,6 +26,63 @@ class _ContractorNotificationPageState
   Future<void> _loadReceiverId() async {
     final id = await UserService().getContractorId();
     setState(() => contractorId = id);
+  }
+
+  Future<void> _acceptHiring(String notificationId, Map<String, dynamic> info) async {
+    try {
+      await ProjectService().acceptHiring(
+        notificationId: notificationId,
+        contractorId: contractorId!,
+        contracteeId: info['contractee_id'],
+        projectId: info['project_id'], 
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Hiring request accepted successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to accept hiring request'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _declineHiring(String notificationId, Map<String, dynamic> info) async {
+    try {
+      await ProjectService().declineHiring(
+        notificationId: notificationId,
+        contractorId: contractorId!,
+        contracteeId: info['contractee_id'],
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Hiring request declined'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to decline hiring request'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -64,53 +123,129 @@ class _ContractorNotificationPageState
               final senderPhoto = info['profile_photo'] ?? '';
               final projectType = info['project_type'] ?? '';
 
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundImage: senderPhoto.isNotEmpty
-                      ? NetworkImage(senderPhoto)
-                      : const AssetImage('assets/default_avatar.png')
-                          as ImageProvider,
-                ),
-                title: Text(
-                  notification['headline'] ?? 'Notification',
-                  style: TextStyle(
-                    fontWeight: notification['is_read'] == true
-                        ? FontWeight.normal
-                        : FontWeight.bold,
-                  ),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (projectType.isNotEmpty)
-                      Text('Project: $projectType'),
-                    Text('From: $senderName'),
-                  ],  
-                ),
-                trailing: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      _formatDate(notification['created_at']),
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                    if (notification['is_read'] != true)
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.blue,
-                          shape: BoxShape.circle,
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CircleAvatar(
+                            backgroundImage: senderPhoto.isNotEmpty
+                                ? NetworkImage(senderPhoto)
+                                : const AssetImage('assets/default_avatar.png')
+                                    as ImageProvider,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${notification['headline'] ?? 'Notification'} from $senderName',
+                                  style: TextStyle(
+                                    fontWeight: notification['is_read'] == true
+                                        ? FontWeight.normal
+                                        : FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            _formatDate(notification['created_at']),
+                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 8),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 52), 
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              info['message'] ?? '',
+                              style: const TextStyle(fontSize: 14, color: Colors.grey),
+                            ),
+                            if (projectType.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  'Project: $projectType',
+                                  style: const TextStyle(fontSize: 12, color: Colors.blue),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                  ],
+                      if (notification['headline'] == 'Hiring Request' &&
+                          info['status'] != 'accepted' &&
+                          info['status'] != 'declined')
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              TextButton(
+                                onPressed: () =>
+                                    _declineHiring(notification['notification_id'], info),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.red,
+                                ),
+                                child: const Text('Decline'),
+                              ),
+                              const SizedBox(width: 8),
+                              ElevatedButton(
+                                onPressed: () =>
+                                    _acceptHiring(notification['notification_id'], info),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  foregroundColor: Colors.white,
+                                ),
+                                child: const Text('Accept'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (notification['headline'] == 'Hiring Request')
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: TextButton.icon(
+                            onPressed: () => UINotifCor().showProjectDetails(context, info),
+                            icon: const Icon(Icons.info_outline, size: 16),
+                            label: const Text('View Project Details'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.blue,
+                            ),
+                          ),
+                        ),
+                      if (info['status'] == 'accepted' || info['status'] == 'declined')
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: info['status'] == 'accepted' ? Colors.green : Colors.red,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                info['status'] == 'accepted' ? 'Accepted' : 'Declined',
+                                style: const TextStyle(color: Colors.white, fontSize: 12),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-                onTap: () {
-                  if (notification['is_read'] != true) {
-                    NotificationService()
-                        .markAsRead(notification['notification_id']);
-                  }
-                },
               );
             },
           );

@@ -27,6 +27,19 @@ class FetchService {
     }
   }
 
+  Future<Map<String, dynamic>?> fetchContracteeData(String contracteeId) async {
+    try {
+      final response = await _supabase
+          .from('Contractee')
+          .select()
+          .eq('contractee_id', contracteeId)
+          .single();
+      return Map<String, dynamic>.from(response);
+    } catch (e) {
+      return null;
+    }
+  }
+
   Future<List<Map<String, dynamic>>> fetchUserProjects() async {
     try {
       final userId = _supabase.auth.currentUser?.id;

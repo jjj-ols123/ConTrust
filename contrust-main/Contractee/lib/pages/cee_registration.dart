@@ -2,6 +2,7 @@
 
 import 'package:backend/utils/be_validation.dart';
 import 'package:contractee/services/cee_signup.dart';
+import 'package:contractor/main.dart';
 import 'package:flutter/material.dart';
 
 class RegistrationPage extends StatefulWidget {
@@ -24,9 +25,9 @@ class _RegistrationPageState extends State<RegistrationPage> {
       body: Stack(
         children: [
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               image: DecorationImage(
-                image: AssetImage('bgloginscreen.jpg'),
+                image: NetworkImage(bgScreen),
                 fit: BoxFit.cover,
               ),
             ),

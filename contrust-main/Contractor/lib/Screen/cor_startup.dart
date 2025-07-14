@@ -1,5 +1,6 @@
 // ignore_for_file: file_names, use_build_context_synchronously, deprecated_member_use, library_private_types_in_public_api
 import 'package:backend/utils/be_validation.dart';
+import 'package:contractor/main.dart';
 import 'package:contractor/services/cor_signin.dart';
 import 'package:flutter/material.dart';
 
@@ -25,8 +26,8 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
             children: [
               // Background Image
               Positioned.fill(
-                child: Image.asset(
-                  'bgloginscreen.jpg',
+                child: Image.network(
+                  bgScreen,
                   color: Colors.black.withOpacity(0.3),
                   colorBlendMode: BlendMode.darken,
                   fit: BoxFit.cover,

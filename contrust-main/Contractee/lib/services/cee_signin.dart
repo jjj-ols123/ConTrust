@@ -1,6 +1,5 @@
 // ignore_for_file: use_build_context_synchronously
 import 'package:backend/services/be_user_service.dart';
-import 'package:contractee/pages/cee_home.dart';
 import 'package:flutter/material.dart';
 
 class SignInContractee {
@@ -38,11 +37,12 @@ class SignInContractee {
         return;
       }
 
-      Navigator.pushAndRemoveUntil(
+      Navigator.pushNamedAndRemoveUntil(
         modalContext,
-        MaterialPageRoute(builder: (context) => HomePage()),
+        '/home',
         (route) => false,
       );
+
       Future.delayed(const Duration(milliseconds: 500), () {
         ScaffoldMessenger.of(modalContext).showSnackBar(
           const SnackBar(

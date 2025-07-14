@@ -3,6 +3,7 @@
 import 'package:backend/models/be_appbar.dart';
 import 'package:backend/services/be_fetchservice.dart';
 import 'package:backend/utils/be_constraint.dart';
+import 'package:contractee/models/cee_modal.dart';
 import 'package:contractee/pages/cee_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -18,7 +19,6 @@ class ContractorProfileScreen extends StatefulWidget {
 }
 
 class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
-
   String firmName = "Firm Name";
   String bio = "No Bio";
   double rating = 4.5;
@@ -76,30 +76,17 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
     setState(() {});
   }
 
-  Future<void> _hireContractor() async {
+  Future<void> _notifyContractor() async {
     setState(() => isHiring = true);
 
     try {
-      await Future.delayed(const Duration(seconds: 2));
+      final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                Text('Successfully initiated hiring process with $firmName!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to hire contractor'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      await HireModal.show(
+        context: context,
+        contracteeId: currentUserId,
+        contractorId: widget.contractorId,
+      );
     } finally {
       if (mounted) {
         setState(() => isHiring = false);
@@ -378,7 +365,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: isHiring ? null : _hireContractor,
+                onPressed: isHiring ? null : _notifyContractor,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green[700],
                   padding: const EdgeInsets.symmetric(vertical: 16),

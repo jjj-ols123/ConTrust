@@ -1,3 +1,4 @@
+import 'package:backend/services/be_fetchservice.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class NotificationService {
@@ -19,7 +20,10 @@ class NotificationService {
         'sender_id': senderId,
         'sender_type': senderType,
         'headline': type,
-        'information': information ?? {},
+        'information': {
+          ...?information,
+          'message': message, 
+        },
         'is_read': false,
         'created_at': DateTime.now().toIso8601String(),
       };
@@ -315,4 +319,34 @@ class NotificationService {
       message: 'The project has been marked as completed.',
     );
   }
+
+  Future<void> notifyContractor({
+    required String contractorId,
+    required String contracteeId,
+    required String projectId,
+  }) async {
+    try {
+      final contracteeData = await FetchService().fetchContracteeData(contracteeId);
+      final contracteeName = contracteeData?['full_name'] ?? 'A contractee';
+
+      await NotificationService().createNotification(
+        receiverId: contractorId,
+        receiverType: 'contractor',
+        senderId: contracteeId,
+        senderType: 'contractee',
+        type: 'Hiring Request',
+        message: '$contracteeName wants to hire your construction firm!',
+        information: {
+          'contractee_id': contracteeId,
+          'full_name': contracteeName,
+          'project_id': projectId,
+          'action': 'hire_request',
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+    } catch (e) {
+      throw Exception('Failed to send notification: $e');
+    }
+  }
+  
 }

@@ -119,6 +119,7 @@ class ProjectView extends StatelessWidget {
   final DateTime createdAt;
   final Function() onTap;
   final Function(String) handleFinalizeBidding;
+  final Function(String)? onDeleteProject; 
 
   const ProjectView({
     Key? key,
@@ -129,6 +130,7 @@ class ProjectView extends StatelessWidget {
     required this.createdAt,
     required this.onTap,
     required this.handleFinalizeBidding,
+    this.onDeleteProject, 
   }) : super(key: key);
 
   @override
@@ -150,28 +152,85 @@ class ProjectView extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    project['title'] ?? 'No title given',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                    ),
-                  ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                  Expanded(
                     child: Text(
-                      "₱${project['min_budget']} - ₱${project['max_budget']}",
+                      project['title'] ?? 'No title given',
                       style: const TextStyle(
-                        color: Colors.black87,
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        fontSize: 20,
                       ),
                     ),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          "₱${project['min_budget']} - ₱${project['max_budget']}",
+                          style: const TextStyle(
+                            color: Colors.black87,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      PopupMenuButton<String>(
+                        icon: const Icon(Icons.more_vert, color: Colors.grey),
+                        onSelected: (value) async {
+                          if (value == 'delete' && onDeleteProject != null) {
+                            final bool? shouldDelete = await showDialog<bool>(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  title: const Text('Delete Project'),
+                                  content: const Text(
+                                    'Are you sure you want to delete this project? This action cannot be undone.',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(true),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: Colors.red,
+                                      ),
+                                      child: const Text('Delete'),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+
+                            if (shouldDelete == true) {
+                              onDeleteProject!(projectId);
+                            }
+                          }
+                        },
+                        itemBuilder: (BuildContext context) => [
+                          const PopupMenuItem<String>(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Delete Project',
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -188,11 +247,9 @@ class ProjectView extends StatelessWidget {
                   const Icon(Icons.info_outline, size: 18, color: Colors.grey),
                   const SizedBox(width: 6),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color:
-                          getStatusColor(project['status']).withOpacity(0.15),
+                      color: getStatusColor(project['status']).withOpacity(0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -209,12 +266,10 @@ class ProjectView extends StatelessWidget {
               const SizedBox(height: 14),
               Row(
                 children: [
-                  const Icon(Icons.timer_outlined,
-                      size: 18, color: Colors.grey),
+                  const Icon(Icons.timer_outlined, size: 18, color: Colors.grey),
                   const SizedBox(width: 6),
                   StreamBuilder<Duration>(
-                    stream:
-                        BiddingService().getBiddingCountdownStream(createdAt, duration),
+                    stream: BiddingService().getBiddingCountdownStream(createdAt, duration),
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) {
                         return const Text(
@@ -269,8 +324,7 @@ class ProjectView extends StatelessWidget {
               const SizedBox(height: 14),
               Row(
                 children: [
-                  const Icon(Icons.attach_money_outlined,
-                      size: 18, color: Colors.grey),
+                  const Icon(Icons.attach_money_outlined, size: 18, color: Colors.grey),
                   const SizedBox(width: 6),
                   Text(
                     "₱${highestBid.toStringAsFixed(2)}",

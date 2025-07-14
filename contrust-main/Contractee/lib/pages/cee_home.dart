@@ -1,7 +1,10 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:backend/models/be_UIapp.dart';
 import 'package:backend/models/be_appbar.dart';
 import 'package:backend/services/be_bidding_service.dart';
 import 'package:backend/services/be_fetchservice.dart';
+import 'package:backend/services/be_project_service.dart';
 import 'package:contractee/models/cee_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -224,6 +227,25 @@ isLoading
                         projectId,
                         bidId,
                       );
+                    },
+                    onDeleteProject: (projectId) async { 
+                      try {
+                        await ProjectService().deleteProject(projectId);
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Project deleted successfully.'),
+                          ),
+                        );
+
+                        _loadData();
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Failed to delete project'),
+                          ),
+                        );
+                      }
                     },
                   );
                 },

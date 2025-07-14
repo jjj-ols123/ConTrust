@@ -39,7 +39,7 @@ class SignUpContractor {
       if (userType == 'contractor') {
         final contractorData = {
           'contractor_id': signUpResponse.user!.id,
-          'firm_name': data?['firmName'],
+          'firm_name': data?['firmName'] ?? '',
           'contact_number': data?['contactNumber'],
           'created_at': DateTime.now().toUtc().toIso8601String(),
         };
