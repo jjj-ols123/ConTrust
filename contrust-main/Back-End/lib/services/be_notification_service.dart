@@ -1,4 +1,3 @@
-import 'package:backend/services/be_fetchservice.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class NotificationService {
@@ -22,7 +21,7 @@ class NotificationService {
         'headline': type,
         'information': {
           ...?information,
-          'message': message, 
+          'message': message,
         },
         'is_read': false,
         'created_at': DateTime.now().toIso8601String(),
@@ -119,7 +118,8 @@ class NotificationService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getUnreadNotifications(String receiverId) async {
+  Future<List<Map<String, dynamic>>> getUnreadNotifications(
+      String receiverId) async {
     try {
       final response = await _supabase
           .from('Notifications')
@@ -156,8 +156,7 @@ class NotificationService {
     try {
       await _supabase
           .from('Notifications')
-          .update({'is_read': true})
-          .eq('notification_id', notificationId);
+          .update({'is_read': true}).eq('notification_id', notificationId);
     } catch (e) {
       throw Exception('Failed to mark as read: ${e.toString()}');
     }
@@ -215,9 +214,8 @@ class NotificationService {
         .stream(primaryKey: ['notification_id'])
         .eq('receiver_id', receiverId)
         .order('created_at', ascending: false)
-        .distinct(); 
- }
-
+        .distinct();
+  }
 
   Future<int> getUnreadCount(String receiverId) async {
     try {
@@ -280,7 +278,8 @@ class NotificationService {
       bidId: bidId,
       projectId: projectId,
       type: 'new_bid',
-      message: 'You have received a new bid of \$${bidAmount.toStringAsFixed(2)} for your project.',
+      message:
+          'You have received a new bid of \$${bidAmount.toStringAsFixed(2)} for your project.',
     );
   }
 
@@ -319,34 +318,4 @@ class NotificationService {
       message: 'The project has been marked as completed.',
     );
   }
-
-  Future<void> notifyContractor({
-    required String contractorId,
-    required String contracteeId,
-    required String projectId,
-  }) async {
-    try {
-      final contracteeData = await FetchService().fetchContracteeData(contracteeId);
-      final contracteeName = contracteeData?['full_name'] ?? 'A contractee';
-
-      await NotificationService().createNotification(
-        receiverId: contractorId,
-        receiverType: 'contractor',
-        senderId: contracteeId,
-        senderType: 'contractee',
-        type: 'Hiring Request',
-        message: '$contracteeName wants to hire your construction firm!',
-        information: {
-          'contractee_id': contracteeId,
-          'full_name': contracteeName,
-          'project_id': projectId,
-          'action': 'hire_request',
-          'timestamp': DateTime.now().toIso8601String(),
-        },
-      );
-    } catch (e) {
-      throw Exception('Failed to send notification: $e');
-    }
-  }
-  
 }

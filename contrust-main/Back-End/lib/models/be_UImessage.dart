@@ -1,8 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'dart:async';
-
-import 'package:backend/services/be_contract_service.dart';
+import 'package:backend/models/be_UIcontract.dart';
 import 'package:backend/services/be_project_service.dart';
 import 'package:contractor/Screen/cor_contracttype.dart';
 import 'package:flutter/material.dart';
@@ -174,6 +173,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
 }
 
 class UIMessage {
+
   static Widget buildMessageBubble(
     BuildContext context,
     Map<String, dynamic> msg,
@@ -215,7 +215,7 @@ class UIMessage {
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: () {
-                ContractService.viewContract(context, msg['contract_id']);
+                UIContract.viewContract(context, msg['contract_id']);
               },
               child: const Text('View Contract'),
             ),

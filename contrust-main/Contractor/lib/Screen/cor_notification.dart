@@ -243,6 +243,33 @@ class _ContractorNotificationPageState
                             ),
                           ),
                         ),
+                      if (info['status'] == 'cancelled')
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                'This hiring request has been cancelled',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                info['cancelled_reason'] ?? 'Project no longer available',
+                                style: TextStyle(
+                                  color: Colors.grey.shade500,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
                 ),

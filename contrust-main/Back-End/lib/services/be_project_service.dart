@@ -1,5 +1,6 @@
 import 'package:backend/services/be_fetchservice.dart';
 import 'package:backend/services/be_notification_service.dart';
+import 'package:backend/utils/be_constraint.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/be_user_service.dart';
@@ -113,21 +114,37 @@ class ProjectService {
     required String location,
   }) async {
     try {
-      final projectResponse = await _supabase
-          .from('Projects')
-          .insert({
-            'contractee_id': contracteeId,
-            'title': title,
-            'type': type,
-            'description': description,
-            'location': location,
-            'status': 'pending',
-            'created_at': DateTime.now().toIso8601String(),
-          })
-          .select()
-          .single();
+      final existingHireRequest =
+          await hasExistingHireRequest(contractorId, contracteeId);
 
-      final projectId = projectResponse['project_id'];
+      if (existingHireRequest != null) {
+        throw Exception(
+            'You already have a pending hire request to this contractor. Please wait for their response.');
+      }
+
+      final existingProject = await hasExistingProject(contracteeId);
+
+      String projectId;
+
+      if (existingProject != null &&
+          existingProject['title'] == title &&
+          existingProject['type'] == type) {
+        projectId = existingProject['project_id'];
+      } else {
+        final projectResponse = await _supabase
+            .from('Projects')
+            .insert({
+              'contractee_id': contracteeId,
+              'title': title,
+              'type': type,
+              'description': description,
+              'location': location,
+              'status': 'pending',
+            })
+            .select()
+            .single();
+        projectId = projectResponse['project_id'];
+      }
 
       final contracteeData =
           await FetchService().fetchContracteeData(contracteeId);
@@ -145,16 +162,17 @@ class ProjectService {
           'contractee_id': contracteeId,
           'full_name': contracteeName,
           'project_id': projectId,
-          'project_title': title, 
+          'project_title': title,
           'project_type': type,
-          'project_location': location, 
+          'project_location': location,
           'project_description': description,
           'action': 'hire_request',
+          'status': 'pending',
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
     } catch (e) {
-      throw Exception('Failed to send notification: $e');
+      rethrow;
     }
   }
 
@@ -181,9 +199,17 @@ class ProjectService {
       currentInfo['status'] = 'accepted';
       currentInfo['updated_at'] = DateTime.now().toIso8601String();
 
-      await _supabase.from('Notifications').update({
-        'information': currentInfo,
-      }).eq('notification_id', notificationId);
+      await _supabase
+          .from('Notifications')
+          .update({
+            'information': {
+              ...currentInfo,
+              'status': 'accepted',
+            }
+          })
+          .eq('notification_id', notificationId);
+
+      await cancelOtherHireRequests(projectId, contracteeId, notificationId);
 
       final contractorData =
           await FetchService().fetchContractorData(contractorId);
@@ -207,7 +233,7 @@ class ProjectService {
         },
       );
     } catch (e) {
-      throw Exception('Failed to accept hiring request: $e');
+      rethrow;
     }
   }
 
@@ -254,7 +280,8 @@ class ProjectService {
         },
       );
     } catch (e) {
-      throw Exception('Failed to decline hiring request: $e');
+      throw Exception('Failed to decline hiring request');
     }
   }
+
 }

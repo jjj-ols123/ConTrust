@@ -4,6 +4,7 @@
 import 'package:backend/services/be_bidding_service.dart';
 import 'package:backend/services/be_project_service.dart';
 import 'package:backend/utils/be_validation.dart';
+import 'package:backend/utils/be_constraint.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -729,10 +730,21 @@ class HireModal {
     required String contracteeId,
     required String contractorId,
   }) async {
-    final titleController = TextEditingController();
-    final descriptionController = TextEditingController();
-    final locationController = TextEditingController();
-    final typeController = TextEditingController();
+
+    final existingProject = await hasExistingProject(contracteeId);
+
+    final titleController = TextEditingController(
+      text: existingProject?['title'] ?? '',
+    );
+    final descriptionController = TextEditingController(
+      text: existingProject?['description'] ?? '',
+    );
+    final locationController = TextEditingController(
+      text: existingProject?['location'] ?? '',
+    );
+    final typeController = TextEditingController(
+      text: existingProject?['type'] ?? '',
+    );
 
     final formKey = GlobalKey<FormState>();
 
@@ -779,6 +791,36 @@ class HireModal {
                               ),
                             ),
                             const SizedBox(height: 8),
+                            if (existingProject != null) ...[
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.shade50,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.blue.shade200),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.info, color: Colors.blue.shade700, size: 20),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          'Using details from your existing project. You can modify them if needed.',
+                                          style: TextStyle(
+                                            color: Colors.blue.shade700,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
                             _buildLabeledField(
                               label: 'Project Title',
                               child: TextFormField(
@@ -875,18 +917,20 @@ class HireModal {
                                     Navigator.pop(context);
 
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                            'Hire request sent successfully!'),
+                                      SnackBar(
+                                        content: Text(existingProject != null 
+                                          ? 'Hiring request sent using existing project!'
+                                          : 'Hire request sent successfully!'
+                                        ),
                                         backgroundColor: Colors.green,
                                       ),
                                     );
                                   } catch (e) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content:
-                                            Text('Failed to send hire request'),
+                                      SnackBar(
+                                        content: Text(e.toString().replaceFirst('Exception: ', '')),
                                         backgroundColor: Colors.red,
+                                        duration: Duration(seconds: 3),
                                       ),
                                     );
                                   }

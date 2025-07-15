@@ -363,47 +363,6 @@ class ContractService {
     }
   }
 
-  static Future<void> viewContract(
-      BuildContext context, String contractId) async {
-    try {
-      final contractData = await getContractById(contractId);
-
-      if (context.mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(contractData['title'] ?? 'Contract'),
-            content: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('Status: ${contractData['status']}'),
-                  const SizedBox(height: 8),
-                  Text('Content:'),
-                  const SizedBox(height: 4),
-                  Text(contractData['content'] ?? 'No content'),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
-              ),
-            ],
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading contract')),
-        );
-      }
-    }
-  }
-
   static Future<Map<String, dynamic>> getContractById(String contractId) async {
     return await _supabase
         .from('Contracts')

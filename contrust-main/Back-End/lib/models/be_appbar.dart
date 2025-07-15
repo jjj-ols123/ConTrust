@@ -17,12 +17,12 @@ import 'package:flutter/material.dart';
 
 class ConTrustAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String headline;
-  final List<Widget>? actions; 
+  final List<Widget>? actions;
 
   const ConTrustAppBar({
     super.key,
     required this.headline,
-    this.actions,  
+    this.actions,
   });
 
   @override
@@ -45,13 +45,22 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
 
   Future<void> _loadReceiverId() async {
     try {
-      final id = await UserService().getContracteeId();
+      String? userType = await UserService().getCurrentUserType();
+      String? id;
+
+      if (userType?.toLowerCase() == 'contractee') {
+        id = await UserService().getContracteeId();
+      } else if (userType?.toLowerCase() == 'contractor') {
+        id = await UserService().getContractorId();
+      }
+
       if (id == null || !mounted) return;
+      
 
       setState(() => _receiverId = id);
-      
+
       _refreshBadge();
-      
+
       _badgeTimer = Timer.periodic(const Duration(seconds: 10), (_) {
         _refreshBadge();
       });
@@ -66,7 +75,7 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
 
   Future<void> _refreshBadge() async {
     if (_receiverId == null || !mounted) return;
-    
+
     try {
       final count = await NotificationService().getUnreadCount(_receiverId!);
       if (mounted) {
@@ -90,18 +99,25 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
     return AppBar(
       backgroundColor: Colors.amber,
       centerTitle: true,
-      automaticallyImplyLeading: true,
-      leading: Navigator.canPop(context)
-          ? IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.black),
-              onPressed: () => Navigator.of(context).pop(),
-            )
-          : Builder(
+      automaticallyImplyLeading: false,
+      leading: (widget.headline == "Home") 
+          ? Builder(
               builder: (context) => IconButton(
                 icon: const Icon(Icons.menu, color: Colors.black),
                 onPressed: () => Scaffold.of(context).openDrawer(),
               ),
-            ),
+            )
+          : Navigator.canPop(context)
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.black),
+                  onPressed: () => Navigator.of(context).pop(),
+                )
+              : Builder(
+                  builder: (context) => IconButton(
+                    icon: const Icon(Icons.menu, color: Colors.black),
+                    onPressed: () => Scaffold.of(context).openDrawer(),
+                  ),
+                ),
       elevation: 4,
       title: Text(
         widget.headline,
@@ -197,7 +213,14 @@ class MenuDrawerContractee extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.home),
             title: const Text('Home'),
-            onTap: () => Navigator.pop(context),
+            onTap: () => {
+              Navigator.pop(context),
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (route) => false,
+              )
+            },
           ),
           ListTile(
             leading: const Icon(Icons.book),
@@ -221,8 +244,7 @@ class MenuDrawerContractee extends StatelessWidget {
 }
 
 class MenuDrawerContractor extends StatelessWidget {
-
-  final String contractorId; 
+  final String contractorId;
 
   const MenuDrawerContractor({super.key, required this.contractorId});
 
@@ -252,7 +274,8 @@ class MenuDrawerContractor extends StatelessWidget {
             leading: const Icon(Icons.assignment),
             title: const Text('Contract Types'),
             onTap: () {
-              transitionBuilder(context, ContractType(contractorId: contractorId));
+              transitionBuilder(
+                  context, ContractType(contractorId: contractorId));
             },
           ),
           ListTile(
@@ -279,8 +302,7 @@ class MenuDrawerContractor extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.info),
             title: const Text('About'),
-            onTap: () {
-            },
+            onTap: () {},
           ),
         ],
       ),
