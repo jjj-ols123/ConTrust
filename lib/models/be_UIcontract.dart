@@ -2,8 +2,10 @@
 
 import 'package:backend/services/be_contract_service.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UIContract {
+
   static Future<Map<String, dynamic>?> showSaveDialog(
     BuildContext context,
     String contractorId, {
@@ -98,6 +100,80 @@ class UIContract {
         );
       },
     );
+  }
+
+  static Future<void> viewContract(
+      BuildContext context, String contractId) async {
+    try {
+      final contractData = await ContractService.getContractById(contractId);
+      final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+      final isContractee = contractData['contractee_id'] == currentUserId;
+      final status = contractData['status'];
+
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(contractData['title'] ?? 'Contract'),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Status: ${contractData['status']}'),
+                  const SizedBox(height: 8),
+                  Text('Content:'),
+                  const SizedBox(height: 4),
+                  Text(contractData['content'] ?? 'No content'),
+                ],
+              ),
+            ),
+            actions: [
+              if (isContractee && status == 'sent') ...[
+                TextButton(
+                  onPressed: () async {
+                    await ContractService.updateContractStatus(
+                      contractId: contractId,
+                      status: 'rejected',
+                    );
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Contract rejected')),
+                    );
+                  },
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  child: const Text('Reject'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    await ContractService.updateContractStatus(
+                      contractId: contractId,
+                      status: 'approved',
+                    );
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Contract approved!')),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                  child: const Text('Accept'),
+                ),
+              ] else
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Close'),
+                ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading contract')),
+        );
+      }
+    }
   }
 }
 
