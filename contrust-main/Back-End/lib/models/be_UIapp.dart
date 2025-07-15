@@ -171,7 +171,7 @@ class ProjectView extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          "₱${project['min_budget']} - ₱${project['max_budget']}",
+                          "₱${project['min_budget']?.toString() ?? '0'} - ₱${project['max_budget']?.toString() ?? '0'}",
                           style: const TextStyle(
                             color: Colors.black87,
                             fontWeight: FontWeight.bold,
