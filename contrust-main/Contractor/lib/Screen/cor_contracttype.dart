@@ -15,7 +15,20 @@ class ContractType extends StatefulWidget {
   State<ContractType> createState() => _ContractTypeState();
 }
 
+Future<List<Map<String, dynamic>>> _fetchCreatedContracts(String contractorId) async {
+  return await FetchService().fetchCreatedContracts(contractorId);
+}
+
 class _ContractTypeState extends State<ContractType> {
+  Key _contractListKey = UniqueKey(); 
+
+  void _refreshContracts() {
+    if (mounted) {
+      setState(() {
+        _contractListKey = UniqueKey(); 
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,8 +89,8 @@ class _ContractTypeState extends State<ContractType> {
                         color: Colors.transparent,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(20),
-                          onTap: () {
-                            Navigator.push(
+                          onTap: () async {
+                            final result = await Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder:
@@ -88,6 +101,9 @@ class _ContractTypeState extends State<ContractType> {
                                     ),
                               ),
                             );
+                            if (result == true) {
+                              _refreshContracts(); 
+                            }
                           },
                           child: Container(
                             width: 200,
@@ -185,7 +201,8 @@ class _ContractTypeState extends State<ContractType> {
                 ],
               ),
               child: FutureBuilder<List<Map<String, dynamic>>>(
-                future: FetchService().fetchCreatedContracts(widget.contractorId),
+                key: _contractListKey,
+                future: _fetchCreatedContracts(widget.contractorId),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
@@ -249,9 +266,36 @@ class _ContractTypeState extends State<ContractType> {
                                   context: context,
                                   position: position,
                                   items: [
-                                    const PopupMenuItem(value: 'send', child: Text('Send to Contractee')),
-                                    const PopupMenuItem(value: 'edit', child: Text('Edit Contract')),
-                                    const PopupMenuItem(value: 'delete', child: Text('Delete Contract')),
+                                    const PopupMenuItem(
+                                      value: 'send',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.send, size: 20),
+                                          SizedBox(width: 8),
+                                          Text('Send to Contractee'),
+                                        ],
+                                      ),
+                                    ),
+                                    const PopupMenuItem(
+                                      value: 'edit',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.edit, size: 20),
+                                          SizedBox(width: 8),
+                                          Text('Edit Contract'),
+                                        ],
+                                      ),
+                                    ),
+                                    const PopupMenuItem(
+                                      value: 'delete',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.delete, size: 20),
+                                          SizedBox(width: 8),
+                                          Text('Delete Contract'),
+                                        ],
+                                      ),
+                                    ),
                                   ],
                                 ).then((choice) async {
                                   if (choice != null) {
@@ -283,7 +327,7 @@ class _ContractTypeState extends State<ContractType> {
                                         }
                                         break;
                                       case 'edit':
-                                        Navigator.push(
+                                        final editResult = await Navigator.push(
                                           context,
                                           MaterialPageRoute(
                                             builder: (_) => CreateContractPage(
@@ -297,20 +341,52 @@ class _ContractTypeState extends State<ContractType> {
                                             ),
                                           ),
                                         );
+                                        if (editResult == true) {
+                                          _refreshContracts();
+                                        }
                                         break;
                                       case 'delete':
-                                        try {
-                                          await ContractService.deleteContract(contractId: contract['contract_id'] as String);
-                                          if (mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(content: Text('Contract deleted')),
-                                            );
-                                          }
-                                        } catch (e) {
-                                          if (mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(content: Text('Error deleting contract')),
-                                            );
+                                        final shouldDelete = await showDialog<bool>(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            title: const Text('Delete Contract'),
+                                            content: const Text('Are you sure you want to delete this contract? This action cannot be undone.'),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(context, false),
+                                                child: const Text('Cancel'),
+                                              ),
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(context, true),
+                                                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                                                child: const Text('Delete'),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                        if (shouldDelete == true) {
+                                          try {
+                                            await ContractService.deleteContract(contractId: contract['contract_id'] as String);
+                                            
+                                            if (mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text('Contract deleted successfully'),
+                                                  backgroundColor: Colors.green,
+                                                ),
+                                              );
+                                              _refreshContracts(); 
+                                            }
+                                          } catch (e) {
+                                          
+                                            if (mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text('Error deleting contract'),
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                              );
+                                            }
                                           }
                                         }
                                         break;

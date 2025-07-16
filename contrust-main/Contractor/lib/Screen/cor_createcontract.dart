@@ -147,7 +147,7 @@ class _CreateContractPageState extends State<CreateContractPage> {
             ),
           );
         }
-        Navigator.pop(context);
+        Navigator.pop(context, true); 
       }
     } catch (e) {
       if (mounted) {
@@ -307,6 +307,7 @@ extension CreateContractDialog on ContractService {
                       'title': titleController.text,
                       'projectId': selectedProjectId,
                     });
+                    
                   },
                   child: const Text('Save'),
                 ),

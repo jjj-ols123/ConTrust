@@ -351,6 +351,8 @@ class ProjectView extends StatelessWidget {
         return 'Pending';
       case 'awaiting_contract':
         return 'Awaiting for Contract';
+      case 'awaiting_agreement':
+        return 'Awaiting Agreement';
       case 'closed':
         return 'Closed';
       case 'ended':
@@ -368,6 +370,8 @@ class ProjectView extends StatelessWidget {
         return Colors.orange;
       case 'awaiting_contract':
         return Colors.blue;
+      case 'awaiting_agreement':
+        return Colors.purple;
       case 'closed':
         return Colors.redAccent;
       case 'ended':

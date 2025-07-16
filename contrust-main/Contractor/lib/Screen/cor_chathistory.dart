@@ -1,4 +1,5 @@
 import 'package:backend/models/be_appbar.dart';
+import 'package:backend/services/be_fetchservice.dart';
 import 'package:backend/services/be_user_service.dart';
 import 'package:backend/utils/be_constraint.dart';
 import 'package:contractor/Screen/cor_messages.dart';
@@ -29,15 +30,6 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
     contractorId = id;
   });
 }
-
-  Future<Map<String, dynamic>?> _loadContracteeData(String contracteeId) async {
-    final response = await supabase
-        .from('Contractees')
-        .select('full_name, profile_photo')
-        .eq('id', contracteeId)
-        .single();
-    return response;  
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,10 +70,10 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
                         final canChat = snapshot.data ?? false;
 
                         return FutureBuilder<Map<String, dynamic>?>(
-                          future: _loadContracteeData(contractorId),
+                          future: FetchService().fetchContracteeData(contracteeId),
                           builder: (context, snapshot) {
-                            final contractorName = snapshot.data?['firm_name'] ?? 'Contractor';
-                            final contractorProfile = snapshot.data?['profile_photo'];
+                            final contracteeName = snapshot.data?['full_name'] ?? 'Contractor';
+                            final contracteeProfile = snapshot.data?['profile_photo'];
                             final lastMessage = chat['last_message'] ?? '';
                             final lastTime = chat['last_message_time'] != null
                                 ? DateTime.tryParse(chat['last_message_time'])
@@ -90,11 +82,11 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
                             return ListTile(
                               leading: CircleAvatar(
                                 backgroundImage: NetworkImage(
-                                  contractorProfile ??
+                                  contracteeProfile ??
                                       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
                                 ),
                               ),
-                              title: Text(contractorName),
+                              title: Text(contracteeName),
                               subtitle: Text(
                                 lastMessage,
                                 maxLines: 1,
@@ -116,8 +108,8 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
                                             chatRoomId: chat['chatroom_id'],
                                             contractorId: contractorId!,
                                             contracteeId: contracteeId,
-                                            contracteeName: contractorName,
-                                            contracteeProfile: contractorProfile,
+                                            contracteeName: contracteeName,
+                                            contracteeProfile: contracteeProfile,
                                           ),
                                         ),
                                       );

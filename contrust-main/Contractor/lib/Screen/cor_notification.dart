@@ -136,7 +136,7 @@ class _ContractorNotificationPageState
                           CircleAvatar(
                             backgroundImage: senderPhoto.isNotEmpty
                                 ? NetworkImage(senderPhoto)
-                                : const AssetImage('assets/default_avatar.png')
+                                : const AssetImage('defaultpic.png')
                                     as ImageProvider,
                           ),
                           const SizedBox(width: 12),
