@@ -98,6 +98,11 @@ class ContractService {
         'sent_at': DateTime.now().toIso8601String(),
       }).eq('contract_id', contractId);
 
+      await _supabase.from('Projects').update({
+      'status': 'awaiting_agreement',
+      'contract_sent_at': DateTime.now().toIso8601String(),
+    }).eq('project_id', contractData['project_id']);
+      
       await _supabase.from('Messages').insert({
         'chatroom_id': chatRoomData['chatroom_id'],
         'sender_id': contractData['contractor_id'],
@@ -144,7 +149,32 @@ class ContractService {
     if (status == 'approved' || status == 'rejected') {
       updateData['reviewed_at'] = DateTime.now().toIso8601String();
     }
-    await _supabase.from('Contracts').update(updateData).eq('id', contractId);
+
+    await _supabase.from('Contracts').update(updateData).eq('contract_id', contractId);
+
+    if (status == 'approved') {
+      final contractData = await _supabase
+          .from('Contracts')
+          .select('project_id')
+          .eq('contract_id', contractId)
+          .single();
+
+      await _supabase.from('Projects').update({
+        'status': 'active',
+        'contract_approved_at': DateTime.now().toIso8601String(),
+      }).eq('project_id', contractData['project_id']);
+    } else if (status == 'rejected') {
+      final contractData = await _supabase
+          .from('Contracts')
+          .select('project_id')
+          .eq('contract_id', contractId)
+          .single();
+ 
+      await _supabase.from('Projects').update({
+        'status': 'awaiting_agreement',
+        'contract_rejected_at': DateTime.now().toIso8601String(),
+      }).eq('project_id', contractData['project_id']);
+    }
   }
 
   static String replacePlaceholders(String template, String contractorId,

@@ -214,15 +214,43 @@ class FetchService {
     }
   }
 
-  Future<String?> fetchProjectStatus(String projectId) async {
+  Future<String?> fetchProjectStatus(String chatRoomId) async {
     try {
-      final project = await _supabase
+      final chatRoomResponse = await _supabase
+          .from('ChatRoom')
+          .select('project_id')
+          .eq('chatroom_id', chatRoomId)
+          .maybeSingle();
+      
+      if (chatRoomResponse == null) {
+        return null;
+      }
+      
+      final projectId = chatRoomResponse['project_id'];
+      
+      if (projectId == null) {
+        return null;
+      }
+      
+      final projectResponse = await _supabase
           .from('Projects')
-          .select('status')
+          .select('status, contractor_agree, contractee_agree')
           .eq('project_id', projectId)
           .maybeSingle();
-
-      return project?['status'];
+      
+      if (projectResponse == null) {
+        return null;
+      }
+      
+      final status = projectResponse['status'];
+      final contractorAgreed = projectResponse['contractor_agree'] ?? false;
+      final contracteeAgreed = projectResponse['contractee_agree'] ?? false;
+      
+      if (status == 'awaiting_contract' && contractorAgreed && contracteeAgreed) {
+        return 'active';
+      }
+      
+      return status;
     } catch (e) {
       return null;
     }
