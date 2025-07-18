@@ -135,16 +135,11 @@ class ContractService {
   static Future<void> updateContractStatus({
     required String contractId,
     required String status,
-    String? notes,
   }) async {
     Map<String, dynamic> updateData = {
       'status': status,
       'updated_at': DateTime.now().toIso8601String(),
     };
-
-    if (notes != null) {
-      updateData['contractee_notes'] = notes;
-    }
 
     if (status == 'approved' || status == 'rejected') {
       updateData['reviewed_at'] = DateTime.now().toIso8601String();
@@ -161,7 +156,6 @@ class ContractService {
 
       await _supabase.from('Projects').update({
         'status': 'active',
-        'contract_approved_at': DateTime.now().toIso8601String(),
       }).eq('project_id', contractData['project_id']);
     } else if (status == 'rejected') {
       final contractData = await _supabase
@@ -172,7 +166,6 @@ class ContractService {
  
       await _supabase.from('Projects').update({
         'status': 'awaiting_agreement',
-        'contract_rejected_at': DateTime.now().toIso8601String(),
       }).eq('project_id', contractData['project_id']);
     }
   }
