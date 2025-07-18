@@ -158,7 +158,7 @@ class NotificationService {
           .from('Notifications')
           .update({'is_read': true}).eq('notification_id', notificationId);
     } catch (e) {
-      throw Exception('Failed to mark as read: ${e.toString()}');
+      throw Exception('Failed to mark as read');
     }
   }
 
@@ -170,7 +170,7 @@ class NotificationService {
           .eq('receiver_id', receiverId)
           .eq('is_read', false);
     } catch (e) {
-      throw Exception('Failed to mark all as read: ${e.toString()}');
+      throw Exception('Failed to mark all as read');
     }
   }
 
