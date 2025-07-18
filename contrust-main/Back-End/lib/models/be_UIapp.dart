@@ -119,7 +119,7 @@ class ProjectView extends StatelessWidget {
   final DateTime createdAt;
   final Function() onTap;
   final Function(String) handleFinalizeBidding;
-  final Function(String)? onDeleteProject; 
+  final Function(String)? onDeleteProject;
 
   const ProjectView({
     Key? key,
@@ -130,13 +130,27 @@ class ProjectView extends StatelessWidget {
     required this.createdAt,
     required this.onTap,
     required this.handleFinalizeBidding,
-    this.onDeleteProject, 
+    this.onDeleteProject,
   }) : super(key: key);
+
+ Future<String?> _getContractorName() async {
+  final notification = await Supabase.instance.client
+    .from('Notifications')
+    .select('information')
+    .filter('information->>project_id', 'eq', projectId)
+    .order('created_at', ascending: false)
+    .limit(1)
+    .maybeSingle();
+  return notification?['information']?['firm_name'];
+}
 
   @override
   Widget build(BuildContext context) {
+    final isHiringRequest =
+        project['min_budget'] == null && project['max_budget'] == null;
+
     return InkWell(
-      onTap: onTap,
+      onTap: isHiringRequest ? null : onTap,
       child: Card(
         margin: const EdgeInsets.only(bottom: 18),
         elevation: 6,
@@ -161,82 +175,94 @@ class ProjectView extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.shade100,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          "₱${project['min_budget']?.toString() ?? '0'} - ₱${project['max_budget']?.toString() ?? '0'}",
-                          style: const TextStyle(
-                            color: Colors.black87,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
+                  if (!isHiringRequest) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        "₱${project['min_budget']?.toString() ?? '0'} - ₱${project['max_budget']?.toString() ?? '0'}",
+                        style: const TextStyle(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert, color: Colors.grey),
-                        onSelected: (value) async {
-                          if (value == 'delete' && onDeleteProject != null) {
-                            final bool? shouldDelete = await showDialog<bool>(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return AlertDialog(
-                                  title: const Text('Delete Project'),
-                                  content: const Text(
-                                    'Are you sure you want to delete this project? This action cannot be undone.',
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.of(context).pop(false),
-                                      child: const Text('Cancel'),
-                                    ),
-                                    TextButton(
-                                      onPressed: () => Navigator.of(context).pop(true),
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: Colors.red,
-                                      ),
-                                      child: const Text('Delete'),
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-
-                            if (shouldDelete == true) {
-                              onDeleteProject!(projectId);
-                            }
-                          }
-                        },
-                        itemBuilder: (BuildContext context) => [
-                          const PopupMenuItem<String>(
-                            value: 'delete',
-                            child: Row(
-                              children: [
-                                Icon(Icons.delete, color: Colors.red),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Delete Project',
-                                  style: TextStyle(color: Colors.red),
+                    ),
+                  ],
+                  if (onDeleteProject != null) ...[
+                    const SizedBox(width: 8),
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert, color: Colors.grey),
+                      onSelected: (value) async {
+                        if (value == 'delete') {
+                          final bool? shouldDelete = await showDialog<bool>(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: const Text('Delete Project'),
+                                content: const Text(
+                                  'Are you sure you want to delete this project? This action cannot be undone.',
                                 ),
-                              ],
-                            ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(true),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Colors.red,
+                                    ),
+                                    child: const Text('Delete'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                          if (shouldDelete == true) {
+                            onDeleteProject!(projectId);
+                          }
+                        }
+                      },
+                      itemBuilder: (BuildContext context) => [
+                        const PopupMenuItem<String>(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete, color: Colors.red),
+                              SizedBox(width: 8),
+                              Text(
+                                'Delete Project',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: 12),
+              if (project['type'] != null)
+                Row(
+                  children: [
+                    Text(
+                      'Type: ${project['type']}',
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              const SizedBox(height: 8),
               Text(
-                project['description'] ?? 'No description',
+                'Description: ${project['description'] ?? 'No description'}',
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 16, color: Colors.black87),
@@ -247,9 +273,11 @@ class ProjectView extends StatelessWidget {
                   const Icon(Icons.info_outline, size: 18, color: Colors.grey),
                   const SizedBox(width: 6),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: getStatusColor(project['status']).withOpacity(0.15),
+                      color:
+                          getStatusColor(project['status']).withOpacity(0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -263,79 +291,106 @@ class ProjectView extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  const Icon(Icons.timer_outlined, size: 18, color: Colors.grey),
-                  const SizedBox(width: 6),
-                  StreamBuilder<Duration>(
-                    stream: BiddingService().getBiddingCountdownStream(createdAt, duration),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
-                        return const Text(
-                          "Loading...",
-                          style: TextStyle(fontSize: 14),
-                        );
-                      }
-
-                      final remaining = snapshot.data!;
-
-                      if (remaining.isNegative) {
-                        handleFinalizeBidding(projectId);
-                      }
-
-                      if (remaining.isNegative) {
+              if (!isHiringRequest) ...[
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    const Icon(Icons.timer_outlined,
+                        size: 18, color: Colors.grey),
+                    const SizedBox(width: 6),
+                    StreamBuilder<Duration>(
+                      stream: BiddingService()
+                          .getBiddingCountdownStream(createdAt, duration),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return const Text(
+                            "Loading...",
+                            style: TextStyle(fontSize: 14),
+                          );
+                        }
+                        final remaining = snapshot.data!;
+                        if (remaining.isNegative) {
+                          handleFinalizeBidding(projectId);
+                        }
+                        if (remaining.isNegative) {
+                          return Text(
+                            "Closed",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.redAccent,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          );
+                        }
+                        final days = remaining.inDays;
+                        final hours = remaining.inHours
+                            .remainder(24)
+                            .toString()
+                            .padLeft(2, '0');
+                        final minutes = remaining.inMinutes
+                            .remainder(60)
+                            .toString()
+                            .padLeft(2, '0');
+                        final seconds = remaining.inSeconds
+                            .remainder(60)
+                            .toString()
+                            .padLeft(2, '0');
                         return Text(
-                          "Closed",
-                          style: TextStyle(
+                          '$days d $hours:$minutes:$seconds',
+                          style: const TextStyle(
                             fontSize: 14,
-                            color: Colors.redAccent,
+                            color: Colors.green,
                             fontWeight: FontWeight.bold,
                           ),
                         );
-                      }
-
-                      final days = remaining.inDays;
-                      final hours = remaining.inHours
-                          .remainder(24)
-                          .toString()
-                          .padLeft(2, '0');
-                      final minutes = remaining.inMinutes
-                          .remainder(60)
-                          .toString()
-                          .padLeft(2, '0');
-                      final seconds = remaining.inSeconds
-                          .remainder(60)
-                          .toString()
-                          .padLeft(2, '0');
-
-                      return Text(
-                        '$days d $hours:$minutes:$seconds',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.green,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  const Icon(Icons.attach_money_outlined, size: 18, color: Colors.grey),
-                  const SizedBox(width: 6),
-                  Text(
-                    "₱${highestBid.toStringAsFixed(2)}",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.green,
-                      fontWeight: FontWeight.bold,
+                      },
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    const Icon(Icons.attach_money_outlined,
+                        size: 18, color: Colors.grey),
+                    const SizedBox(width: 6),
+                    Text(
+                      "₱${highestBid.toStringAsFixed(2)}",
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              if (isHiringRequest) ...[
+                const SizedBox(height: 18),
+                FutureBuilder<String?>(
+                  future: _getContractorName(),
+                  builder: (context, snapshot) {
+                    final name =
+                        (snapshot.data != null && snapshot.data!.isNotEmpty)
+                            ? snapshot.data!
+                            : 'Unknown contractor';
+                    return Row(
+                      children: [
+                        const Icon(Icons.business,
+                            size: 18, color: Colors.grey),
+                        const SizedBox(width: 6),
+                        Text(
+                          'For: $name',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.blueGrey,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
             ],
           ),
         ),
@@ -384,7 +439,7 @@ class ProjectView extends StatelessWidget {
 
 class ExpandableFloatingButton extends StatelessWidget {
   final VoidCallback clearControllers;
-  final VoidCallback? onRefresh; 
+  final VoidCallback? onRefresh;
   final TextEditingController title;
   final TextEditingController typeConstruction;
   final TextEditingController minBudget;
@@ -396,7 +451,7 @@ class ExpandableFloatingButton extends StatelessWidget {
   const ExpandableFloatingButton({
     Key? key,
     required this.clearControllers,
-    this.onRefresh, 
+    this.onRefresh,
     required this.title,
     required this.typeConstruction,
     required this.minBudget,
@@ -496,4 +551,3 @@ class ExpandableFloatingButton extends StatelessWidget {
     );
   }
 }
-

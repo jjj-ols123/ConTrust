@@ -122,14 +122,26 @@ class ProjectService {
             'You already have a pending hire request to this contractor. Please wait for their response.');
       }
 
-      final existingProject = await hasExistingProject(contracteeId);
+      final existingProjectWithContractor =
+          await hasExistingProjectWithContractor(contracteeId, contractorId);
+
+      if (existingProjectWithContractor != null) {
+        throw Exception('You already have a project with this contractor.');
+      }
+
+      final ongoingProject = await hasOngoingProject(contracteeId);
+
+      if (ongoingProject != null) {
+        throw Exception(
+            'You already have an ongoing project. Please complete or cancel it before creating a new one.');
+      }
 
       String projectId;
 
-      if (existingProject != null &&
-          existingProject['title'] == title &&
-          existingProject['type'] == type) {
-        projectId = existingProject['project_id'];
+      if (existingProjectWithContractor != null &&
+          existingProjectWithContractor['title'] == title &&
+          existingProjectWithContractor['type'] == type) {
+        projectId = existingProjectWithContractor['project_id'];
       } else {
         final projectResponse = await _supabase
             .from('Projects')
@@ -140,6 +152,7 @@ class ProjectService {
               'description': description,
               'location': location,
               'status': 'pending',
+              'duration': 0,
             })
             .select()
             .single();
@@ -149,6 +162,9 @@ class ProjectService {
       final contracteeData =
           await FetchService().fetchContracteeData(contracteeId);
       final contracteeName = contracteeData?['full_name'] ?? 'A contractee';
+
+      final contractorData = await FetchService().fetchContractorData(contractorId);
+      final contractorName = contractorData?['firm_name'] ?? 'A contractor';
 
       await NotificationService().createNotification(
         receiverId: contractorId,
@@ -160,6 +176,8 @@ class ProjectService {
             '$contracteeName wants to hire your construction firm for: $title',
         information: {
           'contractee_id': contracteeId,
+          'firm_name': contractorName,
+          'contractor_id': contractorId,
           'full_name': contracteeName,
           'project_id': projectId,
           'project_title': title,
@@ -199,15 +217,12 @@ class ProjectService {
       currentInfo['status'] = 'accepted';
       currentInfo['updated_at'] = DateTime.now().toIso8601String();
 
-      await _supabase
-          .from('Notifications')
-          .update({
-            'information': {
-              ...currentInfo,
-              'status': 'accepted',
-            }
-          })
-          .eq('notification_id', notificationId);
+      await _supabase.from('Notifications').update({
+        'information': {
+          ...currentInfo,
+          'status': 'accepted',
+        }
+      }).eq('notification_id', notificationId);
 
       await cancelOtherHireRequests(projectId, contracteeId, notificationId);
 
@@ -284,4 +299,168 @@ class ProjectService {
     }
   }
 
+  Future<Map<String, dynamic>?> cancelAgreement(
+    String projectId,
+    String requestingUserId,
+  ) async {
+    try {
+      final project = await _supabase
+          .from('Projects')
+          .select('contractor_id, contractee_id')
+          .eq('project_id', projectId)
+          .single();
+
+      if (project.isEmpty) {
+        throw Exception('Project not found');
+      }
+
+      final contractorId = project['contractor_id'];
+      final contracteeId = project['contractee_id'];
+
+      String senderId, senderType, receiverId, receiverType, status, message;
+      if (requestingUserId == contractorId) {
+        senderId = contractorId;
+        senderType = 'contractor';
+        receiverId = contracteeId;
+        receiverType = 'contractee';
+        status = 'cancellation_requested_by_contractor';
+        message = 'The contractor has requested to cancel the project.';
+      } else {
+        senderId = contracteeId;
+        senderType = 'contractee';
+        receiverId = contractorId;
+        receiverType = 'contractor';
+        status = 'cancellation_requested_by_contractee';
+        message = 'The contractee has requested to cancel the project.';
+      }
+
+      await _supabase
+          .from('Projects')
+          .update({'status': status}).eq('project_id', projectId);
+
+      await NotificationService().createNotification(
+        receiverId: receiverId,
+        receiverType: receiverType,
+        senderId: senderId,
+        senderType: senderType,
+        type: 'Project Cancellation Request',
+        message: message,
+        information: {
+          'project_id': projectId,
+          'action': 'cancel_request',
+          'status': status,
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+
+      return project;
+    } catch (e) {
+      throw Exception('Failed to cancel agreement');
+    }
+  }
+
+  Future<Map<String, dynamic>?> agreeCancelAgreement(
+      String projectId, String agreeingUserId) async {
+    try {
+      final project = await _supabase
+          .from('Projects')
+          .select('contractor_id, contractee_id')
+          .eq('project_id', projectId)
+          .single();
+
+      final contractorId = project['contractor_id'];
+      final contracteeId = project['contractee_id'];
+
+      String receiverId, receiverType, senderId, senderType;
+      if (agreeingUserId == contractorId) {
+        senderId = contractorId;
+        senderType = 'contractor';
+        receiverId = contracteeId;
+        receiverType = 'contractee';
+      } else {
+        senderId = contracteeId;
+        senderType = 'contractee';
+        receiverId = contractorId;
+        receiverType = 'contractor';
+      }
+
+      await _supabase
+          .from('Projects')
+          .update({
+            'status': 'cancelled',
+            'contractor_id': null,
+          }).eq('project_id', projectId);
+
+      await NotificationService().createNotification(
+        receiverId: receiverId,
+        receiverType: receiverType,
+        senderId: senderId,
+        senderType: senderType,
+        type: 'Project Cancellation Response',
+        message: 'The $senderType has agreed to cancel the project.',
+        information: {
+          'project_id': projectId,
+          'action': 'cancel_agreed',
+          'status': 'cancelled',
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+
+      return project;
+    } catch (e) {
+      throw Exception('Failed to agree to cancellation');
+    }
+  }
+
+  Future<Map<String, dynamic>?> declineCancelAgreement(
+    String projectId,
+    String decliningUserId,
+  ) async {
+    try {
+      final project = await _supabase
+          .from('Projects')
+          .select('contractor_id, contractee_id')
+          .eq('project_id', projectId)
+          .single();
+
+      final contractorId = project['contractor_id'];
+      final contracteeId = project['contractee_id'];
+
+      String receiverId, receiverType, senderId, senderType;
+      if (decliningUserId == contractorId) {
+        senderId = contractorId;
+        senderType = 'contractor';
+        receiverId = contracteeId;
+        receiverType = 'contractee';
+      } else {
+        senderId = contracteeId;
+        senderType = 'contractee';
+        receiverId = contractorId;
+        receiverType = 'contractor';
+      }
+
+      await _supabase
+          .from('Projects')
+          .update({'status': 'awaiting_contract'}).eq('project_id', projectId);
+
+      await NotificationService().createNotification(
+        receiverId: receiverId,
+        receiverType: receiverType,
+        senderId: senderId,
+        senderType: senderType,
+        type: 'Project Cancellation Response',
+        message: 'The $senderType has declined the cancellation request.',
+        information: {
+          'project_id': projectId,
+          'action': 'cancel_declined',
+          'status': 'active',
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+
+      return project;
+    } catch (e) {
+      throw Exception('Failed to decline cancellation');
+    }
+  }
 }

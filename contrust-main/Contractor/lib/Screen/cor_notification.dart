@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:convert';
 import 'package:backend/services/be_notification_service.dart';
 import 'package:backend/services/be_project_service.dart';
@@ -270,6 +272,33 @@ class _ContractorNotificationPageState
                             ],
                           ),
                         ),
+                      if (notification['headline'] == 'Project Cancellation Request' && info['status'] == 'cancelled') ...[
+                        Row(
+                          children: [
+                            ElevatedButton(
+                              onPressed: () async {
+                                await ProjectService().agreeCancelAgreement(info['project_id'], contractorId!);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('You agreed to cancel the project.')),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                              child: const Text('Agree'),
+                            ),
+                            const SizedBox(width: 12),
+                            ElevatedButton(
+                              onPressed: () async {
+                                await ProjectService().declineCancelAgreement(info['project_id'], contractorId!);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('You declined the cancellation.')),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                              child: const Text('Decline'),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),

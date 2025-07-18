@@ -6,10 +6,10 @@ Future<bool> functionConstraint(String contractorId, String contracteeId) async 
       .select('project_id')
       .eq('contractor_id', contractorId)
       .eq('contractee_id', contracteeId)
-      .inFilter('status', ['awaiting_contract', 'active'])
+      .inFilter('status', ['awaiting_contract', 'active', 'awaiting_agreement'])
       .maybeSingle();
   return response != null;
-}
+} 
 
 Future<bool> hasAlreadyBid(String contractorId, String projectId) async {
   final response = await Supabase.instance.client
@@ -21,17 +21,40 @@ Future<bool> hasAlreadyBid(String contractorId, String projectId) async {
   return response != null;
 }
 
-Future<Map<String, dynamic>?> hasExistingProject(String contracteeId) async {
-  final existingProject = await Supabase.instance.client
+Future<Map<String, dynamic>?> hasExistingProjectWithContractor(String contracteeId, String contractorId) async {
+  final existingProjectWithContractor = await Supabase.instance.client
       .from('Projects')
-      .select('project_id, title, type, description, location, status')
+      .select('project_id, title, type, description, location, status, contractor_id')
       .eq('contractee_id', contracteeId)
-      .eq('status', 'pending') 
-      .order('created_at', ascending: false) 
+      .eq('contractor_id', contractorId)
+      .order('created_at', ascending: false)
       .limit(1)
       .maybeSingle();
 
-  return existingProject;
+  return existingProjectWithContractor;
+}
+
+Future<Map<String, dynamic>?> hasOngoingProject(String contracteeId) async {
+  final ongoingProject = await Supabase.instance.client
+        .from('Projects')
+        .select('project_id')
+        .eq('contractee_id', contracteeId)
+        .not('contractor_id', 'is', null)
+        .inFilter('status', ['awaiting_contract', 'active', 'awaiting_agreement'])
+        .limit(1)
+        .maybeSingle();
+  return ongoingProject;
+}
+
+Future<Map<String, dynamic>?> hasPendingProject(String contracteeId) async {
+  final pendingProject = await Supabase.instance.client
+      .from('Projects')
+      .select('project_id, title, type, description, location')
+      .eq('contractee_id', contracteeId)
+      .eq('status', 'pending')
+      .limit(1)
+      .maybeSingle();
+  return pendingProject;
 }
 
 Future<Map<String, dynamic>?> hasExistingHireRequest(String contractorId, String contracteeId) async {

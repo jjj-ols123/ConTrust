@@ -58,53 +58,6 @@ class FetchService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> fetchAvailableProjects() async {
-    try {
-      final response = await _supabase.from('Projects').select('''
-            project_id, 
-            type, 
-            description, 
-            duration, 
-            min_budget, 
-            max_budget, 
-            created_at, 
-            status,
-            location,
-            contractee:Contractee(full_name, profile_photo)
-          ''').eq('status', 'pending').order('created_at', ascending: false);
-      return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
-      return [];
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> fetchActiveProjects() async {
-    try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) return [];
-
-      final response = await _supabase
-          .from('Projects')
-          .select('''
-            project_id, 
-            type, 
-            description, 
-            duration, 
-            min_budget, 
-            max_budget, 
-            created_at, 
-            status,
-            contractee:Contractee(full_name)
-          ''')
-          .eq('contractor_id', userId)
-          .eq('status', 'active')
-          .order('created_at', ascending: false);
-      return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
-      return [];
-    }
-  }
-
   Future<List<Map<String, dynamic>>> fetchCompletedProjects() async {
     try {
       final userId = _supabase.auth.currentUser?.id;

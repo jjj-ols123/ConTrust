@@ -2,6 +2,7 @@
 
 import 'package:backend/models/be_appbar.dart';
 import 'package:backend/services/be_fetchservice.dart';
+import 'package:backend/services/be_project_service.dart';
 import 'package:backend/utils/be_constraint.dart';
 import 'package:contractee/models/cee_modal.dart';
 import 'package:contractee/pages/cee_messages.dart';
@@ -27,6 +28,8 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
   bool isLoading = true;
   bool isHiring = false;
   bool canChat = false;
+  bool hasAgreementWithThisContractor = false;
+  String? existingProjectId;
 
   static const String profileUrl =
       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
@@ -36,6 +39,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
     super.initState();
     _loadContractorData();
     _checkProjectStatus();
+    _checkAgreementWithContractor();
   }
 
   Future<void> _loadContractorData() async {
@@ -74,6 +78,16 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
     final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
     canChat = await functionConstraint(widget.contractorId, currentUserId);
     setState(() {});
+  }
+
+  Future<void> _checkAgreementWithContractor() async {
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final existingProject = await hasExistingProjectWithContractor(
+        currentUserId, widget.contractorId);
+    setState(() {
+      hasAgreementWithThisContractor = existingProject != null;
+      existingProjectId = existingProject?['project_id'];
+    });
   }
 
   Future<void> _notifyContractor() async {
@@ -364,25 +378,71 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
             color: Colors.white,
             child: SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isHiring ? null : _notifyContractor,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green[700],
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: isHiring
-                    ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 3,
+              child: hasAgreementWithThisContractor
+                  ? ElevatedButton(
+                      onPressed: isHiring
+                          ? null
+                          : () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Cancel Agreement'),
+                                  content: const Text(
+                                      'Are you sure you want to request cancellation?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, false),
+                                      child: const Text('No'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, true),
+                                      child: const Text('Yes',
+                                          style: TextStyle(color: Colors.red)),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirm == true && existingProjectId != null) {
+                                await ProjectService().cancelAgreement(
+                                  existingProjectId!,
+                                  Supabase.instance.client.auth.currentUser!.id,
+                                );
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content:
+                                          Text('Cancellation request sent.')),
+                                );
+                                setState(() {
+                                  isHiring = false;
+                                });
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red[700],
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                      )
-                    : const Text(
+                      ),
+                      child: const Text(
+                        "CANCEL AGREEMENT",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    )
+                  : ElevatedButton(
+                      onPressed: isHiring ? null : _notifyContractor,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green[700],
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
                         "HIRE THIS CONTRACTOR",
                         style: TextStyle(
                           fontSize: 16,
@@ -390,7 +450,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                           color: Colors.white,
                         ),
                       ),
-              ),
+                    ),
             ),
           ),
         ],

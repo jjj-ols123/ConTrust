@@ -45,7 +45,9 @@ class _BiddingScreenState extends State<BiddingScreen> {
           .from('Projects')
           .select(
             'project_id, type, description, duration, min_budget, max_budget, created_at, contractee_id',
-          );
+          )
+          .eq('status', 'pending')
+          .neq('duration', 0);
 
       if (response.isNotEmpty) {
         setState(() {

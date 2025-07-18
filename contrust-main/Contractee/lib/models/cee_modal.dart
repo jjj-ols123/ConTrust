@@ -731,20 +731,25 @@ class HireModal {
     required String contractorId,
   }) async {
 
-    final existingProject = await hasExistingProject(contracteeId);
+    TextEditingController titleController = TextEditingController();
+    TextEditingController typeController = TextEditingController();
+    TextEditingController descriptionController = TextEditingController();
+    TextEditingController locationController = TextEditingController();
 
-    final titleController = TextEditingController(
-      text: existingProject?['title'] ?? '',
-    );
-    final descriptionController = TextEditingController(
-      text: existingProject?['description'] ?? '',
-    );
-    final locationController = TextEditingController(
-      text: existingProject?['location'] ?? '',
-    );
-    final typeController = TextEditingController(
-      text: existingProject?['type'] ?? '',
-    );
+    final existingProjectWithContractor = await hasExistingProjectWithContractor(contracteeId, contractorId);
+    final pendingProject = await hasPendingProject(contracteeId);
+
+    if (existingProjectWithContractor == null) {
+      titleController.text = pendingProject?['title'] ?? '';
+      typeController.text = pendingProject?['type'] ?? '';
+      descriptionController.text = pendingProject?['description'] ?? '';
+      locationController.text = pendingProject?['location'] ?? '';
+    } else {
+      titleController.text = existingProjectWithContractor['title'] ?? '';
+      typeController.text = existingProjectWithContractor['type'] ?? '';
+      descriptionController.text = existingProjectWithContractor['description'] ?? '';
+      locationController.text = existingProjectWithContractor['location'] ?? '';
+    }
 
     final formKey = GlobalKey<FormState>();
 
@@ -791,7 +796,8 @@ class HireModal {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            if (existingProject != null) ...[
+                            if (existingProjectWithContractor != null || 
+                            (existingProjectWithContractor == null && pendingProject != null)) ...[
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                                 child: Container(
@@ -807,7 +813,7 @@ class HireModal {
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
-                                          'Using details from your existing project. You can modify them if needed.',
+                                          'Using details from your existing project.',
                                           style: TextStyle(
                                             color: Colors.blue.shade700,
                                             fontSize: 13,
@@ -918,7 +924,7 @@ class HireModal {
 
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text(existingProject != null 
+                                        content: Text(existingProjectWithContractor != null
                                           ? 'Hiring request sent using existing project!'
                                           : 'Hire request sent successfully!'
                                         ),
