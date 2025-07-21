@@ -58,6 +58,17 @@ class FetchService {
     }
   }
 
+   Future<String?> fetchContractorName(String projectId) async {
+    final notification = await _supabase
+      .from('Notifications')
+      .select('information')
+      .filter('information->>project_id', 'eq', projectId)
+      .order('created_at', ascending: false)
+      .limit(1)
+      .maybeSingle();
+    return notification?['information']?['firm_name'];
+  }
+
   Future<List<Map<String, dynamic>>> fetchCompletedProjects() async {
     try {
       final userId = _supabase.auth.currentUser?.id;

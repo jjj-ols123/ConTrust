@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 import 'package:backend/services/be_bidding_service.dart';
+import 'package:backend/services/be_fetchservice.dart';
 import 'package:contractee/models/cee_expandable.dart';
 import 'package:contractee/models/cee_modal.dart';
 import 'package:contractee/pages/cee_chathistory.dart';
@@ -132,17 +133,6 @@ class ProjectView extends StatelessWidget {
     required this.handleFinalizeBidding,
     this.onDeleteProject,
   }) : super(key: key);
-
- Future<String?> _getContractorName() async {
-  final notification = await Supabase.instance.client
-    .from('Notifications')
-    .select('information')
-    .filter('information->>project_id', 'eq', projectId)
-    .order('created_at', ascending: false)
-    .limit(1)
-    .maybeSingle();
-  return notification?['information']?['firm_name'];
-}
 
   @override
   Widget build(BuildContext context) {
@@ -367,7 +357,7 @@ class ProjectView extends StatelessWidget {
               if (isHiringRequest) ...[
                 const SizedBox(height: 18),
                 FutureBuilder<String?>(
-                  future: _getContractorName(),
+                  future: FetchService().fetchContractorName(projectId),
                   builder: (context, snapshot) {
                     final name =
                         (snapshot.data != null && snapshot.data!.isNotEmpty)
