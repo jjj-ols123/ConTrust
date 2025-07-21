@@ -1,6 +1,7 @@
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
+import 'dart:typed_data'; 
 
 class ContractService {
   static final SupabaseClient _supabase = Supabase.instance.client;
@@ -140,7 +141,6 @@ class ContractService {
       'status': status,
       'updated_at': DateTime.now().toIso8601String(),
     };
-
     if (status == 'approved' || status == 'rejected') {
       updateData['reviewed_at'] = DateTime.now().toIso8601String();
     }
@@ -392,5 +392,35 @@ class ContractService {
         .select('*')
         .eq('contract_id', contractId)
         .single();
+  }
+
+  static Future<void> signContract({
+    required String contractId,
+    required String userId,
+    required Uint8List signatureBytes,
+  }) async {
+    
+    try { 
+
+    final fileName = 'contractee_${contractId}_$userId.png';
+    final storageResponse = await _supabase.storage
+        .from('signatures')
+        .uploadBinary(fileName, signatureBytes, fileOptions: const FileOptions(upsert: true));
+
+    if (storageResponse.isEmpty) { 
+        throw Exception("Fauled to upload signature");
+    }
+
+    final publicUrl = _supabase.storage
+        .from('signatures')
+        .getPublicUrl(fileName);
+        
+    await _supabase.from('Contracts').update({
+      'contractee_signature_url': publicUrl,
+      'contractee_signed_at': DateTime.now().toIso8601String(),
+    }).eq('contract_id', contractId);
+  } catch (e) {
+    throw Exception('Failed to sign contract');
+  }
   }
 }

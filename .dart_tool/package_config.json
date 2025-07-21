@@ -26,6 +26,12 @@
       "languageVersion": "3.2"
     },
     {
+      "name": "archive",
+      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/archive-4.0.7",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
       "name": "args",
       "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/args-2.7.0",
       "packageUri": "lib/",
@@ -254,6 +260,12 @@
       "languageVersion": "3.0"
     },
     {
+      "name": "flutter_svg",
+      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_svg-2.2.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
       "name": "flutter_test",
       "rootUri": "file:///C:/Users/asus/OneDrive/flutter/packages/flutter_test",
       "packageUri": "lib/",
@@ -300,6 +312,12 @@
       "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/http_parser-4.1.2",
       "packageUri": "lib/",
       "languageVersion": "3.4"
+    },
+    {
+      "name": "image",
+      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/image-4.5.4",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
     },
     {
       "name": "image_picker",
@@ -428,6 +446,12 @@
       "languageVersion": "3.4"
     },
     {
+      "name": "path_parsing",
+      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/path_parsing-1.1.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.3"
+    },
+    {
       "name": "path_provider",
       "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/path_provider-2.1.5",
       "packageUri": "lib/",
@@ -464,6 +488,12 @@
       "languageVersion": "3.2"
     },
     {
+      "name": "petitparser",
+      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/petitparser-6.1.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.5"
+    },
+    {
       "name": "photo_view",
       "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/photo_view-0.15.0",
       "packageUri": "lib/",
@@ -478,6 +508,12 @@
     {
       "name": "plugin_platform_interface",
       "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/plugin_platform_interface-2.1.8",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "posix",
+      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/posix-6.0.3",
       "packageUri": "lib/",
       "languageVersion": "3.0"
     },
@@ -600,6 +636,12 @@
       "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/shared_preferences_windows-2.4.1",
       "packageUri": "lib/",
       "languageVersion": "3.3"
+    },
+    {
+      "name": "signature",
+      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/signature-5.5.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.19"
     },
     {
       "name": "sky_engine",
@@ -728,6 +770,24 @@
       "languageVersion": "3.4"
     },
     {
+      "name": "vector_graphics",
+      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/vector_graphics-1.1.19",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "vector_graphics_codec",
+      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/vector_graphics_codec-1.1.13",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "vector_graphics_compiler",
+      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/vector_graphics_compiler-1.1.17",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
       "name": "vector_math",
       "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/vector_math-2.1.4",
       "packageUri": "lib/",
@@ -800,6 +860,12 @@
       "languageVersion": "3.3"
     },
     {
+      "name": "xml",
+      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/xml-6.5.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
+    },
+    {
       "name": "yaml",
       "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/yaml-3.1.3",
       "packageUri": "lib/",
@@ -818,7 +884,7 @@
       "languageVersion": "3.6"
     }
   ],
-  "generated": "2025-06-26T13:29:52.480001Z",
+  "generated": "2025-07-20T13:31:05.469351Z",
   "generator": "pub",
   "generatorVersion": "3.7.2",
   "flutterRoot": "file:///C:/Users/asus/OneDrive/flutter",
