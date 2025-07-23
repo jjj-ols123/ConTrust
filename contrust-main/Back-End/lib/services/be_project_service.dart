@@ -67,7 +67,52 @@ class ProjectService {
   }
 
   Future<void> deleteProject(String projectId) async {
-    await _supabase.from('Projects').delete().eq('project_id', projectId);
+    final _supabase = Supabase.instance.client;
+    try {
+      final hiringRequests = await _supabase
+        .from('Notifications')
+        .select('notification_id, information')
+        .eq('headline', 'Hiring Request')
+        .filter('information->>project_id', 'eq', projectId);
+      for (final notif in hiringRequests) {
+        final info = notif['information'] as Map<String, dynamic>? ?? {};
+        await _supabase
+          .from('Notifications')
+          .update({
+            'information': {
+              ...info,
+              'status': 'deleted',
+              'deleted_reason': 'Project has been deleted by the contractee',
+              'deleted_at': DateTime.now().toIso8601String(),
+              'delete_message': 'Project has been deleted by the contractee.'
+            },
+          })
+          .eq('notification_id', notif['notification_id']);
+      }
+      final hiringResponses = await _supabase
+        .from('Notifications')
+        .select('notification_id, information')
+        .eq('headline', 'Hiring Response')
+        .filter('information->>project_id', 'eq', projectId);
+      for (final notif in hiringResponses) {
+        final info = notif['information'] as Map<String, dynamic>? ?? {};
+        await _supabase
+          .from('Notifications')
+          .update({
+            'information': {
+              ...info,
+              'status': 'deleted',
+              'deleted_reason': 'Project has been deleted by the contractee',
+              'deleted_at': DateTime.now().toIso8601String(),
+              'delete_message': 'Project has been deleted by the contractee.'
+            },
+          })
+          .eq('notification_id', notif['notification_id']);
+      }
+      await _supabase.from('Projects').delete().eq('project_id', projectId);
+    } catch (e) {
+      throw Exception('Error updating notifications and deleting project');
+    }
   }
 
   Future<Map<String, dynamic>?> getProjectDetails(String projectId) async {
@@ -122,26 +167,17 @@ class ProjectService {
             'You already have a pending hire request to this contractor. Please wait for their response.');
       }
 
-      final existingProjectWithContractor =
-          await hasExistingProjectWithContractor(contracteeId, contractorId);
-
-      if (existingProjectWithContractor != null) {
-        throw Exception('You already have a project with this contractor.');
-      }
-
-      final ongoingProject = await hasOngoingProject(contracteeId);
-
-      if (ongoingProject != null) {
-        throw Exception(
-            'You already have an ongoing project. Please complete or cancel it before creating a new one.');
-      }
+      final existingProject = await _supabase
+          .from('Projects')
+          .select('*')
+          .eq('contractee_id', contracteeId)
+          .eq('title', title)
+          .eq('type', type)
+          .maybeSingle();
 
       String projectId;
-
-      if (existingProjectWithContractor != null &&
-          existingProjectWithContractor['title'] == title &&
-          existingProjectWithContractor['type'] == type) {
-        projectId = existingProjectWithContractor['project_id'];
+      if (existingProject != null) {
+        projectId = existingProject['project_id'];
       } else {
         final projectResponse = await _supabase
             .from('Projects')
@@ -310,41 +346,27 @@ class ProjectService {
           .eq('project_id', projectId)
           .single();
 
-      if (project.isEmpty) {
-        throw Exception('Project not found');
-      }
-
-      final contractorId = project['contractor_id'];
-      final contracteeId = project['contractee_id'];
-
-      String senderId, senderType, receiverId, receiverType, status, message;
-      if (requestingUserId == contractorId) {
-        senderId = contractorId;
-        senderType = 'contractor';
-        receiverId = contracteeId;
-        receiverType = 'contractee';
-        status = 'cancellation_requested_by_contractor';
-        message = 'The contractor has requested to cancel the project.';
-      } else {
-        senderId = contracteeId;
-        senderType = 'contractee';
-        receiverId = contractorId;
-        receiverType = 'contractor';
-        status = 'cancellation_requested_by_contractee';
-        message = 'The contractee has requested to cancel the project.';
-      }
+      final userType = requestingUserId == project['contractor_id'] ? 'contractor' : 'contractee';
+      final notifInfo = await FetchService().userTypeDecide(
+        contractId: projectId,
+        userType: userType,
+        action: 'requested to cancel the project',
+      );
+      final status = userType == 'contractor'
+          ? 'cancellation_requested_by_contractor'
+          : 'cancellation_requested_by_contractee';
 
       await _supabase
           .from('Projects')
           .update({'status': status}).eq('project_id', projectId);
 
       await NotificationService().createNotification(
-        receiverId: receiverId,
-        receiverType: receiverType,
-        senderId: senderId,
-        senderType: senderType,
+        receiverId: notifInfo['receiverId'] ?? '',
+        receiverType: notifInfo['receiverType'] ?? '',
+        senderId: notifInfo['senderId'] ?? '',
+        senderType: notifInfo['senderType'] ?? '',
         type: 'Project Cancellation Request',
-        message: message,
+        message: notifInfo['message'] ?? '',
         information: {
           'project_id': projectId,
           'action': 'cancel_request',
@@ -422,34 +444,25 @@ class ProjectService {
           .select('contractor_id, contractee_id')
           .eq('project_id', projectId)
           .single();
-
-      final contractorId = project['contractor_id'];
-      final contracteeId = project['contractee_id'];
-
-      String receiverId, receiverType, senderId, senderType;
-      if (decliningUserId == contractorId) {
-        senderId = contractorId;
-        senderType = 'contractor';
-        receiverId = contracteeId;
-        receiverType = 'contractee';
-      } else {
-        senderId = contracteeId;
-        senderType = 'contractee';
-        receiverId = contractorId;
-        receiverType = 'contractor';
-      }
+          
+      final userType = decliningUserId == project['contractor_id'] ? 'contractor' : 'contractee';
+      final notifInfo = await FetchService().userTypeDecide(
+        contractId: projectId,
+        userType: userType,
+        action: 'declined the cancellation request',
+      );
 
       await _supabase
           .from('Projects')
           .update({'status': 'awaiting_contract'}).eq('project_id', projectId);
 
       await NotificationService().createNotification(
-        receiverId: receiverId,
-        receiverType: receiverType,
-        senderId: senderId,
-        senderType: senderType,
+        receiverId: notifInfo['receiverId'] ?? '',
+        receiverType: notifInfo['receiverType'] ?? '',
+        senderId: notifInfo['senderId'] ?? '',
+        senderType: notifInfo['senderType'] ?? '',
         type: 'Project Cancellation Response',
-        message: 'The $senderType has declined the cancellation request.',
+        message: notifInfo['message'] ?? '',
         information: {
           'project_id': projectId,
           'action': 'cancel_declined',

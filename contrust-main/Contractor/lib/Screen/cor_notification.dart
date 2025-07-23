@@ -126,9 +126,11 @@ class _ContractorNotificationPageState
               final projectType = info['project_type'] ?? '';
 
               return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                elevation: 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -136,24 +138,44 @@ class _ContractorNotificationPageState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           CircleAvatar(
+                            radius: 26,
+                            backgroundColor: Colors.amber.shade100,
                             backgroundImage: senderPhoto.isNotEmpty
                                 ? NetworkImage(senderPhoto)
-                                : const AssetImage('defaultpic.png')
-                                    as ImageProvider,
+                                : const AssetImage('defaultpic.png') as ImageProvider,
+                            child: notification['headline'] == 'Hiring Request'
+                                ? const Icon(Icons.business_center, color: Colors.amber, size: 28)
+                                : null,
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 16),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      notification['headline'] == 'Hiring Request'
+                                          ? Icons.mail_outline
+                                          : Icons.notifications,
+                                      color: notification['is_read'] == true ? Colors.grey : Colors.amber[800],
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      '${notification['headline'] ?? 'Notification'}',
+                                      style: TextStyle(
+                                        fontWeight: notification['is_read'] == true
+                                            ? FontWeight.normal
+                                            : FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                                 Text(
-                                  '${notification['headline'] ?? 'Notification'} from $senderName',
-                                  style: TextStyle(
-                                    fontWeight: notification['is_read'] == true
-                                        ? FontWeight.normal
-                                        : FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
+                                  'From: $senderName',
+                                  style: const TextStyle(fontSize: 13, color: Colors.black54),
                                 ),
                               ],
                             ),
@@ -164,17 +186,25 @@ class _ContractorNotificationPageState
                           ),
                         ],
                       ),
-                      
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                       Padding(
-                        padding: const EdgeInsets.only(left: 52), 
+                        padding: const EdgeInsets.only(left: 58),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              info['message'] ?? '',
-                              style: const TextStyle(fontSize: 14, color: Colors.grey),
-                            ),
+                            if ((notification['message'] ?? '').isNotEmpty)
+                              Text(
+                                notification['message'],
+                                style: const TextStyle(fontSize: 15, color: Colors.black87),
+                              ),
+                            if ((info['message'] ?? '').isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(
+                                  info['message'],
+                                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                                ),
+                              ),
                             if (projectType.isNotEmpty)
                               Padding(
                                 padding: const EdgeInsets.only(top: 4),
@@ -190,27 +220,50 @@ class _ContractorNotificationPageState
                           info['status'] != 'accepted' &&
                           info['status'] != 'declined')
                         Padding(
-                          padding: const EdgeInsets.only(top: 12),
+                          padding: const EdgeInsets.only(top: 16),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
-                              TextButton(
-                                onPressed: () =>
-                                    _declineHiring(notification['notification_id'], info),
+                              TextButton.icon(
+                                onPressed: () => _declineHiring(notification['notification_id'], info),
+                                icon: const Icon(Icons.close, color: Colors.red),
                                 style: TextButton.styleFrom(
                                   foregroundColor: Colors.red,
                                 ),
-                                child: const Text('Decline'),
+                                label: const Text('Decline'),
                               ),
-                              const SizedBox(width: 8),
-                              ElevatedButton(
-                                onPressed: () =>
-                                    _acceptHiring(notification['notification_id'], info),
+                              const SizedBox(width: 12),
+                              ElevatedButton.icon(
+                                onPressed: () async {
+                                  final confirm = await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Accept Hiring Request'),
+                                      content: const Text('Are you sure you want to accept this hiring request?'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context, false),
+                                          child: const Text('Cancel'),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () => Navigator.pop(context, true),
+                                          style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                                          child: const Text('Accept'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  if (confirm == true) {
+                                    _acceptHiring(notification['notification_id'], info);
+                                  }
+                                },
+                                icon: const Icon(Icons.check, color: Colors.white),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.green,
                                   foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                 ),
-                                child: const Text('Accept'),
+                                label: const Text('Accept'),
                               ),
                             ],
                           ),
@@ -245,8 +298,9 @@ class _ContractorNotificationPageState
                             ),
                           ),
                         ),
-                      if (info['status'] == 'cancelled')
+                      if (info['status'] == 'cancelled' || info['status'] == 'deleted')
                         Container(
+                          margin: const EdgeInsets.only(top: 10),
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: Colors.grey.shade100,
@@ -256,19 +310,20 @@ class _ContractorNotificationPageState
                           child: Column(
                             children: [
                               Text(
-                                'This hiring request has been cancelled',
+                                info['deleted_reason'] ?? info['cancelled_reason'] ?? 'This hiring request is no longer available.',
                                 style: TextStyle(
                                   color: Colors.grey.shade600,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
-                              Text(
-                                info['cancelled_reason'] ?? 'Project no longer available',
-                                style: TextStyle(
-                                  color: Colors.grey.shade500,
-                                  fontSize: 12,
+                              if (info['deleted_at'] != null)
+                                Text(
+                                  'Deleted at: ${info['deleted_at']}',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade500,
+                                    fontSize: 12,
+                                  ),
                                 ),
-                              ),
                             ],
                           ),
                         ),

@@ -356,28 +356,37 @@ class ProjectView extends StatelessWidget {
               ],
               if (isHiringRequest) ...[
                 const SizedBox(height: 18),
-                FutureBuilder<String?>(
-                  future: FetchService().fetchContractorName(projectId),
+                FutureBuilder<List<Map<String, dynamic>>>(
+                  future: FetchService().fetchHiringRequestsForProject(projectId),
                   builder: (context, snapshot) {
-                    final name =
-                        (snapshot.data != null && snapshot.data!.isNotEmpty)
-                            ? snapshot.data!
-                            : 'Unknown contractor';
-                    return Row(
-                      children: [
-                        const Icon(Icons.business,
-                            size: 18, color: Colors.grey),
-                        const SizedBox(width: 6),
-                        Text(
-                          'For: $name',
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.blueGrey,
-                          ),
-                        ),
-                      ],
+                    if (!snapshot.hasData) return const SizedBox();
+                    final requests = snapshot.data!;
+                    final accepted = requests.firstWhere(
+                      (r) => r['information']?['status'] == 'accepted',
+                      orElse: () => {},
                     );
+                    if (accepted.isNotEmpty) {
+                      return ListTile(
+                        leading: const Icon(Icons.verified, color: Colors.green),
+                        title: Text('Accepted Contractor: '
+                          '${accepted['information']?['firm_name'] ?? 'Unknown'}'),
+                      );
+                    } else if (requests.isNotEmpty) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Hiring Request Sent To:', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ...requests.map((r) => ListTile(
+                            leading: const Icon(Icons.business),
+                            title: Text(r['information']?['firm_name'] ?? 'Unknown'),
+                            subtitle: Text('Status: '
+                              '${(r['information']?['status'] ?? 'pending').toString().capitalize()}'),
+                          )),
+                        ],
+                      );
+                    } else {
+                      return const Text('No hiring requests sent.');
+                    }
                   },
                 ),
               ],
@@ -540,4 +549,8 @@ class ExpandableFloatingButton extends StatelessWidget {
       ],
     );
   }
+}
+
+extension StringCasingExtension on String {
+  String capitalize() => this.isNotEmpty ? '${this[0].toUpperCase()}${substring(1)}' : '';
 }
