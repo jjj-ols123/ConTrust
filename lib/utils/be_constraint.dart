@@ -86,17 +86,16 @@ Future<Map<String, dynamic>?> hasExistingHireRequest(String contractorId, String
 
       final pendingRequests = await _supabase
           .from('Notifications')
-          .select('notification_id, information')
+          .select('notification_id, information, receiver_id')
           .eq('sender_id', contracteeId)
           .eq('headline', 'Hiring Request')
-          .neq('notification_id', acceptedNotificationId); 
+          .neq('notification_id', acceptedNotificationId);
 
       for (final request in pendingRequests) {
         final info = request['information'] as Map<String, dynamic>?;
         if (info != null && 
             info['project_id'] == projectId && 
             info['status'] == 'pending') {
-          
           await _supabase
               .from('Notifications')
               .update({
@@ -107,6 +106,26 @@ Future<Map<String, dynamic>?> hasExistingHireRequest(String contractorId, String
                   'cancelled_at': DateTime.now().toIso8601String(),
                 }
               })
+              .eq('notification_id', request['notification_id']);
+          await _supabase
+              .from('Notifications')
+              .insert({
+                'receiver_id': request['receiver_id'],
+                'receiver_type': 'contractor',
+                'sender_id': contracteeId,
+                'sender_type': 'contractee',
+                'headline': 'Hiring Request Cancelled',
+                'information': {
+                  'project_id': projectId,
+                  'action': 'hire_request_cancelled',
+                  'timestamp': DateTime.now().toIso8601String(),
+                },
+                'is_read': false,
+                'created_at': DateTime.now().toIso8601String(),
+              });
+          await _supabase
+              .from('Notifications')
+              .delete()
               .eq('notification_id', request['notification_id']);
         }
       }

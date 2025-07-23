@@ -219,4 +219,53 @@ class FetchService {
       return null;
     }
   }
+
+  Future<Map<String, dynamic>?> fetchContractData(String contractId) async {
+    final contract = await _supabase
+      .from('Contracts')
+      .select()
+      .eq('contract_id', contractId)
+      .single();
+    return contract;
+  }
+
+  Future<List<Map<String, dynamic>>> fetchHiringRequestsForProject(String projectId) async {
+  final response = await _supabase
+    .from('Notifications')
+    .select('receiver_id, information, headline')
+    .eq('headline', 'Hiring Request')
+    .filter('information->>project_id', 'eq', projectId);
+
+  return List<Map<String, dynamic>>.from(response);
+}
+
+  Future<Map<String, String>> userTypeDecide({
+    required String contractId,
+    required String userType,
+    required String action,
+  }) async {
+    final contract = await fetchContractData(contractId);
+
+    String receiverId, receiverType, senderId, senderType, message;
+    if (userType == 'contractor') {
+      receiverId = contract?['contractee_id'];
+      receiverType = 'contractee';
+      senderId = contract?['contractor_id'];
+      senderType = 'contractor';
+      message = 'The $userType has $action';
+    } else {
+      receiverId = contract?['contractor_id'];
+      receiverType = 'contractor';
+      senderId = contract?['contractee_id'];
+      senderType = 'contractee';
+      message = 'The $userType has $action';
+    }
+    return {
+      'receiverId': receiverId,
+      'receiverType': receiverType,
+      'senderId': senderId,
+      'senderType': senderType,
+      'message': message,
+    };
+  }
 }

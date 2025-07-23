@@ -183,16 +183,27 @@ class UIMessage {
     if (msg['message_type'] == 'contract') {
       return Container(
         margin: EdgeInsets.only(
-          top: 8,
-          bottom: 8,
-          left: isMe ? 40 : 8,
-          right: isMe ? 8 : 40,
+          top: 12,
+          bottom: 12,
+          left: isMe ? 60 : 12,
+          right: isMe ? 12 : 60,
         ),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: Colors.blue[50],
+          gradient: LinearGradient(
+            colors: [Colors.blue[100]!, Colors.blue[50]!],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           border: Border.all(color: Colors.blue[300]!, width: 2),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.blue.withOpacity(0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,18 +217,34 @@ class UIMessage {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.blue[700],
+                    fontSize: 16,
                   ),
                 ),
+                const Spacer(),
+                if (msg['timestamp'] != null)
+                  Text(
+                    _formatTime(msg['timestamp']),
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
               ],
             ),
             const SizedBox(height: 8),
-            Text(msg['message'] ?? ''),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: () {
-                UIContract.viewContract(context, msg['contract_id']);
-              },
-              child: const Text('View Contract'),
+            Text(msg['message'] ?? '', style: const TextStyle(fontSize: 15)),
+            const SizedBox(height: 14),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  UIContract.viewContract(context, msg['contract_id']);
+                },
+                icon: const Icon(Icons.visibility),
+                label: const Text('View Contract'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue[700],
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
             ),
           ],
         ),
@@ -228,40 +255,96 @@ class UIMessage {
   }
 
   static Widget buildNormalMessageBubble(Map<String, dynamic> msg, bool isMe) {
-    return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: EdgeInsets.only(
-          top: 4,
-          bottom: 4,
-          left: isMe ? 40 : 0,
-          right: isMe ? 0 : 40,
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-        decoration: BoxDecoration(
-          color: isMe ? Colors.amber[300] : Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: Radius.circular(isMe ? 16 : 4),
-            bottomRight: Radius.circular(isMe ? 4 : 16),
+    return Row(
+      mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (!isMe) ...[
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: Colors.amber[100],
+            child: const Icon(Icons.person, color: Colors.amber),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.15),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
+          const SizedBox(width: 8),
+        ],
+        Flexible(
+          child: Container(
+            margin: EdgeInsets.only(
+              top: 6,
+              bottom: 6,
+              left: isMe ? 40 : 0,
+              right: isMe ? 0 : 40,
             ),
-          ],
-        ),
-        child: Text(
-          msg['message'] ?? '',
-          style: TextStyle(
-            fontSize: 16,
-            color: isMe ? Colors.black : Colors.grey[900],
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
+            decoration: BoxDecoration(
+              gradient: isMe
+                  ? LinearGradient(
+                      colors: [Colors.amber[300]!, Colors.amber[100]!],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : LinearGradient(
+                      colors: [Colors.white, Colors.grey[100]!],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+              borderRadius: BorderRadius.only(
+                topLeft: const Radius.circular(16),
+                topRight: const Radius.circular(16),
+                bottomLeft: Radius.circular(isMe ? 16 : 4),
+                bottomRight: Radius.circular(isMe ? 4 : 16),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.10),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment:
+                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                Text(
+                  msg['message'] ?? '',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: isMe ? Colors.black : Colors.grey[900],
+                  ),
+                ),
+                if (msg['timestamp'] != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      _formatTime(msg['timestamp']),
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
-      ),
+        if (isMe) ...[
+          const SizedBox(width: 8),
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: Colors.amber[300],
+            child: const Icon(Icons.person, color: Colors.white),
+          ),
+        ],
+      ],
     );
+  }
+
+  static String _formatTime(dynamic timestamp) {
+    try {
+      final date = timestamp is String ? DateTime.parse(timestamp) : timestamp as DateTime;
+      final hour = date.hour.toString().padLeft(2, '0');
+      final min = date.minute.toString().padLeft(2, '0');
+      return '$hour:$min';
+    } catch (e) {
+      return '';
+    }
   }
 }

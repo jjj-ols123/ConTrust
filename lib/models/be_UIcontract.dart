@@ -103,13 +103,24 @@ class UIContract {
     );
   }
 
+  static Future<String?> getSignedUrl(String? path) async {
+    if (path == null || path.isEmpty) return null;
+    final response = await Supabase.instance.client.storage
+        .from('signatures')
+        .createSignedUrl(path, 60 * 60); 
+    return response; 
+  }
+
   static Future<void> viewContract(
       BuildContext context, String contractId) async {
     try {
       final contractData = await ContractService.getContractById(contractId);
       final currentUserId = Supabase.instance.client.auth.currentUser?.id;
       final isContractee = contractData['contractee_id'] == currentUserId;
+      final isContractor = contractData['contractor_id'] == currentUserId;
       final status = contractData['status'];
+      final contracteeSignaturePath = contractData['contractee_signature_url'];
+      final contractorSignaturePath = contractData['contractor_signature_url'];
 
       if (context.mounted) {
         showDialog(
@@ -127,37 +138,326 @@ class UIContract {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text('Status:', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    Text('${contractData['status']}'),
+                    Text('\t${contractData['status']}'),
                     const Divider(),
                     Text('Content:', style: const TextStyle(fontWeight: FontWeight.bold)),
                     Text(contractData['content'] ?? 'No content'),
                     const Divider(),
-                    if (contractData['contractee_signature_url'] != null &&
-                        (contractData['contractee_signature_url'] as String).isNotEmpty) ...[
-                      Text('Contractee Signature:', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      Container(
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Image.network(
-                          contractData['contractee_signature_url'],
-                          height: 100,
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Text('Could not load signature image'),
-                        ),
-                      ),
-                    ] else ...[
+                    Text('Contractee Signature:', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    if (contracteeSignaturePath != null && (contracteeSignaturePath as String).isNotEmpty)
+                      FutureBuilder<String?>(
+                        future: getSignedUrl(contracteeSignaturePath),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8),
+                              child: SizedBox(height: 40, child: Center(child: CircularProgressIndicator())),
+                            );
+                          }
+                          final signedUrl = snapshot.data;
+                          if (signedUrl == null) {
+                            return const Text('Could not load signature image');
+                          }
+                          return Container(
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Image.network(
+                              signedUrl,
+                              height: 100,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Text('Could not load signature image'),
+                            ),
+                          );
+                        },
+                      )
+                    else
                       const Text('No signature yet.', style: TextStyle(color: Colors.grey)),
-                    ],
+                    const SizedBox(height: 8),
+                    Text('Contractor Signature:', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    if (contractorSignaturePath != null && (contractorSignaturePath as String).isNotEmpty)
+                      FutureBuilder<String?>(
+                        future: getSignedUrl(contractorSignaturePath),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8),
+                              child: SizedBox(height: 40, child: Center(child: CircularProgressIndicator())),
+                            );
+                          }
+                          final signedUrl = snapshot.data;
+                          if (signedUrl == null) {
+                            return const Text('Could not load signature image');
+                          }
+                          return Container(
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Image.network(
+                              signedUrl,
+                              height: 100,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Text('Could not load signature image'),
+                            ),
+                          );
+                        },
+                      )
+                    else
+                      const Text('No signature yet.', style: TextStyle(color: Colors.grey)),
                   ],
                 ),
               ),
             ),
             actions: [
-              if (isContractee && status == 'sent') ...[
+              if (isContractor && status == 'sent' && (contractorSignaturePath == null || (contractorSignaturePath as String).isEmpty)) ...[
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (context.mounted) {
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            final SignatureController _controller = SignatureController(
+                              penStrokeWidth: 3,
+                              penColor: Colors.black,
+                            );
+                            bool isSaving = false;
+                            return StatefulBuilder(
+                              builder: (context, setState) {
+                                return AlertDialog(
+                                  title: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text('Sign the Contract'),
+                                      IconButton(
+                                        icon: const Icon(Icons.close),
+                                        onPressed: () => Navigator.of(context).pop(),
+                                        tooltip: 'Close',
+                                      ),
+                                    ],
+                                  ),
+                                  content: SingleChildScrollView(
+                                    child: SizedBox(
+                                      width: 350,
+                                      child: UIContract.buildSignaturePad(
+                                        controller: _controller,
+                                        height: 200,
+                                      ),
+                                    ),
+                                  ),
+                                  actions: [
+                                    ElevatedButton.icon(
+                                      onPressed: isSaving
+                                          ? null
+                                          : () async {
+                                              if (_controller.isNotEmpty) {
+                                                setState(() {
+                                                  isSaving = true;
+                                                });
+                                                final signature = await _controller.toPngBytes();
+                                                try {
+                                                  await ContractService.signContract(
+                                                    contractId: contractId,
+                                                    userId: currentUserId!,
+                                                    signatureBytes: signature!,
+                                                    userType: 'contractor',
+                                                  );
+                                                  Navigator.of(context).pop();
+                                                  if (context.mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(content: Text('Signature saved!')),
+                                                    );
+                                                  }
+                                                } catch (e) {
+                                                  setState(() {
+                                                    isSaving = false;
+                                                  });
+                                                  print('Failed to save signature');
+                                                  if (context.mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(content: Text('Failed to save signature')),
+                                                    );
+                                                  }
+                                                }
+                                              } else {
+                                                if (context.mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    const SnackBar(content: Text('Please provide a signature')),
+                                                  );
+                                                }
+                                              }
+                                            },
+                                      icon: isSaving
+                                          ? const SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                              ),
+                                            )
+                                          : const Icon(Icons.save),
+                                      label: const Text('Save'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.blue,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          },
+                        );
+                      }
+                    });
+                  },
+                  icon: const Icon(Icons.edit),
+                  label: const Text('Sign the Contract'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                  label: const Text('Close'),
+                ),
+              ]
+              else if (isContractee && status == 'approved' && (contracteeSignaturePath == null || (contracteeSignaturePath as String).isEmpty)) ...[
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (context.mounted) {
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            final SignatureController _controller = SignatureController(
+                              penStrokeWidth: 3,
+                              penColor: Colors.black,
+                            );
+                            bool isSaving = false;
+                            return StatefulBuilder(
+                              builder: (context, setState) {
+                                return AlertDialog(
+                                  title: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text('Sign the Contract'),
+                                      IconButton(
+                                        icon: const Icon(Icons.close),
+                                        onPressed: () => Navigator.of(context).pop(),
+                                        tooltip: 'Close',
+                                      ),
+                                    ],
+                                  ),
+                                  content: SingleChildScrollView(
+                                    child: SizedBox(
+                                      width: 350,
+                                      child: UIContract.buildSignaturePad(
+                                        controller: _controller,
+                                        height: 200,
+                                      ),
+                                    ),
+                                  ),
+                                  actions: [
+                                    ElevatedButton.icon(
+                                      onPressed: isSaving
+                                          ? null
+                                          : () async {
+                                              if (_controller.isNotEmpty) {
+                                                setState(() {
+                                                  isSaving = true;
+                                                });
+                                                final signature = await _controller.toPngBytes();
+                                                try {
+                                                  await ContractService.signContract(
+                                                    contractId: contractId,
+                                                    userId: currentUserId!,
+                                                    signatureBytes: signature!,
+                                                    userType: 'contractee',
+                                                  );
+                                                  Navigator.of(context).pop();
+                                                  if (context.mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(content: Text('Signature saved!')),
+                                                    );
+                                                  }
+                                                } catch (e) {
+                                                  setState(() {
+                                                    isSaving = false;
+                                                  });
+                                                  print('Failed to save signature');
+                                                  if (context.mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(content: Text('Failed to save signature')),
+                                                    );
+                                                  }
+                                                }
+                                              } else {
+                                                if (context.mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    const SnackBar(content: Text('Please provide a signature')),
+                                                  );
+                                                }
+                                              }
+                                            },
+                                      icon: isSaving
+                                          ? const SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                              ),
+                                            )
+                                          : const Icon(Icons.save),
+                                      label: const Text('Save'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.blue,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          },
+                        );
+                      }
+                    });
+                  },
+                  icon: const Icon(Icons.edit),
+                  label: const Text('Sign the Contract'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                  label: const Text('Close'),
+                ),
+              ]
+              else if (isContractee && status == 'sent') ...[
                 TextButton.icon(
                   onPressed: () async {
                     await ContractService.updateContractStatus(
@@ -188,99 +488,6 @@ class UIContract {
                   label: const Text('Accept'),
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
                 ),
-              ] else if (isContractee && status == 'approved') ...[
-                ElevatedButton.icon(
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) {
-                        final SignatureController _controller = SignatureController(
-                          penStrokeWidth: 3,
-                          penColor: Colors.black,
-                        );
-                        return StatefulBuilder(
-                          builder: (context, setState) {
-                            bool isSaving = false;
-                            return AlertDialog(
-                              title: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text('Sign the Contract'),
-                                  IconButton(
-                                    icon: const Icon(Icons.close),
-                                    onPressed: () => Navigator.of(context).pop(),
-                                    tooltip: 'Close',
-                                  ),
-                                ],
-                              ),
-                              content: UIContract.buildSignaturePad(
-                                controller: _controller,
-                              ),
-                              actions: [
-                                ElevatedButton.icon(
-                                  onPressed: isSaving
-                                      ? null
-                                      : () async {
-                                          if (_controller.isNotEmpty) {
-                                            setState(() => isSaving = true);
-                                            final signature = await _controller.toPngBytes();
-                                            try {
-                                              await ContractService.signContract(
-                                                contractId: contractId,
-                                                userId: currentUserId!,
-                                                signatureBytes: signature!,
-                                              );
-                                              Navigator.of(context).pop();
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                const SnackBar(content: Text('Signature saved!')),
-                                              );
-                                            } catch (e) {
-                                              setState(() => isSaving = false);
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                const SnackBar(content: Text('Failed to save signature')),
-                                              );
-                                            }
-                                          }
-                                        },
-                                  icon: isSaving
-                                      ? const SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                          ),
-                                        )
-                                      : const Icon(Icons.save),
-                                  label: const Text('Save'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blue,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      },
-                    );
-                  },
-                  icon: const Icon(Icons.edit),
-                  label: const Text('Sign the Contract'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-                TextButton.icon(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
-                  label: const Text('Close'),
-                ),
               ] else
                 TextButton.icon(
                   onPressed: () => Navigator.pop(context),
@@ -305,36 +512,77 @@ class UIContract {
     double height = 200,
     Color backgroundColor = const Color(0xFFE0E0E0),
   }) {
-    return Column(
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Signature(
-            controller: controller,
-            height: height,
-            backgroundColor: backgroundColor,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
+    return Card(
+      elevation: 6,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            ElevatedButton.icon(
-              onPressed: () => controller.clear(),
-              icon: const Icon(Icons.refresh),
-              label: const Text('Clear'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+            Row(
+              children: [
+                Icon(Icons.draw_rounded, color: Colors.blue[700]),
+                const SizedBox(width: 8),
+                Text(
+                  'Draw your signature',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.blue[700],
+                  ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Divider(),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.blueGrey[50],
+                border: Border.all(color: Colors.blue[200]!, width: 2),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blue.withOpacity(0.05),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
+              width: double.infinity,
+              height: height + 40,
+              child: Signature(
+                controller: controller,
+                backgroundColor: Colors.transparent,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Sign above using your mouse, stylus, or finger.',
+              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () => controller.clear(),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Clear'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange[400],
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-      ],
+      ),
     );
   }
 }

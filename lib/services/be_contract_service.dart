@@ -1,7 +1,9 @@
+import 'package:backend/services/be_fetchservice.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'dart:typed_data'; 
+import 'package:backend/services/be_notification_service.dart';
 
 class ContractService {
   static final SupabaseClient _supabase = Supabase.instance.client;
@@ -101,7 +103,6 @@ class ContractService {
 
       await _supabase.from('Projects').update({
       'status': 'awaiting_agreement',
-      'contract_sent_at': DateTime.now().toIso8601String(),
     }).eq('project_id', contractData['project_id']);
       
       await _supabase.from('Messages').insert({
@@ -155,7 +156,7 @@ class ContractService {
           .single();
 
       await _supabase.from('Projects').update({
-        'status': 'active',
+        'status': 'awaiting_agreement',
       }).eq('project_id', contractData['project_id']);
     } else if (status == 'rejected') {
       final contractData = await _supabase
@@ -398,29 +399,52 @@ class ContractService {
     required String contractId,
     required String userId,
     required Uint8List signatureBytes,
+    required String userType, 
   }) async {
-    
-    try { 
+    try {
+      final fileName = '${userType}_${contractId}_$userId.png';
+      final storageResponse = await _supabase.storage
+          .from('signatures')
+          .uploadBinary(fileName, signatureBytes, fileOptions: const FileOptions(upsert: true));
 
-    final fileName = 'contractee_${contractId}_$userId.png';
-    final storageResponse = await _supabase.storage
-        .from('signatures')
-        .uploadBinary(fileName, signatureBytes, fileOptions: const FileOptions(upsert: true));
+      if (storageResponse.isEmpty) {
+        throw Exception("Failed to upload signature");
+      }
 
-    if (storageResponse.isEmpty) { 
-        throw Exception("Fauled to upload signature");
+      final publicUrl = _supabase.storage
+          .from('signatures')
+          .getPublicUrl(fileName);
+
+      final updateData = userType == 'contractor'
+          ? {
+              'contractor_signature_url': publicUrl,
+              'contractor_signed_at': DateTime.now().toIso8601String(),
+            }
+          : {
+              'contractee_signature_url': publicUrl,
+              'contractee_signed_at': DateTime.now().toIso8601String(),
+            };
+
+      await _supabase.from('Contracts').update(updateData).eq('contract_id', contractId);
+
+      final notifInfo = await FetchService().userTypeDecide(
+        contractId: contractId,
+        userType: userType,
+        action: 'signed',
+      );
+
+      await NotificationService().createContractNotification(
+        receiverId: notifInfo['receiverId']!,
+        receiverType: notifInfo['receiverType']!,
+        senderId: notifInfo['senderId']!,
+        senderType: notifInfo['senderType']!,
+        contractId: contractId,
+        type: 'Contract Signed',
+        message: notifInfo['message']!,
+      );
+
+    } catch (e) {
+      throw Exception('Failed to sign contract $e');
     }
-
-    final publicUrl = _supabase.storage
-        .from('signatures')
-        .getPublicUrl(fileName);
-        
-    await _supabase.from('Contracts').update({
-      'contractee_signature_url': publicUrl,
-      'contractee_signed_at': DateTime.now().toIso8601String(),
-    }).eq('contract_id', contractId);
-  } catch (e) {
-    throw Exception('Failed to sign contract');
-  }
   }
 }
