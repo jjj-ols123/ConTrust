@@ -5,6 +5,7 @@ import 'package:backend/services/be_fetchservice.dart';
 import 'package:backend/services/be_project_service.dart';
 import 'package:contractor/Screen/cor_createcontract.dart';
 import 'package:flutter/material.dart';
+import 'package:backend/models/be_UIcontract.dart';
 
 class ContractType extends StatefulWidget {
   final String contractorId;
@@ -397,7 +398,10 @@ class _ContractTypeState extends State<ContractType> {
                             );
                           },
                         ),
-                        onTap: () {},
+                        onTap: () async {
+                          final contractId = contract['contract_id'] as String;
+                          await UIContract.viewContract(context, contractId);
+                        },
                       );
                     },
                   );
