@@ -476,4 +476,59 @@ class ProjectService {
       throw Exception('Failed to decline cancellation');
     }
   }
+
+
+  Future<void> addTaskToProject({
+    required String projectId,
+    required String task,
+    bool done = false,
+  }) async {
+    await _supabase.from('ProjectTasks').insert({
+      'project_id': projectId,
+      'task': task,
+      'done': done,
+      'created_at': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<void> addReportToProject({
+    required String projectId,
+    required String content,
+    required String authorId,
+  }) async {
+    await _supabase.from('ProjectReports').insert({
+      'project_id': projectId,
+      'content': content,
+      'author_id': authorId,
+      'created_at': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<void> addPhotoToProject({
+    required String projectId,
+    required String photoUrl,
+    required String uploaderId,
+  }) async {
+    await _supabase.from('ProjectPhotos').insert({
+      'project_id': projectId,
+      'photo_url': photoUrl,
+      'uploader_id': uploaderId,
+      'created_at': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<void> addCostToProject({
+    required String projectId,
+    required String item,
+    required num amount,
+    String? note,
+  }) async {
+    await _supabase.from('ProjectCosts').insert({
+      'project_id': projectId,
+      'item': item,
+      'amount': amount,
+      if (note != null) 'note': note,
+      'created_at': DateTime.now().toIso8601String(),
+    });
+  }
 }

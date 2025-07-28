@@ -403,25 +403,22 @@ class ContractService {
   }) async {
     try {
       final fileName = '${userType}_${contractId}_$userId.png';
+      
       final storageResponse = await _supabase.storage
           .from('signatures')
           .uploadBinary(fileName, signatureBytes, fileOptions: const FileOptions(upsert: true));
 
       if (storageResponse.isEmpty) {
-        throw Exception("Failed to upload signature");
+        throw Exception("Failed to upload signature to storage");
       }
-
-      final publicUrl = _supabase.storage
-          .from('signatures')
-          .getPublicUrl(fileName);
 
       final updateData = userType == 'contractor'
           ? {
-              'contractor_signature_url': publicUrl,
+              'contractor_signature_url': fileName,
               'contractor_signed_at': DateTime.now().toIso8601String(),
             }
           : {
-              'contractee_signature_url': publicUrl,
+              'contractee_signature_url': fileName,
               'contractee_signed_at': DateTime.now().toIso8601String(),
             };
 
@@ -443,8 +440,37 @@ class ContractService {
         message: notifInfo['message']!,
       );
 
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      final contract = await _supabase
+          .from('Contracts')
+          .select('project_id, contractor_signature_url, contractee_signature_url, status')
+          .eq('contract_id', contractId)
+          .single();
+
+      final hasContractorSignature = (contract['contractor_signature_url'] as String?)?.isNotEmpty ?? false;
+      final hasContracteeSignature = (contract['contractee_signature_url'] as String?)?.isNotEmpty ?? false;
+      final currentStatus = contract['status'] as String? ?? '';
+
+      if (hasContractorSignature && hasContracteeSignature && currentStatus != 'active') {
+        try {
+          await _supabase.from('Contracts').update({
+            'status': 'active',
+          }).eq('contract_id', contractId);
+
+          final projectId = contract['project_id'];
+          if (projectId != null) {
+            await _supabase.from('Projects').update({
+              'status': 'active',
+            }).eq('project_id', projectId);
+          }
+
+        } catch (activationError) {
+        }
+      }
+
     } catch (e) {
-      throw Exception('Failed to sign contract $e');
+      throw Exception('Failed to sign contract');
     }
   }
 }

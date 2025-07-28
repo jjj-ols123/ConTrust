@@ -4,6 +4,8 @@ import 'package:backend/services/be_contract_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:signature/signature.dart';
+import 'package:contractor/Screen/cor_ongoing.dart';
+import 'package:contractee/pages/cee_ongoing.dart';
 
 class UIContract {
 
@@ -105,10 +107,10 @@ class UIContract {
 
   static Future<String?> getSignedUrl(String? path) async {
     if (path == null || path.isEmpty) return null;
-    final response = await Supabase.instance.client.storage
+    final signedUrl = await Supabase.instance.client.storage
         .from('signatures')
-        .createSignedUrl(path, 60 * 60); 
-    return response; 
+        .createSignedUrl(path, 60 * 60);
+    return signedUrl;
   }
 
   static Future<void> viewContract(
@@ -144,70 +146,100 @@ class UIContract {
                     Text(contractData['content'] ?? 'No content'),
                     const Divider(),
                     Text('Contractee Signature:', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    if (contracteeSignaturePath != null && (contracteeSignaturePath as String).isNotEmpty)
-                      FutureBuilder<String?>(
-                        future: getSignedUrl(contracteeSignaturePath),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 8),
-                              child: SizedBox(height: 40, child: Center(child: CircularProgressIndicator())),
-                            );
-                          }
-                          final signedUrl = snapshot.data;
-                          if (signedUrl == null) {
-                            return const Text('Could not load signature image');
-                          }
-                          return Container(
+                    if (contracteeSignaturePath != null && contracteeSignaturePath.isNotEmpty)
+                      (contracteeSignaturePath).startsWith('http')
+                        ? Container(
                             margin: const EdgeInsets.symmetric(vertical: 8),
                             decoration: BoxDecoration(
                               border: Border.all(color: Colors.grey),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Image.network(
-                              signedUrl,
+                              contracteeSignaturePath,
                               height: 100,
                               fit: BoxFit.contain,
                               errorBuilder: (context, error, stackTrace) =>
-                                  const Text('Could not load signature image'),
+                                  const Text('No signature yet.'),
                             ),
-                          );
-                        },
-                      )
+                          )
+                        : FutureBuilder<String?>(
+                            future: getSignedUrl(contracteeSignaturePath),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                return const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 8),
+                                  child: SizedBox(height: 40, child: Center(child: CircularProgressIndicator())),
+                                );
+                              }
+                              final signedUrl = snapshot.data;
+                              if (signedUrl == null) {
+                                return const Text('No signature yet.');
+                              }
+                              return Container(
+                                margin: const EdgeInsets.symmetric(vertical: 8),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Image.network(
+                                  signedUrl,
+                                  height: 100,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Text('No signature yet.'),
+                                ),
+                              );
+                            },
+                          )
                     else
                       const Text('No signature yet.', style: TextStyle(color: Colors.grey)),
                     const SizedBox(height: 8),
                     Text('Contractor Signature:', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    if (contractorSignaturePath != null && (contractorSignaturePath as String).isNotEmpty)
-                      FutureBuilder<String?>(
-                        future: getSignedUrl(contractorSignaturePath),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 8),
-                              child: SizedBox(height: 40, child: Center(child: CircularProgressIndicator())),
-                            );
-                          }
-                          final signedUrl = snapshot.data;
-                          if (signedUrl == null) {
-                            return const Text('Could not load signature image');
-                          }
-                          return Container(
+                    if (contractorSignaturePath != null && contractorSignaturePath.isNotEmpty)
+                      contractorSignaturePath.startsWith('http')
+                        ? Container(
                             margin: const EdgeInsets.symmetric(vertical: 8),
                             decoration: BoxDecoration(
                               border: Border.all(color: Colors.grey),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Image.network(
-                              signedUrl,
+                              contractorSignaturePath,
                               height: 100,
                               fit: BoxFit.contain,
                               errorBuilder: (context, error, stackTrace) =>
                                   const Text('Could not load signature image'),
                             ),
-                          );
-                        },
-                      )
+                          )
+                        : FutureBuilder<String?>(
+                            future: getSignedUrl(contractorSignaturePath),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                return const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 8),
+                                  child: SizedBox(height: 40, child: Center(child: CircularProgressIndicator())),
+                                );
+                              }
+                              final signedUrl = snapshot.data;
+                              if (signedUrl == null) {
+                                return const Text('No signature yet.');
+                              }
+                              return Container(
+                                  margin: const EdgeInsets.symmetric(vertical: 8),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Image.network(
+                                  signedUrl,
+                                  height: 100,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Text('No signature yet.'),
+                                ),
+                              );
+                            },
+                          )
                     else
                       const Text('No signature yet.', style: TextStyle(color: Colors.grey)),
                   ],
@@ -215,7 +247,7 @@ class UIContract {
               ),
             ),
             actions: [
-              if (isContractor && status == 'sent' && (contractorSignaturePath == null || (contractorSignaturePath as String).isEmpty)) ...[
+              if (isContractor && status == 'approved' && (contractorSignaturePath == null || (contractorSignaturePath as String).isEmpty)) ...[
                 ElevatedButton.icon(
                   onPressed: () {
                     Navigator.of(context).pop();
@@ -279,10 +311,9 @@ class UIContract {
                                                   setState(() {
                                                     isSaving = false;
                                                   });
-                                                  print('Failed to save signature');
                                                   if (context.mounted) {
                                                     ScaffoldMessenger.of(context).showSnackBar(
-                                                      const SnackBar(content: Text('Failed to save signature')),
+                                                      SnackBar(content: Text('Failed to save signature')),
                                                     );
                                                   }
                                                 }
@@ -399,8 +430,7 @@ class UIContract {
                                                 } catch (e) {
                                                   setState(() {
                                                     isSaving = false;
-                                                  });
-                                                  print('Failed to save signature');
+                                                  }); 
                                                   if (context.mounted) {
                                                     ScaffoldMessenger.of(context).showSnackBar(
                                                       const SnackBar(content: Text('Failed to save signature')),
@@ -497,6 +527,7 @@ class UIContract {
             ],
           ),
         );
+        _pollForActiveStatus(context, contractId, isContractor);
       }
     } catch (e) {
       if (context.mounted) {
@@ -506,6 +537,50 @@ class UIContract {
       }
     }
   }
+
+  static Future<void> _pollForActiveStatus(
+    BuildContext context,
+    String contractId,
+    bool isContractor,
+    ) async {
+  bool dialogShown = false;
+  while (context.mounted && !dialogShown) {
+    final contract = await ContractService.getContractById(contractId);
+    if (contract['status'] == 'active') {
+      dialogShown = true;
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Project Started!'),
+            content: const Text('The contract is now active. Do you want to go to the project management page?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Later'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => isContractor
+                        ? CorOngoingProjectScreen(projectId: contract['project_id'])
+                        : CeeOngoingProjectScreen(projectId: contract['project_id']),
+                    ),
+                  );
+                },
+                child: const Text('Go'),
+              ),
+            ],
+          ),
+        );
+      }
+      break;
+    }
+    await Future.delayed(const Duration(seconds: 2));
+  }
+}
 
   static Widget buildSignaturePad({
     required SignatureController controller,
