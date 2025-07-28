@@ -282,7 +282,7 @@ class MenuDrawerContractor extends StatelessWidget {
             leading: const Icon(Icons.work),
             title: const Text('Ongoing Projects'),
             onTap: () {
-              transitionBuilder(context, OngoingProjectScreen());
+              transitionBuilder(context, CorOngoingProjectScreen(projectId: contractorId));
             },
           ),
           ListTile(

@@ -1,30 +1,22 @@
 import 'package:backend/models/be_appbar.dart';
 import 'package:backend/services/be_project_service.dart';
+import 'package:contractee/pages/cee_messages.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 
-class CorOngoingProjectScreen extends StatefulWidget {
+class CeeOngoingProjectScreen extends StatefulWidget {
   final String projectId;
-  const CorOngoingProjectScreen({super.key, required this.projectId});
+  const CeeOngoingProjectScreen({super.key, required this.projectId});
 
   @override
-  State<CorOngoingProjectScreen> createState() => _CorOngoingProjectScreenState();
+  State<CeeOngoingProjectScreen> createState() => _CeeOngoingProjectScreenState();
 }
 
-class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
+class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
   late Future<Map<String, dynamic>?> _projectFuture;
   late Future<List<Map<String, dynamic>>> _reportsFuture;
   late Future<List<String>> _photosFuture;
   late Future<List<Map<String, dynamic>>> _costsFuture;
   late Future<List<Map<String, dynamic>>> _tasksFuture;
-
-  final TextEditingController reportController = TextEditingController();
-  final TextEditingController taskController = TextEditingController();
-  final TextEditingController addressController = TextEditingController();
-  final TextEditingController startDateController = TextEditingController();
-  final TextEditingController estimatedCompletionController = TextEditingController();
-
-  bool isEditing = false;
 
   @override
   void initState() {
@@ -36,91 +28,11 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     _tasksFuture = Future.value([]);
   }
 
-  void _addReport() async {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Add Report'),
-          content: TextField(
-            controller: reportController,
-            decoration: const InputDecoration(hintText: 'Enter report details'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                setState(() {
-                  _reportsFuture = Future.value([]);
-                  reportController.clear();
-                });
-                Navigator.pop(context);
-              },
-              child: const Text('Add'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _addTask() async {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Add Task'),
-          content: TextField(
-            controller: taskController,
-            decoration: const InputDecoration(hintText: 'Enter task details'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                setState(() {
-                  _tasksFuture = Future.value([]);
-                  taskController.clear();
-                });
-                Navigator.pop(context);
-              },
-              child: const Text('Add'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-    );
-    if (pickedFile != null) {
-      setState(() {
-        _photosFuture = Future.value([]);
-      });
-    }
-  }
-
-  void _toggleEdit() {
-    setState(() {
-      isEditing = !isEditing;
-    });
-  }
-
-  void _saveProjectInfo() async {
-    setState(() {
-      isEditing = false;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Project info saved!')),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: const ConTrustAppBar(headline: "Ongoing Projects"),
+      appBar: const ConTrustAppBar(headline: 'Ongoing Project'),
       body: FutureBuilder<Map<String, dynamic>?>(
         future: _projectFuture,
         builder: (context, snapshot) {
@@ -131,83 +43,100 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
             return const Center(child: Text('Project not found.'));
           }
           final project = snapshot.data!;
-          final clientName = project['client_name'] ?? 'Client';
+          final projectTitle = project['title'] ?? 'Project';
+          final contractorName = project['contractor_name'] ?? 'Contractor';
+          final contractorPhoto = project['contractor_photo'] ?? '';
           final address = project['location'] ?? '';
           final startDate = project['start_date'] ?? '';
           final estimatedCompletion = project['estimated_completion'] ?? '';
           final progress = (project['progress'] as num?)?.toDouble() ?? 0.0;
+          final contracteeId = project['contractee_id'] ?? '';
+          final contractorId = project['contractor_id'] ?? '';
+          final chatRoomId = project['chatroom_id'] ?? '';
+          final contractorProfile = contractorPhoto;
 
-          final infoFields = [
-            TextField(
-              controller: addressController..text = address,
-              enabled: isEditing,
-              decoration: const InputDecoration(
-                labelText: 'Address',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: startDateController..text = startDate,
-              enabled: isEditing,
-              decoration: const InputDecoration(
-                labelText: 'Start of Construction',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: estimatedCompletionController..text = estimatedCompletion,
-              enabled: isEditing,
-              decoration: const InputDecoration(
-                labelText: 'Estimated Completion',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                ElevatedButton.icon(
-                  onPressed: isEditing ? _saveProjectInfo : null,
-                  icon: const Icon(Icons.save),
-                  label: const Text('Save'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton.icon(
-                  onPressed: !isEditing ? _toggleEdit : null,
-                  icon: const Icon(Icons.edit),
-                  label: const Text('Edit'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              'Completion Progress',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            LinearProgressIndicator(
-              value: progress,
-              minHeight: 8,
-            ),
-          ];
-
-          return Padding(
-            padding: const EdgeInsets.all(12),
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Client: $clientName', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                ...infoFields,
-                const SizedBox(height: 10),
+                // Header
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 28,
+                      backgroundImage: contractorPhoto.isNotEmpty ? NetworkImage(contractorPhoto) : null,
+                      child: contractorPhoto.isEmpty ? const Icon(Icons.business, size: 32) : null,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(projectTitle, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 4),
+                          Text('Contractor: $contractorName', style: theme.textTheme.bodyMedium),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.chat_bubble_outline),
+                      tooltip: 'Chat with Contractor',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MessagePageContractee(
+                              chatRoomId: chatRoomId,
+                              contracteeId: contracteeId,
+                              contractorId: contractorId,
+                              contractorName: contractorName,
+                              contractorProfile: contractorProfile,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                // Project Info
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.location_on, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text(address)),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(Icons.calendar_today, size: 20),
+                            const SizedBox(width: 8),
+                            Text('Start: $startDate'),
+                            const SizedBox(width: 16),
+                            const Icon(Icons.flag, size: 20),
+                            const SizedBox(width: 8),
+                            Text('Est. Completion: $estimatedCompletion'),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text('Status: ${(progress * 100).toStringAsFixed(0)}% complete', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 6),
+                        LinearProgressIndicator(value: progress, minHeight: 8),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
                 // Tasks
                 Card(
                   elevation: 2,
@@ -236,27 +165,18 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                               return const Text('No tasks yet.');
                             }
                             return Column(
-                              children: tasks.map((task) => CheckboxListTile(
+                              children: tasks.map((task) => ListTile(
+                                leading: Icon(task['done'] == true ? Icons.check_circle : Icons.radio_button_unchecked, color: task['done'] == true ? Colors.green : Colors.grey),
                                 title: Text(task['task'] ?? ''),
-                                value: task['done'] == true,
-                                onChanged: (val) async {
-                                    setState(() {
-                                    _tasksFuture = Future.value([]);
-                                  });
-                                },
                               )).toList(),
                             );
                           },
-                        ),
-                        ElevatedButton(
-                          onPressed: _addTask,
-                          child: const Text('Add Task'),
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 18),
                 // Reports
                 Card(
                   elevation: 2,
@@ -293,15 +213,11 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                             );
                           },
                         ),
-                        ElevatedButton(
-                          onPressed: _addReport,
-                          child: const Text('Add Report'),
-                        ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 18),
                 // Photos
                 Card(
                   elevation: 2,
@@ -333,29 +249,25 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
+                                crossAxisCount: 3,
                                 crossAxisSpacing: 8,
                                 mainAxisSpacing: 8,
                               ),
                               itemCount: photos.length,
                               itemBuilder: (context, index) {
-                                return Image.network(
-                                  photos[index],
-                                  fit: BoxFit.cover,
+                                return ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(photos[index], fit: BoxFit.cover),
                                 );
                               },
                             );
                           },
                         ),
-                        ElevatedButton(
-                          onPressed: _pickImage,
-                          child: const Text('Add Photo'),
-                        ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 18),
                 // Cost Breakdown
                 Card(
                   elevation: 2,
@@ -399,18 +311,15 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                             );
                           },
                         ),
-                        ElevatedButton(
-                          onPressed: () {},
-                          child: const Text('Save'),
-                        ),
                       ],
                     ),
                   ),
                 ),
                 const SizedBox(height: 24),
+                // Info
                 Center(
                   child: Text(
-                    'This page updates in real time as you add progress. Contractee will see updates instantly.',
+                    'This page updates in real time as your contractor adds progress.\nFor questions, use the chat button above.',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[700]),
                   ),

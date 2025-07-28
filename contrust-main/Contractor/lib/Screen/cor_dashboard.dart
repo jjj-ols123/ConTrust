@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously, avoid_print
 import 'package:backend/models/be_appbar.dart';
+import 'package:backend/services/be_fetchservice.dart';
 import 'package:backend/services/be_user_service.dart';
 import 'package:backend/utils/be_pagetransition.dart';
 import 'package:contractor/Screen/cor_ongoing.dart';
@@ -89,7 +90,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               destination = ContractorUserProfileScreen(contractorId: contractorId!);
                               break;
                             case '/ongoingproject':
-                              destination = OngoingProjectScreen();
+                              final ongoingProject = await FetchService().fetchActiveProject(contractorId!);
+                              if (ongoingProject == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('No ongoing project found!')),
+                                );
+                                return;
+                              }
+                              destination = CorOngoingProjectScreen(projectId: ongoingProject['project_id']);
                               break;
                             case '/bidding':
                               destination = BiddingScreen(contractorId: contractorId!);

@@ -220,6 +220,16 @@ class FetchService {
     }
   }
 
+  Future<Map<String, dynamic>?> fetchActiveProject(String contractorId) async {
+  final response = await Supabase.instance.client
+      .from('Projects')
+      .select()
+      .eq('contractor_id', contractorId)
+      .eq('status', 'active')
+      .maybeSingle();
+  return response;
+}
+
   Future<Map<String, dynamic>?> fetchContractData(String contractId) async {
     final contract = await _supabase
       .from('Contracts')
