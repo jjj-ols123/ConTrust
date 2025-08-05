@@ -2,6 +2,7 @@
 // ignore_for_file: non_constant_identifier_names, use_build_context_synchronously, unnecessary_type_check, deprecated_member_use
 
 import 'package:backend/services/be_bidding_service.dart';
+import 'package:backend/services/be_fetchservice.dart';
 import 'package:backend/services/be_project_service.dart';
 import 'package:backend/utils/be_validation.dart';
 import 'package:backend/utils/be_constraint.dart';
@@ -275,6 +276,21 @@ class ProjectModal {
                                 onPressed: () async {
                                   if (!(formKey.currentState?.validate() ??
                                       false)) {
+                                    return;
+                                  }
+                                  final userProjects =
+                                      await FetchService().fetchUserProjects();
+                                  if (userProjects.isNotEmpty) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                              'You already have an existing project.'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
                                     return;
                                   }
                                   try {
@@ -730,13 +746,13 @@ class HireModal {
     required String contracteeId,
     required String contractorId,
   }) async {
-
     TextEditingController titleController = TextEditingController();
     TextEditingController typeController = TextEditingController();
     TextEditingController descriptionController = TextEditingController();
     TextEditingController locationController = TextEditingController();
 
-    final existingProjectWithContractor = await hasExistingProjectWithContractor(contracteeId, contractorId);
+    final existingProjectWithContractor =
+        await hasExistingProjectWithContractor(contracteeId, contractorId);
     final pendingProject = await hasPendingProject(contracteeId);
 
     if (existingProjectWithContractor == null) {
@@ -747,7 +763,8 @@ class HireModal {
     } else {
       titleController.text = existingProjectWithContractor['title'] ?? '';
       typeController.text = existingProjectWithContractor['type'] ?? '';
-      descriptionController.text = existingProjectWithContractor['description'] ?? '';
+      descriptionController.text =
+          existingProjectWithContractor['description'] ?? '';
       locationController.text = existingProjectWithContractor['location'] ?? '';
     }
 
@@ -796,20 +813,25 @@ class HireModal {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            if (existingProjectWithContractor != null || 
-                            (existingProjectWithContractor == null && pendingProject != null)) ...[
+                            if (existingProjectWithContractor != null ||
+                                (existingProjectWithContractor == null &&
+                                    pendingProject != null)) ...[
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16.0),
                                 child: Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
                                     color: Colors.blue.shade50,
                                     borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: Colors.blue.shade200),
+                                    border:
+                                        Border.all(color: Colors.blue.shade200),
                                   ),
                                   child: Row(
                                     children: [
-                                      Icon(Icons.info, color: Colors.blue.shade700, size: 20),
+                                      Icon(Icons.info,
+                                          color: Colors.blue.shade700,
+                                          size: 20),
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
@@ -924,17 +946,19 @@ class HireModal {
 
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text(existingProjectWithContractor != null
-                                          ? 'Hiring request sent using existing project!'
-                                          : 'Hire request sent successfully!'
-                                        ),
+                                        content: Text(existingProjectWithContractor !=
+                                                null
+                                            ? 'Hiring request sent using existing project!'
+                                            : 'Hire request sent successfully!'),
                                         backgroundColor: Colors.green,
                                       ),
                                     );
                                   } catch (e) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text(e.toString().replaceFirst('Exception: ', '')),
+                                        content: Text(e
+                                            .toString()
+                                            .replaceFirst('Exception: ', '')),
                                         backgroundColor: Colors.red,
                                         duration: Duration(seconds: 3),
                                       ),

@@ -2,10 +2,12 @@
 import 'dart:async';
 import 'package:backend/services/be_notification_service.dart';
 import 'package:backend/services/be_user_service.dart';
+import 'package:backend/services/be_fetchservice.dart';
 import 'package:backend/utils/be_pagetransition.dart';
 import 'package:contractee/pages/cee_about.dart';
 import 'package:contractee/pages/cee_materials.dart';
 import 'package:contractee/pages/cee_notification.dart';
+import 'package:contractee/pages/cee_ongoing.dart';
 import 'package:contractee/pages/cee_transaction.dart';
 import 'package:contractee/services/cee_checkuser.dart';
 import 'package:contractor/Screen/cor_chathistory.dart';
@@ -55,7 +57,6 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
       }
 
       if (id == null || !mounted) return;
-      
 
       setState(() => _receiverId = id);
 
@@ -100,7 +101,7 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
       backgroundColor: Colors.amber,
       centerTitle: true,
       automaticallyImplyLeading: false,
-      leading: (widget.headline == "Home") 
+      leading: (widget.headline == "Home")
           ? Builder(
               builder: (context) => IconButton(
                 icon: const Icon(Icons.menu, color: Colors.black),
@@ -237,6 +238,30 @@ class MenuDrawerContractee extends StatelessWidget {
             title: const Text('About'),
             onTap: () => transitionBuilder(context, const AboutPage()),
           ),
+          ListTile(
+            leading: const Icon(Icons.work),
+            title: const Text('Ongoing'),
+            onTap: () async {
+              final contracteeId = await UserService().getContracteeId();
+              if (contracteeId != null) {
+                final projects = await FetchService().fetchUserProjects();
+                final activeProject = projects.firstWhere(
+                  (project) => project['status'] == 'active',
+                  orElse: () => {},
+                );
+                if (activeProject.isNotEmpty && context.mounted) {
+                  transitionBuilder(
+                      context,
+                      CeeOngoingProjectScreen(
+                          projectId: activeProject['project_id']));
+                } else if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('No active project found')),
+                  );
+                }
+              }
+            },
+          )
         ],
       ),
     );
@@ -281,8 +306,23 @@ class MenuDrawerContractor extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.work),
             title: const Text('Ongoing Projects'),
-            onTap: () {
-              transitionBuilder(context, CorOngoingProjectScreen(projectId: contractorId));
+            onTap: () async {
+              final projects = await FetchService().fetchUserProjects();
+              final activeProject = projects
+                  .where((project) =>
+                      project['contractor_id'] == contractorId &&
+                      project['status'] == 'active')
+                  .toList();
+              if (activeProject.isNotEmpty && context.mounted) {
+                transitionBuilder(
+                    context,
+                    CorOngoingProjectScreen(
+                        projectId: activeProject.first['project_id']));
+              } else if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('No active project found')),
+                );
+              }
             },
           ),
           ListTile(

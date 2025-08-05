@@ -2,7 +2,6 @@
 import 'dart:ui';
 import 'package:backend/services/be_contract_service.dart';
 import 'package:backend/services/be_fetchservice.dart';
-import 'package:backend/services/be_project_service.dart';
 import 'package:contractor/Screen/cor_createcontract.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/models/be_UIcontract.dart';
@@ -306,7 +305,7 @@ class _ContractTypeState extends State<ContractType> {
                                         try {
 
                                           String? contracteeId = contract['contractee_id'] as String? ?? 
-                                              (await ProjectService().getProjectDetails(contract['project_id'] as String))?['contractee_id'] as String?;
+                                              (await FetchService().fetchProjectDetails(contract['project_id'] as String))?['contractee_id'] as String?;
                                        
                                           await ContractService.sendContractToContractee(
                                             contractId: contract['contract_id'] as String,
