@@ -357,7 +357,8 @@ class ProjectView extends StatelessWidget {
               if (isHiringRequest) ...[
                 const SizedBox(height: 18),
                 FutureBuilder<List<Map<String, dynamic>>>(
-                  future: FetchService().fetchHiringRequestsForProject(projectId),
+                  future:
+                      FetchService().fetchHiringRequestsForProject(projectId),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) return const SizedBox();
                     final requests = snapshot.data!;
@@ -367,21 +368,24 @@ class ProjectView extends StatelessWidget {
                     );
                     if (accepted.isNotEmpty) {
                       return ListTile(
-                        leading: const Icon(Icons.verified, color: Colors.green),
+                        leading:
+                            const Icon(Icons.verified, color: Colors.green),
                         title: Text('Accepted Contractor: '
-                          '${accepted['information']?['firm_name'] ?? 'Unknown'}'),
+                            '${accepted['information']?['firm_name'] ?? 'Unknown'}'),
                       );
                     } else if (requests.isNotEmpty) {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Hiring Request Sent To:', style: TextStyle(fontWeight: FontWeight.bold)),
+                          const Text('Hiring Request Sent To:',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
                           ...requests.map((r) => ListTile(
-                            leading: const Icon(Icons.business),
-                            title: Text(r['information']?['firm_name'] ?? 'Unknown'),
-                            subtitle: Text('Status: '
-                              '${(r['information']?['status'] ?? 'pending').toString().capitalize()}'),
-                          )),
+                                leading: const Icon(Icons.business),
+                                title: Text(r['information']?['firm_name'] ??
+                                    'Unknown'),
+                                subtitle: Text('Status: '
+                                    '${(r['information']?['status'] ?? 'pending').toString().capitalize()}'),
+                              )),
                         ],
                       );
                     } else {
@@ -552,5 +556,6 @@ class ExpandableFloatingButton extends StatelessWidget {
 }
 
 extension StringCasingExtension on String {
-  String capitalize() => this.isNotEmpty ? '${this[0].toUpperCase()}${substring(1)}' : '';
+  String capitalize() =>
+      this.isNotEmpty ? '${this[0].toUpperCase()}${substring(1)}' : '';
 }

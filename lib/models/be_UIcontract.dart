@@ -135,10 +135,10 @@ class UIContract {
             content: SingleChildScrollView(
               child: Container(
                 constraints: const BoxConstraints(minWidth: 350),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
                     Text('Status:', style: const TextStyle(fontWeight: FontWeight.bold)),
                     Text('\t${contractData['status']}'),
                     const Divider(),
@@ -193,7 +193,7 @@ class UIContract {
                           )
                     else
                       const Text('No signature yet.', style: TextStyle(color: Colors.grey)),
-                    const SizedBox(height: 8),
+                  const SizedBox(height: 8),
                     Text('Contractor Signature:', style: const TextStyle(fontWeight: FontWeight.bold)),
                     if (contractorSignaturePath != null && contractorSignaturePath.isNotEmpty)
                       contractorSignaturePath.startsWith('http')
@@ -203,13 +203,13 @@ class UIContract {
                               border: Border.all(color: Colors.grey),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Image.network(
+                      child: Image.network(
                               contractorSignaturePath,
-                              height: 100,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Text('Could not load signature image'),
-                            ),
+                        height: 100,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Text('Could not load signature image'),
+                      ),
                           )
                         : FutureBuilder<String?>(
                             future: getSignedUrl(contractorSignaturePath),
@@ -579,8 +579,8 @@ class UIContract {
       break;
     }
     await Future.delayed(const Duration(seconds: 2));
+    }
   }
-}
 
   static Widget buildSignaturePad({
     required SignatureController controller,

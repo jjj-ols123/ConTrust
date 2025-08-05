@@ -32,15 +32,14 @@ class UserService {
 
   Future<Map<String, dynamic>?> getUserProfile(String userId) async {
     final response = await _supabase
-        .rpc('get_auth_user', params: {'user_id': userId})
-        .single();
+        .rpc('get_auth_user', params: {'user_id': userId}).single();
     return response;
   }
 
   Future<String?> getContractorId() async {
     final user = _supabase.auth.currentUser;
     if (user == null) return null;
-    
+
     try {
       final response = await _supabase
           .from('Contractor')
@@ -53,8 +52,8 @@ class UserService {
     }
   }
 
-  Future<String?> getCurrentUserId() async { 
-    return _supabase.auth.currentUser?.id; 
+  Future<String?> getCurrentUserId() async {
+    return _supabase.auth.currentUser?.id;
   }
 
   Future<String?> getContracteeId() async {
@@ -124,13 +123,16 @@ class UserService {
           'rating': (response['rating'] ?? 4.5).toDouble(),
           'profile_photo': response['profile_photo'] ?? 'defaultpic.png',
           'past_projects': List<String>.from(response['past_projects'] ?? []),
+          'contact_number': response['contact_number'] ?? "No contact number",
+          'specialization': response['specialization'] ?? "No specialization",
         };
       } else {
         return {
           'full_name': response['full_name'] ?? "No full name",
           'address': response['address'] ?? "No address available",
           'profile_photo': response['profile_photo'] ?? 'defaultpic.png',
-          'project_history_count': (response['project_history_count'] ?? 0).toInt(),
+          'project_history_count':
+              (response['project_history_count'] ?? 0).toInt(),
         };
       }
     } catch (error) {
@@ -169,7 +171,9 @@ class UserService {
     try {
       final String filePath = '${DateTime.now().millisecondsSinceEpoch}.png';
 
-      await _supabase.storage.from(bucketName).uploadBinary(filePath, imageBytes);
+      await _supabase.storage
+          .from(bucketName)
+          .uploadBinary(filePath, imageBytes);
       return _supabase.storage.from(bucketName).getPublicUrl(filePath);
     } catch (error) {
       return null;
@@ -217,7 +221,8 @@ class UserService {
   }
 
   Future<Uint8List?> pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    final pickedFile =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       return await pickedFile.readAsBytes();
     }

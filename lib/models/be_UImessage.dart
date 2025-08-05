@@ -173,7 +173,6 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
 }
 
 class UIMessage {
-
   static Widget buildMessageBubble(
     BuildContext context,
     Map<String, dynamic> msg,
@@ -242,7 +241,8 @@ class UIMessage {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue[700],
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
                 ),
               ),
             ),
@@ -339,7 +339,9 @@ class UIMessage {
 
   static String _formatTime(dynamic timestamp) {
     try {
-      final date = timestamp is String ? DateTime.parse(timestamp) : timestamp as DateTime;
+      final date = timestamp is String
+          ? DateTime.parse(timestamp)
+          : timestamp as DateTime;
       final hour = date.hour.toString().padLeft(2, '0');
       final min = date.minute.toString().padLeft(2, '0');
       return '$hour:$min';

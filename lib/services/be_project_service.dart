@@ -70,61 +70,42 @@ class ProjectService {
     final _supabase = Supabase.instance.client;
     try {
       final hiringRequests = await _supabase
-        .from('Notifications')
-        .select('notification_id, information')
-        .eq('headline', 'Hiring Request')
-        .filter('information->>project_id', 'eq', projectId);
+          .from('Notifications')
+          .select('notification_id, information')
+          .eq('headline', 'Hiring Request')
+          .filter('information->>project_id', 'eq', projectId);
       for (final notif in hiringRequests) {
         final info = notif['information'] as Map<String, dynamic>? ?? {};
-        await _supabase
-          .from('Notifications')
-          .update({
-            'information': {
-              ...info,
-              'status': 'deleted',
-              'deleted_reason': 'Project has been deleted by the contractee',
-              'deleted_at': DateTime.now().toIso8601String(),
-              'delete_message': 'Project has been deleted by the contractee.'
-            },
-          })
-          .eq('notification_id', notif['notification_id']);
+        await _supabase.from('Notifications').update({
+          'information': {
+            ...info,
+            'status': 'deleted',
+            'deleted_reason': 'Project has been deleted by the contractee',
+            'deleted_at': DateTime.now().toIso8601String(),
+            'delete_message': 'Project has been deleted by the contractee.'
+          },
+        }).eq('notification_id', notif['notification_id']);
       }
       final hiringResponses = await _supabase
-        .from('Notifications')
-        .select('notification_id, information')
-        .eq('headline', 'Hiring Response')
-        .filter('information->>project_id', 'eq', projectId);
+          .from('Notifications')
+          .select('notification_id, information')
+          .eq('headline', 'Hiring Response')
+          .filter('information->>project_id', 'eq', projectId);
       for (final notif in hiringResponses) {
         final info = notif['information'] as Map<String, dynamic>? ?? {};
-        await _supabase
-          .from('Notifications')
-          .update({
-            'information': {
-              ...info,
-              'status': 'deleted',
-              'deleted_reason': 'Project has been deleted by the contractee',
-              'deleted_at': DateTime.now().toIso8601String(),
-              'delete_message': 'Project has been deleted by the contractee.'
-            },
-          })
-          .eq('notification_id', notif['notification_id']);
+        await _supabase.from('Notifications').update({
+          'information': {
+            ...info,
+            'status': 'deleted',
+            'deleted_reason': 'Project has been deleted by the contractee',
+            'deleted_at': DateTime.now().toIso8601String(),
+            'delete_message': 'Project has been deleted by the contractee.'
+          },
+        }).eq('notification_id', notif['notification_id']);
       }
       await _supabase.from('Projects').delete().eq('project_id', projectId);
     } catch (e) {
       throw Exception('Error updating notifications and deleting project');
-    }
-  }
-
-  Future<Map<String, dynamic>?> getProjectDetails(String projectId) async {
-    try {
-      final response = await _supabase
-          .from('Projects')
-          .select('*')
-          .eq('project_id', projectId)
-          .single();
-      return response;
-    } catch (error) {
-      return null;
     }
   }
 
@@ -199,7 +180,8 @@ class ProjectService {
           await FetchService().fetchContracteeData(contracteeId);
       final contracteeName = contracteeData?['full_name'] ?? 'A contractee';
 
-      final contractorData = await FetchService().fetchContractorData(contractorId);
+      final contractorData =
+          await FetchService().fetchContractorData(contractorId);
       final contractorName = contractorData?['firm_name'] ?? 'A contractor';
 
       await NotificationService().createNotification(
@@ -346,7 +328,9 @@ class ProjectService {
           .eq('project_id', projectId)
           .single();
 
-      final userType = requestingUserId == project['contractor_id'] ? 'contractor' : 'contractee';
+      final userType = requestingUserId == project['contractor_id']
+          ? 'contractor'
+          : 'contractee';
       final notifInfo = await FetchService().userTypeDecide(
         contractId: projectId,
         userType: userType,
@@ -406,12 +390,10 @@ class ProjectService {
         receiverType = 'contractor';
       }
 
-      await _supabase
-          .from('Projects')
-          .update({
-            'status': 'cancelled',
-            'contractor_id': null,
-          }).eq('project_id', projectId);
+      await _supabase.from('Projects').update({
+        'status': 'cancelled',
+        'contractor_id': null,
+      }).eq('project_id', projectId);
 
       await NotificationService().createNotification(
         receiverId: receiverId,
@@ -444,8 +426,10 @@ class ProjectService {
           .select('contractor_id, contractee_id')
           .eq('project_id', projectId)
           .single();
-          
-      final userType = decliningUserId == project['contractor_id'] ? 'contractor' : 'contractee';
+
+      final userType = decliningUserId == project['contractor_id']
+          ? 'contractor'
+          : 'contractee';
       final notifInfo = await FetchService().userTypeDecide(
         contractId: projectId,
         userType: userType,
@@ -477,13 +461,12 @@ class ProjectService {
     }
   }
 
-
   Future<void> addTaskToProject({
     required String projectId,
     required String task,
     bool done = false,
   }) async {
-    await _supabase.from('ProjectTasks').insert({
+    await _supabase.from('projecttasks').insert({
       'project_id': projectId,
       'task': task,
       'done': done,
@@ -496,7 +479,7 @@ class ProjectService {
     required String content,
     required String authorId,
   }) async {
-    await _supabase.from('ProjectReports').insert({
+    await _supabase.from('projectreports').insert({
       'project_id': projectId,
       'content': content,
       'author_id': authorId,
@@ -509,7 +492,7 @@ class ProjectService {
     required String photoUrl,
     required String uploaderId,
   }) async {
-    await _supabase.from('ProjectPhotos').insert({
+    await _supabase.from('projectphotos').insert({
       'project_id': projectId,
       'photo_url': photoUrl,
       'uploader_id': uploaderId,
@@ -523,12 +506,18 @@ class ProjectService {
     required num amount,
     String? note,
   }) async {
-    await _supabase.from('ProjectCosts').insert({
+    await _supabase.from('projectcosts').insert({
       'project_id': projectId,
       'item': item,
       'amount': amount,
       if (note != null) 'note': note,
       'created_at': DateTime.now().toIso8601String(),
     });
+  }
+
+  Future<void> updateTaskStatus(String taskId, bool done) async {
+    await _supabase
+        .from('projecttasks')
+        .update({'done': done}).eq('task_id', taskId);
   }
 }
