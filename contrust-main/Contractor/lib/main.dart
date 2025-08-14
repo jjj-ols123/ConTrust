@@ -59,7 +59,7 @@ class _MyAppState extends State<MyApp> {
         FlutterQuillLocalizations.delegate,  
         ..._localization.localizationsDelegates,
       ],
-      home: session != null ? DashboardScreen() : LoginScreen(),
+      home: session != null ? DashboardScreen(contractorId: session.user.id) : LoginScreen(),
     );
   }
 }

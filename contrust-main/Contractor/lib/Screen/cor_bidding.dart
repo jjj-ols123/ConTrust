@@ -109,7 +109,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => transitionBuilder(context, DashboardScreen()),
+                    onTap: () => transitionBuilder(context, DashboardScreen(contractorId: contractorId!)),
                     child: Text(
                       "Home",
                       style: TextStyle(

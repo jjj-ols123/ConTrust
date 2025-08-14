@@ -8,7 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 
 class ContractorChatHistoryPage extends StatefulWidget {
-  const ContractorChatHistoryPage({super.key});
+  const ContractorChatHistoryPage({super.key, String? contractorId});
 
   @override
   State<ContractorChatHistoryPage> createState() => _ContractorChatHistoryPageState();

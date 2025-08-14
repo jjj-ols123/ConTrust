@@ -52,7 +52,7 @@ class SignInContractor {
       Future.delayed(const Duration(milliseconds: 500), () {
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => DashboardScreen()),
+          MaterialPageRoute(builder: (context) => DashboardScreen(contractorId: signInResponse.user!.id)),
           (route) => false,
         );
       });

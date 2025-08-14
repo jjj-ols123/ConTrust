@@ -10,11 +10,8 @@ import 'package:contractee/pages/cee_notification.dart';
 import 'package:contractee/pages/cee_ongoing.dart';
 import 'package:contractee/pages/cee_transaction.dart';
 import 'package:contractee/services/cee_checkuser.dart';
-import 'package:contractor/Screen/cor_chathistory.dart';
-import 'package:contractor/Screen/cor_clienthistory.dart';
-import 'package:contractor/Screen/cor_contracttype.dart';
 import 'package:contractor/Screen/cor_notification.dart';
-import 'package:contractor/Screen/cor_ongoing.dart';
+
 import 'package:flutter/material.dart';
 
 class ConTrustAppBar extends StatefulWidget implements PreferredSizeWidget {
@@ -38,11 +35,13 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
   Timer? _badgeTimer;
   int _unreadCount = 0;
   String? _receiverId;
+  String? _userType;
 
   @override
   void initState() {
     super.initState();
     _loadReceiverId();
+    _loadUserType();
   }
 
   Future<void> _loadReceiverId() async {
@@ -74,6 +73,16 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
     }
   }
 
+  Future<void> _loadUserType() async {
+    try {
+      final userType = await UserService().getCurrentUserType();
+      if (mounted) {
+        setState(() => _userType = userType);
+      }
+    } catch (e) {
+    }
+  }
+
   Future<void> _refreshBadge() async {
     if (_receiverId == null || !mounted) return;
 
@@ -101,7 +110,7 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
       backgroundColor: Colors.amber,
       centerTitle: true,
       automaticallyImplyLeading: false,
-      leading: (widget.headline == "Home")
+      leading: (widget.headline == "Home" && _userType?.toLowerCase() == 'contractee')
           ? Builder(
               builder: (context) => IconButton(
                 icon: const Icon(Icons.menu, color: Colors.black),
@@ -113,12 +122,14 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
                   icon: const Icon(Icons.arrow_back, color: Colors.black),
                   onPressed: () => Navigator.of(context).pop(),
                 )
-              : Builder(
-                  builder: (context) => IconButton(
-                    icon: const Icon(Icons.menu, color: Colors.black),
-                    onPressed: () => Scaffold.of(context).openDrawer(),
-                  ),
-                ),
+              : (_userType?.toLowerCase() == 'contractee')
+                  ? Builder(
+                      builder: (context) => IconButton(
+                        icon: const Icon(Icons.menu, color: Colors.black),
+                        onPressed: () => Scaffold.of(context).openDrawer(),
+                      ),
+                    )
+                  : null,
       elevation: 4,
       title: Text(
         widget.headline,
@@ -262,88 +273,6 @@ class MenuDrawerContractee extends StatelessWidget {
               }
             },
           )
-        ],
-      ),
-    );
-  }
-}
-
-class MenuDrawerContractor extends StatelessWidget {
-  final String contractorId;
-
-  const MenuDrawerContractor({super.key, required this.contractorId});
-
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: BoxDecoration(
-              color: Colors.blue[700],
-            ),
-            child: const Text(
-              'Contractor Menu',
-              style: TextStyle(color: Colors.white, fontSize: 24),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.message),
-            title: const Text('Messages'),
-            onTap: () {
-              transitionBuilder(context, ContractorChatHistoryPage());
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.assignment),
-            title: const Text('Contract Types'),
-            onTap: () {
-              transitionBuilder(
-                  context, ContractType(contractorId: contractorId));
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.work),
-            title: const Text('Ongoing Projects'),
-            onTap: () async {
-              final projects = await FetchService().fetchUserProjects();
-              final activeProject = projects
-                  .where((project) =>
-                      project['contractor_id'] == contractorId &&
-                      project['status'] == 'active')
-                  .toList();
-              if (activeProject.isNotEmpty && context.mounted) {
-                transitionBuilder(
-                    context,
-                    CorOngoingProjectScreen(
-                        projectId: activeProject.first['project_id']));
-              } else if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('No active project found')),
-                );
-              }
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.history),
-            title: const Text('Client History'),
-            onTap: () {
-              transitionBuilder(context, ClientHistoryScreen());
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.notifications),
-            title: const Text('Notifications'),
-            onTap: () {
-              transitionBuilder(context, ContractorNotificationPage());
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.info),
-            title: const Text('About'),
-            onTap: () {},
-          ),
         ],
       ),
     );

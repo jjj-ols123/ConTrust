@@ -159,14 +159,12 @@ class _ContractorUserProfileScreenState
     if (isLoading) {
       return Scaffold(
         appBar: const ConTrustAppBar(headline: "Profile"),
-        drawer: MenuDrawerContractor(contractorId: widget.contractorId),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
       appBar: const ConTrustAppBar(headline: "Profile"),
-      drawer: MenuDrawerContractor(contractorId: widget.contractorId),
       body: RefreshIndicator(
         onRefresh: _loadContractorData,
         child: SingleChildScrollView(
