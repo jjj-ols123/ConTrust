@@ -100,15 +100,15 @@ packages:
   contractee:
     dependency: "direct main"
     description:
-      path: "C:\\Users\\asus\\Downloads\\ConTrust\\contrust-main\\Contractee"
-      relative: false
+      path: "../Contractee"
+      relative: true
     source: path
     version: "1.0.0+1"
   contractor:
     dependency: "direct main"
     description:
-      path: "C:\\Users\\asus\\Downloads\\ConTrust\\contrust-main\\Contractor"
-      relative: false
+      path: "../Contractor"
+      relative: true
     source: path
     version: "1.0.0+1"
   cross_file:

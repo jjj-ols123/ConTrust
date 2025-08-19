@@ -212,46 +212,64 @@ class MenuDrawerContractee extends StatelessWidget {
         padding: EdgeInsets.zero,
         children: [
           const DrawerHeader(
-            decoration: BoxDecoration(color: Colors.yellow),
+            decoration: BoxDecoration(color: Colors.amber),
             child: Text(
-              'Menu',
+              '',
               style: TextStyle(
                 color: Colors.black,
-                fontSize: 24,
+                fontSize: 28,
                 fontWeight: FontWeight.bold,
               ),
             ),
           ),
           ListTile(
-            leading: const Icon(Icons.home),
-            title: const Text('Home'),
-            onTap: () => {
-              Navigator.pop(context),
+            leading: const Icon(Icons.home, color: Colors.blueGrey),
+            title: const Text(
+              'Home',
+              style: TextStyle(
+                fontSize: 18,
+              ),
+            ),
+            onTap: () {
+              Navigator.pop(context);
               Navigator.pushNamedAndRemoveUntil(
                 context,
                 '/home',
                 (route) => false,
-              )
+              );
             },
           ),
+          const SizedBox(height: 0.5),
           ListTile(
-            leading: const Icon(Icons.book),
-            title: const Text('Transaction History'),
+            leading: const Icon(Icons.book, color: Colors.blueGrey),
+            title: const Text(
+              'Transaction History',
+              style: TextStyle(
+                fontSize: 18,
+              ),
+            ),
             onTap: () => transitionBuilder(context, const TransactionPage()),
           ),
+          const SizedBox(height: 0.5),
           ListTile(
-            leading: const Icon(Icons.handyman),
-            title: const Text('Materials'),
+            leading: const Icon(Icons.handyman, color: Colors.blueGrey),
+            title: const Text(
+              'Materials',
+              style: TextStyle(
+                fontSize: 18,
+              ),
+            ),
             onTap: () => transitionBuilder(context, const Buildingmaterial()),
           ),
+          const SizedBox(height: 0.5),
           ListTile(
-            leading: const Icon(Icons.info),
-            title: const Text('About'),
-            onTap: () => transitionBuilder(context, const AboutPage()),
-          ),
-          ListTile(
-            leading: const Icon(Icons.work),
-            title: const Text('Ongoing'),
+            leading: const Icon(Icons.work, color: Colors.blueGrey),
+            title: const Text(
+              'Ongoing',
+              style: TextStyle(
+                fontSize: 18,
+              ),
+            ),
             onTap: () async {
               final contracteeId = await UserService().getContracteeId();
               if (contracteeId != null) {
@@ -262,9 +280,10 @@ class MenuDrawerContractee extends StatelessWidget {
                 );
                 if (activeProject.isNotEmpty && context.mounted) {
                   transitionBuilder(
-                      context,
-                      CeeOngoingProjectScreen(
-                          projectId: activeProject['project_id']));
+                    context,
+                    CeeOngoingProjectScreen(
+                        projectId: activeProject['project_id']),
+                  );
                 } else if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('No active project found')),
@@ -272,9 +291,21 @@ class MenuDrawerContractee extends StatelessWidget {
                 }
               }
             },
-          )
+          ),
+          const SizedBox(height: 0.5),
+          ListTile(
+            leading: const Icon(Icons.info, color: Colors.blueGrey),
+            title: const Text(
+              'About',
+              style: TextStyle(
+                fontSize: 18,
+              ),
+            ),
+            onTap: () => transitionBuilder(context, const AboutPage()),
+          ),
         ],
       ),
     );
   }
 }
+
