@@ -118,7 +118,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
             return const Center(child: Text('Project not found.'));
           }
        
-                     final project = snapshot.data!;
+           final project = snapshot.data!;
            final projectTitle = project['title'] ?? 'Project';
            final address = project['location'] ?? '';
            final startDate = project['start_date'] ?? '';
@@ -168,7 +168,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                               ],
                             ),
                           ),
-                                                     IconButton(
+                            IconButton(
                              icon: const Icon(Icons.chat_bubble_outline, size: 28),
                              tooltip: 'Chat with Contractor',
                              onPressed: _canChat && _chatRoomId != null
@@ -227,25 +227,59 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                           const SizedBox(height: 16),
                           Row(
                             children: [
-                              const Icon(Icons.location_on, size: 20, color: Colors.grey),
-                              const SizedBox(width: 8),
-                              Expanded(child: Text(address)),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                padding: const EdgeInsets.all(6),
+                                child: const Icon(Icons.location_on, size: 20, color: Colors.red),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  address,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 12),
                           Row(
                             children: [
-                              const Icon(Icons.calendar_today, size: 20, color: Colors.grey),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                padding: const EdgeInsets.all(6),
+                                child: const Icon(Icons.calendar_today, size: 20, color: Colors.blue),
+                              ),
                               const SizedBox(width: 8),
-                              Text('Start: $startDate'),
-                              const SizedBox(width: 16),
-                              const Icon(Icons.flag, size: 20, color: Colors.grey),
+                              Text(
+                                'Start: $startDate',
+                                style: theme.textTheme.bodyMedium,
+                              ),
+                              const SizedBox(width: 20),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                padding: const EdgeInsets.all(6),
+                                child: const Icon(Icons.flag, size: 20, color: Colors.green),
+                              ),
                               const SizedBox(width: 8),
-                              Text('Est. Completion: $estimatedCompletion'),
+                              Text(
+                                'Est. Completion: $estimatedCompletion',
+                                style: theme.textTheme.bodyMedium,
+                              ),
                             ],
                           ),
                           const SizedBox(height: 16),
-                                                     FutureBuilder<List<Map<String, dynamic>>>(
+                             FutureBuilder<List<Map<String, dynamic>>>(
                              future: _tasksFuture,
                              builder: (context, taskSnap) {
                                final tasks = taskSnap.data ?? [];
@@ -275,15 +309,18 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                                              ),
                                            ],
                                          ),
-                                         const SizedBox(height: 8),
-                                         LinearProgressIndicator(
-                                           value: progress,
-                                           minHeight: 10,
-                                           backgroundColor: Colors.grey[300],
-                                           valueColor: AlwaysStoppedAnimation<Color>(
-                                             progress >= 1.0 ? Colors.green : Colors.blue,
+                                          const SizedBox(height: 10),
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(12),
+                                            child: LinearProgressIndicator(
+                                              value: progress,
+                                              minHeight: 12,
+                                              backgroundColor: Colors.grey[300],
+                                              valueColor: AlwaysStoppedAnimation<Color>(
+                                                progress >= 1.0 ? Colors.green : Colors.blue,
                                            ),
                                          ),
+                                        )
                                        ],
                                      ),
                                    ),
@@ -297,67 +334,105 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                   ),
                   const SizedBox(height: 20),
                   Card(
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    shadowColor: Colors.black.withOpacity(0.1),
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(20),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.checklist, size: 24, color: Colors.blue),
-                              const SizedBox(width: 8),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                padding: const EdgeInsets.all(8),
+                                child: const Icon(Icons.checklist, size: 26, color: Colors.blue),
+                              ),
+                              const SizedBox(width: 12),
                               Text(
                                 'Project Tasks',
-                                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 20),
                           FutureBuilder<List<Map<String, dynamic>>>(
                             future: _tasksFuture,
                             builder: (context, taskSnap) {
                               if (taskSnap.connectionState == ConnectionState.waiting) {
                                 return const Center(child: CircularProgressIndicator());
                               }
+
                               final tasks = taskSnap.data ?? [];
+
                               if (tasks.isEmpty) {
-                                return const Card(
-                                  child: Padding(
-                                    padding: EdgeInsets.all(16),
-                                    child: Text(
-                                      'No tasks have been added by your contractor yet.',
-                                      style: TextStyle(fontStyle: FontStyle.italic),
+                                return Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(18),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[100],
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: const Text(
+                                    'No tasks have been added by your contractor yet.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontStyle: FontStyle.italic,
+                                      color: Colors.black54,
                                     ),
                                   ),
                                 );
                               }
                               return Column(
-                                children: tasks.map((task) => Card(
-                                  margin: const EdgeInsets.only(bottom: 8),
-                                  child: ListTile(
-                                    leading: CircleAvatar(
-                                      backgroundColor: task['done'] == true ? Colors.green : Colors.grey,
-                                      child: Icon(
-                                        task['done'] == true ? Icons.check : Icons.radio_button_unchecked,
-                                        color: Colors.white,
+                                children: tasks.map((task) {
+                                  final isDone = task['done'] == true;
+                                  return Container(
+                                    margin: const EdgeInsets.only(bottom: 10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ListTile(
+                                      leading: CircleAvatar(
+                                        radius: 22,
+                                        backgroundColor: isDone ? Colors.green : Colors.grey[400],
+                                        child: Icon(
+                                          isDone ? Icons.check_rounded : Icons.radio_button_unchecked,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      title: Text(
+                                        task['task'] ?? '',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          decoration: isDone ? TextDecoration.lineThrough : null,
+                                          color: isDone ? Colors.grey[600] : Colors.black87,
+                                        ),
+                                      ),
+                                      subtitle: Text(
+                                        'Created: ${DateTime.parse(task['created_at']).toLocal().toString().split('.')[0]}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[600],
+                                        ),
                                       ),
                                     ),
-                                    title: Text(
-                                      task['task'] ?? '',
-                                      style: TextStyle(
-                                        decoration: task['done'] == true 
-                                            ? TextDecoration.lineThrough 
-                                            : null,
-                                      ),
-                                    ),
-                                    subtitle: Text(
-                                      'Created: ${DateTime.parse(task['created_at']).toLocal().toString().split('.')[0]}',
-                                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                                    ),
-                                  ),
-                                )).toList(),
+                                  );
+                                }).toList(),
                               );
                             },
                           ),
