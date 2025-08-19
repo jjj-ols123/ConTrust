@@ -48,68 +48,86 @@ class ProjectModal {
     }
 
     await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return Center(
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 500),
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.all(0),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Stack(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 40.0),
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.only(
-                        bottom: MediaQuery.of(context).viewInsets.bottom,
+    context: context,
+    barrierDismissible: false,
+    builder: (context) {
+      return Center(
+        child: Material(
+          color: Colors.transparent,
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.8, end: 1.0),
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutBack,
+            builder: (context, scale, child) {
+              return Transform.scale(
+                scale: scale,
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 500),
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.black,
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 20,
+                        spreadRadius: 1,
+                        offset: const Offset(0, 8),
                       ),
-                      child: Form(
-                        key: formKey,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const SizedBox(height: 8),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 8.0),
-                              child: Center(
-                                child: Text(
-                                  "Post a request for Construction",
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
+                    ],
+                  ),
+                  child: Stack(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 40.0),
+                        child: SingleChildScrollView(
+                          padding: EdgeInsets.only(
+                            bottom: MediaQuery.of(context).viewInsets.bottom,
+                          ),
+                          child: Form(
+                            key: formKey,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                const SizedBox(height: 8),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                                  child: Center(
+                                    child: Text(
+                                      "Post a request for Construction",
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            _buildLabeledField(
-                              label: 'Project Title',
-                              child: TextFormField(
-                                controller: titleController,
-                                decoration: const InputDecoration(
-                                  hintText: 'Enter project title',
-                                  border: OutlineInputBorder(),
+                                const SizedBox(height: 8),
+                                _buildLabeledField(
+                                  label: 'Project Title',
+                                  child: TextFormField(
+                                    controller: titleController,
+                                    decoration: const InputDecoration(
+                                      hintText: 'Enter project title',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    validator: (value) =>
+                                        (value == null || value.trim().isEmpty)
+                                            ? 'Please enter a project title'
+                                            : null,
+                                  ),
                                 ),
-                                validator: (value) =>
-                                    (value == null || value.trim().isEmpty)
-                                        ? 'Please enter a project title'
-                                        : null,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            _buildLabeledField(
-                              label: 'Type of Construction',
-                              child: DropdownButtonFormField<String>(
-                                value:
-                                    constructionTypeController.text.isNotEmpty
+                                const SizedBox(height: 16),
+                                _buildLabeledField(
+                                  label: 'Type of Construction',
+                                  child: DropdownButtonFormField<String>(
+                                    value: constructionTypeController
+                                            .text.isNotEmpty
                                         ? constructionTypeController.text
                                         : null,
                                 items: constructionTypes
@@ -278,21 +296,6 @@ class ProjectModal {
                                       false)) {
                                     return;
                                   }
-                                  final userProjects =
-                                      await FetchService().fetchUserProjects();
-                                  if (userProjects.isNotEmpty) {
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                              'You already have an existing project.'),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
-                                    }
-                                    return;
-                                  }
                                   try {
                                     final startdate_format = DateTime.parse(
                                         startDateController.text.trim());
@@ -365,7 +368,10 @@ class ProjectModal {
                 ],
               ),
             ),
+          );
+            },
           ),
+        )
         );
       },
     );

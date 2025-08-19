@@ -2,19 +2,28 @@ import 'package:backend/models/be_appbar.dart';
 import 'package:backend/utils/be_constraint.dart';
 import 'package:contractee/pages/cee_messages.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ContracteeChatHistoryPage extends StatefulWidget {
   const ContracteeChatHistoryPage({super.key});
+  
 
   @override
-  State<ContracteeChatHistoryPage> createState() => _ContracteeChatHistoryPageState();
+  State<ContracteeChatHistoryPage> createState() =>
+      _ContracteeChatHistoryPageState();
 }
 
-class _ContracteeChatHistoryPageState extends State<ContracteeChatHistoryPage> {
+class _ContracteeChatHistoryPageState
+    extends State<ContracteeChatHistoryPage> {
   final supabase = Supabase.instance.client;
-
   String? contracteeId;
+  String? _toggledChatRoomId;
+
 
   @override
   void initState() {
@@ -28,7 +37,8 @@ class _ContracteeChatHistoryPageState extends State<ContracteeChatHistoryPage> {
     });
   }
 
-  Future<Map<String, dynamic>?> _loadContractorData(String contractorId) async {
+  Future<Map<String, dynamic>?> _loadContractorData(
+      String contractorId) async {
     final response = await supabase
         .from('Contractor')
         .select('firm_name, profile_photo')
@@ -37,11 +47,26 @@ class _ContracteeChatHistoryPageState extends State<ContracteeChatHistoryPage> {
     return response;
   }
 
-  @override
+  String formatTime(DateTime? time) {
+    if (time == null) return '';
+    return DateFormat('hh:mm a').format(time);
+  }
+
+   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const ConTrustAppBar(headline: "Chat History"),
-      drawer: const MenuDrawerContractee(),
+      appBar: AppBar(
+        backgroundColor: Colors.yellow[700],
+        title: const Text(
+          "Messages",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+        centerTitle: true,
+        elevation: 0,
+      ),
       body: contracteeId == null
           ? const Center(child: CircularProgressIndicator())
           : StreamBuilder<List<Map<String, dynamic>>>(
@@ -63,68 +88,119 @@ class _ContracteeChatHistoryPageState extends State<ContracteeChatHistoryPage> {
                     ),
                   );
                 }
-                return ListView.separated(
+                return ListView.builder(
+                  padding: const EdgeInsets.all(12),
                   itemCount: chatRooms.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final chat = chatRooms[index];
                     final contractorId = chat['contractor_id'];
                     final contracteeId = chat['contractee_id'];
 
                     return FutureBuilder<bool>(
-                      future: functionConstraint(contractorId, contracteeId),
-                      builder: (context, snapshot) {
-                        final canChat = snapshot.data ?? false;
+                      future:
+                          functionConstraint(contractorId, contracteeId),
+                      builder: (context, canChatSnap) {
+                        final canChat = canChatSnap.data ?? false;
 
                         return FutureBuilder<Map<String, dynamic>?>(
                           future: _loadContractorData(contractorId),
-                          builder: (context, snapshot) {
+                          builder: (context, contractorSnap) {
                             final contractorName =
-                                snapshot.data?['firm_name'] ?? 'Contractor';
+                                contractorSnap.data?['firm_name'] ??
+                                    'Contractor';
                             final contractorProfile =
-                                snapshot.data?['profile_photo'];
+                                contractorSnap.data?['profile_photo'];
                             final lastMessage = chat['last_message'] ?? '';
                             final lastTime = chat['last_message_time'] != null
-                                ? DateTime.tryParse(chat['last_message_time'])
+                                ? DateTime.tryParse(
+                                    chat['last_message_time'])
                                 : null;
 
-                            return ListTile(
-                              leading: CircleAvatar(
-                                backgroundImage: NetworkImage(
-                                  contractorProfile ??
-                                      'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
-                                ),
-                              ),
-                              title: Text(contractorName),
-                              subtitle: Text(
-                                lastMessage,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              trailing: lastTime != null
-                                  ? Text(
-                                      "${lastTime.hour.toString().padLeft(2, '0')}:${lastTime.minute.toString().padLeft(2, '0')}",
-                                      style: const TextStyle(
-                                          fontSize: 12, color: Colors.grey),
-                                    )
-                                  : null,
-                              enabled: canChat,
+                            return GestureDetector(
                               onTap: canChat
                                   ? () {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) => MessagePageContractee(
+                                          builder: (context) =>
+                                              MessagePageContractee(
                                             chatRoomId: chat['chatroom_id'],
                                             contracteeId: contracteeId!,
                                             contractorId: contractorId,
                                             contractorName: contractorName,
-                                            contractorProfile: contractorProfile,
+                                            contractorProfile:
+                                                contractorProfile,
                                           ),
                                         ),
                                       );
                                     }
                                   : null,
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 1.5,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.grey.withOpacity(0.1),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 4),
+                                    )
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 28,
+                                      backgroundColor: Colors.yellow.shade600,
+                                      backgroundImage: NetworkImage(
+                                        contractorProfile ??
+                                            'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            contractorName,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 18,
+                                              color: Colors.blue.shade800,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            lastMessage,
+                                            style: TextStyle(
+                                              color: Colors.grey.shade700,
+                                              fontSize: 14,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      formatTime(lastTime),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             );
                           },
                         );

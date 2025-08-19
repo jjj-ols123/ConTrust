@@ -60,8 +60,8 @@ packages:
   backend:
     dependency: "direct main"
     description:
-      path: "C:\\Users\\asus\\Downloads\\ConTrust\\contrust-main\\Back-End"
-      relative: false
+      path: "../Back-End"
+      relative: true
     source: path
     version: "1.0.0+1"
   boolean_selector:
@@ -107,8 +107,8 @@ packages:
   contractor:
     dependency: "direct main"
     description:
-      path: "C:/Users/asus/Downloads/ConTrust/contrust-main/Contractor"
-      relative: false
+      path: "../Contractor"
+      relative: true
     source: path
     version: "1.0.0+1"
   cross_file:

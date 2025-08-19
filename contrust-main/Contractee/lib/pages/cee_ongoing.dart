@@ -194,8 +194,8 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                   ),
                   const SizedBox(height: 20),
                   Card(
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 3,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                     child: Padding(
                       padding: const EdgeInsets.all(20),
                       child: Column(
@@ -203,11 +203,24 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.timeline, size: 24, color: Colors.blue),
-                              const SizedBox(width: 8),
+                              Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: const LinearGradient(
+                                    colors: [Colors.orange, Colors.deepOrange],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                ),
+                                padding: const EdgeInsets.all(8),
+                                child: const Icon(Icons.article, size: 22, color: Colors.white),
+                              ),
+                              const SizedBox(width: 12),
                               Text(
-                                'Project Progress',
-                                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                                'Progress Reports',
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
                           ),
