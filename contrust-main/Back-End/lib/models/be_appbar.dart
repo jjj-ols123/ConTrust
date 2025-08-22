@@ -303,6 +303,17 @@ class MenuDrawerContractee extends StatelessWidget {
             ),
             onTap: () => transitionBuilder(context, const AboutPage()),
           ),
+          const SizedBox(height: 0.5),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text(
+              'Logout',
+              style: TextStyle(
+                fontSize: 18,
+              ),
+            ),
+            //onTap: () => transitionBuilder(context, ()),
+          ),
         ],
       ),
     );

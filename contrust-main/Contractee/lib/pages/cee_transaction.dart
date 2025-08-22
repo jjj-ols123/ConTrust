@@ -6,12 +6,12 @@ class TransactionPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<Map<String, dynamic>> transactions = [
-    //{
-    //    'companyName': 'Pau Construction Firm',
-    //    'contractorName': 'Contractor Pogi',
-    //   'projectDescription': 'Gumawa ng garage',
-    //    'price': 3500,
-    //  },
+    {
+        'companyName': 'Pau Construction Firm',
+        'contractorName': 'Contractor Pogi',
+       'projectDescription': 'Gumawa ng garage',
+        'price': 3500,
+      },
     //  {
     //    'companyName': 'Migs Construction Firm',
     //   'contractorName': 'Contractor Juan',
