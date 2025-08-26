@@ -5,13 +5,15 @@ import 'package:backend/services/be_user_service.dart';
 import 'package:backend/services/be_fetchservice.dart';
 import 'package:backend/utils/be_pagetransition.dart';
 import 'package:contractee/pages/cee_about.dart';
+import 'package:contractee/pages/cee_login.dart';
 import 'package:contractee/pages/cee_materials.dart';
 import 'package:contractee/pages/cee_notification.dart';
 import 'package:contractee/pages/cee_ongoing.dart';
 import 'package:contractee/pages/cee_transaction.dart';
 import 'package:contractee/services/cee_checkuser.dart';
 import 'package:contractor/Screen/cor_notification.dart';
-
+import 'package:contractee/pages/cee_launch.dart';
+import 'package:contractee/pages/cee_registration.dart';
 import 'package:flutter/material.dart';
 
 class ConTrustAppBar extends StatefulWidget implements PreferredSizeWidget {
@@ -312,7 +314,7 @@ class MenuDrawerContractee extends StatelessWidget {
                 fontSize: 18,
               ),
             ),
-            //onTap: () => transitionBuilder(context, ()),
+            onTap: () => transitionBuilder(context, RegistrationPage()),
           ),
         ],
       ),
