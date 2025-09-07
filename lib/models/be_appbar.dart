@@ -219,7 +219,7 @@ class MenuDrawerContractee extends StatelessWidget {
               '',
               style: TextStyle(
                 color: Colors.black,
-                fontSize: 28,
+                fontSize: 1,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -314,7 +314,7 @@ class MenuDrawerContractee extends StatelessWidget {
                 fontSize: 18,
               ),
             ),
-            onTap: () => transitionBuilder(context, RegistrationPage()),
+            onTap: () => transitionBuilder(context, LoginPage(modalContext: context,)),
           ),
         ],
       ),
