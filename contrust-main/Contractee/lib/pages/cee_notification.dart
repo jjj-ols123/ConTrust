@@ -37,7 +37,6 @@ class _ContracteeNotificationPageState
         body: Center(child: CircularProgressIndicator()),
       );
     }
-
     return Scaffold(
       appBar: AppBar(
         title: const Text("Notifications",
