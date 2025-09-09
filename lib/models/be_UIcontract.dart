@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:backend/services/be_contract_service.dart';
+import 'package:backend/services/be_fetchservice.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:signature/signature.dart';
@@ -36,7 +37,7 @@ class UIContract {
                     ),
                     const SizedBox(height: 16),
                     FutureBuilder<List<Map<String, dynamic>>>(
-                      future: ContractService.getContractorProjectInfo(contractorId),
+                      future: FetchService().fetchContractorProjectInfo(contractorId),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
                           return const CircularProgressIndicator();

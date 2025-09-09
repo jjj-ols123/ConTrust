@@ -109,18 +109,6 @@ class ProjectService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getProjectsByContractee(
-      String contracteeId) async {
-    try {
-      final response = await _supabase
-          .from('Projects')
-          .select('*')
-          .eq('contractee_id', contracteeId);
-      return List<Map<String, dynamic>>.from(response);
-    } catch (error) {
-      return [];
-    }
-  }
 
   Future<String?> getProjectId(String chatRoomId) async {
     final chatRoom = await _supabase
@@ -466,7 +454,7 @@ class ProjectService {
     required String task,
     bool done = false,
   }) async {
-    await _supabase.from('projecttasks').insert({
+    await _supabase.from('ProjectTasks').insert({
       'project_id': projectId,
       'task': task,
       'done': done,
@@ -479,7 +467,7 @@ class ProjectService {
     required String content,
     required String authorId,
   }) async {
-    await _supabase.from('projectreports').insert({
+    await _supabase.from('ProjectReports').insert({
       'project_id': projectId,
       'content': content,
       'author_id': authorId,
@@ -492,7 +480,7 @@ class ProjectService {
     required String photoUrl,
     required String uploaderId,
   }) async {
-    await _supabase.from('projectphotos').insert({
+    await _supabase.from('ProjectPhotos').insert({
       'project_id': projectId,
       'photo_url': photoUrl,
       'uploader_id': uploaderId,
@@ -501,23 +489,78 @@ class ProjectService {
   }
 
   Future<void> addCostToProject({
+    required String contractor_id, 
     required String projectId,
-    required String item,
-    required num amount,
-    String? note,
+    required String material_name,
+    required num quantity,
+    String? brand,
+    String? unit,
+    num? unit_price,
+    String? notes,
   }) async {
-    await _supabase.from('projectcosts').insert({
+    await _supabase.from('ProjectMaterials').insert({
+      'contractor_id': contractor_id,
       'project_id': projectId,
-      'item': item,
-      'amount': amount,
-      if (note != null) 'note': note,
+      'material_name': material_name,
+      'brand': brand,
+      'unit': unit,
+      'quantity': quantity,
+      'unit_price': unit_price,
+      if (notes != null) 'notes': notes,
       'created_at': DateTime.now().toIso8601String(),
     });
   }
 
   Future<void> updateTaskStatus(String taskId, bool done) async {
     await _supabase
-        .from('projecttasks')
-        .update({'done': done}).eq('task_id', taskId);
+        .from('ProjectTasks')
+        .update({'done': done})
+        .eq('task_id', taskId);
+  }
+
+  Future<void> deleteTask(String taskId) async {
+    await _supabase
+        .from('ProjectTasks')
+        .delete()
+        .eq('task_id', taskId);
+  }
+
+  Future<void> deleteReport(String reportId) async {
+    await _supabase
+        .from('ProjectReports')
+        .delete()
+        .eq('report_id', reportId);
+  }
+
+  Future<void> deletePhoto(String photoId) async {
+    final photo = await _supabase
+        .from('ProjectPhotos')
+        .select('photo_url')
+        .eq('photo_id', photoId)
+        .single();
+    
+    final photoUrl = photo['photo_url'] as String?;
+    
+    await _supabase
+        .from('ProjectPhotos')
+        .delete()
+        .eq('photo_id', photoId);
+    
+    if (photoUrl != null && photoUrl.isNotEmpty) {
+      try {
+        await _supabase.storage
+            .from('projectphotos')
+            .remove([photoUrl]);
+      } catch (e) {
+        print('Failed to delete photo from storage: $e');
+      }
+    }
+  }
+
+  Future<void> deleteCost(String materialId) async {
+    await _supabase
+        .from('ProjectMaterials')
+        .delete()
+        .eq('material_id', materialId);
   }
 }

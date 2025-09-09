@@ -67,17 +67,6 @@ class ContractService {
     }).eq('contract_id', contractId);
   }
 
-  static Future<List<Map<String, dynamic>>> getContractorProjectInfo(
-      String contractorId) async {
-    final response = await _supabase
-        .from('Projects')
-        .select('project_id, contractee_id, description')
-        .eq('contractor_id', contractorId)
-        .order('created_at', ascending: false);
-
-    return List<Map<String, dynamic>>.from(response);
-  }
-
   static Future<void> sendContractToContractee({
     required String contractId,
     required String contracteeId,
