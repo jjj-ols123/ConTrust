@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously, empty_catches
+
 import 'package:backend/services/be_notification_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
@@ -202,7 +204,9 @@ class BiddingService {
           'profile_photo': contracteePhoto,
         },
       );
-    } catch (e) {}
+    } catch (e) {
+      
+    }
   }
 
   Future<void> processBiddingDurationExpiry(String projectId) async {

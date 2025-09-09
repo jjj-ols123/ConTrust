@@ -1,3 +1,5 @@
+// ignore_for_file: empty_catches
+
 import 'package:backend/services/be_fetchservice.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
