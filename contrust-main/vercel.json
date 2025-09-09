@@ -1,0 +1,11 @@
+{
+  "buildCommand": "cd Back-End && flutter build web --base-href /",
+  "outputDirectory": "Back-End/build/web",
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
