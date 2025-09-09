@@ -1,11 +1,11 @@
 // ignore_for_file: file_names, deprecated_member_use, use_build_context_synchronously, unused_element, library_private_types_in_public_api
 import 'package:contractor/Screen/cor_chathistory.dart';
 import 'package:contractor/Screen/cor_contracttype.dart';
+import 'package:contractor/Screen/cor_product.dart';
 import 'package:flutter/material.dart';
 import 'package:contractor/Screen/cor_ongoing.dart';
 import 'package:contractor/Screen/cor_clienthistory.dart';
 import 'package:contractor/Screen/cor_profile.dart';
-import 'package:contractor/Screen/cor_editprofile.dart';
 import 'package:backend/services/be_fetchservice.dart';
 
 class DashboardUI extends StatefulWidget {
@@ -152,7 +152,7 @@ class _DashboardUIState extends State<DashboardUI>
                 _buildRecentProjects(),
                 const SizedBox(height: 20),
                 _buildProjectTasks(),
-                const SizedBox(height: 100),
+                const SizedBox(height: 40,),
               ],
             ),
           ),
@@ -368,7 +368,7 @@ class _DashboardUIState extends State<DashboardUI>
             Row(
               children: [
                 Container(
-                  padding: EdgeInsets.all(isDesktop ? 15 : (isTablet ? 14 : 12)),
+                  padding: EdgeInsets.all(isDesktop ? 14 : (isTablet ? 14 : 12)),
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(
@@ -378,7 +378,7 @@ class _DashboardUIState extends State<DashboardUI>
                   child: Icon(
                     icon,
                     color: color,
-                    size: isDesktop ? 24 : (isTablet ? 22 : 20),
+                    size: isDesktop ? 22 : (isTablet ? 22 : 20),
                   ),
                 ),
               ],
@@ -593,27 +593,16 @@ class _DashboardUIState extends State<DashboardUI>
                     'Created: ${DateTime.parse(task['created_at']).toLocal().toString().split('.')[0]}',
                     style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CorOngoingProjectScreen(
-                            projectId: task['project_id'],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
                 ),
               ),
+              const SizedBox(height: 10),
               Text(
-                'Tap to view more...',
+                'More on the Project Management Page...',
                 style: TextStyle(
                   fontSize: isTablet ? 14 : 12,
                   color: Colors.grey.shade600,
                 ),
+                textAlign: TextAlign.center,
               ),
           ],
         ),
@@ -621,7 +610,7 @@ class _DashboardUIState extends State<DashboardUI>
     );
   }
 }
-
+ 
 class ContractorProjectView extends StatelessWidget {
   final Map<String, dynamic> project;
   const ContractorProjectView({super.key, required this.project});
@@ -820,14 +809,14 @@ class _PersistentDashboardDrawerState extends State<PersistentDashboardDrawer>
           alignment: Alignment.bottomCenter,
           child: Container(
             width: double.infinity,
-            height: screenWidth > 1200 ? 40 : (screenWidth > 600 ? 40 : 40),
+            height: screenWidth > 1200 ? 35 : (screenWidth > 600 ? 35 : 30),
             color: Colors.amber[800],
           ),
         ),
         DraggableScrollableSheet(
           controller: _controller,
           initialChildSize: initialSize,
-          minChildSize: initialSize,
+          minChildSize: initialSize, 
           maxChildSize: adjustedExpandedSize,
           builder: (context, scrollController) {
             return Column(
@@ -835,7 +824,7 @@ class _PersistentDashboardDrawerState extends State<PersistentDashboardDrawer>
                 Container(
                   width: double.infinity,
                   height:
-                      screenWidth > 1200 ? 93.8 : (screenWidth > 600 ? 93.8 : 93.8),
+                      screenWidth > 1200 ? 93.5 : (screenWidth > 600 ? 93.5 : 93.5),
                   color: Colors.transparent,
                   child: Center(
                     child: GestureDetector(
@@ -909,6 +898,56 @@ class DashboardDrawer extends StatelessWidget {
   final String? contractorId;
   const DashboardDrawer({super.key, this.scrollController, this.contractorId});
 
+  Future<void> _openMaterials(BuildContext context) async {
+    if (contractorId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No contractor detected')),
+      );
+      return;
+    }
+
+    try {
+      final projects = await FetchService().fetchContractorProjectInfo(contractorId!);
+
+      // Filter active/ongoing
+      final active = projects.where((p) {
+        final s = (p['status'] as String? ?? '').toLowerCase();
+        return s == 'active' || s == 'ongoing';
+      }).toList();
+
+      if (active.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No active/ongoing projects detected')),
+        );
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProductPanelScreen(
+              contractorId: contractorId!,
+              projectId: null,
+            ),
+          ),
+        );
+        return;
+      }
+      final selectedId = active.first['project_id']?.toString();
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ProductPanelScreen(
+            contractorId: contractorId!,
+            projectId: selectedId,
+          ),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading projects: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -947,7 +986,7 @@ class DashboardDrawer extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.symmetric(
-        vertical: screenWidth > 600 ? 5 : 15,
+        vertical: screenWidth > 600 ? 10 : 15,
         horizontal: screenWidth > 1200 ? 32 : (screenWidth > 600 ? 20 : 8),
       ),
       child: Column(
@@ -1030,36 +1069,14 @@ class DashboardDrawer extends StatelessWidget {
                   },
                 ),
                 _DrawerIcon(
-                  icon: Icons.edit,
-                  label: 'Edit Profile',
+                  icon: Icons.build,
+                  label: 'Material Page',
                   iconSize: iconSize,
                   fontSize: fontSize,
                   color: Colors.indigo,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (context) => EditProfileScreen(
-                              userId: contractorId!,
-                              isContractor: true,
-                            ),
-                      ),
-                    );
-                  },
+                  onTap: () => _openMaterials(context),
                 ),
-                _DrawerIcon(
-                  icon: Icons.settings,
-                  label: 'Settings',
-                  iconSize: iconSize,
-                  fontSize: fontSize,
-                  color: Colors.grey,
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Settings coming soon!')),
-                    );
-                  },
-                ),
+
               ],
             ),
           ),

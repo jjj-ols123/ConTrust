@@ -3,6 +3,7 @@
 import 'dart:convert';
 import 'package:backend/models/be_UIcontract.dart';
 import 'package:backend/services/be_contract_service.dart';
+import 'package:backend/services/be_fetchservice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_quill/quill_delta.dart';
@@ -244,7 +245,7 @@ extension CreateContractDialog on ContractService {
                     const SizedBox(height: 16),
                     
                     FutureBuilder<List<Map<String, dynamic>>>(
-                      future: ContractService.getContractorProjectInfo(contractorId),
+                      future: FetchService().fetchContractorProjectInfo(contractorId),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
                           return const CircularProgressIndicator();

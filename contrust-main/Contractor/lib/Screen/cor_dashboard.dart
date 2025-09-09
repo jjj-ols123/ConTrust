@@ -37,18 +37,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           widget.contractorId.isEmpty
               ? const Center(child: CircularProgressIndicator())
-              : RefreshIndicator(
-                  onRefresh: () async {
-
-                  },
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: SizedBox(
-                      height: MediaQuery.of(context).size.height,
-                      child: DashboardUI(contractorId: widget.contractorId),
-                    ),
-                  ),
-                ),
+              : DashboardUI(contractorId: widget.contractorId),
           PersistentDashboardDrawer(contractorId: widget.contractorId),
         ],
       ),

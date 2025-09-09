@@ -98,7 +98,7 @@ class _HomePageState extends State<HomePage> {
     final theme = Theme.of(context);
     return Scaffold(
     appBar: PreferredSize(
-      preferredSize: const Size.fromHeight(70), 
+      preferredSize: const Size.fromHeight(40), 
       child: ConTrustAppBar(headline: "Home"),
     ),
       drawer: const MenuDrawerContractee(),
@@ -141,7 +141,7 @@ class _HomePageState extends State<HomePage> {
                 "Suggested Contractor Firms",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 27,
+                  fontSize: 23,
                 ),
               ),
               const SizedBox(height: 25,),
@@ -175,7 +175,6 @@ class _HomePageState extends State<HomePage> {
                          child: Container(
                             width: 200,  
                             height: 250, 
-                            margin: const EdgeInsets.symmetric(horizontal: 10),
                             decoration: BoxDecoration(
                               border: Border.all(
                                 color: isSelected ? const Color.fromARGB(255, 99, 98, 98) : Colors.transparent,
@@ -201,7 +200,7 @@ class _HomePageState extends State<HomePage> {
                     "Your Posted Projects",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 27,
+                      fontSize: 23,
                     ),
                   ),
                   TextButton(

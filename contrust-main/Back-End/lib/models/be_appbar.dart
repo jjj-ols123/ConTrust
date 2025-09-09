@@ -117,19 +117,21 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
                 onPressed: () => Scaffold.of(context).openDrawer(),
               ),
             )
-          : Navigator.canPop(context)
-              ? IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.black),
-                  onPressed: () => Navigator.of(context).pop(),
-                )
-              : (_userType?.toLowerCase() == 'contractee')
-                  ? Builder(
-                      builder: (context) => IconButton(
-                        icon: const Icon(Icons.menu, color: Colors.black),
-                        onPressed: () => Scaffold.of(context).openDrawer(),
-                      ),
+          : (widget.headline == "Dashboard")
+              ? null 
+              : Navigator.canPop(context)
+                  ? IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.black),
+                      onPressed: () => Navigator.of(context).pop(),
                     )
-                  : null,
+                  : (_userType?.toLowerCase() == 'contractee')
+                      ? Builder(
+                          builder: (context) => IconButton(
+                            icon: const Icon(Icons.menu, color: Colors.black),
+                            onPressed: () => Scaffold.of(context).openDrawer(),
+                          ),
+                        )
+                      : null,
       elevation: 4,
       title: Text(
         widget.headline,

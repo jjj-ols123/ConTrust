@@ -1,28 +1,20 @@
-import 'package:backend/models/be_appbar.dart';
 import 'package:backend/utils/be_constraint.dart';
 import 'package:contractee/pages/cee_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
 class ContracteeChatHistoryPage extends StatefulWidget {
   const ContracteeChatHistoryPage({super.key});
-  
 
   @override
-  State<ContracteeChatHistoryPage> createState() =>
-      _ContracteeChatHistoryPageState();
+  _ContracteeChatHistoryPageState createState() => _ContracteeChatHistoryPageState();
 }
 
 class _ContracteeChatHistoryPageState
     extends State<ContracteeChatHistoryPage> {
   final supabase = Supabase.instance.client;
   String? contracteeId;
-  String? _toggledChatRoomId;
 
 
   @override
@@ -147,6 +139,7 @@ class _ContracteeChatHistoryPageState
                                   ),
                                   boxShadow: [
                                     BoxShadow(
+                                      // ignore: deprecated_member_use
                                       color: Colors.grey.withOpacity(0.1),
                                       blurRadius: 6,
                                       offset: const Offset(0, 4),

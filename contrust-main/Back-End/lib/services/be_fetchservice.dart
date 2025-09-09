@@ -178,12 +178,12 @@ class FetchService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> fetchProjectsTasks(String projectId) async {
+  Future<List<Map<String, dynamic>>> fetchProjectTasks(String projectId) async {
     try {
       final response = await _supabase
-          .from('projecttasks')
-          .select('project_id, task, done, created_at')
-          .eq('project_id', projectId)  
+          .from('ProjectTasks')
+          .select('task_id, project_id, task, done, created_at')
+          .eq('project_id', projectId)
           .order('created_at', ascending: false);
 
       return List<Map<String, dynamic>>.from(response);
@@ -305,24 +305,11 @@ class FetchService {
     };
   }
 
-  Future<List<Map<String, dynamic>>> fetchProjectTasks(String projectId) async {
-    try {
-      final response = await _supabase
-          .from('projecttasks')
-          .select('*')
-          .eq('project_id', projectId)
-          .order('created_at', ascending: false);
-      return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
-      return [];
-    }
-  }
-
   Future<List<Map<String, dynamic>>> fetchProjectReports(
       String projectId) async {
     try {
       final response = await _supabase
-          .from('projectreports')
+          .from('ProjectReports')
           .select('*')
           .eq('project_id', projectId)
           .order('created_at', ascending: false);
@@ -336,7 +323,7 @@ class FetchService {
       String projectId) async {
     try {
       final response = await _supabase
-          .from('projectphotos')
+          .from('ProjectPhotos')
           .select('*')
           .eq('project_id', projectId)
           .order('created_at', ascending: false);
@@ -349,7 +336,7 @@ class FetchService {
   Future<List<Map<String, dynamic>>> fetchProjectCosts(String projectId) async {
     try {
       final response = await _supabase
-          .from('projectcosts')
+          .from('ProjectMaterials')
           .select('*')
           .eq('project_id', projectId)
           .order('created_at', ascending: false);

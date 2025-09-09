@@ -6,7 +6,7 @@ import 'package:backend/services/be_project_service.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:io';
+import '../Screen/cor_product.dart'; 
 
 class CorOngoingProjectScreen extends StatefulWidget {
   final String projectId;
@@ -77,7 +77,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
-                controller: reportController,
+            controller: reportController,
                 maxLines: 4,
                 decoration: const InputDecoration(
                   hintText: 'Enter detailed progress report...',
@@ -101,8 +101,8 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                       content: reportController.text.trim(),
                       authorId: userId,
                     );
-                    reportController.clear();
-                    Navigator.pop(context);
+                  reportController.clear();
+                Navigator.pop(context);
                     _loadData();
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -148,7 +148,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                     task: taskController.text.trim(),
                   );
                   taskController.clear();
-                  Navigator.pop(context);
+                Navigator.pop(context);
                   _loadData();
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -158,86 +158,6 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                 }
               },
               child: const Text('Add Task'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _addCost() async {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Add Cost Item'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: costItemController,
-                decoration: const InputDecoration(
-                  hintText: 'Item name',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: costAmountController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  hintText: 'Amount (₱)',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: costNoteController,
-                decoration: const InputDecoration(
-                  hintText: 'Note (optional)',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (costItemController.text.trim().isNotEmpty &&
-                    costAmountController.text.trim().isNotEmpty) {
-                  final amount = double.tryParse(
-                    costAmountController.text.trim(),
-                  );
-                  if (amount != null) {
-                    await _projectService.addCostToProject(
-                      projectId: widget.projectId,
-                      item: costItemController.text.trim(),
-                      amount: amount,
-                      note:
-                          costNoteController.text.trim().isNotEmpty
-                              ? costNoteController.text.trim()
-                              : null,
-                    );
-                    costItemController.clear();
-                    costAmountController.clear();
-                    costNoteController.clear();
-                    Navigator.pop(context);
-                    _loadData();
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Cost item added successfully!'),
-                        ),
-                      );
-                    }
-                  }
-                }
-              },
-              child: const Text('Add Cost'),
             ),
           ],
         );
@@ -255,28 +175,28 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
 
     if (pickedFile != null) {
       try {
-        final file = File(pickedFile.path);
-        final bytes = await file.readAsBytes();
+        final bytes = await pickedFile.readAsBytes();
         final userId = _supabase.auth.currentUser?.id;
 
         if (userId != null) {
           final fileName =
               '${widget.projectId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-          await _supabase.storage
-              .from('project_photos')
-              .uploadBinary(
-                fileName,
-                bytes,
-                fileOptions: const FileOptions(upsert: true),
-              );
+          final storagePath = '$userId/$fileName';
 
-          final photoUrl = _supabase.storage
-              .from('project_photos')
-              .getPublicUrl(fileName);
+          await _supabase.storage
+              .from('projectphotos')
+              .uploadBinary(
+                storagePath,
+                bytes,
+                fileOptions: const FileOptions(
+                  upsert: true,
+                  contentType: 'image/jpeg',
+                ),
+              );
 
           await _projectService.addPhotoToProject(
             projectId: widget.projectId,
-            photoUrl: photoUrl,
+            photoUrl: storagePath,
             uploaderId: userId,
           );
 
@@ -297,7 +217,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     }
   }
 
-  void _updateTaskStatus(String taskId, bool done) async {
+void _updateTaskStatus(String taskId, bool done) async {
     setState(() {
       final taskIndex = _localTasks.indexWhere(
         (task) => task['task_id'].toString() == taskId,
@@ -350,7 +270,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Failed to update task'),
             backgroundColor: Colors.red,
@@ -370,11 +290,11 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
           content: TextField(
             controller: progressController,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
+        decoration: const InputDecoration(
               hintText: 'Enter progress percentage (0-100)',
-              border: OutlineInputBorder(),
-            ),
-          ),
+          border: OutlineInputBorder(),
+        ),
+      ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -410,6 +330,174 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     );
   }
 
+  Future<String?> _createSignedPhotoUrl(String? path) async {
+    if (path == null || path.isEmpty) return null;
+    if (path.startsWith('http')) {
+      return path;
+    }
+    try {
+      final url = await _supabase.storage
+          .from('projectphotos')
+          .createSignedUrl(path, 60 * 60);
+      return url;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Delete methods
+  Future<void> _deleteTask(String taskId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Task'),
+        content: const Text('Are you sure you want to delete this task?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await _projectService.deleteTask(taskId);
+        _loadData();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Task deleted successfully!')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error deleting task: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _deleteReport(String reportId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Report'),
+        content: const Text('Are you sure you want to delete this report?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await _projectService.deleteReport(reportId);
+        _loadData();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Report deleted successfully!')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error deleting report: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _deletePhoto(String photoId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Photo'),
+        content: const Text('Are you sure you want to delete this photo?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await _projectService.deletePhoto(photoId);
+        _loadData();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Photo deleted successfully!')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error deleting photo: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _deleteCost(String materialId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Material'),
+        content: const Text('Are you sure you want to delete this material?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await _projectService.deleteCost(materialId);
+        _loadData();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Material deleted successfully!')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error deleting material: $e')),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -427,7 +515,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
 
           final project = snapshot.data!;
           final projectTitle = project['title'] ?? 'Project';
-          final clientName = project['client_name'] ?? 'Client';
+          final clientName = project['full_name'] ?? 'Client';
           final address = project['location'] ?? '';
           final startDate = project['start_date'] ?? '';
           final estimatedCompletion = project['estimated_completion'] ?? '';
@@ -451,8 +539,8 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
+      Row(
+        children: [
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -473,17 +561,17 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                                   ],
                                 ),
                               ),
-                              ElevatedButton.icon(
+          ElevatedButton.icon(
                                 onPressed: _updateProgress,
-                                icon: const Icon(Icons.edit),
+            icon: const Icon(Icons.edit),
                                 label: const Text('Update Progress'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue,
-                                  foregroundColor: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
                           const SizedBox(height: 16),
                           Row(
                             children: [
@@ -518,18 +606,18 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                           ),
                           const SizedBox(height: 16),
                           Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
+                children: [
+                  Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                                     Row(
                                       children: [
                                         Text(
                                           'Progress: ${(_localProgress * 100).toStringAsFixed(0)}%',
                                           style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                fontWeight: FontWeight.bold,
+                              ),
                                         ),
                                         const SizedBox(width: 16),
                                         Text(
@@ -541,8 +629,8 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                                           ),
                                         ),
                                       ],
-                                    ),
-                                    const SizedBox(height: 8),
+                            ),
+                            const SizedBox(height: 8),
                                     LinearProgressIndicator(
                                       value: _localProgress,
                                       minHeight: 10,
@@ -557,11 +645,11 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                                 ),
                               ),
                             ],
-                          ),
-                        ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
                   const SizedBox(height: 20),
 
                   Card(
@@ -571,11 +659,11 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
-                      child: Column(
+                    child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                      children: [
                           Row(
-                            children: [
+                                children: [
                               const Icon(
                                 Icons.checklist,
                                 size: 24,
@@ -597,9 +685,9 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                                   backgroundColor: Colors.green,
                                   foregroundColor: Colors.white,
                                 ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
                           const SizedBox(height: 16),
                           _localTasks.isEmpty
                               ? const Card(
@@ -613,77 +701,51 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                                   ),
                                 ),
                               )
-                              : Column(
-                                children:
-                                    _localTasks
-                                        .map(
-                                          (task) => Card(
-                                            margin: const EdgeInsets.only(
-                                              bottom: 8,
-                                            ),
-                                            child: CheckboxListTile(
-                                              title: Text(
-                                                task['task'] ?? '',
-                                                style: TextStyle(
-                                                  decoration:
-                                                      task['done'] == true
-                                                          ? TextDecoration
-                                                              .lineThrough
-                                                          : null,
-                                                  color:
-                                                      task['done'] == true
-                                                          ? Colors.grey[600]
-                                                          : Colors.black87,
-                                                ),
-                                              ),
-                                              subtitle: Text(
-                                                'Created: ${DateTime.parse(task['created_at']).toLocal().toString().split('.')[0]}',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.grey[600],
-                                                ),
-                                              ),
-                                              value: task['done'] == true,
-                                              onChanged: (val) {
-                                                final taskId = task['task_id'];
-                                                _updateTaskStatus(
-                                                  taskId.toString(),
-                                                  val ?? false,
-                                                );
-                                              },
-                                              activeColor: Colors.green,
-                                              checkColor: Colors.white,
-                                              controlAffinity:
-                                                  ListTileControlAffinity
-                                                      .leading,
-                                              contentPadding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 16,
-                                                    vertical: 8,
-                                                  ),
-                                            ),
-                                          ),
-                                        )
-                                        .toList(),
-                              ),
+                              : () {
+                                                                // Responsive layout for tasks
+                              final screenWidth = MediaQuery.of(context).size.width;
+                              final isDesktop = screenWidth > 1200;
+                              
+                              if (isDesktop) {
+                                return GridView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: isDesktop ? 3 : 2,
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 5,
+                                    childAspectRatio: isDesktop ? 5 : 4,
+                                  ),
+                                  itemCount: _localTasks.length,
+                                  itemBuilder: (context, index) {
+                                    final task = _localTasks[index];
+                                    return _buildTaskItem(task);
+                                  },
+                                );
+                              } else {
+                                return Column(
+                                  children: _localTasks.map((task) => _buildTaskItem(task)).toList(),
+                                );
+                              }
+                                }(),
                         ],
-                      ),
-                    ),
-                  ),
+                            ),
+                          ),
+                        ),
                   const SizedBox(height: 20),
 
-                  Card(
+                        Card(
                     elevation: 2,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Padding(
+                          child: Padding(
                       padding: const EdgeInsets.all(16),
-                      child: Column(
+                            child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
+                              children: [
+                                Row(
+                                  children: [
                               const Icon(
                                 Icons.article,
                                 size: 24,
@@ -699,15 +761,15 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                               const Spacer(),
                               ElevatedButton.icon(
                                 onPressed: _addReport,
-                                icon: const Icon(Icons.add),
+                                      icon: const Icon(Icons.add),
                                 label: const Text('Add Report'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.orange,
                                   foregroundColor: Colors.white,
                                 ),
-                              ),
-                            ],
-                          ),
+                                    ),
+                                  ],
+                                ),
                           const SizedBox(height: 16),
                           FutureBuilder<List<Map<String, dynamic>>>(
                             future: _reportsFuture,
@@ -732,43 +794,38 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                                   ),
                                 );
                               }
-                              return Column(
-                                children:
-                                    reports
-                                        .map(
-                                          (report) => Card(
-                                            margin: const EdgeInsets.only(
-                                              bottom: 12,
-                                            ),
-                                            child: ListTile(
-                                              leading: const CircleAvatar(
-                                                backgroundColor: Colors.orange,
-                                                child: Icon(
-                                                  Icons.description,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                              title: Text(
-                                                report['content'] ?? '',
-                                              ),
-                                              subtitle: Text(
-                                                'Posted: ${DateTime.parse(report['created_at']).toLocal().toString().split('.')[0]}',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.grey[600],
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        )
-                                        .toList(),
-                              );
+                              
+                              final screenWidth =
+                                  MediaQuery.of(context).size.width;
+                              final isDesktop = screenWidth > 1200;
+                              
+                              if (isDesktop) {
+                                return GridView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: isDesktop ? 3 : 2,
+                                    crossAxisSpacing: 16,
+                                    mainAxisSpacing: 12,
+                                    childAspectRatio: isDesktop ? 5 : 4,
+                                  ),
+                                  itemCount: reports.length,
+                                  itemBuilder: (context, index) {
+                                    final report = reports[index];
+                                    return _buildReportItem(report);
+                                  },
+                                );
+                              } else {
+                                return Column(
+                                  children: reports.map((report) => _buildReportItem(report)).toList(),
+                                );
+                              }
                             },
+                                ),
+                              ],
+                            ),
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
+                        ),
                   const SizedBox(height: 20),
 
                   Card(
@@ -776,11 +833,11 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Padding(
+                      child: Padding(
                       padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                           Row(
                             children: [
                               const Icon(
@@ -792,9 +849,9 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                               Text(
                                 'Progress Photos',
                                 style: theme.textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                fontWeight: FontWeight.bold,
                               ),
+                            ),
                               const Spacer(),
                               ElevatedButton.icon(
                                 onPressed: _pickImage,
@@ -804,9 +861,9 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                                   backgroundColor: Colors.purple,
                                   foregroundColor: Colors.white,
                                 ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
+                        ),
                           const SizedBox(height: 16),
                           FutureBuilder<List<Map<String, dynamic>>>(
                             future: _photosFuture,
@@ -831,57 +888,105 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                                   ),
                                 );
                               }
+
+                              final screenWidth =
+                                  MediaQuery.of(context).size.width;
+                              final isDesktop = screenWidth > 1200;
+
                               return GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 2,
-                                      crossAxisSpacing: 8,
-                                      mainAxisSpacing: 8,
-                                      childAspectRatio: 1.2,
-                                    ),
-                                itemCount: photos.length,
-                                itemBuilder: (context, index) {
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: isDesktop ? 3 : 2,
+                                crossAxisSpacing: 8,
+                                mainAxisSpacing: 8,
+                                      childAspectRatio: isDesktop ? 2 : 3,
+                              ),
+                              itemCount: photos.length,
+                              itemBuilder: (context, index) {
                                   final photo = photos[index];
-                                  return ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.network(
-                                      photo['photo_url'] ?? '',
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (
-                                        context,
-                                        error,
-                                        stackTrace,
-                                      ) {
-                                        return Container(
-                                          color: Colors.grey[300],
-                                          child: const Icon(Icons.error),
-                                        );
-                                      },
-                                    ),
+                                  final path = photo['photo_url'] as String?;
+                                  return Stack(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: FutureBuilder<String?>(
+                                          future: _createSignedPhotoUrl(path),
+                                          builder: (context, snap) {
+                                            if (!snap.hasData) {
+                                              return Container(
+                                                color: Colors.grey[300],
+                                                child: const Center(
+                                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                                ),
+                                              );
+                                            }
+                                            final url = snap.data;
+                                            if (url == null) {
+                                              return Container(
+                                                color: Colors.grey[300],
+                                                child: const Icon(Icons.error),
+                                              );
+                                            }
+                                            return SizedBox.expand(
+                                              child: Image.network(
+                                                url,
+                                                fit: BoxFit.cover,
+                                                alignment: Alignment.center,
+                                                errorBuilder: (context, error, stackTrace) {
+                                                  return Container(
+                                                    color: Colors.grey[300],
+                                                    child: const Icon(Icons.error),
+                                                  );
+                                                },
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      Positioned(
+                                        top: 4,
+                                        right: 4,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withOpacity(0.6),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: IconButton(
+                                            icon: const Icon(Icons.delete, color: Colors.white, size: 16),
+                                            onPressed: () => _deletePhoto(photo['photo_id']),
+                                            padding: const EdgeInsets.all(4),
+                                            constraints: const BoxConstraints(
+                                              minWidth: 24,
+                                              minHeight: 24,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   );
                                 },
                               );
                             },
-                          ),
-                        ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
                   const SizedBox(height: 20),
-                  Card(
+                    Card(
                     elevation: 2,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Padding(
+                      child: Padding(
                       padding: const EdgeInsets.all(16),
-                      child: Column(
+                        child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
-                            children: [
+                          children: [
                               const Icon(
                                 Icons.attach_money,
                                 size: 24,
@@ -896,9 +1001,18 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                               ),
                               const Spacer(),
                               ElevatedButton.icon(
-                                onPressed: _addCost,
-                                icon: const Icon(Icons.add),
-                                label: const Text('Add Cost'),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ProductPanelScreen(
+                                        projectId: widget.projectId,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.inventory),
+                                label: const Text('Manage Materials'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.green,
                                   foregroundColor: Colors.white,
@@ -917,12 +1031,17 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                                 );
                               }
                               final costs = costSnap.data ?? [];
-                              if (costs.isEmpty) {
+                              final validCosts = costs.where((c) {
+                                final unitPrice = (c['unit_price'] as num? ?? 0).toDouble();
+                                return unitPrice > 0;
+                              }).toList();
+                              
+                              if (validCosts.isEmpty) {
                                 return const Card(
                                   child: Padding(
                                     padding: EdgeInsets.all(16),
                                     child: Text(
-                                      'No cost items added yet. Add costs to track project expenses!',
+                                      'No materials with costs added yet. Add materials to track project costs!',
                                       style: TextStyle(
                                         fontStyle: FontStyle.italic,
                                       ),
@@ -930,39 +1049,42 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                                   ),
                                 );
                               }
-                              final totalCost = costs.fold<double>(
+                              final totalCost = validCosts.fold<double>(
                                 0,
-                                (sum, c) =>
-                                    sum + (c['amount'] as num? ?? 0).toDouble(),
+                                (sum, c) {
+                                  final quantity = (c['quantity'] as num? ?? 0).toDouble();
+                                  final unitPrice = (c['unit_price'] as num? ?? 0).toDouble();
+                                  return sum + (quantity * unitPrice);
+                                },
                               );
+                              
+                              // Responsive layout for materials
+                              final screenWidth = MediaQuery.of(context).size.width;
+                              final isDesktop = screenWidth > 1200;
+                              
                               return Column(
-                                children: [
-                                  ...costs.map(
-                                    (cost) => Card(
-                                      margin: const EdgeInsets.only(bottom: 8),
-                                      child: ListTile(
-                                        leading: const CircleAvatar(
-                                          backgroundColor: Colors.green,
-                                          child: Icon(
-                                            Icons.receipt,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        title: Text(cost['item'] ?? ''),
-                                        subtitle:
-                                            cost['note'] != null
-                                                ? Text(cost['note'] ?? '')
-                                                : null,
-                                        trailing: Text(
-                                          '₱${(cost['amount'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                          ),
-                                        ),
+                              children: [
+                                  if (isDesktop)
+                                    // Multi-column layout for wide screens
+                                    GridView.builder(
+                                      shrinkWrap: true,
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: isDesktop ? 3 : 2,
+                                        crossAxisSpacing: 16,
+                                        mainAxisSpacing: 8,
+                                        childAspectRatio: isDesktop ? 4 : 4,
                                       ),
-                                    ),
-                                  ),
+                                      itemCount: validCosts.length,
+                                      itemBuilder: (context, index) {
+                                        final cost = validCosts[index];
+                                        return _buildCostItem(cost);
+                                      },
+                                    )
+                                  else
+                                    // Single column for mobile
+                                    ...validCosts.map((cost) => _buildCostItem(cost)),
+                                  
                                   const Divider(thickness: 2),
                                   Card(
                                     color: Colors.green[50],
@@ -993,9 +1115,9 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                                 ],
                               );
                             },
-                          ),
-                        ],
-                      ),
+                                ),
+                              ],
+                            ),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -1015,16 +1137,135 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                          ),
-                        ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
               ),
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildReportItem(Map<String, dynamic> report) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: const CircleAvatar(
+          backgroundColor: Colors.orange,
+          child: Icon(
+            Icons.description,
+            color: Colors.white,
+          ),
+        ),
+        title: Text(
+          report['content'] ?? '',
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(
+          'Posted: ${DateTime.parse(report['created_at']).toLocal().toString().split('.')[0]}',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+        ),
+        trailing: IconButton(
+          icon: const Icon(Icons.delete_outline),
+          onPressed: () => _deleteReport(report['report_id']),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTaskItem(Map<String, dynamic> task) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: CheckboxListTile(
+        title: Text(
+          task['task'] ?? '',
+          style: TextStyle(
+            decoration: task['done'] == true ? TextDecoration.lineThrough : null,
+            color: task['done'] == true ? Colors.grey[600] : Colors.black87,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(
+          'Created: ${DateTime.parse(task['created_at']).toLocal().toString().split('.')[0]}',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+        ),
+        value: task['done'] == true,
+        onChanged: (val) {
+          final taskId = task['task_id'];
+          _updateTaskStatus(taskId.toString(), val ?? false);
+        },
+        activeColor: Colors.green,
+        checkColor: Colors.white,
+        controlAffinity: ListTileControlAffinity.leading,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+        secondary: IconButton(
+          icon: const Icon(Icons.delete_outline),
+          onPressed: () => _deleteTask(task['task_id']),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCostItem(Map<String, dynamic> cost) {
+    final quantity = (cost['quantity'] as num? ?? 0).toDouble();
+    final unitPrice = (cost['unit_price'] as num? ?? 0).toDouble();
+    final totalItemCost = quantity * unitPrice;
+    
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: const CircleAvatar(
+          backgroundColor: Colors.green,
+          child: Icon(
+            Icons.construction,
+            color: Colors.white,
+          ),
+        ),
+        title: Text(cost['material_name'] ?? ''),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (cost['brand'] != null)
+              Text('Brand: ${cost['brand']}'),
+            Text('Qty: ${quantity.toStringAsFixed(1)} ${cost['unit'] ?? 'pcs'}'),
+            Text('Unit Price: ₱${unitPrice.toStringAsFixed(2)}'),
+            if (cost['notes'] != null)
+              Text('Note: ${cost['notes']}', 
+                style: const TextStyle(fontStyle: FontStyle.italic)),
+          ],
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '₱${totalItemCost.toStringAsFixed(2)}',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: Colors.green,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () => _deleteCost(cost['material_id']),
+            ),
+          ],
+        ),
       ),
     );
   }

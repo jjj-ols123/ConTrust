@@ -2,7 +2,6 @@
 // ignore_for_file: non_constant_identifier_names, use_build_context_synchronously, unnecessary_type_check, deprecated_member_use
 
 import 'package:backend/services/be_bidding_service.dart';
-import 'package:backend/services/be_fetchservice.dart';
 import 'package:backend/services/be_project_service.dart';
 import 'package:backend/utils/be_validation.dart';
 import 'package:backend/utils/be_constraint.dart';

@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 import 'dart:ui';
+import 'package:backend/models/be_appbar.dart';
 import 'package:backend/services/be_contract_service.dart';
 import 'package:backend/services/be_fetchservice.dart';
 import 'package:contractor/Screen/cor_createcontract.dart';
@@ -34,12 +35,7 @@ class _ContractTypeState extends State<ContractType> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Contract Types'),
-        backgroundColor: Colors.amber[700],
-        elevation: 0,
-        centerTitle: true,
-      ),
+      appBar: ConTrustAppBar(headline: "Contract Types"),
       backgroundColor: Colors.grey[100],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
