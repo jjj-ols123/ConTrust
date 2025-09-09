@@ -21,20 +21,22 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade100, 
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Container(
-            padding: const EdgeInsets.all(20),
+            width: 400, 
+            padding: const EdgeInsets.all(28), 
             margin: const EdgeInsets.symmetric(horizontal: 20),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
+                  color: Colors.black.withOpacity(0.08), 
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
                 ),
               ],
             ),
@@ -49,89 +51,147 @@ class _LoginPageState extends State<LoginPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'Login',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 40,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
+        Column(
+          children: [
+            Icon(Icons.lock_outline,
+                size: 64, color: Colors.amber.shade400), 
+            const SizedBox(height: 12),
+            Text(
+              'Welcome Back',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade800,
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Login to your account',
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+          ],
         ),
-        const SizedBox(height: 25),
+
+        const SizedBox(height: 30),
         TextFormField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Email',
-            prefixIcon: Icon(Icons.email),
-            border: OutlineInputBorder(),
+            prefixIcon: const Icon(Icons.email_outlined),
+            filled: true,
+            fillColor: Colors.grey.shade100, 
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12), 
+              borderSide: BorderSide.none,
+            ),
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 18),
         TextFormField(
           controller: _passwordController,
           keyboardType: TextInputType.visiblePassword,
           obscureText: true,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Password',
-            prefixIcon: Icon(Icons.lock),
-            border: OutlineInputBorder(),
+            prefixIcon: const Icon(Icons.lock_outline),
+            filled: true,
+            fillColor: Colors.grey.shade100,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
           ),
         ),
+
         const SizedBox(height: 25),
         ElevatedButton(
           onPressed: () async {
             final signInContractee = SignInContractee();
             signInContractee.signInContractee(
-              context, 
+              context,
               _emailController.text,
-              _passwordController.text, 
-              () => validateFieldsLogin(context, _emailController.text, _passwordController.text)
-              );
+              _passwordController.text,
+              () => validateFieldsLogin(
+                  context, _emailController.text, _passwordController.text),
+            );
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.teal,
-            padding: const EdgeInsets.symmetric(vertical: 18),
-          ),
-          child: const Text('Login'),
-        ),
-        const SizedBox(height: 15),
-        const Text(
-          'Or Continue With',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.grey, fontSize: 16),
-        ),
-        const SizedBox(height: 15),
-        GestureDetector(
-          onTap: () {
-            //Googlesign-in
-          },
-          child: Center(
-            child: Image.asset(
-              'assets/googleicon.png',
-              height: 50,
+            backgroundColor: Colors.amber.shade400,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12), 
             ),
+            elevation: 4,
           ),
+          child: const Text(
+            'Login',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 10),
+              child: Text(
+                'Or Continue With',
+                style: TextStyle(color: Colors.grey, fontSize: 14),
+              ),
+            ),
+            Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
+          ],
         ),
         const SizedBox(height: 20),
         GestureDetector(
           onTap: () {
+            // google
+          },
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(12), 
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset('assets/googleicon.png', height: 28),
+                const SizedBox(width: 12),
+                const Text(
+                  "Continue with Google",
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 25),
+        GestureDetector(
+          onTap: () {
             transitionBuilder(context, RegistrationPage());
           },
-          child: const Text(
-            "Doesn't have an account? Sign up",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.teal,
-              decoration: TextDecoration.underline,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+          child: Text.rich(
+            TextSpan(
+              text: "Don't have an account? ",
+              style: const TextStyle(color: Colors.grey, fontSize: 14),
+              children: [
+                TextSpan(
+                  text: "Sign up",
+                  style: TextStyle(
+                    color: Colors.teal.shade600,
+                    fontWeight: FontWeight.bold,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ],
             ),
+            textAlign: TextAlign.center,
           ),
         ),
       ],
     );
   }
-
 }

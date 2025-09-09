@@ -369,9 +369,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                               if (taskSnap.connectionState == ConnectionState.waiting) {
                                 return const Center(child: CircularProgressIndicator());
                               }
-
                               final tasks = taskSnap.data ?? [];
-
                               if (tasks.isEmpty) {
                                 return Container(
                                   width: double.infinity,

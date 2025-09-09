@@ -5,13 +5,14 @@ import 'package:backend/services/be_user_service.dart';
 import 'package:backend/services/be_fetchservice.dart';
 import 'package:backend/utils/be_pagetransition.dart';
 import 'package:contractee/pages/cee_about.dart';
+import 'package:contractee/pages/cee_login.dart';
 import 'package:contractee/pages/cee_materials.dart';
 import 'package:contractee/pages/cee_notification.dart';
 import 'package:contractee/pages/cee_ongoing.dart';
 import 'package:contractee/pages/cee_transaction.dart';
 import 'package:contractee/services/cee_checkuser.dart';
 import 'package:contractor/Screen/cor_notification.dart';
-
+import 'package:contractee/pages/cee_registration.dart';
 import 'package:flutter/material.dart';
 
 class ConTrustAppBar extends StatefulWidget implements PreferredSizeWidget {
@@ -219,7 +220,7 @@ class MenuDrawerContractee extends StatelessWidget {
               '',
               style: TextStyle(
                 color: Colors.black,
-                fontSize: 28,
+                fontSize: 1,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -304,6 +305,17 @@ class MenuDrawerContractee extends StatelessWidget {
               ),
             ),
             onTap: () => transitionBuilder(context, const AboutPage()),
+          ),
+          const SizedBox(height: 0.5),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text(
+              'Logout',
+              style: TextStyle(
+                fontSize: 18,
+              ),
+            ),
+            onTap: () => transitionBuilder(context, LoginPage(modalContext: context,)),
           ),
         ],
       ),

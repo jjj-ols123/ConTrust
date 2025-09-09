@@ -37,10 +37,16 @@ class _ContracteeNotificationPageState
         body: Center(child: CircularProgressIndicator()),
       );
     }
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Notifications"),
+        title: const Text("Notifications",
+            style: TextStyle(
+              color: Colors.black, 
+              fontWeight: FontWeight.bold,
+            )
+          ),
+        backgroundColor: Colors.yellow[700],
+        centerTitle: true,
       ),
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: NotificationService().listenToNotifications(contracteeId!),

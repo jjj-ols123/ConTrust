@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, use_super_parameters, file_names
 import 'package:backend/services/be_bidding_service.dart';
 import 'package:backend/services/be_fetchservice.dart';
 import 'package:contractee/models/cee_expandable.dart';
@@ -142,14 +142,22 @@ class ProjectView extends StatelessWidget {
     return InkWell(
       onTap: isHiringRequest ? null : onTap,
       child: Card(
-        margin: const EdgeInsets.only(bottom: 18),
-        elevation: 6,
+        margin: const EdgeInsets.only(bottom: 20), 
+        elevation: 8,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20), 
         ),
-        shadowColor: Colors.amber.shade100,
-        child: Padding(
-          padding: const EdgeInsets.all(18),
+        shadowColor: Colors.amber.withOpacity(0.5), 
+        child: Container( 
+          decoration: BoxDecoration(
+            gradient: LinearGradient( 
+              colors: [Colors.amber.shade50, Colors.amber.shade100],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20), 
+          ),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -161,24 +169,25 @@ class ProjectView extends StatelessWidget {
                       project['title'] ?? 'No title given',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 20,
+                        fontSize: 25, 
                       ),
                     ),
                   ),
                   if (!isHiringRequest) ...[
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.amber.shade100,
-                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.amber.shade50,
+                        border: Border.all(color: Colors.amber.shade200, width: 1),
+                        borderRadius: BorderRadius.circular(14),
                       ),
                       child: Text(
                         "₱${project['min_budget']?.toString() ?? '0'} - ₱${project['max_budget']?.toString() ?? '0'}",
                         style: const TextStyle(
                           color: Colors.black87,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 20,
                         ),
                       ),
                     ),
@@ -187,13 +196,22 @@ class ProjectView extends StatelessWidget {
                     const SizedBox(width: 8),
                     PopupMenuButton<String>(
                       icon: const Icon(Icons.more_vert, color: Colors.grey),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       onSelected: (value) async {
                         if (value == 'delete') {
                           final bool? shouldDelete = await showDialog<bool>(
                             context: context,
                             builder: (BuildContext context) {
                               return AlertDialog(
-                                title: const Text('Delete Project'),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                title: const Text(
+                                  'Delete Project',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                                 content: const Text(
                                   'Are you sure you want to delete this project? This action cannot be undone.',
                                 ),
@@ -239,10 +257,15 @@ class ProjectView extends StatelessWidget {
                   ],
                 ],
               ),
+
               const SizedBox(height: 12),
+
               if (project['type'] != null)
                 Row(
                   children: [
+                    const Icon(Icons.category_outlined,
+                        size: 18, color: Colors.grey),
+                    const SizedBox(width: 6),
                     Text(
                       'Type: ${project['type']}',
                       style: const TextStyle(
@@ -250,25 +273,28 @@ class ProjectView extends StatelessWidget {
                     ),
                   ],
                 ),
-              const SizedBox(height: 8),
+
+              const SizedBox(height: 10),
+
               Text(
-                'Description: ${project['description'] ?? 'No description'}',
+                project['description'] ?? 'No description',
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 16, color: Colors.black87),
               ),
-              const SizedBox(height: 18),
+
+              const SizedBox(height: 20),
+
               Row(
                 children: [
                   const Icon(Icons.info_outline, size: 18, color: Colors.grey),
                   const SizedBox(width: 6),
                   Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color:
-                          getStatusColor(project['status']).withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(12),
+                      color: getStatusColor(project['status']).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     child: Text(
                       "Status: ${getStatusLabel(project['status'])}",
@@ -281,8 +307,9 @@ class ProjectView extends StatelessWidget {
                   ),
                 ],
               ),
+
               if (!isHiringRequest) ...[
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
                 Row(
                   children: [
                     const Icon(Icons.timer_outlined,
@@ -305,7 +332,7 @@ class ProjectView extends StatelessWidget {
                         if (remaining.isNegative) {
                           return Text(
                             "Closed",
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 14,
                               color: Colors.redAccent,
                               fontWeight: FontWeight.bold,
@@ -337,7 +364,9 @@ class ProjectView extends StatelessWidget {
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 14),
+
                 Row(
                   children: [
                     const Icon(Icons.attach_money_outlined,
@@ -354,11 +383,11 @@ class ProjectView extends StatelessWidget {
                   ],
                 ),
               ],
+
               if (isHiringRequest) ...[
                 const SizedBox(height: 18),
                 FutureBuilder<List<Map<String, dynamic>>>(
-                  future:
-                      FetchService().fetchHiringRequestsForProject(projectId),
+                  future: FetchService().fetchHiringRequestsForProject(projectId),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) return const SizedBox();
                     final requests = snapshot.data!;
@@ -368,8 +397,8 @@ class ProjectView extends StatelessWidget {
                     );
                     if (accepted.isNotEmpty) {
                       return ListTile(
-                        leading:
-                            const Icon(Icons.verified, color: Colors.green),
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.verified, color: Colors.green),
                         title: Text('Accepted Contractor: '
                             '${accepted['information']?['firm_name'] ?? 'Unknown'}'),
                       );
@@ -380,9 +409,10 @@ class ProjectView extends StatelessWidget {
                           const Text('Hiring Request Sent To:',
                               style: TextStyle(fontWeight: FontWeight.bold)),
                           ...requests.map((r) => ListTile(
+                                contentPadding: EdgeInsets.zero,
                                 leading: const Icon(Icons.business),
-                                title: Text(r['information']?['firm_name'] ??
-                                    'Unknown'),
+                                title: Text(
+                                    r['information']?['firm_name'] ?? 'Unknown'),
                                 subtitle: Text('Status: '
                                     '${(r['information']?['status'] ?? 'pending').toString().capitalize()}'),
                               )),
