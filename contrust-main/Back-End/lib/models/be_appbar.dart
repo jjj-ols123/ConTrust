@@ -1,4 +1,4 @@
-// ignore_for_file: unused_field
+// ignore_for_file: unused_field, use_build_context_synchronously
 import 'dart:async';
 import 'package:backend/services/be_notification_service.dart';
 import 'package:backend/services/be_user_service.dart';
@@ -12,7 +12,6 @@ import 'package:contractee/pages/cee_ongoing.dart';
 import 'package:contractee/pages/cee_transaction.dart';
 import 'package:contractee/services/cee_checkuser.dart';
 import 'package:contractor/Screen/cor_notification.dart';
-import 'package:contractee/pages/cee_registration.dart';
 import 'package:flutter/material.dart';
 
 class ConTrustAppBar extends StatefulWidget implements PreferredSizeWidget {
@@ -81,6 +80,9 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
         setState(() => _userType = userType);
       }
     } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error identifying user type.'))
+      );
     }
   }
 

@@ -73,7 +73,7 @@ class UserService {
   }
 
   Future<String?> getCurrentUserType() async {
-    final session = await _supabase.auth.currentSession;
+    final session = _supabase.auth.currentSession;
     if (session == null) return null;
 
     await _supabase.auth.refreshSession();

@@ -1,3 +1,5 @@
+// ignore_for_file: non_constant_identifier_names, empty_catches, no_leading_underscores_for_local_identifiers
+
 import 'package:backend/services/be_fetchservice.dart';
 import 'package:backend/services/be_notification_service.dart';
 import 'package:backend/utils/be_constraint.dart';
@@ -552,7 +554,6 @@ class ProjectService {
             .from('projectphotos')
             .remove([photoUrl]);
       } catch (e) {
-        print('Failed to delete photo from storage: $e');
       }
     }
   }
