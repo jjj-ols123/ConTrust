@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd contrust-main/Back-End && flutter/bin/flutter build web --release --base-href=/",
+  "buildCommand": "cd contrust-main/Back-End && flutter/bin/flutter build web --release --base-href=/ && ls -la build/web/",
   "outputDirectory": "contrust-main/Back-End/build/web",
   "installCommand": "cd contrust-main/Back-End && if cd flutter; then git pull && cd .. ; else git clone https://github.com/flutter/flutter.git; fi && ls && flutter/bin/flutter doctor && flutter/bin/flutter clean && flutter/bin/flutter config --enable-web",
   "rewrites": [
