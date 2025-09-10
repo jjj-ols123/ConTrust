@@ -260,7 +260,7 @@ extension CreateContractDialog on ContractService {
                         }
                         
                         return DropdownButtonFormField<String>(
-                          value: selectedProjectId,
+                          initialValue: selectedProjectId,
                           decoration: const InputDecoration(
                             labelText: 'Select Project *',
                             border: OutlineInputBorder(),

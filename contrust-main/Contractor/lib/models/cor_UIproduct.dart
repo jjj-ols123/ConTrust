@@ -206,7 +206,7 @@ class _MaterialsOperationsState extends State<MaterialsOperations> {
                 SizedBox(
                   width: 120,
                   child: DropdownButtonFormField<String>(
-                    value: unit,
+                    initialValue: unit,
                     decoration: const InputDecoration(
                       labelText: 'Unit',
                       border: OutlineInputBorder(),
