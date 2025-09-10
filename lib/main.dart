@@ -20,7 +20,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'ConTrust Web',
+      title: 'ConTrust',
       home: kIsWeb ? const WebsiteStartPage() : const _NonWebPlaceholder(),
     );
   }
