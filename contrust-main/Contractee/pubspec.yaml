@@ -35,12 +35,10 @@ dependencies:
   backend:
     path: ../Back-End
   shared_preferences: ^2.5.2
-  contractor: 
-    path: ../Contractor
-  intl: ^0.19.0
   flutter_quill: ^11.4.1
   flutter_keyboard_visibility: ^6.0.0
-  flutter_localization: ^0.3.3
+  flutter_localizations: 
+    sdk: flutter
   flutter_quill_extensions: ^11.0.0
   flutter_quill_delta_from_html: ^1.5.2
   signature: ^5.4.0
