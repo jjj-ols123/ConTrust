@@ -1,38 +1,32 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <base href="/">
+  <base href="$FLUTTER_BASE_HREF">
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="ConTrust - Connect contractors and contractees">
+  <meta name="description" content="ConTrust">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="ConTrust">
   <link rel="icon" type="image/png" href="favicon.png"/>
   <title>ConTrust</title>
   <link rel="manifest" href="manifest.json">
-  <script>
-    const serviceWorkerVersion = null;
-  </script>
-  <script src="flutter_bootstrap.js" async></script>
 </head>
 <body>
-  <div id="loading">
-    <style>
-      #loading {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: #fff;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-      }
-    </style>
-    <p>Loading ConTrust...</p>
-  </div>
+  <script>
+    window.addEventListener('load', function(ev) {
+      _flutter.loader.loadEntrypoint({
+        serviceWorker: {
+          serviceWorkerVersion: null,
+        },
+        onEntrypointLoaded: function(engineInitializer) {
+          engineInitializer.initializeEngine().then(function(appRunner) {
+            appRunner.runApp();
+          });
+        }
+      });
+    });
+  </script>
+  <script src="flutter.js" defer></script>
 </body>
 </html>
