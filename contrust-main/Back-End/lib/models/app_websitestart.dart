@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:contractee/pages/cee_welcome.dart';
 import 'package:contractor/Screen/cor_startup.dart';
 import 'package:flutter/foundation.dart';
@@ -10,16 +12,22 @@ class WebsiteStartPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isWide = MediaQuery.of(context).size.width >= 900;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final bool isWide = screenWidth >= 768; // Changed from 900 to 768
     final theme = Theme.of(context);
 
     return Scaffold(
       backgroundColor: Colors.amber[50],
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1100),
+          constraints: BoxConstraints(
+            maxWidth: isWide ? 1100 : screenWidth * 0.9, 
+          ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            padding: EdgeInsets.symmetric(
+              horizontal: isWide ? 24 : 16,
+              vertical: 32,
+            ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -29,6 +37,7 @@ class WebsiteStartPage extends StatelessWidget {
                   style: theme.textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: Colors.black87,
+                    fontSize: isWide ? null : 24, 
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -37,63 +46,29 @@ class WebsiteStartPage extends StatelessWidget {
                   'Choose how you want to continue',
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: Colors.black54,
+                    fontSize: isWide ? null : 16,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 32),
-                Flex(
-                  direction: isWide ? Axis.horizontal : Axis.vertical,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      flex: 1,
-                      child: _RoleCard(
-                        color: Colors.blue,
-                        icon: Icons.person_outline,
-                        title: 'Contractee',
-                        description:
-                            'Browse contractors, manage contracts and monitor your projects.',
-                        buttonText: 'Continue as Contractee',
-                        onPressed: () {
-                          print('Contractee button pressed');
-                          try {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const WelcomePage()),
-                            );
-                            print('Navigation successful');
-                          } catch (e) {
-                            print('Navigation error: $e');
-                          }
-                        },
+                SizedBox(height: isWide ? 32 : 24), 
+                isWide
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: _buildContracteeCard(context)),
+                          const SizedBox(width: 24),
+                          Expanded(child: _buildContractorCard(context)),
+                        ],
+                      )
+                    : Column( 
+                        children: [
+                          _buildContracteeCard(context),
+                          const SizedBox(height: 24),
+                          _buildContractorCard(context),
+                        ],
                       ),
-                    ),
-                    SizedBox(width: isWide ? 24 : 0, height: isWide ? 0 : 24),
-                    Expanded(
-                      flex: 1,
-                      child: _RoleCard(
-                        color: Colors.teal,
-                        icon: Icons.engineering_outlined,
-                        title: 'Contractor',
-                        description:
-                            'Sign in to manage bids, contracts, clients, and ongoing projects.',
-                        buttonText: 'Continue as Contractor',
-                        onPressed: () {
-                          print('Contractor button pressed');
-                          try {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => ToLoginScreen()),
-                            );
-                            print('Navigation successful');
-                          } catch (e) {
-                            print('Navigation error: $e');
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
+                SizedBox(height: isWide ? 24 : 16),
                 if (!_isWeb)
                   const Text(
                     'Tip: This chooser is intended for web builds.',
@@ -106,9 +81,53 @@ class WebsiteStartPage extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildContracteeCard(BuildContext context) {
+    return _RoleCard(
+      color: Colors.blue,
+      icon: Icons.person_outline,
+      title: 'Contractee',
+      description:
+          'Browse contractors, manage contracts and monitor your projects.',
+      buttonText: 'Continue as Contractee',
+      onPressed: () {
+        try {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const WelcomePage()),
+          );
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error navigating to Contractee: $e')),
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildContractorCard(BuildContext context) {
+    return _RoleCard(
+      color: Colors.teal,
+      icon: Icons.engineering_outlined,
+      title: 'Contractor',
+      description:
+          'Sign in to manage bids, contracts, clients, and ongoing projects.',
+      buttonText: 'Continue as Contractor',
+      onPressed: () {
+        try {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => ToLoginScreen()),
+          );
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error navigating to Contractor: $e')),
+          );
+        }
+      },
+    );
+  }
 }
 
-class _RoleCard extends StatelessWidget {
+class _RoleCard extends StatefulWidget {
   final Color color;
   final IconData icon;
   final String title;
@@ -126,70 +145,97 @@ class _RoleCard extends StatelessWidget {
   });
 
   @override
+  State<_RoleCard> createState() => _RoleCardState();
+}
+
+class _RoleCardState extends State<_RoleCard> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      elevation: 6,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              padding: const EdgeInsets.all(16),
-              child: Icon(icon, color: color, size: 36),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              description,
-              style: theme.textTheme.bodyMedium?.copyWith(color: Colors.black54),
-            ),
-            const SizedBox(height: 16),
-            GestureDetector(
-              onTap: () {
-                print('GestureDetector tapped: $buttonText');
-                onPressed();
-              },
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: color,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = screenWidth >= 768;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        transform: Matrix4.identity()..scale(_isHovered ? 1.02 : 1.0),
+        child: Card(
+          elevation: _isHovered ? 12 : 6,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: InkWell( //
+            borderRadius: BorderRadius.circular(16),
+            onTap: () {
+              widget.onPressed();
+            },
+            child: Padding(
+              padding: EdgeInsets.all(isWide ? 24 : 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: widget.color.withOpacity(0.1),
+                      shape: BoxShape.circle,
                     ),
-                    elevation: 4,
-                  ),
-                  onPressed: () {
-                    print('Button pressed: $buttonText');
-                    onPressed();
-                  },
-                  child: Text(
-                    buttonText,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                    padding: EdgeInsets.all(isWide ? 16 : 12), 
+                    child: Icon(
+                      widget.icon,
+                      color: widget.color,
+                      size: isWide ? 36 : 28, 
                     ),
                   ),
-                ),
+                  SizedBox(height: isWide ? 16 : 12),
+                  Text(
+                    widget.title,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      fontSize: isWide ? null : 18, 
+                    ),
+                  ),
+                  SizedBox(height: isWide ? 8 : 6),
+                  Text(
+                    widget.description,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: Colors.black54,
+                      fontSize: isWide ? null : 14, 
+                    ),
+                  ),
+                  SizedBox(height: isWide ? 16 : 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: widget.color,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                          vertical: isWide ? 14 : 12, 
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        elevation: _isHovered ? 8 : 4,
+                      ),
+                      onPressed: () {
+                        widget.onPressed();
+                      },
+                      child: Text(
+                        widget.buttonText,
+                        style: TextStyle(
+                          fontSize: isWide ? 16 : 14, 
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
