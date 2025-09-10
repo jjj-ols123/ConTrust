@@ -56,9 +56,15 @@ class WebsiteStartPage extends StatelessWidget {
                             'Browse contractors, manage contracts and monitor your projects.',
                         buttonText: 'Continue as Contractee',
                         onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const WelcomePage()),
-                          );
+                          print('Contractee button pressed');
+                          try {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const WelcomePage()),
+                            );
+                            print('Navigation successful');
+                          } catch (e) {
+                            print('Navigation error: $e');
+                          }
                         },
                       ),
                     ),
@@ -73,9 +79,15 @@ class WebsiteStartPage extends StatelessWidget {
                             'Sign in to manage bids, contracts, clients, and ongoing projects.',
                         buttonText: 'Continue as Contractor',
                         onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => ToLoginScreen()),
-                          );
+                          print('Contractor button pressed');
+                          try {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => ToLoginScreen()),
+                            );
+                            print('Navigation successful');
+                          } catch (e) {
+                            print('Navigation error: $e');
+                          }
                         },
                       ),
                     ),
@@ -146,19 +158,35 @@ class _RoleCard extends StatelessWidget {
               style: theme.textTheme.bodyMedium?.copyWith(color: Colors.black54),
             ),
             const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: color,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+            GestureDetector(
+              onTap: () {
+                print('GestureDetector tapped: $buttonText');
+                onPressed();
+              },
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: color,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    elevation: 4,
+                  ),
+                  onPressed: () {
+                    print('Button pressed: $buttonText');
+                    onPressed();
+                  },
+                  child: Text(
+                    buttonText,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-                onPressed: onPressed,
-                child: Text(buttonText),
               ),
             ),
           ],

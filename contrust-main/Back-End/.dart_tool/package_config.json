@@ -224,12 +224,6 @@
       "languageVersion": "3.5"
     },
     {
-      "name": "flutter_localization",
-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_localization-0.3.3",
-      "packageUri": "lib/",
-      "languageVersion": "3.0"
-    },
-    {
       "name": "flutter_localizations",
       "rootUri": "file:///C:/Users/asus/OneDrive/flutter/packages/flutter_localizations",
       "packageUri": "lib/",
@@ -716,12 +710,6 @@
       "languageVersion": "3.5"
     },
     {
-      "name": "universal_io",
-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/universal_io-2.2.2",
-      "packageUri": "lib/",
-      "languageVersion": "2.17"
-    },
-    {
       "name": "url_launcher",
       "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/url_launcher-6.3.2",
       "packageUri": "lib/",
@@ -864,12 +852,6 @@
       "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/xml-6.6.1",
       "packageUri": "lib/",
       "languageVersion": "3.8"
-    },
-    {
-      "name": "yaml",
-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/yaml-3.1.3",
-      "packageUri": "lib/",
-      "languageVersion": "3.4"
     },
     {
       "name": "yet_another_json_isolate",
