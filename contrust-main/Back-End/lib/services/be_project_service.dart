@@ -11,6 +11,8 @@ class ProjectService {
   final SupabaseClient _supabase = Supabase.instance.client;
   final UserService _userService = UserService();
 
+  //For Contractees
+
   Future<void> postProject({
     required String contracteeId,
     required String title,
@@ -62,7 +64,7 @@ class ProjectService {
     }
   }
 
-  Future<void> updateProjectStatus(String projectId, String status) async {
+  Future<void> updaterojecStatus(String projectId, String status) async {
     await _supabase
         .from('Projects')
         .update({'status': status}).eq('project_id', projectId);
@@ -111,17 +113,7 @@ class ProjectService {
     }
   }
 
-
-  Future<String?> getProjectId(String chatRoomId) async {
-    final chatRoom = await _supabase
-        .from('ChatRoom')
-        .select('project_id')
-        .eq('chatroom_id', chatRoomId)
-        .maybeSingle();
-    return chatRoom?['project_id'];
-  }
-
-  Future<void> notifyContractor({
+   Future<void> notifyContractor({
     required String contractorId,
     required String contracteeId,
     required String title,
@@ -201,6 +193,67 @@ class ProjectService {
       rethrow;
     }
   }
+
+  Future<Map<String, dynamic>?> cancelAgreement(
+    String projectId,
+    String requestingUserId,
+  ) async {
+    try {
+      final project = await _supabase
+          .from('Projects')
+          .select('contractor_id, contractee_id')
+          .eq('project_id', projectId)
+          .single();
+
+      final userType = requestingUserId == project['contractor_id']
+          ? 'contractor'
+          : 'contractee';
+      final notifInfo = await FetchService().userTypeDecide(
+        contractId: projectId,
+        userType: userType,
+        action: 'requested to cancel the project',
+      );
+      final status = userType == 'contractor'
+          ? 'cancellation_requested_by_contractor'
+          : 'cancellation_requested_by_contractee';
+
+      await _supabase
+          .from('Projects')
+          .update({'status': status}).eq('project_id', projectId);
+
+      await NotificationService().createNotification(
+        receiverId: notifInfo['receiverId'] ?? '',
+        receiverType: notifInfo['receiverType'] ?? '',
+        senderId: notifInfo['senderId'] ?? '',
+        senderType: notifInfo['senderType'] ?? '',
+        type: 'Project Cancellation Request',
+        message: notifInfo['message'] ?? '',
+        information: {
+          'project_id': projectId,
+          'action': 'cancel_request',
+          'status': status,
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+
+      return project;
+    } catch (e) {
+      throw Exception('Failed to cancel agreement');
+    }
+  }
+
+  //For Both Users
+
+  Future<String?> getProjectId(String chatRoomId) async {
+    final chatRoom = await _supabase
+        .from('ChatRoom')
+        .select('project_id')
+        .eq('chatroom_id', chatRoomId)
+        .maybeSingle();
+    return chatRoom?['project_id'];
+  }
+
+  //For Contractors 
 
   Future<void> acceptHiring({
     required String notificationId,
@@ -304,54 +357,6 @@ class ProjectService {
       );
     } catch (e) {
       throw Exception('Failed to decline hiring request');
-    }
-  }
-
-  Future<Map<String, dynamic>?> cancelAgreement(
-    String projectId,
-    String requestingUserId,
-  ) async {
-    try {
-      final project = await _supabase
-          .from('Projects')
-          .select('contractor_id, contractee_id')
-          .eq('project_id', projectId)
-          .single();
-
-      final userType = requestingUserId == project['contractor_id']
-          ? 'contractor'
-          : 'contractee';
-      final notifInfo = await FetchService().userTypeDecide(
-        contractId: projectId,
-        userType: userType,
-        action: 'requested to cancel the project',
-      );
-      final status = userType == 'contractor'
-          ? 'cancellation_requested_by_contractor'
-          : 'cancellation_requested_by_contractee';
-
-      await _supabase
-          .from('Projects')
-          .update({'status': status}).eq('project_id', projectId);
-
-      await NotificationService().createNotification(
-        receiverId: notifInfo['receiverId'] ?? '',
-        receiverType: notifInfo['receiverType'] ?? '',
-        senderId: notifInfo['senderId'] ?? '',
-        senderType: notifInfo['senderType'] ?? '',
-        type: 'Project Cancellation Request',
-        message: notifInfo['message'] ?? '',
-        information: {
-          'project_id': projectId,
-          'action': 'cancel_request',
-          'status': status,
-          'timestamp': DateTime.now().toIso8601String(),
-        },
-      );
-
-      return project;
-    } catch (e) {
-      throw Exception('Failed to cancel agreement');
     }
   }
 

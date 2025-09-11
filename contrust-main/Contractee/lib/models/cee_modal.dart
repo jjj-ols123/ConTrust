@@ -1,5 +1,4 @@
-// request_modal.dart
-// ignore_for_file: non_constant_identifier_names, use_build_context_synchronously, unnecessary_type_check, deprecated_member_use
+// ignore_for_file: non_constant_identifier_names, use_build_context_synchronously, unnecessary_type_check, deprecated_member_use, depend_on_referenced_packages
 
 import 'package:backend/services/be_bidding_service.dart';
 import 'package:backend/services/be_project_service.dart';

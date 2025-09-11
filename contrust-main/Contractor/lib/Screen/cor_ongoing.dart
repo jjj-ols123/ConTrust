@@ -70,53 +70,78 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   void _addReport() async {
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Add Progress Report'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-            controller: reportController,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  hintText: 'Enter detailed progress report...',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
+      builder: (context) {        
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+          child: Container(
+            width: 600,
+            height: 500,
+            padding: EdgeInsets.all(32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Add Progress Report',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Expanded(
+                  child: TextField(
+                    controller: reportController,
+                    maxLines: null,
+                    expands: true,
+                    textAlignVertical: TextAlignVertical.top,
+                    decoration: const InputDecoration(
+                      hintText: 'Enter progress report...',
+                      border: OutlineInputBorder(),
+                      alignLabelWithHint: true,
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed: () async {
+                        if (reportController.text.trim().isNotEmpty) {
+                          final userId = _supabase.auth.currentUser?.id;
+                          if (userId != null) {
+                            await _projectService.addReportToProject(
+                              projectId: widget.projectId,
+                              content: reportController.text.trim(),
+                              authorId: userId,
+                            );
+                            reportController.clear();
+                            Navigator.pop(context);
+                            _loadData();
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Report added successfully!'),
+                                ),
+                              );
+                            }
+                          }
+                        }
+                      },
+                      child: const Text('Add Report'),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            ElevatedButton(
-              onPressed: () async {
-                if (reportController.text.trim().isNotEmpty) {
-                  final userId = _supabase.auth.currentUser?.id;
-                  if (userId != null) {
-                    await _projectService.addReportToProject(
-                      projectId: widget.projectId,
-                      content: reportController.text.trim(),
-                      authorId: userId,
-                    );
-                  reportController.clear();
-                Navigator.pop(context);
-                    _loadData();
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Progress report added successfully!'),
-                        ),
-                      );
-                    }
-                  }
-                }
-              },
-              child: const Text('Add Report'),
-            ),
-          ],
+          ),
         );
       },
     );
@@ -281,55 +306,6 @@ void _updateTaskStatus(String taskId, bool done) async {
     }
   }
 
-  void _updateProgress() async {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Update Progress'),
-          content: TextField(
-            controller: progressController,
-            keyboardType: TextInputType.number,
-        decoration: const InputDecoration(
-              hintText: 'Enter progress percentage (0-100)',
-          border: OutlineInputBorder(),
-        ),
-      ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final progress = double.tryParse(
-                  progressController.text.trim(),
-                );
-                if (progress != null && progress >= 0 && progress <= 100) {
-                  await _supabase
-                      .from('Projects')
-                      .update({'progress': progress / 100})
-                      .eq('project_id', widget.projectId);
-                  progressController.clear();
-                  Navigator.pop(context);
-                  _loadData();
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Progress updated successfully!'),
-                      ),
-                    );
-                  }
-                }
-              },
-              child: const Text('Update'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Future<String?> _createSignedPhotoUrl(String? path) async {
     if (path == null || path.isEmpty) return null;
     if (path.startsWith('http')) {
@@ -345,7 +321,6 @@ void _updateTaskStatus(String taskId, bool done) async {
     }
   }
 
-  // Delete methods
   Future<void> _deleteTask(String taskId) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -561,15 +536,6 @@ void _updateTaskStatus(String taskId, bool done) async {
                                   ],
                                 ),
                               ),
-          ElevatedButton.icon(
-                                onPressed: _updateProgress,
-            icon: const Icon(Icons.edit),
-                                label: const Text('Update Progress'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-            ),
-          ),
         ],
       ),
                           const SizedBox(height: 16),
@@ -702,7 +668,6 @@ void _updateTaskStatus(String taskId, bool done) async {
                                 ),
                               )
                               : () {
-                                                                // Responsive layout for tasks
                               final screenWidth = MediaQuery.of(context).size.width;
                               final isDesktop = screenWidth > 1200;
                               
@@ -714,7 +679,7 @@ void _updateTaskStatus(String taskId, bool done) async {
                                     crossAxisCount: isDesktop ? 3 : 2,
                                     crossAxisSpacing: 12,
                                     mainAxisSpacing: 5,
-                                    childAspectRatio: isDesktop ? 5 : 4,
+                                    childAspectRatio: isDesktop ? 6 : 4,
                                   ),
                                   itemCount: _localTasks.length,
                                   itemBuilder: (context, index) {
@@ -807,7 +772,7 @@ void _updateTaskStatus(String taskId, bool done) async {
                                     crossAxisCount: isDesktop ? 3 : 2,
                                     crossAxisSpacing: 16,
                                     mainAxisSpacing: 12,
-                                    childAspectRatio: isDesktop ? 5 : 4,
+                                    childAspectRatio: isDesktop ? 6.5 : 4,
                                   ),
                                   itemCount: reports.length,
                                   itemBuilder: (context, index) {
@@ -1058,14 +1023,12 @@ void _updateTaskStatus(String taskId, bool done) async {
                                 },
                               );
                               
-                              // Responsive layout for materials
                               final screenWidth = MediaQuery.of(context).size.width;
                               final isDesktop = screenWidth > 1200;
                               
                               return Column(
                               children: [
                                   if (isDesktop)
-                                    // Multi-column layout for wide screens
                                     GridView.builder(
                                       shrinkWrap: true,
                                       physics: const NeverScrollableScrollPhysics(),
@@ -1073,7 +1036,7 @@ void _updateTaskStatus(String taskId, bool done) async {
                                         crossAxisCount: isDesktop ? 3 : 2,
                                         crossAxisSpacing: 16,
                                         mainAxisSpacing: 8,
-                                        childAspectRatio: isDesktop ? 4 : 4,
+                                        childAspectRatio: isDesktop ? 5 : 4,
                                       ),
                                       itemCount: validCosts.length,
                                       itemBuilder: (context, index) {
@@ -1082,7 +1045,6 @@ void _updateTaskStatus(String taskId, bool done) async {
                                       },
                                     )
                                   else
-                                    // Single column for mobile
                                     ...validCosts.map((cost) => _buildCostItem(cost)),
                                   
                                   const Divider(thickness: 2),
@@ -1260,6 +1222,7 @@ void _updateTaskStatus(String taskId, bool done) async {
                 color: Colors.green,
               ),
             ),
+            const SizedBox(width: 10),
             IconButton(
               icon: const Icon(Icons.delete_outline),
               onPressed: () => _deleteCost(cost['material_id']),

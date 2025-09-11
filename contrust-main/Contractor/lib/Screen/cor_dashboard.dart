@@ -23,15 +23,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       appBar: ConTrustAppBar(
         headline: "Dashboard",
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-            onPressed: () async {
-
-            },
-          ),
-        ],
       ),
       body: Stack(
         children: [

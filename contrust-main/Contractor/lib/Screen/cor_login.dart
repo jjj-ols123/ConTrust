@@ -79,7 +79,7 @@ class LoginScreen extends StatelessWidget {
                           transitionBuilder(context, ToLoginScreen());
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueAccent,
+                          backgroundColor: Colors.amber[700],
                           minimumSize: Size(double.infinity, 40),
                         ),
                         child: Text('Login', style: TextStyle(color: Colors.white)),
