@@ -97,6 +97,83 @@ class BiddingService {
     }
   }
 
+  Stream<Duration> getBiddingCountdownStream(
+    DateTime createdAt,
+    int durationInDays,
+  ) async* {
+    final endTime = createdAt.add(Duration(days: durationInDays));
+    while (true) {
+      final now = DateTime.now();
+      final remaining = endTime.difference(now);
+      if (remaining.isNegative) break;
+      yield remaining;
+      await Future.delayed(const Duration(seconds: 1));
+    }
+  }
+
+   static String formatNotificationTime(String? createdAt) {
+    if (createdAt == null) return '';
+    
+    try {
+      final dateTime = DateTime.parse(createdAt);
+      final now = DateTime.now();
+      final difference = now.difference(dateTime);
+      
+      if (difference.inDays > 0) {
+        return '${difference.inDays}d ago';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours}h ago';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes}m ago';
+      } else {
+        return 'Just now';
+      }
+    } catch (e) {
+      return '';
+    }
+  }
+
+  Future<void> processBiddingDurationExpiry(String projectId) async {
+    final bids = await _supabase
+        .from('Bids')
+        .select()
+        .eq('project_id', projectId)
+        .order('bid_amount', ascending: false);
+
+    if (bids.isEmpty) return;
+
+    final winningBid = bids.first;
+    final bidWinnerId = winningBid['bid_id'];
+    final contractorId = winningBid['contractor_id'];
+
+    final projectResponse = await _supabase
+        .from('Projects')
+        .select()
+        .eq('project_id', projectId)
+        .single();
+
+    if (projectResponse.isEmpty) return;
+
+    await _supabase.from('Projects').update({
+      'status': 'awaiting_contract',
+      'bid_id': bidWinnerId,
+      'contractor_id': contractorId,
+    }).eq('project_id', projectId);
+
+    final losingBidIds = bids.skip(1).map((bid) => bid['bid_id']).toList();
+    if (losingBidIds.isNotEmpty) {
+      await _supabase
+          .from('Bids')
+          .update({'status': 'expired'}).inFilter('bid_id', losingBidIds);
+    }
+
+    await _supabase
+        .from('Bids')
+        .update({'status': 'accepted'}).eq('bid_id', bidWinnerId);
+  }
+
+  // For Both Users 
+
   Future<Map<String, double>> getProjectHighestBids() async {
     try {
       final response = await _supabase
@@ -121,18 +198,7 @@ class BiddingService {
     }
   }
 
-  Future<int> getProjectBidCount(String projectId) async {
-    try {
-      final response = await _supabase
-          .from('Bids')
-          .select('bid_id')
-          .eq('project_id', projectId);
-
-      return response.length;
-    } catch (e) {
-      return 0;
-    }
-  }
+  //For Contractees 
 
   Future<void> acceptProjectBid(String projectId, String bidId) async {
     final bidResponse =
@@ -209,45 +275,6 @@ class BiddingService {
     }
   }
 
-  Future<void> processBiddingDurationExpiry(String projectId) async {
-    final bids = await _supabase
-        .from('Bids')
-        .select()
-        .eq('project_id', projectId)
-        .order('bid_amount', ascending: false);
-
-    if (bids.isEmpty) return;
-
-    final winningBid = bids.first;
-    final bidWinnerId = winningBid['bid_id'];
-    final contractorId = winningBid['contractor_id'];
-
-    final projectResponse = await _supabase
-        .from('Projects')
-        .select()
-        .eq('project_id', projectId)
-        .single();
-
-    if (projectResponse.isEmpty) return;
-
-    await _supabase.from('Projects').update({
-      'status': 'awaiting_contract',
-      'bid_id': bidWinnerId,
-      'contractor_id': contractorId,
-    }).eq('project_id', projectId);
-
-    final losingBidIds = bids.skip(1).map((bid) => bid['bid_id']).toList();
-    if (losingBidIds.isNotEmpty) {
-      await _supabase
-          .from('Bids')
-          .update({'status': 'expired'}).inFilter('bid_id', losingBidIds);
-    }
-
-    await _supabase
-        .from('Bids')
-        .update({'status': 'accepted'}).eq('bid_id', bidWinnerId);
-  }
-
   Future<void> deleteBid(String bidId) async {
     await _supabase.from('Bids').delete().eq('bid_id', bidId);
   }
@@ -271,41 +298,4 @@ class BiddingService {
       return [];
     }
   }
-
-  Stream<Duration> getBiddingCountdownStream(
-    DateTime createdAt,
-    int durationInDays,
-  ) async* {
-    final endTime = createdAt.add(Duration(days: durationInDays));
-    while (true) {
-      final now = DateTime.now();
-      final remaining = endTime.difference(now);
-      if (remaining.isNegative) break;
-      yield remaining;
-      await Future.delayed(const Duration(seconds: 1));
-    }
-  }
-
-   static String formatNotificationTime(String? createdAt) {
-    if (createdAt == null) return '';
-    
-    try {
-      final dateTime = DateTime.parse(createdAt);
-      final now = DateTime.now();
-      final difference = now.difference(dateTime);
-      
-      if (difference.inDays > 0) {
-        return '${difference.inDays}d ago';
-      } else if (difference.inHours > 0) {
-        return '${difference.inHours}h ago';
-      } else if (difference.inMinutes > 0) {
-        return '${difference.inMinutes}m ago';
-      } else {
-        return 'Just now';
-      }
-    } catch (e) {
-      return '';
-    }
-  }
-
 }

@@ -1,7 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:contractee/pages/cee_welcome.dart';
-import 'package:contractor/Screen/cor_startup.dart';
+import 'package:contractor/Screen/cor_login.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -13,68 +13,75 @@ class WebsiteStartPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final bool isWide = screenWidth >= 768; // Changed from 900 to 768
+    final bool isDesktop = screenWidth >= 900;
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.amber[50],
-      body: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: isWide ? 1100 : screenWidth * 0.9, 
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/bgloginscreen.jpg'),
+            fit: BoxFit.cover,
           ),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: isWide ? 24 : 16,
-              vertical: 32,
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: isDesktop ? 1100 : screenWidth * 0.9,
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  'Welcome to ConTrust',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black87,
-                    fontSize: isWide ? null : 24, 
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: isDesktop ? 24 : 16,
+                vertical: 32,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'Welcome to ConTrust',
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: Colors.black87,
+                      fontSize: isDesktop ? null : 24,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Choose how you want to continue',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: Colors.black54,
-                    fontSize: isWide ? null : 16,
+                  const SizedBox(height: 8),
+                  Text(
+                    'Choose how you want to continue',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: Colors.black54,
+                      fontSize: isDesktop ? null : 16,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: isWide ? 32 : 24), 
-                isWide
-                    ? Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(child: _buildContracteeCard(context)),
-                          const SizedBox(width: 24),
-                          Expanded(child: _buildContractorCard(context)),
-                        ],
-                      )
-                    : Column( 
-                        children: [
-                          _buildContracteeCard(context),
-                          const SizedBox(height: 24),
-                          _buildContractorCard(context),
-                        ],
-                      ),
-                SizedBox(height: isWide ? 24 : 16),
-                if (!_isWeb)
-                  const Text(
-                    'Tip: This chooser is intended for web builds.',
-                    style: TextStyle(color: Colors.black45),
-                  ),
-              ],
+                  SizedBox(height: isDesktop ? 32 : 24),
+                  isDesktop
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: _buildContracteeCard(context)),
+                            const SizedBox(width: 24),
+                            Expanded(child: _buildContractorCard(context)),
+                          ],
+                        )
+                      : Column( 
+                          children: [
+                            _buildContracteeCard(context),
+                            const SizedBox(height: 24),
+                            _buildContractorCard(context),
+                          ],
+                        ),
+                  SizedBox(height: isDesktop ? 24 : 16),
+                  if (!_isWeb)
+                    const Text(
+                      'Tip: This chooser is intended for web builds.',
+                      style: TextStyle(color: Colors.black45),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
@@ -84,7 +91,7 @@ class WebsiteStartPage extends StatelessWidget {
 
   Widget _buildContracteeCard(BuildContext context) {
     return _RoleCard(
-      color: Colors.blue,
+      color: Colors.amber[700]!,
       icon: Icons.person_outline,
       title: 'Contractee',
       description:
@@ -92,7 +99,7 @@ class WebsiteStartPage extends StatelessWidget {
       buttonText: 'Continue as Contractee',
       onPressed: () {
         try {
-          Navigator.of(context).push(
+          Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const WelcomePage()),
           );
         } catch (e) {
@@ -106,7 +113,7 @@ class WebsiteStartPage extends StatelessWidget {
 
   Widget _buildContractorCard(BuildContext context) {
     return _RoleCard(
-      color: Colors.teal,
+      color: Colors.amber[700]!,
       icon: Icons.engineering_outlined,
       title: 'Contractor',
       description:
@@ -115,7 +122,7 @@ class WebsiteStartPage extends StatelessWidget {
       onPressed: () {
         try {
           Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => ToLoginScreen()),
+            MaterialPageRoute(builder: (_) => LoginScreen()),
           );
         } catch (e) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -166,7 +173,7 @@ class _RoleCardState extends State<_RoleCard> {
         child: Card(
           elevation: _isHovered ? 12 : 6,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: InkWell( //
+          child: InkWell(
             borderRadius: BorderRadius.circular(16),
             onTap: () {
               widget.onPressed();

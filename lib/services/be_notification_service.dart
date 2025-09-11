@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class NotificationService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
+  //For Both Users
+
   Future<void> createNotification({
     required String? receiverId,
     required String receiverType,
@@ -39,6 +41,100 @@ class NotificationService {
       throw Exception('Notification error');
     }
   }
+
+   Future<List<Map<String, dynamic>>> getNotifications(String receiverId) async {
+    try {
+      final response = await _supabase
+          .from('Notifications')
+          .select()
+          .eq('receiver_id', receiverId)
+          .order('created_at', ascending: false);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getUnreadNotifications(
+      String receiverId) async {
+    try {
+      final response = await _supabase
+          .from('Notifications')
+          .select()
+          .eq('receiver_id', receiverId)
+          .eq('is_read', false)
+          .order('created_at', ascending: false);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getNotificationsByType(
+    String receiverId,
+    String type,
+  ) async {
+    try {
+      final response = await _supabase
+          .from('Notifications')
+          .select()
+          .eq('receiver_id', receiverId)
+          .eq('headline', type)
+          .order('created_at', ascending: false);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<void> markAsRead(String notificationId) async {
+    try {
+      await _supabase
+          .from('Notifications')
+          .update({'is_read': true}).eq('notification_id', notificationId);
+    } catch (e) {
+      throw Exception('Failed to mark as read');
+    }
+  }
+
+  Future<void> deleteNotification(String notificationId) async {
+    try {
+      await _supabase
+          .from('Notifications')
+          .delete()
+          .eq('notification_id', notificationId);
+    } catch (e) {
+      throw Exception('Failed to delete notification: ${e.toString()}');
+    }
+  }
+
+  Stream<List<Map<String, dynamic>>> listenToNotifications(String receiverId) {
+    return _supabase
+        .from('Notifications')
+        .stream(primaryKey: ['notification_id'])
+        .eq('receiver_id', receiverId)
+        .order('created_at', ascending: false)
+        .distinct();
+  }
+
+  Future<int> getUnreadCount(String receiverId) async {
+    try {
+      final response = await _supabase
+          .from('Notifications')
+          .select('notification_id')
+          .eq('receiver_id', receiverId)
+          .eq('is_read', false);
+
+      return response.length;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  //For Contractors
 
   Future<void> createProjectNotification({
     required String receiverId,
@@ -104,164 +200,7 @@ class NotificationService {
     );
   }
 
-  Future<List<Map<String, dynamic>>> getNotifications(String receiverId) async {
-    try {
-      final response = await _supabase
-          .from('Notifications')
-          .select()
-          .eq('receiver_id', receiverId)
-          .order('created_at', ascending: false);
-
-      return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
-      return [];
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> getUnreadNotifications(
-      String receiverId) async {
-    try {
-      final response = await _supabase
-          .from('Notifications')
-          .select()
-          .eq('receiver_id', receiverId)
-          .eq('is_read', false)
-          .order('created_at', ascending: false);
-
-      return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
-      return [];
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> getNotificationsByType(
-    String receiverId,
-    String type,
-  ) async {
-    try {
-      final response = await _supabase
-          .from('Notifications')
-          .select()
-          .eq('receiver_id', receiverId)
-          .eq('headline', type)
-          .order('created_at', ascending: false);
-
-      return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
-      return [];
-    }
-  }
-
-  Future<void> markAsRead(String notificationId) async {
-    try {
-      await _supabase
-          .from('Notifications')
-          .update({'is_read': true}).eq('notification_id', notificationId);
-    } catch (e) {
-      throw Exception('Failed to mark as read');
-    }
-  }
-
-  Future<void> markAllAsRead(String receiverId) async {
-    try {
-      await _supabase
-          .from('Notifications')
-          .update({'is_read': true})
-          .eq('receiver_id', receiverId)
-          .eq('is_read', false);
-    } catch (e) {
-      throw Exception('Failed to mark all as read');
-    }
-  }
-
-  Future<void> deleteNotification(String notificationId) async {
-    try {
-      await _supabase
-          .from('Notifications')
-          .delete()
-          .eq('notification_id', notificationId);
-    } catch (e) {
-      throw Exception('Failed to delete notification: ${e.toString()}');
-    }
-  }
-
-  Future<void> deleteAllNotifications(String receiverId) async {
-    try {
-      await _supabase
-          .from('Notifications')
-          .delete()
-          .eq('receiver_id', receiverId);
-    } catch (e) {
-      throw Exception('Failed to delete all notifications: ${e.toString()}');
-    }
-  }
-
-  Future<void> deleteOldNotifications(int daysOld) async {
-    try {
-      final cutoffDate = DateTime.now().subtract(Duration(days: daysOld));
-      await _supabase
-          .from('Notifications')
-          .delete()
-          .lt('created_at', cutoffDate.toIso8601String());
-    } catch (e) {
-      throw Exception('Failed to delete old notifications: ${e.toString()}');
-    }
-  }
-
-  Stream<List<Map<String, dynamic>>> listenToNotifications(String receiverId) {
-    return _supabase
-        .from('Notifications')
-        .stream(primaryKey: ['notification_id'])
-        .eq('receiver_id', receiverId)
-        .order('created_at', ascending: false)
-        .distinct();
-  }
-
-  Future<int> getUnreadCount(String receiverId) async {
-    try {
-      final response = await _supabase
-          .from('Notifications')
-          .select('notification_id')
-          .eq('receiver_id', receiverId)
-          .eq('is_read', false);
-
-      return response.length;
-    } catch (e) {
-      return 0;
-    }
-  }
-
-  Future<int> getTotalCount(String receiverId) async {
-    try {
-      final response = await _supabase
-          .from('Notifications')
-          .select('notification_id')
-          .eq('receiver_id', receiverId);
-
-      return response.length;
-    } catch (e) {
-      return 0;
-    }
-  }
-
-  Future<Map<String, int>> getNotificationStatsByType(String receiverId) async {
-    try {
-      final response = await _supabase
-          .from('Notifications')
-          .select('headline')
-          .eq('receiver_id', receiverId);
-
-      Map<String, int> stats = {};
-      for (var notification in response) {
-        String type = notification['headline'] ?? 'unknown';
-        stats[type] = (stats[type] ?? 0) + 1;
-      }
-
-      return stats;
-    } catch (e) {
-      return {};
-    }
-  }
+  //For Contractees
 
   Future<void> notifyNewBid({
     required String contracteeId,
@@ -298,24 +237,6 @@ class NotificationService {
       projectId: projectId,
       type: 'bid_accepted',
       message: 'Congratulations! Your bid has been accepted.',
-    );
-  }
-
-  Future<void> notifyProjectCompleted({
-    required String receiverId,
-    required String receiverType,
-    required String senderId,
-    required String senderType,
-    required String projectId,
-  }) async {
-    await createProjectNotification(
-      receiverId: receiverId,
-      receiverType: receiverType,
-      senderId: senderId,
-      senderType: senderType,
-      projectId: projectId,
-      type: 'project_completed',
-      message: 'The project has been marked as completed.',
     );
   }
 }

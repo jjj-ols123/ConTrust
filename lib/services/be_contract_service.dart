@@ -10,6 +10,8 @@ import 'package:backend/services/be_notification_service.dart';
 class ContractService {
   static final SupabaseClient _supabase = Supabase.instance.client;
 
+  //For Contractors 
+
   static Future<void> saveContract({
     required String projectId,
     required String contractorId,
@@ -378,6 +380,8 @@ class ContractService {
     }
   }
 
+  // For Both Users
+
   static Future<Map<String, dynamic>> getContractById(String contractId) async {
     return await _supabase
         .from('Contracts')
@@ -453,6 +457,7 @@ class ContractService {
           if (projectId != null) {
             await _supabase.from('Projects').update({
               'status': 'active',
+              'start_date': DateTime.now().toIso8601String(),
             }).eq('project_id', projectId);
           }
 
