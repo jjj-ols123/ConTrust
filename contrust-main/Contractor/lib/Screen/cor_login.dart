@@ -40,7 +40,7 @@ class LoginScreen extends StatelessWidget {
                 ),
                 SizedBox(height: 20),
                 Container(
-                  width: screenWidth * 0.8,
+                  width: screenWidth * 0.5,
                   padding: EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.8),
@@ -61,7 +61,7 @@ class LoginScreen extends StatelessWidget {
                       ),
                       SizedBox(height: 5),
                       Text(
-                        'Simplify your contracts.Secure results!',
+                        'Choose an option to proceed',
                         style: TextStyle(fontSize: 14),
                         textAlign: TextAlign.center,
                       ),
