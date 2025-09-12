@@ -12,21 +12,18 @@ class LoginScreen extends StatelessWidget {
     double screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Image.asset(
-                'bgloginscreen.jpg', 
-                color: Colors.black.withOpacity(0.3),
-                colorBlendMode: BlendMode.darken,
-              fit: BoxFit.cover,
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/bgloginscreen.jpg'),
+            fit: BoxFit.cover,
           ),
-          Column(
-            children: [
-              Container(
-                height: 40,
-                color: Colors.amber,
+        ),
+        child: Column(
+          children: [
+            Container(
+              height: 40,
+              color: Colors.amber,
               ),
             ],
           ),

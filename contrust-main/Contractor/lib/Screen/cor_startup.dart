@@ -22,16 +22,13 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Image.asset(
-              'bgloginscreen.jpg',
-              color: Colors.black.withOpacity(0.1),
-              colorBlendMode: BlendMode.darken,
-              fit: BoxFit.cover,
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/bgloginscreen.jpg'),
+            fit: BoxFit.cover,
           ),
+        ),
           Positioned(
             top: 50,
             left: 30,
