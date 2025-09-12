@@ -28,14 +28,6 @@ class LoginScreen extends StatelessWidget {
                 height: 40,
                 color: Colors.amber,
               ),
-              Container(
-                height: 5,
-                color: Colors.white,
-              ),
-              Container(
-                height: 5,
-                color: Colors.amber,
-              ),
             ],
           ),
           Center(

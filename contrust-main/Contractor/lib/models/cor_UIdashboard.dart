@@ -1,4 +1,5 @@
 // ignore_for_file: file_names, deprecated_member_use, use_build_context_synchronously, unused_element, library_private_types_in_public_api
+import 'package:contractor/Screen/cor_bidding.dart';
 import 'package:contractor/Screen/cor_chathistory.dart';
 import 'package:contractor/Screen/cor_contracttype.dart';
 import 'package:contractor/Screen/cor_product.dart';
@@ -152,7 +153,7 @@ class _DashboardUIState extends State<DashboardUI>
                 _buildRecentProjects(),
                 const SizedBox(height: 20),
                 _buildProjectTasks(),
-                const SizedBox(height: 40,),
+                const SizedBox(height: 40),
               ],
             ),
           ),
@@ -278,7 +279,7 @@ class _DashboardUIState extends State<DashboardUI>
     final isDesktop = screenWidth >= 1200;
     final isTablet = screenWidth >= 700 && screenWidth < 1200;
 
-    int crossAxisCount; 
+    int crossAxisCount;
     double childAspectRatio;
     double spacing;
 
@@ -292,7 +293,7 @@ class _DashboardUIState extends State<DashboardUI>
       spacing = 16;
     } else {
       crossAxisCount = 2;
-      childAspectRatio = 1.5;
+      childAspectRatio = 1.3;
       spacing = 12;
     }
 
@@ -350,7 +351,9 @@ class _DashboardUIState extends State<DashboardUI>
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(isDesktop ? 20 : (isTablet ? 10 : 12)),
+        borderRadius: BorderRadius.circular(
+          isDesktop ? 20 : (isTablet ? 10 : 12),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),
@@ -368,11 +371,13 @@ class _DashboardUIState extends State<DashboardUI>
             Row(
               children: [
                 Container(
-                  padding: EdgeInsets.all(isDesktop ? 14 : (isTablet ? 14 : 12)),
+                  padding: EdgeInsets.all(
+                    isDesktop ? 14 : (isTablet ? 14 : 12),
+                  ),
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(
-                     isDesktop ? 12 : (isTablet ? 16 : 8),
+                      isDesktop ? 12 : (isTablet ? 16 : 8),
                     ),
                   ),
                   child: Icon(
@@ -458,33 +463,41 @@ class _DashboardUIState extends State<DashboardUI>
             ),
             SizedBox(height: isTablet ? 20 : 16),
             if (recentActivities.isEmpty)
-              Container(
-                padding: EdgeInsets.all(isTablet ? 60 : 40),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.folder_open,
-                      size: isTablet ? 64 : 48,
-                      color: Colors.grey.shade400,
-                    ),
-                    SizedBox(height: isTablet ? 20 : 16),
-                    Text(
-                      'No projects yet',
-                      style: TextStyle(
-                        fontSize: isTablet ? 22 : 18,
-                        color: Colors.grey.shade600,
-                        fontWeight: FontWeight.w500,
+              Center(
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    vertical: isTablet ? 60 : 40,
+                    horizontal: 20,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center, 
+                    children: [
+                      Icon(
+                        Icons.folder_open,
+                        size: isTablet ? 64 : 48,
+                        color: Colors.grey.shade400,
                       ),
-                    ),
-                    SizedBox(height: isTablet ? 12 : 8),
-                    Text(
-                      'Start by creating your first project',
-                      style: TextStyle(
-                        color: Colors.grey.shade500,
-                        fontSize: isTablet ? 16 : 14,
+                      SizedBox(height: isTablet ? 20 : 16),
+                      Text(
+                        'No projects yet',
+                        style: TextStyle(
+                          fontSize: isTablet ? 22 : 18,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center, 
                       ),
-                    ),
-                  ],
+                      SizedBox(height: isTablet ? 12 : 8),
+                      Text(
+                        'Start by creating your first project',
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: isTablet ? 16 : 14,
+                        ),
+                        textAlign: TextAlign.center, 
+                      ),
+                    ],
+                  ),
                 ),
               )
             else
@@ -542,36 +555,44 @@ class _DashboardUIState extends State<DashboardUI>
             ),
             SizedBox(height: isTablet ? 20 : 16),
             if (localTasks.isEmpty)
-              Container(
-                padding: EdgeInsets.all(isTablet ? 60 : 40),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.inbox,
-                      size: isTablet ? 64 : 48,
-                      color: Colors.grey.shade400,
-                    ),
-                    SizedBox(height: isTablet ? 20 : 16),
-                    Text(
-                      'No tasks yet',
-                      style: TextStyle(
-                        fontSize: isTablet ? 22 : 18,
-                        color: Colors.grey.shade600,
-                        fontWeight: FontWeight.w500,
+              Center(
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    vertical: isTablet ? 60 : 40,
+                    horizontal: 20,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center, 
+                    children: [
+                      Icon(
+                        Icons.inbox,
+                        size: isTablet ? 64 : 48,
+                        color: Colors.grey.shade400,
                       ),
-                    ),
-                    SizedBox(height: isTablet ? 12 : 8),
-                    Text(
-                      'Start by adding your first task',
-                      style: TextStyle(
-                        color: Colors.grey.shade500,
-                        fontSize: isTablet ? 16 : 14,
+                      SizedBox(height: isTablet ? 20 : 16),
+                      Text(
+                        'No tasks yet',
+                        style: TextStyle(
+                          fontSize: isTablet ? 22 : 18,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                    ),
-                  ],
+                      SizedBox(height: isTablet ? 12 : 8),
+                      Text(
+                        'Start by adding your first task',
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: isTablet ? 16 : 14,
+                        ),
+                        textAlign: TextAlign.center, 
+                      ),
+                    ],
+                  ),
                 ),
               )
-            else
+            else ...[
               ...localTasks.map(
                 (task) => ListTile(
                   leading: Icon(
@@ -596,21 +617,24 @@ class _DashboardUIState extends State<DashboardUI>
                 ),
               ),
               const SizedBox(height: 10),
-              Text(
-                'More on the Project Management Page...',
-                style: TextStyle(
-                  fontSize: isTablet ? 14 : 12,
-                  color: Colors.grey.shade600,
+              Center(
+                child: Text(
+                  'More on the Project Management Page...',
+                  style: TextStyle(
+                    fontSize: isTablet ? 14 : 12,
+                    color: Colors.grey.shade600,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
               ),
+            ],
           ],
         ),
       ),
     );
   }
 }
- 
+
 class ContractorProjectView extends StatelessWidget {
   final Map<String, dynamic> project;
   const ContractorProjectView({super.key, required this.project});
@@ -800,31 +824,23 @@ class _PersistentDashboardDrawerState extends State<PersistentDashboardDrawer>
     final double initialSize = screenHeight > 600 ? 0.10 : 0.10;
     final double expandedSize = screenHeight > 600 ? 0.40 : 0.20;
     final double toggleThreshold = screenHeight > 600 ? 0.2 : 0.25;
-    final isWebsite = screenWidth > 1200;
-    final adjustedExpandedSize = isWebsite ? 0.39 : expandedSize;
+    final isDesktop = screenWidth > 1200;
+    final adjustedExpandedSize = isDesktop ? 0.39 : expandedSize;
 
     return Stack(
       children: [
-        Align(
-          alignment: Alignment.bottomCenter,
-          child: Container(
-            width: double.infinity,
-            height: screenWidth > 1200 ? 35 : (screenWidth > 600 ? 35 : 30),
-            color: Colors.amber[800],
-          ),
-        ),
         DraggableScrollableSheet(
           controller: _controller,
           initialChildSize: initialSize,
-          minChildSize: initialSize, 
+          minChildSize: initialSize,
           maxChildSize: adjustedExpandedSize,
           builder: (context, scrollController) {
             return Column(
+              mainAxisSize: MainAxisSize.min, 
               children: [
                 Container(
                   width: double.infinity,
-                  height:
-                      screenWidth > 1200 ? 93.5 : (screenWidth > 600 ? 93.5 : 93.5),
+                  height: 93.5,
                   color: Colors.transparent,
                   child: Center(
                     child: GestureDetector(
@@ -846,8 +862,8 @@ class _PersistentDashboardDrawerState extends State<PersistentDashboardDrawer>
                         }
                       },
                       child: Container(
-                        width: screenWidth > 600 ? 120 : screenWidth * 0.18,
-                        height: screenWidth > 600 ? 20 : 22,
+                        width: screenWidth > 600 ? 110 : screenWidth * 0.18,
+                        height: 22,
                         margin: const EdgeInsets.only(bottom: 5),
                         decoration: BoxDecoration(
                           color: Colors.amber[600],
@@ -870,8 +886,7 @@ class _PersistentDashboardDrawerState extends State<PersistentDashboardDrawer>
                     ),
                   ),
                 ),
-                Flexible(
-                  fit: FlexFit.loose,
+                Expanded( 
                   child: Material(
                     elevation: 16,
                     borderRadius: const BorderRadius.vertical(
@@ -900,20 +915,22 @@ class DashboardDrawer extends StatelessWidget {
 
   Future<void> _openMaterials(BuildContext context) async {
     if (contractorId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No contractor detected')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No contractor detected')));
       return;
     }
 
     try {
-      final projects = await FetchService().fetchContractorProjectInfo(contractorId!);
+      final projects = await FetchService().fetchContractorProjectInfo(
+        contractorId!,
+      );
 
-      // Filter active/ongoing
-      final active = projects.where((p) {
-        final s = (p['status'] as String? ?? '').toLowerCase();
-        return s == 'active' || s == 'ongoing';
-      }).toList();
+      final active =
+          projects.where((p) {
+            final s = (p['status'] as String? ?? '').toLowerCase();
+            return s == 'active' || s == 'ongoing';
+          }).toList();
 
       if (active.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -922,10 +939,11 @@ class DashboardDrawer extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProductPanelScreen(
-              contractorId: contractorId!,
-              projectId: null,
-            ),
+            builder:
+                (context) => ProductPanelScreen(
+                  contractorId: contractorId!,
+                  projectId: null,
+                ),
           ),
         );
         return;
@@ -935,22 +953,24 @@ class DashboardDrawer extends StatelessWidget {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => ProductPanelScreen(
-            contractorId: contractorId!,
-            projectId: selectedId,
-          ),
+          builder:
+              (context) => ProductPanelScreen(
+                contractorId: contractorId!,
+                projectId: selectedId,
+              ),
         ),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading projects: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error loading projects: $e')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
 
     int crossAxisCount;
     double iconSize;
@@ -960,127 +980,141 @@ class DashboardDrawer extends StatelessWidget {
 
     if (screenWidth > 1200) {
       crossAxisCount = 6;
-      iconSize = 28.0;
-      fontSize = 14.0;
+      iconSize = screenHeight < 800 ? 24.0 : 28.0; 
+      fontSize = screenHeight < 800 ? 12.0 : 14.0; 
       spacing = 16.0;
-      childAspectRatio = 0.95;
+      childAspectRatio = screenHeight < 800 ? 1.1 : 0.95;
     } else if (screenWidth > 900) {
       crossAxisCount = 5;
-      iconSize = 26.0;
-      fontSize = 13.0;
+      iconSize = screenHeight < 800 ? 22.0 : 26.0;
+      fontSize = screenHeight < 800 ? 11.0 : 13.0;
       spacing = 14.0;
-      childAspectRatio = 0.95;
+      childAspectRatio = screenHeight < 800 ? 1.1 : 0.95;
     } else if (screenWidth > 600) {
       crossAxisCount = 4;
-      iconSize = 24.0;
-      fontSize = 12.0;
+      iconSize = screenHeight < 800 ? 20.0 : 24.0;
+      fontSize = screenHeight < 800 ? 10.0 : 12.0;
       spacing = 12.0;
-      childAspectRatio = 1.0;
+      childAspectRatio = screenHeight < 800 ? 1.2 : 1.0;
     } else {
       crossAxisCount = 3;
-      iconSize = 20.0;
-      fontSize = 11.0;
+      iconSize = screenHeight < 800 ? 18.0 : 20.0;
+      fontSize = screenHeight < 800 ? 9.0 : 11.0;
       spacing = 1.0;
-      childAspectRatio = 1.1;
+      childAspectRatio = screenHeight < 800 ? 1.3 : 1.1;
     }
 
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        vertical: screenWidth > 600 ? 10 : 15,
-        horizontal: screenWidth > 1200 ? 32 : (screenWidth > 600 ? 20 : 8),
-      ),
-      child: Column(
-        children: [
-          Expanded(
-            child: GridView.count(
-              controller: scrollController,
-              shrinkWrap: true,
-              crossAxisCount: crossAxisCount,
-              mainAxisSpacing: spacing,
-              crossAxisSpacing: spacing,
-              childAspectRatio: childAspectRatio,
-              children: [
-                _DrawerIcon(
-                  icon: Icons.message,
-                  label: 'Messages',
-                  iconSize: iconSize,
-                  fontSize: fontSize,
-                  color: Colors.blue,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (context) => ContractorChatHistoryPage(
-                              contractorId: contractorId,
-                            ),
-                      ),
-                    );
-                  },
-                ),
-                _DrawerIcon(
-                  icon: Icons.assignment,
-                  label: 'Contracts',
-                  iconSize: iconSize,
-                  fontSize: fontSize,
-                  color: Colors.green,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (context) =>
-                                ContractType(contractorId: contractorId!),
-                      ),
-                    );
-                  },
-                ),
-                _DrawerIcon(
-                  icon: Icons.history,
-                  label: 'History',
-                  iconSize: iconSize,
-                  fontSize: fontSize,
-                  color: Colors.purple,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ClientHistoryScreen(),
-                      ),
-                    );
-                  },
-                ),
-                _DrawerIcon(
-                  icon: Icons.person,
-                  label: 'Profile',
-                  iconSize: iconSize,
-                  fontSize: fontSize,
-                  color: Colors.teal,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (context) => ContractorUserProfileScreen(
-                              contractorId: contractorId!,
-                            ),
-                      ),
-                    );
-                  },
-                ),
-                _DrawerIcon(
-                  icon: Icons.build,
-                  label: 'Material Page',
-                  iconSize: iconSize,
-                  fontSize: fontSize,
-                  color: Colors.indigo,
-                  onTap: () => _openMaterials(context),
-                ),
-
-              ],
+    return SizedBox(
+      height: double.infinity, 
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          vertical: screenHeight < 800 ? 8 : 10, 
+          horizontal: screenWidth > 1200 ? 32 : (screenWidth > 600 ? 20 : 8),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min, 
+          children: [
+            Expanded( 
+              child: GridView.count(
+                controller: scrollController,
+                shrinkWrap: true,
+                crossAxisCount: crossAxisCount,
+                mainAxisSpacing: spacing,
+                crossAxisSpacing: spacing,
+                childAspectRatio: childAspectRatio,
+                children: [
+                  _DrawerIcon(
+                    icon: Icons.message,
+                    label: 'Messages',
+                    iconSize: iconSize,
+                    fontSize: fontSize,
+                    color: Colors.blue,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ContractorChatHistoryPage(
+                            contractorId: contractorId,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  _DrawerIcon(
+                    icon: Icons.assignment,
+                    label: 'Contracts',
+                    iconSize: iconSize,
+                    fontSize: fontSize,
+                    color: Colors.green,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ContractType(contractorId: contractorId!),
+                        ),
+                      );
+                    },
+                  ),
+                  _DrawerIcon(
+                    icon: Icons.gavel,
+                    label: 'Bidding',
+                    iconSize: iconSize,
+                    fontSize: fontSize,
+                    color: Colors.orange,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => BiddingScreen(contractorId: contractorId!),
+                        ),
+                      );
+                    },
+                  ),
+                  _DrawerIcon(
+                    icon: Icons.history,
+                    label: 'History',
+                    iconSize: iconSize,
+                    fontSize: fontSize,
+                    color: Colors.purple,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ClientHistoryScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _DrawerIcon(
+                    icon: Icons.person,
+                    label: 'Profile',
+                    iconSize: iconSize,
+                    fontSize: fontSize,
+                    color: Colors.teal,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ContractorUserProfileScreen(
+                            contractorId: contractorId!,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  _DrawerIcon(
+                    icon: Icons.build,
+                    label: 'Material Page',
+                    iconSize: iconSize,
+                    fontSize: fontSize,
+                    color: Colors.indigo,
+                    onTap: () => _openMaterials(context),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

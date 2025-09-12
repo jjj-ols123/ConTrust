@@ -6,7 +6,7 @@ import 'package:backend/services/be_project_service.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../Screen/cor_product.dart'; 
+import '../Screen/cor_product.dart';
 
 class CorOngoingProjectScreen extends StatefulWidget {
   final String projectId;
@@ -22,6 +22,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   late Future<List<Map<String, dynamic>>> _reportsFuture;
   late Future<List<Map<String, dynamic>>> _photosFuture;
   late Future<List<Map<String, dynamic>>> _costsFuture;
+
 
   final TextEditingController reportController = TextEditingController();
   final TextEditingController taskController = TextEditingController();
@@ -70,7 +71,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   void _addReport() async {
     showDialog(
       context: context,
-      builder: (context) {        
+      builder: (context) {
         return Dialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -84,9 +85,9 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
               children: [
                 Text(
                   'Add Progress Report',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 24),
                 Expanded(
@@ -102,7 +103,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -173,7 +174,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                     task: taskController.text.trim(),
                   );
                   taskController.clear();
-                Navigator.pop(context);
+                  Navigator.pop(context);
                   _loadData();
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -242,7 +243,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     }
   }
 
-void _updateTaskStatus(String taskId, bool done) async {
+  void _updateTaskStatus(String taskId, bool done) async {
     setState(() {
       final taskIndex = _localTasks.indexWhere(
         (task) => task['task_id'].toString() == taskId,
@@ -295,7 +296,7 @@ void _updateTaskStatus(String taskId, bool done) async {
       });
 
       if (mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Failed to update task'),
             backgroundColor: Colors.red,
@@ -324,20 +325,24 @@ void _updateTaskStatus(String taskId, bool done) async {
   Future<void> _deleteTask(String taskId) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Task'),
-        content: const Text('Are you sure you want to delete this task?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Delete Task'),
+            content: const Text('Are you sure you want to delete this task?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text(
+                  'Delete',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
     );
 
     if (confirmed == true) {
@@ -351,9 +356,9 @@ void _updateTaskStatus(String taskId, bool done) async {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting task: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error deleting task: $e')));
         }
       }
     }
@@ -362,20 +367,24 @@ void _updateTaskStatus(String taskId, bool done) async {
   Future<void> _deleteReport(String reportId) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Report'),
-        content: const Text('Are you sure you want to delete this report?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Delete Report'),
+            content: const Text('Are you sure you want to delete this report?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text(
+                  'Delete',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
     );
 
     if (confirmed == true) {
@@ -389,9 +398,9 @@ void _updateTaskStatus(String taskId, bool done) async {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting report: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error deleting report: $e')));
         }
       }
     }
@@ -400,20 +409,24 @@ void _updateTaskStatus(String taskId, bool done) async {
   Future<void> _deletePhoto(String photoId) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Photo'),
-        content: const Text('Are you sure you want to delete this photo?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Delete Photo'),
+            content: const Text('Are you sure you want to delete this photo?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text(
+                  'Delete',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
     );
 
     if (confirmed == true) {
@@ -427,9 +440,9 @@ void _updateTaskStatus(String taskId, bool done) async {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting photo: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error deleting photo: $e')));
         }
       }
     }
@@ -438,20 +451,26 @@ void _updateTaskStatus(String taskId, bool done) async {
   Future<void> _deleteCost(String materialId) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Material'),
-        content: const Text('Are you sure you want to delete this material?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Delete Material'),
+            content: const Text(
+              'Are you sure you want to delete this material?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text(
+                  'Delete',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
     );
 
     if (confirmed == true) {
@@ -514,8 +533,8 @@ void _updateTaskStatus(String taskId, bool done) async {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-      Row(
-        children: [
+                          Row(
+                            children: [
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -536,8 +555,8 @@ void _updateTaskStatus(String taskId, bool done) async {
                                   ],
                                 ),
                               ),
-        ],
-      ),
+                            ],
+                          ),
                           const SizedBox(height: 16),
                           Row(
                             children: [
@@ -572,18 +591,18 @@ void _updateTaskStatus(String taskId, bool done) async {
                           ),
                           const SizedBox(height: 16),
                           Row(
-                children: [
-                  Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
                                     Row(
                                       children: [
                                         Text(
                                           'Progress: ${(_localProgress * 100).toStringAsFixed(0)}%',
                                           style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                         const SizedBox(width: 16),
                                         Text(
@@ -595,8 +614,8 @@ void _updateTaskStatus(String taskId, bool done) async {
                                           ),
                                         ),
                                       ],
-                            ),
-                            const SizedBox(height: 8),
+                                    ),
+                                    const SizedBox(height: 8),
                                     LinearProgressIndicator(
                                       value: _localProgress,
                                       minHeight: 10,
@@ -611,11 +630,11 @@ void _updateTaskStatus(String taskId, bool done) async {
                                 ),
                               ),
                             ],
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
+                  ),
                   const SizedBox(height: 20),
 
                   Card(
@@ -625,11 +644,11 @@ void _updateTaskStatus(String taskId, bool done) async {
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
-                    child: Column(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                        children: [
                           Row(
-                                children: [
+                            children: [
                               const Icon(
                                 Icons.checklist,
                                 size: 24,
@@ -651,9 +670,9 @@ void _updateTaskStatus(String taskId, bool done) async {
                                   backgroundColor: Colors.green,
                                   foregroundColor: Colors.white,
                                 ),
-                                  ),
-                                ],
                               ),
+                            ],
+                          ),
                           const SizedBox(height: 16),
                           _localTasks.isEmpty
                               ? const Card(
@@ -668,49 +687,55 @@ void _updateTaskStatus(String taskId, bool done) async {
                                 ),
                               )
                               : () {
-                              final screenWidth = MediaQuery.of(context).size.width;
-                              final isDesktop = screenWidth > 1200;
-                              
-                              if (isDesktop) {
-                                return GridView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: isDesktop ? 3 : 2,
-                                    crossAxisSpacing: 12,
-                                    mainAxisSpacing: 5,
-                                    childAspectRatio: isDesktop ? 6 : 4,
-                                  ),
-                                  itemCount: _localTasks.length,
-                                  itemBuilder: (context, index) {
-                                    final task = _localTasks[index];
-                                    return _buildTaskItem(task);
-                                  },
-                                );
-                              } else {
-                                return Column(
-                                  children: _localTasks.map((task) => _buildTaskItem(task)).toList(),
-                                );
-                              }
-                                }(),
+                                final screenWidth =
+                                    MediaQuery.of(context).size.width;
+                                final isDesktop = screenWidth > 1200;
+
+                                if (isDesktop) {
+                                  return GridView.builder(
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    gridDelegate:
+                                        SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: isDesktop ? 3 : 2,
+                                          crossAxisSpacing: 12,
+                                          mainAxisSpacing: 5,
+                                          childAspectRatio: isDesktop ? 6 : 4,
+                                        ),
+                                    itemCount: _localTasks.length,
+                                    itemBuilder: (context, index) {
+                                      final task = _localTasks[index];
+                                      return _buildTaskItem(task);
+                                    },
+                                  );
+                                } else {
+                                  return Column(
+                                    children:
+                                        _localTasks
+                                            .map((task) => _buildTaskItem(task))
+                                            .toList(),
+                                  );
+                                }
+                              }(),
                         ],
-                            ),
-                          ),
-                        ),
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 20),
 
-                        Card(
+                  Card(
                     elevation: 2,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                          child: Padding(
+                    child: Padding(
                       padding: const EdgeInsets.all(16),
-                            child: Column(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
+                        children: [
+                          Row(
+                            children: [
                               const Icon(
                                 Icons.article,
                                 size: 24,
@@ -726,15 +751,15 @@ void _updateTaskStatus(String taskId, bool done) async {
                               const Spacer(),
                               ElevatedButton.icon(
                                 onPressed: _addReport,
-                                      icon: const Icon(Icons.add),
+                                icon: const Icon(Icons.add),
                                 label: const Text('Add Report'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.orange,
                                   foregroundColor: Colors.white,
                                 ),
-                                    ),
-                                  ],
-                                ),
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 16),
                           FutureBuilder<List<Map<String, dynamic>>>(
                             future: _reportsFuture,
@@ -759,21 +784,22 @@ void _updateTaskStatus(String taskId, bool done) async {
                                   ),
                                 );
                               }
-                              
+
                               final screenWidth =
                                   MediaQuery.of(context).size.width;
                               final isDesktop = screenWidth > 1200;
-                              
+
                               if (isDesktop) {
                                 return GridView.builder(
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
-                                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: isDesktop ? 3 : 2,
-                                    crossAxisSpacing: 16,
-                                    mainAxisSpacing: 12,
-                                    childAspectRatio: isDesktop ? 6.5 : 4,
-                                  ),
+                                  gridDelegate:
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: isDesktop ? 3 : 2,
+                                        crossAxisSpacing: 16,
+                                        mainAxisSpacing: 12,
+                                        childAspectRatio: isDesktop ? 6.5 : 4,
+                                      ),
                                   itemCount: reports.length,
                                   itemBuilder: (context, index) {
                                     final report = reports[index];
@@ -782,15 +808,21 @@ void _updateTaskStatus(String taskId, bool done) async {
                                 );
                               } else {
                                 return Column(
-                                  children: reports.map((report) => _buildReportItem(report)).toList(),
+                                  children:
+                                      reports
+                                          .map(
+                                            (report) =>
+                                                _buildReportItem(report),
+                                          )
+                                          .toList(),
                                 );
                               }
                             },
-                                ),
-                              ],
-                            ),
                           ),
-                        ),
+                        ],
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 20),
 
                   Card(
@@ -798,11 +830,11 @@ void _updateTaskStatus(String taskId, bool done) async {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                      child: Padding(
+                    child: Padding(
                       padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Row(
                             children: [
                               const Icon(
@@ -814,9 +846,9 @@ void _updateTaskStatus(String taskId, bool done) async {
                               Text(
                                 'Progress Photos',
                                 style: theme.textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
                               const Spacer(),
                               ElevatedButton.icon(
                                 onPressed: _pickImage,
@@ -826,9 +858,9 @@ void _updateTaskStatus(String taskId, bool done) async {
                                   backgroundColor: Colors.purple,
                                   foregroundColor: Colors.white,
                                 ),
-                            ),
-                          ],
-                        ),
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 16),
                           FutureBuilder<List<Map<String, dynamic>>>(
                             future: _photosFuture,
@@ -859,17 +891,17 @@ void _updateTaskStatus(String taskId, bool done) async {
                               final isDesktop = screenWidth > 1200;
 
                               return GridView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: isDesktop ? 3 : 2,
-                                crossAxisSpacing: 8,
-                                mainAxisSpacing: 8,
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: isDesktop ? 3 : 2,
+                                      crossAxisSpacing: 8,
+                                      mainAxisSpacing: 8,
                                       childAspectRatio: isDesktop ? 2 : 3,
-                              ),
-                              itemCount: photos.length,
-                              itemBuilder: (context, index) {
+                                    ),
+                                itemCount: photos.length,
+                                itemBuilder: (context, index) {
                                   final photo = photos[index];
                                   final path = photo['photo_url'] as String?;
                                   return Stack(
@@ -883,7 +915,10 @@ void _updateTaskStatus(String taskId, bool done) async {
                                               return Container(
                                                 color: Colors.grey[300],
                                                 child: const Center(
-                                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                      ),
                                                 ),
                                               );
                                             }
@@ -899,10 +934,16 @@ void _updateTaskStatus(String taskId, bool done) async {
                                                 url,
                                                 fit: BoxFit.cover,
                                                 alignment: Alignment.center,
-                                                errorBuilder: (context, error, stackTrace) {
+                                                errorBuilder: (
+                                                  context,
+                                                  error,
+                                                  stackTrace,
+                                                ) {
                                                   return Container(
                                                     color: Colors.grey[300],
-                                                    child: const Icon(Icons.error),
+                                                    child: const Icon(
+                                                      Icons.error,
+                                                    ),
                                                   );
                                                 },
                                               ),
@@ -915,12 +956,21 @@ void _updateTaskStatus(String taskId, bool done) async {
                                         right: 4,
                                         child: Container(
                                           decoration: BoxDecoration(
-                                            color: Colors.black.withOpacity(0.6),
+                                            color: Colors.black.withOpacity(
+                                              0.6,
+                                            ),
                                             shape: BoxShape.circle,
                                           ),
                                           child: IconButton(
-                                            icon: const Icon(Icons.delete, color: Colors.white, size: 16),
-                                            onPressed: () => _deletePhoto(photo['photo_id']),
+                                            icon: const Icon(
+                                              Icons.delete,
+                                              color: Colors.white,
+                                              size: 16,
+                                            ),
+                                            onPressed:
+                                                () => _deletePhoto(
+                                                  photo['photo_id'],
+                                                ),
                                             padding: const EdgeInsets.all(4),
                                             constraints: const BoxConstraints(
                                               minWidth: 24,
@@ -934,24 +984,24 @@ void _updateTaskStatus(String taskId, bool done) async {
                                 },
                               );
                             },
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
+                  ),
                   const SizedBox(height: 20),
-                    Card(
+                  Card(
                     elevation: 2,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                      child: Padding(
+                    child: Padding(
                       padding: const EdgeInsets.all(16),
-                        child: Column(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
-                          children: [
+                            children: [
                               const Icon(
                                 Icons.attach_money,
                                 size: 24,
@@ -970,9 +1020,10 @@ void _updateTaskStatus(String taskId, bool done) async {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => ProductPanelScreen(
-                                        projectId: widget.projectId,
-                                      ),
+                                      builder:
+                                          (context) => ProductPanelScreen(
+                                            projectId: widget.projectId,
+                                          ),
                                     ),
                                   );
                                 },
@@ -996,11 +1047,14 @@ void _updateTaskStatus(String taskId, bool done) async {
                                 );
                               }
                               final costs = costSnap.data ?? [];
-                              final validCosts = costs.where((c) {
-                                final unitPrice = (c['unit_price'] as num? ?? 0).toDouble();
-                                return unitPrice > 0;
-                              }).toList();
-                              
+                              final validCosts =
+                                  costs.where((c) {
+                                    final unitPrice =
+                                        (c['unit_price'] as num? ?? 0)
+                                            .toDouble();
+                                    return unitPrice > 0;
+                                  }).toList();
+
                               if (validCosts.isEmpty) {
                                 return const Card(
                                   child: Padding(
@@ -1014,30 +1068,35 @@ void _updateTaskStatus(String taskId, bool done) async {
                                   ),
                                 );
                               }
-                              final totalCost = validCosts.fold<double>(
-                                0,
-                                (sum, c) {
-                                  final quantity = (c['quantity'] as num? ?? 0).toDouble();
-                                  final unitPrice = (c['unit_price'] as num? ?? 0).toDouble();
-                                  return sum + (quantity * unitPrice);
-                                },
-                              );
-                              
-                              final screenWidth = MediaQuery.of(context).size.width;
+                              final totalCost = validCosts.fold<double>(0, (
+                                sum,
+                                c,
+                              ) {
+                                final quantity =
+                                    (c['quantity'] as num? ?? 0).toDouble();
+                                final unitPrice =
+                                    (c['unit_price'] as num? ?? 0).toDouble();
+                                return sum + (quantity * unitPrice);
+                              });
+
+                              final screenWidth =
+                                  MediaQuery.of(context).size.width;
                               final isDesktop = screenWidth > 1200;
-                              
+
                               return Column(
-                              children: [
+                                children: [
                                   if (isDesktop)
                                     GridView.builder(
                                       shrinkWrap: true,
-                                      physics: const NeverScrollableScrollPhysics(),
-                                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: isDesktop ? 3 : 2,
-                                        crossAxisSpacing: 16,
-                                        mainAxisSpacing: 8,
-                                        childAspectRatio: isDesktop ? 5 : 4,
-                                      ),
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      gridDelegate:
+                                          SliverGridDelegateWithFixedCrossAxisCount(
+                                            crossAxisCount: isDesktop ? 3 : 2,
+                                            crossAxisSpacing: 16,
+                                            mainAxisSpacing: 8,
+                                            childAspectRatio: isDesktop ? 5 : 4,
+                                          ),
                                       itemCount: validCosts.length,
                                       itemBuilder: (context, index) {
                                         final cost = validCosts[index];
@@ -1045,8 +1104,10 @@ void _updateTaskStatus(String taskId, bool done) async {
                                       },
                                     )
                                   else
-                                    ...validCosts.map((cost) => _buildCostItem(cost)),
-                                  
+                                    ...validCosts.map(
+                                      (cost) => _buildCostItem(cost),
+                                    ),
+
                                   const Divider(thickness: 2),
                                   Card(
                                     color: Colors.green[50],
@@ -1077,9 +1138,9 @@ void _updateTaskStatus(String taskId, bool done) async {
                                 ],
                               );
                             },
-                                ),
-                              ],
-                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -1099,12 +1160,12 @@ void _updateTaskStatus(String taskId, bool done) async {
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
+                ],
               ),
             ),
           );
@@ -1120,10 +1181,7 @@ void _updateTaskStatus(String taskId, bool done) async {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: const CircleAvatar(
           backgroundColor: Colors.orange,
-          child: Icon(
-            Icons.description,
-            color: Colors.white,
-          ),
+          child: Icon(Icons.description, color: Colors.white),
         ),
         title: Text(
           report['content'] ?? '',
@@ -1132,10 +1190,7 @@ void _updateTaskStatus(String taskId, bool done) async {
         ),
         subtitle: Text(
           'Posted: ${DateTime.parse(report['created_at']).toLocal().toString().split('.')[0]}',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
         ),
         trailing: IconButton(
           icon: const Icon(Icons.delete_outline),
@@ -1152,7 +1207,8 @@ void _updateTaskStatus(String taskId, bool done) async {
         title: Text(
           task['task'] ?? '',
           style: TextStyle(
-            decoration: task['done'] == true ? TextDecoration.lineThrough : null,
+            decoration:
+                task['done'] == true ? TextDecoration.lineThrough : null,
             color: task['done'] == true ? Colors.grey[600] : Colors.black87,
           ),
           maxLines: 1,
@@ -1160,10 +1216,7 @@ void _updateTaskStatus(String taskId, bool done) async {
         ),
         subtitle: Text(
           'Created: ${DateTime.parse(task['created_at']).toLocal().toString().split('.')[0]}',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
         ),
         value: task['done'] == true,
         onChanged: (val) {
@@ -1186,29 +1239,29 @@ void _updateTaskStatus(String taskId, bool done) async {
     final quantity = (cost['quantity'] as num? ?? 0).toDouble();
     final unitPrice = (cost['unit_price'] as num? ?? 0).toDouble();
     final totalItemCost = quantity * unitPrice;
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: const CircleAvatar(
           backgroundColor: Colors.green,
-          child: Icon(
-            Icons.construction,
-            color: Colors.white,
-          ),
+          child: Icon(Icons.construction, color: Colors.white),
         ),
         title: Text(cost['material_name'] ?? ''),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (cost['brand'] != null)
-              Text('Brand: ${cost['brand']}'),
-            Text('Qty: ${quantity.toStringAsFixed(1)} ${cost['unit'] ?? 'pcs'}'),
+            if (cost['brand'] != null) Text('Brand: ${cost['brand']}'),
+            Text(
+              'Qty: ${quantity.toStringAsFixed(1)} ${cost['unit'] ?? 'pcs'}',
+            ),
             Text('Unit Price: ₱${unitPrice.toStringAsFixed(2)}'),
             if (cost['notes'] != null)
-              Text('Note: ${cost['notes']}', 
-                style: const TextStyle(fontStyle: FontStyle.italic)),
+              Text(
+                'Note: ${cost['notes']}',
+                style: const TextStyle(fontStyle: FontStyle.italic),
+              ),
           ],
         ),
         trailing: Row(
