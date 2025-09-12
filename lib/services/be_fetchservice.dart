@@ -32,7 +32,7 @@ class FetchService {
     try {
       final response = await _supabase
           .from('Contractor')
-          .select()
+          .select('*')
           .eq('contractor_id', contractorId)
           .single();
       return Map<String, dynamic>.from(response);
@@ -45,7 +45,7 @@ class FetchService {
     try {
       final response = await _supabase
           .from('Contractee')
-          .select()
+          .select('*')
           .eq('contractee_id', contracteeId)
           .single();
       return Map<String, dynamic>.from(response);
@@ -294,7 +294,7 @@ class FetchService {
     try {
       final response = await _supabase
           .from('Projects')
-          .select('project_id, contractee_id, description, type, status, title, activated_at')
+          .select('*')
           .eq('contractor_id', contractorId)
           .order('created_at', ascending: false);
 
