@@ -16,219 +16,457 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController contactNumberController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController confirmPasswordController = TextEditingController();
+  final TextEditingController confirmPasswordController =
+      TextEditingController();
 
   @override
   Widget build(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    bool isPhone = screenWidth < 1000;
+
     return Scaffold(
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          bool isMobile = constraints.maxWidth < 600;
-          return Stack(
-            children: [
-              Positioned.fill(
-                child: Image.asset(
-                  "assets/bgloginscreen.jpg",
-                  color: Colors.black.withOpacity(0.3),
-                  colorBlendMode: BlendMode.darken,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              Positioned(
-                top: 50,
-                left: 30,
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                  child: const Icon(
-                    Icons.arrow_back,
-                    color: Colors.white,
-                    size: 30,
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 80,
-                left: 0,
-                right: 0,
-                child: Column(
-                  children: [
-                    Image.asset(
-                      'logo3.png',
-                      width: isMobile ? constraints.maxWidth * 0.25 : constraints.maxWidth * 0.2,
-                    ),
-                    const SizedBox(height: 5),
-                    const Text(
-                      'Simplify your contracts. Secure results!',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontFamily: 'Times New Roman',
-                        fontStyle: FontStyle.italic,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-              Center(
+      backgroundColor: Colors.grey.shade100,
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/bgloginscreen.jpg'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 100),
+              child: Center(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                  padding: const EdgeInsets.all(20),
                   child: Container(
-                    width: isMobile ? double.infinity : constraints.maxWidth * 0.5,
-                    padding: const EdgeInsets.all(20),
+                    width:
+                        isPhone
+                            ? screenWidth * 0.9
+                            : 700, 
+                    padding: const EdgeInsets.all(28),
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 5)],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Text(
-                          'Register as a Contractor',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        _textField('Firm Name', controller: firmNameController),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _textField(
-                                'Contact Number',
-                                isNumber: true,
-                                controller: contactNumberController,
-                                maxLength: 11,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: _textField('Email Address', controller: emailController),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _textField(
-                                'Password',
-                                isPassword: true,
-                                controller: passwordController,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: _textField(
-                                'Confirm Password',
-                                isPassword: true,
-                                controller: confirmPasswordController,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _button(
-                                'Verify(ID)',
-                                Colors.amber,
-                                Colors.black,
-                                () {}, 
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: _button(
-                                'Sign Up',
-                                Colors.green,
-                                Colors.white,
-                                () async {
-                                  final signUpContractor = SignUpContractor();
-                                  signUpContractor.signUpContractor(
-                                    context,
-                                    emailController.text,
-                                    confirmPasswordController.text,
-                                    "contractor",
-                                    {
-                                      'user_type': "contractor",
-                                      'firmName': firmNameController.text,
-                                      'contactNumber': contactNumberController.text,
-                                    },
-                                    () => validateFieldsContractor(
-                                      context,
-                                      emailController.text,
-                                      contactNumberController.text,
-                                      emailController.text,
-                                      passwordController.text,
-                                      confirmPasswordController.text,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
                         ),
                       ],
                     ),
+                    child: _buildRegistrationForm(context),
                   ),
                 ),
               ),
-            ],
-          );
-        },
+            ),
+            Positioned(
+              top: 50,
+              left: 30,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.pop(context);
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back,
+                    color: Colors.grey,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _textField(
-    String label, 
-    {bool isPassword = false,
-    bool isNumber = false,
-    TextEditingController? controller,
-    int? maxLength,}
-  ) {
-    return TextField(
-      controller: controller,
-      obscureText: isPassword,
-      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-      inputFormatters: isNumber
-          ? [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(maxLength),
-            ]
-          : [],
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.9),
-      ),
-    );
-  }
+  Widget _buildRegistrationForm(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    bool isPhone = screenWidth < 600;
 
-  Widget _button(
-    String text,
-    Color bgColor,
-    Color textColor,
-    VoidCallback onPressed,
-  ) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: bgColor,
-        padding: const EdgeInsets.symmetric(vertical: 15),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-      ),
-      child: Center(child: Text(text, style: TextStyle(color: textColor))),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Column(
+          children: [
+            Image.asset('logo3.png', width: 80, height: 80),
+            const SizedBox(height: 16),
+            Text(
+              'Join ConTrust',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade800,
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Register as a Contractor',
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Be a part of our community and start your journey with us today!',
+              style: TextStyle(
+                color: Colors.amber.shade600,
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        const SizedBox(height: 30),
+        TextFormField(
+          controller: firmNameController,
+          decoration: InputDecoration(
+            labelText: 'Firm Name',
+            prefixIcon: const Icon(Icons.business),
+            filled: true,
+            fillColor: Colors.grey.shade100,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+        const SizedBox(height: 18),
+        isPhone
+            ? Column(
+              children: [
+                TextFormField(
+                  controller: contactNumberController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(11),
+                  ],
+                  decoration: InputDecoration(
+                    labelText: 'Contact Number',
+                    prefixIcon: const Icon(Icons.phone),
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                TextFormField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    labelText: 'Email Address',
+                    prefixIcon: const Icon(Icons.email_outlined),
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ],
+            )
+            : Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: contactNumberController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(11),
+                    ],
+                    decoration: InputDecoration(
+                      labelText: 'Contact Number',
+                      prefixIcon: const Icon(Icons.phone),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextFormField(
+                    controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      labelText: 'Email Address',
+                      prefixIcon: const Icon(Icons.email_outlined),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+        const SizedBox(height: 18),
+        isPhone
+            ? Column(
+              children: [
+                TextFormField(
+                  controller: passwordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                TextFormField(
+                  controller: confirmPasswordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: 'Confirm Password',
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ],
+            )
+            : Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: passwordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextFormField(
+                    controller: confirmPasswordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: 'Confirm Password',
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+        const SizedBox(height: 25),
+        isPhone
+            ? Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber.shade600,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 4,
+                    ),
+                    child: const Text(
+                      'Verify ID',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      final signUpContractor = SignUpContractor();
+                      signUpContractor.signUpContractor(
+                        context,
+                        emailController.text,
+                        confirmPasswordController.text,
+                        "contractor",
+                        {
+                          'user_type': "contractor",
+                          'firmName': firmNameController.text,
+                          'contactNumber': contactNumberController.text,
+                        },
+                        () => validateFieldsContractor(
+                          context,
+                          firmNameController.text,
+                          contactNumberController.text,
+                          emailController.text,
+                          passwordController.text,
+                          confirmPasswordController.text,
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green.shade600,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 4,
+                    ),
+                    child: const Text(
+                      'Sign Up',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            )
+            : Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber.shade600,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 4,
+                    ),
+                    child: const Text(
+                      'Verify ID',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      final signUpContractor = SignUpContractor();
+                      signUpContractor.signUpContractor(
+                        context,
+                        emailController.text,
+                        confirmPasswordController.text,
+                        "contractor",
+                        {
+                          'user_type': "contractor",
+                          'firmName': firmNameController.text,
+                          'contactNumber': contactNumberController.text,
+                        },
+                        () => validateFieldsContractor(
+                          context,
+                          firmNameController.text,
+                          contactNumberController.text,
+                          emailController.text,
+                          passwordController.text,
+                          confirmPasswordController.text,
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green.shade600,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 4,
+                    ),
+                    child: const Text(
+                      'Sign Up',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+        const SizedBox(height: 20),
+        GestureDetector(
+          onTap: () {
+            Navigator.pop(context); 
+          },
+          child: Text.rich(
+            TextSpan(
+              text: "Already have an account? ",
+              style: const TextStyle(color: Colors.grey, fontSize: 14),
+              children: [
+                TextSpan(
+                  text: "Login here",
+                  style: TextStyle(
+                    color: Colors.amber.shade700,
+                    fontWeight: FontWeight.bold,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ],
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
     );
   }
 }

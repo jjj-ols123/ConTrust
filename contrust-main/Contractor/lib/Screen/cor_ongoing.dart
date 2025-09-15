@@ -662,15 +662,29 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                                 ),
                               ),
                               const Spacer(),
-                              ElevatedButton.icon(
-                                onPressed: _addTask,
-                                icon: const Icon(Icons.add),
-                                label: const Text('Add Task'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green,
-                                  foregroundColor: Colors.white,
-                                ),
-                              ),
+                              MediaQuery.of(context).size.width < 500
+                                  ? ElevatedButton(
+                                      onPressed: _addTask,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.green,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.all(12),
+                                        minimumSize: const Size(48, 48),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      child: const Icon(Icons.add),
+                                    )
+                                  : ElevatedButton.icon(
+                                      onPressed: _addTask,
+                                      icon: const Icon(Icons.add),
+                                      label: const Text('Add Task'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.green,
+                                        foregroundColor: Colors.white,
+                                      ),
+                                    ),
                             ],
                           ),
                           const SizedBox(height: 16),
@@ -749,15 +763,29 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                                 ),
                               ),
                               const Spacer(),
-                              ElevatedButton.icon(
-                                onPressed: _addReport,
-                                icon: const Icon(Icons.add),
-                                label: const Text('Add Report'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.orange,
-                                  foregroundColor: Colors.white,
-                                ),
-                              ),
+                              MediaQuery.of(context).size.width < 500
+                                  ? ElevatedButton(
+                                      onPressed: _addReport,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.orange,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.all(12),
+                                        minimumSize: const Size(48, 48),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      child: const Icon(Icons.add),
+                                    )
+                                  : ElevatedButton.icon(
+                                      onPressed: _addReport,
+                                      icon: const Icon(Icons.add),
+                                      label: const Text('Add Report'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.orange,
+                                        foregroundColor: Colors.white,
+                                      ),
+                                    ),
                             ],
                           ),
                           const SizedBox(height: 16),
@@ -850,15 +878,29 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                                 ),
                               ),
                               const Spacer(),
-                              ElevatedButton.icon(
-                                onPressed: _pickImage,
-                                icon: const Icon(Icons.add_a_photo),
-                                label: const Text('Add Photo'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.purple,
-                                  foregroundColor: Colors.white,
-                                ),
-                              ),
+                              MediaQuery.of(context).size.width < 500
+                                  ? ElevatedButton(
+                                      onPressed: _pickImage,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.purple,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.all(12),
+                                        minimumSize: const Size(48, 48),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      child: const Icon(Icons.add_a_photo),
+                                    )
+                                  : ElevatedButton.icon(
+                                      onPressed: _pickImage,
+                                      icon: const Icon(Icons.add_a_photo),
+                                      label: const Text('Add Photo'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.purple,
+                                        foregroundColor: Colors.white,
+                                      ),
+                                    ),
                             ],
                           ),
                           const SizedBox(height: 16),
@@ -1015,25 +1057,47 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                                 ),
                               ),
                               const Spacer(),
-                              ElevatedButton.icon(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder:
-                                          (context) => ProductPanelScreen(
-                                            projectId: widget.projectId,
+                              MediaQuery.of(context).size.width < 500
+                                  ? ElevatedButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => ProductPanelScreen(
+                                              projectId: widget.projectId,
+                                            ),
                                           ),
+                                        );
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.green,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.all(12),
+                                        minimumSize: const Size(48, 48),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      child: const Icon(Icons.inventory),
+                                    )
+                                  : ElevatedButton.icon(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => ProductPanelScreen(
+                                              projectId: widget.projectId,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      icon: const Icon(Icons.inventory),
+                                      label: const Text('Manage Materials'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.green,
+                                        foregroundColor: Colors.white,
+                                      ),
                                     ),
-                                  );
-                                },
-                                icon: const Icon(Icons.inventory),
-                                label: const Text('Manage Materials'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green,
-                                  foregroundColor: Colors.white,
-                                ),
-                              ),
                             ],
                           ),
                           const SizedBox(height: 16),

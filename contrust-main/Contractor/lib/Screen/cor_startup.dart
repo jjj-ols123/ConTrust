@@ -31,6 +31,31 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
         ),
         child: Stack(
           children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 100),
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Container(
+                    width: isPhone ? screenWidth * 0.8 : 600,
+                    padding: const EdgeInsets.all(28),
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: _buildLoginForm(context),
+                  ),
+                ),
+              ),
+            ),
             Positioned(
               top: 50,
               left: 30,
@@ -45,7 +70,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withOpacity(0.2),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -56,28 +81,6 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
                     color: Colors.grey,
                     size: 24,
                   ),
-                ),
-              ),
-            ),
-            Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Container(
-                  width: isPhone ? screenWidth * 0.8 : 600,
-                  padding: const EdgeInsets.all(28),
-                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: _buildLoginForm(context),
                 ),
               ),
             ),
@@ -225,7 +228,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.asset('googleicon.png', height: 28),
+                Image.asset('assets/googleicon.png', height: 28),
                 const SizedBox(width: 12),
                 const Text(
                   "Continue with Google",

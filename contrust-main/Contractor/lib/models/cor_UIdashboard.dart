@@ -821,11 +821,10 @@ class _PersistentDashboardDrawerState extends State<PersistentDashboardDrawer>
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
-    final double initialSize = screenHeight > 600 ? 0.10 : 0.10;
-    final double expandedSize = screenHeight > 600 ? 0.40 : 0.20;
-    final double toggleThreshold = screenHeight > 600 ? 0.2 : 0.25;
     final isDesktop = screenWidth > 1200;
-    final adjustedExpandedSize = isDesktop ? 0.39 : expandedSize;
+    final double initialSize = 0.10;
+    final double expandedSize = isDesktop ? 0.39 : 0.48;
+    final double toggleThreshold = screenHeight > 600 ? 0.2 : 0.25;
 
     return Stack(
       children: [
@@ -833,7 +832,7 @@ class _PersistentDashboardDrawerState extends State<PersistentDashboardDrawer>
           controller: _controller,
           initialChildSize: initialSize,
           minChildSize: initialSize,
-          maxChildSize: adjustedExpandedSize,
+          maxChildSize: expandedSize,
           builder: (context, scrollController) {
             return Column(
               mainAxisSize: MainAxisSize.min, 
@@ -847,7 +846,7 @@ class _PersistentDashboardDrawerState extends State<PersistentDashboardDrawer>
                       onTap: () {
                         if (_controller.size < toggleThreshold) {
                           _controller.animateTo(
-                            adjustedExpandedSize,
+                            expandedSize,
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeOut,
                           );
@@ -1008,7 +1007,7 @@ class DashboardDrawer extends StatelessWidget {
       height: double.infinity, 
       child: Padding(
         padding: EdgeInsets.symmetric(
-          vertical: screenHeight < 800 ? 8 : 10, 
+          vertical: screenHeight < 800 ? 8 : 15, 
           horizontal: screenWidth > 1200 ? 32 : (screenWidth > 600 ? 20 : 8),
         ),
         child: Column(
