@@ -217,7 +217,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
 
         GestureDetector(
           onTap: () {
-           
+            SignInGoogleContractor().signInGoogle(context);
           },
           child: Container(
             padding: const EdgeInsets.all(12),
