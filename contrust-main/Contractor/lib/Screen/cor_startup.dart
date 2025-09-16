@@ -96,11 +96,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
       children: [
         Column(
           children: [
-            Image.asset(
-              'logo3.png',
-              width: 80,
-              height: 80,
-            ),
+            Image.asset('logo3.png', width: 80, height: 80),
             const SizedBox(height: 16),
             Text(
               'Welcome Back',
@@ -180,7 +176,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
             );
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.amber.shade700, 
+            backgroundColor: Colors.amber.shade700,
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -212,13 +208,12 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
             Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
           ],
         ),
-
         const SizedBox(height: 20),
-
-        GestureDetector(
+        InkWell(
           onTap: () {
             SignInGoogleContractor().signInGoogle(context);
           },
+          borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -238,12 +233,9 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
             ),
           ),
         ),
-
         const SizedBox(height: 20),
-
         TextButton(
-          onPressed: () {
-          },
+          onPressed: () {},
           child: Text(
             'Forgot Password?',
             style: TextStyle(

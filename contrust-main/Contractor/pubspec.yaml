@@ -38,6 +38,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   image_picker: ^1.1.2
   supabase_flutter: ^2.8.4
+  flutter_dotenv: ^5.0.2
   backend: 
     path: ../Back-End
   shared_preferences: ^2.5.2
@@ -45,7 +46,7 @@ dependencies:
   flutter_keyboard_visibility: ^6.0.0
   flutter_quill_extensions: ^11.0.0
   flutter_quill_delta_from_html: ^1.5.2
-  signature: ^5.4.0
+  signature: ^5.4.0 
 
 dev_dependencies:
   flutter_test:

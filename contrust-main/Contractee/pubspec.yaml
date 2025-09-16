@@ -32,6 +32,7 @@ dependencies:
     sdk: flutter
   smooth_page_indicator: ^1.2.0+3
   supabase_flutter: ^2.8.4
+  flutter_dotenv: ^5.0.2
   backend:
     path: ../Back-End
   shared_preferences: ^2.5.2
