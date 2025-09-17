@@ -114,7 +114,7 @@ class SignInGoogleContractor {
       final existingContractor = await supabase
           .from('Contractor')
           .select()
-          .eq('user_id', user.id)
+          .eq('contractor_id', user.id)
           .maybeSingle();
 
       if (existingContractor == null) {
@@ -158,7 +158,7 @@ class SignInGoogleContractor {
         UserAttributes(
           data: {
             'user_type': 'contractor',
-            'firm_name': user.userMetadata?['full_name'] ?? 'My Firm',
+            'firm_name': user.userMetadata?['full_name'] ?? 'Contractor Firm',
             'email': user.email,
             'profile_photo': user.userMetadata?['avatar_url'],
           },
@@ -166,8 +166,8 @@ class SignInGoogleContractor {
       );
 
       await supabase.from('Contractor').insert({
-        'user_id': user.id,
-        'firm_name': user.userMetadata?['full_name'] ?? 'My Firm',
+        'contractor_id': user.id,
+        'firm_name': user.userMetadata?['full_name'] ?? 'Contractor Firm',
         'profile_photo': user.userMetadata?['avatar_url'],
         'contact_number': '',
         'rating': 0.0,
@@ -176,7 +176,7 @@ class SignInGoogleContractor {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Welcome! Your contractor account has been created.'),
+          content: Text('Welcome! Your account has been created.'),
           backgroundColor: Colors.green,
         ),
       );
