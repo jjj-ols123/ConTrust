@@ -176,12 +176,6 @@
       "languageVersion": "2.14"
     },
     {
-      "name": "flutter_dotenv",
-      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_dotenv-5.2.1",
-      "packageUri": "lib/",
-      "languageVersion": "2.12"
-    },
-    {
       "name": "flutter_keyboard_visibility",
       "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_keyboard_visibility-6.0.0",
       "packageUri": "lib/",

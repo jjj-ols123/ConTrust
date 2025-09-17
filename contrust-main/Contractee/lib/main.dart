@@ -4,7 +4,8 @@ import 'package:contractee/pages/cee_welcome.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:backend/utils/supabase_config.dart';
+
 
 class AppScrollBehavior extends MaterialScrollBehavior {
   @override
@@ -17,11 +18,10 @@ class AppScrollBehavior extends MaterialScrollBehavior {
 
 Future<void> main() async {
 
-  await dotenv.load(fileName: ".env");
 
   await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+    url: SupabaseConfig.url,
+    anonKey: SupabaseConfig.anonKey,
   );
 
   SharedPreferences prefs = await SharedPreferences.getInstance();

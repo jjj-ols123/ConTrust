@@ -38,7 +38,6 @@ dependencies:
   cupertino_icons: ^1.0.8
   image_picker: ^1.1.2
   supabase_flutter: ^2.8.4
-  flutter_dotenv: ^5.0.2
   backend: 
     path: ../Back-End
   shared_preferences: ^2.5.2
