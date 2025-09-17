@@ -36,7 +36,7 @@ class SignInContractor {
       if (userType?.toLowerCase() != 'contractor') {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Not a contractee...'),
+            content: Text('Not a contractor...'),
             backgroundColor: Colors.red,
           ),
         );
