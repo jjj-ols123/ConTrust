@@ -59,7 +59,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
             Positioned(
               top: 50,
               left: 30,
-              child: GestureDetector(
+              child: InkWell(
                 onTap: () {
                   Navigator.pop(context);
                 },
@@ -223,7 +223,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.asset('googleicon.png', height: 28),
+                Image.asset('assets/googleicon.png', height: 28),
                 const SizedBox(width: 12),
                 const Text(
                   "Continue with Google",
@@ -247,7 +247,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
 
         const SizedBox(height: 10),
 
-        GestureDetector(
+        InkWell(
           onTap: () {
             Navigator.push(
               context,

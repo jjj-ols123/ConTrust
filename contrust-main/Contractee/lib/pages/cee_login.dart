@@ -155,7 +155,7 @@ class _LoginPageState extends State<LoginPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.asset('googleicon.png', height: 28),
+                Image.asset('assets/googleicon.png', height: 28),
                 const SizedBox(width: 12),
                 const Text(
                   "Continue with Google",
@@ -166,7 +166,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
         const SizedBox(height: 25),
-        GestureDetector(
+        InkWell(
           onTap: () {
             transitionBuilder(context, RegistrationPage());
           },

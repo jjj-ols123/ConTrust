@@ -111,7 +111,7 @@ class _ContracteeChatHistoryPageState
                                     chat['last_message_time'])
                                 : null;
 
-                            return GestureDetector(
+                            return InkWell(
                               onTap: canChat
                                   ? () {
                                       Navigator.push(

@@ -842,7 +842,7 @@ class _PersistentDashboardDrawerState extends State<PersistentDashboardDrawer>
                   height: 93.5,
                   color: Colors.transparent,
                   child: Center(
-                    child: GestureDetector(
+                    child: InkWell(
                       onTap: () {
                         if (_controller.size < toggleThreshold) {
                           _controller.animateTo(
@@ -1138,7 +1138,7 @@ class _DrawerIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(

@@ -162,7 +162,7 @@ class _HomePageState extends State<HomePage> {
                                ? profileUrl
                                : profilePhoto;
                        final isSelected = selectedIndex == index;
-                        return GestureDetector(
+                        return InkWell(
                           onTap: () {
                             setState(() {
                               if (selectedIndex == index) {

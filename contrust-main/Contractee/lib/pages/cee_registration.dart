@@ -178,7 +178,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
           ),
         ),
         const SizedBox(height: 20),
-        GestureDetector(
+        InkWell(
           onTap: () {
             Navigator.pushReplacement(
               context,

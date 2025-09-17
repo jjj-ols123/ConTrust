@@ -187,7 +187,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(5, (index) {
-                    return GestureDetector(
+                    return InkWell(
                       onTap: () {
                         setDialogState(() {
                           tempRating = index + 1.0;

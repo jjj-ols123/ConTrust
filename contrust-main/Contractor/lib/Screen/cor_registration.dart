@@ -66,7 +66,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             Positioned(
               top: 50,
               left: 30,
-              child: GestureDetector(
+              child: InkWell(
                 onTap: () {
                   Navigator.pop(context);
                 },
@@ -444,7 +444,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ],
             ),
         const SizedBox(height: 20),
-        GestureDetector(
+        InkWell(
           onTap: () {
             Navigator.pop(context); 
           },
