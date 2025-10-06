@@ -1,6 +1,6 @@
 // ignore_for_file: deprecated_member_use
-import 'package:backend/models/be_UImessage.dart';
-import 'package:backend/services/be_fetchservice.dart';
+import 'package:backend/build/buildmessagesdesign.dart';
+import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -173,7 +173,7 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
                   itemBuilder: (context, index) {
                     final msg = messages[index];
                     final isMe = msg['sender_id'] == widget.contracteeId;
-                    return UIMessage.buildMessageBubble(
+                    return UIMessage.buildContractMessage(
                       context,
                       msg,
                       isMe,

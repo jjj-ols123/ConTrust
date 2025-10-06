@@ -1,11 +1,10 @@
 // ignore_for_file: non_constant_identifier_names, empty_catches, no_leading_underscores_for_local_identifiers
 
-import 'package:backend/services/be_fetchservice.dart';
-import 'package:backend/services/be_notification_service.dart';
-import 'package:backend/utils/be_constraint.dart';
+import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/services/both services/be_notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:backend/services/be_user_service.dart';
+import 'package:backend/services/both services/be_user_service.dart';
 
 class ProjectService {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -28,7 +27,25 @@ class ProjectService {
     try {
       await _userService.checkContracteeId(contracteeId);
 
-      await _supabase.from('Projects').upsert({
+      final existingProject = await _supabase
+          .from('Projects')
+          .select('project_id, status')
+          .eq('contractee_id', contracteeId)
+          .eq('status', 'pending')
+          .maybeSingle();
+
+      if (existingProject != null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('You cannot post a new project while a project is up.'),
+            duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
+      }
+
+      await _supabase.from('Projects').insert({
         'contractee_id': contracteeId,
         'type': type,
         'title': title,
@@ -39,7 +56,7 @@ class ProjectService {
         'status': 'pending',
         'duration': duration,
         'start_date': startDate.toIso8601String(),
-      }, onConflict: 'contractee_id');
+      });
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -48,17 +65,9 @@ class ProjectService {
       }
     } catch (e) {
       if (context.mounted) {
-        if (e is PostgrestException &&
-            e.code == '23505' &&
-            e.message.contains('unique_contractee_id')) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('You can only post one project')),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error inserting data')),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error creating project: $e')),
+        );
       }
       rethrow;
     }
@@ -161,6 +170,7 @@ class ProjectService {
       final contracteeData =
           await FetchService().fetchContracteeData(contracteeId);
       final contracteeName = contracteeData?['full_name'] ?? 'A contractee';
+      final contracteePhoto = contracteeData?['profile_photo'] ?? '';
 
       final contractorData =
           await FetchService().fetchContractorData(contractorId);
@@ -179,6 +189,7 @@ class ProjectService {
           'firm_name': contractorName,
           'contractor_id': contractorId,
           'full_name': contracteeName,
+          'profile_photo': contracteePhoto,
           'project_id': projectId,
           'project_title': title,
           'project_type': type,
@@ -310,6 +321,39 @@ class ProjectService {
       );
     } catch (e) {
       rethrow;
+    }
+  }
+
+  // Helper method to check for existing hire requests
+  Future<Map<String, dynamic>?> hasExistingHireRequest(
+      String contractorId, String contracteeId) async {
+    return await FetchService().hasExistingHireRequest(contractorId, contracteeId);
+  }
+
+  // Helper method to cancel other hire requests
+  Future<void> cancelOtherHireRequests(
+      String projectId, String contracteeId, String acceptedNotificationId) async {
+    try {
+      final otherRequests = await _supabase
+          .from('Notifications')
+          .select('notification_id, information')
+          .eq('headline', 'Hiring Request')
+          .eq('sender_id', contracteeId)
+          .filter('information->>project_id', 'eq', projectId)
+          .neq('notification_id', acceptedNotificationId);
+
+      for (final request in otherRequests) {
+        final info = Map<String, dynamic>.from(request['information'] ?? {});
+        info['status'] = 'cancelled';
+        info['cancelled_reason'] = 'Another contractor was selected';
+        info['cancelled_at'] = DateTime.now().toIso8601String();
+
+        await _supabase.from('Notifications').update({
+          'information': info,
+        }).eq('notification_id', request['notification_id']);
+      }
+    } catch (e) {
+      return;
     }
   }
 

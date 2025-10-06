@@ -1,6 +1,6 @@
 // ignore_for_file: file_names, deprecated_member_use, library_private_types_in_public_api, use_build_context_synchronously
 import 'package:backend/utils/be_validation.dart';
-import 'package:contractor/services/cor_signup.dart';
+import 'package:backend/services/contractor services/cor_signup.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 

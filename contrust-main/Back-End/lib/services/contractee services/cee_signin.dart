@@ -1,5 +1,5 @@
 // ignore_for_file: use_build_context_synchronously
-import 'package:backend/services/be_user_service.dart';
+import 'package:backend/services/both services/be_user_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 

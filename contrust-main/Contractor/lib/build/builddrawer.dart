@@ -1,0 +1,753 @@
+// ignore_for_file: use_build_context_synchronously, deprecated_member_use
+
+import 'package:backend/models/be_appbar.dart';
+import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:contractor/Screen/cor_bidding.dart';
+import 'package:contractor/Screen/cor_chathistory.dart';
+import 'package:contractor/Screen/cor_clienthistory.dart';
+import 'package:contractor/Screen/cor_contracttype.dart';
+import 'package:contractor/Screen/cor_dashboard.dart';
+import 'package:contractor/Screen/cor_ongoing.dart';
+import 'package:contractor/Screen/cor_product.dart';
+import 'package:contractor/Screen/cor_profile.dart';
+import 'package:flutter/material.dart';
+
+enum ContractorPage {
+  dashboard,
+  messages,
+  contracts,
+  bidding,
+  history,
+  profile,
+  materials,
+  projectManagement,
+}
+
+class ContractorShell extends StatelessWidget {
+  final ContractorPage currentPage;
+  final String contractorId;
+  final Widget child;
+  final EdgeInsets? contentPadding;
+  
+  const ContractorShell({
+    super.key,
+    required this.currentPage,
+    required this.contractorId,
+    required this.child,
+    this.contentPadding,
+  });
+
+  String title() {
+    switch (currentPage) {
+      case ContractorPage.dashboard:
+        return 'Dashboard';
+      case ContractorPage.messages:
+        return 'Messages';
+      case ContractorPage.contracts:
+        return 'Contracts';
+      case ContractorPage.bidding:
+        return 'Bidding';
+      case ContractorPage.history:
+        return 'History';
+      case ContractorPage.profile:
+        return 'Profile';
+      case ContractorPage.materials:
+        return 'Material Page';
+      case ContractorPage.projectManagement:
+        return 'Project Management';
+    }
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth >= 1000;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
+      appBar: ConTrustAppBar(headline: ''),
+      body: Row(
+        children: [
+          if (isDesktop)
+            Container(
+              width: 280,
+              decoration: BoxDecoration(
+                color: Colors.amber[500],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(2, 0),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade50,
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Colors.amber.shade200,
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.shade600,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.construction,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'ConTrust',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF2D3748),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: SideDashboardDrawer(
+                      contractorId: contractorId,
+                      currentPage: currentPage,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          Expanded(
+            child: Padding(
+              padding: contentPadding ?? EdgeInsets.zero,
+              child: child,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SideDashboardDrawer extends StatefulWidget {
+  final String? contractorId;
+  final ContractorPage currentPage;
+  const SideDashboardDrawer({
+    super.key,
+    required this.contractorId,
+    required this.currentPage,
+  });
+
+  @override
+  State<SideDashboardDrawer> createState() => _SideDashboardDrawerState();
+}
+
+class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
+  bool _loadingPM = false;
+
+  Future<void> goProjectManagement() async {
+    if (widget.contractorId == null) return;
+    setState(() => _loadingPM = true);
+
+    try {
+      final activeProjects = await FetchService().fetchContractorActiveProjects(
+        widget.contractorId!,
+      );
+
+      setState(() => _loadingPM = false);
+
+      if (activeProjects.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No active / ongoing project found')),
+        );
+        return;
+      }
+      final projectId = activeProjects.first['project_id'];
+
+      if (widget.currentPage != ContractorPage.projectManagement) {
+                navigateToPage(ContractorShell(
+                  currentPage: ContractorPage.projectManagement,
+                  contractorId: widget.contractorId ?? '',
+                  child: CorOngoingProjectScreen(projectId: projectId ?? ''),
+                ));
+              }
+    } catch (e) {
+      setState(() => _loadingPM = false);
+      return;
+    }
+  }
+  
+  void navigateToPage(Widget page) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => page,
+        transitionDuration: Duration.zero, 
+        reverseTransitionDuration: Duration.zero,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final id = widget.contractorId;
+    return Container(
+      color: Colors.white,
+      child: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        children: [
+          _SidebarItem(
+            icon: Icons.dashboard_outlined,
+            label: 'Dashboard',
+            active: widget.currentPage == ContractorPage.dashboard,
+            onTap: () {
+              if (widget.currentPage != ContractorPage.dashboard) {
+                navigateToPage(DashboardScreen(contractorId: id ?? ''));
+              }
+            },
+          ),
+          _SidebarItem(
+            icon: Icons.message_outlined,
+            label: 'Messages',
+            active: widget.currentPage == ContractorPage.messages,
+            onTap: () {
+              if (widget.currentPage != ContractorPage.messages) {
+                navigateToPage(ContractorShell(
+                  currentPage: ContractorPage.messages,
+                  contractorId: id ?? '',
+                  child: ContractorChatHistoryPage(),
+                ));
+              }
+            },
+          ),
+          _SidebarItem(
+            icon: Icons.assignment_outlined,
+            label: 'Contracts',
+            active: widget.currentPage == ContractorPage.contracts,
+            onTap: () {
+              if (widget.currentPage != ContractorPage.contracts) {
+                navigateToPage(ContractorShell(
+                  currentPage: ContractorPage.contracts,
+                  contractorId: id ?? '',
+                  child: ContractType(contractorId: id ?? ''),
+                ));
+              }
+            },
+          ),
+          _SidebarItem(
+            icon: Icons.gavel_outlined,
+            label: 'Bidding',
+            active: widget.currentPage == ContractorPage.bidding,
+            onTap: () {
+              if (widget.currentPage != ContractorPage.bidding) {
+                navigateToPage(ContractorShell(
+                  currentPage: ContractorPage.bidding,
+                  contractorId: id ?? '',
+                  child: BiddingScreen(contractorId: id ?? ''),
+                ));
+              }
+            },
+          ),
+          _SidebarItem(
+            icon: Icons.history_outlined,
+            label: 'History',
+            active: widget.currentPage == ContractorPage.history,
+            onTap: () {
+              if (widget.currentPage != ContractorPage.history) {
+                navigateToPage(ContractorShell(
+                  currentPage: ContractorPage.history,
+                  contractorId: id ?? '',
+                  child: ClientHistoryScreen(),
+                ));
+              }
+            },
+          ),
+          _SidebarItem(
+            icon: Icons.person_outline,
+            label: 'Profile',
+            active: widget.currentPage == ContractorPage.profile,
+            onTap: () {
+              if (widget.currentPage != ContractorPage.profile) {
+                navigateToPage(ContractorShell(
+                  currentPage: ContractorPage.profile,
+                  contractorId: id ?? '',
+                  child: ContractorUserProfileScreen(contractorId: id ?? ''),
+                ));
+              }
+            },
+          ),
+          _SidebarItem(
+            icon: Icons.build_outlined,
+            label: 'Material Page',
+            active: widget.currentPage == ContractorPage.materials,
+            onTap: () => openMaterials(context, widget.contractorId, fromSidebar: true),
+          ),
+          _SidebarItem(
+            icon: Icons.work_outline,
+            label: _loadingPM ? 'Loading...' : 'Project Management',
+            active: widget.currentPage == ContractorPage.projectManagement,
+            onTap: _loadingPM ? null : goProjectManagement,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SidebarItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool active;
+  final VoidCallback? onTap;
+  const _SidebarItem({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = active ? Colors.amber.shade700 : Colors.grey.shade700;
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: active ? Colors.amber.shade100 : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                  color: color,
+                ),
+              ),
+            ),
+            if (active) Icon(Icons.chevron_right, color: color, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class BottomDashboardDrawer extends StatefulWidget {
+  final String? contractorId;
+  const BottomDashboardDrawer({super.key, this.contractorId});
+
+  @override
+  State<BottomDashboardDrawer> createState() => _BottomDashboardDrawerState();
+}
+
+class _BottomDashboardDrawerState extends State<BottomDashboardDrawer>
+    with TickerProviderStateMixin {
+  final DraggableScrollableController _controller =
+      DraggableScrollableController();
+  late AnimationController _iconController;
+  late Animation<double> _iconRotation;
+
+  @override
+  void initState() {
+    super.initState();
+    _iconController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _iconRotation = Tween<double>(begin: 0.0, end: 0.5).animate(
+      CurvedAnimation(parent: _iconController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _iconController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth > 1200;
+    final double initialSize = 0.10;
+    final double expandedSize = isDesktop ? 0.39 : 0.48;
+    final double toggleThreshold = screenHeight > 600 ? 0.2 : 0.25;
+
+    return Stack(
+      children: [
+        DraggableScrollableSheet(
+          controller: _controller,
+          initialChildSize: initialSize,
+          minChildSize: initialSize,
+          maxChildSize: expandedSize,
+          builder: (context, scrollController) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: double.infinity,
+                  height: 93.5,
+                  color: Colors.transparent,
+                  child: Center(
+                    child: InkWell(
+                      onTap: () {
+                        if (_controller.size < toggleThreshold) {
+                          _controller.animateTo(
+                            expandedSize,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOut,
+                          );
+                          _iconController.forward();
+                        } else {
+                          _controller.animateTo(
+                            initialSize,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOut,
+                          );
+                          _iconController.reverse();
+                        }
+                      },
+                      child: Container(
+                        width: screenWidth > 600 ? 110 : screenWidth * 0.18,
+                        height: 22,
+                        margin: const EdgeInsets.only(bottom: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.amber[600],
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        child: AnimatedBuilder(
+                          animation: _iconRotation,
+                          builder: (context, child) {
+                            return Transform.rotate(
+                              angle: _iconRotation.value * 3.14159,
+                              child: Icon(
+                                Icons.keyboard_arrow_up,
+                                color: Colors.white,
+                                size: screenWidth > 600 ? 22 : 16,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Material(
+                    elevation: 16,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(24),
+                    ),
+                    color: Colors.white,
+                    child: DashboardDrawer(
+                      scrollController: scrollController,
+                      contractorId: widget.contractorId,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class DashboardDrawer extends StatelessWidget {
+  final ScrollController? scrollController;
+  final String? contractorId;
+  const DashboardDrawer({super.key, this.scrollController, this.contractorId});
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    int crossAxisCount;
+    double iconSize;
+    double fontSize;
+    double spacing;
+    double childAspectRatio;
+
+    if (screenWidth > 1200) {
+      crossAxisCount = 6;
+      iconSize = screenHeight < 800 ? 24.0 : 28.0;
+      fontSize = screenHeight < 800 ? 12.0 : 14.0;
+      spacing = 16.0;
+      childAspectRatio = screenHeight < 800 ? 1.1 : 0.95;
+    } else if (screenWidth > 900) {
+      crossAxisCount = 5;
+      iconSize = screenHeight < 800 ? 22.0 : 26.0;
+      fontSize = screenHeight < 800 ? 11.0 : 13.0;
+      spacing = 14.0;
+      childAspectRatio = screenHeight < 800 ? 1.1 : 0.95;
+    } else if (screenWidth > 600) {
+      crossAxisCount = 4;
+      iconSize = screenHeight < 800 ? 20.0 : 24.0;
+      fontSize = screenHeight < 800 ? 10.0 : 12.0;
+      spacing = 12.0;
+      childAspectRatio = screenHeight < 800 ? 1.2 : 1.0;
+    } else {
+      crossAxisCount = 3;
+      iconSize = screenHeight < 800 ? 18.0 : 20.0;
+      fontSize = screenHeight < 800 ? 9.0 : 11.0;
+      spacing = 1.0;
+      childAspectRatio = screenHeight < 800 ? 1.3 : 1.1;
+    }
+
+    return SizedBox(
+      height: double.infinity,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          vertical: screenHeight < 800 ? 8 : 15,
+          horizontal: screenWidth > 1200 ? 32 : (screenWidth > 600 ? 20 : 8),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Expanded(
+              child: GridView.count(
+                controller: scrollController,
+                shrinkWrap: true,
+                crossAxisCount: crossAxisCount,
+                mainAxisSpacing: spacing,
+                crossAxisSpacing: spacing,
+                childAspectRatio: childAspectRatio,
+                children: [
+                  _DrawerIcon(
+                    icon: Icons.message,
+                    label: 'Messages',
+                    iconSize: iconSize,
+                    fontSize: fontSize,
+                    color: Colors.blue,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => ContractorChatHistoryPage(
+                                contractorId: contractorId,
+                              ),
+                        ),
+                      );
+                    },
+                  ),
+                  _DrawerIcon(
+                    icon: Icons.assignment,
+                    label: 'Contracts',
+                    iconSize: iconSize,
+                    fontSize: fontSize,
+                    color: Colors.green,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) =>
+                                  ContractType(contractorId: contractorId!),
+                        ),
+                      );
+                    },
+                  ),
+                  _DrawerIcon(
+                    icon: Icons.gavel,
+                    label: 'Bidding',
+                    iconSize: iconSize,
+                    fontSize: fontSize,
+                    color: Colors.orange,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) =>
+                                  BiddingScreen(contractorId: contractorId!),
+                        ),
+                      );
+                    },
+                  ),
+                  _DrawerIcon(
+                    icon: Icons.history,
+                    label: 'History',
+                    iconSize: iconSize,
+                    fontSize: fontSize,
+                    color: Colors.purple,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ClientHistoryScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _DrawerIcon(
+                    icon: Icons.person,
+                    label: 'Profile',
+                    iconSize: iconSize,
+                    fontSize: fontSize,
+                    color: Colors.teal,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => ContractorUserProfileScreen(
+                                contractorId: contractorId!,
+                              ),
+                        ),
+                      );
+                    },
+                  ),
+                  _DrawerIcon(
+                    icon: Icons.build,
+                    label: 'Material Page',
+                    iconSize: iconSize,
+                    fontSize: fontSize,
+                    color: Colors.indigo,
+                    onTap: () => openMaterials(context, contractorId),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DrawerIcon extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final double iconSize;
+  final double fontSize;
+  final Color color;
+
+  const _DrawerIcon({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    required this.iconSize,
+    required this.fontSize,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+          border: Border.all(color: color.withOpacity(0.2)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: iconSize),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+  Future<void> openMaterials(BuildContext context, String? contractorId, {bool fromSidebar = false}) async {
+  if (contractorId == null) return;
+  try {
+    final projects = await FetchService().fetchContractorProjectInfo(contractorId);
+
+    final active = projects.where((p) {
+      final s = (p['status'] as String? ?? '').toLowerCase();
+      return s == 'active' || s == 'ongoing';
+    }).toList();
+
+    final productScreen = ProductPanelScreen(
+      contractorId: contractorId,
+      projectId: active.isNotEmpty ? active.first['project_id']?.toString() : null,
+    );
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    if (fromSidebar || screenWidth >= 1000) {
+      final page = ContractorShell(
+        currentPage: ContractorPage.materials,
+        contractorId: contractorId,
+        child: productScreen,
+      );
+      
+      Navigator.pushReplacement(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) => page,
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => productScreen),
+      );
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading materials: ${e.toString()}')),
+      );
+    }
+    return;
+  }
+  }

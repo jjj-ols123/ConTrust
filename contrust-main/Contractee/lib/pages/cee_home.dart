@@ -2,9 +2,9 @@
 
 import 'package:backend/models/be_UIapp.dart';
 import 'package:backend/models/be_appbar.dart';
-import 'package:backend/services/be_bidding_service.dart';
-import 'package:backend/services/be_fetchservice.dart';
-import 'package:backend/services/be_project_service.dart';
+import 'package:backend/services/both services/be_bidding_service.dart';
+import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/services/both services/be_project_service.dart';
 import 'package:contractee/models/cee_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';

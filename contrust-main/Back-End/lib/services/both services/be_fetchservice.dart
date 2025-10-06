@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class FetchService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  //For Contractees 
+  //For Contractees
 
   Future<List<Map<String, dynamic>>> fetchContractors() async {
     try {
@@ -16,7 +16,6 @@ class FetchService {
     }
   }
 
-  
   Future<String?> fetchChatRoomId(String projectId) async {
     final response = await _supabase
         .from('ChatRoom')
@@ -116,7 +115,7 @@ class FetchService {
     }
   }
 
-    Future<List<Map<String, dynamic>>> fetchProjectTasks(String projectId) async {
+  Future<List<Map<String, dynamic>>> fetchProjectTasks(String projectId) async {
     try {
       final response = await _supabase
           .from('ProjectTasks')
@@ -130,7 +129,7 @@ class FetchService {
     }
   }
 
-    Future<List<Map<String, dynamic>>> fetchProjectReports(
+  Future<List<Map<String, dynamic>>> fetchProjectReports(
       String projectId) async {
     try {
       final response = await _supabase
@@ -177,14 +176,42 @@ class FetchService {
           .from('Projects')
           .select('*')
           .eq('project_id', projectId)
-          .single();
+          .maybeSingle()
+          .order('created_at', ascending: false);
+
       return response;
     } catch (error) {
       return null;
     }
   }
 
-    Future<Map<String, String>> userTypeDecide({
+  Future<Map<String, dynamic>?> fetchProjectDetailsByChatRoom(String chatRoomId) async {
+    try {
+      final chatRoomResponse = await _supabase
+          .from('ChatRoom')
+          .select('project_id')
+          .eq('chatroom_id', chatRoomId)
+          .maybeSingle();
+
+      if (chatRoomResponse == null || chatRoomResponse['project_id'] == null) {
+        return null;
+      }
+
+      final projectId = chatRoomResponse['project_id'];
+
+      final projectResponse = await _supabase
+          .from('Projects')
+          .select('*')
+          .eq('project_id', projectId)
+          .maybeSingle();
+
+      return projectResponse;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  Future<Map<String, String>> userTypeDecide({
     required String contractId,
     required String userType,
     required String action,
@@ -213,7 +240,6 @@ class FetchService {
       'message': message,
     };
   }
-
 
   //For Contractors
 
@@ -273,12 +299,15 @@ class FetchService {
             project_id, 
             contract_type_id, 
             title, 
-            content, 
-            total_amount, 
+            pdf_url, 
             status, 
             created_at, 
             updated_at,
-            project:Projects(type, description)
+            sent_at,
+            reviewed_at,
+            contractor_signed_at,
+            contractee_signed_at,
+            project:Projects(type, description, title)
           ''')
           .inFilter('project_id', projectIds)
           .order('created_at', ascending: false);
@@ -298,7 +327,7 @@ class FetchService {
           .eq('contractor_id', contractorId)
           .order('created_at', ascending: false);
 
-      return List<Map<String, dynamic>>.from(response);
+      return response;
     } catch (e) {
       return [];
     }
@@ -322,5 +351,122 @@ class FetchService {
         .filter('information->>project_id', 'eq', projectId);
 
     return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<Map<String, dynamic>?> fetchContracteeFromProject(
+      String projectId) async {
+    try {
+      final response = await _supabase.from('Projects').select('''
+          contractee_id,
+          contractee:"Contractee"(
+            full_name,
+            profile_photo,
+            contractee_id
+          )
+        ''').eq('project_id', projectId).single();
+
+      return response['contractee'];
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchContractorActiveProjects(String contractorId) async {
+    try {
+      final res = await _supabase
+          .from('Projects')
+          .select('project_id,title,status')
+          .eq('contractor_id', contractorId)
+          .inFilter('status', ['active', 'ongoing'])
+          .order('created_at', ascending: false);
+      return List<Map<String, dynamic>>.from(res);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchRatings(String contractorId) async {
+    try {
+      final response = await Supabase.instance.client
+          .from('ContractorRatings')
+          .select('rating, review, created_at, contractee_id')
+          .eq('contractor_id', contractorId)
+          .order('created_at', ascending: false);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  // Contract-specific fetch methods for PDF system
+
+  Future<List<Map<String, dynamic>>> fetchContractsForContractee(
+      String contracteeId) async {
+    try {
+      final response = await _supabase
+          .from('Contracts')
+          .select('''
+            contract_id,
+            project_id,
+            contract_type_id,
+            title,
+            pdf_url,
+            status,
+            created_at,
+            updated_at,
+            sent_at,
+            reviewed_at,
+            contractor_signed_at,
+            contractee_signed_at,
+            project:Projects(type, description, title),
+            contractor:Projects!inner(contractor_id, contractor:Contractor(firm_name, profile_photo))
+          ''')
+          .eq('contractee_id', contracteeId)
+          .order('created_at', ascending: false);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>?> fetchContractWithDetails(String contractId) async {
+    try {
+      final response = await _supabase
+          .from('Contracts')
+          .select('''
+            *,
+            project:Projects(*),
+            contractor:Projects!inner(contractor:Contractor(*)),
+            contractee:Contractee(*),
+            contract_type:ContractTypes(*)
+          ''')
+          .eq('contract_id', contractId)
+          .single();
+
+      return response;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Helper method to check for existing hire requests
+  Future<Map<String, dynamic>?> hasExistingHireRequest(
+      String contractorId, String contracteeId) async {
+    try {
+      final response = await _supabase
+          .from('Notifications')
+          .select('notification_id, information')
+          .eq('headline', 'Hiring Request')
+          .eq('receiver_id', contractorId)
+          .eq('sender_id', contracteeId)
+          .filter('information->>status', 'eq', 'pending')
+          .maybeSingle();
+
+      return response;
+    } catch (e) {
+      return null;
+    }
   }
 }
