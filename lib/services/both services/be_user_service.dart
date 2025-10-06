@@ -167,9 +167,10 @@ class UserService {
     }
   }
 
-  Future<String?> uploadImage(Uint8List imageBytes, String bucketName) async {
+  Future<String?> uploadImage(Uint8List imageBytes, String bucketName, {String? folderPath}) async {
     try {
-      final String filePath = '${DateTime.now().millisecondsSinceEpoch}.png';
+      final String fileName = '${DateTime.now().millisecondsSinceEpoch}.png';
+      final String filePath = folderPath != null ? '$folderPath/$fileName' : fileName;
 
       await _supabase.storage
           .from(bucketName)
@@ -196,7 +197,10 @@ class UserService {
     String contractorId,
     Uint8List imageBytes,
   ) async {
-    final String? imageUrl = await uploadImage(imageBytes, 'pastprojects');
+    // Create contractor-specific folder path
+    final String contractorFolder = 'contractor_$contractorId';
+    
+    final String? imageUrl = await uploadImage(imageBytes, 'pastprojects', folderPath: contractorFolder);
     if (imageUrl == null) return false;
 
     try {

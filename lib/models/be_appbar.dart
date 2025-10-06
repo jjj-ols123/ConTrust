@@ -1,8 +1,8 @@
 // ignore_for_file: unused_field, use_build_context_synchronously
 import 'dart:async';
-import 'package:backend/services/be_notification_service.dart';
-import 'package:backend/services/be_user_service.dart';
-import 'package:backend/services/be_fetchservice.dart';
+import 'package:backend/services/both services/be_notification_service.dart';
+import 'package:backend/services/both services/be_user_service.dart';
+import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/utils/be_pagetransition.dart';
 import 'package:contractee/pages/cee_about.dart';
 import 'package:contractee/pages/cee_login.dart';
@@ -10,9 +10,10 @@ import 'package:contractee/pages/cee_materials.dart';
 import 'package:contractee/pages/cee_notification.dart';
 import 'package:contractee/pages/cee_ongoing.dart';
 import 'package:contractee/pages/cee_transaction.dart';
-import 'package:contractee/services/cee_checkuser.dart';
+import 'package:backend/services/contractee services/cee_checkuser.dart';
 import 'package:contractor/Screen/cor_notification.dart';
 import 'package:flutter/material.dart';
+import 'package:backend/build/buildnotification.dart';
 
 class ConTrustAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String headline;
@@ -81,8 +82,7 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error identifying user type.'))
-      );
+          const SnackBar(content: Text('Error identifying user type.')));
     }
   }
 
@@ -110,31 +110,15 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: Colors.amber,
+      backgroundColor: Colors.amber[500],
       centerTitle: true,
       automaticallyImplyLeading: false,
-      leading: (widget.headline == "Home" && _userType?.toLowerCase() == 'contractee')
-          ? Builder(
+      leading: (_userType?.toLowerCase() == 'contractee') ? Builder(
               builder: (context) => IconButton(
                 icon: const Icon(Icons.menu, color: Colors.black),
                 onPressed: () => Scaffold.of(context).openDrawer(),
               ),
-            )
-          : (widget.headline == "Dashboard")
-              ? null 
-              : Navigator.canPop(context)
-                  ? IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.black),
-                      onPressed: () => Navigator.of(context).pop(),
-                    )
-                  : (_userType?.toLowerCase() == 'contractee')
-                      ? Builder(
-                          builder: (context) => IconButton(
-                            icon: const Icon(Icons.menu, color: Colors.black),
-                            onPressed: () => Scaffold.of(context).openDrawer(),
-                          ),
-                        )
-                      : null,
+            ) : null,
       elevation: 4,
       title: Text(
         widget.headline,
@@ -152,32 +136,70 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
               icon: const Icon(Icons.notifications, color: Colors.black),
               onPressed: () async {
                 CheckUserLogin.isLoggedIn(
-                  context: context,
-                  onAuthenticated: () async {
-                    if (!context.mounted) return;
-
-                    String? userType = await UserService().getCurrentUserType();
-
-                    if (userType == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('User type not found')),
-                      );
-                      return;
-                    }
-
-                    if (!context.mounted) return;
-
-                    if (userType.toLowerCase() == 'contractee') {
-                      transitionBuilder(context, ContracteeNotificationPage());
-                    } else if (userType.toLowerCase() == 'contractor') {
-                      transitionBuilder(context, ContractorNotificationPage());
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Unknown user type')),
-                      );
-                    }
-                  },
-                );
+                    context: context,
+                    onAuthenticated: () async {
+                      if (!context.mounted || _receiverId == null) return;
+                      final width = MediaQuery.of(context).size.width;
+                      if (width > 1200) {
+                        showGeneralDialog(
+                          context: context,
+                          barrierDismissible: true,
+                          barrierLabel: 'Notifications',
+                          barrierColor: Colors.black54,
+                          transitionDuration: const Duration(milliseconds: 200),
+                          pageBuilder: (ctx, anim1, anim2) {
+                            final overlayBuilder = NotificationUIBuildMethods(
+                              context: ctx,
+                              receiverId: _receiverId!,
+                            );
+                            return SafeArea(
+                              child: Align(
+                                alignment: Alignment.topRight,
+                                child: Container(
+                                  width: 450,
+                                  height: 500,
+                                  margin: const EdgeInsets.all(16),
+                                  child: Material(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.all(16),
+                                          child: Text(
+                                            'Notifications',
+                                            style: Theme.of(ctx).textTheme.titleLarge,
+                                          ),
+                                        ),
+                                        const Divider(height: 1),
+                                        Flexible(
+                                          child: overlayBuilder.buildNotificationList(
+                                            NotificationService().listenToNotifications(_receiverId!),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      } else {
+                        String? userType = _userType?.toLowerCase();
+                        if (userType == 'contractee') {
+                          transitionBuilder(context, const ContracteeNotificationPage());
+                        } else if (userType == 'contractor') {
+                          transitionBuilder(context, const ContractorNotificationPage());
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Unknown user type')),
+                          );
+                        }
+                      }
+                    },
+                  );
               },
             ),
             if (_unreadCount > 0)
@@ -317,11 +339,14 @@ class MenuDrawerContractee extends StatelessWidget {
                 fontSize: 18,
               ),
             ),
-            onTap: () => transitionBuilder(context, LoginPage(modalContext: context,)),
+            onTap: () => transitionBuilder(
+                context,
+                LoginPage(
+                  modalContext: context,
+                )),
           ),
         ],
       ),
     );
   }
 }
-

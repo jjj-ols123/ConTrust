@@ -1,12 +1,12 @@
 // ignore_for_file: deprecated_member_use, use_super_parameters, file_names
-import 'package:backend/services/be_bidding_service.dart';
-import 'package:backend/services/be_fetchservice.dart';
+import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/services/contractor services/cor_biddingservice.dart';
 import 'package:contractee/models/cee_expandable.dart';
 import 'package:contractee/models/cee_modal.dart';
 import 'package:contractee/pages/cee_chathistory.dart';
 import 'package:contractee/pages/cee_torprofile.dart';
 import 'package:flutter/material.dart';
-import 'package:contractee/services/cee_checkuser.dart';
+import 'package:backend/services/contractee services/cee_checkuser.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ContractorsView extends StatelessWidget {
@@ -316,7 +316,7 @@ class ProjectView extends StatelessWidget {
                         size: 18, color: Colors.grey),
                     const SizedBox(width: 6),
                     StreamBuilder<Duration>(
-                      stream: BiddingService()
+                      stream: CorBiddingService()
                           .getBiddingCountdownStream(createdAt, duration),
                       builder: (context, snapshot) {
                         if (!snapshot.hasData) {
