@@ -271,7 +271,7 @@ class FetchService {
       final response = await _supabase
           .from('ContractTypes')
           .select(
-              'contract_type_id, template_name, template_content, template_description')
+              'contract_type_id, template_name, template_description')
           .order('template_name', ascending: true);
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {

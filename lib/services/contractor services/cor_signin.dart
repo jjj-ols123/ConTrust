@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 import 'package:backend/services/both%20services/be_user_service.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/Screen/cor_dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -22,33 +23,18 @@ class SignInContractor {
       );
 
       if (signInResponse.user == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invalid email or password'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ConTrustSnackBar.error(context, 'Invalid email or password');
         return;
       }
 
       final userType = signInResponse.user?.userMetadata?['user_type'];
 
       if (userType?.toLowerCase() != 'contractor') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Not a contractor...'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ConTrustSnackBar.error(context, 'Not a contractor...');
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Successfully logged in'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      ConTrustSnackBar.success(context, 'Successfully logged in');
 
       Future.delayed(const Duration(milliseconds: 500), () {
         Navigator.pushAndRemoveUntil(
@@ -62,12 +48,7 @@ class SignInContractor {
         );
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error signing in'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      rethrow;
     }
   }
 }
@@ -86,28 +67,18 @@ class SignInGoogleContractor {
         final user = data.session?.user;
 
         if (event == AuthChangeEvent.signedIn && user != null) {
-          _handleSignIn(context, user);
+          handleSignIn(context, user);
         } else if (event == AuthChangeEvent.signedOut) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Sign in cancelled'),
-              backgroundColor: Colors.orange,
-            ),
-          );
+          ConTrustSnackBar.warning(context, 'Signed in cancelled');
         }
       });
       
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error signing in with Google: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      rethrow;
     }
   }
 
-  Future<void> _handleSignIn(BuildContext context, User user) async {
+  Future<void> handleSignIn(BuildContext context, User user) async {
     try {
       final supabase = Supabase.instance.client;
       
@@ -118,16 +89,12 @@ class SignInGoogleContractor {
           .maybeSingle();
 
       if (existingContractor == null) {
-        await _setupContractor(context, user);
+        await setupContractor(context, user);
       } else {
         final userType = user.userMetadata?['user_type'];
         if (userType?.toLowerCase() != 'contractor') {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('This Google account is not registered as a contractor'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          ConTrustSnackBar.error(context, 'This Google account is not registered as a contractor');
+        }
           await supabase.auth.signOut();
           return;
         }
@@ -140,17 +107,12 @@ class SignInGoogleContractor {
           (route) => false,
         );
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error during sign in: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    catch (e) {
+      rethrow;
     }
   }
 
-  Future<void> _setupContractor(BuildContext context, User user) async {
+  Future<void> setupContractor(BuildContext context, User user) async {
     try {
       final supabase = Supabase.instance.client;
       
@@ -174,11 +136,7 @@ class SignInGoogleContractor {
         'created_at': DateTime.now().toIso8601String(),
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Welcome! Your account has been created.'),
-          backgroundColor: Colors.green,
-        ),
+      ConTrustSnackBar.success(context, 'Welcome! Your contractor account has been created.'
       );
 
       Navigator.pushAndRemoveUntil(
@@ -190,12 +148,7 @@ class SignInGoogleContractor {
       );
 
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error setting up profile: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      rethrow;
     }
   }
 }

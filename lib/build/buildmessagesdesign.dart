@@ -3,7 +3,9 @@
 import 'dart:async';
 import 'package:backend/models/be_UIcontract.dart';
 import 'package:backend/services/both%20services/be_project_service.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/Screen/cor_contracttype.dart';
+import 'package:contractor/build/builddrawer.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -24,17 +26,20 @@ class ContractAgreementBanner extends StatefulWidget {
 
 class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
   final supabase = Supabase.instance.client;
-  bool _dialogShown = false;
+  bool dialogShown = false;
+  bool _hasAgreed = false;
+  bool otherHasAgreed = false;
+  bool contractStarted = false;
 
   late final StreamSubscription _projectSubscription;
 
   @override
   void initState() {
     super.initState();
-    _checkProject();
+    checkProject();
   }
 
-  void _checkProject() async {
+  void checkProject() async {
     final projectId = await ProjectService().getProjectId(widget.chatRoomId);
     if (projectId == null) return;
 
@@ -49,6 +54,14 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
             final contractorAgreed = project['contractor_agree'] == true;
             final contracteeAgreed = project['contractee_agree'] == true;
 
+            setState(() {
+              contractStarted = initiated;
+              final isContractor = widget.userRole == 'contractor';
+              _hasAgreed = isContractor ? contractorAgreed : contracteeAgreed;
+              otherHasAgreed =
+                  isContractor ? contracteeAgreed : contractorAgreed;
+            });
+
             if (initiated &&
                 contractorAgreed &&
                 contracteeAgreed &&
@@ -56,47 +69,17 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
               if (mounted) {
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(
-                    builder: (_) => ContractType(
+                    builder: (_) => ContractorShell(
+                      currentPage: ContractorPage.contracts,
                       contractorId: project['contractor_id'] ?? '',
+                      child: ContractType(
+                        contractorId: project['contractor_id'] ?? '',
+                      ),
                     ),
                   ),
                 );
               }
               return;
-            }
-
-            final isContractor = widget.userRole == 'contractor';
-            final hasAgreed =
-                isContractor ? contractorAgreed : contracteeAgreed;
-
-            if (initiated && !hasAgreed && !_dialogShown) {
-              _dialogShown = true;
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Contract Agreement'),
-                      content: const Text(
-                          'Do you agree to proceed with the contract?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () async {
-                            await handleAgree(projectId);
-                          },
-                          child: const Text('Agree'),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          child: const Text('Not now'),
-                        ),
-                      ],
-                    ),
-                  );
-                });
-              }
             }
           }
         });
@@ -108,12 +91,9 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
 
     await supabase
         .from('Projects')
-        .update({'contract_started': true})
-        .eq('project_id', projectId);
+        .update({'contract_started': true}).eq('project_id', projectId);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Waiting for the other party to agree...')),
-    );
+    ConTrustSnackBar.waitingForOther(context);
 
     await Future.delayed(const Duration(milliseconds: 400));
 
@@ -127,10 +107,11 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
 
     await supabase
         .from('Projects')
-        .update({column: true})
-        .eq('project_id', projectId);
+        .update({column: true}).eq('project_id', projectId);
 
-    Navigator.pop(context);
+    if (mounted) {
+      ConTrustSnackBar.agreementConfirmed(context);
+    }
   }
 
   @override
@@ -141,28 +122,78 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
 
   @override
   Widget build(BuildContext context) {
+    String bannerText;
+    String buttonText;
+    VoidCallback? onPressed;
+    Color bannerColor;
+
+    if (!contractStarted) {
+      bannerText = "This project is awaiting for creating contract agreement.";
+      buttonText = "Proceed with Contract";
+      onPressed = handleProceed;
+      bannerColor = Colors.blue[50]!;
+    } else if (_hasAgreed && !otherHasAgreed) {
+      bannerText = "Waiting for the other party to agree.";
+      buttonText = "Waiting...";
+      onPressed = null;
+      bannerColor = Colors.orange[50]!;
+    } else if (!_hasAgreed && otherHasAgreed) {
+      bannerText = "The other party has agreed. Do you agree to proceed?";
+      buttonText = "Agree";
+      onPressed = () async {
+        final projectId =
+            await ProjectService().getProjectId(widget.chatRoomId);
+        if (projectId != null) {
+          await handleAgree(projectId);
+        }
+      };
+      bannerColor = Colors.green[50]!;
+    } else if (_hasAgreed && otherHasAgreed) {
+      if (widget.userRole == 'contractor') {
+        bannerText = "Please proceed to contract creation.";
+        buttonText = "Preparing...";
+        onPressed = null;
+        bannerColor = Colors.amber[500]!;
+      } else {
+        bannerText = "Please wait for the contractor to send a contract.";
+        buttonText = "Waiting for contract...";
+        onPressed = null;
+        bannerColor = Colors.blue[50]!;
+      }
+    } else {
+      bannerText = "This project is awaiting for creating contract agreement.";
+      buttonText = "Proceed with Contract";
+      onPressed = handleProceed;
+      bannerColor = Colors.blue[50]!;
+    }
+
     return Card(
-      color: Colors.blue[50],
+      color: bannerColor,
       margin: const EdgeInsets.all(12),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            const Text(
-              "This project is awaiting contract agreement.",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            Text(
+              bannerText,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton(
-                  onPressed: handleProceed,
+                  onPressed: onPressed,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: onPressed != null
+                        ? (_hasAgreed && !otherHasAgreed
+                            ? Colors.orange
+                            : Colors.blue)
+                        : Colors.grey,
                     foregroundColor: Colors.white,
                   ),
-                  child: const Text("Proceed with Contract"),
+                  child: Text(buttonText),
                 ),
                 const SizedBox(width: 12),
               ],

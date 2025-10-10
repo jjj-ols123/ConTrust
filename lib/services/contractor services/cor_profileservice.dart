@@ -82,6 +82,9 @@ class CorProfileService {
         case 'firmName':
           columnName = 'firm_name';
           break;
+        case 'address':
+          columnName = 'address';
+          break;
         default:
           throw Exception('Invalid field type');
       }

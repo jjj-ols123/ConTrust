@@ -1,6 +1,8 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/utils/be_status.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 
 class CorDashboardService {
@@ -67,7 +69,7 @@ class CorDashboardService {
         'localTasks': localTasks,
       };
     } catch (e) {
-      throw Exception('Error loading dashboard data: $e');
+      rethrow;
     }
   }
 
@@ -80,15 +82,8 @@ class CorDashboardService {
     
     if (projectStatus != 'active') {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Project is not active yet. Current status: ${getStatusLabel(projectStatus)}',
-            ),
-            backgroundColor: Colors.orange,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        ConTrustSnackBar.warning(context, 
+          'Project is not active yet. Current status: ${ProjectStatus().getStatusLabel(projectStatus)}');
       }
       return;
     }
@@ -113,44 +108,6 @@ class CorDashboardService {
 
     if (confirmed == true) {
       onNavigate();
-    }
-  }
-
-  String getStatusLabel(String? status) {
-    switch ((status ?? '').toLowerCase()) {
-      case 'active':
-        return 'Active';
-      case 'pending':
-        return 'Pending';
-      case 'awaiting_contract':
-        return 'Awaiting for Contract';
-      case 'awaiting_agreement':
-        return 'Awaiting Agreement';
-      case 'closed':
-        return 'Closed';
-      case 'ended':
-        return 'Ended';
-      default:
-        return 'Unknown';
-    }
-  }
-
-  Color getStatusColor(String? status) {
-    switch ((status ?? '').toLowerCase()) {
-      case 'active':
-        return Colors.green;
-      case 'pending':
-        return Colors.orange;
-      case 'awaiting_contract':
-        return Colors.blue;
-      case 'awaiting_agreement':
-        return Colors.purple;
-      case 'closed':
-        return Colors.redAccent;
-      case 'ended':
-        return Colors.grey;
-      default:
-        return Colors.grey;
     }
   }
 }

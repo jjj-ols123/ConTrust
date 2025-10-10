@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:backend/build/buildmessagesdesign.dart';
 import 'package:backend/services/both%20services/be_fetchservice.dart';
 import 'package:backend/utils/be_constraint.dart';
+import 'package:backend/utils/be_status.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MessageBuildMethods {}
@@ -179,7 +180,7 @@ class MessageUIBuildMethods {
                         final canChat = constraintSnapshot.data ?? true;
 
                         return FutureBuilder<Map<String, dynamic>?>(
-                          future: _loadUserData(otherUserId),
+                          future: loadUserData(otherUserId),
                           builder: (context, userSnapshot) {
                             final userName = userSnapshot.data?[
                                     userRole == 'contractor'
@@ -232,7 +233,7 @@ class MessageUIBuildMethods {
                                       Positioned(
                                         right: 0,
                                         bottom: 0,
-                                        child: _buildConstraintIcon(),
+                                        child: buildConstraintIcon(),
                                       ),
                                   ],
                                 ),
@@ -381,10 +382,28 @@ class MessageUIBuildMethods {
                   FutureBuilder<String?>(
                     future: projectStatus,
                     builder: (context, snapshot) {
+                      if (snapshot.hasData && snapshot.data == 'awaiting_contract') {
+                        return ContractAgreementBanner(
+                          chatRoomId: chatRoomId!,
+                          userRole: userRole,
+                        );
+                      }
                       return Container();
                     },
                   ),
-                if (userRole == 'contractee') Container(),
+                if (userRole == 'contractee')
+                  FutureBuilder<String?>(
+                    future: projectStatus,
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData && snapshot.data == 'awaiting_contract') {
+                        return ContractAgreementBanner(
+                          chatRoomId: chatRoomId!,
+                          userRole: userRole,
+                        );
+                      }
+                      return Container();
+                    },
+                  ),
                 Expanded(
                   child: StreamBuilder<List<Map<String, dynamic>>>(
                     stream: supabase
@@ -543,15 +562,15 @@ class MessageUIBuildMethods {
                     ),
                   )
                 : userRole == 'contractor'
-                    ? _buildContractorProjectInfo()
-                    : _buildContracteeProjectInfo(),
+                    ? buildContractorProjectInfo()
+                    : buildContracteeProjectInfo(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildContractorProjectInfo() {
+  Widget buildContractorProjectInfo() {
     return Column(
       children: [
         Expanded(
@@ -578,13 +597,13 @@ class MessageUIBuildMethods {
     );
   }
 
-  Widget _buildContracteeProjectInfo() {
+  Widget buildContracteeProjectInfo() {
     return Column(
       children: [
         Expanded(
           flex: 2,
           child: FutureBuilder<Map<String, dynamic>?>(
-            future: _loadUserData(otherUserId!),
+            future: loadUserData(otherUserId!),
             builder: (context, contractorSnapshot) {
               if (!contractorSnapshot.hasData ||
                   contractorSnapshot.data == null) {
@@ -593,7 +612,7 @@ class MessageUIBuildMethods {
 
               final contractor = contractorSnapshot.data!;
 
-              return _buildContractorInfoSection(contractor);
+              return buildContractorInfoSection(contractor);
             },
           ),
         ),
@@ -621,7 +640,7 @@ class MessageUIBuildMethods {
     );
   }
 
-  Future<Map<String, dynamic>?> _loadUserData(String userId) async {
+  Future<Map<String, dynamic>?> loadUserData(String userId) async {
     try {
       if (userRole == 'contractor') {
         return await FetchService().fetchContracteeData(userId);
@@ -672,7 +691,7 @@ class MessageUIBuildMethods {
     );
   }
 
-  Widget _buildConstraintIcon() {
+  Widget buildConstraintIcon() {
     return Container(
       padding: EdgeInsets.all(isMobile ? 1 : 2),
       decoration: const BoxDecoration(
@@ -723,12 +742,12 @@ class MessageUIBuildMethods {
                       ),
                     ),
                     SizedBox(height: isDesktop ? 12 : (isTablet ? 10 : 8)),
-                    _buildInfoRow('Type', project['type']?.toString() ?? 'N/A'),
-                    _buildInfoRow('Location', project['location']?.toString() ?? 'N/A'),
-                    _buildInfoRow('Duration', project['duration']?.toString() ?? 'N/A'),
-                    _buildInfoRow('Budget', 
+                    buildInfoRow('Type', project['type']?.toString() ?? 'N/A'),
+                    buildInfoRow('Location', project['location']?.toString() ?? 'N/A'),
+                    buildInfoRow('Duration', project['duration']?.toString() ?? 'N/A'),
+                    buildInfoRow('Budget', 
                       '₱${project['min_budget']?.toString() ?? '0'} - ₱${project['max_budget']?.toString() ?? '0'}'),
-                    _buildInfoRow('Status', project['status']?.toString() ?? 'N/A'),
+                    buildInfoRow('Status', ProjectStatus().getStatusLabel(project['status']?.toString())),
                     SizedBox(height: isDesktop ? 16 : (isTablet ? 12 : 8)),
                     Text(
                       'Description:',
@@ -757,7 +776,7 @@ class MessageUIBuildMethods {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget buildInfoRow(String label, String value) {
     return Padding(
       padding: EdgeInsets.only(bottom: isDesktop ? 8.0 : (isTablet ? 6.0 : 4.0)),
       child: Row(
@@ -788,7 +807,7 @@ class MessageUIBuildMethods {
     );
   }
 
-  Widget _buildContractorInfoSection(Map<String, dynamic> contractor) {
+  Widget buildContractorInfoSection(Map<String, dynamic> contractor) {
     return Padding(
       padding: EdgeInsets.all(isDesktop ? 16.0 : (isTablet ? 12.0 : 8.0)),
       child: Column(

@@ -4,6 +4,7 @@ import 'package:backend/services/both services/be_notification_service.dart';
 import 'package:backend/services/both services/be_user_service.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/utils/be_pagetransition.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractee/pages/cee_about.dart';
 import 'package:contractee/pages/cee_login.dart';
 import 'package:contractee/pages/cee_materials.dart';
@@ -67,9 +68,7 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to load notifications')),
-        );
+        ConTrustSnackBar.error(context, 'Failed to load notifications');
       }
     }
   }
@@ -81,8 +80,7 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
         setState(() => _userType = userType);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error identifying user type.')));
+      ConTrustSnackBar.error(context, 'Error identifying user type.');
     }
   }
 
@@ -193,9 +191,7 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
                         } else if (userType == 'contractor') {
                           transitionBuilder(context, const ContractorNotificationPage());
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Unknown user type')),
-                          );
+                          ConTrustSnackBar.error(context, 'Unknown user type');
                         }
                       }
                     },
@@ -312,9 +308,7 @@ class MenuDrawerContractee extends StatelessWidget {
                         projectId: activeProject['project_id']),
                   );
                 } else if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('No active project found')),
-                  );
+                  ConTrustSnackBar.projectError(context);
                 }
               }
             },

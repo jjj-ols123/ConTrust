@@ -2,6 +2,7 @@ import 'package:backend/services/both services/be_bidding_service.dart';
 import 'package:backend/services/both services/be_user_service.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_notification_service.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 
@@ -71,34 +72,19 @@ class CorBiddingService {
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error sending notification')),
-          );
+          ConTrustSnackBar.error(context, 'Error sending notification');
         }
       }
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Bid created successfully!'),
-            duration: Duration(seconds: 2),
-            backgroundColor: Colors.green,
-          ),
-        );
+        ConTrustSnackBar.bidSubmitted(context);
       }
     } catch (e) {
       if (context.mounted) {
         if (e is PostgrestException && e.code == '23505') {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('You can only submit one bid per project.'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          ConTrustSnackBar.warning(context, 'You can only submit one bid per project.');
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error posting bid')),
-          );
+          ConTrustSnackBar.bidError(context, 'Error posting bid');
         }
       }
       rethrow;

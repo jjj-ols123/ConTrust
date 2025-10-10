@@ -1,6 +1,7 @@
 import 'package:backend/services/both services/be_contract_service.dart';
 import 'package:backend/services/both services/be_contract_pdf_service.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/utils/be_pdfextract.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
@@ -11,6 +12,7 @@ class ContractField {
   final TextInputType inputType;
   final bool isRequired;
   final int maxLines;
+  final bool isEnabled;
 
   ContractField({
     required this.key,
@@ -19,6 +21,7 @@ class ContractField {
     this.inputType = TextInputType.text,
     this.isRequired = false,
     this.maxLines = 1,
+    this.isEnabled = true,
   });
 }
 
@@ -37,116 +40,193 @@ class CreateContractService {
 
   Future<String> loadTemplateContent(String templateName) async {
     try {
-      return getDefaultTemplateContent(templateName);
+      return PdfExtractUtils.getDefaultTemplateContent(templateName);
     } catch (e) {
-      return getDefaultTemplateContent(templateName);
+      return PdfExtractUtils.getDefaultTemplateContent(templateName);
     }
   }
 
   String getDefaultTemplateContent(String templateName) {
-    switch (templateName.toLowerCase()) {
-      case 'lump sum':
-        return '''[DATE] [Client Name] [Client Address] [Contractor Name] [Contractor Address] 
-[Project Description] [Project Location] [Start Date] [Completion Date] [Duration]
-[Total Amount] [Down Payment] [Progress Payment 1] [Progress Payment 2] [Progress Payment 3] 
-[Final Payment] [Materials List] [Equipment List] [Payment Due Days] [Warranty Period] 
-[Notice Period] [Contractor Title] [Client Title] [Witness Name]''';
-      case 'cost-plus':
-        return '''[DATE] [Client Name] [Client Address] [Contractor Name] [Contractor Address]
-[Project Description] [Project Location] [Start Date] [Completion Date] [Duration]
-[Contractor Fee Percentage] [Fixed Fee Amount] [Maximum Budget] [Payment Due Days]
-[Warranty Period] [Notice Period] [Contractor Title] [Client Title] [Witness Name]''';
-      case 'time and materials':
-        return '''[DATE] [Client Name] [Client Address] [Contractor Name] [Contractor Address]
-[Project Description] [Project Location] [Start Date] [Completion Date] [Duration]
-[Hourly Rate] [Position/Trade] [Material Markup] [Equipment Markup] [Supervisor Rate]
-[Skilled Rate] [General Rate] [Overtime Multiplier] [Invoice Frequency] [Late Fee Percentage]
-[Estimated Budget] [Work Description] [Payment Due Days] [Warranty Period] [Notice Period]
-[Contractor Title] [Client Title] [Witness Name]''';
-      default:
-        return '''[DATE] [Client Name] [Client Address] [Contractor Name] [Contractor Address]
-[Project Description] [Project Location] [Start Date] [Completion Date] [Duration]
-[Payment Due Days] [Warranty Period] [Notice Period] [Contractor Title] [Client Title] [Witness Name]''';
-    }
+    return PdfExtractUtils.getDefaultTemplateContent(templateName);
   }
 
-  List<ContractField> extractFieldsFromTemplate(String templateContent) {
-    final fieldRegex = RegExp(r'\[([^\]]+)\]');
-    final matches = fieldRegex.allMatches(templateContent);
-    final Set<String> uniqueFields = {};
-    
-    for (final match in matches) {
-      final fieldName = match.group(1);
-      if (fieldName != null) {
-        uniqueFields.add(fieldName);
-      }
-    }
-    
-    return uniqueFields.map((fieldName) {
-      return ContractField(
-        key: fieldName,
-        label: fieldName,
-        isRequired: isFieldRequired(fieldName),
-        inputType: getInputType(fieldName),
-        maxLines: getMaxLines(fieldName),
-      );
-    }).toList();
+  List<ContractField> getContractTypeSpecificFields(String contractType, {int itemCount = 3}) {
+    final normalizedType = contractType.toLowerCase();
+    return _getTemplateSpecificFields(normalizedType, itemCount: itemCount);
   }
 
-  List<ContractField> buildDefaultFields() {
+  List<ContractField> _getTemplateSpecificFields(String contractType, {int itemCount = 3}) {
+    if (contractType.contains('lump sum')) {
+      return _getLumpSumFields();
+    } else if (contractType.contains('cost-plus') || contractType.contains('cost plus')) {
+      return _getCostPlusFields();
+    } else if (contractType.contains('time and materials')) {
+      return getTimeAndMaterialsFieldsWithItems(itemCount);
+    }
+    return [];
+  }
+
+  List<ContractField> getFieldsForTemplate(String contractType, {int itemCount = 3}) {
+    return _getTemplateSpecificFields(contractType, itemCount: itemCount);
+  }
+
+  List<ContractField> _getLumpSumFields() {
     return [
-      ContractField(key: 'DATE', label: 'Contract Date', isRequired: true),
-      ContractField(key: 'Client Name', label: 'Client Name', isRequired: true),
-      ContractField(key: 'Client Address', label: 'Client Address', isRequired: true, maxLines: 2),
-      ContractField(key: 'Contractor Name', label: 'Contractor Name', isRequired: true),
-      ContractField(key: 'Contractor Address', label: 'Contractor Address', isRequired: true, maxLines: 2),
-      ContractField(key: 'Project Description', label: 'Project Description', isRequired: true, maxLines: 3),
-      ContractField(key: 'Project Location', label: 'Project Location', isRequired: true, maxLines: 2),
-      ContractField(key: 'Start Date', label: 'Start Date', isRequired: true),
-      ContractField(key: 'Completion Date', label: 'Completion Date', isRequired: true),
-      ContractField(key: 'Duration', label: 'Duration (days)', isRequired: true),
-      ContractField(key: 'Payment Due Days', label: 'Payment Due Days', inputType: TextInputType.number),
-      ContractField(key: 'Warranty Period', label: 'Warranty Period', isRequired: true),
-      ContractField(key: 'Notice Period', label: 'Notice Period (days)', inputType: TextInputType.number),
-      ContractField(key: 'Contractor Title', label: 'Contractor Title'),
-      ContractField(key: 'Client Title', label: 'Client Title'),
-      ContractField(key: 'Witness Name', label: 'Witness Name'),
+      ContractField(key: 'Contract.CreationDate', label: 'Contract Creation Date', isRequired: true),
+
+      ContractField(key: 'Contractee.FirstName', label: 'Contractee First Name', isRequired: true),
+      ContractField(key: 'Contractee.LastName', label: 'Contractee Last Name', isRequired: true),
+      ContractField(key: 'Contractee.Address', label: 'Contractee Street Address', isRequired: true, maxLines: 2),
+      ContractField(key: 'Contractee.Phone', label: 'Contractee Phone', isRequired: true),
+      ContractField(key: 'Contractee.Email', label: 'Contractee Email', isRequired: true),
+      
+      ContractField(key: 'Contractor.Company', label: 'Contractor Company', isRequired: true),
+      ContractField(key: 'Contractor.License', label: 'Contractor License Number', isRequired: true),
+      ContractField(key: 'Contractor.Address', label: 'Contractor Street Address', isRequired: true, maxLines: 2),
+      ContractField(key: 'Contractor.Phone', label: 'Contractor Phone', isRequired: true),
+      ContractField(key: 'Contractor.Email', label: 'Contractor Email', isRequired: true),
+      ContractField(key: 'Contractor.Province', label: 'Contractor Province', isRequired: true),
+      
+      ContractField(key: 'Project.Description', label: 'Project Description', isRequired: true, maxLines: 3),
+      ContractField(key: 'Project.Address', label: 'Project Site Address', isRequired: true, maxLines: 2),
+      ContractField(key: 'Project.LegalDescription', label: 'Legal Description of Property', maxLines: 2),
+      ContractField(key: 'Project.PropertyDescription', label: 'Property Description', maxLines: 2),
+      ContractField(key: 'Project.ScopeOfWork', label: 'Project Scope of Work', isRequired: true, maxLines: 3),
+      ContractField(key: 'Project.Specification', label: 'Project Specification', maxLines: 2),
+      ContractField(key: 'Project.NumofDays', label: 'Number of Days to Commence', isRequired: true, inputType: TextInputType.number),
+      ContractField(key: 'Project.StartDate', label: 'Project Start Date', isRequired: true),
+      ContractField(key: 'Project.CompletionDate', label: 'Project Completion Date', isRequired: true),
+      ContractField(key: 'Project.Duration', label: 'Project Duration (days)', isRequired: true, inputType: TextInputType.number),
+      ContractField(key: 'Project.InsuranceRequirement', label: 'Insurance Requirements', maxLines: 2),
+      
+      ContractField(key: 'Project.ContractPrice', label: 'Total Contract Price (₱)', isRequired: true, inputType: TextInputType.number),
+      ContractField(key: 'Payment.Method', label: 'Payment Method', isRequired: true),
+      ContractField(key: 'Payment.DownPaymentPercentage', label: 'Down Payment Percentage (%)', isRequired: true, inputType: TextInputType.number),
+      ContractField(key: 'Payment.ProgressPayment1Percentage', label: 'Progress Payment 1 Percentage (%)', inputType: TextInputType.number),
+      ContractField(key: 'Payment.Milestone1', label: 'Milestone 1 Description', maxLines: 2),
+      ContractField(key: 'Payment.ProgressPayment2Percentage', label: 'Progress Payment 2 Percentage (%)', inputType: TextInputType.number),
+      ContractField(key: 'Payment.Milestone2', label: 'Milestone 2 Description', maxLines: 2),
+      ContractField(key: 'Payment.FinalPaymentPercentage', label: 'Final Payment Percentage (%)', isRequired: true, inputType: TextInputType.number),
+      
+      ContractField(key: 'Insurance.MinimumAmount', label: 'Minimum Insurance Amount (₱)', inputType: TextInputType.number),
+      ContractField(key: 'Inspection.PeriodDays', label: 'Inspection Period (days)', inputType: TextInputType.number),
     ];
   }
 
-  bool isFieldRequired(String fieldName) {
-    final requiredFields = {
-      'DATE', 'Client Name', 'Client Address', 'Contractor Name', 'Contractor Address',
-      'Project Description', 'Project Location', 'Start Date', 'Completion Date', 'Duration'
-    };
-    return requiredFields.contains(fieldName);
+  List<ContractField> _getCostPlusFields() {
+    return [
+      ContractField(key: 'Contract.CreationDate', label: 'Contract Creation Date', isRequired: true),
+      
+      ContractField(key: 'Contractor.Firm', label: 'Contractor Firm/Company Name', isRequired: true),
+      ContractField(key: 'Contractor.FirstName', label: 'Contractor First Name', isRequired: true),
+      ContractField(key: 'Contractor.LastName', label: 'Contractor Last Name', isRequired: true),
+      ContractField(key: 'Contractor.Address', label: 'Contractor Address', isRequired: true, maxLines: 2),
+      ContractField(key: 'Contractor.City', label: 'Contractor City', isRequired: true),
+      ContractField(key: 'Contractor.PostalCode', label: 'Contractor Postal Code', isRequired: true),
+      ContractField(key: 'Contractor.Company', label: 'Contractor Company (for signature)', isRequired: true),
+      ContractField(key: 'Contractor.Province', label: 'Contractor Province', isRequired: true),
+
+      ContractField(key: 'Contractee.FirstName', label: 'Contractee First Name', isRequired: true),
+      ContractField(key: 'Contractee.LastName', label: 'Contractee Last Name', isRequired: true),
+      ContractField(key: 'Contractee.Address', label: 'Contractee Address', isRequired: true, maxLines: 2),
+      ContractField(key: 'Contractee.City', label: 'Contractee City', isRequired: true),
+      ContractField(key: 'Contractee.PostalCode', label: 'Contractee Postal Code', isRequired: true),
+      
+      ContractField(key: 'Project.Description', label: 'Project Description', isRequired: true, maxLines: 3),
+      ContractField(key: 'Project.Address', label: 'Project Address/Location', isRequired: true, maxLines: 2),
+      ContractField(key: 'Project.StartDate', label: 'Project Start Date', isRequired: true),
+      ContractField(key: 'Project.CompletionDate', label: 'Project Completion Date (Estimate)', isRequired: true),
+      ContractField(key: 'Project.Duration', label: 'Project Duration (days)', isRequired: true, inputType: TextInputType.number),
+      
+      ContractField(key: 'Labor Costs', label: 'Labor Costs per Hour (₱)', isRequired: true, inputType: TextInputType.number),
+      ContractField(key: 'Material Costs', label: 'Estimated Material Costs (₱)', inputType: TextInputType.number),
+      ContractField(key: 'Equipment Costs', label: 'Estimated Equipment Costs (₱)', inputType: TextInputType.number),
+      ContractField(key: 'Overhead Percentage', label: 'Overhead and Profit Percentage (%)', isRequired: true, inputType: TextInputType.number),
+      ContractField(key: 'Estimated Total', label: 'Total Estimated Project Cost (₱)', isRequired: true, inputType: TextInputType.number),
+      
+      ContractField(key: 'Payment Interval', label: 'Payment Interval (weekly/bi-weekly/monthly)', isRequired: true),
+      ContractField(key: 'Retention Fee', label: 'Retention Fee (₱)', inputType: TextInputType.number),
+      ContractField(key: 'Late Fee Percentage', label: 'Late Payment Fee Percentage (%)', inputType: TextInputType.number),
+      ContractField(key: 'Payment.DueDays', label: 'Payment Due Days from Invoice', inputType: TextInputType.number),
+      
+      ContractField(key: 'Bond.TimeFrame', label: 'Bond Submission Timeframe (days)', inputType: TextInputType.number),
+      ContractField(key: 'Bond.PaymentAmount', label: 'Payment Bond Amount (₱)', inputType: TextInputType.number),
+      ContractField(key: 'Bond.Performance', label: 'Performance Bond Amount (₱)', inputType: TextInputType.number),
+
+      ContractField(key: 'Notice Period', label: 'Termination Notice Period (days)', inputType: TextInputType.number),
+      ContractField(key: 'Warranty Period', label: 'Warranty Period (months)', inputType: TextInputType.number),
+    ];
   }
 
-  TextInputType getInputType(String fieldName) {
-    if (fieldName.toLowerCase().contains('amount') ||
-        fieldName.toLowerCase().contains('rate') ||
-        fieldName.toLowerCase().contains('payment') ||
-        fieldName.toLowerCase().contains('budget') ||
-        fieldName.toLowerCase().contains('fee') ||
-        fieldName.toLowerCase().contains('percentage') ||
-        fieldName.toLowerCase().contains('days') ||
-        fieldName.toLowerCase().contains('duration') ||
-        fieldName.toLowerCase().contains('multiplier')) {
-      return TextInputType.number;
-    }
-    return TextInputType.text;
+  List<ContractField> _getTimeAndMaterialsFields() {
+    return [
+      
+      ContractField(key: 'Contract.CreationDate', label: 'Contract Creation Date', isRequired: true),
+      
+      ContractField(key: 'Contractee.FirstName', label: 'Contractee First Name', isRequired: true),
+      ContractField(key: 'Contractee.LastName', label: 'Contractee Last Name', isRequired: true),
+      ContractField(key: 'Contractee.Address', label: 'Contractee Address', isRequired: true, maxLines: 2),
+      ContractField(key: 'Contractee.City', label: 'Contractee City', isRequired: true),
+      ContractField(key: 'Contractee.PostalCode', label: 'Contractee Postal Code', isRequired: true),
+      
+      ContractField(key: 'Contractor.FirstName', label: 'Contractor First Name', isRequired: true),
+      ContractField(key: 'Contractor.LastName', label: 'Contractor Last Name', isRequired: true),
+      ContractField(key: 'Contractor.Address', label: 'Contractor Address', isRequired: true, maxLines: 2),
+      ContractField(key: 'Contractor.City', label: 'Contractor City', isRequired: true),
+      ContractField(key: 'Contractor.PostalCode', label: 'Contractor Postal Code', isRequired: true),
+      ContractField(key: 'Contractor.Company', label: 'Contractor Company (for signature)', isRequired: true),
+      
+      ContractField(key: 'Project.ContractorDef', label: 'Project Definition by Contractor', isRequired: true, maxLines: 3),
+      ContractField(key: 'Project.Scope', label: 'Project Scope of Work', isRequired: true, maxLines: 3),
+      ContractField(key: 'Project.LaborHours', label: 'Project Labor Hours', isRequired: true, inputType: TextInputType.number),
+      ContractField(key: 'Project.Duration', label: 'Project Duration', isRequired: true),
+      ContractField(key: 'Project.StartDate', label: 'Project Start Date', isRequired: true),
+      ContractField(key: 'Project.CompletionDate', label: 'Project Completion Date', isRequired: true),
+      ContractField(key: 'Project.Schedule', label: 'Project Schedule', maxLines: 4, placeholder: 'Enter detailed project schedule including phases, dates, and key activities'),
+      ContractField(key: 'Project.MilestonesList', label: 'Project Milestones List', maxLines: 4, placeholder: 'List major project milestones with completion dates and deliverables'),
+      
+      ContractField(key: 'Materials.List', label: 'Materials List', maxLines: 3),
+      
+      // Dynamic item count - will be populated by getTimeAndMaterialsFieldsWithItems
+      ContractField(key: 'ItemCount', label: 'Number of Items', inputType: TextInputType.number, isRequired: true),
+      
+      ContractField(key: 'Payment.Subtotal', label: 'Payment Subtotal (₱)', inputType: TextInputType.number, isEnabled: false),
+  // Discount is now percentage-based; hint includes %
+  ContractField(key: 'Payment.Discount', label: 'Payment Discount (%)', placeholder: 'e.g., 5%', inputType: TextInputType.number),
+  // Tax is now percentage-based; hint includes %
+  ContractField(key: 'Payment.Tax', label: 'Payment Tax (%)', placeholder: 'e.g., 12%', inputType: TextInputType.number, isRequired: true),
+      ContractField(key: 'Payment.Total', label: 'Payment Total (₱)', inputType: TextInputType.number, isEnabled: false),
+      
+      ContractField(key: 'Penalty.Amount', label: 'Penalty Amount (₱)', inputType: TextInputType.number),
+      ContractField(key: 'Tax.List', label: 'Tax List', maxLines: 2),
+    ];
   }
 
-  int getMaxLines(String fieldName) {
-    if (fieldName.toLowerCase().contains('description') ||
-        fieldName.toLowerCase().contains('list')) {
-      return 3;
+  List<ContractField> getTimeAndMaterialsFieldsWithItems(int itemCount) {
+    List<ContractField> fields = _getTimeAndMaterialsFields();
+    
+    // Remove the ItemCount field from the main list
+    fields.removeWhere((field) => field.key == 'ItemCount');
+    
+    // Find the index where to insert item fields (after Materials.List)
+    int insertIndex = fields.indexWhere((field) => field.key == 'Materials.List') + 1;
+    
+    // Generate dynamic item fields
+    List<ContractField> itemFields = [];
+    for (int i = 1; i <= itemCount; i++) {
+      itemFields.addAll([
+        ContractField(key: 'Item.$i.Name', label: 'Item $i Name', isRequired: i <= 3), // First 3 items required
+        ContractField(key: 'Item.$i.Description', label: 'Item $i Description', isRequired: i <= 3),
+        ContractField(key: 'Item.$i.Price', label: 'Item $i Price (₱)', isRequired: i <= 3, inputType: TextInputType.number),
+        ContractField(key: 'Item.$i.Quantity', label: 'Item $i Quantity', isRequired: i <= 3, inputType: TextInputType.number),
+        ContractField(key: 'Item.$i.Subtotal', label: 'Item $i Subtotal (₱)', inputType: TextInputType.number, isEnabled: false), // Disabled for auto-calculation
+      ]);
     }
-    if (fieldName.toLowerCase().contains('address') ||
-        fieldName.toLowerCase().contains('location')) {
-      return 2;
-    }
-    return 1;
+    
+    // Insert item fields at the correct position
+    fields.insertAll(insertIndex, itemFields);
+    
+    return fields;
   }
 
   Future<Map<String, dynamic>?> fetchProjectData(String projectId) async {
@@ -158,53 +238,52 @@ class CreateContractService {
   }
 
   void populateProjectFields(Map<String, dynamic> projectData, Map<String, TextEditingController> controllers, String? selectedContractType) {
-    controllers['Project Description']?.text = projectData['description'] ?? '';
-    controllers['Project Location']?.text = projectData['location'] ?? '';
-    controllers['Duration']?.text = projectData['duration']?.toString() ?? '';
+    // Project Information
+    controllers['Project.Description']?.text = projectData['description'] ?? '';
+    controllers['Project.Address']?.text = projectData['location'] ?? '';
     
-    final contractType = selectedContractType?.toLowerCase();
-    if (contractType == 'lump sum') {
-      final maxBudget = projectData['max_budget']?.toString() ?? '';
-      if (maxBudget.isNotEmpty) {
-        controllers['Total Amount']?.text = maxBudget;
-        calculatePaymentSchedule(maxBudget, controllers);
-      }
-    } else if (contractType == 'cost-plus') {
-      final maxBudget = projectData['max_budget']?.toString() ?? '';
-      if (maxBudget.isNotEmpty) {
-        controllers['Maximum Budget']?.text = maxBudget;
-      }
-    } else if (contractType == 'time and materials') {
-      final maxBudget = projectData['max_budget']?.toString() ?? '';
-      if (maxBudget.isNotEmpty) {
-        controllers['Estimated Budget']?.text = maxBudget;
-      }
-    }
-    
-    controllers['DATE']?.text = DateTime.now().toString().split(' ')[0];
+    // Date handling
+    final currentDate = DateTime.now().toString().split(' ')[0];
+    controllers['Contract.CreationDate']?.text = currentDate;
     
     if (projectData['start_date'] != null) {
-      controllers['Start Date']?.text = projectData['start_date'].toString().split(' ')[0];
+      final startDate = projectData['start_date'].toString().split(' ')[0];
+      controllers['Project.StartDate']?.text = startDate;
     } else {
-      controllers['Start Date']?.text = DateTime.now().toString().split(' ')[0];
+      controllers['Project.StartDate']?.text = currentDate;
     }
     
-    final duration = int.tryParse(projectData['duration']?.toString() ?? '') ?? 30;
-    final startDate = DateTime.tryParse(controllers['Start Date']?.text ?? '') ?? DateTime.now();
-    final completionDate = startDate.add(Duration(days: duration));
-    controllers['Completion Date']?.text = completionDate.toString().split(' ')[0];
+    // Handle completion date
+    if (projectData['end_date'] != null) {
+      final endDate = projectData['end_date'].toString().split(' ')[0];
+      controllers['Project.CompletionDate']?.text = endDate;
+    }
+
+    final contractType = selectedContractType?.toLowerCase();
+    final maxBudget = projectData['max_budget']?.toString() ?? '';
     
-    controllers['Payment Due Days']?.text = '30';
-    controllers['Warranty Period']?.text = '1 year';
-    controllers['Notice Period']?.text = '7';
+    if (contractType?.contains('lump sum') == true) {
+      if (maxBudget.isNotEmpty) {
+        controllers['Project.ContractPrice']?.text = maxBudget;
+        calculatePaymentSchedule(maxBudget, controllers);
+      }
+    } else if (contractType?.contains('cost-plus') == true || contractType?.contains('cost plus') == true) {
+      if (maxBudget.isNotEmpty) {
+        controllers['Estimated Total']?.text = maxBudget;
+      }
+    } else if (contractType?.contains('time and materials') == true) {
+      if (maxBudget.isNotEmpty) {
+        controllers['Payment.Total']?.text = maxBudget;
+      }
+    }
   }
 
-  void calculatePaymentSchedule(String totalAmountStr, Map<String, TextEditingController> controllers) {
-    final totalAmount = double.tryParse(totalAmountStr.replaceAll(',', '')) ?? 0;
-    if (totalAmount > 0) {
-      final downPayment = totalAmount * 0.20;
-      final progressPayment = totalAmount * 0.20;
-      final finalPayment = totalAmount * 0.20;
+  void calculatePaymentSchedule(String contractPriceStr, Map<String, TextEditingController> controllers) {
+    final contractPrice = double.tryParse(contractPriceStr.replaceAll(',', '')) ?? 0;
+    if (contractPrice > 0) {
+      final downPayment = contractPrice * 0.20;
+      final progressPayment = contractPrice * 0.20;
+      final finalPayment = contractPrice * 0.20;
       
       controllers['Down Payment']?.text = downPayment.toStringAsFixed(0);
       controllers['Progress Payment 1']?.text = progressPayment.toStringAsFixed(0);
@@ -214,37 +293,183 @@ class CreateContractService {
     }
   }
 
+  void calculateDuration(Map<String, TextEditingController> controllers) {
+    final startDateStr = controllers['Project.StartDate']?.text ?? '';
+    final completionDateStr = controllers['Project.CompletionDate']?.text ?? '';
+    
+    if (startDateStr.isNotEmpty && completionDateStr.isNotEmpty) {
+      final startDate = DateTime.tryParse(startDateStr);
+      final completionDate = DateTime.tryParse(completionDateStr);
+      
+      if (startDate != null && completionDate != null) {
+        final duration = completionDate.difference(startDate).inDays;
+        controllers['Project.Duration']?.text = duration.toString();
+      }
+    }
+  }
+
+  void calculateTimeAndMaterialsRates(Map<String, TextEditingController> controllers, {int? itemCount}) {
+    double totalSubtotal = 0.0;
+    
+    // Get the dynamic item count if provided, otherwise try to determine from available controllers
+    int maxItems = itemCount ?? _getMaxItemCountFromControllers(controllers);
+    
+    // Calculate subtotals for each item (dynamic count)
+    for (int i = 1; i <= maxItems; i++) {
+      final priceKey = 'Item.$i.Price';
+      final quantityKey = 'Item.$i.Quantity';
+      final subtotalKey = 'Item.$i.Subtotal';
+      
+      final price = double.tryParse(controllers[priceKey]?.text ?? '0') ?? 0;
+      final quantity = double.tryParse(controllers[quantityKey]?.text ?? '0') ?? 0;
+      
+      if (price > 0 && quantity > 0) {
+        final subtotal = price * quantity;
+        controllers[subtotalKey]?.text = subtotal.toStringAsFixed(2);
+        totalSubtotal += subtotal;
+      } else if (controllers[subtotalKey] != null) {
+        controllers[subtotalKey]?.text = '0.00';
+      }
+    }
+    
+    // Calculate Payment Subtotal
+    controllers['Payment.Subtotal']?.text = totalSubtotal.toStringAsFixed(2);
+    
+    // Get user-inputted values
+    // Parse percentage helper; supports values like "12", "12%", or "0.12"
+    double _parsePercent(String raw) {
+      final cleaned = raw.trim().replaceAll('%', '').replaceAll(',', '');
+      final v = double.tryParse(cleaned) ?? 0.0;
+      if (v <= 0) return 0.0;
+      // If user typed 0..1, treat as fraction; if >1, treat as percent
+      return v > 1.0 ? (v / 100.0) : v;
+    }
+    final discountRate = _parsePercent(controllers['Payment.Discount']?.text ?? '0');
+    final discountAmount = totalSubtotal * discountRate;
+    final taxRate = _parsePercent(controllers['Payment.Tax']?.text ?? '0');
+    final taxAmount = totalSubtotal * taxRate;
+
+    // Calculate Total (subtotal - discountAmount + taxAmount)
+    final total = totalSubtotal - discountAmount + taxAmount;
+    controllers['Payment.Total']?.text = total.toStringAsFixed(2);
+    // Optionally keep computed amounts if such controllers exist
+    controllers['Payment.DiscountAmount']?.text = discountAmount.toStringAsFixed(2);
+    // Optionally keep a computed tax amount if such a controller exists
+    controllers['Payment.TaxAmount']?.text = taxAmount.toStringAsFixed(2);
+    
+    // Update legacy fields for compatibility
+    controllers['Contract Price']?.text = total.toStringAsFixed(2);
+    controllers['Estimated Budget']?.text = total.toStringAsFixed(2);
+  }
+
+  int _getMaxItemCountFromControllers(Map<String, TextEditingController> controllers) {
+    int maxItems = 3; // Default fallback changed to 3
+    
+    // Check for controllers with Item.X.Name pattern to determine max count
+    for (String key in controllers.keys) {
+      if (key.startsWith('Item.') && key.endsWith('.Name')) {
+        final itemNumberStr = key.split('.')[1];
+        final itemNumber = int.tryParse(itemNumberStr) ?? 0;
+        if (itemNumber > maxItems) {
+          maxItems = itemNumber;
+        }
+      }
+    }
+    
+    return maxItems;
+  }
+
+  
+
   Future<void> populateContractorInfo(String contractorId, Map<String, TextEditingController> controllers) async {
     try {
-      final contractorData = await FetchService().fetchContractorData(contractorId);
-      if (contractorData != null) {
-        controllers['Contractor Name']?.text = contractorData['firm_name'] ?? '';
-        controllers['Contractor Address']?.text = contractorData['address'] ?? '';
-        controllers['Contractor Title']?.text = 'General Contractor';
+      // Do not fetch any data and do not inject field keys.
+      // Only compose legacy aggregated fields from existing user-entered values, if available.
+
+      final firstName = controllers['Contractor.FirstName']?.text.trim();
+      final lastName = controllers['Contractor.LastName']?.text.trim();
+      final company = controllers['Contractor.Company']?.text.trim();
+      final address = controllers['Contractor.Address']?.text.trim();
+      final city = controllers['Contractor.City']?.text.trim();
+      final postal = controllers['Contractor.PostalCode']?.text.trim();
+      final title = controllers['Contractor.Title']?.text.trim();
+
+      // Contractor Name: prefer "First Last"; fallback to Company if name is empty
+    final composedName = [firstName, lastName]
+      .where((v) => (v ?? '').isNotEmpty)
+      .map((v) => v!)
+      .join(' ');
+      if (controllers['Contractor Name'] != null) {
+        controllers['Contractor Name']!.text = composedName.isNotEmpty
+            ? composedName
+            : (company != null && company.isNotEmpty ? company : controllers['Contractor Name']!.text);
       }
+
+      // Contractor Address: combine Address, City, Postal if present
+      final parts = <String>[];
+      if (address != null && address.isNotEmpty) parts.add(address);
+      if (city != null && city.isNotEmpty) parts.add(city);
+      if (postal != null && postal.isNotEmpty) parts.add(postal);
+      if (controllers['Contractor Address'] != null && parts.isNotEmpty) {
+        controllers['Contractor Address']!.text = parts.join(', ');
+      }
+
+      // Contractor Title: only set if user provided something
+      if (controllers['Contractor Title'] != null && title != null && title.isNotEmpty) {
+        controllers['Contractor Title']!.text = title;
+      }
+      // Leave all other fields untouched to ensure placeholders remain descriptive until user enters values.
     } catch (e) {
-      // Handle error silently
+      rethrow;
     }
   }
 
   void clearAutoPopulatedFields(Map<String, TextEditingController> controllers) {
-    controllers['Project Description']?.clear();
-    controllers['Project Location']?.clear();
-    controllers['Duration']?.clear();
-    controllers['Start Date']?.clear();
-    controllers['Completion Date']?.clear();
-    controllers['Total Amount']?.clear();
-    controllers['Maximum Budget']?.clear();
-    controllers['Estimated Budget']?.clear();
-    controllers['Down Payment']?.clear();
-    controllers['Progress Payment 1']?.clear();
-    controllers['Progress Payment 2']?.clear();
-    controllers['Progress Payment 3']?.clear();
-    controllers['Final Payment']?.clear();
-    controllers['DATE']?.clear();
-    controllers['Payment Due Days']?.clear();
+    // Project fields (use template-specific fields only)
+    controllers['Project.Description']?.clear();
+    controllers['Project.Address']?.clear();
+    controllers['Project.Duration']?.clear();
+    controllers['Project.StartDate']?.clear();
+    controllers['Project.CompletionDate']?.clear();
+    
+    // Payment fields (use template-specific fields only)
+    controllers['Project.ContractPrice']?.clear();
+    controllers['Estimated Total']?.clear();
+    controllers['Payment.Total']?.clear();
+    
+    // Lump Sum payment fields
+    controllers['Payment.DownPaymentPercentage']?.clear();
+    controllers['Payment.ProgressPayment1Percentage']?.clear();
+    controllers['Payment.ProgressPayment2Percentage']?.clear();
+    controllers['Payment.FinalPaymentPercentage']?.clear();
+    
+    // Cost Plus fields
+    controllers['Overhead Percentage']?.clear();
+    controllers['Labor Costs']?.clear();
+    controllers['Material Costs']?.clear();
+    controllers['Equipment Costs']?.clear();
+    
+    // Time and Materials specific fields - Dynamic Table Items
+    for (int i = 1; i <= 5; i++) {
+      controllers['Item.$i.Name']?.clear();
+      controllers['Item.$i.Description']?.clear();
+      controllers['Item.$i.Price']?.clear();
+      controllers['Item.$i.Quantity']?.clear();
+      controllers['Item.$i.Subtotal']?.clear();
+    }
+    controllers['Payment.Subtotal']?.clear();
+    controllers['Payment.Discount']?.clear();
+    controllers['Payment.Tax']?.clear();
+    
+    // Date fields (use template-specific fields only)
+    controllers['Contract.CreationDate']?.clear();
+    
+    // Additional fields
+    controllers['Penalty.Amount']?.clear();
+    controllers['Payment.DueDays']?.clear();
     controllers['Warranty Period']?.clear();
     controllers['Notice Period']?.clear();
+    controllers['Late Fee Percentage']?.clear();
   }
 
   Future<Uint8List> generatePreview(String contractType, Map<String, String> fieldValues, String title) async {

@@ -3,8 +3,8 @@
 import 'package:backend/services/both services/be_contract_service.dart';
 import 'package:backend/services/both services/be_contract_pdf_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:typed_data';
 import 'dart:io';
 
 class ViewContractService {
@@ -16,11 +16,22 @@ class ViewContractService {
     }
   }
 
-  static Future<File> downloadContract({
+  static Future<dynamic> downloadContract({
     required Map<String, dynamic> contractData,
     required BuildContext context,
   }) async {
-    final pdfUrl = contractData['pdf_url'] as String?;
+    String? pdfUrl = contractData['pdf_url'] as String?;
+    
+    // If no direct PDF URL, try to construct it from contract data
+    if (pdfUrl == null || pdfUrl.isEmpty) {
+      final contractorId = contractData['contractor_id'] as String?;
+      final projectId = contractData['project_id'] as String?;
+      final contracteeId = contractData['contractee_id'] as String?;
+      
+      if (contractorId != null && projectId != null && contracteeId != null) {
+        pdfUrl = '$contractorId/${projectId}_$contracteeId.pdf';
+      }
+    }
     
     if (pdfUrl == null) {
       throw Exception('No PDF contract available');
@@ -29,9 +40,9 @@ class ViewContractService {
     try {
       final pdfBytes = await ContractPdfService.downloadContractPdf(pdfUrl);
       final fileName = 'Contract_${contractData['title']?.replaceAll(' ', '_') ?? 'Document'}.pdf';
-      final file = await ContractPdfService.saveToDevice(pdfBytes, fileName);
+      final result = await ContractPdfService.saveToDevice(pdfBytes, fileName);
       
-      return file;
+      return result;
     } catch (e) {
       rethrow;
     }
@@ -62,6 +73,64 @@ class ViewContractService {
       return signedUrl;
     } catch (e) {
       return null;
+    }
+  }
+
+  static String? getPdfUrl(Map<String, dynamic> contractData) {
+    String? pdfUrl = contractData['pdf_url'] as String?;
+    
+    // If no direct PDF URL, try to construct it from contract data
+    if (pdfUrl == null || pdfUrl.isEmpty) {
+      final contractorId = contractData['contractor_id'] as String?;
+      final projectId = contractData['project_id'] as String?;
+      final contracteeId = contractData['contractee_id'] as String?;
+      
+      if (contractorId != null && projectId != null && contracteeId != null) {
+        pdfUrl = '$contractorId/${projectId}_$contracteeId.pdf';
+      }
+    }
+    
+    return pdfUrl;
+  }
+
+  static Future<String?> getPdfSignedUrl(Map<String, dynamic> contractData) async {
+    final pdfPath = getPdfUrl(contractData);
+    if (pdfPath == null) {
+      print('No PDF path found for contract data: $contractData');
+      return null;
+    }
+    
+    try {
+      // First check if the file exists
+      print('Checking if PDF exists at path: $pdfPath');
+      final fileExists = await _checkFileExists(pdfPath);
+      if (!fileExists) {
+        print('PDF file does not exist at path: $pdfPath');
+        return null;
+      }
+      
+      print('Attempting to create signed URL for path: $pdfPath');
+      final signedUrl = await Supabase.instance.client.storage
+          .from('contracts')
+          .createSignedUrl(pdfPath, 60 * 60 * 24); // 24 hours
+      print('Successfully created signed URL: $signedUrl');
+      return signedUrl;
+    } catch (e) {
+      print('Error creating signed URL for path $pdfPath: $e');
+      return null;
+    }
+  }
+
+  static Future<bool> _checkFileExists(String filePath) async {
+    try {
+      final response = await Supabase.instance.client.storage
+          .from('contracts')
+          .list(path: filePath.contains('/') ? filePath.split('/').first : '');
+      
+      return response.any((file) => file.name == filePath.split('/').last);
+    } catch (e) {
+      print('Error checking if file exists: $e');
+      return false;
     }
   }
 
@@ -123,62 +192,33 @@ class ViewContractService {
     ).join(' ');
   }
 
-  static Color getStatusColor(String? status) {
-    switch (status?.toLowerCase()) {
-      case 'draft':
-        return Colors.grey;
-      case 'sent':
-        return Colors.blue;
-      case 'under_review':
-        return Colors.orange;
-      case 'approved':
-        return Colors.green;
-      case 'rejected':
-        return Colors.red;
-      case 'signed':
-        return Colors.purple;
-      case 'active':
-        return Colors.teal;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  static IconData getStatusIcon(String? status) {
-    switch (status?.toLowerCase()) {
-      case 'draft':
-        return Icons.edit;
-      case 'sent':
-        return Icons.send;
-      case 'under_review':
-        return Icons.visibility;
-      case 'approved':
-        return Icons.check_circle;
-      case 'rejected':
-        return Icons.cancel;
-      case 'signed':
-        return Icons.verified;
-      case 'active':
-        return Icons.play_circle;
-      default:
-        return Icons.info;
-    }
-  }
-
   static Future<void> handleDownload({
     required Map<String, dynamic> contractData,
     required BuildContext context,
   }) async {
     try {
-      final file = await downloadContract(
+      final result = await downloadContract(
         contractData: contractData,
         context: context,
       );
       
-      showSuccessMessage(
-        context,
-        'Contract downloaded to: ${file.path}',
-      );
+      // Handle different platforms
+      if (kIsWeb) {
+        showSuccessMessage(
+          context,
+          'Contract download started',
+        );
+      } else if (result is File) {
+        showSuccessMessage(
+          context,
+          'Contract downloaded to: ${result.path}',
+        );
+      } else {
+        showSuccessMessage(
+          context,
+          'Contract downloaded successfully',
+        );
+      }
     } catch (e) {
       showErrorMessage(context, e.toString());
     }

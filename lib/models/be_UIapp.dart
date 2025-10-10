@@ -1,6 +1,8 @@
 // ignore_for_file: deprecated_member_use, use_super_parameters, file_names
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/contractor services/cor_biddingservice.dart';
+import 'package:backend/utils/be_status.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractee/models/cee_expandable.dart';
 import 'package:contractee/models/cee_modal.dart';
 import 'package:contractee/pages/cee_chathistory.dart';
@@ -138,24 +140,25 @@ class ProjectView extends StatelessWidget {
   Widget build(BuildContext context) {
     final isHiringRequest =
         project['min_budget'] == null && project['max_budget'] == null;
+    final ProjectStatus status = ProjectStatus();
 
     return InkWell(
       onTap: isHiringRequest ? null : onTap,
       child: Card(
-        margin: const EdgeInsets.only(bottom: 20), 
+        margin: const EdgeInsets.only(bottom: 20),
         elevation: 8,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20), 
+          borderRadius: BorderRadius.circular(20),
         ),
-        shadowColor: Colors.amber.withOpacity(0.5), 
-        child: Container( 
+        shadowColor: Colors.amber.withOpacity(0.5),
+        child: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient( 
+            gradient: LinearGradient(
               colors: [Colors.amber.shade50, Colors.amber.shade100],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(20), 
+            borderRadius: BorderRadius.circular(20),
           ),
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -169,17 +172,18 @@ class ProjectView extends StatelessWidget {
                       project['title'] ?? 'No title given',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 25, 
+                        fontSize: 25,
                       ),
                     ),
                   ),
                   if (!isHiringRequest) ...[
                     Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: Colors.amber.shade50,
-                        border: Border.all(color: Colors.amber.shade200, width: 1),
+                        border:
+                            Border.all(color: Colors.amber.shade200, width: 1),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Text(
@@ -257,9 +261,7 @@ class ProjectView extends StatelessWidget {
                   ],
                 ],
               ),
-
               const SizedBox(height: 12),
-
               if (project['type'] != null)
                 Row(
                   children: [
@@ -273,18 +275,14 @@ class ProjectView extends StatelessWidget {
                     ),
                   ],
                 ),
-
               const SizedBox(height: 10),
-
               Text(
                 project['description'] ?? 'No description',
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 16, color: Colors.black87),
               ),
-
               const SizedBox(height: 20),
-
               Row(
                 children: [
                   const Icon(Icons.info_outline, size: 18, color: Colors.grey),
@@ -293,21 +291,22 @@ class ProjectView extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: getStatusColor(project['status']).withOpacity(0.15),
+                      color: status
+                          .getStatusColor(project['status'])
+                          .withOpacity(0.15),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Text(
-                      "Status: ${getStatusLabel(project['status'])}",
+                      "Status: ${status.getStatusLabel(project['status'])}",
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: getStatusColor(project['status']),
+                        color: status.getStatusColor(project['status']),
                       ),
                     ),
                   ),
                 ],
               ),
-
               if (!isHiringRequest) ...[
                 const SizedBox(height: 16),
                 Row(
@@ -364,9 +363,7 @@ class ProjectView extends StatelessWidget {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 14),
-
                 Row(
                   children: [
                     const Icon(Icons.attach_money_outlined,
@@ -383,11 +380,11 @@ class ProjectView extends StatelessWidget {
                   ],
                 ),
               ],
-
               if (isHiringRequest) ...[
                 const SizedBox(height: 18),
                 FutureBuilder<List<Map<String, dynamic>>>(
-                  future: FetchService().fetchHiringRequestsForProject(projectId),
+                  future:
+                      FetchService().fetchHiringRequestsForProject(projectId),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) return const SizedBox();
                     final requests = snapshot.data!;
@@ -398,7 +395,8 @@ class ProjectView extends StatelessWidget {
                     if (accepted.isNotEmpty) {
                       return ListTile(
                         contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.verified, color: Colors.green),
+                        leading:
+                            const Icon(Icons.verified, color: Colors.green),
                         title: Text('Accepted Contractor: '
                             '${accepted['information']?['firm_name'] ?? 'Unknown'}'),
                       );
@@ -411,8 +409,8 @@ class ProjectView extends StatelessWidget {
                           ...requests.map((r) => ListTile(
                                 contentPadding: EdgeInsets.zero,
                                 leading: const Icon(Icons.business),
-                                title: Text(
-                                    r['information']?['firm_name'] ?? 'Unknown'),
+                                title: Text(r['information']?['firm_name'] ??
+                                    'Unknown'),
                                 subtitle: Text('Status: '
                                     '${(r['information']?['status'] ?? 'pending').toString().capitalize()}'),
                               )),
@@ -429,44 +427,6 @@ class ProjectView extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String getStatusLabel(String? status) {
-    switch ((status ?? '').toLowerCase()) {
-      case 'active':
-        return 'Active';
-      case 'pending':
-        return 'Pending';
-      case 'awaiting_contract':
-        return 'Awaiting for Contract';
-      case 'awaiting_agreement':
-        return 'Awaiting Agreement';
-      case 'closed':
-        return 'Closed';
-      case 'ended':
-        return 'Ended';
-      default:
-        return 'Unknown';
-    }
-  }
-
-  Color getStatusColor(String? status) {
-    switch ((status ?? '').toLowerCase()) {
-      case 'active':
-        return Colors.green;
-      case 'pending':
-        return Colors.orange;
-      case 'awaiting_contract':
-        return Colors.blue;
-      case 'awaiting_agreement':
-        return Colors.purple;
-      case 'closed':
-        return Colors.redAccent;
-      case 'ended':
-        return Colors.grey;
-      default:
-        return Colors.grey;
-    }
   }
 }
 
@@ -511,9 +471,7 @@ class ExpandableFloatingButton extends StatelessWidget {
                   final user = Supabase.instance.client.auth.currentUser?.id;
                   if (user == null) {
                     if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('User not authenticated')),
-                    );
+                    ConTrustSnackBar.loginError(context);
                     return;
                   }
 
@@ -537,9 +495,7 @@ class ExpandableFloatingButton extends StatelessWidget {
               );
             } catch (e) {
               if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Error showing modal')),
-              );
+              ConTrustSnackBar.error(context, 'Error showing modal');
             }
           },
           backgroundColor: Colors.amber[700],
