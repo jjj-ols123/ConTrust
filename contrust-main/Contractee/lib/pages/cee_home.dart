@@ -98,7 +98,7 @@ class _HomePageState extends State<HomePage> {
     final theme = Theme.of(context);
     return Scaffold(
     appBar: PreferredSize(
-      preferredSize: const Size.fromHeight(40), 
+      preferredSize: const Size.fromHeight(70), 
       child: ConTrustAppBar(headline: "Home"),
     ),
       drawer: const MenuDrawerContractee(),
@@ -108,10 +108,10 @@ class _HomePageState extends State<HomePage> {
          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center( 
+            Center(
               child: SizedBox(
-                width: MediaQuery.of(context).size.width * 0.90, 
-                height: 50, 
+                width: MediaQuery.of(context).size.width * 0.90,
+                height: 50,
                 child: TextField(
                   decoration: InputDecoration(
                     hintText: 'Search',
@@ -141,7 +141,7 @@ class _HomePageState extends State<HomePage> {
                 "Suggested Contractor Firms",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 23,
+                  fontSize: 27,
                 ),
               ),
               const SizedBox(height: 25,),
@@ -162,7 +162,7 @@ class _HomePageState extends State<HomePage> {
                                ? profileUrl
                                : profilePhoto;
                        final isSelected = selectedIndex == index;
-                        return InkWell(
+                        return GestureDetector(
                           onTap: () {
                             setState(() {
                               if (selectedIndex == index) {
@@ -175,6 +175,7 @@ class _HomePageState extends State<HomePage> {
                          child: Container(
                             width: 200,  
                             height: 250, 
+                            margin: const EdgeInsets.symmetric(horizontal: 10),
                             decoration: BoxDecoration(
                               border: Border.all(
                                 color: isSelected ? const Color.fromARGB(255, 99, 98, 98) : Colors.transparent,
@@ -200,7 +201,7 @@ class _HomePageState extends State<HomePage> {
                     "Your Posted Projects",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 23,
+                      fontSize: 27,
                     ),
                   ),
                   TextButton(
@@ -232,94 +233,131 @@ isLoading
               final projectId = project['project_id'].toString();
               final highestBid = highestBids[projectId] ?? 0.0;
 
-              return FutureBuilder<Map<String, dynamic>>(
-                future: supabase
-                    .from('Projects')
-                    .select('bid_id')
-                    .eq('project_id', projectId)
-                    .single(),
-                    
-                builder: (context, snapshot) {
-                  String? acceptedBidId;
-                  if (snapshot.connectionState == ConnectionState.done &&
-                      snapshot.hasData) {
-                    acceptedBidId = snapshot.data?['bid_id'];
-                  }
-                  return ProjectView(
-                    project: project,
-                    projectId: projectId,
-                    highestBid: highestBid,
-                    duration: project['duration'] ?? 0,
-                    createdAt: DateTime.parse(
-                        project['created_at'].toString()),
-                    onTap: () async {
-                      await BidsModal.show(
-                        context: context,
-                        projectId: projectId,
-                        acceptBidding: (projectId, bidId) async {
-                          _loadAcceptBidding(projectId, bidId);
-                          setState(() {
-                            acceptedBidIds[projectId] = bidId;
-                          });
+                          return FutureBuilder<Map<String, dynamic>>(
+                            future: supabase
+                                .from('Projects')
+                                .select('bid_id')
+                                .eq('project_id', projectId)
+                                .single(),
+                            builder: (context, snapshot) {
+                              String? acceptedBidId;
+                              if (snapshot.connectionState ==
+                                      ConnectionState.done &&
+                                  snapshot.hasData) {
+                                acceptedBidId = snapshot.data?['bid_id'];
+                              }
+                              return ProjectView(
+                                project: project,
+                                projectId: projectId,
+                                highestBid: highestBid,
+                                duration: project['duration'] ?? 0,
+                                createdAt: DateTime.parse(
+                                    project['created_at'].toString()),
+                                onTap: () async {
+                                  await BidsModal.show(
+                                    context: context,
+                                    projectId: projectId,
+                                    acceptBidding: (projectId, bidId) async {
+                                      _loadAcceptBidding(projectId, bidId);
+                                      setState(() {
+                                        acceptedBidIds[projectId] = bidId;
+                                      });
+                                    },
+                                    initialAcceptedBidId: acceptedBidId,
+                                  );
+                                },
+                                handleFinalizeBidding: (bidId) {
+                                  return BiddingService()
+                                      .acceptProjectBid(projectId, bidId);
+                                },
+                                onDeleteProject: (projectId) async {
+                                  try {
+                                    await ProjectService().deleteProject(projectId);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content:
+                                            Text('Project deleted successfully.'),
+                                      ),
+                                    );
+                                    _loadData();
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content:
+                                            Text('Failed to delete project'),
+                                      ),
+                                    );
+                                  }
+                                },
+                              );
+                            },
+                          );
                         },
-                        initialAcceptedBidId: acceptedBidId,
-                      );
-                    },
-                    handleFinalizeBidding: (bidId) {
-                      return BiddingService().acceptProjectBid(
-                        projectId,
-                        bidId,
-                      );
-                    },
-                    onDeleteProject: (projectId) async { 
-                      try {
-                        await ProjectService().deleteProject(projectId);
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Project deleted successfully.'),
-                          ),
-                        );
-
-                        _loadData();
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Failed to delete project'),
-                          ),
-                        );
-                      }
-                    },
-                  );
-                },
-              );
-            },
-          ),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButton: ExpandableFloatingButton(
-        clearControllers: _clearControllers,
-        onRefresh: _loadData,
-        title: _titleController,
-        typeConstruction: _typeConstructionController,
-        minBudget: _minBudgetController,
-        maxBudget: _maxBudgetController,
-        location: _locationController,
-        description: _descriptionController,
-        bidTime: _bidTimeController,
-      ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
     );
   }
-
-  void _clearControllers() {
-    _titleController.clear();
-    _typeConstructionController.clear();
-    _minBudgetController.clear();
-    _maxBudgetController.clear();
-    _locationController.clear();
-    _descriptionController.clear();
-    _bidTimeController.clear();
-  }
-}
+              return isWideScreen
+                  ? Scaffold(
+                      body: Row(
+                        children: [
+                          SizedBox(
+                            width: 250,
+                            child: drawerWidget,
+                          ),
+                          Expanded(
+                            child: Scaffold(
+                              appBar: PreferredSize(
+                                preferredSize: const Size.fromHeight(70),
+                                child: ConTrustAppBar(headline: "Home"),
+                              ),
+                              body: pageContent,
+                              floatingActionButton: ExpandableFloatingButton(
+                                clearControllers: _clearControllers,
+                                onRefresh: _loadData,
+                                title: _titleController,
+                                typeConstruction: _typeConstructionController,
+                                minBudget: _minBudgetController,
+                                maxBudget: _maxBudgetController,
+                                location: _locationController,
+                                description: _descriptionController,
+                                bidTime: _bidTimeController,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Scaffold(
+                      appBar: PreferredSize(
+                        preferredSize: const Size.fromHeight(70),
+                        child: ConTrustAppBar(headline: "Home"),
+                      ),
+                      drawer: drawerWidget,
+                      body: pageContent,
+                      floatingActionButton: ExpandableFloatingButton(
+                        clearControllers: _clearControllers,
+                        onRefresh: _loadData,
+                        title: _titleController,
+                        typeConstruction: _typeConstructionController,
+                        minBudget: _minBudgetController,
+                        maxBudget: _maxBudgetController,
+                        location: _locationController,
+                        description: _descriptionController,
+                        bidTime: _bidTimeController,
+                      ),
+                    );
+                  }
+                    void _clearControllers() {
+                      _titleController.clear();
+                      _typeConstructionController.clear();
+                      _minBudgetController.clear();
+                      _maxBudgetController.clear();
+                      _locationController.clear();
+                      _descriptionController.clear();
+                      _bidTimeController.clear();
+                    }
+                  }
