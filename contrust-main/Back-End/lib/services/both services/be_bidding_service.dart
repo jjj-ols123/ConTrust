@@ -76,7 +76,6 @@ class BiddingService {
         .from('Bids')
         .update({'status': 'accepted'}).eq('bid_id', bidId);
 
-    // Create chatroom after bid acceptance
     try {
       final messageService = MessageService();
       await messageService.getOrCreateChatRoom(
@@ -85,7 +84,7 @@ class BiddingService {
         projectId: projectId,
       );
     } catch (e) {
-      // Continue even if chatroom creation fails
+        rethrow;
     }
 
     try {

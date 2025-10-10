@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:backend/services/contractor services/cor_dashboardservice.dart';
+import 'package:backend/utils/be_status.dart';
 import 'package:flutter/material.dart';
 
 class DashboardBuildMethods {
@@ -15,7 +16,8 @@ class DashboardBuildMethods {
   );
 
   final BuildContext context;
-  final CorDashboardService _service = CorDashboardService();
+  final ProjectStatus status = ProjectStatus();
+  final CorDashboardService dashboardservice = CorDashboardService();
 
   List<Map<String, dynamic>> recentActivities = [];
   List<Map<String, dynamic>> localTasks = [];
@@ -238,15 +240,15 @@ class DashboardBuildMethods {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _service.getStatusColor(project['status']).withOpacity(0.1),
+                  color: status.getStatusColor(project['status']).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  _service.getStatusLabel(project['status']),
+                  status.getStatusLabel(project['status']),
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: _service.getStatusColor(project['status']),
+                    color: status.getStatusColor(project['status']),
                   ),
                 ),
               ),
@@ -734,7 +736,7 @@ class DashboardBuildMethods {
 
   Widget projectView(BuildContext context, project) {
     return InkWell(
-      onTap: () => _service.navigateToProject(
+      onTap: () => dashboardservice.navigateToProject(
         context: context,
         project: project,
         onNavigate: () {},
@@ -786,17 +788,17 @@ class DashboardBuildMethods {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: _service.getStatusColor(
+                      color: status.getStatusColor(
                         project['status'],
                       ).withOpacity(0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      'Status: ${_service.getStatusLabel(project['status'])}',
+                      'Status: ${status.getStatusLabel(project['status'])}',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: _service.getStatusColor(project['status']),
+                        color: status.getStatusColor(project['status']),
                       ),
                     ),
                   ),

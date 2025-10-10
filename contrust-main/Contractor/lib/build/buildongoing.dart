@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 
 class OngoingBuildMethods {
@@ -586,6 +588,592 @@ class OngoingBuildMethods {
           ],
         );
       },
+    );
+  }
+
+  static Widget buildMobileTabNavigation(String selectedTab, Function(String) onTabChanged) {
+    final tabs = ['Tasks', 'Reports', 'Photos', 'Materials'];
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: tabs.map((tab) {
+          final isActive = selectedTab == tab;
+          return Expanded(
+            child: InkWell(
+              onTap: () => onTabChanged(tab),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  color: isActive ? Colors.orange.shade50 : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  tab,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                    color: isActive ? Colors.orange.shade700 : Colors.grey.shade600,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+ 
+  static Widget buildMobileLayout({
+    required String projectTitle,
+    required String clientName,
+    required String address,
+    required String startDate,
+    required String estimatedCompletion,
+    required double progress,
+    required String selectedTab,
+    required Function(String) onTabChanged,
+    required Widget tabContent,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          buildProjectHeader(
+            projectTitle: projectTitle,
+            clientName: clientName,
+            address: address,
+            startDate: startDate,
+            estimatedCompletion: estimatedCompletion,
+            progress: progress,
+          ),
+          const SizedBox(height: 16),
+          buildMobileTabNavigation(selectedTab, onTabChanged),
+          const SizedBox(height: 16),
+          Expanded(child: tabContent),
+        ],
+      ),
+    );
+  }
+
+  static Widget buildTabContent({
+    required String selectedTab,
+    required List<Map<String, dynamic>> tasks,
+    required List<Map<String, dynamic>> reports,
+    required List<Map<String, dynamic>> photos,
+    required List<Map<String, dynamic>> costs,
+    required Function(String, bool) onUpdateTaskStatus,
+    required Function(String) onDeleteTask,
+    required Function(String) onDeleteReport,
+    required Function(String) onDeletePhoto,
+    required Function(String) onDeleteCost,
+    required Future<String?> Function(String?) createSignedUrl,
+    required VoidCallback onAddTask,
+    required VoidCallback onAddReport,
+    required VoidCallback onAddPhoto,
+  }) {
+    switch (selectedTab) {
+      case 'Tasks':
+        return buildSectionCard(
+          title: 'Tasks & Progress',
+          icon: Icons.checklist,
+          iconColor: Colors.blue,
+          onAdd: onAddTask,
+          addButtonText: 'Add Task',
+          child: buildTasksList(
+            tasks: tasks,
+            onUpdateTaskStatus: onUpdateTaskStatus,
+            onDeleteTask: onDeleteTask,
+          ),
+        );
+      case 'Reports':
+        return buildSectionCard(
+          title: 'Progress Reports',
+          icon: Icons.description,
+          iconColor: Colors.orange,
+          onAdd: onAddReport,
+          addButtonText: 'Add Report',
+          child: buildReportsList(
+            reports: reports,
+            onDeleteReport: onDeleteReport,
+          ),
+        );
+      case 'Photos':
+        return buildSectionCard(
+          title: 'Project Photos',
+          icon: Icons.photo_library,
+          iconColor: Colors.green,
+          onAdd: onAddPhoto,
+          addButtonText: 'Add Photo',
+          child: buildPhotosList(
+            photos: photos,
+            createSignedUrl: createSignedUrl,
+            onDeletePhoto: onDeletePhoto,
+          ),
+        );
+      case 'Materials':
+        return buildSectionCard(
+          title: 'Materials & Costs',
+          icon: Icons.construction,
+          iconColor: Colors.purple,
+          child: buildCostsList(
+            costs: costs,
+            onDeleteCost: onDeleteCost,
+          ),
+        );
+      default:
+        return buildSectionCard(
+          title: 'Tasks & Progress',
+          icon: Icons.checklist,
+          iconColor: Colors.blue,
+          onAdd: onAddTask,
+          addButtonText: 'Add Task',
+          child: buildTasksList(
+            tasks: tasks,
+            onUpdateTaskStatus: onUpdateTaskStatus,
+            onDeleteTask: onDeleteTask,
+          ),
+        );
+    }
+  }
+
+  static Widget buildDesktopGridLayout({
+    required String projectTitle,
+    required String clientName,
+    required String address,
+    required String startDate,
+    required String estimatedCompletion,
+    required double progress,
+    required List<Map<String, dynamic>> tasks,
+    required List<Map<String, dynamic>> reports,
+    required List<Map<String, dynamic>> photos,
+    required List<Map<String, dynamic>> costs,
+    required Function(String, bool) onUpdateTaskStatus,
+    required Function(String) onDeleteTask,
+    required Function(String) onDeleteReport,
+    required Function(String) onDeletePhoto,
+    required Function(String) onDeleteCost,
+    required Future<String?> Function(String?) createSignedUrl,
+    required VoidCallback onAddTask,
+    required VoidCallback onAddReport,
+    required VoidCallback onAddPhoto,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          buildProjectHeader(
+            projectTitle: projectTitle,
+            clientName: clientName,
+            address: address,
+            startDate: startDate,
+            estimatedCompletion: estimatedCompletion,
+            progress: progress,
+          ),
+          const SizedBox(height: 20),
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: buildGridSectionCard(
+                          title: 'Tasks & Progress',
+                          icon: Icons.checklist,
+                          iconColor: Colors.blue,
+                          onAdd: onAddTask,
+                          addButtonText: 'Add Task',
+                          child: buildDesktopTasksList(
+                            tasks: tasks,
+                            onUpdateTaskStatus: onUpdateTaskStatus,
+                            onDeleteTask: onDeleteTask,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: buildGridSectionCard(
+                          title: 'Project Photos',
+                          icon: Icons.photo_library,
+                          iconColor: Colors.green,
+                          onAdd: onAddPhoto,
+                          addButtonText: 'Add Photo',
+                          child: buildDesktopPhotosList(
+                            photos: photos,
+                            createSignedUrl: createSignedUrl,
+                            onDeletePhoto: onDeletePhoto,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: buildGridSectionCard(
+                          title: 'Progress Reports',
+                          icon: Icons.description,
+                          iconColor: Colors.orange,
+                          onAdd: onAddReport,
+                          addButtonText: 'Add Report',
+                          child: buildDesktopReportsList(
+                            reports: reports,
+                            onDeleteReport: onDeleteReport,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: buildGridSectionCard(
+                          title: 'Materials & Costs',
+                          icon: Icons.construction,
+                          iconColor: Colors.purple,
+                          child: buildDesktopCostsList(
+                            costs: costs,
+                            onDeleteCost: onDeleteCost,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget buildGridSectionCard({
+    required String title,
+    required IconData icon,
+    required Color iconColor,
+    required Widget child,
+    VoidCallback? onAdd,
+    String? addButtonText,
+  }) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: iconColor, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+                if (onAdd != null)
+                  SizedBox(
+                    height: 32,
+                    child: ElevatedButton.icon(
+                      onPressed: onAdd,
+                      icon: const Icon(Icons.add, size: 14),
+                      label: Text(addButtonText ?? 'Add', style: const TextStyle(fontSize: 12)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: iconColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: child,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget buildDesktopTasksList({
+    required List<Map<String, dynamic>> tasks,
+    required Function(String, bool) onUpdateTaskStatus,
+    required Function(String) onDeleteTask,
+  }) {
+    if (tasks.isEmpty) {
+      return const Center(
+        child: Text('No tasks yet', style: TextStyle(color: Colors.grey)),
+      );
+    }
+    
+    return ListView.builder(
+      itemCount: tasks.take(10).length, 
+      itemBuilder: (context, index) {
+        final task = tasks[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 4),
+          child: Row(
+            children: [
+              Checkbox(
+                value: task['done'] == true,
+                onChanged: (val) => onUpdateTaskStatus(task['task_id'].toString(), val ?? false),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              Expanded(
+                child: Text(
+                  task['task'] ?? '',
+                  style: TextStyle(
+                    decoration: task['done'] == true ? TextDecoration.lineThrough : null,
+                    fontSize: 13,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, size: 16),
+                onPressed: () => onDeleteTask(task['task_id']),
+                constraints: const BoxConstraints(),
+                padding: EdgeInsets.zero,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  static Widget buildDesktopReportsList({
+    required List<Map<String, dynamic>> reports,
+    required Function(String) onDeleteReport,
+  }) {
+    if (reports.isEmpty) {
+      return const Center(
+        child: Text('No reports yet', style: TextStyle(color: Colors.grey)),
+      );
+    }
+    
+    return ListView.builder(
+      itemCount: reports.take(8).length,
+      itemBuilder: (context, index) {
+        final report = reports[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.orange.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  report['content'] ?? '',
+                  style: const TextStyle(fontSize: 13),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, size: 16),
+                onPressed: () => onDeleteReport(report['report_id']),
+                constraints: const BoxConstraints(),
+                padding: EdgeInsets.zero,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  static Widget buildDesktopPhotosList({
+    required List<Map<String, dynamic>> photos,
+    required Future<String?> Function(String?) createSignedUrl,
+    required Function(String) onDeletePhoto,
+  }) {
+    if (photos.isEmpty) {
+      return const Center(
+        child: Text('No photos yet', style: TextStyle(color: Colors.grey)),
+      );
+    }
+
+    return GridView.builder(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        crossAxisSpacing: 4,
+        mainAxisSpacing: 4,
+      ),
+      itemCount: photos.take(12).length,
+      itemBuilder: (context, index) {
+        final photo = photos[index];
+        return FutureBuilder<String?>(
+          future: createSignedUrl(photo['photo_url']),
+          builder: (context, snapshot) {
+            return Stack(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    image: snapshot.hasData && snapshot.data != null
+                        ? DecorationImage(
+                            image: NetworkImage(snapshot.data!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                    color: Colors.grey[200],
+                  ),
+                  child: snapshot.hasData && snapshot.data != null
+                      ? null
+                      : const Center(child: Icon(Icons.image, size: 16)),
+                ),
+                Positioned(
+                  top: 2,
+                  right: 2,
+                  child: GestureDetector(
+                    onTap: () => onDeletePhoto(photo['photo_id']),
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.close, color: Colors.white, size: 12),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  static Widget buildDesktopCostsList({
+    required List<Map<String, dynamic>> costs,
+    required Function(String) onDeleteCost,
+  }) {
+    if (costs.isEmpty) {
+      return const Center(
+        child: Text('No materials yet', style: TextStyle(color: Colors.grey)),
+      );
+    }
+
+    double totalCost = 0;
+    for (var cost in costs) {
+      final quantity = (cost['quantity'] as num? ?? 0).toDouble();
+      final unitPrice = (cost['unit_price'] as num? ?? 0).toDouble();
+      totalCost += quantity * unitPrice;
+    }
+
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.green.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Total:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              Text(
+                '₱${totalCost.toStringAsFixed(2)}',
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: ListView.builder(
+            itemCount: costs.take(10).length,
+            itemBuilder: (context, index) {
+              final cost = costs[index];
+              final quantity = (cost['quantity'] as num? ?? 0).toDouble();
+              final unitPrice = (cost['unit_price'] as num? ?? 0).toDouble();
+              final itemTotal = quantity * unitPrice;
+              
+              return Container(
+                margin: const EdgeInsets.only(bottom: 4),
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.purple.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            cost['material_name'] ?? '',
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            '${quantity.toStringAsFixed(1)} × ₱${unitPrice.toStringAsFixed(2)}',
+                            style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      '₱${itemTotal.toStringAsFixed(2)}',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 14),
+                      onPressed: () => onDeleteCost(cost['material_id']),
+                      constraints: const BoxConstraints(),
+                      padding: EdgeInsets.zero,
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

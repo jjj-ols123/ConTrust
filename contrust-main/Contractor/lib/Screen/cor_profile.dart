@@ -19,6 +19,7 @@ class _ContractorUserProfileScreenState
   late String bio;
   late String contactNumber;
   late String specialization;
+  late String address;
   late double rating;
   late List<String> pastProjects;
   late String? profileImage;
@@ -35,11 +36,13 @@ class _ContractorUserProfileScreenState
   bool isEditingContact = false;
   bool isEditingSpecialization = false;
   bool isEditingFirmName = false;
+  bool isEditingAddress = false;
   
   late TextEditingController bioController;
   late TextEditingController contactController;
   late TextEditingController specializationController;
   late TextEditingController firmNameController;
+  late TextEditingController addressController;
 
   List<Map<String, dynamic>> allRatings = [];
   Map<int, int> ratingDistribution = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
@@ -53,6 +56,7 @@ class _ContractorUserProfileScreenState
     contactController = TextEditingController();
     specializationController = TextEditingController();
     firmNameController = TextEditingController();
+    addressController = TextEditingController();
   }
 
   @override
@@ -61,6 +65,7 @@ class _ContractorUserProfileScreenState
     contactController.dispose();
     specializationController.dispose();
     firmNameController.dispose();
+    addressController.dispose();
     super.dispose();
   }
 
@@ -77,6 +82,7 @@ class _ContractorUserProfileScreenState
           bio = contractorData['bio'] ?? "No bio available";
           contactNumber = contractorData['contact_number'] ?? "No contact number";
           specialization = contractorData['specialization'] ?? "No specialization";
+          address = contractorData['address'] ?? "No address provided";
           rating = contractorData['rating']?.toDouble() ?? 0.0;
           profileImage = contractorData['profile_photo'];
           pastProjects = List<String>.from(
@@ -102,6 +108,7 @@ class _ContractorUserProfileScreenState
     contactController.text = contactNumber;
     specializationController.text = specialization;
     firmNameController.text = firmName;
+    addressController.text = address;
   }
 
   @override
@@ -235,22 +242,27 @@ class _ContractorUserProfileScreenState
       bio: bio,
       contactNumber: contactNumber,
       specialization: specialization,
+      address: address,
       isEditingFirmName: isEditingFirmName,
       isEditingBio: isEditingBio,
       isEditingContact: isEditingContact,
       isEditingSpecialization: isEditingSpecialization,
+      isEditingAddress: isEditingAddress,
       firmNameController: firmNameController,
       bioController: bioController,
       contactController: contactController,
       specializationController: specializationController,
+      addressController: addressController,
       toggleEditFirmName: () => _toggleEdit('firmName'),
       toggleEditBio: () => _toggleEdit('bio'),
       toggleEditContact: () => _toggleEdit('contact'),
       toggleEditSpecialization: () => _toggleEdit('specialization'),
+      toggleEditAddress: () => _toggleEdit('address'),
       saveFirmName: () => _saveField('firmName', firmNameController.text),
       saveBio: () => _saveField('bio', bioController.text),
       saveContact: () => _saveField('contact', contactController.text),
       saveSpecialization: () => _saveField('specialization', specializationController.text),
+      saveAddress: () => _saveField('address', addressController.text),
       contractorId: widget.contractorId,
     );
   }
@@ -302,6 +314,10 @@ class _ContractorUserProfileScreenState
           isEditingFirmName = !isEditingFirmName;
           if (!isEditingFirmName) firmNameController.text = firmName;
           break;
+        case 'address':
+          isEditingAddress = !isEditingAddress;
+          if (!isEditingAddress) addressController.text = address;
+          break;
       }
     });
   }
@@ -330,6 +346,10 @@ class _ContractorUserProfileScreenState
             case 'firmName':
               firmName = newValue;
               isEditingFirmName = false;
+              break;
+            case 'address':
+              address = newValue;
+              isEditingAddress = false;
               break;
           }
         });

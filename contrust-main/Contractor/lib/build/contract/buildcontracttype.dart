@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:backend/services/both%20services/be_fetchservice.dart';
 import 'package:backend/services/contractor services/contract/cor_contracttypeservice.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
@@ -40,7 +41,7 @@ class ContractTypeBuild {
     return SizedBox(
       height: 220,
       child: FutureBuilder<List<Map<String, dynamic>>>(
-        future: ContractTypeService.fetchContractTypes(),
+        future: FetchService().fetchContractTypes(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -187,7 +188,7 @@ class ContractTypeBuild {
         ),
         child: FutureBuilder<List<Map<String, dynamic>>>(
           key: contractListKey,
-          future: ContractTypeService.fetchCreatedContracts(contractorId),
+          future: FetchService().fetchCreatedContracts(contractorId),
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
               return const Center(child: CircularProgressIndicator());

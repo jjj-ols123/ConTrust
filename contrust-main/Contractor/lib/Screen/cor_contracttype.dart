@@ -41,7 +41,7 @@ class _ContractTypeState extends State<ContractType> {
       ),
       backgroundColor: Colors.grey[100],
       body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start, 
         children: [
           ContractTypeBuild.buildHeader(context),
           const SizedBox(height: 18),

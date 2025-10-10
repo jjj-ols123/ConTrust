@@ -2,6 +2,7 @@
 
 import 'package:backend/models/be_appbar.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/Screen/cor_bidding.dart';
 import 'package:contractor/Screen/cor_chathistory.dart';
 import 'package:contractor/Screen/cor_clienthistory.dart';
@@ -28,7 +29,7 @@ class ContractorShell extends StatelessWidget {
   final String contractorId;
   final Widget child;
   final EdgeInsets? contentPadding;
-  
+
   const ContractorShell({
     super.key,
     required this.currentPage,
@@ -57,13 +58,15 @@ class ContractorShell extends StatelessWidget {
         return 'Project Management';
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= 1000;
 
     return Scaffold(
+      // Prevent automatic insets adjustments that can cause vertical jumps
+      resizeToAvoidBottomInset: false,
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: ConTrustAppBar(headline: ''),
       body: Row(
@@ -172,32 +175,32 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
       setState(() => _loadingPM = false);
 
       if (activeProjects.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No active / ongoing project found')),
-        );
+        ConTrustSnackBar.error(context, 'No current ongoing project found!');
         return;
       }
       final projectId = activeProjects.first['project_id'];
 
       if (widget.currentPage != ContractorPage.projectManagement) {
-                navigateToPage(ContractorShell(
-                  currentPage: ContractorPage.projectManagement,
-                  contractorId: widget.contractorId ?? '',
-                  child: CorOngoingProjectScreen(projectId: projectId ?? ''),
-                ));
-              }
+        navigateToPage(
+          ContractorShell(
+            currentPage: ContractorPage.projectManagement,
+            contractorId: widget.contractorId ?? '',
+            child: CorOngoingProjectScreen(projectId: projectId ?? ''),
+          ),
+        );
+      }
     } catch (e) {
       setState(() => _loadingPM = false);
       return;
     }
   }
-  
+
   void navigateToPage(Widget page) {
     Navigator.push(
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) => page,
-        transitionDuration: Duration.zero, 
+        transitionDuration: Duration.zero,
         reverseTransitionDuration: Duration.zero,
       ),
     );
@@ -227,11 +230,13 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             active: widget.currentPage == ContractorPage.messages,
             onTap: () {
               if (widget.currentPage != ContractorPage.messages) {
-                navigateToPage(ContractorShell(
-                  currentPage: ContractorPage.messages,
-                  contractorId: id ?? '',
-                  child: ContractorChatHistoryPage(),
-                ));
+                navigateToPage(
+                  ContractorShell(
+                    currentPage: ContractorPage.messages,
+                    contractorId: id ?? '',
+                    child: ContractorChatHistoryPage(),
+                  ),
+                );
               }
             },
           ),
@@ -241,11 +246,13 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             active: widget.currentPage == ContractorPage.contracts,
             onTap: () {
               if (widget.currentPage != ContractorPage.contracts) {
-                navigateToPage(ContractorShell(
-                  currentPage: ContractorPage.contracts,
-                  contractorId: id ?? '',
-                  child: ContractType(contractorId: id ?? ''),
-                ));
+                navigateToPage(
+                  ContractorShell(
+                    currentPage: ContractorPage.contracts,
+                    contractorId: id ?? '',
+                    child: ContractType(contractorId: id ?? ''),
+                  ),
+                );
               }
             },
           ),
@@ -255,11 +262,13 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             active: widget.currentPage == ContractorPage.bidding,
             onTap: () {
               if (widget.currentPage != ContractorPage.bidding) {
-                navigateToPage(ContractorShell(
-                  currentPage: ContractorPage.bidding,
-                  contractorId: id ?? '',
-                  child: BiddingScreen(contractorId: id ?? ''),
-                ));
+                navigateToPage(
+                  ContractorShell(
+                    currentPage: ContractorPage.bidding,
+                    contractorId: id ?? '',
+                    child: BiddingScreen(contractorId: id ?? ''),
+                  ),
+                );
               }
             },
           ),
@@ -269,11 +278,13 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             active: widget.currentPage == ContractorPage.history,
             onTap: () {
               if (widget.currentPage != ContractorPage.history) {
-                navigateToPage(ContractorShell(
-                  currentPage: ContractorPage.history,
-                  contractorId: id ?? '',
-                  child: ClientHistoryScreen(),
-                ));
+                navigateToPage(
+                  ContractorShell(
+                    currentPage: ContractorPage.history,
+                    contractorId: id ?? '',
+                    child: ClientHistoryScreen(),
+                  ),
+                );
               }
             },
           ),
@@ -283,11 +294,13 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             active: widget.currentPage == ContractorPage.profile,
             onTap: () {
               if (widget.currentPage != ContractorPage.profile) {
-                navigateToPage(ContractorShell(
-                  currentPage: ContractorPage.profile,
-                  contractorId: id ?? '',
-                  child: ContractorUserProfileScreen(contractorId: id ?? ''),
-                ));
+                navigateToPage(
+                  ContractorShell(
+                    currentPage: ContractorPage.profile,
+                    contractorId: id ?? '',
+                    child: ContractorUserProfileScreen(contractorId: id ?? ''),
+                  ),
+                );
               }
             },
           ),
@@ -295,7 +308,12 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             icon: Icons.build_outlined,
             label: 'Material Page',
             active: widget.currentPage == ContractorPage.materials,
-            onTap: () => openMaterials(context, widget.contractorId, fromSidebar: true),
+            onTap:
+                () => openMaterials(
+                  context,
+                  widget.contractorId,
+                  fromSidebar: true,
+                ),
           ),
           _SidebarItem(
             icon: Icons.work_outline,
@@ -539,7 +557,7 @@ class DashboardDrawer extends StatelessWidget {
                 crossAxisSpacing: spacing,
                 childAspectRatio: childAspectRatio,
                 children: [
-                  _DrawerIcon(
+                  DrawerIcon(
                     icon: Icons.message,
                     label: 'Messages',
                     iconSize: iconSize,
@@ -557,7 +575,7 @@ class DashboardDrawer extends StatelessWidget {
                       );
                     },
                   ),
-                  _DrawerIcon(
+                  DrawerIcon(
                     icon: Icons.assignment,
                     label: 'Contracts',
                     iconSize: iconSize,
@@ -574,7 +592,7 @@ class DashboardDrawer extends StatelessWidget {
                       );
                     },
                   ),
-                  _DrawerIcon(
+                  DrawerIcon(
                     icon: Icons.gavel,
                     label: 'Bidding',
                     iconSize: iconSize,
@@ -591,7 +609,7 @@ class DashboardDrawer extends StatelessWidget {
                       );
                     },
                   ),
-                  _DrawerIcon(
+                  DrawerIcon(
                     icon: Icons.history,
                     label: 'History',
                     iconSize: iconSize,
@@ -606,7 +624,7 @@ class DashboardDrawer extends StatelessWidget {
                       );
                     },
                   ),
-                  _DrawerIcon(
+                  DrawerIcon(
                     icon: Icons.person,
                     label: 'Profile',
                     iconSize: iconSize,
@@ -624,7 +642,7 @@ class DashboardDrawer extends StatelessWidget {
                       );
                     },
                   ),
-                  _DrawerIcon(
+                  DrawerIcon(
                     icon: Icons.build,
                     label: 'Material Page',
                     iconSize: iconSize,
@@ -642,7 +660,7 @@ class DashboardDrawer extends StatelessWidget {
   }
 }
 
-class _DrawerIcon extends StatelessWidget {
+class DrawerIcon extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
@@ -650,7 +668,8 @@ class _DrawerIcon extends StatelessWidget {
   final double fontSize;
   final Color color;
 
-  const _DrawerIcon({
+  const DrawerIcon({
+    super.key,
     required this.icon,
     required this.label,
     required this.onTap,
@@ -704,30 +723,38 @@ class _DrawerIcon extends StatelessWidget {
   }
 }
 
-  Future<void> openMaterials(BuildContext context, String? contractorId, {bool fromSidebar = false}) async {
+Future<void> openMaterials(
+  BuildContext context,
+  String? contractorId, {
+  bool fromSidebar = false,
+}) async {
   if (contractorId == null) return;
   try {
-    final projects = await FetchService().fetchContractorProjectInfo(contractorId);
+    final projects = await FetchService().fetchContractorProjectInfo(
+      contractorId,
+    );
 
-    final active = projects.where((p) {
-      final s = (p['status'] as String? ?? '').toLowerCase();
-      return s == 'active' || s == 'ongoing';
-    }).toList();
+    final active =
+        projects.where((p) {
+          final s = (p['status'] as String? ?? '').toLowerCase();
+          return s == 'active' || s == 'ongoing';
+        }).toList();
 
     final productScreen = ProductPanelScreen(
       contractorId: contractorId,
-      projectId: active.isNotEmpty ? active.first['project_id']?.toString() : null,
+      projectId:
+          active.isNotEmpty ? active.first['project_id']?.toString() : null,
     );
 
     final screenWidth = MediaQuery.of(context).size.width;
-    
+
     if (fromSidebar || screenWidth >= 1000) {
       final page = ContractorShell(
         currentPage: ContractorPage.materials,
         contractorId: contractorId,
         child: productScreen,
       );
-      
+
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
@@ -750,4 +777,4 @@ class _DrawerIcon extends StatelessWidget {
     }
     return;
   }
-  }
+}

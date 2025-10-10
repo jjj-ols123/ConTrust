@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 import 'package:backend/services/both services/be_user_service.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -45,23 +46,14 @@ class SignInContractee {
       );
 
       Future.delayed(const Duration(milliseconds: 500), () {
-        ScaffoldMessenger.of(modalContext).showSnackBar(
-          const SnackBar(
-            content: Text('Successfully logged in'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        ConTrustSnackBar.success(modalContext, 'Successfully logged in');
       });
     } catch (e) {
-      ScaffoldMessenger.of(modalContext).showSnackBar(
-        SnackBar(
-          content: Text('Error logging in'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ConTrustSnackBar.error(modalContext, 'Error logging in');
+    }
     }
   }
-}
+
 
 class SignInGoogleContractee {
   void signInGoogle(BuildContext context) async {
@@ -77,29 +69,19 @@ class SignInGoogleContractee {
         final user = data.session?.user;
 
         if (event == AuthChangeEvent.signedIn && user != null) {
-          _handleSignIn(context, user);
+          handleSignIn(context, user);
         } else if (event == AuthChangeEvent.signedOut) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Sign in cancelled'),
-              backgroundColor: Colors.orange,
-            ),
-          );
+          ConTrustSnackBar.success(context, 'Signed in cancelled');
         }
       });
       
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error signing in with Google: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+       rethrow;
     }
   }
 
 
-  Future<void> _handleSignIn(BuildContext context, User user) async {
+  Future<void> handleSignIn(BuildContext context, User user) async {
     try {
       final supabase = Supabase.instance.client;
       
@@ -110,16 +92,11 @@ class SignInGoogleContractee {
           .maybeSingle();
 
       if (existingContractee == null) {
-        await _setupContractee(context, user);
+        await setupContractee(context, user);
       } else {
         final userType = user.userMetadata?['user_type'];
         if (userType?.toLowerCase() != 'contractee') {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('This Google account is not registered as a contractee'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          ConTrustSnackBar.error(context, 'Not a contractee...');
           await supabase.auth.signOut();
           return;
         }
@@ -131,16 +108,11 @@ class SignInGoogleContractee {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error during sign in: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      rethrow;
     }
   }
 
-  Future<void> _setupContractee(BuildContext context, User user) async {
+  Future<void> setupContractee(BuildContext context, User user) async {
     try {
       final supabase = Supabase.instance.client;
       
@@ -162,12 +134,7 @@ class SignInGoogleContractee {
         'created_at': DateTime.now().toIso8601String(),
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Welcome! Your contractee account has been created.'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      ConTrustSnackBar.success(context, 'Welcome! Your contractee account has been created.');
 
       Navigator.pushNamedAndRemoveUntil(
         context,
@@ -176,12 +143,7 @@ class SignInGoogleContractee {
       );
 
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error setting up profile: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      rethrow;
     }
   }
 }

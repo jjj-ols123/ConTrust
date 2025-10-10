@@ -63,7 +63,7 @@ class _ContractorViewContractPageState extends State<ContractorViewContractPage>
     );
   }
 
-  Future<void> _signContract() async {
+  Future<void> signContract() async {
     await ViewContractBuild.showSignatureDialog(
       context: context,
       onSign: (signature) async {
@@ -96,7 +96,7 @@ class _ContractorViewContractPageState extends State<ContractorViewContractPage>
             context, 
             contractData?['title'], 
             onDownload: downloadContract, 
-            onSign: ViewContractService.canSignContract(contractData) ? _signContract : null,
+            onSign: ViewContractService.canSignContract(contractData) ? signContract : null,
           ),
           Expanded(
             child: isLoading
@@ -108,7 +108,27 @@ class _ContractorViewContractPageState extends State<ContractorViewContractPage>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            ViewContractBuild.buildPdfViewerPlaceholder(downloadContract),            
+                            FutureBuilder<String?>(
+                              future: ViewContractService.getPdfSignedUrl(contractData!),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                  return Card(
+                                    child: Container(
+                                      height: 400,
+                                      child: const Center(
+                                        child: CircularProgressIndicator(color: Colors.amber),
+                                      ),
+                                    ),
+                                  );
+                                }
+                                
+                                return ViewContractBuild.buildPdfViewer(
+                                  pdfUrl: snapshot.data,
+                                  onDownload: downloadContract,
+                                  height: 600,
+                                );
+                              },
+                            ),            
                             const SizedBox(height: 24),
                             ViewContractBuild.buildSignaturesSection(
                               buildSignatureSection(
@@ -156,7 +176,7 @@ class _ContractorViewContractPageState extends State<ContractorViewContractPage>
           ),
           child: signaturePath != null && signaturePath.isNotEmpty
               ? FutureBuilder<String?>(
-                  future: _getSignedUrl(signaturePath),
+                  future: ViewContractService.getSignedUrl(signaturePath),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(
@@ -209,10 +229,6 @@ class _ContractorViewContractPageState extends State<ContractorViewContractPage>
         ),
       ],
     );
-  }
-
-  Future<String?> _getSignedUrl(String signaturePath) async {
-    return await ViewContractService.getSignedUrl(signaturePath);
   }
 
   @override

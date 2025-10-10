@@ -2,6 +2,7 @@
 
 import 'package:backend/services/both services/be_contract_service.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:signature/signature.dart';
@@ -80,15 +81,11 @@ class UIContract {
                 ElevatedButton(
                   onPressed: () {
                     if (titleController.text.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Title is required')),
-                      );
+                      ConTrustSnackBar.missingInfo(context, 'title');
                       return;
                     }
                     if (selectedProjectId == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Project is required')),
-                      );
+                      ConTrustSnackBar.missingInfo(context, 'project');
                       return;
                     }
                     Navigator.of(dialogContext).pop({
@@ -313,9 +310,7 @@ class UIContract {
                                                     isSaving = false;
                                                   });
                                                   if (context.mounted) {
-                                                    ScaffoldMessenger.of(context).showSnackBar(
-                                                      SnackBar(content: Text('Failed to save signature')),
-                                                    );
+                                                    ConTrustSnackBar.error(context, 'Failed to save signature');
                                                   }
                                                 }
                                               } else {
@@ -433,9 +428,7 @@ class UIContract {
                                                     isSaving = false;
                                                   }); 
                                                   if (context.mounted) {
-                                                    ScaffoldMessenger.of(context).showSnackBar(
-                                                      const SnackBar(content: Text('Failed to save signature')),
-                                                    );
+                                                    ConTrustSnackBar.error(context, 'Failed to save signature');
                                                   }
                                                 }
                                               } else {
@@ -496,9 +489,7 @@ class UIContract {
                       status: 'rejected',
                     );
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Contract rejected')),
-                    );
+                    ConTrustSnackBar.info(context, 'Contract rejected');
                   },
                   icon: const Icon(Icons.close, color: Colors.red),
                   label: const Text('Reject'),
@@ -511,9 +502,7 @@ class UIContract {
                       status: 'approved',
                     );
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Contract approved!')),
-                    );
+                    ConTrustSnackBar.contractSigned(context);
                   },
                   icon: const Icon(Icons.check, color: Colors.white),
                   label: const Text('Accept'),
@@ -532,9 +521,7 @@ class UIContract {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading contract')),
-        );
+        ConTrustSnackBar.contractError(context, 'Error loading contract');
       }
     }
   }

@@ -2,6 +2,7 @@
 
 import 'package:contractee/pages/cee_welcome.dart';
 import 'package:contractor/Screen/cor_login.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -103,9 +104,7 @@ class WebsiteStartPage extends StatelessWidget {
             MaterialPageRoute(builder: (_) => const WelcomePage()),
           );
         } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error navigating to Contractee: $e')),
-          );
+          ConTrustSnackBar.error(context, 'Error navigating to Contractee: $e');
         }
       },
     );
@@ -125,9 +124,7 @@ class WebsiteStartPage extends StatelessWidget {
             MaterialPageRoute(builder: (_) => LoginScreen()),
           );
         } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error navigating to Contractor: $e')),
-          );
+          ConTrustSnackBar.error(context, 'Error navigating to Contractor: $e');
         }
       },
     );

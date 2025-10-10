@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/services/contractor services/cor_productservice.dart';
 
@@ -1101,7 +1102,7 @@ class _MaterialInputDialogState extends State<MaterialInputDialog> {
 
   Future<void> saveMaterial() async {
     if (widget.contractorId == null || widget.projectId == null) {
-      _showSnackBar('Missing project or contractor information');
+      ConTrustSnackBar.error(context, 'No current ongoing project found!');
       return;
     }
 
@@ -1332,8 +1333,8 @@ class _MaterialInputDialogState extends State<MaterialInputDialog> {
 
                     buildTextField(
                       controller: _priceController,
-                      label: 'Unit Price (₱)',
-                      icon: Icons.attach_money,
+                      label: 'Price (₱)',
+                      icon: Icons.money,
                       keyboardType: TextInputType.number,
                       isRequired: true,
                     ),
@@ -1341,7 +1342,7 @@ class _MaterialInputDialogState extends State<MaterialInputDialog> {
 
                     buildTextField(
                       controller: _noteController,
-                      label: 'Notes (Optional)',
+                      label: 'Product Description / Notes',
                       icon: Icons.note,
                       maxLines: 3,
                     ),

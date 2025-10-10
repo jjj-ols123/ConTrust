@@ -3,9 +3,17 @@
 import 'package:flutter/material.dart';
 import 'package:signature/signature.dart';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
+import 'dart:html' as html;
+import 'dart:ui_web' as ui_web;
 
 class ViewContractBuild {
-  static Widget buildHeader(BuildContext context, String? title, {required VoidCallback onDownload, VoidCallback? onSign}) {
+  static Widget buildHeader(
+    BuildContext context,
+    String? title, {
+    required VoidCallback onDownload,
+    VoidCallback? onSign,
+  }) {
     return Container(
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -20,7 +28,11 @@ class ViewContractBuild {
           Expanded(
             child: Text(
               title ?? 'Contract Details',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -28,7 +40,10 @@ class ViewContractBuild {
             onPressed: onDownload,
             icon: const Icon(Icons.download),
             label: const Text('Download'),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[600], foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue[600],
+              foregroundColor: Colors.white,
+            ),
           ),
           if (onSign != null) ...[
             const SizedBox(width: 8),
@@ -36,7 +51,10 @@ class ViewContractBuild {
               onPressed: onSign,
               icon: const Icon(Icons.edit),
               label: const Text('Sign Contract'),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber[600], foregroundColor: Colors.black),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber[600],
+                foregroundColor: Colors.black,
+              ),
             ),
           ],
         ],
@@ -59,22 +77,57 @@ class ViewContractBuild {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [Icon(Icons.picture_as_pdf, color: Colors.amber[700]), const SizedBox(width: 8), const Text('Contract PDF', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))]),
+            Row(
+              children: [
+                Icon(Icons.picture_as_pdf, color: Colors.amber[700]),
+                const SizedBox(width: 8),
+                const Text(
+                  'Contract PDF',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
             const SizedBox(height: 16),
             Container(
               constraints: const BoxConstraints(minHeight: 400),
-              decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(8), color: Colors.grey.shade50),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.grey.shade50,
+              ),
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.picture_as_pdf, size: 64, color: Colors.grey[400]),
+                    Icon(
+                      Icons.picture_as_pdf,
+                      size: 64,
+                      color: Colors.grey[400],
+                    ),
                     const SizedBox(height: 16),
-                    Text('PDF Contract Viewer', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[600])),
+                    Text(
+                      'PDF Contract Viewer',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[600],
+                      ),
+                    ),
                     const SizedBox(height: 8),
-                    Text('Add flutter_pdfview package to view PDF here', style: TextStyle(fontSize: 14, color: Colors.grey[500])),
+                    Text(
+                      'Add flutter_pdfview package to view PDF here',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                    ),
                     const SizedBox(height: 16),
-                    ElevatedButton.icon(onPressed: onDownload, icon: const Icon(Icons.download), label: const Text('Download PDF'), style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[600], foregroundColor: Colors.white)),
+                    ElevatedButton.icon(
+                      onPressed: onDownload,
+                      icon: const Icon(Icons.download),
+                      label: const Text('Download PDF'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue[600],
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -85,21 +138,165 @@ class ViewContractBuild {
     );
   }
 
-  static Widget buildSignaturesSection(Widget contractorSigWidget, Widget contracteeSigWidget) {
+  static Widget buildPdfViewer({
+    required String? pdfUrl,
+    required VoidCallback onDownload,
+    double height = 600,
+  }) {
+    if (pdfUrl == null || pdfUrl.isEmpty) {
+      return buildPdfViewerPlaceholder(onDownload);
+    }
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.amber.shade100, width: 1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+
+            Container(
+              height: height,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child:
+                    kIsWeb
+                        ? _buildWebPdfViewer(pdfUrl)
+                        : _buildMobilePdfViewer(pdfUrl, onDownload),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget _buildWebPdfViewer(String pdfUrl) {
+    // Create a minimal PDF.js viewer URL with only page navigation
+    final viewerUrl =
+        'https://mozilla.github.io/pdf.js/web/viewer.html'
+        '?file=${Uri.encodeComponent(pdfUrl)}'
+        '#toolbar=0' // Hide main toolbar
+        '&navpanes=0' // Hide navigation panes
+        '&scrollbar=1' // Keep scrollbar
+        '&spread=0' // Single page view
+        '&sidebar=0'; // Hide sidebar
+
+    final viewType = 'pdf-viewer-${pdfUrl.hashCode.abs()}';
+
+    // Register the platform view factory
+    if (kIsWeb) {
+      ui_web.platformViewRegistry.registerViewFactory(viewType, (int viewId) {
+        final iframe =
+            html.IFrameElement()
+              ..src = viewerUrl
+              ..style.border = 'none'
+              ..style.width = '100%'
+              ..style.height = '100%'
+              ..allow = 'fullscreen';
+
+        return iframe;
+      });
+    }
+
+    return HtmlElementView(viewType: viewType);
+  }
+
+  static Widget _buildMobilePdfViewer(String pdfUrl, VoidCallback onDownload) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.picture_as_pdf, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'PDF Viewer',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'PDF viewing is optimized for web browsers.\nTap download to view the contract.',
+              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: onDownload,
+              icon: const Icon(Icons.download),
+              label: const Text('Download PDF'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue[600],
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget buildSignaturesSection(
+    Widget contractorSigWidget,
+    Widget contracteeSigWidget,
+  ) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.amber.shade100, width: 1)),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [Icon(Icons.draw, color: Colors.amber[700]), const SizedBox(width: 8), const Text('Signatures', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D3748)))]),
-          const SizedBox(height: 16),
-          contractorSigWidget,
-          const SizedBox(height: 24),
-          contracteeSigWidget,
-        ]),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.amber.shade100, width: 1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.draw, color: Colors.amber[700]),
+                const SizedBox(width: 8),
+                const Text(
+                  'Signatures',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2D3748),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            contractorSigWidget,
+            const SizedBox(height: 24),
+            contracteeSigWidget,
+          ],
+        ),
       ),
     );
   }
@@ -217,30 +414,34 @@ class ViewContractBuild {
               ),
               actions: [
                 ElevatedButton.icon(
-                  onPressed: isSaving
-                      ? null
-                      : () async {
-                          setState(() {
-                            isSaving = true;
-                          });
-                          
-                          final signature = await controller.toPngBytes();
-                          await onSign(signature);
-                          
-                          setState(() {
-                            isSaving = false;
-                          });
-                        },
-                  icon: isSaving
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Icon(Icons.save),
+                  onPressed:
+                      isSaving
+                          ? null
+                          : () async {
+                            setState(() {
+                              isSaving = true;
+                            });
+
+                            final signature = await controller.toPngBytes();
+                            await onSign(signature);
+
+                            setState(() {
+                              isSaving = false;
+                            });
+                          },
+                  icon:
+                      isSaving
+                          ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                          : const Icon(Icons.save),
                   label: const Text('Save'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.amber[600],
@@ -281,11 +482,7 @@ class ViewContractBuild {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: Colors.red[400],
-          ),
+          Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
           const SizedBox(height: 16),
           Text(
             'Error Loading Contract',

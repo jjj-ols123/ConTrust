@@ -3,7 +3,6 @@
 import 'package:backend/services/contractor services/cor_ongoingservices.dart';
 import 'package:contractor/build/buildongoing.dart';
 import 'package:flutter/material.dart';
-import '../Screen/cor_product.dart';
 
 class CorOngoingProjectScreen extends StatefulWidget {
   final String projectId;
@@ -24,6 +23,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
 
   bool isEditing = false;
   final ongoingService = CorOngoingService();
+  String selectedTab = 'Tasks'; 
 
   Map<String, dynamic>? projectData;
   List<Map<String, dynamic>> _localTasks = [];
@@ -56,6 +56,12 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
         ).showSnackBar(SnackBar(content: Text('Error loading data: $e')));
       }
     }
+  }
+
+  void onTabChanged(String tab) {
+    setState(() {
+      selectedTab = tab;
+    });
   }
 
   void addReport() async {
@@ -182,16 +188,26 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body:
-          isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : projectData == null
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : projectData == null
               ? const Center(child: Text('Project not found.'))
-              : _buildProjectContent(),
+              : _buildResponsiveContent(),
     );
   }
 
-  Widget _buildProjectContent() {
+  Widget _buildResponsiveContent() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 700;
+
+    if (isMobile) {
+      return _buildMobileContent();
+    } else {
+      return _buildDesktopContent();
+    }
+  }
+
+  Widget _buildMobileContent() {
     final project = projectData!['projectDetails'];
     final reports = projectData!['reports'] as List<Map<String, dynamic>>;
     final photos = projectData!['photos'] as List<Map<String, dynamic>>;
@@ -205,91 +221,69 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
 
     return RefreshIndicator(
       onRefresh: () async => loadData(),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            OngoingBuildMethods.buildProjectHeader(
-              projectTitle: projectTitle,
-              clientName: clientName,
-              address: address,
-              startDate: startDate,
-              estimatedCompletion: estimatedCompletion,
-              progress: _localProgress,
-            ),
-            const SizedBox(height: 20),
-            OngoingBuildMethods.buildSectionCard(
-              title: 'Tasks & Progress',
-              icon: Icons.checklist,
-              iconColor: Colors.blue,
-              onAdd: addTask,
-              addButtonText: 'Add Task',
-              child: OngoingBuildMethods.buildTasksList(
-                tasks: _localTasks,
-                onUpdateTaskStatus: updateTaskStatus,
-                onDeleteTask: deleteTask,
-              ),
-            ),
-            const SizedBox(height: 20),
-            OngoingBuildMethods.buildSectionCard(
-              title: 'Progress Reports',
-              icon: Icons.description,
-              iconColor: Colors.orange,
-              onAdd: addReport,
-              addButtonText: 'Add Report',
-              child: OngoingBuildMethods.buildReportsList(
-                reports: reports,
-                onDeleteReport: deleteReport,
-              ),
-            ),
-            const SizedBox(height: 20),
-            OngoingBuildMethods.buildSectionCard(
-              title: 'Project Photos',
-              icon: Icons.photo_library,
-              iconColor: Colors.green,
-              onAdd: pickImage,
-              addButtonText: 'Add Photo',
-              child: OngoingBuildMethods.buildPhotosList(
-                photos: photos,
-                createSignedUrl: createSignedPhotoUrl,
-                onDeletePhoto: deletePhoto,
-              ),
-            ),
-            const SizedBox(height: 20),
-            OngoingBuildMethods.buildSectionCard(
-              title: 'Materials & Costs',
-              icon: Icons.construction,
-              iconColor: Colors.purple,
-              child: OngoingBuildMethods.buildCostsList(
-                costs: costs,
-                onDeleteCost: deleteCost,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: ListTile(
-                leading: const Icon(Icons.info, color: Colors.blue),
-                title: const Text('Need Help?'),
-                subtitle: const Text('Contact support for assistance'),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap:
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (context) =>
-                                ProductPanelScreen(projectId: widget.projectId),
-                      ),
-                    ),
-              ),
-            ),
-          ],
+      child: OngoingBuildMethods.buildMobileLayout(
+        projectTitle: projectTitle,
+        clientName: clientName,
+        address: address,
+        startDate: startDate,
+        estimatedCompletion: estimatedCompletion,
+        progress: _localProgress,
+        selectedTab: selectedTab,
+        onTabChanged: onTabChanged,
+        tabContent: OngoingBuildMethods.buildTabContent(
+          selectedTab: selectedTab,
+          tasks: _localTasks,
+          reports: reports,
+          photos: photos,
+          costs: costs,
+          onUpdateTaskStatus: updateTaskStatus,
+          onDeleteTask: deleteTask,
+          onDeleteReport: deleteReport,
+          onDeletePhoto: deletePhoto,
+          onDeleteCost: deleteCost,
+          createSignedUrl: createSignedPhotoUrl,
+          onAddTask: addTask,
+          onAddReport: addReport,
+          onAddPhoto: pickImage,
         ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopContent() {
+    final project = projectData!['projectDetails'];
+    final reports = projectData!['reports'] as List<Map<String, dynamic>>;
+    final photos = projectData!['photos'] as List<Map<String, dynamic>>;
+    final costs = projectData!['costs'] as List<Map<String, dynamic>>;
+
+    final projectTitle = project['title'] ?? 'Project';
+    final clientName = project['full_name'] ?? 'Client';
+    final address = project['location'] ?? '';
+    final startDate = project['start_date'] ?? '';
+    final estimatedCompletion = project['estimated_completion'] ?? '';
+
+    return RefreshIndicator(
+      onRefresh: () async => loadData(),
+      child: OngoingBuildMethods.buildDesktopGridLayout(
+        projectTitle: projectTitle,
+        clientName: clientName,
+        address: address,
+        startDate: startDate,
+        estimatedCompletion: estimatedCompletion,
+        progress: _localProgress,
+        tasks: _localTasks,
+        reports: reports,
+        photos: photos,
+        costs: costs,
+        onUpdateTaskStatus: updateTaskStatus,
+        onDeleteTask: deleteTask,
+        onDeleteReport: deleteReport,
+        onDeletePhoto: deletePhoto,
+        onDeleteCost: deleteCost,
+        createSignedUrl: createSignedPhotoUrl,
+        onAddTask: addTask,
+        onAddReport: addReport,
+        onAddPhoto: pickImage,
       ),
     );
   }

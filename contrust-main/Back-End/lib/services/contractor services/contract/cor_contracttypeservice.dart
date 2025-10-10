@@ -7,14 +7,7 @@ import 'package:contractor/Screen/cor_viewcontract.dart';
 import 'package:flutter/material.dart';
 
 class ContractTypeService {
-  static Future<List<Map<String, dynamic>>> fetchContractTypes() async {
-    return await FetchService().fetchContractTypes();
-  }
-
-  static Future<List<Map<String, dynamic>>> fetchCreatedContracts(String contractorId) async {
-    return await FetchService().fetchCreatedContracts(contractorId);
-  }
-
+  
   static Future<bool?> navigateToCreateContract({
     required BuildContext context,
     required Map<String, dynamic> template,
@@ -60,7 +53,6 @@ class ContractTypeService {
         builder: (_) => CreateContractPage(
           template: {
             'contract_type_id': contract['contract_type_id'],
-            'template_content': contract['content']
           },
           contractType: contract['contract_type_id'] as String,
           contractorId: contractorId,

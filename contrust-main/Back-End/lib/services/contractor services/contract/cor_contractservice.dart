@@ -3,10 +3,8 @@
 import 'package:backend/services/both services/be_contract_service.dart';
 import 'package:backend/services/both services/be_contract_pdf_service.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
-import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:typed_data';
-import 'dart:io';
 
 class ContractorContractService {
   static Future<List<Map<String, dynamic>>> fetchContractTypes() async {
@@ -87,21 +85,77 @@ class ContractorContractService {
     return await ContractPdfService.downloadContractPdf(pdfPath);
   }
 
-  static Future<File> saveToDevice(Uint8List pdfBytes, String fileName) async {
+  static Future<dynamic> saveToDevice(Uint8List pdfBytes, String fileName) async {
     return await ContractPdfService.saveToDevice(pdfBytes, fileName);
   }
 
-  static Future<void> signContract({
+  static Future<Map<String, dynamic>> signContract({
     required String contractId,
     required String userId,
     required Uint8List signatureBytes,
     required String userType,
   }) async {
-    await ContractService.signContract(
+    return await ContractService.signContract(
       contractId: contractId,
       userId: userId,
       signatureBytes: signatureBytes,
       userType: userType,
+    );
+  }
+
+  static Future<bool> verifySignature({
+    required String contractId,
+    required String userType,
+  }) async {
+    return await ContractService.verifySignature(
+      contractId: contractId,
+      userType: userType,
+    );
+  }
+
+  static Future<String?> getSignatureUrl({
+    required String contractId,
+    required String userType,
+  }) async {
+    return await ContractService.getSignatureUrl(
+      contractId: contractId,
+      userType: userType,
+    );
+  }
+
+  static Future<Map<String, dynamic>> downloadContractPdfWithProgress({
+    required String contractId,
+    String? customFileName,
+    bool saveToDevice = false,
+  }) async {
+    return await ContractService.downloadContractPdfWithProgress(
+      contractId: contractId,
+      customFileName: customFileName,
+      saveToDevice: saveToDevice,
+    );
+  }
+
+  static Future<String> getContractPdfPreviewUrl({
+    required String contractId,
+    int expiryHours = 24,
+  }) async {
+    return await ContractService.getContractPdfPreviewUrl(
+      contractId: contractId,
+      expiryHours: expiryHours,
+    );
+  }
+
+  static Future<Map<String, dynamic>> validateContractPdf(String contractId) async {
+    return await ContractService.validateContractPdf(contractId);
+  }
+
+  static Future<Map<String, dynamic>> downloadMultipleContracts({
+    required List<String> contractIds,
+    String? archiveName,
+  }) async {
+    return await ContractService.downloadMultipleContracts(
+      contractIds: contractIds,
+      archiveName: archiveName,
     );
   }
 
@@ -119,14 +173,6 @@ class ContractorContractService {
 
   static Future<void> deleteContract({required String contractId}) async {
     await ContractService.deleteContract(contractId: contractId);
-  }
-
-  static IconData getStatusIcon(String status) {
-    return ContractService.getStatusIcon(status);
-  }
-
-  static Color getStatusColor(String status) {
-    return ContractService.getStatusColor(status);
   }
 
   static String formatDate(String? dateString) {

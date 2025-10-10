@@ -447,7 +447,7 @@ class BiddingUIBuildMethods {
           controller: messageController,
           maxLines: 3,
           decoration: InputDecoration(
-            labelText: 'Message to the contractee (optional)',
+            labelText: 'Message to the contractee on what you can offer!',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
             fillColor: Colors.white,

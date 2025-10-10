@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
+import 'be_snackbar.dart';
 
 bool validateFieldsLogin(context, String email, String password) {
   if (email.isEmpty || password.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Please fill in all fields'),
-        backgroundColor: Colors.red,
-      ),
-    );
+    ConTrustSnackBar.error(context, 'Please fill in all fields');
     return false;
   }
   return true;
@@ -20,21 +16,11 @@ bool validateFieldsContractor(context, String firmName, String contactNumber,
       email.isEmpty ||
       password.isEmpty ||
       confirmPassword.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Please fill in all fields'),
-        backgroundColor: Colors.red,
-      ),
-    );
+    ConTrustSnackBar.error(context, 'Please fill in all fields');
     return false;
   }
   if (password != confirmPassword) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Passwords do not match'),
-        backgroundColor: Colors.red,
-      ),
-    );
+    ConTrustSnackBar.error(context, 'Passwords do not match');
     return false;
   }
   return true;
@@ -48,22 +34,12 @@ bool validateFieldsContractee(context, String fName, String lName, String email,
       email.isEmpty ||
       password.isEmpty ||
       confirmPass.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Please fill in all fields'),
-        backgroundColor: Colors.red,
-      ),
-    );
+    ConTrustSnackBar.error(context, 'Please fill in all fields');
     return false;
   }
 
   if (password != confirmPass) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Passwords do not match'),
-        backgroundColor: Colors.red,
-      ),
-    );
+    ConTrustSnackBar.error(context, 'Passwords do not match');
     return false;
   }
 
@@ -79,12 +55,7 @@ bool validateFieldsPostRequest(BuildContext context, String title, String constr
       location.isEmpty ||
       description.isEmpty ||
       duration.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Please fill in all fields'),
-        backgroundColor: Colors.red,
-      ),
-    );
+    ConTrustSnackBar.error(context, 'Please fill in all fields');
     return false;
   }
 
@@ -92,11 +63,7 @@ bool validateFieldsPostRequest(BuildContext context, String title, String constr
   int maxBudgetInt = int.tryParse(maxBudget) ?? 0;
 
   if (minBudgetInt > maxBudgetInt) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Minimum budget cannot exceed maximum budget'),
-        backgroundColor: Colors.red,
-      ),
+    ConTrustSnackBar.error(context, 'Minimum budget cannot be greater than maximum budget'
     );
     return false;
   }
@@ -104,12 +71,7 @@ bool validateFieldsPostRequest(BuildContext context, String title, String constr
   int durationInt = int.tryParse(duration) ?? 0;
 
   if (durationInt < 1 || durationInt > 30) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Bid duration must be between 1 and 30 days'),
-        backgroundColor: Colors.red,
-      ),
-    );
+    ConTrustSnackBar.error(context, 'Bid duration must be between 1 and 30 days');
     return false;
   }
 
@@ -118,24 +80,14 @@ bool validateFieldsPostRequest(BuildContext context, String title, String constr
 
 bool validateBidRequest(BuildContext context, String bidAmount, String message) {
   if (bidAmount.isEmpty || message.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Please fill in all fields'),
-        backgroundColor: Colors.red,
-      ),
-    );
+    ConTrustSnackBar.error(context, 'Please fill in all fields');
     return false;
   }
 
   int bidAmountInt = int.tryParse(bidAmount) ?? 0;
 
   if (bidAmountInt < 1) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Bid amount must be greater than zero'),
-        backgroundColor: Colors.red,
-      ),
-    );
+    ConTrustSnackBar.error(context, 'Bid amount must be greater than zero');
     return false;
   }
 
