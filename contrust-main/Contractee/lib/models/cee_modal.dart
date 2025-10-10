@@ -1,8 +1,6 @@
-// request_modal.dart
-// ignore_for_file: non_constant_identifier_names, use_build_context_synchronously, unnecessary_type_check, deprecated_member_use
+// ignore_for_file: non_constant_identifier_names, use_build_context_synchronously, unnecessary_type_check, deprecated_member_use, depend_on_referenced_packages
 
-import 'package:backend/services/be_bidding_service.dart';
-import 'package:backend/services/be_fetchservice.dart';
+import 'package:backend/services/both services/be_bidding_service.dart';
 import 'package:backend/services/be_project_service.dart';
 import 'package:backend/utils/be_validation.dart';
 import 'package:backend/utils/be_constraint.dart';
@@ -333,7 +331,7 @@ class ProjectModal {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content:
-                                            Text('Error submitting request'),
+                                            Text('Error submitting request $e'),
                                         backgroundColor: Colors.red,
                                       ),
                                     );

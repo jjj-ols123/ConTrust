@@ -1,6 +1,7 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, file_names, use_build_context_synchronously
 
-import 'package:backend/services/be_contract_service.dart';
+import 'package:backend/services/both services/be_contract_service.dart';
+import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:signature/signature.dart';
@@ -36,7 +37,7 @@ class UIContract {
                     ),
                     const SizedBox(height: 16),
                     FutureBuilder<List<Map<String, dynamic>>>(
-                      future: ContractService.getContractorProjectInfo(contractorId),
+                      future: FetchService().fetchContractorProjectInfo(contractorId),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
                           return const CircularProgressIndicator();
@@ -256,7 +257,7 @@ class UIContract {
                         showDialog(
                           context: context,
                           builder: (context) {
-                            final SignatureController _controller = SignatureController(
+                            final SignatureController controller = SignatureController(
                               penStrokeWidth: 3,
                               penColor: Colors.black,
                             );
@@ -279,7 +280,7 @@ class UIContract {
                                     child: SizedBox(
                                       width: 350,
                                       child: UIContract.buildSignaturePad(
-                                        controller: _controller,
+                                        controller: controller,
                                         height: 200,
                                       ),
                                     ),
@@ -289,11 +290,11 @@ class UIContract {
                                       onPressed: isSaving
                                           ? null
                                           : () async {
-                                              if (_controller.isNotEmpty) {
+                                              if (controller.isNotEmpty) {
                                                 setState(() {
                                                   isSaving = true;
                                                 });
-                                                final signature = await _controller.toPngBytes();
+                                                final signature = await controller.toPngBytes();
                                                 try {
                                                   await ContractService.signContract(
                                                     contractId: contractId,
@@ -376,7 +377,7 @@ class UIContract {
                         showDialog(
                           context: context,
                           builder: (context) {
-                            final SignatureController _controller = SignatureController(
+                            final SignatureController controller = SignatureController(
                               penStrokeWidth: 3,
                               penColor: Colors.black,
                             );
@@ -399,7 +400,7 @@ class UIContract {
                                     child: SizedBox(
                                       width: 350,
                                       child: UIContract.buildSignaturePad(
-                                        controller: _controller,
+                                        controller: controller,
                                         height: 200,
                                       ),
                                     ),
@@ -409,11 +410,11 @@ class UIContract {
                                       onPressed: isSaving
                                           ? null
                                           : () async {
-                                              if (_controller.isNotEmpty) {
+                                              if (controller.isNotEmpty) {
                                                 setState(() {
                                                   isSaving = true;
                                                 });
-                                                final signature = await _controller.toPngBytes();
+                                                final signature = await controller.toPngBytes();
                                                 try {
                                                   await ContractService.signContract(
                                                     contractId: contractId,

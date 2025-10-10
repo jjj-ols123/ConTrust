@@ -2,7 +2,7 @@
 
 import 'package:backend/utils/be_pagetransition.dart';
 import 'package:backend/utils/be_validation.dart';
-import 'package:contractee/services/cee_signin.dart';
+import 'package:backend/services/contractee services/cee_signin.dart';
 import 'package:contractee/pages/cee_registration.dart';
 import 'package:flutter/material.dart';
 
@@ -21,20 +21,20 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100, 
+      backgroundColor: Colors.grey.shade100,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Container(
-            width: 400, 
-            padding: const EdgeInsets.all(28), 
+            width: 400,
+            padding: const EdgeInsets.all(28),
             margin: const EdgeInsets.symmetric(horizontal: 20),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.08), 
+                  color: Colors.black.withOpacity(0.08),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -53,8 +53,7 @@ class _LoginPageState extends State<LoginPage> {
       children: [
         Column(
           children: [
-            Icon(Icons.lock_outline,
-                size: 64, color: Colors.amber.shade400), 
+            Icon(Icons.lock_outline, size: 64, color: Colors.amber.shade400),
             const SizedBox(height: 12),
             Text(
               'Welcome Back',
@@ -71,7 +70,6 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ],
         ),
-
         const SizedBox(height: 30),
         TextFormField(
           controller: _emailController,
@@ -80,9 +78,9 @@ class _LoginPageState extends State<LoginPage> {
             labelText: 'Email',
             prefixIcon: const Icon(Icons.email_outlined),
             filled: true,
-            fillColor: Colors.grey.shade100, 
+            fillColor: Colors.grey.shade100,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12), 
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
           ),
@@ -103,7 +101,6 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
-
         const SizedBox(height: 25),
         ElevatedButton(
           onPressed: () async {
@@ -120,7 +117,7 @@ class _LoginPageState extends State<LoginPage> {
             backgroundColor: Colors.amber.shade400,
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12), 
+              borderRadius: BorderRadius.circular(12),
             ),
             elevation: 4,
           ),
@@ -144,15 +141,16 @@ class _LoginPageState extends State<LoginPage> {
           ],
         ),
         const SizedBox(height: 20),
-        GestureDetector(
+        InkWell(
           onTap: () {
-            // google
+            SignInGoogleContractee().signInGoogle(context);
           },
+          borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(12), 
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -167,9 +165,8 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
-
         const SizedBox(height: 25),
-        GestureDetector(
+        InkWell(
           onTap: () {
             transitionBuilder(context, RegistrationPage());
           },

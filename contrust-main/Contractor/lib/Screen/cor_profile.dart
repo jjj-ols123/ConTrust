@@ -1,11 +1,7 @@
 // ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously, deprecated_member_use
-import 'package:backend/models/be_appbar.dart';
-import 'package:backend/services/be_user_service.dart';
-import 'package:backend/utils/be_pagetransition.dart';
-import 'package:contractor/Screen/cor_editprofile.dart';
+import 'package:backend/services/contractor services/cor_profileservice.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:typed_data';
+import 'package:contractor/build/buildprofile.dart';
 
 class ContractorUserProfileScreen extends StatefulWidget {
   final String contractorId;
@@ -33,632 +29,312 @@ class _ContractorUserProfileScreenState
   static const String profileUrl =
       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
 
+  String selectedTab = 'Portfolio'; 
+
+  bool isEditingBio = false;
+  bool isEditingContact = false;
+  bool isEditingSpecialization = false;
+  bool isEditingFirmName = false;
+  
+  late TextEditingController bioController;
+  late TextEditingController contactController;
+  late TextEditingController specializationController;
+  late TextEditingController firmNameController;
+
+  List<Map<String, dynamic>> allRatings = [];
+  Map<int, int> ratingDistribution = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
+  int totalReviews = 0;
+
   @override
   void initState() {
     super.initState();
-    _loadContractorData();
+    loadContractorData();
+    bioController = TextEditingController();
+    contactController = TextEditingController();
+    specializationController = TextEditingController();
+    firmNameController = TextEditingController();
   }
 
-  Future<void> _loadContractorData() async {
+  @override
+  void dispose() {
+    bioController.dispose();
+    contactController.dispose();
+    specializationController.dispose();
+    firmNameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> loadContractorData() async {
     try {
-      final contractorData = await UserService().fetchUserData(
-        widget.contractorId,
-        isContractor: true,
-      );
-
-      final completedProjects = await Supabase.instance.client
-          .from('Projects')
-          .select('project_id')
-          .eq('contractor_id', widget.contractorId)
-          .eq('status', 'completed');
-
-      if (contractorData != null) {
-        setState(() {
+      setState(() => isLoading = true);
+      
+      final result = await CorProfileService().loadContractorData(widget.contractorId);
+      final contractorData = result['contractorData'];
+      
+      setState(() {
+        if (contractorData != null) {
           firmName = contractorData['firm_name'] ?? "No firm name";
           bio = contractorData['bio'] ?? "No bio available";
-          contactNumber =
-              contractorData['contact_number'] ?? "No contact number";
-          specialization =
-              contractorData['specialization'] ?? "No specialization";
+          contactNumber = contractorData['contact_number'] ?? "No contact number";
+          specialization = contractorData['specialization'] ?? "No specialization";
           rating = contractorData['rating']?.toDouble() ?? 0.0;
           profileImage = contractorData['profile_photo'];
           pastProjects = List<String>.from(
             contractorData['past_projects'] ?? [],
           );
-          completedProjectsCount = completedProjects.length;
-          isLoading = false;
-        });
-      } else {
-        setState(() {
-          completedProjectsCount = completedProjects.length;
-          isLoading = false;
-        });
-      }
+        }
+        
+        completedProjectsCount = result['completedProjectsCount'];
+        allRatings = result['allRatings'];
+        ratingDistribution = result['ratingDistribution'];
+        totalReviews = result['totalReviews'];
+        isLoading = false;
+      });
+      
+      _updateControllers();
     } catch (e) {
       setState(() => isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to load contractor data'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
     }
   }
 
-  Future<void> _uploadProjectPhoto() async {
-    setState(() => isUploading = true);
-
-    try {
-      Uint8List? imageBytes = await UserService().pickImage();
-
-      if (imageBytes != null) {
-        bool success = await UserService().addPastProjectPhoto(
-          widget.contractorId,
-          imageBytes,
-        );
-
-        if (success && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Project photo uploaded successfully!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          _loadContractorData();
-        } else if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to upload project photo'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error uploading photo: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      setState(() => isUploading = false);
-    }
-  }
-
-  Widget _buildRatingStars(double rating) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(5, (index) {
-        if (index < rating.floor()) {
-          return const Icon(Icons.star, color: Colors.amber, size: 24);
-        } else if (index < rating.ceil() && rating % 1 != 0) {
-          return const Icon(Icons.star_half, color: Colors.amber, size: 24);
-        } else {
-          return const Icon(Icons.star_border, color: Colors.amber, size: 24);
-        }
-      }),
-    );
+  void _updateControllers() {
+    bioController.text = bio;
+    contactController.text = contactNumber;
+    specializationController.text = specialization;
+    firmNameController.text = firmName;
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final screenWidth = MediaQuery.of(context).size.width;
-    final crossAxisCount =
-        screenWidth > 1000
-            ? 4
-            : screenWidth > 600
-            ? 3
-            : 2;
-
     if (isLoading) {
-      return Scaffold(
-        appBar: const ConTrustAppBar(headline: "Profile"),
-        body: const Center(child: CircularProgressIndicator()),
+      return const Scaffold(
+        backgroundColor: Color(0xFFF8F9FA),
+        body: Center(child: CircularProgressIndicator(color: Colors.amber,)),
       );
     }
 
     return Scaffold(
-      appBar: const ConTrustAppBar(headline: "Profile"),
-      body: RefreshIndicator(
-        onRefresh: _loadContractorData,
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Column(
-            children: [
-              SizedBox(
-                height: 200,
-                width: double.infinity,
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: Image.asset(
-                        'bgloginscreen.jpg',
-                        fit: BoxFit.cover,
-                        errorBuilder:
-                            (context, error, stackTrace) =>
-                                Container(color: Colors.blue.shade700),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 20,
-                      left: 20,
-                      right: 20,
-                      child: Row(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 4),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.2),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 5),
-                                ),
-                              ],
-                            ),
-                            child: CircleAvatar(
-                              radius: 50,
-                              backgroundColor: Colors.grey.shade200,
-                              backgroundImage:
-                                  (profileImage != null &&
-                                          profileImage!.isNotEmpty)
-                                      ? NetworkImage(profileImage!)
-                                      : NetworkImage(profileUrl),
-                              child:
-                                  (profileImage == null ||
-                                          profileImage!.isEmpty)
-                                      ? const Icon(
-                                        Icons.business,
-                                        size: 40,
-                                        color: Colors.grey,
-                                      )
-                                      : null,
-                            ),
-                          ),
-                          const SizedBox(width: 20),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  firmName,
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    _buildRatingStars(rating),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      rating.toStringAsFixed(1),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Card(
-                      elevation: 8,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.info_outline,
-                                  color: Colors.blue.shade700,
-                                  size: 24,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  'About Us',
-                                  style: theme.textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue.shade700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              bio,
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                height: 1.6,
-                                color: Colors.grey.shade700,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.phone,
-                                  color: Colors.blue.shade600,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Contact: $contactNumber',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: Colors.grey.shade700,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.work,
-                                  color: Colors.blue.shade600,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Specialization: $specialization',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: Colors.grey.shade700,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: ElevatedButton.icon(
-                                    onPressed: () async {
-                                      String? contractorId =
-                                          await UserService().getContractorId();
-                                      if (contractorId != null && mounted) {
-                                        transitionBuilder(
-                                          context,
-                                          EditProfileScreen(
-                                            userId: contractorId,
-                                            isContractor: true,
-                                          ),
-                                        );
-                                      }
-                                    },
-                                    icon: const Icon(Icons.edit),
-                                    label: const Text('Edit Profile'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.blue.shade600,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 12,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    Card(
-                      elevation: 8,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.photo_library,
-                                  color: Colors.purple.shade600,
-                                  size: 24,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  'Past Projects',
-                                  style: theme.textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.purple.shade600,
-                                  ),
-                                ),
-                                const Spacer(),
-                                if (isUploading)
-                                  const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-
-                            if (pastProjects.isEmpty)
-                              Container(
-                                padding: const EdgeInsets.all(40),
-                                child: Column(
-                                  children: [
-                                    Icon(
-                                      Icons.photo_library_outlined,
-                                      size: 64,
-                                      color: Colors.grey.shade400,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      'No project photos yet',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        color: Colors.grey.shade600,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Upload photos of your completed projects to showcase your work',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Colors.grey.shade500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            else
-                              GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate:
-                                    SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: crossAxisCount,
-                                      crossAxisSpacing: 12,
-                                      mainAxisSpacing: 12,
-                                      childAspectRatio: 1.0,
-                                    ),
-                                itemCount: pastProjects.length,
-                                itemBuilder: (context, index) {
-                                  return Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(12),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.1),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Image.network(
-                                        pastProjects[index],
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (
-                                          context,
-                                          error,
-                                          stackTrace,
-                                        ) {
-                                          return Container(
-                                            color: Colors.grey.shade200,
-                                            child: Icon(
-                                              Icons.error_outline,
-                                              color: Colors.grey.shade400,
-                                              size: 32,
-                                            ),
-                                          );
-                                        },
-                                        loadingBuilder: (
-                                          context,
-                                          child,
-                                          loadingProgress,
-                                        ) {
-                                          if (loadingProgress == null) {
-                                            return child;
-                                          }
-                                          return Container(
-                                            color: Colors.grey.shade200,
-                                            child: Center(
-                                              child: CircularProgressIndicator(
-                                                value:
-                                                    loadingProgress
-                                                                .expectedTotalBytes !=
-                                                            null
-                                                        ? loadingProgress
-                                                                .cumulativeBytesLoaded /
-                                                            loadingProgress
-                                                                .expectedTotalBytes!
-                                                        : null,
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-
-                            const SizedBox(height: 20),
-
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                onPressed:
-                                    isUploading ? null : _uploadProjectPhoto,
-                                icon:
-                                    isUploading
-                                        ? const SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                        : const Icon(Icons.add_a_photo),
-                                label: Text(
-                                  isUploading
-                                      ? 'Uploading...'
-                                      : 'Upload Project Photo',
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.purple.shade600,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    Card(
-                      elevation: 8,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.analytics,
-                                  color: Colors.green.shade600,
-                                  size: 24,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  'Performance Stats',
-                                  style: theme.textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.green.shade600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildStatCard(
-                                    icon: Icons.star,
-                                    title: 'Rating',
-                                    value: rating.toStringAsFixed(1),
-                                    color: Colors.amber,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: _buildStatCard(
-                                    icon: Icons.work,
-                                    title: 'Completed Projects',
-                                    value: '$completedProjectsCount',
-                                    color: Colors.green,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatCard({
-    required IconData icon,
-    required String title,
-    required String value,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Column(
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: Column(
         children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
+          Container(
+            height: 60,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.amber.shade50,
+              border: Border(
+                bottom: BorderSide(color: Colors.grey.shade200),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.person_outline, color: Colors.amber, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Profile',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
           ),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 14,
-              color: color.withOpacity(0.8),
-              fontWeight: FontWeight.w500,
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: loadContractorData,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isMobile = constraints.maxWidth < 768;
+                  
+                  if (isMobile) {
+                    return SingleChildScrollView(
+                      child: ProfileBuildMethods.buildMobileLayout(
+                        firmName: firmName,
+                        specialization: specialization,
+                        profileImage: profileImage,
+                        profileUrl: profileUrl,
+                        completedProjectsCount: completedProjectsCount,
+                        rating: rating,
+                        pastProjects: pastProjects,
+                        selectedTab: selectedTab,
+                        onTabChanged: (String tab) {
+                          setState(() {
+                            selectedTab = tab;
+                          });
+                        },
+                        mainContent: _buildMainContent(),
+                      ),
+                    );
+                  } else {
+                    return ProfileBuildMethods.buildDesktopLayout(
+                      firmName: firmName,
+                      specialization: specialization,
+                      profileImage: profileImage,
+                      profileUrl: profileUrl,
+                      completedProjectsCount: completedProjectsCount,
+                      rating: rating,
+                      pastProjects: pastProjects,
+                      selectedTab: selectedTab,
+                      onTabChanged: (String tab) {
+                        setState(() {
+                          selectedTab = tab;
+                        });
+                      },
+                      mainContent: _buildMainContent(),
+                    );
+                  }
+                },
+              ),
             ),
           ),
         ],
       ),
     );
   }
+
+
+
+
+
+  Widget _buildMainContent() {
+    return ProfileBuildMethods.buildMainContent(
+      selectedTab,
+      () => _buildPortfolio(),
+      () => _buildAboutContent(),
+      () => _buildReviewsContent(),
+    );
+  }
+
+  Widget _buildPortfolio() {
+    return ProfileBuildMethods.buildPortfolio(
+      bio: bio,
+      pastProjects: pastProjects,
+      isUploading: isUploading,
+      uploadProjectPhoto: () => CorProfileService().handleUploadProjectPhoto(
+        contractorId: widget.contractorId,
+        context: context,
+        setUploading: (loading) => setState(() => isUploading = loading),
+        onSuccess: loadContractorData,
+      ),
+      context: context,
+    );
+  }
+
+  Widget _buildAboutContent() {
+    return ProfileBuildMethods.buildAbout(
+      context: context,
+      firmName: firmName,
+      bio: bio,
+      contactNumber: contactNumber,
+      specialization: specialization,
+      isEditingFirmName: isEditingFirmName,
+      isEditingBio: isEditingBio,
+      isEditingContact: isEditingContact,
+      isEditingSpecialization: isEditingSpecialization,
+      firmNameController: firmNameController,
+      bioController: bioController,
+      contactController: contactController,
+      specializationController: specializationController,
+      toggleEditFirmName: () => _toggleEdit('firmName'),
+      toggleEditBio: () => _toggleEdit('bio'),
+      toggleEditContact: () => _toggleEdit('contact'),
+      toggleEditSpecialization: () => _toggleEdit('specialization'),
+      saveFirmName: () => _saveField('firmName', firmNameController.text),
+      saveBio: () => _saveField('bio', bioController.text),
+      saveContact: () => _saveField('contact', contactController.text),
+      saveSpecialization: () => _saveField('specialization', specializationController.text),
+      contractorId: widget.contractorId,
+    );
+  }
+
+  Widget _buildReviewsContent() {
+    return ProfileBuildMethods.buildReviewsContainer(
+      rating: rating,
+      totalReviews: totalReviews,
+      getRatingPercentage: _getRatingPercentage,
+      buildRatingBar: _buildRatingBar,
+      allRatings: allRatings,
+      buildReviewCard: _buildReviewCard,
+      getTimeAgo: _getTimeAgo,
+    );
+  }
+
+  String _getTimeAgo(DateTime dateTime) {
+    return CorProfileService().getTimeAgo(dateTime);
+  }
+
+  double _getRatingPercentage(int stars) {
+    return CorProfileService().getRatingPercentage(stars, totalReviews, ratingDistribution);
+  }
+  
+  Widget _buildRatingBar(String label, double percentage, Color color) {
+    return ProfileBuildMethods.buildRatingBar(label, percentage, color);
+  }
+
+  Widget _buildReviewCard(String clientName, String review, double rating, String projectName, String timeAgo) {
+    return ProfileBuildMethods.buildReviews(clientName, review, rating, projectName, timeAgo);
+  }
+
+  void _toggleEdit(String fieldType) {
+    setState(() {
+      switch (fieldType) {
+        case 'bio':
+          isEditingBio = !isEditingBio;
+          if (!isEditingBio) bioController.text = bio; 
+          break;
+        case 'contact':
+          isEditingContact = !isEditingContact;
+          if (!isEditingContact) contactController.text = contactNumber;
+          break;
+        case 'specialization':
+          isEditingSpecialization = !isEditingSpecialization;
+          if (!isEditingSpecialization) specializationController.text = specialization;
+          break;
+        case 'firmName':
+          isEditingFirmName = !isEditingFirmName;
+          if (!isEditingFirmName) firmNameController.text = firmName;
+          break;
+      }
+    });
+  }
+
+  Future<void> _saveField(String fieldType, String newValue) async {
+    await CorProfileService().handleSaveField(
+      contractorId: widget.contractorId,
+      fieldType: fieldType,
+      newValue: newValue,
+      context: context,
+      onSuccess: () {
+        setState(() {
+          switch (fieldType) {
+            case 'bio':
+              bio = newValue;
+              isEditingBio = false;
+              break;
+            case 'contact':
+              contactNumber = newValue;
+              isEditingContact = false;
+              break;
+            case 'specialization':
+              specialization = newValue;
+              isEditingSpecialization = false;
+              break;
+            case 'firmName':
+              firmName = newValue;
+              isEditingFirmName = false;
+              break;
+          }
+        });
+      },
+    );
+  }
+
 }

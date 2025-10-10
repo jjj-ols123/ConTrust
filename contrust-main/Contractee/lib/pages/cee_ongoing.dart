@@ -1,7 +1,7 @@
-// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'package:backend/models/be_appbar.dart';
-import 'package:backend/services/be_fetchservice.dart';
+import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/utils/be_constraint.dart';
 import 'package:contractee/pages/cee_messages.dart';
 import 'package:flutter/material.dart';

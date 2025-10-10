@@ -2,9 +2,9 @@
 
 import 'package:backend/models/be_UIapp.dart';
 import 'package:backend/models/be_appbar.dart';
-import 'package:backend/services/be_bidding_service.dart';
-import 'package:backend/services/be_fetchservice.dart';
-import 'package:backend/services/be_project_service.dart';
+import 'package:backend/services/both services/be_bidding_service.dart';
+import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/services/both services/be_project_service.dart';
 import 'package:contractee/models/cee_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -96,12 +96,16 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bool isWideScreen = MediaQuery.of(context).size.width >= 800;
-    final drawerWidget = const MenuDrawerContractee();
-    final pageContent = SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-        child: Column(
+    return Scaffold(
+    appBar: PreferredSize(
+      preferredSize: const Size.fromHeight(70), 
+      child: ConTrustAppBar(headline: "Home"),
+    ),
+      drawer: const MenuDrawerContractee(),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
@@ -132,100 +136,102 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-            const SizedBox(height: 15),
-            const Text(
-              "Suggested Contractor Firms",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 27,
-              ),
-            ),
-            const SizedBox(height: 25),
-            SizedBox(
-              height: 280,
-              child: isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : contractors.isEmpty
-                      ? const Center(child: Text("No contractors found"))
-                      : ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: contractors.length,
-                          itemBuilder: (context, index) {
-                            final contractor = contractors[index];
-                            final profilePhoto = contractor['profile_photo'];
-                            final profileImage = (profilePhoto == null || profilePhoto.isEmpty)
-                                ? profileUrl
-                                : profilePhoto;
-                            final isSelected = selectedIndex == index;
-                            return GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  selectedIndex =
-                                      (selectedIndex == index) ? -1 : index;
-                                });
-                              },
-                              child: Container(
-                                width: 200,
-                                height: 250,
-                                margin: const EdgeInsets.symmetric(horizontal: 10),
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? const Color.fromARGB(255, 99, 98, 98)
-                                        : Colors.transparent,
-                                    width: 2,
-                                  ),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: ContractorsView(
-                                  id: contractor['contractor_id'] ?? '',
-                                  name: contractor['firm_name'] ?? 'Unknown',
-                                  profileImage: profileImage,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-            ),
-            const SizedBox(height: 30),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  "Your Posted Projects",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 27,
-                  ),
+              const SizedBox(height: 15),
+              const Text(
+                "Suggested Contractor Firms",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 27,
                 ),
-                TextButton(
-                  onPressed: _loadData,
-                  child: Text(
-                    "Refresh",
+              ),
+              const SizedBox(height: 25,),
+              SizedBox(
+               height: 280,
+                child: isLoading
+               ? const Center(child: CircularProgressIndicator())
+               : contractors.isEmpty
+                 ? const Center(child: Text("No contractors found"))
+                 : ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: contractors.length,
+                     itemBuilder: (context, index) {
+                       final contractor = contractors[index];
+                       final profilePhoto = contractor['profile_photo'];
+                        final profileImage =
+                            (profilePhoto == null || profilePhoto.isEmpty)
+                               ? profileUrl
+                               : profilePhoto;
+                       final isSelected = selectedIndex == index;
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              if (selectedIndex == index) {
+                                selectedIndex = -1; 
+                             } else {
+                                selectedIndex = index; 
+                              }
+                            });
+                         },
+                         child: Container(
+                            width: 200,  
+                            height: 250, 
+                            margin: const EdgeInsets.symmetric(horizontal: 10),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: isSelected ? const Color.fromARGB(255, 99, 98, 98) : Colors.transparent,
+                                width: 2,
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: ContractorsView(
+                              id: contractor['contractor_id'] ?? '',
+                              name: contractor['firm_name'] ?? 'Unknown',
+                              profileImage: profileImage,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+             ),
+              const SizedBox(height: 30),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Your Posted Projects",
                     style: TextStyle(
-                      color: theme.colorScheme.primary,
                       fontWeight: FontWeight.bold,
-                      fontSize: 18,
+                      fontSize: 27,
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 15),
-            isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : projects.isEmpty
-                    ? const Center(
-                        child: Text("You haven't posted any projects yet"),
-                      )
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: projects.length,
-                        itemBuilder: (context, index) {
-                          final project = projects[index];
-                          final projectId = project['project_id'].toString();
-                          final highestBid = highestBids[projectId] ?? 0.0;
+                  TextButton(
+                    onPressed: _loadData,
+                    child: Text(
+                      "Refresh",
+                      style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 15),
+isLoading
+    ? const Center(child: CircularProgressIndicator())
+    : projects.isEmpty
+        ? const Center(
+            child: Text("You haven't posted any projects yet"),
+          )
+        : ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: projects.length,
+            itemBuilder: (context, index) {
+              final project = projects[index];
+              final projectId = project['project_id'].toString();
+              final highestBid = highestBids[projectId] ?? 0.0;
 
                           return FutureBuilder<Map<String, dynamic>>(
                             future: supabase
@@ -291,8 +297,9 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                 ),
-              );
-
+              )
+    );
+  }
               return isWideScreen
                   ? Scaffold(
                       body: Row(

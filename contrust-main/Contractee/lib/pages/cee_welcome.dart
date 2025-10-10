@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:backend/utils/be_pagetransition.dart';
 import 'package:contractee/pages/cee_home.dart';
 import 'package:flutter/material.dart';
@@ -20,27 +22,35 @@ class _WelcomePageState extends State<WelcomePage> {
     return Scaffold(
       body: Stack(
         children: [
-          PageView(
-            controller: _pageController,
-            children: [ 
-              buildPage(
-                color: Colors.yellow[700]!,
-                title: "Welcome",
-                description:
-                    "Contrust is a platform for creating contracts between contractors and contractees.",
-              ),
-              buildPage(
-                color: Colors.yellow[700]!,
-                title: "Connect",
-                description: "Easily find and connect with reliable contractors.",
-              ),
-              buildPage(
-                color: Colors.yellow[700]!,
-                title: "Design",
-                description: "Use AI to pick a color of your choice.",
-                context: context,
-              ),
-            ],
+          ScrollConfiguration(
+            behavior: ScrollConfiguration.of(context).copyWith(
+              dragDevices: {
+                PointerDeviceKind.touch,
+                PointerDeviceKind.mouse,
+              },
+            ),
+            child: PageView(
+              controller: _pageController,
+              children: [ 
+                buildPage(
+                  color: Colors.yellow[700]!,
+                  title: "Welcome",
+                  description:
+                      "Contrust is a platform for creating contracts between contractors and contractees.",
+                ),
+                buildPage(
+                  color: Colors.yellow[700]!,
+                  title: "Connect",
+                  description: "Easily find and connect with reliable contractors.",
+                ),
+                buildPage(
+                  color: Colors.yellow[700]!,
+                  title: "Design",
+                  description: "Use AI to pick a color of your choice to your wall.",
+                  context: context,
+                ),
+              ],
+            ),
           ),
           Positioned(
             bottom: 40,

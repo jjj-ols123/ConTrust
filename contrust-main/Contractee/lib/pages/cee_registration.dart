@@ -1,7 +1,7 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, no_leading_underscores_for_local_identifiers
 
 import 'package:backend/utils/be_validation.dart';
-import 'package:contractee/services/cee_signup.dart';
+import 'package:backend/services/contractee services/cee_signup.dart';
 import 'package:flutter/material.dart';
 import 'package:contractee/pages/cee_login.dart';
 
@@ -178,7 +178,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
           ),
         ),
         const SizedBox(height: 20),
-        GestureDetector(
+        InkWell(
           onTap: () {
             Navigator.pushReplacement(
               context,

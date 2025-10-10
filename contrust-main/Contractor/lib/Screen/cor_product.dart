@@ -1,17 +1,22 @@
-import 'package:backend/models/be_appbar.dart';
+// ignore_for_file: use_build_context_synchronously, unused_local_variable
+import 'package:backend/services/both services/be_user_service.dart';
+import 'package:contractor/build/buildproduct.dart';
 import 'package:flutter/material.dart';
+import 'package:backend/services/contractor services/cor_productservice.dart';
 
 class ProductPanelScreen extends StatefulWidget {
-  const ProductPanelScreen({super.key});
+  final String? contractorId;
+  final String? projectId;
+
+  const ProductPanelScreen({super.key, this.contractorId, this.projectId});
 
   @override
-  // ignore: library_private_types_in_public_api
-  _ProductPanelScreenState createState() => _ProductPanelScreenState();
+  State<ProductPanelScreen> createState() => _ProductPanelScreenState();
 }
 
 class _ProductPanelScreenState extends State<ProductPanelScreen> {
-
-  final List<Map<String, dynamic>> products = [
+  final List<Map<String, dynamic>> catalog = const [
+    {'name': 'Specify', 'icon': Icons.add},
     {'name': 'Wood', 'icon': Icons.forest},
     {'name': 'Steel', 'icon': Icons.construction},
     {'name': 'Glass', 'icon': Icons.window},
@@ -26,218 +31,147 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
     {'name': 'Cool Roofing', 'icon': Icons.roofing},
   ];
 
-  void _showInventoryPanel() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return InventoryPanel();
-      },
-    );
-  }
+  String search = '';
+  List<Map<String, dynamic>> inventory = [];
+  List<Map<String, dynamic>> projects = [];
+  Map<String, List<Map<String, dynamic>>> projectMaterials = {};
 
-  void _showProductDetails(String productName) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return ProductDetailsPanel(productName: productName);
-      },
-    );
+  String? contractorId;
+  String? projectId;
+
+  bool isLoading = true;
+
+  List<Map<String, dynamic>> get filteredCatalog {
+    if (search.trim().isEmpty) return catalog;
+    final q = search.toLowerCase();
+    return catalog
+        .where((p) => (p['name'] as String).toLowerCase().contains(q))
+        .toList();
   }
 
   @override
-  Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    int crossAxisCount;
-    if (width > 1200) {
-      crossAxisCount = 5;
-    } else if (width > 900) {
-      crossAxisCount = 4;
-    } else if (width > 600) {
-      crossAxisCount = 3;
-    } else {
-      crossAxisCount = 2;
+  void initState() {
+    super.initState();
+    projectId = widget.projectId;
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => isLoading = true);
+    try {
+      await fetchContractorId();
+      await Future.wait([
+        CorProductService().loadInventory(
+          contractorId!,
+          setState,
+          inventory,
+          projectMaterials,
+        ),
+        CorProductService().loadProjects(
+          contractorId!,
+          projectId ?? '',
+          setState,
+          projects,
+        ),
+      ]);
+    } catch (e) {
+      return;
+    } finally {
+      setState(() => isLoading = false);
     }
+  }
 
+  Future<void> fetchContractorId() async {
+    contractorId = widget.contractorId ?? await UserService().getContractorId();
+  }
+
+  double getProjectTotal(String projectId) {
+    final materials = projectMaterials[projectId] ?? [];
+    return materials.fold<double>(
+      0.0,
+      (sum, it) => sum + ((it['total'] as num?)?.toDouble() ?? 0.0),
+    );
+  }
+
+  void openMaterialDialog(Map<String, dynamic> material, {int? editIndex}) {
+    final existing = editIndex != null ? inventory[editIndex] : null;
+
+    ProductBuildMethods.showMaterialDialog(
+      context: context,
+      material: material,
+      existingItem: existing,
+      contractorId: contractorId,
+      projectId: projectId,
+      onSuccess: _loadData,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
-      appBar: const ConTrustAppBar(headline: "Products"),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.amber.shade100,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        '/dashboard',
-                        (Route<dynamic> route) => false,
-                      );
-                    },
-                    child: const Text(
-                      "Home",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
+      appBar:
+          screenWidth > 1200
+              ? null
+              : AppBar(
+                backgroundColor: Colors.yellow[700],
+                title: const Text(
+                  "",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
                   ),
-                  const SizedBox(width: 10),
-                  const Text("|", style: TextStyle(fontSize: 16, color: Colors.black54)),
-                  const SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(context, '/productpanel');
-                    },
-                    child: const Text(
-                      "Product Panel",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.amber.shade200,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: _showInventoryPanel,
-                    icon: const Icon(Icons.inventory),
-                    label: const Text("Inventory"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.amber[700],
-                      foregroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
-                  SizedBox(
-                    width: 180,
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: "Search product...",
-                        prefixIcon: const Icon(Icons.search),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                      ),
-                      onChanged: (value) {
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.all(4),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossAxisCount,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  childAspectRatio: 0.85,
                 ),
-                itemCount: products.length,
-                itemBuilder: (context, index) {
-                  final product = products[index];
-                  return GestureDetector(
-                    onTap: () => _showProductDetails(product['name']),
-                    child: Card(
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(product['icon'], size: 48, color: Colors.amber[800]),
-                          const SizedBox(height: 12),
-                          Text(
-                            product['name'],
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+                centerTitle: true,
+                elevation: 0,
               ),
+      body: Column(
+        children: [
+          Container(
+            height: 60,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.amber.shade50,
+              border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
             ),
-          ],
-        ),
+            child: Row(
+              children: [
+                Icon(Icons.storage, color: Colors.amber, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Materials & Inventory',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child:
+                isLoading
+                    ? const Center(child: CircularProgressIndicator(color: Colors.amber,))
+                    : ProductBuildMethods.buildProductUI(
+                      context: context,
+                      isLoading: isLoading,
+                      search: search,
+                      onSearchChanged:
+                          (value) => setState(() => search = value),
+                      projects: projects,
+                      filteredCatalog: filteredCatalog,
+                      projectMaterials: projectMaterials,
+                      getProjectTotal: getProjectTotal,
+                      openMaterialDialog: openMaterialDialog,
+                      contractorId: contractorId,
+                    ),
+          ),
+        ],
       ),
-    );
-  }
-}
-
-class InventoryPanel extends StatelessWidget {
-  const InventoryPanel({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Text("Inventory"),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [Text("Inventory management here...")],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text("Close"),
-        ),
-      ],
-    );
-  }
-}
-
-class ProductDetailsPanel extends StatelessWidget {
-  final String productName;
-  const ProductDetailsPanel({super.key, required this.productName});
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(productName),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [Text("Details for $productName")],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text("Close"),
-        ),
-      ],
     );
   }
 }
