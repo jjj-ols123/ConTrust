@@ -1,55 +1,14 @@
+// ignore_for_file: file_names
+
+import 'package:backend/utils/be_contractformat.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 class TimeAndMaterialsPDF {
-  static String _getFieldValue(Map<String, String> fieldValues, String key) {
-    return fieldValues[key]?.isNotEmpty == true ? fieldValues[key]! : '____________';
-  }
-
-  // Helpers to compute monetary values from form data
-  static double _parseMoney(String? s) {
-    if (s == null) return 0.0;
-    final cleaned = s.replaceAll(RegExp(r'[^0-9\.-]'), '');
-    return double.tryParse(cleaned) ?? 0.0;
-  }
-
-  static double _parsePercent(String? s) {
-    if (s == null) return 0.0;
-    final raw = s.trim();
-    if (raw.isEmpty) return 0.0;
-    final cleaned = raw.replaceAll('%', '').replaceAll(',', '');
-    final v = double.tryParse(cleaned) ?? 0.0;
-    if (v <= 0) return 0.0;
-    // If >1 treat as percent (12 => 0.12), else fraction
-    return v > 1.0 ? (v / 100.0) : v;
-  }
-
-  static double _computeSubtotal(Map<String, String> fieldValues) {
-    // Prefer explicit Payment.Subtotal
-    final explicit = _parseMoney(fieldValues['Payment.Subtotal']);
-    if (explicit > 0) return explicit;
-
-    // Fallback: try sum of item subtotals
-    final itemCount = int.tryParse(fieldValues['ItemCount'] ?? '') ?? 3;
-    double sum = 0.0;
-    for (int i = 1; i <= itemCount; i++) {
-      final sub = _parseMoney(fieldValues['Item.$i.Subtotal']);
-      if (sub > 0) {
-        sum += sub;
-      } else {
-        // compute from price * qty if subtotal missing
-        final price = _parseMoney(fieldValues['Item.$i.Price']);
-        final qty = _parseMoney(fieldValues['Item.$i.Quantity']);
-        if (price > 0 && qty > 0) sum += price * qty;
-      }
-    }
-    return sum;
-  }
 
   static List<pw.Widget> buildTimeAndMaterialsPdf(Map<String, String> fieldValues) {
     List<pw.Widget> widgets = [];
 
-    // Title
     widgets.add(
       pw.Center(
         child: pw.Text(
@@ -64,11 +23,9 @@ class TimeAndMaterialsPDF {
       ),
     );
     widgets.add(pw.SizedBox(height: 30));
-
-    // Opening paragraph
     widgets.add(
       pw.Text(
-        'This time and materials contract (hereinafter referred to as the "Contract") is entered into and shall be effective this ${_getFieldValue(fieldValues, 'Contract.CreationDate')} ("Effective Date") by and between ${_getFieldValue(fieldValues, 'Contractee.FirstName')} ${_getFieldValue(fieldValues, 'Contractee.LastName')} ("Contractee") residing at ${_getFieldValue(fieldValues, 'Contractee.Address')}, ${_getFieldValue(fieldValues, 'Contractee.City')}, ${_getFieldValue(fieldValues, 'Contractee.PostalCode')} and ${_getFieldValue(fieldValues, 'Contractor.FirstName')} ${_getFieldValue(fieldValues, 'Contractor.LastName')} ("Contractor") with principal office at ${_getFieldValue(fieldValues, 'Contractor.Address')}, ${_getFieldValue(fieldValues, 'Contractor.City')}, ${_getFieldValue(fieldValues, 'Contractor.PostalCode')}.',
+        'This time and materials contract (hereinafter referred to as the "Contract") is entered into and shall be effective this ${ContractStyle.getFieldValue(fieldValues, 'Contract.CreationDate')} ("Effective Date") by and between ${ContractStyle.getFieldValue(fieldValues, 'Contractee.FirstName')} ${ContractStyle.getFieldValue(fieldValues, 'Contractee.LastName')} ("Contractee") residing at ${ContractStyle.getFieldValue(fieldValues, 'Contractee.Address')}, ${ContractStyle.getFieldValue(fieldValues, 'Contractee.City')}, ${ContractStyle.getFieldValue(fieldValues, 'Contractee.PostalCode')} and ${ContractStyle.getFieldValue(fieldValues, 'Contractor.FirstName')} ${ContractStyle.getFieldValue(fieldValues, 'Contractor.LastName')} ("Contractor") with principal office at ${ContractStyle.getFieldValue(fieldValues, 'Contractor.Address')}, ${ContractStyle.getFieldValue(fieldValues, 'Contractor.City')}, ${ContractStyle.getFieldValue(fieldValues, 'Contractor.PostalCode')}.',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),
@@ -86,14 +43,13 @@ class TimeAndMaterialsPDF {
 
     widgets.add(
       pw.Text(
-        'The Parties agree that the Contractor will complete the project described as: ${_getFieldValue(fieldValues, 'Project.ContractorDef')} ("Project"), and furnish all materials, supplies, services, labor, tools, transportation, equipment, and parts for said work in accordance with this Contract.',
+        'The Parties agree that the Contractor will complete the project described as: ${ContractStyle.getFieldValue(fieldValues, 'Project.ContractorDef')} ("Project"), and furnish all materials, supplies, services, labor, tools, transportation, equipment, and parts for said work in accordance with this Contract.',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),
     );
     widgets.add(pw.SizedBox(height: 24));
 
-    // Terms and Conditions
     widgets.add(
       pw.Text(
         'Terms and Conditions',
@@ -101,8 +57,6 @@ class TimeAndMaterialsPDF {
       ),
     );
     widgets.add(pw.SizedBox(height: 16));
-
-    // 1. Relationship of Parties
     widgets.add(
       pw.Text(
         '1. Relationship of Parties',
@@ -118,8 +72,6 @@ class TimeAndMaterialsPDF {
       ),
     );
     widgets.add(pw.SizedBox(height: 16));
-
-    // 2. Contractor's Duties
     widgets.add(
       pw.Text(
         '2. Contractor\'s Duties',
@@ -135,8 +87,6 @@ class TimeAndMaterialsPDF {
       ),
     );
     widgets.add(pw.SizedBox(height: 12));
-
-    // Duties Table
     widgets.add(
       pw.Table(
         border: pw.TableBorder.all(color: PdfColors.grey400),
@@ -162,7 +112,7 @@ class TimeAndMaterialsPDF {
               ),
               pw.Padding(
                 padding: const pw.EdgeInsets.all(8),
-                child: pw.Text(_getFieldValue(fieldValues, 'Project.Scope'), style: const pw.TextStyle(fontSize: 10)),
+                child: pw.Text(ContractStyle.getFieldValue(fieldValues, 'Project.Scope'), style: const pw.TextStyle(fontSize: 10)),
               ),
             ],
           ),
@@ -174,7 +124,7 @@ class TimeAndMaterialsPDF {
               ),
               pw.Padding(
                 padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('${_getFieldValue(fieldValues, 'Project.LaborHours')} hours', style: const pw.TextStyle(fontSize: 10)),
+                child: pw.Text('${ContractStyle.getFieldValue(fieldValues, 'Project.LaborHours')} hours', style: const pw.TextStyle(fontSize: 10)),
               ),
             ],
           ),
@@ -186,7 +136,7 @@ class TimeAndMaterialsPDF {
               ),
               pw.Padding(
                 padding: const pw.EdgeInsets.all(8),
-                child: pw.Text(_getFieldValue(fieldValues, 'Materials.List'), style: const pw.TextStyle(fontSize: 10)),
+                child: pw.Text(ContractStyle.getFieldValue(fieldValues, 'Materials.List'), style: const pw.TextStyle(fontSize: 10)),
               ),
             ],
           ),
@@ -194,8 +144,6 @@ class TimeAndMaterialsPDF {
       ),
     );
     widgets.add(pw.SizedBox(height: 16));
-
-    // 3. Completion Schedule
     widgets.add(
       pw.Text(
         '3. Completion Schedule',
@@ -205,7 +153,7 @@ class TimeAndMaterialsPDF {
     widgets.add(pw.SizedBox(height: 8));
     widgets.add(
       pw.Text(
-        'This Contract shall be effective as of the Effective Date herein and shall continue until Project completion or for ${_getFieldValue(fieldValues, 'Project.Duration')} unless terminated early or an extension is mutually agreed upon between the Parties with written consent.',
+        'This Contract shall be effective as of the Effective Date herein and shall continue until Project completion or for ${ContractStyle.getFieldValue(fieldValues, 'Project.Duration')} unless terminated early or an extension is mutually agreed upon between the Parties with written consent.',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),
@@ -213,20 +161,18 @@ class TimeAndMaterialsPDF {
     widgets.add(pw.SizedBox(height: 8));
     widgets.add(
       pw.Text(
-        'Schedule: ${_getFieldValue(fieldValues, 'Project.Schedule')}',
+        'Schedule: ${ContractStyle.getFieldValue(fieldValues, 'Project.Schedule')}',
         style: const pw.TextStyle(fontSize: 11),
       ),
     );
     widgets.add(pw.SizedBox(height: 4));
     widgets.add(
       pw.Text(
-        'Milestones: ${_getFieldValue(fieldValues, 'Project.MilestonesList')}',
+        'Milestones: ${ContractStyle.getFieldValue(fieldValues, 'Project.MilestonesList')}',
         style: const pw.TextStyle(fontSize: 11),
       ),
     );
     widgets.add(pw.SizedBox(height: 16));
-
-    // 4. Materials Supply and Delivery
     widgets.add(
       pw.Text(
         '4. Materials Supply and Delivery',
@@ -266,8 +212,6 @@ class TimeAndMaterialsPDF {
       ),
     );
     widgets.add(pw.SizedBox(height: 16));
-
-    // 5. Timeliness
     widgets.add(
       pw.Text(
         '5. Timeliness',
@@ -277,7 +221,7 @@ class TimeAndMaterialsPDF {
     widgets.add(pw.SizedBox(height: 8));
     widgets.add(
       pw.Text(
-        'This Contract shall begin on the day specified and shall continue until the Project is completed or upon the set due date. Any delays incurred by the Contractor that are found to be unreasonable shall be determined a breach of this Contract. The Company shall impose a fine of up to ₱${_getFieldValue(fieldValues, 'Penalty.Amount')} for such a delay.',
+        'This Contract shall begin on the day specified and shall continue until the Project is completed or upon the set due date. Any delays incurred by the Contractor that are found to be unreasonable shall be determined a breach of this Contract. The Company shall impose a fine of up to ₱${ContractStyle.getFieldValue(fieldValues, 'Penalty.Amount')} for such a delay.',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),
@@ -312,8 +256,6 @@ class TimeAndMaterialsPDF {
       ),
     );
     widgets.add(pw.SizedBox(height: 16));
-
-    // 7. Rates & Payment
     widgets.add(
       pw.Text(
         '7. Rates & Payment',
@@ -323,14 +265,12 @@ class TimeAndMaterialsPDF {
     widgets.add(pw.SizedBox(height: 8));
     widgets.add(
       pw.Text(
-        'The Contractor agrees to such standard pre-determined rates set by ${_getFieldValue(fieldValues, 'Contractee.FirstName')} ${_getFieldValue(fieldValues, 'Contractee.LastName')}. The following rates shall apply unless otherwise mutually modified by both parties:',
+        'The Contractor agrees to such standard pre-determined rates set by ${ContractStyle.getFieldValue(fieldValues, 'Contractee.FirstName')} ${ContractStyle.getFieldValue(fieldValues, 'Contractee.LastName')}. The following rates shall apply unless otherwise mutually modified by both parties:',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),
     );
     widgets.add(pw.SizedBox(height: 12));
-
-    // Items Table
     widgets.add(
       pw.Table(
         border: pw.TableBorder.all(color: PdfColors.grey400),
@@ -341,7 +281,6 @@ class TimeAndMaterialsPDF {
           3: const pw.FlexColumnWidth(2),
         },
         children: [
-          // Header
           pw.TableRow(
             decoration: const pw.BoxDecoration(color: PdfColors.grey200),
             children: [
@@ -363,21 +302,17 @@ class TimeAndMaterialsPDF {
               ),
             ],
           ),
-          // Dynamic Items based on ItemCount
           ...(() {
-            // Get the number of items from the form data
-            int itemCount = int.tryParse(_getFieldValue(fieldValues, 'ItemCount')) ?? 3;
-            
-            // Filter out empty items to avoid showing blank rows
+            int itemCount = int.tryParse(ContractStyle.getFieldValue(fieldValues, 'ItemCount')) ?? 3;
+
             List<pw.TableRow> itemRows = [];
             
             for (int i = 1; i <= itemCount; i++) {
-              String itemName = _getFieldValue(fieldValues, 'Item.$i.Name');
-              String itemPrice = _getFieldValue(fieldValues, 'Item.$i.Price');
-              String itemQuantity = _getFieldValue(fieldValues, 'Item.$i.Quantity');
-              String itemSubtotal = _getFieldValue(fieldValues, 'Item.$i.Subtotal');
+              String itemName = ContractStyle.getFieldValue(fieldValues, 'Item.$i.Name');
+              String itemPrice = ContractStyle.getFieldValue(fieldValues, 'Item.$i.Price');
+              String itemQuantity = ContractStyle.getFieldValue(fieldValues, 'Item.$i.Quantity');
+              String itemSubtotal = ContractStyle.getFieldValue(fieldValues, 'Item.$i.Subtotal');
               
-              // Only add the row if at least the name or price is filled
               if (itemName != '____________' || itemPrice != '____________') {
                 itemRows.add(
                   pw.TableRow(
@@ -389,7 +324,7 @@ class TimeAndMaterialsPDF {
                           children: [
                             pw.Text(itemName, style: pw.TextStyle(fontWeight: pw.FontWeight.normal, fontSize: 10)),
                             pw.SizedBox(height: 2),
-                            pw.Text(_getFieldValue(fieldValues, 'Item.$i.Description'), style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+                            pw.Text(ContractStyle.getFieldValue(fieldValues, 'Item.$i.Description'), style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
                           ],
                         ),
                       ),
@@ -411,7 +346,6 @@ class TimeAndMaterialsPDF {
               }
             }
             
-            // If no items have data, show at least one row as placeholder
             if (itemRows.isEmpty) {
               itemRows.add(
                 pw.TableRow(
@@ -439,8 +373,6 @@ class TimeAndMaterialsPDF {
             
             return itemRows;
           })(),
-          // Payment Summary
-          // Payment Summary (computed to align with on-screen preview)
           pw.TableRow(
             decoration: const pw.BoxDecoration(color: PdfColors.grey50),
             children: [
@@ -453,7 +385,7 @@ class TimeAndMaterialsPDF {
               pw.Padding(
                 padding: const pw.EdgeInsets.all(8),
                 child: () {
-                  final sub = _computeSubtotal(fieldValues);
+                  final sub = ContractStyle.computeSubtotal(fieldValues);
                   return pw.Text('₱${sub.toStringAsFixed(2)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10));
                 }(),
               ),
@@ -470,8 +402,8 @@ class TimeAndMaterialsPDF {
               pw.Padding(
                 padding: const pw.EdgeInsets.all(8),
                 child: () {
-                  final sub = _computeSubtotal(fieldValues);
-                  final discRate = _parsePercent(fieldValues['Payment.Discount']);
+                  final sub = ContractStyle.computeSubtotal(fieldValues);
+                  final discRate = ContractStyle.parsePercent(fieldValues['Payment.Discount']);
                   final discAmt = sub * discRate;
                   return pw.Text('-₱${discAmt.toStringAsFixed(2)}', style: const pw.TextStyle(color: PdfColors.red, fontSize: 10));
                 }(),
@@ -489,8 +421,8 @@ class TimeAndMaterialsPDF {
               pw.Padding(
                 padding: const pw.EdgeInsets.all(8),
                 child: () {
-                  final sub = _computeSubtotal(fieldValues);
-                  final taxRate = _parsePercent(fieldValues['Payment.Tax']);
+                  final sub = ContractStyle.computeSubtotal(fieldValues);
+                  final taxRate = ContractStyle.parsePercent(fieldValues['Payment.Tax']);
                   final taxAmt = sub * taxRate;
                   return pw.Text('₱${taxAmt.toStringAsFixed(2)}', style: const pw.TextStyle(fontSize: 10));
                 }(),
@@ -509,9 +441,9 @@ class TimeAndMaterialsPDF {
               pw.Padding(
                 padding: const pw.EdgeInsets.all(8),
                 child: () {
-                  final sub = _computeSubtotal(fieldValues);
-                  final disc = sub * _parsePercent(fieldValues['Payment.Discount']);
-                  final tax = sub * _parsePercent(fieldValues['Payment.Tax']);
+                  final sub = ContractStyle.computeSubtotal(fieldValues);
+                  final disc = sub * ContractStyle.parsePercent(fieldValues['Payment.Discount']);
+                  final tax = sub * ContractStyle.parsePercent(fieldValues['Payment.Tax']);
                   final total = sub - disc + tax;
                   return pw.Text('₱${total.toStringAsFixed(2)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12));
                 }(),
@@ -522,18 +454,14 @@ class TimeAndMaterialsPDF {
       ),
     );
     widgets.add(pw.SizedBox(height: 16));
-
-    // Additional sections
     widgets.add(
       pw.Text(
-        'All invoices shall be sent to ${_getFieldValue(fieldValues, 'Contractee.FirstName')} ${_getFieldValue(fieldValues, 'Contractee.LastName')} or the authorized personnel identified in this Contract. Payment will be made within 30 days of invoice receipt.',
+        'All invoices shall be sent to ${ContractStyle.getFieldValue(fieldValues, 'Contractee.FirstName')} ${ContractStyle.getFieldValue(fieldValues, 'Contractee.LastName')} or the authorized personnel identified in this Contract. Payment will be made within 30 days of invoice receipt.',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),
     );
     widgets.add(pw.SizedBox(height: 40));
-
-    // Acceptance Section
     widgets.add(
       pw.Text(
         'Acceptance',
@@ -549,8 +477,6 @@ class TimeAndMaterialsPDF {
       ),
     );
     widgets.add(pw.SizedBox(height: 30));
-
-    // Signatures Table
     widgets.add(
       pw.Table(
         columnWidths: {
@@ -585,7 +511,7 @@ class TimeAndMaterialsPDF {
                   ),
                   pw.SizedBox(height: 8),
                   pw.Text(
-                    '${_getFieldValue(fieldValues, 'Contractee.FirstName')} ${_getFieldValue(fieldValues, 'Contractee.LastName')}',
+                    '${ContractStyle.getFieldValue(fieldValues, 'Contractee.FirstName')} ${ContractStyle.getFieldValue(fieldValues, 'Contractee.LastName')}',
                     style: const pw.TextStyle(fontSize: 11),
                   ),
                   pw.Text(
@@ -594,7 +520,7 @@ class TimeAndMaterialsPDF {
                   ),
                 ],
               ),
-              pw.Container(), // Spacer
+              pw.Container(), 
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
@@ -619,7 +545,7 @@ class TimeAndMaterialsPDF {
                   ),
                   pw.SizedBox(height: 8),
                   pw.Text(
-                    '${_getFieldValue(fieldValues, 'Contractor.FirstName')} ${_getFieldValue(fieldValues, 'Contractor.LastName')}',
+                    '${ContractStyle.getFieldValue(fieldValues, 'Contractor.FirstName')} ${ContractStyle.getFieldValue(fieldValues, 'Contractor.LastName')}',
                     style: const pw.TextStyle(fontSize: 11),
                   ),
                   pw.Text(
@@ -634,8 +560,6 @@ class TimeAndMaterialsPDF {
       ),
     );
     widgets.add(pw.SizedBox(height: 40));
-
-    // Footer
     widgets.add(
       pw.Center(
         child: pw.Text(

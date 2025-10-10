@@ -22,7 +22,6 @@ class ViewContractService {
   }) async {
     String? pdfUrl = contractData['pdf_url'] as String?;
     
-    // If no direct PDF URL, try to construct it from contract data
     if (pdfUrl == null || pdfUrl.isEmpty) {
       final contractorId = contractData['contractor_id'] as String?;
       final projectId = contractData['project_id'] as String?;
@@ -79,7 +78,6 @@ class ViewContractService {
   static String? getPdfUrl(Map<String, dynamic> contractData) {
     String? pdfUrl = contractData['pdf_url'] as String?;
     
-    // If no direct PDF URL, try to construct it from contract data
     if (pdfUrl == null || pdfUrl.isEmpty) {
       final contractorId = contractData['contractor_id'] as String?;
       final projectId = contractData['project_id'] as String?;
@@ -96,32 +94,25 @@ class ViewContractService {
   static Future<String?> getPdfSignedUrl(Map<String, dynamic> contractData) async {
     final pdfPath = getPdfUrl(contractData);
     if (pdfPath == null) {
-      print('No PDF path found for contract data: $contractData');
       return null;
     }
     
     try {
-      // First check if the file exists
-      print('Checking if PDF exists at path: $pdfPath');
-      final fileExists = await _checkFileExists(pdfPath);
+      final fileExists = await checkFileExists(pdfPath);
       if (!fileExists) {
-        print('PDF file does not exist at path: $pdfPath');
         return null;
       }
       
-      print('Attempting to create signed URL for path: $pdfPath');
       final signedUrl = await Supabase.instance.client.storage
           .from('contracts')
-          .createSignedUrl(pdfPath, 60 * 60 * 24); // 24 hours
-      print('Successfully created signed URL: $signedUrl');
+          .createSignedUrl(pdfPath, 60 * 60 * 24); 
       return signedUrl;
     } catch (e) {
-      print('Error creating signed URL for path $pdfPath: $e');
       return null;
     }
   }
 
-  static Future<bool> _checkFileExists(String filePath) async {
+  static Future<bool> checkFileExists(String filePath) async {
     try {
       final response = await Supabase.instance.client.storage
           .from('contracts')
@@ -129,7 +120,6 @@ class ViewContractService {
       
       return response.any((file) => file.name == filePath.split('/').last);
     } catch (e) {
-      print('Error checking if file exists: $e');
       return false;
     }
   }
@@ -201,8 +191,7 @@ class ViewContractService {
         contractData: contractData,
         context: context,
       );
-      
-      // Handle different platforms
+
       if (kIsWeb) {
         showSuccessMessage(
           context,

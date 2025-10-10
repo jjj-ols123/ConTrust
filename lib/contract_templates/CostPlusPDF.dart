@@ -1,15 +1,13 @@
+// ignore_for_file: file_names
+
+import 'package:backend/utils/be_contractformat.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 class CostPlusPDF {
-  static String _getFieldValue(Map<String, String> fieldValues, String key) {
-    return fieldValues[key]?.isNotEmpty == true ? fieldValues[key]! : '____________';
-  }
 
   static List<pw.Widget> buildCostPlusPdf(Map<String, String> fieldValues) {
     List<pw.Widget> widgets = [];
-
-    // Title
     widgets.add(
       pw.Center(
         child: pw.Text(
@@ -24,18 +22,14 @@ class CostPlusPDF {
       ),
     );
     widgets.add(pw.SizedBox(height: 30));
-
-    // Opening paragraph
     widgets.add(
       pw.Text(
-        'This Cost-Plus Construction Contract ("Contract") is entered into on ${_getFieldValue(fieldValues, 'Contract.CreationDate')} by and between ${_getFieldValue(fieldValues, 'Contractor.Company')} ("Your Construction Company\'s Name"), hereinafter referred to as the "Contractor," and ${_getFieldValue(fieldValues, 'Contractee.FirstName')} ${_getFieldValue(fieldValues, 'Contractee.LastName')}, hereinafter referred to as the "Contractee."',
+        'This Cost-Plus Construction Contract ("Contract") is entered into on ${ContractStyle.getFieldValue(fieldValues, 'Contract.CreationDate')} by and between ${ContractStyle.getFieldValue(fieldValues, 'Contractor.Company')} ("Your Construction Company\'s Name"), hereinafter referred to as the "Contractor," and ${ContractStyle.getFieldValue(fieldValues, 'Contractee.FirstName')} ${ContractStyle.getFieldValue(fieldValues, 'Contractee.LastName')}, hereinafter referred to as the "Contractee."',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),
     );
     widgets.add(pw.SizedBox(height: 24));
-
-    // The Parties
     widgets.add(
       pw.Text(
         'The Parties',
@@ -43,8 +37,6 @@ class CostPlusPDF {
       ),
     );
     widgets.add(pw.SizedBox(height: 16));
-
-    // Party Information Table
     widgets.add(
       pw.Table(
         border: pw.TableBorder.all(color: PdfColors.grey400),
@@ -58,10 +50,10 @@ class CostPlusPDF {
                   children: [
                     pw.Text('Contractor', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
                     pw.SizedBox(height: 8),
-                    pw.Text('Company: ${_getFieldValue(fieldValues, 'Contractor.Company')}', style: const pw.TextStyle(fontSize: 10)),
-                    pw.Text('Address: ${_getFieldValue(fieldValues, 'Contractor.Address')}', style: const pw.TextStyle(fontSize: 10)),
-                    pw.Text('Phone: ${_getFieldValue(fieldValues, 'Contractor.Phone')}', style: const pw.TextStyle(fontSize: 10)),
-                    pw.Text('Email: ${_getFieldValue(fieldValues, 'Contractor.Email')}', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text('Company: ${ContractStyle.getFieldValue(fieldValues, 'Contractor.Company')}', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text('Address: ${ContractStyle.getFieldValue(fieldValues, 'Contractor.Address')}', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text('Phone: ${ContractStyle.getFieldValue(fieldValues, 'Contractor.Phone')}', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text('Email: ${ContractStyle.getFieldValue(fieldValues, 'Contractor.Email')}', style: const pw.TextStyle(fontSize: 10)),
                   ],
                 ),
               ),
@@ -72,10 +64,10 @@ class CostPlusPDF {
                   children: [
                     pw.Text('Contractee', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
                     pw.SizedBox(height: 8),
-                    pw.Text('Name: ${_getFieldValue(fieldValues, 'Contractee.FirstName')} ${_getFieldValue(fieldValues, 'Contractee.LastName')}', style: const pw.TextStyle(fontSize: 10)),
-                    pw.Text('Address: ${_getFieldValue(fieldValues, 'Contractee.Address')}', style: const pw.TextStyle(fontSize: 10)),
-                    pw.Text('Phone: ${_getFieldValue(fieldValues, 'Contractee.Phone')}', style: const pw.TextStyle(fontSize: 10)),
-                    pw.Text('Email: ${_getFieldValue(fieldValues, 'Contractee.Email')}', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text('Name: ${ContractStyle.getFieldValue(fieldValues, 'Contractee.FirstName')} ${ContractStyle.getFieldValue(fieldValues, 'Contractee.LastName')}', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text('Address: ${ContractStyle.getFieldValue(fieldValues, 'Contractee.Address')}', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text('Phone: ${ContractStyle.getFieldValue(fieldValues, 'Contractee.Phone')}', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text('Email: ${ContractStyle.getFieldValue(fieldValues, 'Contractee.Email')}', style: const pw.TextStyle(fontSize: 10)),
                   ],
                 ),
               ),
@@ -85,8 +77,6 @@ class CostPlusPDF {
       ),
     );
     widgets.add(pw.SizedBox(height: 24));
-
-    // Recitals
     widgets.add(
       pw.Text(
         'Recitals',
@@ -106,31 +96,31 @@ class CostPlusPDF {
 
     widgets.add(
       pw.Bullet(
-        text: 'Brief Description of the Project: ${_getFieldValue(fieldValues, 'Project.Description')}',
+        text: 'Brief Description of the Project: ${ContractStyle.getFieldValue(fieldValues, 'Project.Description')}',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Location: ${_getFieldValue(fieldValues, 'Project.Address')}',
+        text: 'Location: ${ContractStyle.getFieldValue(fieldValues, 'Project.Address')}',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Start Date: ${_getFieldValue(fieldValues, 'Project.StartDate')}',
+        text: 'Start Date: ${ContractStyle.getFieldValue(fieldValues, 'Project.StartDate')}',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Completion Date: ${_getFieldValue(fieldValues, 'Project.CompletionDate')} (Estimate)',
+        text: 'Completion Date: ${ContractStyle.getFieldValue(fieldValues, 'Project.CompletionDate')} (Estimate)',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Duration: ${_getFieldValue(fieldValues, 'Project.Duration')} days',
+        text: 'Duration: ${ContractStyle.getFieldValue(fieldValues, 'Project.Duration')} days',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
@@ -154,7 +144,6 @@ class CostPlusPDF {
     );
     widgets.add(pw.SizedBox(height: 24));
 
-    // 1. Scope of Work and Cost
     widgets.add(
       pw.Text(
         '1. Scope of Work and Cost',
@@ -174,19 +163,19 @@ class CostPlusPDF {
 
     widgets.add(
       pw.Bullet(
-        text: 'Labor Costs: Actual hourly rates as specified - ₱${_getFieldValue(fieldValues, 'Labor.Costs')} per hour',
+        text: 'Labor Costs: Actual hourly rates as specified - ₱${ContractStyle.getFieldValue(fieldValues, 'Labor.Costs')} per hour',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Material Costs: Actual cost of materials with receipts - ₱${_getFieldValue(fieldValues, 'Material.Costs')} (estimated)',
+        text: 'Material Costs: Actual cost of materials with receipts - ₱${ContractStyle.getFieldValue(fieldValues, 'Material.Costs')} (estimated)',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Equipment Costs: Actual rental/usage costs - ₱${_getFieldValue(fieldValues, 'Equipment.Costs')} (estimated)',
+        text: 'Equipment Costs: Actual rental/usage costs - ₱${ContractStyle.getFieldValue(fieldValues, 'Equipment.Costs')} (estimated)',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
@@ -198,13 +187,12 @@ class CostPlusPDF {
     );
     widgets.add(
       pw.Bullet(
-        text: 'Overhead and Profit Fee: ${_getFieldValue(fieldValues, 'Overhead.Percentage')}% of total project costs',
+        text: 'Overhead and Profit Fee: ${ContractStyle.getFieldValue(fieldValues, 'Overhead.Percentage')}% of total project costs',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(pw.SizedBox(height: 12));
 
-    // 1.2 Payment Terms
     widgets.add(
       pw.Text(
         '1.2 Payment Terms:',
@@ -215,37 +203,36 @@ class CostPlusPDF {
 
     widgets.add(
       pw.Bullet(
-        text: 'Total Estimated Project Cost: ₱${_getFieldValue(fieldValues, 'Estimated.Total')}',
+        text: 'Total Estimated Project Cost: ₱${ContractStyle.getFieldValue(fieldValues, 'Estimated.Total')}',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Payment Interval: ${_getFieldValue(fieldValues, 'Payment.Interval')} (weekly/bi-weekly/monthly)',
+        text: 'Payment Interval: ${ContractStyle.getFieldValue(fieldValues, 'Payment.Interval')} (weekly/bi-weekly/monthly)',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Retention Fee: ₱${_getFieldValue(fieldValues, 'Retention.Fee')} (held until project completion)',
+        text: 'Retention Fee: ₱${ContractStyle.getFieldValue(fieldValues, 'Retention.Fee')} (held until project completion)',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Late Payment Fee: ${_getFieldValue(fieldValues, 'Late.Fee.Percentage')}% per month on overdue amounts',
+        text: 'Late Payment Fee: ${ContractStyle.getFieldValue(fieldValues, 'Late.Fee.Percentage')}% per month on overdue amounts',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Payment Due: ${_getFieldValue(fieldValues, 'Payment.DueDays')} days from invoice date',
+        text: 'Payment Due: ${ContractStyle.getFieldValue(fieldValues, 'Payment.DueDays')} days from invoice date',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(pw.SizedBox(height: 20));
 
-    // 2. Obligations and Responsibilities
     widgets.add(
       pw.Text(
         '2. Obligations and Responsibilities',
@@ -254,7 +241,6 @@ class CostPlusPDF {
     );
     widgets.add(pw.SizedBox(height: 12));
 
-    // Contractee's Responsibilities
     widgets.add(
       pw.Text(
         'Contractee\'s Responsibilities',
@@ -263,7 +249,6 @@ class CostPlusPDF {
     );
     widgets.add(pw.SizedBox(height: 12));
 
-    // Responsibilities Table
     widgets.add(
       pw.Table(
         border: pw.TableBorder.all(color: PdfColors.grey400),
@@ -321,7 +306,6 @@ class CostPlusPDF {
     );
     widgets.add(pw.SizedBox(height: 20));
 
-    // 3. Contractor's Responsibilities
     widgets.add(
       pw.Text(
         '3. Contractor\'s Responsibilities',
@@ -387,7 +371,6 @@ class CostPlusPDF {
     );
     widgets.add(pw.SizedBox(height: 20));
 
-    // 3.1. Cost of Work and Payments
     widgets.add(
       pw.Text(
         '3.1. Cost of Work and Payments',
@@ -395,8 +378,6 @@ class CostPlusPDF {
       ),
     );
     widgets.add(pw.SizedBox(height: 12));
-
-    // Cost Plus Fee
     widgets.add(
       pw.Text(
         'Cost Plus Fee',
@@ -442,8 +423,6 @@ class CostPlusPDF {
       ),
     );
     widgets.add(pw.SizedBox(height: 16));
-
-    // Payment Procedures
     widgets.add(
       pw.Text(
         'Payment Procedures',
@@ -470,7 +449,6 @@ class CostPlusPDF {
     );
     widgets.add(pw.SizedBox(height: 20));
 
-    // 4. Delays and Extensions of Time
     widgets.add(
       pw.Text(
         '4. Delays and Extensions of Time',
@@ -509,7 +487,6 @@ class CostPlusPDF {
     );
     widgets.add(pw.SizedBox(height: 20));
 
-    // 5. Insurance and Bonds
     widgets.add(
       pw.Text(
         '5. Insurance and Bonds',
@@ -541,7 +518,7 @@ class CostPlusPDF {
     );
     widgets.add(
       pw.Text(
-        'The Contractor shall furnish to the Contractee, within ${_getFieldValue(fieldValues, 'Bond.TimeFrame')} days, performance and payment bonds executed by a surety company licensed to do business in the jurisdiction where the project is located. The performance bond shall be in an amount not less than ₱${_getFieldValue(fieldValues, 'Bond.PerformanceAmount')} and shall guarantee the faithful performance of all Work under this Agreement.',
+        'The Contractor shall furnish to the Contractee, within ${ContractStyle.getFieldValue(fieldValues, 'Bond.TimeFrame')} days, performance and payment bonds executed by a surety company licensed to do business in the jurisdiction where the project is located. The performance bond shall be in an amount not less than ₱${ContractStyle.getFieldValue(fieldValues, 'Bond.PerformanceAmount')} and shall guarantee the faithful performance of all Work under this Agreement.',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),
@@ -550,14 +527,13 @@ class CostPlusPDF {
 
     widgets.add(
       pw.Text(
-        'The payment bond shall be in an amount not less than ₱${_getFieldValue(fieldValues, 'Bond.PaymentAmount')} and shall guarantee the payment to all subcontractors, laborers, and material suppliers for labor and materials furnished in connection with this Contract. The Contractor shall maintain these bonds in full force and effect throughout the duration of the project.',
+        'The payment bond shall be in an amount not less than ₱${ContractStyle.getFieldValue(fieldValues, 'Bond.PaymentAmount')} and shall guarantee the payment to all subcontractors, laborers, and material suppliers for labor and materials furnished in connection with this Contract. The Contractor shall maintain these bonds in full force and effect throughout the duration of the project.',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),
     );
     widgets.add(pw.SizedBox(height: 20));
 
-    // 6. Change Orders and Modifications
     widgets.add(
       pw.Text(
         '6. Change Orders and Modifications',
@@ -575,7 +551,6 @@ class CostPlusPDF {
     );
     widgets.add(pw.SizedBox(height: 20));
 
-    // 7. Termination and Disputes
     widgets.add(
       pw.Text(
         '7. Termination and Disputes',
@@ -586,7 +561,7 @@ class CostPlusPDF {
 
     widgets.add(
       pw.Text(
-        '7.1. Either party may terminate this contract with ${_getFieldValue(fieldValues, 'Notice.Period')} days written notice. Upon termination, Contractor shall be compensated for all work completed and costs incurred up to the termination date.',
+        '7.1. Either party may terminate this contract with ${ContractStyle.getFieldValue(fieldValues, 'Notice.Period')} days written notice. Upon termination, Contractor shall be compensated for all work completed and costs incurred up to the termination date.',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),
@@ -595,7 +570,7 @@ class CostPlusPDF {
 
     widgets.add(
       pw.Text(
-        '7.2. Contractor provides a ${_getFieldValue(fieldValues, 'Warranty.Period')} months warranty on workmanship and materials from the date of project completion. This warranty covers defects in materials and workmanship under normal use and conditions.',
+        '7.2. Contractor provides a ${ContractStyle.getFieldValue(fieldValues, 'Warranty.Period')} months warranty on workmanship and materials from the date of project completion. This warranty covers defects in materials and workmanship under normal use and conditions.',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),
@@ -604,14 +579,13 @@ class CostPlusPDF {
 
     widgets.add(
       pw.Text(
-        '7.3. Any disputes arising from this contract shall be resolved through mediation first, and if unsuccessful, through arbitration under Philippine law. All legal proceedings shall be conducted in the courts of ${_getFieldValue(fieldValues, 'Contractor.Province')}, Republic of the Philippines.',
+        '7.3. Any disputes arising from this contract shall be resolved through mediation first, and if unsuccessful, through arbitration under Philippine law. All legal proceedings shall be conducted in the courts of ${ContractStyle.getFieldValue(fieldValues, 'Contractor.Province')}, Republic of the Philippines.',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),
     );
     widgets.add(pw.SizedBox(height: 20));
 
-    // 8. Governing Law
     widgets.add(
       pw.Text(
         '8. Governing Law',
@@ -638,7 +612,6 @@ class CostPlusPDF {
     );
     widgets.add(pw.SizedBox(height: 30));
 
-    // Execution
     widgets.add(
       pw.Center(
         child: pw.Text(
@@ -653,7 +626,6 @@ class CostPlusPDF {
     );
     widgets.add(pw.SizedBox(height: 30));
 
-    // Signature blocks
     widgets.add(
       pw.Table(
         columnWidths: {
@@ -688,7 +660,7 @@ class CostPlusPDF {
                   ),
                   pw.SizedBox(height: 8),
                   pw.Text(
-                    '${_getFieldValue(fieldValues, 'Contractee.FirstName')} ${_getFieldValue(fieldValues, 'Contractee.LastName')}',
+                    '${ContractStyle.getFieldValue(fieldValues, 'Contractee.FirstName')} ${ContractStyle.getFieldValue(fieldValues, 'Contractee.LastName')}',
                     style: const pw.TextStyle(fontSize: 11),
                   ),
                   pw.Text(
@@ -697,7 +669,7 @@ class CostPlusPDF {
                   ),
                 ],
               ),
-              pw.Container(), // Spacer
+              pw.Container(), 
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
@@ -722,7 +694,7 @@ class CostPlusPDF {
                   ),
                   pw.SizedBox(height: 8),
                   pw.Text(
-                    '${_getFieldValue(fieldValues, 'Contractor.FirstName')} ${_getFieldValue(fieldValues, 'Contractor.LastName')}',
+                    '${ContractStyle.getFieldValue(fieldValues, 'Contractor.FirstName')} ${ContractStyle.getFieldValue(fieldValues, 'Contractor.LastName')}',
                     style: const pw.TextStyle(fontSize: 11),
                   ),
                   pw.Text(
