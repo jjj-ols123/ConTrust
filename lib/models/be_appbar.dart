@@ -1,12 +1,10 @@
 // ignore_for_file: unused_field, use_build_context_synchronously
 import 'dart:async';
-import 'package:backend/build/buildnotification.dart';
-import 'package:backend/services/both services/be_notification_service.dart';
-import 'package:backend/services/both services/be_user_service.dart';
-import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/services/both%20services/be_fetchservice.dart';
+import 'package:backend/services/both%20services/be_notification_service.dart';
+import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/services/contractee%20services/cee_checkuser.dart';
 import 'package:backend/utils/be_pagetransition.dart';
-import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractee/pages/cee_about.dart';
 import 'package:contractee/pages/cee_login.dart';
 import 'package:contractee/pages/cee_materials.dart';
@@ -68,7 +66,9 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
       });
     } catch (e) {
       if (mounted) {
-        ConTrustSnackBar.error(context, 'Failed to load notifications');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to load notifications')),
+        );
       }
     }
   }
@@ -80,8 +80,7 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
         setState(() => _userType = userType);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error identifying user type.')));
+      rethrow;
     }
   }
 
@@ -149,70 +148,32 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
               icon: const Icon(Icons.notifications, color: Colors.black),
               onPressed: () async {
                 CheckUserLogin.isLoggedIn(
-                    context: context,
-                    onAuthenticated: () async {
-                      if (!context.mounted || _receiverId == null) return;
-                      final width = MediaQuery.of(context).size.width;
-                      if (width > 1200) {
-                        showGeneralDialog(
-                          context: context,
-                          barrierDismissible: true,
-                          barrierLabel: 'Notifications',
-                          barrierColor: Colors.black54,
-                          transitionDuration: const Duration(milliseconds: 200),
-                          pageBuilder: (ctx, anim1, anim2) {
-                            final overlayBuilder = NotificationUIBuildMethods(
-                              context: ctx,
-                              receiverId: _receiverId!,
-                            );
-                            return SafeArea(
-                              child: Align(
-                                alignment: Alignment.topRight,
-                                child: Container(
-                                  width: 450,
-                                  height: 500,
-                                  margin: const EdgeInsets.all(16),
-                                  child: Material(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.all(16),
-                                          child: Text(
-                                            'Notifications',
-                                            style: Theme.of(ctx).textTheme.titleLarge,
-                                          ),
-                                        ),
-                                        const Divider(height: 1),
-                                        Flexible(
-                                          child: overlayBuilder.buildNotificationList(
-                                            NotificationService().listenToNotifications(_receiverId!),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        );
-                      } else {
-                        String? userType = _userType?.toLowerCase();
-                        if (userType == 'contractee') {
-                          transitionBuilder(context, const ContracteeNotificationPage());
-                        } else if (userType == 'contractor') {
-                          transitionBuilder(context, const ContractorNotificationPage());
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Unknown user type')),
-                          );
-                        }
-                      }
-                    },
-                  );
+                  context: context,
+                  onAuthenticated: () async {
+                    if (!context.mounted) return;
+
+                    String? userType = await UserService().getCurrentUserType();
+
+                    if (userType == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('User type not found')),
+                      );
+                      return;
+                    }
+
+                    if (!context.mounted) return;
+
+                    if (userType.toLowerCase() == 'contractee') {
+                      transitionBuilder(context, ContracteeNotificationPage());
+                    } else if (userType.toLowerCase() == 'contractor') {
+                      transitionBuilder(context, ContractorNotificationPage());
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Unknown user type')),
+                      );
+                    }
+                  },
+                );
               },
             ),
             if (_unreadCount > 0)
@@ -247,106 +208,115 @@ class MenuDrawerContractee extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Drawer(
-      
-      elevation: 0,
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          Container(
-            height: 70, 
-            color: Colors.yellow[700], 
-            padding: const EdgeInsets.symmetric(horizontal: 5),
-            child: const Row(
-              children: [
-                Text(
-                  ""
-                )
-              ],
-            ),
+    return Theme(
+      data: Theme.of(context).copyWith(
+        drawerTheme: const DrawerThemeData(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.zero, 
           ),
-          ListTile(
-            leading: const Icon(Icons.home, color: Colors.blueGrey),
-            title: const Text(
-              'Home',
-              style: TextStyle(fontSize: 18),
+        ),
+      ),
+      child: Drawer(
+        elevation: 0,
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            Container(
+              height: 70,
+              color: Colors.yellow[700],
+              padding: const EdgeInsets.symmetric(horizontal: 5),
+              child: const Row(
+                children: [
+                  Text(""),
+                ],
+              ),
             ),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/home',
-                (route) => false,
-              );
-            },
-          ),
-          const SizedBox(height: 0.5),
-          ListTile(
-            leading: const Icon(Icons.book, color: Colors.blueGrey),
-            title: const Text(
-              'Transaction History',
-              style: TextStyle(fontSize: 18),
-            ),
-            onTap: () => transitionBuilder(context, const TransactionPage()),
-          ),
-
-          const SizedBox(height: 0.5),
-          ListTile(
-            leading: const Icon(Icons.handyman, color: Colors.blueGrey),
-            title: const Text(
-              'Materials',
-              style: TextStyle(fontSize: 18),
-            ),
-            onTap: () => transitionBuilder(context, const Buildingmaterial()),
-          ),
-          const SizedBox(height: 0.5),
-          ListTile(
-            leading: const Icon(Icons.work, color: Colors.blueGrey),
-            title: const Text(
-              'Ongoing',
-              style: TextStyle(fontSize: 18),
-            ),
-            onTap: () async {
-              final contracteeId = await UserService().getContracteeId();
-              if (contracteeId != null) {
-                final projects = await FetchService().fetchUserProjects();
-                final activeProject = projects.firstWhere(
-                  (project) => project['status'] == 'active',
-                  orElse: () => {},
+            ListTile(
+              leading: const Icon(Icons.home, color: Colors.blueGrey),
+              title: const Text(
+                'Home',
+                style: TextStyle(fontSize: 18),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/home',
+                  (route) => false,
                 );
-                if (activeProject.isNotEmpty && context.mounted) {
-                  transitionBuilder(
-                    context,
-                    CeeOngoingProjectScreen(
-                      projectId: activeProject['project_id'],
-                    ),
+              },
+            ),
+            const SizedBox(height: 0.5),
+            ListTile(
+              leading: const Icon(Icons.book, color: Colors.blueGrey),
+              title: const Text(
+                'Transaction History',
+                style: TextStyle(fontSize: 18),
+              ),
+              onTap: () => transitionBuilder(context, const TransactionPage()),
+            ),
+            const SizedBox(height: 0.5),
+            ListTile(
+              leading: const Icon(Icons.handyman, color: Colors.blueGrey),
+              title: const Text(
+                'Materials',
+                style: TextStyle(fontSize: 18),
+              ),
+              onTap: () => transitionBuilder(context, const Buildingmaterial()),
+            ),
+            const SizedBox(height: 0.5),
+            ListTile(
+              leading: const Icon(Icons.work, color: Colors.blueGrey),
+              title: const Text(
+                'Ongoing',
+                style: TextStyle(fontSize: 18),
+              ),
+              onTap: () async {
+                final contracteeId = await UserService().getContracteeId();
+                if (contracteeId != null) {
+                  final projects = await FetchService().fetchUserProjects();
+                  final activeProject = projects.firstWhere(
+                    (project) => project['status'] == 'active',
+                    orElse: () => {},
                   );
-                } else if (context.mounted) {
-                  ConTrustSnackBar.projectError(context);
+                  if (activeProject.isNotEmpty && context.mounted) {
+                    transitionBuilder(
+                      context,
+                      CeeOngoingProjectScreen(
+                        projectId: activeProject['project_id'],
+                      ),
+                    );
+                  } else if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('No active project found')),
+                    );
+                  }
                 }
-              }
-            },
-          ),
-          const SizedBox(height: 0.5),
-          ListTile(
-            leading: const Icon(Icons.info, color: Colors.blueGrey),
-            title: const Text(
-              'About',
-              style: TextStyle(fontSize: 18),
+              },
             ),
-            onTap: () => transitionBuilder(context, const AboutPage()),
-          ),
-          const SizedBox(height: 0.5),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text(
-              'Logout',
-              style: TextStyle(fontSize: 18),
+            const SizedBox(height: 0.5),
+            ListTile(
+              leading: const Icon(Icons.info, color: Colors.blueGrey),
+              title: const Text(
+                'About',
+                style: TextStyle(fontSize: 18),
+              ),
+              onTap: () => transitionBuilder(context, const AboutPage()),
             ),
-            onTap: () =>
-                transitionBuilder(context, LoginPage(modalContext: context)),
-          ),
-        ],
+            const SizedBox(height: 0.5),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text(
+                'Logout',
+                style: TextStyle(fontSize: 18),
+              ),
+              onTap: () => transitionBuilder(
+                context,
+                LoginPage(modalContext: context),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
