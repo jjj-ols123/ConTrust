@@ -1,8 +1,8 @@
-// ignore_for_file: unused_field, use_build_context_synchronously
+// ignore_for_file: unused_field
 import 'dart:async';
-import 'package:backend/services/both services/be_notification_service.dart';
-import 'package:backend/services/both services/be_user_service.dart';
-import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/services/be_notification_service.dart';
+import 'package:backend/services/be_user_service.dart';
+import 'package:backend/services/be_fetchservice.dart';
 import 'package:backend/utils/be_pagetransition.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractee/pages/cee_about.dart';
@@ -11,10 +11,11 @@ import 'package:contractee/pages/cee_materials.dart';
 import 'package:contractee/pages/cee_notification.dart';
 import 'package:contractee/pages/cee_ongoing.dart';
 import 'package:contractee/pages/cee_transaction.dart';
-import 'package:backend/services/contractee services/cee_checkuser.dart';
+import 'package:contractee/services/cee_checkuser.dart';
 import 'package:contractor/Screen/cor_notification.dart';
+import 'package:contractee/pages/cee_launch.dart';
+import 'package:contractee/pages/cee_registration.dart';
 import 'package:flutter/material.dart';
-import 'package:backend/build/buildnotification.dart';
 
 class ConTrustAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String headline;
@@ -80,7 +81,8 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
         setState(() => _userType = userType);
       }
     } catch (e) {
-      ConTrustSnackBar.error(context, 'Error identifying user type.');
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error identifying user type.')));
     }
   }
 
@@ -108,15 +110,29 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: Colors.amber[500],
+      backgroundColor: Colors.amber,
       centerTitle: true,
       automaticallyImplyLeading: false,
-      leading: (_userType?.toLowerCase() == 'contractee') ? Builder(
+      leading: (widget.headline == "Home" && _userType?.toLowerCase() == 'contractee')
+          ? Builder(
               builder: (context) => IconButton(
                 icon: const Icon(Icons.menu, color: Colors.black),
                 onPressed: () => Scaffold.of(context).openDrawer(),
               ),
-            ) : null,
+            )
+          : Navigator.canPop(context)
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.black),
+                  onPressed: () => Navigator.of(context).pop(),
+                )
+              : (_userType?.toLowerCase() == 'contractee')
+                  ? Builder(
+                      builder: (context) => IconButton(
+                        icon: const Icon(Icons.menu, color: Colors.black),
+                        onPressed: () => Scaffold.of(context).openDrawer(),
+                      ),
+                    )
+                  : null,
       elevation: 4,
       title: Text(
         widget.headline,
@@ -191,7 +207,9 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
                         } else if (userType == 'contractor') {
                           transitionBuilder(context, const ContractorNotificationPage());
                         } else {
-                          ConTrustSnackBar.error(context, 'Unknown user type');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Unknown user type')),
+                          );
                         }
                       }
                     },
@@ -231,27 +249,28 @@ class MenuDrawerContractee extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
+      
+      elevation: 0,
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          const DrawerHeader(
-            decoration: BoxDecoration(color: Colors.amber),
-            child: Text(
-              '',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 1,
-                fontWeight: FontWeight.bold,
-              ),
+          Container(
+            height: 70, 
+            color: Colors.yellow[700], 
+            padding: const EdgeInsets.symmetric(horizontal: 5),
+            child: const Row(
+              children: [
+                Text(
+                  ""
+                )
+              ],
             ),
           ),
           ListTile(
             leading: const Icon(Icons.home, color: Colors.blueGrey),
             title: const Text(
               'Home',
-              style: TextStyle(
-                fontSize: 18,
-              ),
+              style: TextStyle(fontSize: 18),
             ),
             onTap: () {
               Navigator.pop(context);
@@ -267,20 +286,17 @@ class MenuDrawerContractee extends StatelessWidget {
             leading: const Icon(Icons.book, color: Colors.blueGrey),
             title: const Text(
               'Transaction History',
-              style: TextStyle(
-                fontSize: 18,
-              ),
+              style: TextStyle(fontSize: 18),
             ),
             onTap: () => transitionBuilder(context, const TransactionPage()),
           ),
+
           const SizedBox(height: 0.5),
           ListTile(
             leading: const Icon(Icons.handyman, color: Colors.blueGrey),
             title: const Text(
               'Materials',
-              style: TextStyle(
-                fontSize: 18,
-              ),
+              style: TextStyle(fontSize: 18),
             ),
             onTap: () => transitionBuilder(context, const Buildingmaterial()),
           ),
@@ -289,9 +305,7 @@ class MenuDrawerContractee extends StatelessWidget {
             leading: const Icon(Icons.work, color: Colors.blueGrey),
             title: const Text(
               'Ongoing',
-              style: TextStyle(
-                fontSize: 18,
-              ),
+              style: TextStyle(fontSize: 18),
             ),
             onTap: () async {
               final contracteeId = await UserService().getContracteeId();
@@ -305,7 +319,8 @@ class MenuDrawerContractee extends StatelessWidget {
                   transitionBuilder(
                     context,
                     CeeOngoingProjectScreen(
-                        projectId: activeProject['project_id']),
+                      projectId: activeProject['project_id'],
+                    ),
                   );
                 } else if (context.mounted) {
                   ConTrustSnackBar.projectError(context);
@@ -318,9 +333,7 @@ class MenuDrawerContractee extends StatelessWidget {
             leading: const Icon(Icons.info, color: Colors.blueGrey),
             title: const Text(
               'About',
-              style: TextStyle(
-                fontSize: 18,
-              ),
+              style: TextStyle(fontSize: 18),
             ),
             onTap: () => transitionBuilder(context, const AboutPage()),
           ),
@@ -329,15 +342,10 @@ class MenuDrawerContractee extends StatelessWidget {
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text(
               'Logout',
-              style: TextStyle(
-                fontSize: 18,
-              ),
+              style: TextStyle(fontSize: 18),
             ),
-            onTap: () => transitionBuilder(
-                context,
-                LoginPage(
-                  modalContext: context,
-                )),
+            onTap: () =>
+                transitionBuilder(context, LoginPage(modalContext: context)),
           ),
         ],
       ),
