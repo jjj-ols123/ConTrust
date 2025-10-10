@@ -207,42 +207,6 @@ class ContractService {
     }
   }
 
-  // PDF-specific helper methods
-
-  static Future<String?> getContractPdfUrl(String contractId) async {
-    try {
-      final contract = await _supabase
-          .from('Contracts')
-          .select('pdf_url')
-          .eq('contract_id', contractId)
-          .single();
-
-      final pdfPath = contract['pdf_url'] as String?;
-      if (pdfPath == null) return null;
-
-      return await ContractPdfService.getContractPdfUrl(pdfPath);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  static Future<Uint8List?> downloadContractPdf(String contractId) async {
-    try {
-      final contract = await _supabase
-          .from('Contracts')
-          .select('pdf_url')
-          .eq('contract_id', contractId)
-          .single();
-
-      final pdfPath = contract['pdf_url'] as String?;
-      if (pdfPath == null) return null;
-
-      return await ContractPdfService.downloadContractPdf(pdfPath);
-    } catch (e) {
-      return null;
-    }
-  }
-
   // For Both Users
 
   static Future<Map<String, dynamic>> getContractById(String contractId) async {
@@ -260,7 +224,6 @@ class ContractService {
     required String userType,
   }) async {
     try {
-      // Validate inputs
       if (contractId.isEmpty || userId.isEmpty || signatureBytes.isEmpty) {
         throw Exception('Invalid signature data provided');
       }
@@ -269,12 +232,10 @@ class ContractService {
         throw Exception('Invalid user type. Must be contractor or contractee');
       }
 
-      // Validate signature image size and format
-      if (signatureBytes.length > 5 * 1024 * 1024) { // 5MB limit
+      if (signatureBytes.length > 5 * 1024 * 1024) { 
         throw Exception('Signature image too large. Maximum size is 5MB');
       }
 
-      // Get contract data for validation
       final contractData = await _supabase
           .from('Contracts')
           .select('status, contractor_id, contractee_id, project_id')
@@ -286,7 +247,6 @@ class ContractService {
         throw Exception('Cannot sign a $contractStatus contract');
       }
 
-      // Validate user is authorized to sign this contract
       final contractorId = contractData['contractor_id'] as String?;
       final contracteeId = contractData['contractee_id'] as String?;
       
@@ -296,8 +256,6 @@ class ContractService {
       if (userType.toLowerCase() == 'contractee' && contracteeId != userId) {
         throw Exception('User not authorized to sign as contractee');
       }
-
-      // Check if user has already signed
       final existingSignature = userType.toLowerCase() == 'contractor' 
           ? contractData['contractor_signature_url'] 
           : contractData['contractee_signature_url'];
@@ -305,7 +263,6 @@ class ContractService {
       final fileName = '${userType.toLowerCase()}_${contractId}_$userId.png';
       final timestamp = DateTime.now().toIso8601String();
 
-      // Upload signature to storage with retry logic
       String? uploadPath;
       for (int attempt = 0; attempt < 3; attempt++) {
         try {
@@ -319,7 +276,7 @@ class ContractService {
             break;
           }
         } catch (uploadError) {
-          if (attempt == 2) throw uploadError;
+          if (attempt == 2) rethrow;
           await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
         }
       }
@@ -328,7 +285,6 @@ class ContractService {
         throw Exception("Failed to upload signature after multiple attempts");
       }
 
-      // Update contract with signature data
       final updateData = userType.toLowerCase() == 'contractor'
           ? {
               'contractor_signature_url': fileName,
@@ -344,7 +300,6 @@ class ContractService {
           .update(updateData)
           .eq('contract_id', contractId);
 
-      // Send notification to other party
       try {
         final notifInfo = await FetchService().userTypeDecide(
           contractId: contractId,
@@ -362,10 +317,8 @@ class ContractService {
           message: notifInfo['message']!,
         );
       } catch (notificationError) {
-        // Continue even if notification fails
       }
 
-      // Check if both parties have signed and activate contract
       await Future.delayed(const Duration(milliseconds: 200));
 
       final updatedContract = await _supabase
@@ -401,7 +354,6 @@ class ContractService {
 
           contractActivated = true;
 
-          // Send contract activation notification to both parties
           try {
             await NotificationService().createContractNotification(
               receiverId: contractorId!,
@@ -423,7 +375,6 @@ class ContractService {
               message: 'Contract has been fully signed and is now active',
             );
           } catch (activationNotifError) {
-            // Continue even if activation notifications fail
           }
         } catch (activationErr) {
           activationError = activationErr.toString();
@@ -447,7 +398,6 @@ class ContractService {
     }
   }
 
-  // Enhanced method to verify signature integrity
   static Future<bool> verifySignature({
     required String contractId,
     required String userType,
@@ -467,7 +417,6 @@ class ContractService {
         return false;
       }
 
-      // Check if signature file exists in storage
       try {
         final files = await _supabase.storage
             .from('signatures')
@@ -482,7 +431,6 @@ class ContractService {
     }
   }
 
-  // Method to get signature URL with validation
   static Future<String?> getSignatureUrl({
     required String contractId,
     required String userType,
@@ -504,7 +452,7 @@ class ContractService {
 
       final signedUrl = await _supabase.storage
           .from('signatures')
-          .createSignedUrl(signaturePath, 60 * 60 * 2); // 2 hours
+          .createSignedUrl(signaturePath, 60 * 60 * 2); 
 
       return signedUrl;
     } catch (e) {
@@ -512,15 +460,12 @@ class ContractService {
     }
   }
 
-  // Enhanced PDF download methods
-
   static Future<Map<String, dynamic>> downloadContractPdfWithProgress({
     required String contractId,
     String? customFileName,
     bool saveToDevice = false,
   }) async {
     try {
-      // Get contract data
       final contract = await _supabase
           .from('Contracts')
           .select('pdf_url, title, created_at, status')
@@ -539,12 +484,10 @@ class ContractService {
         throw Exception('Cannot download cancelled contract');
       }
 
-      // Generate appropriate filename
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final fileName = customFileName ?? 
           '${contractTitle.replaceAll(RegExp(r'[^\w\s-]'), '')}_$timestamp.pdf';
 
-      // Download with retry logic
       Uint8List? pdfBytes;
       for (int attempt = 0; attempt < 3; attempt++) {
         try {
@@ -553,7 +496,7 @@ class ContractService {
               .download(pdfPath);
           break;
         } catch (downloadError) {
-          if (attempt == 2) throw downloadError;
+          if (attempt == 2) rethrow;
           await Future.delayed(Duration(milliseconds: 1000 * (attempt + 1)));
         }
       }
@@ -562,7 +505,6 @@ class ContractService {
         throw Exception('Failed to download PDF after multiple attempts');
       }
 
-      // Validate PDF file
       if (pdfBytes.length < 100) {
         throw Exception('Downloaded file appears to be corrupted');
       }
@@ -573,17 +515,13 @@ class ContractService {
       if (saveToDevice) {
         try {
           savedFile = await ContractPdfService.saveToDevice(pdfBytes, fileName);
-          // For mobile, savedFile is a File with a path
-          // For web, savedFile is void (download is triggered automatically)
           if (!kIsWeb && savedFile is File) {
             filePath = savedFile.path;
           } else if (kIsWeb) {
-            // Web download was triggered automatically
-            filePath = fileName; // Just use the filename for web
-            savedFile = true; // Indicate successful web download
+            filePath = fileName; 
+            savedFile = true; 
           }
         } catch (saveError) {
-          // Continue without saving to device if it fails
         }
       }
 
@@ -624,7 +562,6 @@ class ContractService {
         throw Exception('Cannot preview cancelled contract');
       }
 
-      // Create signed URL with specified expiry
       final signedUrl = await _supabase.storage
           .from('contracts')
           .createSignedUrl(pdfPath, expiryHours * 60 * 60);
@@ -652,7 +589,6 @@ class ContractService {
         };
       }
 
-      // Check if file exists in storage
       try {
         final files = await _supabase.storage
             .from('contracts')
@@ -669,7 +605,6 @@ class ContractService {
           };
         }
 
-        // Try to get file info
         final fileInfo = files.firstWhere((file) => file.name == fileName);
         
         return {
@@ -697,7 +632,6 @@ class ContractService {
     }
   }
 
-  // Method to download multiple contracts as a ZIP
   static Future<Map<String, dynamic>> downloadMultipleContracts({
     required List<String> contractIds,
     String? archiveName,
@@ -714,7 +648,6 @@ class ContractService {
       final downloadResults = <Map<String, dynamic>>[];
       final failedDownloads = <String>[];
 
-      // Download each contract
       for (final contractId in contractIds) {
         try {
           final result = await downloadContractPdfWithProgress(

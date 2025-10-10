@@ -60,11 +60,9 @@ class ContractPdfService {
     required String contracteeId,
   }) async {
     try {
-      // Create file path: {contractor_id}/{project_id}_{contractee_id}.pdf
       final fileName = '${projectId}_$contracteeId.pdf';
       final filePath = '$contractorId/$fileName';
 
-      // Upload to Supabase storage
       await _supabase.storage
           .from('contracts')
           .uploadBinary(filePath, pdfBytes, fileOptions: const FileOptions(upsert: true));
@@ -72,18 +70,6 @@ class ContractPdfService {
       return filePath;
     } catch (e) {
       throw Exception('Failed to upload contract PDF: $e');
-    }
-  }
-
-  static Future<String> getContractPdfUrl(String pdfPath) async {
-    try {
-      final signedUrl = await _supabase.storage
-          .from('contracts')
-          .createSignedUrl(pdfPath, 60 * 60 * 24); // 24 hours
-      
-      return signedUrl;
-    } catch (e) {
-      throw Exception('Failed to get contract PDF URL: $e');
     }
   }
 
@@ -101,10 +87,8 @@ class ContractPdfService {
 
   static Future<dynamic> saveToDevice(Uint8List pdfBytes, String fileName) async {
     if (kIsWeb) {
-      // Web implementation - trigger download
-      return _downloadFileWeb(pdfBytes, fileName);
+      return downloadFileWeb(pdfBytes, fileName);
     } else {
-      // Mobile implementation
       final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/$fileName');
       await file.writeAsBytes(pdfBytes);
@@ -112,9 +96,8 @@ class ContractPdfService {
     }
   }
 
-  static void _downloadFileWeb(Uint8List bytes, String fileName) {
+  static void downloadFileWeb(Uint8List bytes, String fileName) {
     if (kIsWeb) {
-      // Create a blob and download link for web
       final blob = html.Blob([bytes], 'application/pdf');
       final url = html.Url.createObjectUrlFromBlob(blob);
       (html.AnchorElement(href: url)

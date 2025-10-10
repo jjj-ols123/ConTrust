@@ -5,7 +5,6 @@ import 'package:contractor/build/contract/buildcontract.dart';
 import 'package:contractor/build/contract/buildcontracttabs.dart';
 import 'package:backend/services/contractor services/contract/cor_createcontractservice.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_quill/flutter_quill.dart';
 
 class CreateContractPage extends StatefulWidget {
   final String? contractType;
@@ -30,13 +29,11 @@ class _CreateContractPageState extends State<CreateContractPage>
   bool isSaving = false;
   late final TextEditingController titleController;
   String? initialProjectId;
-  // Bump this to force the Final Preview subtree to remount (fresh build)
+
   int _previewRefreshTick = 0;
 
   final Map<String, TextEditingController> controllers = {};
   final formKey = GlobalKey<FormState>();
-  bool showPreview = false;
-  late QuillController previewController;
   late TabController tabController;
 
   List<ContractField> contractFields = [];
@@ -51,7 +48,6 @@ class _CreateContractPageState extends State<CreateContractPage>
   void initState() {
     super.initState();
     tabController = TabController(length: 3, vsync: this);
-    // Rebuild when switching tabs so header actions (like Next) can update visibility
     tabController.addListener(() {
       if (mounted) setState(() {});
     });
@@ -59,41 +55,40 @@ class _CreateContractPageState extends State<CreateContractPage>
       text: widget.existingContract?['title'] as String? ?? '',
     );
     initialProjectId = widget.existingContract?['project_id'] as String?;
-    previewController = QuillController.basic();
     selectedContractType = widget.contractType;
     selectedTemplate = widget.template;
-    _initializeFields();
-    _checkForProject();
+    initializeFields();
+    checkForProject();
   }
 
-  void _initializeFields() {
+  void initializeFields() {
     if (selectedTemplate != null) {
-      _loadTemplateAndBuildFields();
+      loadTemplateAndBuildFields();
     } else {
-      _buildDefaultFields();
+      buildDefaultFields();
     }
   }
 
-  Future<void> _checkForProject() async {
+  Future<void> checkForProject() async {
     if (initialProjectId != null) {
-      _fetchProjectData(initialProjectId!);
+      fetchProjectData(initialProjectId!);
     } else {
       await service.checkForSingleProject(widget.contractorId, (projectId) {
         if (projectId != null) {
           setState(() {
             initialProjectId = projectId;
           });
-          _fetchProjectData(projectId);
+          fetchProjectData(projectId);
         }
       });
     }
   }
 
-  Future<void> _loadTemplateAndBuildFields() async {
+  Future<void> loadTemplateAndBuildFields() async {
     if (selectedTemplate == null) return;
 
     try {
-      // Use contract type specific fields instead of extracting from template
+
       final templateName = selectedTemplate!['template_name'] ?? '';
       final fields = service.getContractTypeSpecificFields(templateName);
 
@@ -105,14 +100,12 @@ class _CreateContractPageState extends State<CreateContractPage>
       contractFields = fields;
       for (var field in contractFields) {
         final controller = TextEditingController();
-        // Add listener to update UI when fields change
         controller.addListener(() {
           if (mounted) {
             setState(() {});
-            // Trigger calculation for Time and Materials contracts
             if (selectedTemplate != null && 
                 selectedTemplate!['template_name']?.toLowerCase().contains('time and materials') == true) {
-              _triggerTimeAndMaterialsCalculation();
+              triggerTimeAndMaterialsCalculation();
             }
           }
         });
@@ -121,23 +114,20 @@ class _CreateContractPageState extends State<CreateContractPage>
 
       if (mounted) setState(() {});
     } catch (e) {
-      _buildDefaultFields();
+      buildDefaultFields();
     }
   }
 
-  void _buildDefaultFields() {
-    // Use contract type specific fields if template is available
+  void buildDefaultFields() {
     if (selectedTemplate != null) {
       final templateName = selectedTemplate!['template_name'] ?? '';
       contractFields = service.getContractTypeSpecificFields(templateName);
     } else {
-      // No template selected - empty fields list
       contractFields = [];
     }
     
     for (var field in contractFields) {
       final controller = TextEditingController();
-      // Add listener to update UI when fields change
       controller.addListener(() {
         if (mounted) setState(() {});
       });
@@ -145,7 +135,7 @@ class _CreateContractPageState extends State<CreateContractPage>
     }
   }
 
-  Future<void> _fetchProjectData(String projectId) async {
+  Future<void> fetchProjectData(String projectId) async {
     setState(() {
       isLoadingProject = true;
     });
@@ -182,7 +172,7 @@ class _CreateContractPageState extends State<CreateContractPage>
     }
   }
 
-  Future<void> _setContractType(Map<String, dynamic>? template) async {
+  Future<void> setContractType(Map<String, dynamic>? template) async {
     if (template == null || template == selectedTemplate) return;
 
     final oldValues = <String, String>{};
@@ -193,7 +183,7 @@ class _CreateContractPageState extends State<CreateContractPage>
     selectedTemplate = template;
     selectedContractType = template['template_name'];
 
-    await _loadTemplateAndBuildFields();
+    await loadTemplateAndBuildFields();
 
     for (var field in contractFields) {
       if (oldValues.containsKey(field.key)) {
@@ -202,26 +192,23 @@ class _CreateContractPageState extends State<CreateContractPage>
     }
 
     if (initialProjectId != null) {
-      _fetchProjectData(initialProjectId!);
+      fetchProjectData(initialProjectId!);
     }
   }
 
-  void _updateItemCount(int newItemCount) {
+  void updateItemCount(int newItemCount) {
     if (selectedTemplate == null) return;
 
     try {
       final templateName = selectedTemplate!['template_name'] ?? '';
       
-      // Save current field values
       final oldValues = <String, String>{};
       for (var field in contractFields) {
         oldValues[field.key] = controllers[field.key]?.text ?? '';
       }
 
-      // Generate new fields with the updated item count
       final newFields = service.getContractTypeSpecificFields(templateName, itemCount: newItemCount);
 
-      // Dispose old controllers and create new ones
       for (var controller in controllers.values) {
         controller.dispose();
       }
@@ -230,17 +217,14 @@ class _CreateContractPageState extends State<CreateContractPage>
       contractFields = newFields;
       for (var field in contractFields) {
         final controller = TextEditingController();
-        // Restore old values if they exist
         if (oldValues.containsKey(field.key)) {
           controller.text = oldValues[field.key] ?? '';
         }
-        // Add listener to trigger calculations for Time and Materials
         controller.addListener(() {
           if (mounted) {
             setState(() {});
-            // Trigger calculation if this is a Time and Materials contract
             if (templateName.toLowerCase().contains('time and materials')) {
-              _triggerTimeAndMaterialsCalculation();
+              triggerTimeAndMaterialsCalculation();
             }
           }
         });
@@ -258,17 +242,16 @@ class _CreateContractPageState extends State<CreateContractPage>
     }
   }
 
-  void _triggerTimeAndMaterialsCalculation() {
+  void triggerTimeAndMaterialsCalculation() {
     if (selectedTemplate != null && 
         selectedTemplate!['template_name']?.toLowerCase().contains('time and materials') == true) {
-      // Delay the calculation to ensure the UI has updated
       Future.delayed(const Duration(milliseconds: 100), () {
         service.calculateTimeAndMaterialsRates(controllers);
       });
     }
   }
 
-  Future<void> _saveContract() async {
+  Future<void> saveContract() async {
     if (!formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -304,7 +287,7 @@ class _CreateContractPageState extends State<CreateContractPage>
         fieldValues[field.key] = controllers[field.key]?.text ?? '';
       }
 
-      final contractData = await _showSaveDialog();
+      final contractData = await showSaveDialog();
 
       if (contractData != null) {
         if (widget.existingContract != null) {
@@ -353,7 +336,7 @@ class _CreateContractPageState extends State<CreateContractPage>
     }
   }
 
-  Future<Map<String, dynamic>?> _showSaveDialog() async {
+  Future<Map<String, dynamic>?> showSaveDialog() async {
     String? selectedProjectId = initialProjectId;
     return await CreateContractBuild.showSaveDialog(
       context,
@@ -363,7 +346,7 @@ class _CreateContractPageState extends State<CreateContractPage>
       onProjectChanged: (String? projectId) {
         if (projectId != null && projectId != selectedProjectId) {
           selectedProjectId = projectId;
-          _fetchProjectData(projectId);
+          fetchProjectData(projectId);
         }
       },
     );
@@ -388,7 +371,7 @@ class _CreateContractPageState extends State<CreateContractPage>
             isLoadingProject = true;
             initialProjectId = projectId;
           });
-          await _fetchProjectData(projectId);
+          await fetchProjectData(projectId);
         } else {
           setState(() {
             initialProjectId = null;
@@ -397,22 +380,20 @@ class _CreateContractPageState extends State<CreateContractPage>
           service.clearAutoPopulatedFields(controllers);
         }
       },
-      onContractTypeChanged: _setContractType,
+      onContractTypeChanged: setContractType,
       onItemCountChanged: (int newItemCount) {
-        _updateItemCount(newItemCount);
+        updateItemCount(newItemCount);
       },
       onCalculationTriggered: () {
-        _triggerTimeAndMaterialsCalculation();
+        triggerTimeAndMaterialsCalculation();
       },
     );
 
-    // Check if required fields are completed for Final Preview tab
     final canViewFinalPreview = ContractTabsBuild.validateRequiredFields(
       contractFields,
       controllers,
     );
 
-    // Get completion status for progress indicator
     final completionStatus = ContractTabsBuild.getFieldCompletionStatus(
       contractFields,
       controllers,
@@ -423,13 +404,12 @@ class _CreateContractPageState extends State<CreateContractPage>
       contractorId: widget.contractorId,
       child: Column(
         children: [
-          // Header
           CreateContractBuild.buildHeader(
             context,
             title: 'Create Contract',
             actions: [
               ElevatedButton.icon(
-                onPressed: isSaving ? null : _saveContract,
+                onPressed: isSaving ? null : saveContract,
                 icon: isSaving
                     ? const SizedBox(
                         width: 16,
@@ -449,18 +429,15 @@ class _CreateContractPageState extends State<CreateContractPage>
             ],
           ),
 
-          // Progress Indicator
           ContractTabsBuild.buildCompletionIndicator(
             completedFields: completionStatus['completed']!,
             totalRequiredFields: completionStatus['total']!,
           ),
 
-          // Tab Bar
           ContractTabsBuild.buildTabBar(
             tabController: tabController,
             canViewFinalPreview: canViewFinalPreview,
             onBeforeFinalPreview: () async {
-              // Show a quick toast while preparing the preview
               final messenger = ScaffoldMessenger.of(context);
               messenger.hideCurrentSnackBar();
               messenger.showSnackBar(
@@ -471,11 +448,8 @@ class _CreateContractPageState extends State<CreateContractPage>
                 ),
               );
               FocusScope.of(context).unfocus();
-              // Run calculations immediately to populate payment fields
               service.calculateTimeAndMaterialsRates(controllers);
-              // Small delay to allow any listeners to propagate values
               await Future.delayed(const Duration(milliseconds: 75));
-              // Force Final Preview to rebuild fresh so resolver picks up latest values
               if (mounted) {
                 setState(() {
                   _previewRefreshTick++;
@@ -484,7 +458,6 @@ class _CreateContractPageState extends State<CreateContractPage>
             },
           ),
 
-          // Tab Bar View
           Expanded(
             child: ContractTabsBuild.buildTabBarView(
               tabController: tabController,
@@ -510,7 +483,6 @@ class _CreateContractPageState extends State<CreateContractPage>
   @override
   void dispose() {
     titleController.dispose();
-    previewController.dispose();
     tabController.dispose();
     for (var controller in controllers.values) {
       controller.dispose();

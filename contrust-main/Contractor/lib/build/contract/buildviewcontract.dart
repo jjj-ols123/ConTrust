@@ -1,8 +1,7 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter
 
 import 'package:flutter/material.dart';
 import 'package:signature/signature.dart';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'dart:html' as html;
 import 'dart:ui_web' as ui_web;

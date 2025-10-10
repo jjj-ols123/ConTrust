@@ -1,15 +1,14 @@
+// ignore_for_file: file_names
+
+import 'package:backend/utils/be_contractformat.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 class LumpSumPDF {
-  static String _getFieldValue(Map<String, String> fieldValues, String key) {
-    return fieldValues[key]?.isNotEmpty == true ? fieldValues[key]! : '____________';
-  }
 
   static List<pw.Widget> buildLumpSumPdf(Map<String, String> fieldValues) {
     List<pw.Widget> widgets = [];
 
-    // Title
     widgets.add(
       pw.Center(
         child: pw.Text(
@@ -25,17 +24,15 @@ class LumpSumPDF {
     );
     widgets.add(pw.SizedBox(height: 30));
 
-    // Opening paragraph
     widgets.add(
       pw.Text(
-        'This Lump Sum Construction Contract ("Contract") is entered into on ${_getFieldValue(fieldValues, 'Contract.CreationDate')} by and between ${_getFieldValue(fieldValues, 'Contractor.Company')} ("Your Construction Company\'s Name"), hereinafter referred to as the "Contractor," and ${_getFieldValue(fieldValues, 'Contractee.FirstName')} ${_getFieldValue(fieldValues, 'Contractee.LastName')}, hereinafter referred to as the "Contractee."',
+        'This Lump Sum Construction Contract ("Contract") is entered into on ${ContractStyle.getFieldValue(fieldValues, 'Contract.CreationDate')} by and between ${ContractStyle.getFieldValue(fieldValues, 'Contractor.Company')} ("Your Construction Company\'s Name"), hereinafter referred to as the "Contractor," and ${ContractStyle.getFieldValue(fieldValues, 'Contractee.FirstName')} ${ContractStyle.getFieldValue(fieldValues, 'Contractee.LastName')}, hereinafter referred to as the "Contractee."',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),
     );
     widgets.add(pw.SizedBox(height: 24));
 
-    // The Parties
     widgets.add(
       pw.Text(
         'The Parties',
@@ -44,7 +41,6 @@ class LumpSumPDF {
     );
     widgets.add(pw.SizedBox(height: 16));
 
-    // Party Information Table
     widgets.add(
       pw.Table(
         border: pw.TableBorder.all(color: PdfColors.grey400),
@@ -58,10 +54,10 @@ class LumpSumPDF {
                   children: [
                     pw.Text('Contractor', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
                     pw.SizedBox(height: 8),
-                    pw.Text('Company: ${_getFieldValue(fieldValues, 'Contractor.Company')}', style: const pw.TextStyle(fontSize: 10)),
-                    pw.Text('Address: ${_getFieldValue(fieldValues, 'Contractor.Address')}', style: const pw.TextStyle(fontSize: 10)),
-                    pw.Text('Phone: ${_getFieldValue(fieldValues, 'Contractor.Phone')}', style: const pw.TextStyle(fontSize: 10)),
-                    pw.Text('Email: ${_getFieldValue(fieldValues, 'Contractor.Email')}', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text('Company: ${ContractStyle.getFieldValue(fieldValues, 'Contractor.Company')}', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text('Address: ${ContractStyle.getFieldValue(fieldValues, 'Contractor.Address')}', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text('Phone: ${ContractStyle.getFieldValue(fieldValues, 'Contractor.Phone')}', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text('Email: ${ContractStyle.getFieldValue(fieldValues, 'Contractor.Email')}', style: const pw.TextStyle(fontSize: 10)),
                   ],
                 ),
               ),
@@ -72,10 +68,10 @@ class LumpSumPDF {
                   children: [
                     pw.Text('Contractee', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
                     pw.SizedBox(height: 8),
-                    pw.Text('Name: ${_getFieldValue(fieldValues, 'Contractee.FirstName')} ${_getFieldValue(fieldValues, 'Contractee.LastName')}', style: const pw.TextStyle(fontSize: 10)),
-                    pw.Text('Address: ${_getFieldValue(fieldValues, 'Contractee.Address')}', style: const pw.TextStyle(fontSize: 10)),
-                    pw.Text('Phone: ${_getFieldValue(fieldValues, 'Contractee.Phone')}', style: const pw.TextStyle(fontSize: 10)),
-                    pw.Text('Email: ${_getFieldValue(fieldValues, 'Contractee.Email')}', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text('Name: ${ContractStyle.getFieldValue(fieldValues, 'Contractee.FirstName')} ${ContractStyle.getFieldValue(fieldValues, 'Contractee.LastName')}', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text('Address: ${ContractStyle.getFieldValue(fieldValues, 'Contractee.Address')}', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text('Phone: ${ContractStyle.getFieldValue(fieldValues, 'Contractee.Phone')}', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text('Email: ${ContractStyle.getFieldValue(fieldValues, 'Contractee.Email')}', style: const pw.TextStyle(fontSize: 10)),
                   ],
                 ),
               ),
@@ -86,7 +82,6 @@ class LumpSumPDF {
     );
     widgets.add(pw.SizedBox(height: 24));
 
-    // Recitals
     widgets.add(
       pw.Text(
         'Recitals',
@@ -106,31 +101,31 @@ class LumpSumPDF {
 
     widgets.add(
       pw.Bullet(
-        text: 'Brief Description of the Project: ${_getFieldValue(fieldValues, 'Project.Description')}',
+        text: 'Brief Description of the Project: ${ContractStyle.getFieldValue(fieldValues, 'Project.Description')}',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Location: ${_getFieldValue(fieldValues, 'Project.Address')}',
+        text: 'Location: ${ContractStyle.getFieldValue(fieldValues, 'Project.Address')}',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Start Date: ${_getFieldValue(fieldValues, 'Project.StartDate')}',
+        text: 'Start Date: ${ContractStyle.getFieldValue(fieldValues, 'Project.StartDate')}',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Completion Date: ${_getFieldValue(fieldValues, 'Project.CompletionDate')} (Estimate)',
+        text: 'Completion Date: ${ContractStyle.getFieldValue(fieldValues, 'Project.CompletionDate')} (Estimate)',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Duration: ${_getFieldValue(fieldValues, 'Project.Duration')} days',
+        text: 'Duration: ${ContractStyle.getFieldValue(fieldValues, 'Project.Duration')} days',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
@@ -154,7 +149,6 @@ class LumpSumPDF {
     );
     widgets.add(pw.SizedBox(height: 24));
 
-    // 1. Scope of Work and Contract Price
     widgets.add(
       pw.Text(
         '1. Scope of Work and Contract Price',
@@ -175,7 +169,7 @@ class LumpSumPDF {
     widgets.add(
       pw.Center(
         child: pw.Text(
-          'TOTAL CONTRACT PRICE: ₱${_getFieldValue(fieldValues, 'Payment.Total')}',
+          'TOTAL CONTRACT PRICE: ₱${ContractStyle.getFieldValue(fieldValues, 'Payment.Total')}',
           style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
         ),
       ),
@@ -184,14 +178,13 @@ class LumpSumPDF {
 
     widgets.add(
       pw.Text(
-        '(In words: ${_getFieldValue(fieldValues, 'Payment.TotalInWords')} Pesos)',
+        '(In words: ${ContractStyle.getFieldValue(fieldValues, 'Payment.TotalInWords')} Pesos)',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.center,
       ),
     );
     widgets.add(pw.SizedBox(height: 16));
 
-    // 1.2 Payment Schedule
     widgets.add(
       pw.Text(
         '1.2 Payment Schedule:',
@@ -202,43 +195,42 @@ class LumpSumPDF {
 
     widgets.add(
       pw.Bullet(
-        text: 'Down Payment: ₱${_getFieldValue(fieldValues, 'Payment.DownPayment')} (${_getFieldValue(fieldValues, 'Payment.DownPaymentPercentage')}% of total contract price) - Due upon contract signing',
+        text: 'Down Payment: ₱${ContractStyle.getFieldValue(fieldValues, 'Payment.DownPayment')} (${ContractStyle.getFieldValue(fieldValues, 'Payment.DownPaymentPercentage')}% of total contract price) - Due upon contract signing',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Progress Payments: ₱${_getFieldValue(fieldValues, 'Payment.ProgressPayments')} - To be paid based on percentage of work completed',
+        text: 'Progress Payments: ₱${ContractStyle.getFieldValue(fieldValues, 'Payment.ProgressPayments')} - To be paid based on percentage of work completed',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Final Payment: ₱${_getFieldValue(fieldValues, 'Payment.FinalPayment')} - Due upon final completion and acceptance',
+        text: 'Final Payment: ₱${ContractStyle.getFieldValue(fieldValues, 'Payment.FinalPayment')} - Due upon final completion and acceptance',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Retention: ${_getFieldValue(fieldValues, 'Payment.RetentionPercentage')}% (₱${_getFieldValue(fieldValues, 'Payment.RetentionAmount')}) - Released after ${_getFieldValue(fieldValues, 'Payment.RetentionPeriod')} days from completion',
+        text: 'Retention: ${ContractStyle.getFieldValue(fieldValues, 'Payment.RetentionPercentage')}% (₱${ContractStyle.getFieldValue(fieldValues, 'Payment.RetentionAmount')}) - Released after ${ContractStyle.getFieldValue(fieldValues, 'Payment.RetentionPeriod')} days from completion',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Payment Terms: Net ${_getFieldValue(fieldValues, 'Payment.DueDays')} days from invoice date',
+        text: 'Payment Terms: Net ${ContractStyle.getFieldValue(fieldValues, 'Payment.DueDays')} days from invoice date',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Late Payment Fee: ${_getFieldValue(fieldValues, 'Payment.LateFeePercentage')}% per month on overdue amounts',
+        text: 'Late Payment Fee: ${ContractStyle.getFieldValue(fieldValues, 'Payment.LateFeePercentage')}% per month on overdue amounts',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(pw.SizedBox(height: 20));
 
-    // Payment Schedule Table
     widgets.add(
       pw.Text(
         'Detailed Payment Schedule:',
@@ -280,11 +272,11 @@ class LumpSumPDF {
               ),
               pw.Padding(
                 padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('${_getFieldValue(fieldValues, 'Payment.DownPaymentPercentage')}%', style: const pw.TextStyle(fontSize: 9)),
+                child: pw.Text('${ContractStyle.getFieldValue(fieldValues, 'Payment.DownPaymentPercentage')}%', style: const pw.TextStyle(fontSize: 9)),
               ),
               pw.Padding(
                 padding: const pw.EdgeInsets.all(8),
-                child: pw.Text(_getFieldValue(fieldValues, 'Payment.DownPayment'), style: const pw.TextStyle(fontSize: 9)),
+                child: pw.Text(ContractStyle.getFieldValue(fieldValues, 'Payment.DownPayment'), style: const pw.TextStyle(fontSize: 9)),
               ),
               pw.Padding(
                 padding: const pw.EdgeInsets.all(8),
@@ -364,7 +356,7 @@ class LumpSumPDF {
               ),
               pw.Padding(
                 padding: const pw.EdgeInsets.all(8),
-                child: pw.Text(_getFieldValue(fieldValues, 'Payment.FinalPayment'), style: const pw.TextStyle(fontSize: 9)),
+                child: pw.Text(ContractStyle.getFieldValue(fieldValues, 'Payment.FinalPayment'), style: const pw.TextStyle(fontSize: 9)),
               ),
               pw.Padding(
                 padding: const pw.EdgeInsets.all(8),
@@ -377,7 +369,6 @@ class LumpSumPDF {
     );
     widgets.add(pw.SizedBox(height: 20));
 
-    // 2. Obligations and Responsibilities
     widgets.add(
       pw.Text(
         '2. Obligations and Responsibilities',
@@ -386,7 +377,6 @@ class LumpSumPDF {
     );
     widgets.add(pw.SizedBox(height: 12));
 
-    // Contractee's Responsibilities
     widgets.add(
       pw.Text(
         'Contractee\'s Responsibilities',
@@ -395,7 +385,6 @@ class LumpSumPDF {
     );
     widgets.add(pw.SizedBox(height: 12));
 
-    // Responsibilities Table
     widgets.add(
       pw.Table(
         border: pw.TableBorder.all(color: PdfColors.grey400),
@@ -453,7 +442,6 @@ class LumpSumPDF {
     );
     widgets.add(pw.SizedBox(height: 20));
 
-    // 3. Contractor's Responsibilities
     widgets.add(
       pw.Text(
         '3. Contractor\'s Responsibilities',
@@ -519,7 +507,6 @@ class LumpSumPDF {
     );
     widgets.add(pw.SizedBox(height: 20));
 
-    // 4. Project Schedule and Milestones
     widgets.add(
       pw.Text(
         '4. Project Schedule and Milestones',
@@ -538,37 +525,36 @@ class LumpSumPDF {
 
     widgets.add(
       pw.Bullet(
-        text: 'Project Start Date: ${_getFieldValue(fieldValues, 'Project.StartDate')}',
+        text: 'Project Start Date: ${ContractStyle.getFieldValue(fieldValues, 'Project.StartDate')}',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Estimated Completion: ${_getFieldValue(fieldValues, 'Project.CompletionDate')}',
+        text: 'Estimated Completion: ${ContractStyle.getFieldValue(fieldValues, 'Project.CompletionDate')}',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Total Duration: ${_getFieldValue(fieldValues, 'Project.Duration')} days',
+        text: 'Total Duration: ${ContractStyle.getFieldValue(fieldValues, 'Project.Duration')} days',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Working Days: Monday through ${_getFieldValue(fieldValues, 'Project.WorkingDays')}',
+        text: 'Working Days: Monday through ${ContractStyle.getFieldValue(fieldValues, 'Project.WorkingDays')}',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Working Hours: ${_getFieldValue(fieldValues, 'Project.WorkingHours')}',
+        text: 'Working Hours: ${ContractStyle.getFieldValue(fieldValues, 'Project.WorkingHours')}',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(pw.SizedBox(height: 16));
 
-    // Project Schedule Table
     widgets.add(
       pw.Text(
         'Major Milestones:',
@@ -614,11 +600,11 @@ class LumpSumPDF {
               ),
               pw.Padding(
                 padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('${_getFieldValue(fieldValues, 'Milestone.Phase1Duration')} days', style: const pw.TextStyle(fontSize: 9)),
+                child: pw.Text('${ContractStyle.getFieldValue(fieldValues, 'Milestone.Phase1Duration')} days', style: const pw.TextStyle(fontSize: 9)),
               ),
               pw.Padding(
                 padding: const pw.EdgeInsets.all(8),
-                child: pw.Text(_getFieldValue(fieldValues, 'Milestone.Phase1Date'), style: const pw.TextStyle(fontSize: 9)),
+                child: pw.Text(ContractStyle.getFieldValue(fieldValues, 'Milestone.Phase1Date'), style: const pw.TextStyle(fontSize: 9)),
               ),
             ],
           ),
@@ -634,11 +620,11 @@ class LumpSumPDF {
               ),
               pw.Padding(
                 padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('${_getFieldValue(fieldValues, 'Milestone.Phase2Duration')} days', style: const pw.TextStyle(fontSize: 9)),
+                child: pw.Text('${ContractStyle.getFieldValue(fieldValues, 'Milestone.Phase2Duration')} days', style: const pw.TextStyle(fontSize: 9)),
               ),
               pw.Padding(
                 padding: const pw.EdgeInsets.all(8),
-                child: pw.Text(_getFieldValue(fieldValues, 'Milestone.Phase2Date'), style: const pw.TextStyle(fontSize: 9)),
+                child: pw.Text(ContractStyle.getFieldValue(fieldValues, 'Milestone.Phase2Date'), style: const pw.TextStyle(fontSize: 9)),
               ),
             ],
           ),
@@ -654,11 +640,11 @@ class LumpSumPDF {
               ),
               pw.Padding(
                 padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('${_getFieldValue(fieldValues, 'Milestone.Phase3Duration')} days', style: const pw.TextStyle(fontSize: 9)),
+                child: pw.Text('${ContractStyle.getFieldValue(fieldValues, 'Milestone.Phase3Duration')} days', style: const pw.TextStyle(fontSize: 9)),
               ),
               pw.Padding(
                 padding: const pw.EdgeInsets.all(8),
-                child: pw.Text(_getFieldValue(fieldValues, 'Milestone.Phase3Date'), style: const pw.TextStyle(fontSize: 9)),
+                child: pw.Text(ContractStyle.getFieldValue(fieldValues, 'Milestone.Phase3Date'), style: const pw.TextStyle(fontSize: 9)),
               ),
             ],
           ),
@@ -674,11 +660,11 @@ class LumpSumPDF {
               ),
               pw.Padding(
                 padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('${_getFieldValue(fieldValues, 'Milestone.Phase4Duration')} days', style: const pw.TextStyle(fontSize: 9)),
+                child: pw.Text('${ContractStyle.getFieldValue(fieldValues, 'Milestone.Phase4Duration')} days', style: const pw.TextStyle(fontSize: 9)),
               ),
               pw.Padding(
                 padding: const pw.EdgeInsets.all(8),
-                child: pw.Text(_getFieldValue(fieldValues, 'Milestone.Phase4Date'), style: const pw.TextStyle(fontSize: 9)),
+                child: pw.Text(ContractStyle.getFieldValue(fieldValues, 'Milestone.Phase4Date'), style: const pw.TextStyle(fontSize: 9)),
               ),
             ],
           ),
@@ -687,7 +673,6 @@ class LumpSumPDF {
     );
     widgets.add(pw.SizedBox(height: 20));
 
-    // 5. Insurance and Bonds
     widgets.add(
       pw.Text(
         '5. Insurance and Bonds',
@@ -719,7 +704,7 @@ class LumpSumPDF {
     );
     widgets.add(
       pw.Text(
-        'The Contractor shall furnish to the Contractee, within ${_getFieldValue(fieldValues, 'Bond.TimeFrame')} days, performance and payment bonds executed by a surety company licensed to do business in the jurisdiction where the project is located. The performance bond shall be in an amount not less than ₱${_getFieldValue(fieldValues, 'Bond.PerformanceAmount')} and shall guarantee the faithful performance of all Work under this Agreement.',
+        'The Contractor shall furnish to the Contractee, within ${ContractStyle.getFieldValue(fieldValues, 'Bond.TimeFrame')} days, performance and payment bonds executed by a surety company licensed to do business in the jurisdiction where the project is located. The performance bond shall be in an amount not less than ₱${ContractStyle.getFieldValue(fieldValues, 'Bond.PerformanceAmount')} and shall guarantee the faithful performance of all Work under this Agreement.',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),
@@ -728,14 +713,13 @@ class LumpSumPDF {
 
     widgets.add(
       pw.Text(
-        'The payment bond shall be in an amount not less than ₱${_getFieldValue(fieldValues, 'Bond.PaymentAmount')} and shall guarantee the payment to all subcontractors, laborers, and material suppliers for labor and materials furnished in connection with this Contract. The Contractor shall maintain these bonds in full force and effect throughout the duration of the project.',
+        'The payment bond shall be in an amount not less than ₱${ContractStyle.getFieldValue(fieldValues, 'Bond.PaymentAmount')} and shall guarantee the payment to all subcontractors, laborers, and material suppliers for labor and materials furnished in connection with this Contract. The Contractor shall maintain these bonds in full force and effect throughout the duration of the project.',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),
     );
     widgets.add(pw.SizedBox(height: 20));
 
-    // 6. Change Orders and Modifications
     widgets.add(
       pw.Text(
         '6. Change Orders and Modifications',
@@ -755,14 +739,13 @@ class LumpSumPDF {
 
     widgets.add(
       pw.Text(
-        '6.2. Change Order Pricing: Labor rates for change orders shall be ${_getFieldValue(fieldValues, 'Change.LaborRate')} per hour. Materials shall be charged at cost plus ${_getFieldValue(fieldValues, 'Change.MaterialMarkup')}% markup. Equipment charges shall be at cost plus ${_getFieldValue(fieldValues, 'Change.EquipmentMarkup')}% markup.',
+        '6.2. Change Order Pricing: Labor rates for change orders shall be ${ContractStyle.getFieldValue(fieldValues, 'Change.LaborRate')} per hour. Materials shall be charged at cost plus ${ContractStyle.getFieldValue(fieldValues, 'Change.MaterialMarkup')}% markup. Equipment charges shall be at cost plus ${ContractStyle.getFieldValue(fieldValues, 'Change.EquipmentMarkup')}% markup.',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),
     );
     widgets.add(pw.SizedBox(height: 20));
 
-    // 7. Delays and Extensions of Time
     widgets.add(
       pw.Text(
         '7. Delays and Extensions of Time',
@@ -794,14 +777,13 @@ class LumpSumPDF {
     );
     widgets.add(
       pw.Text(
-        'If the Contractor fails to complete the Work by the agreed completion date, and such delay is not excusable under the terms of this Contract, the Contractor shall pay liquidated damages in the amount of ₱${_getFieldValue(fieldValues, 'Penalty.DailyAmount')} per calendar day for each day of delay. These liquidated damages represent a reasonable estimate of the damages that the Contractee will suffer as a result of delayed completion.',
+        'If the Contractor fails to complete the Work by the agreed completion date, and such delay is not excusable under the terms of this Contract, the Contractor shall pay liquidated damages in the amount of ₱${ContractStyle.getFieldValue(fieldValues, 'Penalty.DailyAmount')} per calendar day for each day of delay. These liquidated damages represent a reasonable estimate of the damages that the Contractee will suffer as a result of delayed completion.',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),
     );
     widgets.add(pw.SizedBox(height: 20));
 
-    // 8. Termination and Disputes
     widgets.add(
       pw.Text(
         '8. Termination and Disputes',
@@ -812,7 +794,7 @@ class LumpSumPDF {
 
     widgets.add(
       pw.Text(
-        '8.1. Either party may terminate this contract with ${_getFieldValue(fieldValues, 'Notice.Period')} days written notice. Upon termination, Contractor shall be compensated for all work completed and accepted by the Contractee up to the termination date, less any amounts previously paid.',
+        '8.1. Either party may terminate this contract with ${ContractStyle.getFieldValue(fieldValues, 'Notice.Period')} days written notice. Upon termination, Contractor shall be compensated for all work completed and accepted by the Contractee up to the termination date, less any amounts previously paid.',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),
@@ -821,7 +803,7 @@ class LumpSumPDF {
 
     widgets.add(
       pw.Text(
-        '8.2. Contractor provides a ${_getFieldValue(fieldValues, 'Warranty.Period')} months warranty on workmanship and materials from the date of project completion. This warranty covers defects in materials and workmanship under normal use and conditions.',
+        '8.2. Contractor provides a ${ContractStyle.getFieldValue(fieldValues, 'Warranty.Period')} months warranty on workmanship and materials from the date of project completion. This warranty covers defects in materials and workmanship under normal use and conditions.',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),
@@ -830,14 +812,13 @@ class LumpSumPDF {
 
     widgets.add(
       pw.Text(
-        '8.3. Any disputes arising from this contract shall be resolved through mediation first, and if unsuccessful, through arbitration under Philippine law. All legal proceedings shall be conducted in the courts of ${_getFieldValue(fieldValues, 'Contractor.Province')}, Republic of the Philippines.',
+        '8.3. Any disputes arising from this contract shall be resolved through mediation first, and if unsuccessful, through arbitration under Philippine law. All legal proceedings shall be conducted in the courts of ${ContractStyle.getFieldValue(fieldValues, 'Contractor.Province')}, Republic of the Philippines.',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),
     );
     widgets.add(pw.SizedBox(height: 20));
 
-    // 9. Governing Law
     widgets.add(
       pw.Text(
         '9. Governing Law',
@@ -864,7 +845,6 @@ class LumpSumPDF {
     );
     widgets.add(pw.SizedBox(height: 30));
 
-    // Execution
     widgets.add(
       pw.Center(
         child: pw.Text(
@@ -879,7 +859,6 @@ class LumpSumPDF {
     );
     widgets.add(pw.SizedBox(height: 30));
 
-    // Signature blocks
     widgets.add(
       pw.Table(
         columnWidths: {
@@ -914,7 +893,7 @@ class LumpSumPDF {
                   ),
                   pw.SizedBox(height: 8),
                   pw.Text(
-                    '${_getFieldValue(fieldValues, 'Contractee.FirstName')} ${_getFieldValue(fieldValues, 'Contractee.LastName')}',
+                    '${ContractStyle.getFieldValue(fieldValues, 'Contractee.FirstName')} ${ContractStyle.getFieldValue(fieldValues, 'Contractee.LastName')}',
                     style: const pw.TextStyle(fontSize: 11),
                   ),
                   pw.Text(
@@ -923,7 +902,7 @@ class LumpSumPDF {
                   ),
                 ],
               ),
-              pw.Container(), // Spacer
+              pw.Container(), 
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
@@ -948,7 +927,7 @@ class LumpSumPDF {
                   ),
                   pw.SizedBox(height: 8),
                   pw.Text(
-                    '${_getFieldValue(fieldValues, 'Contractor.FirstName')} ${_getFieldValue(fieldValues, 'Contractor.LastName')}',
+                    '${ContractStyle.getFieldValue(fieldValues, 'Contractor.FirstName')} ${ContractStyle.getFieldValue(fieldValues, 'Contractor.LastName')}',
                     style: const pw.TextStyle(fontSize: 11),
                   ),
                   pw.Text(
@@ -967,10 +946,9 @@ class LumpSumPDF {
     return widgets;
   }
 
-  // Helper method to calculate percentage of total amount
   static String _calculatePercentage(Map<String, String> fieldValues, int percentage) {
     try {
-      String totalStr = _getFieldValue(fieldValues, 'Payment.Total');
+      String totalStr = ContractStyle.getFieldValue(fieldValues, 'Payment.Total');
       double total = double.parse(totalStr.replaceAll(',', ''));
       double result = (total * percentage) / 100;
       return result.toStringAsFixed(2);

@@ -1,8 +1,5 @@
 import 'package:backend/services/both services/be_contract_service.dart';
-import 'package:backend/services/both services/be_contract_pdf_service.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
-import 'package:backend/utils/be_pdfextract.dart';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 class ContractField {
@@ -38,39 +35,23 @@ class CreateContractService {
     }
   }
 
-  Future<String> loadTemplateContent(String templateName) async {
-    try {
-      return PdfExtractUtils.getDefaultTemplateContent(templateName);
-    } catch (e) {
-      return PdfExtractUtils.getDefaultTemplateContent(templateName);
-    }
-  }
-
-  String getDefaultTemplateContent(String templateName) {
-    return PdfExtractUtils.getDefaultTemplateContent(templateName);
-  }
-
   List<ContractField> getContractTypeSpecificFields(String contractType, {int itemCount = 3}) {
     final normalizedType = contractType.toLowerCase();
-    return _getTemplateSpecificFields(normalizedType, itemCount: itemCount);
+    return getTemplateSpecificFields(normalizedType, itemCount: itemCount);
   }
 
-  List<ContractField> _getTemplateSpecificFields(String contractType, {int itemCount = 3}) {
+  List<ContractField> getTemplateSpecificFields(String contractType, {int itemCount = 3}) {
     if (contractType.contains('lump sum')) {
-      return _getLumpSumFields();
+      return getLumpSumFields();
     } else if (contractType.contains('cost-plus') || contractType.contains('cost plus')) {
-      return _getCostPlusFields();
+      return getCostPlusFields();
     } else if (contractType.contains('time and materials')) {
       return getTimeAndMaterialsFieldsWithItems(itemCount);
     }
     return [];
   }
 
-  List<ContractField> getFieldsForTemplate(String contractType, {int itemCount = 3}) {
-    return _getTemplateSpecificFields(contractType, itemCount: itemCount);
-  }
-
-  List<ContractField> _getLumpSumFields() {
+  List<ContractField> getLumpSumFields() {
     return [
       ContractField(key: 'Contract.CreationDate', label: 'Contract Creation Date', isRequired: true),
 
@@ -113,7 +94,7 @@ class CreateContractService {
     ];
   }
 
-  List<ContractField> _getCostPlusFields() {
+  List<ContractField> getCostPlusFields() {
     return [
       ContractField(key: 'Contract.CreationDate', label: 'Contract Creation Date', isRequired: true),
       
@@ -158,7 +139,7 @@ class CreateContractService {
     ];
   }
 
-  List<ContractField> _getTimeAndMaterialsFields() {
+  List<ContractField> getTimeAndMaterialsFields() {
     return [
       
       ContractField(key: 'Contract.CreationDate', label: 'Contract Creation Date', isRequired: true),
@@ -203,7 +184,7 @@ class CreateContractService {
   }
 
   List<ContractField> getTimeAndMaterialsFieldsWithItems(int itemCount) {
-    List<ContractField> fields = _getTimeAndMaterialsFields();
+    List<ContractField> fields = getTimeAndMaterialsFields();
     
     // Remove the ItemCount field from the main list
     fields.removeWhere((field) => field.key == 'ItemCount');
@@ -265,7 +246,6 @@ class CreateContractService {
     if (contractType?.contains('lump sum') == true) {
       if (maxBudget.isNotEmpty) {
         controllers['Project.ContractPrice']?.text = maxBudget;
-        calculatePaymentSchedule(maxBudget, controllers);
       }
     } else if (contractType?.contains('cost-plus') == true || contractType?.contains('cost plus') == true) {
       if (maxBudget.isNotEmpty) {
@@ -278,41 +258,11 @@ class CreateContractService {
     }
   }
 
-  void calculatePaymentSchedule(String contractPriceStr, Map<String, TextEditingController> controllers) {
-    final contractPrice = double.tryParse(contractPriceStr.replaceAll(',', '')) ?? 0;
-    if (contractPrice > 0) {
-      final downPayment = contractPrice * 0.20;
-      final progressPayment = contractPrice * 0.20;
-      final finalPayment = contractPrice * 0.20;
-      
-      controllers['Down Payment']?.text = downPayment.toStringAsFixed(0);
-      controllers['Progress Payment 1']?.text = progressPayment.toStringAsFixed(0);
-      controllers['Progress Payment 2']?.text = progressPayment.toStringAsFixed(0);
-      controllers['Progress Payment 3']?.text = progressPayment.toStringAsFixed(0);
-      controllers['Final Payment']?.text = finalPayment.toStringAsFixed(0);
-    }
-  }
-
-  void calculateDuration(Map<String, TextEditingController> controllers) {
-    final startDateStr = controllers['Project.StartDate']?.text ?? '';
-    final completionDateStr = controllers['Project.CompletionDate']?.text ?? '';
-    
-    if (startDateStr.isNotEmpty && completionDateStr.isNotEmpty) {
-      final startDate = DateTime.tryParse(startDateStr);
-      final completionDate = DateTime.tryParse(completionDateStr);
-      
-      if (startDate != null && completionDate != null) {
-        final duration = completionDate.difference(startDate).inDays;
-        controllers['Project.Duration']?.text = duration.toString();
-      }
-    }
-  }
-
   void calculateTimeAndMaterialsRates(Map<String, TextEditingController> controllers, {int? itemCount}) {
     double totalSubtotal = 0.0;
     
     // Get the dynamic item count if provided, otherwise try to determine from available controllers
-    int maxItems = itemCount ?? _getMaxItemCountFromControllers(controllers);
+    int maxItems = itemCount ?? getMaxItemCountFromControllers(controllers);
     
     // Calculate subtotals for each item (dynamic count)
     for (int i = 1; i <= maxItems; i++) {
@@ -337,16 +287,16 @@ class CreateContractService {
     
     // Get user-inputted values
     // Parse percentage helper; supports values like "12", "12%", or "0.12"
-    double _parsePercent(String raw) {
+    double parsePercent(String raw) {
       final cleaned = raw.trim().replaceAll('%', '').replaceAll(',', '');
       final v = double.tryParse(cleaned) ?? 0.0;
       if (v <= 0) return 0.0;
       // If user typed 0..1, treat as fraction; if >1, treat as percent
       return v > 1.0 ? (v / 100.0) : v;
     }
-    final discountRate = _parsePercent(controllers['Payment.Discount']?.text ?? '0');
+    final discountRate = parsePercent(controllers['Payment.Discount']?.text ?? '0');
     final discountAmount = totalSubtotal * discountRate;
-    final taxRate = _parsePercent(controllers['Payment.Tax']?.text ?? '0');
+    final taxRate = parsePercent(controllers['Payment.Tax']?.text ?? '0');
     final taxAmount = totalSubtotal * taxRate;
 
     // Calculate Total (subtotal - discountAmount + taxAmount)
@@ -362,7 +312,7 @@ class CreateContractService {
     controllers['Estimated Budget']?.text = total.toStringAsFixed(2);
   }
 
-  int _getMaxItemCountFromControllers(Map<String, TextEditingController> controllers) {
+  int getMaxItemCountFromControllers(Map<String, TextEditingController> controllers) {
     int maxItems = 3; // Default fallback changed to 3
     
     // Check for controllers with Item.X.Name pattern to determine max count
@@ -383,8 +333,6 @@ class CreateContractService {
 
   Future<void> populateContractorInfo(String contractorId, Map<String, TextEditingController> controllers) async {
     try {
-      // Do not fetch any data and do not inject field keys.
-      // Only compose legacy aggregated fields from existing user-entered values, if available.
 
       final firstName = controllers['Contractor.FirstName']?.text.trim();
       final lastName = controllers['Contractor.LastName']?.text.trim();
@@ -394,7 +342,6 @@ class CreateContractService {
       final postal = controllers['Contractor.PostalCode']?.text.trim();
       final title = controllers['Contractor.Title']?.text.trim();
 
-      // Contractor Name: prefer "First Last"; fallback to Company if name is empty
     final composedName = [firstName, lastName]
       .where((v) => (v ?? '').isNotEmpty)
       .map((v) => v!)
@@ -405,7 +352,6 @@ class CreateContractService {
             : (company != null && company.isNotEmpty ? company : controllers['Contractor Name']!.text);
       }
 
-      // Contractor Address: combine Address, City, Postal if present
       final parts = <String>[];
       if (address != null && address.isNotEmpty) parts.add(address);
       if (city != null && city.isNotEmpty) parts.add(city);
@@ -414,42 +360,36 @@ class CreateContractService {
         controllers['Contractor Address']!.text = parts.join(', ');
       }
 
-      // Contractor Title: only set if user provided something
       if (controllers['Contractor Title'] != null && title != null && title.isNotEmpty) {
         controllers['Contractor Title']!.text = title;
       }
-      // Leave all other fields untouched to ensure placeholders remain descriptive until user enters values.
     } catch (e) {
       rethrow;
     }
   }
 
   void clearAutoPopulatedFields(Map<String, TextEditingController> controllers) {
-    // Project fields (use template-specific fields only)
+
     controllers['Project.Description']?.clear();
     controllers['Project.Address']?.clear();
     controllers['Project.Duration']?.clear();
     controllers['Project.StartDate']?.clear();
     controllers['Project.CompletionDate']?.clear();
     
-    // Payment fields (use template-specific fields only)
     controllers['Project.ContractPrice']?.clear();
     controllers['Estimated Total']?.clear();
     controllers['Payment.Total']?.clear();
     
-    // Lump Sum payment fields
     controllers['Payment.DownPaymentPercentage']?.clear();
     controllers['Payment.ProgressPayment1Percentage']?.clear();
     controllers['Payment.ProgressPayment2Percentage']?.clear();
     controllers['Payment.FinalPaymentPercentage']?.clear();
     
-    // Cost Plus fields
     controllers['Overhead Percentage']?.clear();
     controllers['Labor Costs']?.clear();
     controllers['Material Costs']?.clear();
     controllers['Equipment Costs']?.clear();
     
-    // Time and Materials specific fields - Dynamic Table Items
     for (int i = 1; i <= 5; i++) {
       controllers['Item.$i.Name']?.clear();
       controllers['Item.$i.Description']?.clear();
@@ -461,23 +401,13 @@ class CreateContractService {
     controllers['Payment.Discount']?.clear();
     controllers['Payment.Tax']?.clear();
     
-    // Date fields (use template-specific fields only)
     controllers['Contract.CreationDate']?.clear();
     
-    // Additional fields
     controllers['Penalty.Amount']?.clear();
     controllers['Payment.DueDays']?.clear();
     controllers['Warranty Period']?.clear();
     controllers['Notice Period']?.clear();
     controllers['Late Fee Percentage']?.clear();
-  }
-
-  Future<Uint8List> generatePreview(String contractType, Map<String, String> fieldValues, String title) async {
-    return await ContractPdfService.generateContractPdf(
-      contractType: contractType,
-      fieldValues: fieldValues,
-      title: title,
-    );
   }
 
   Future<void> saveContract({

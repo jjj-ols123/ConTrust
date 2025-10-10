@@ -1,7 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:backend/services/both services/be_contract_service.dart';
-import 'package:backend/services/both services/be_contract_pdf_service.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:typed_data';
@@ -53,18 +52,6 @@ class ContractorContractService {
     );
   }
 
-  static Future<Uint8List> generateContractPdf({
-    required String contractType,
-    required Map<String, String> fieldValues,
-    required String title,
-  }) async {
-    return await ContractPdfService.generateContractPdf(
-      contractType: contractType,
-      fieldValues: fieldValues,
-      title: title,
-    );
-  }
-
   static Future<Map<String, dynamic>?> fetchProjectDetails(String projectId) async {
     return await FetchService().fetchProjectDetails(projectId);
   }
@@ -81,13 +68,6 @@ class ContractorContractService {
     return await ContractService.getContractById(contractId);
   }
 
-  static Future<Uint8List> downloadContractPdf(String pdfPath) async {
-    return await ContractPdfService.downloadContractPdf(pdfPath);
-  }
-
-  static Future<dynamic> saveToDevice(Uint8List pdfBytes, String fileName) async {
-    return await ContractPdfService.saveToDevice(pdfBytes, fileName);
-  }
 
   static Future<Map<String, dynamic>> signContract({
     required String contractId,
@@ -108,16 +88,6 @@ class ContractorContractService {
     required String userType,
   }) async {
     return await ContractService.verifySignature(
-      contractId: contractId,
-      userType: userType,
-    );
-  }
-
-  static Future<String?> getSignatureUrl({
-    required String contractId,
-    required String userType,
-  }) async {
-    return await ContractService.getSignatureUrl(
       contractId: contractId,
       userType: userType,
     );

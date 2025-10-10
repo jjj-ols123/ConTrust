@@ -113,7 +113,7 @@ class _ContractorViewContractPageState extends State<ContractorViewContractPage>
                               builder: (context, snapshot) {
                                 if (snapshot.connectionState == ConnectionState.waiting) {
                                   return Card(
-                                    child: Container(
+                                    child: SizedBox(
                                       height: 400,
                                       child: const Center(
                                         child: CircularProgressIndicator(color: Colors.amber),
