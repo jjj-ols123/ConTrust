@@ -30,15 +30,6 @@ class _HomePageState extends State<HomePage> {
   List<Map<String, dynamic>> projects = [];
   bool isLoading = true;
 
-  final TextEditingController _minBudgetController = TextEditingController();
-  final TextEditingController _maxBudgetController = TextEditingController();
-  final TextEditingController _locationController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _typeConstructionController =
-      TextEditingController();
-  final TextEditingController _bidTimeController = TextEditingController();
-  final TextEditingController _titleController = TextEditingController();
-
   static const String profileUrl =
       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
 
@@ -300,64 +291,4 @@ isLoading
               )
     );
   }
-              return isWideScreen
-                  ? Scaffold(
-                      body: Row(
-                        children: [
-                          SizedBox(
-                            width: 250,
-                            child: drawerWidget,
-                          ),
-                          Expanded(
-                            child: Scaffold(
-                              appBar: PreferredSize(
-                                preferredSize: const Size.fromHeight(70),
-                                child: ConTrustAppBar(headline: "Home"),
-                              ),
-                              body: pageContent,
-                              floatingActionButton: ExpandableFloatingButton(
-                                clearControllers: _clearControllers,
-                                onRefresh: _loadData,
-                                title: _titleController,
-                                typeConstruction: _typeConstructionController,
-                                minBudget: _minBudgetController,
-                                maxBudget: _maxBudgetController,
-                                location: _locationController,
-                                description: _descriptionController,
-                                bidTime: _bidTimeController,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : Scaffold(
-                      appBar: PreferredSize(
-                        preferredSize: const Size.fromHeight(70),
-                        child: ConTrustAppBar(headline: "Home"),
-                      ),
-                      drawer: drawerWidget,
-                      body: pageContent,
-                      floatingActionButton: ExpandableFloatingButton(
-                        clearControllers: _clearControllers,
-                        onRefresh: _loadData,
-                        title: _titleController,
-                        typeConstruction: _typeConstructionController,
-                        minBudget: _minBudgetController,
-                        maxBudget: _maxBudgetController,
-                        location: _locationController,
-                        description: _descriptionController,
-                        bidTime: _bidTimeController,
-                      ),
-                    );
-                  }
-                    void _clearControllers() {
-                      _titleController.clear();
-                      _typeConstructionController.clear();
-                      _minBudgetController.clear();
-                      _maxBudgetController.clear();
-                      _locationController.clear();
-                      _descriptionController.clear();
-                      _bidTimeController.clear();
-                    }
-                  }
+}

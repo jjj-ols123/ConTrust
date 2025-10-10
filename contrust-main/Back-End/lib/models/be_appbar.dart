@@ -1,8 +1,10 @@
-// ignore_for_file: unused_field
+// ignore_for_file: unused_field, use_build_context_synchronously
 import 'dart:async';
-import 'package:backend/services/be_notification_service.dart';
-import 'package:backend/services/be_user_service.dart';
-import 'package:backend/services/be_fetchservice.dart';
+import 'package:backend/build/buildnotification.dart';
+import 'package:backend/services/both services/be_notification_service.dart';
+import 'package:backend/services/both services/be_user_service.dart';
+import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/services/contractee%20services/cee_checkuser.dart';
 import 'package:backend/utils/be_pagetransition.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractee/pages/cee_about.dart';
@@ -11,10 +13,7 @@ import 'package:contractee/pages/cee_materials.dart';
 import 'package:contractee/pages/cee_notification.dart';
 import 'package:contractee/pages/cee_ongoing.dart';
 import 'package:contractee/pages/cee_transaction.dart';
-import 'package:contractee/services/cee_checkuser.dart';
 import 'package:contractor/Screen/cor_notification.dart';
-import 'package:contractee/pages/cee_launch.dart';
-import 'package:contractee/pages/cee_registration.dart';
 import 'package:flutter/material.dart';
 
 class ConTrustAppBar extends StatefulWidget implements PreferredSizeWidget {
