@@ -1,13 +1,16 @@
-import 'package:backend/services/be_fetchservice.dart';
-import 'package:backend/services/be_notification_service.dart';
-import 'package:backend/utils/be_constraint.dart';
+// ignore_for_file: non_constant_identifier_names, empty_catches, no_leading_underscores_for_local_identifiers
+
+import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/services/both services/be_notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:backend/services/be_user_service.dart';
+import 'package:backend/services/both services/be_user_service.dart';
 
 class ProjectService {
   final SupabaseClient _supabase = Supabase.instance.client;
   final UserService _userService = UserService();
+
+  //For Contractees
 
   Future<void> postProject({
     required String contracteeId,
@@ -24,7 +27,25 @@ class ProjectService {
     try {
       await _userService.checkContracteeId(contracteeId);
 
-      await _supabase.from('Projects').upsert({
+      final existingProject = await _supabase
+          .from('Projects')
+          .select('project_id, status')
+          .eq('contractee_id', contracteeId)
+          .eq('status', 'pending')
+          .maybeSingle();
+
+      if (existingProject != null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('You cannot post a new project while a project is up.'),
+            duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
+      }
+
+      await _supabase.from('Projects').insert({
         'contractee_id': contracteeId,
         'type': type,
         'title': title,
@@ -35,7 +56,7 @@ class ProjectService {
         'status': 'pending',
         'duration': duration,
         'start_date': startDate.toIso8601String(),
-      }, onConflict: 'contractee_id');
+      });
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -44,23 +65,15 @@ class ProjectService {
       }
     } catch (e) {
       if (context.mounted) {
-        if (e is PostgrestException &&
-            e.code == '23505' &&
-            e.message.contains('unique_contractee_id')) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('You can only post one project')),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error inserting data')),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error creating project: $e')),
+        );
       }
       rethrow;
     }
   }
 
-  Future<void> updateProjectStatus(String projectId, String status) async {
+  Future<void> updaterojecStatus(String projectId, String status) async {
     await _supabase
         .from('Projects')
         .update({'status': status}).eq('project_id', projectId);
@@ -109,29 +122,7 @@ class ProjectService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getProjectsByContractee(
-      String contracteeId) async {
-    try {
-      final response = await _supabase
-          .from('Projects')
-          .select('*')
-          .eq('contractee_id', contracteeId);
-      return List<Map<String, dynamic>>.from(response);
-    } catch (error) {
-      return [];
-    }
-  }
-
-  Future<String?> getProjectId(String chatRoomId) async {
-    final chatRoom = await _supabase
-        .from('ChatRoom')
-        .select('project_id')
-        .eq('chatroom_id', chatRoomId)
-        .maybeSingle();
-    return chatRoom?['project_id'];
-  }
-
-  Future<void> notifyContractor({
+   Future<void> notifyContractor({
     required String contractorId,
     required String contracteeId,
     required String title,
@@ -179,6 +170,7 @@ class ProjectService {
       final contracteeData =
           await FetchService().fetchContracteeData(contracteeId);
       final contracteeName = contracteeData?['full_name'] ?? 'A contractee';
+      final contracteePhoto = contracteeData?['profile_photo'] ?? '';
 
       final contractorData =
           await FetchService().fetchContractorData(contractorId);
@@ -197,6 +189,7 @@ class ProjectService {
           'firm_name': contractorName,
           'contractor_id': contractorId,
           'full_name': contracteeName,
+          'profile_photo': contracteePhoto,
           'project_id': projectId,
           'project_title': title,
           'project_type': type,
@@ -211,6 +204,67 @@ class ProjectService {
       rethrow;
     }
   }
+
+  Future<Map<String, dynamic>?> cancelAgreement(
+    String projectId,
+    String requestingUserId,
+  ) async {
+    try {
+      final project = await _supabase
+          .from('Projects')
+          .select('contractor_id, contractee_id')
+          .eq('project_id', projectId)
+          .single();
+
+      final userType = requestingUserId == project['contractor_id']
+          ? 'contractor'
+          : 'contractee';
+      final notifInfo = await FetchService().userTypeDecide(
+        contractId: projectId,
+        userType: userType,
+        action: 'requested to cancel the project',
+      );
+      final status = userType == 'contractor'
+          ? 'cancellation_requested_by_contractor'
+          : 'cancellation_requested_by_contractee';
+
+      await _supabase
+          .from('Projects')
+          .update({'status': status}).eq('project_id', projectId);
+
+      await NotificationService().createNotification(
+        receiverId: notifInfo['receiverId'] ?? '',
+        receiverType: notifInfo['receiverType'] ?? '',
+        senderId: notifInfo['senderId'] ?? '',
+        senderType: notifInfo['senderType'] ?? '',
+        type: 'Project Cancellation Request',
+        message: notifInfo['message'] ?? '',
+        information: {
+          'project_id': projectId,
+          'action': 'cancel_request',
+          'status': status,
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+
+      return project;
+    } catch (e) {
+      throw Exception('Failed to cancel agreement');
+    }
+  }
+
+  //For Both Users
+
+  Future<String?> getProjectId(String chatRoomId) async {
+    final chatRoom = await _supabase
+        .from('ChatRoom')
+        .select('project_id')
+        .eq('chatroom_id', chatRoomId)
+        .maybeSingle();
+    return chatRoom?['project_id'];
+  }
+
+  //For Contractors 
 
   Future<void> acceptHiring({
     required String notificationId,
@@ -270,6 +324,39 @@ class ProjectService {
     }
   }
 
+  // Helper method to check for existing hire requests
+  Future<Map<String, dynamic>?> hasExistingHireRequest(
+      String contractorId, String contracteeId) async {
+    return await FetchService().hasExistingHireRequest(contractorId, contracteeId);
+  }
+
+  // Helper method to cancel other hire requests
+  Future<void> cancelOtherHireRequests(
+      String projectId, String contracteeId, String acceptedNotificationId) async {
+    try {
+      final otherRequests = await _supabase
+          .from('Notifications')
+          .select('notification_id, information')
+          .eq('headline', 'Hiring Request')
+          .eq('sender_id', contracteeId)
+          .filter('information->>project_id', 'eq', projectId)
+          .neq('notification_id', acceptedNotificationId);
+
+      for (final request in otherRequests) {
+        final info = Map<String, dynamic>.from(request['information'] ?? {});
+        info['status'] = 'cancelled';
+        info['cancelled_reason'] = 'Another contractor was selected';
+        info['cancelled_at'] = DateTime.now().toIso8601String();
+
+        await _supabase.from('Notifications').update({
+          'information': info,
+        }).eq('notification_id', request['notification_id']);
+      }
+    } catch (e) {
+      return;
+    }
+  }
+
   Future<void> declineHiring({
     required String notificationId,
     required String contractorId,
@@ -314,54 +401,6 @@ class ProjectService {
       );
     } catch (e) {
       throw Exception('Failed to decline hiring request');
-    }
-  }
-
-  Future<Map<String, dynamic>?> cancelAgreement(
-    String projectId,
-    String requestingUserId,
-  ) async {
-    try {
-      final project = await _supabase
-          .from('Projects')
-          .select('contractor_id, contractee_id')
-          .eq('project_id', projectId)
-          .single();
-
-      final userType = requestingUserId == project['contractor_id']
-          ? 'contractor'
-          : 'contractee';
-      final notifInfo = await FetchService().userTypeDecide(
-        contractId: projectId,
-        userType: userType,
-        action: 'requested to cancel the project',
-      );
-      final status = userType == 'contractor'
-          ? 'cancellation_requested_by_contractor'
-          : 'cancellation_requested_by_contractee';
-
-      await _supabase
-          .from('Projects')
-          .update({'status': status}).eq('project_id', projectId);
-
-      await NotificationService().createNotification(
-        receiverId: notifInfo['receiverId'] ?? '',
-        receiverType: notifInfo['receiverType'] ?? '',
-        senderId: notifInfo['senderId'] ?? '',
-        senderType: notifInfo['senderType'] ?? '',
-        type: 'Project Cancellation Request',
-        message: notifInfo['message'] ?? '',
-        information: {
-          'project_id': projectId,
-          'action': 'cancel_request',
-          'status': status,
-          'timestamp': DateTime.now().toIso8601String(),
-        },
-      );
-
-      return project;
-    } catch (e) {
-      throw Exception('Failed to cancel agreement');
     }
   }
 
@@ -466,7 +505,7 @@ class ProjectService {
     required String task,
     bool done = false,
   }) async {
-    await _supabase.from('projecttasks').insert({
+    await _supabase.from('ProjectTasks').insert({
       'project_id': projectId,
       'task': task,
       'done': done,
@@ -479,7 +518,7 @@ class ProjectService {
     required String content,
     required String authorId,
   }) async {
-    await _supabase.from('projectreports').insert({
+    await _supabase.from('ProjectReports').insert({
       'project_id': projectId,
       'content': content,
       'author_id': authorId,
@@ -492,7 +531,7 @@ class ProjectService {
     required String photoUrl,
     required String uploaderId,
   }) async {
-    await _supabase.from('projectphotos').insert({
+    await _supabase.from('ProjectPhotos').insert({
       'project_id': projectId,
       'photo_url': photoUrl,
       'uploader_id': uploaderId,
@@ -501,23 +540,77 @@ class ProjectService {
   }
 
   Future<void> addCostToProject({
+    required String contractor_id, 
     required String projectId,
-    required String item,
-    required num amount,
-    String? note,
+    required String material_name,
+    required num quantity,
+    String? brand,
+    String? unit,
+    num? unit_price,
+    String? notes,
   }) async {
-    await _supabase.from('projectcosts').insert({
+    await _supabase.from('ProjectMaterials').insert({
+      'contractor_id': contractor_id,
       'project_id': projectId,
-      'item': item,
-      'amount': amount,
-      if (note != null) 'note': note,
+      'material_name': material_name,
+      'brand': brand,
+      'unit': unit,
+      'quantity': quantity,
+      'unit_price': unit_price,
+      if (notes != null) 'notes': notes,
       'created_at': DateTime.now().toIso8601String(),
     });
   }
 
   Future<void> updateTaskStatus(String taskId, bool done) async {
     await _supabase
-        .from('projecttasks')
-        .update({'done': done}).eq('task_id', taskId);
+        .from('ProjectTasks')
+        .update({'done': done})
+        .eq('task_id', taskId);
+  }
+
+  Future<void> deleteTask(String taskId) async {
+    await _supabase
+        .from('ProjectTasks')
+        .delete()
+        .eq('task_id', taskId);
+  }
+
+  Future<void> deleteReport(String reportId) async {
+    await _supabase
+        .from('ProjectReports')
+        .delete()
+        .eq('report_id', reportId);
+  }
+
+  Future<void> deletePhoto(String photoId) async {
+    final photo = await _supabase
+        .from('ProjectPhotos')
+        .select('photo_url')
+        .eq('photo_id', photoId)
+        .single();
+    
+    final photoUrl = photo['photo_url'] as String?;
+    
+    await _supabase
+        .from('ProjectPhotos')
+        .delete()
+        .eq('photo_id', photoId);
+    
+    if (photoUrl != null && photoUrl.isNotEmpty) {
+      try {
+        await _supabase.storage
+            .from('projectphotos')
+            .remove([photoUrl]);
+      } catch (e) {
+      }
+    }
+  }
+
+  Future<void> deleteCost(String materialId) async {
+    await _supabase
+        .from('ProjectMaterials')
+        .delete()
+        .eq('material_id', materialId);
   }
 }

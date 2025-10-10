@@ -209,115 +209,108 @@ class MenuDrawerContractee extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: Theme.of(context).copyWith(
-        drawerTheme: const DrawerThemeData(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.zero, 
+    return Drawer(
+      
+      elevation: 0,
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          Container(
+            height: 70, 
+            color: Colors.yellow[700], 
+            padding: const EdgeInsets.symmetric(horizontal: 5),
+            child: const Row(
+              children: [
+                Text(
+                  ""
+                )
+              ],
+            ),
           ),
-        ),
-      ),
-      child: Drawer(
-        elevation: 0,
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            Container(
-              height: 70,
-              color: Colors.yellow[700],
-              padding: const EdgeInsets.symmetric(horizontal: 5),
-              child: const Row(
-                children: [
-                  Text(""),
-                ],
-              ),
+          ListTile(
+            leading: const Icon(Icons.home, color: Colors.blueGrey),
+            title: const Text(
+              'Home',
+              style: TextStyle(fontSize: 18),
             ),
-            ListTile(
-              leading: const Icon(Icons.home, color: Colors.blueGrey),
-              title: const Text(
-                'Home',
-                style: TextStyle(fontSize: 18),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/home',
-                  (route) => false,
-                );
-              },
-            ),
-            const SizedBox(height: 0.5),
-            ListTile(
-              leading: const Icon(Icons.book, color: Colors.blueGrey),
-              title: const Text(
-                'Transaction History',
-                style: TextStyle(fontSize: 18),
-              ),
-              onTap: () => transitionBuilder(context, const TransactionPage()),
-            ),
-            const SizedBox(height: 0.5),
-            ListTile(
-              leading: const Icon(Icons.handyman, color: Colors.blueGrey),
-              title: const Text(
-                'Materials',
-                style: TextStyle(fontSize: 18),
-              ),
-              onTap: () => transitionBuilder(context, const Buildingmaterial()),
-            ),
-            const SizedBox(height: 0.5),
-            ListTile(
-              leading: const Icon(Icons.work, color: Colors.blueGrey),
-              title: const Text(
-                'Ongoing',
-                style: TextStyle(fontSize: 18),
-              ),
-              onTap: () async {
-                final contracteeId = await UserService().getContracteeId();
-                if (contracteeId != null) {
-                  final projects = await FetchService().fetchUserProjects();
-                  final activeProject = projects.firstWhere(
-                    (project) => project['status'] == 'active',
-                    orElse: () => {},
-                  );
-                  if (activeProject.isNotEmpty && context.mounted) {
-                    transitionBuilder(
-                      context,
-                      CeeOngoingProjectScreen(
-                        projectId: activeProject['project_id'],
-                      ),
-                    );
-                  } else if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('No active project found')),
-                    );
-                  }
-                }
-              },
-            ),
-            const SizedBox(height: 0.5),
-            ListTile(
-              leading: const Icon(Icons.info, color: Colors.blueGrey),
-              title: const Text(
-                'About',
-                style: TextStyle(fontSize: 18),
-              ),
-              onTap: () => transitionBuilder(context, const AboutPage()),
-            ),
-            const SizedBox(height: 0.5),
-            ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text(
-                'Logout',
-                style: TextStyle(fontSize: 18),
-              ),
-              onTap: () => transitionBuilder(
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamedAndRemoveUntil(
                 context,
-                LoginPage(modalContext: context),
-              ),
+                '/home',
+                (route) => false,
+              );
+            },
+          ),
+          const SizedBox(height: 0.5),
+          ListTile(
+            leading: const Icon(Icons.book, color: Colors.blueGrey),
+            title: const Text(
+              'Transaction History',
+              style: TextStyle(fontSize: 18),
             ),
-          ],
-        ),
+            onTap: () => transitionBuilder(context, const TransactionPage()),
+          ),
+
+          const SizedBox(height: 0.5),
+          ListTile(
+            leading: const Icon(Icons.handyman, color: Colors.blueGrey),
+            title: const Text(
+              'Materials',
+              style: TextStyle(fontSize: 18),
+            ),
+            onTap: () => transitionBuilder(context, const Buildingmaterial()),
+          ),
+          const SizedBox(height: 0.5),
+          ListTile(
+            leading: const Icon(Icons.work, color: Colors.blueGrey),
+            title: const Text(
+              'Ongoing',
+              style: TextStyle(fontSize: 18),
+            ),
+            onTap: () async {
+              final contracteeId = await UserService().getContracteeId();
+              if (contracteeId != null) {
+                final projects = await FetchService().fetchUserProjects();
+                final activeProject = projects.firstWhere(
+                  (project) => project['status'] == 'active',
+                  orElse: () => {},
+                );
+                if (activeProject.isNotEmpty && context.mounted) {
+                  transitionBuilder(
+                    context,
+                    CeeOngoingProjectScreen(
+                      projectId: activeProject['project_id'],
+                    ),
+                  );
+                } else if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('No active project found')),
+                  );
+                }
+              }
+            },
+          ),
+          const SizedBox(height: 0.5),
+          ListTile(
+            leading: const Icon(Icons.info, color: Colors.blueGrey),
+            title: const Text(
+              'About',
+              style: TextStyle(fontSize: 18),
+            ),
+            onTap: () => transitionBuilder(context, const AboutPage()),
+          ),
+          const SizedBox(height: 0.5),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text(
+              'Logout',
+              style: TextStyle(fontSize: 18),
+            ),
+            onTap: () =>
+                transitionBuilder(context, LoginPage(modalContext: context)),
+          ),
+        ],
       ),
     );
   }

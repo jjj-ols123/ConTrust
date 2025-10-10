@@ -1,8 +1,8 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, file_names, use_build_context_synchronously
 
 import 'dart:async';
 import 'package:backend/models/be_UIcontract.dart';
-import 'package:backend/services/be_project_service.dart';
+import 'package:backend/services/both%20services/be_project_service.dart';
 import 'package:contractor/Screen/cor_contracttype.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -82,7 +82,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
                       actions: [
                         TextButton(
                           onPressed: () async {
-                            await _handleAgree(projectId);
+                            await handleAgree(projectId);
                           },
                           child: const Text('Agree'),
                         ),
@@ -102,13 +102,14 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
         });
   }
 
-  Future<void> _handleProceed() async {
+  Future<void> handleProceed() async {
     final projectId = await ProjectService().getProjectId(widget.chatRoomId);
     if (projectId == null) return;
 
     await supabase
         .from('Projects')
-        .update({'contract_started': true}).eq('project_id', projectId);
+        .update({'contract_started': true})
+        .eq('project_id', projectId);
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Waiting for the other party to agree...')),
@@ -119,14 +120,15 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
     if (mounted) setState(() {});
   }
 
-  Future<void> _handleAgree(String projectId) async {
+  Future<void> handleAgree(String projectId) async {
     final column = widget.userRole == 'contractor'
         ? 'contractor_agree'
         : 'contractee_agree';
 
     await supabase
         .from('Projects')
-        .update({column: true}).eq('project_id', projectId);
+        .update({column: true})
+        .eq('project_id', projectId);
 
     Navigator.pop(context);
   }
@@ -155,7 +157,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton(
-                  onPressed: _handleProceed,
+                  onPressed: handleProceed,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
@@ -173,7 +175,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
 }
 
 class UIMessage {
-  static Widget buildMessageBubble(
+  static Widget buildContractMessage(
     BuildContext context,
     Map<String, dynamic> msg,
     bool isMe,

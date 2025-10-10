@@ -1,0 +1,59 @@
+CONSTRUCTION CONTRACT - COST-PLUS
+
+This Construction Contract ("Contract") is entered into on [DATE] between:
+
+CONTRACTOR:
+Name: [Contractor Name]
+Address: [Contractor Address]
+Title: [Contractor Title]
+
+CLIENT:
+Name: [Client Name]
+Address: [Client Address]
+Title: [Client Title]
+
+PROJECT DESCRIPTION:
+[Project Description]
+
+PROJECT LOCATION:
+[Project Location]
+
+TERMS AND CONDITIONS:
+
+1. SCOPE OF WORK
+The Contractor agrees to provide all labor, materials, equipment, and services necessary for the completion of the construction project as described above.
+
+2. COST-PLUS ARRANGEMENT
+This is a cost-plus contract where the Client pays for:
+- All actual project costs
+- Contractor fee of [Contractor Fee Percentage]% of total costs
+- Fixed fee amount: ₱[Fixed Fee Amount] (if applicable)
+- Maximum budget limit: ₱[Maximum Budget]
+
+3. PROJECT TIMELINE
+- Start Date: [Start Date]
+- Completion Date: [Completion Date]
+- Duration: [Duration] days
+
+4. PAYMENT TERMS
+Payment is due within [Payment Due Days] days of invoice receipt.
+All costs must be documented with receipts and invoices.
+
+5. WARRANTY
+The Contractor provides a [Warranty Period] warranty on all work performed.
+
+6. TERMINATION
+Either party may terminate this contract with [Notice Period] days written notice.
+
+7. SIGNATURES
+
+Contractor: _________________    Date: ___________
+[Contractor Name]
+
+Client: _________________       Date: ___________
+[Client Name]
+
+Witness: _________________     Date: ___________
+[Witness Name]
+
+This contract is governed by the laws of the Philippines.

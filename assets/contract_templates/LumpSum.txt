@@ -1,0 +1,79 @@
+LUMP SUM CONSTRUCTION CONTRACT
+
+This Lump Sum Construction Contract ("Contract") is entered into on [DATE] between:
+
+CONTRACTOR:
+Name: [Contractor Name]
+Address: [Contractor Address]
+Title: [Contractor Title]
+
+CLIENT:
+Name: [Client Name]  
+Address: [Client Address]
+Title: [Client Title]
+
+PROJECT DETAILS:
+Project Description: [Project Description]
+Project Location: [Project Location]
+Start Date: [Start Date]
+Completion Date: [Completion Date]
+Duration: [Duration] days
+
+CONTRACT AMOUNT:
+Total Contract Amount: ₱[Total Amount]
+
+PAYMENT SCHEDULE:
+- Down Payment (Upon Signing): ₱[Down Payment]
+- 25% Progress Payment: ₱[Progress Payment 1]
+- 50% Progress Payment: ₱[Progress Payment 2]
+- 75% Progress Payment: ₱[Progress Payment 3]
+- Final Payment (Upon Completion): ₱[Final Payment]
+
+MATERIALS AND EQUIPMENT:
+Materials to be provided:
+[Materials List]
+
+Equipment to be provided:
+[Equipment List]
+
+TERMS AND CONDITIONS:
+
+1. SCOPE OF WORK: The Contractor agrees to provide all labor, materials, equipment, and services necessary for the completion of the construction project as described above.
+
+2. CONTRACT PRICE: The total contract price is ₱[Total Amount], which includes all labor, materials, equipment, permits, and other costs necessary for project completion.
+
+3. PAYMENT TERMS: Payments shall be made according to the schedule above. Payment is due within [Payment Due Days] days of invoice.
+
+4. TIME OF COMPLETION: Work shall commence on [Start Date] and be substantially completed by [Completion Date].
+
+5. WARRANTY: Contractor warrants all work for [Warranty Period] from the date of completion.
+
+6. CHANGES: Any changes to this contract must be agreed upon in writing by both parties.
+
+7. TERMINATION: Either party may terminate this contract with [Notice Period] days written notice.
+
+8. PERMITS: Contractor shall obtain all necessary permits and licenses required for the work.
+
+9. INSURANCE: Contractor shall maintain appropriate insurance coverage throughout the project duration.
+
+10. COMPLIANCE: All work shall comply with applicable building codes, laws, and regulations.
+
+11. DISPUTES: Any disputes shall be resolved through binding arbitration under Philippine law.
+
+12. FORCE MAJEURE: Neither party shall be liable for delays caused by circumstances beyond their reasonable control.
+
+WITNESS:
+[Witness Name]
+
+SIGNATURES:
+
+CONTRACTOR: _________________    DATE: _________________
+[Contractor Name]
+
+CLIENT: _________________    DATE: _________________
+[Client Name]
+
+WITNESS: _________________    DATE: _________________
+[Witness Name]
+
+This contract is governed by the laws of the Republic of the Philippines.
