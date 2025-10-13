@@ -114,7 +114,15 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
           ? Builder(
               builder: (context) => IconButton(
                 icon: const Icon(Icons.menu, color: Colors.black),
-                onPressed: () => Scaffold.of(context).openDrawer(),
+                onPressed: () {
+                  // If the parent Scaffold provides a drawer, open it. Otherwise show a left-side modal
+                  final scaffoldState = Scaffold.maybeOf(context);
+                  if (scaffoldState != null && scaffoldState.widget.drawer != null) {
+                    scaffoldState.openDrawer();
+                  } else {
+                    _openDrawerFallback(context);
+                  }
+                },
               ),
             )
           : Navigator.canPop(context)
@@ -126,7 +134,14 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
                   ? Builder(
                       builder: (context) => IconButton(
                         icon: const Icon(Icons.menu, color: Colors.black),
-                        onPressed: () => Scaffold.of(context).openDrawer(),
+                        onPressed: () {
+                          final scaffoldState = Scaffold.maybeOf(context);
+                          if (scaffoldState != null && scaffoldState.widget.drawer != null) {
+                            scaffoldState.openDrawer();
+                          } else {
+                            _openDrawerFallback(context);
+                          }
+                        },
                       ),
                     )
                   : null,
@@ -198,6 +213,37 @@ class _ConTrustAppBarState extends State<ConTrustAppBar> {
           ],
         ),
       ],
+    );
+  }
+
+  void _openDrawerFallback(BuildContext context) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Menu',
+      transitionDuration: const Duration(milliseconds: 250),
+      pageBuilder: (context, anim1, anim2) {
+        return SafeArea(
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.78,
+              child: Material(
+                color: Theme.of(context).canvasColor,
+                elevation: 8,
+                child: const MenuDrawerContractee(),
+              ),
+            ),
+          ),
+        );
+      },
+      transitionBuilder: (context, a1, a2, child) {
+        final curved = Curves.easeOut.transform(a1.value);
+        return Transform.translate(
+          offset: Offset(-200 * (1 - curved), 0),
+          child: Opacity(opacity: a1.value, child: child),
+        );
+      },
     );
   }
 }
