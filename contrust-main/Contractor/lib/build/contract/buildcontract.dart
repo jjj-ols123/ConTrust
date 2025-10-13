@@ -80,7 +80,6 @@ static Future<Map<String, dynamic>?> showSaveDialog(
                       return const Text('Error loading projects');
                     }
                     return DropdownButtonFormField<String>(
-                      initialValue: selectedProjectId,
                       decoration: const InputDecoration(
                         labelText: 'Select Project',
                         border: OutlineInputBorder(
@@ -251,7 +250,6 @@ class CreateContractBuildMethods {
                                     isExpanded: true,
                                     alignment: AlignmentDirectional.centerStart,
                                     icon: const Icon(Icons.arrow_drop_down),
-                                    initialValue: selectedTemplate?['contract_type_id'],
                                     decoration: InputDecoration(
                                       labelText: 'Contract Type',
                                       hintText: 'Choose a contract type',
@@ -330,7 +328,6 @@ class CreateContractBuildMethods {
                                 isExpanded: true,
                                 alignment: AlignmentDirectional.centerStart,
                                 icon: const Icon(Icons.arrow_drop_down),
-                                initialValue: initialProjectId,
                                 decoration: InputDecoration(
                                   labelText: 'Select Project', 
                                   border: const OutlineInputBorder(
