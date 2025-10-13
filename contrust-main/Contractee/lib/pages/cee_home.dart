@@ -1,11 +1,11 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:backend/models/be_UIapp.dart';
-import 'package:backend/models/be_appbar.dart';
 import 'package:backend/services/both%20services/be_bidding_service.dart';
 import 'package:backend/services/both%20services/be_fetchservice.dart';
 import 'package:backend/services/both%20services/be_project_service.dart';
 import 'package:contractee/models/cee_modal.dart';
+import 'package:contractee/build/builddrawer.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -30,14 +30,7 @@ class _HomePageState extends State<HomePage> {
   List<Map<String, dynamic>> projects = [];
   bool isLoading = true;
 
-  final TextEditingController _minBudgetController = TextEditingController();
-  final TextEditingController _maxBudgetController = TextEditingController();
-  final TextEditingController _locationController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _typeConstructionController =
-      TextEditingController();
-  final TextEditingController _bidTimeController = TextEditingController();
-  final TextEditingController _titleController = TextEditingController();
+
 
   static const String profileUrl =
       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
@@ -96,13 +89,16 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bool isWideScreen = MediaQuery.of(context).size.width >= 800;
-    final pageContent = SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+
+    return ContracteeShell(
+      currentPage: ContracteePage.home,
+      contracteeId: widget.contracteeId,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Center(
               child: SizedBox(
                 width: MediaQuery.of(context).size.width * 0.90,
@@ -293,65 +289,8 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-    );
-
-    return isWideScreen
-        ? Scaffold(
-            body: Row(
-              children: [
-                SizedBox(
-                  width: 250,
-                ),
-                Expanded(
-                  child: Scaffold(
-                    appBar: PreferredSize(
-                      preferredSize: const Size.fromHeight(70),
-                      child: ConTrustAppBar(headline: "Home"),
-                    ),
-                    body: pageContent,
-                    floatingActionButton: ExpandableFloatingButton(
-                      clearControllers: _clearControllers,
-                      onRefresh: _loadData,
-                      title: _titleController,
-                      typeConstruction: _typeConstructionController,
-                      minBudget: _minBudgetController,
-                      maxBudget: _maxBudgetController,
-                      location: _locationController,
-                      description: _descriptionController,
-                      bidTime: _bidTimeController,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          )
-        : Scaffold(
-            appBar: PreferredSize(
-              preferredSize: const Size.fromHeight(70),
-              child: ConTrustAppBar(headline: "Home"),
-            ),
-            body: pageContent,
-            floatingActionButton: ExpandableFloatingButton(
-              clearControllers: _clearControllers,
-              onRefresh: _loadData,
-              title: _titleController,
-              typeConstruction: _typeConstructionController,
-              minBudget: _minBudgetController,
-              maxBudget: _maxBudgetController,
-              location: _locationController,
-              description: _descriptionController,
-              bidTime: _bidTimeController,
-            ),
-          );
+    ));
   }
 
-  void _clearControllers() {
-    _titleController.clear();
-    _typeConstructionController.clear();
-    _minBudgetController.clear();
-    _maxBudgetController.clear();
-    _locationController.clear();
-    _descriptionController.clear();
-    _bidTimeController.clear();
-  }
+
 }

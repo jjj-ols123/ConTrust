@@ -3,6 +3,7 @@
 import 'dart:ui';
 import 'package:backend/utils/be_pagetransition.dart';
 import 'package:contractee/pages/cee_home.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
@@ -136,28 +137,25 @@ class _WelcomePageState extends State<WelcomePage> {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 40),
-            if (context != null && title == "Design")
-              ElevatedButton(
-                onPressed: () async {
-                  SharedPreferences prefs = await SharedPreferences.getInstance();
-                  await prefs.setBool('isFirstOpen', false);
+          ),
+          const SizedBox(height: 40),
+          if (context != null && title == 'Design')
+            ElevatedButton(
+              onPressed: () async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('isFirstOpen', false);
 
-                 // ignore: use_build_context_synchronously
-                 transitionBuilder(context, HomePage(), replace: true);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 24, vertical: 12),
-                ),
-                child: const Text(
-                  "Let's Go!",
-                  style: TextStyle(fontSize: 18, color: Colors.white),
-                ),
+                final session = Supabase.instance.client.auth.currentSession;
+                final userId = session?.user.id ?? '';
+                transitionBuilder(context, HomePage(contracteeId: userId), replace: true);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
-          ],
-        ),
+              child: const Text("Let's Go!", style: TextStyle(fontSize: 18, color: Colors.white)),
+            ),
+        ],
       ),
     );
   }
