@@ -54,7 +54,6 @@ class ConTrustSnackBar {
     );
   }
 
-  // Convenience methods for common use cases
   static void success(
     BuildContext context,
     String message, {
@@ -104,7 +103,6 @@ class ConTrustSnackBar {
     success(context, 'Dashboard refreshed successfully');
   }
 
-  // Material/Product specific methods
   static void materialAdded(BuildContext context) {
     success(context, 'Material added to inventory');
   }
@@ -121,7 +119,6 @@ class ConTrustSnackBar {
     warning(context, 'Please enter $field');
   }
 
-  // Project specific methods
   static void projectError(BuildContext context) {
     ConTrustSnackBar.error(context, 'No active / ongoing project found');
   }
@@ -130,7 +127,6 @@ class ConTrustSnackBar {
     loading(context, 'Loading project...');
   }
 
-  // Bidding specific methods
   static void bidSubmitted(BuildContext context) {
     success(context, 'Bid submitted successfully');
   }
@@ -139,7 +135,6 @@ class ConTrustSnackBar {
     ConTrustSnackBar.error(context, 'Failed to submit bid: $errorMessage');
   }
 
-  // Contract specific methods
   static void contractSent(BuildContext context) {
     success(context, 'Contract sent successfully');
   }
@@ -152,15 +147,24 @@ class ConTrustSnackBar {
     ConTrustSnackBar.error(context, 'Contract error: $errorMessage');
   }
 
-  // Agreement specific methods
+  static void contractApproved(BuildContext context) {
+    success(context, 'Contract approved! You can now sign it.');
+  }
+
+  static void contractRejected(BuildContext context) {
+    warning(context, 'Contract rejected');
+  }
+
+  static void downloadSuccess(BuildContext context, String message) {
+    success(context, message);
+  }
+
   static void agreementConfirmed(BuildContext context) {
     success(context, 'Agreement confirmed!');
   }
   static void waitingForOther(BuildContext context) {
     info(context, 'Waiting for the other party to agree...');
   }
-
-  // Message specific methods
   static void messageSent(BuildContext context) {
     success(context, 'Message sent');
   }
@@ -181,7 +185,7 @@ class ConTrustSnackBar {
     info(context, 'You have been logged out');
   }
 
-  // File operations
+
   static void fileUploadSuccess(BuildContext context, String fileName) {
     success(context, '$fileName uploaded successfully');
   }

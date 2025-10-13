@@ -205,7 +205,7 @@ class UIContract {
                               contractorSignaturePath,
                         height: 100,
                         fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) =>
+                          errorBuilder: (context, error, stackTrace) =>
                             const Text('Could not load signature image'),
                       ),
                           )

@@ -75,7 +75,6 @@ class PdfExtractUtils {
               Applicable Taxes: [Tax.List]
               ''';
     } else {
-      // Safe fallback so preview is never empty
       return '''CONSTRUCTION CONTRACT PREVIEW\n\nTitle: [Title]\nDate: [Contract.CreationDate]\n\nParties:\nContractee: [Contractee.FirstName] [Contractee.LastName]\nContractor: [Contractor.Company]''';
     }
   }
