@@ -168,13 +168,11 @@ class CreateContractService {
       
       ContractField(key: 'Materials.List', label: 'Materials List', maxLines: 3),
       
-      // Dynamic item count - will be populated by getTimeAndMaterialsFieldsWithItems
       ContractField(key: 'ItemCount', label: 'Number of Items', inputType: TextInputType.number, isRequired: true),
       
       ContractField(key: 'Payment.Subtotal', label: 'Payment Subtotal (₱)', inputType: TextInputType.number, isEnabled: false),
-  // Discount is now percentage-based; hint includes %
+
   ContractField(key: 'Payment.Discount', label: 'Payment Discount (%)', placeholder: 'e.g., 5%', inputType: TextInputType.number),
-  // Tax is now percentage-based; hint includes %
   ContractField(key: 'Payment.Tax', label: 'Payment Tax (%)', placeholder: 'e.g., 12%', inputType: TextInputType.number, isRequired: true),
       ContractField(key: 'Payment.Total', label: 'Payment Total (₱)', inputType: TextInputType.number, isEnabled: false),
       
@@ -186,25 +184,21 @@ class CreateContractService {
   List<ContractField> getTimeAndMaterialsFieldsWithItems(int itemCount) {
     List<ContractField> fields = getTimeAndMaterialsFields();
     
-    // Remove the ItemCount field from the main list
     fields.removeWhere((field) => field.key == 'ItemCount');
-    
-    // Find the index where to insert item fields (after Materials.List)
+
     int insertIndex = fields.indexWhere((field) => field.key == 'Materials.List') + 1;
     
-    // Generate dynamic item fields
     List<ContractField> itemFields = [];
     for (int i = 1; i <= itemCount; i++) {
       itemFields.addAll([
-        ContractField(key: 'Item.$i.Name', label: 'Item $i Name', isRequired: i <= 3), // First 3 items required
+        ContractField(key: 'Item.$i.Name', label: 'Item $i Name', isRequired: i <= 3), 
         ContractField(key: 'Item.$i.Description', label: 'Item $i Description', isRequired: i <= 3),
         ContractField(key: 'Item.$i.Price', label: 'Item $i Price (₱)', isRequired: i <= 3, inputType: TextInputType.number),
         ContractField(key: 'Item.$i.Quantity', label: 'Item $i Quantity', isRequired: i <= 3, inputType: TextInputType.number),
-        ContractField(key: 'Item.$i.Subtotal', label: 'Item $i Subtotal (₱)', inputType: TextInputType.number, isEnabled: false), // Disabled for auto-calculation
+        ContractField(key: 'Item.$i.Subtotal', label: 'Item $i Subtotal (₱)', inputType: TextInputType.number, isEnabled: false), 
       ]);
     }
     
-    // Insert item fields at the correct position
     fields.insertAll(insertIndex, itemFields);
     
     return fields;
@@ -219,11 +213,11 @@ class CreateContractService {
   }
 
   void populateProjectFields(Map<String, dynamic> projectData, Map<String, TextEditingController> controllers, String? selectedContractType) {
-    // Project Information
+
     controllers['Project.Description']?.text = projectData['description'] ?? '';
     controllers['Project.Address']?.text = projectData['location'] ?? '';
     
-    // Date handling
+
     final currentDate = DateTime.now().toString().split(' ')[0];
     controllers['Contract.CreationDate']?.text = currentDate;
     
@@ -234,7 +228,6 @@ class CreateContractService {
       controllers['Project.StartDate']?.text = currentDate;
     }
     
-    // Handle completion date
     if (projectData['end_date'] != null) {
       final endDate = projectData['end_date'].toString().split(' ')[0];
       controllers['Project.CompletionDate']?.text = endDate;
@@ -244,15 +237,15 @@ class CreateContractService {
     final maxBudget = projectData['max_budget']?.toString() ?? '';
     
     if (contractType?.contains('lump sum') == true) {
-      if (maxBudget.isNotEmpty) {
+      if ((controllers['Project.ContractPrice']?.text ?? '').isEmpty && maxBudget.isNotEmpty) {
         controllers['Project.ContractPrice']?.text = maxBudget;
       }
     } else if (contractType?.contains('cost-plus') == true || contractType?.contains('cost plus') == true) {
-      if (maxBudget.isNotEmpty) {
+      if ((controllers['Estimated Total']?.text ?? '').isEmpty && maxBudget.isNotEmpty) {
         controllers['Estimated Total']?.text = maxBudget;
       }
     } else if (contractType?.contains('time and materials') == true) {
-      if (maxBudget.isNotEmpty) {
+      if ((controllers['Payment.Total']?.text ?? '').isEmpty && maxBudget.isNotEmpty) {
         controllers['Payment.Total']?.text = maxBudget;
       }
     }
@@ -260,11 +253,9 @@ class CreateContractService {
 
   void calculateTimeAndMaterialsRates(Map<String, TextEditingController> controllers, {int? itemCount}) {
     double totalSubtotal = 0.0;
-    
-    // Get the dynamic item count if provided, otherwise try to determine from available controllers
+
     int maxItems = itemCount ?? getMaxItemCountFromControllers(controllers);
     
-    // Calculate subtotals for each item (dynamic count)
     for (int i = 1; i <= maxItems; i++) {
       final priceKey = 'Item.$i.Price';
       final quantityKey = 'Item.$i.Quantity';
@@ -282,16 +273,12 @@ class CreateContractService {
       }
     }
     
-    // Calculate Payment Subtotal
     controllers['Payment.Subtotal']?.text = totalSubtotal.toStringAsFixed(2);
     
-    // Get user-inputted values
-    // Parse percentage helper; supports values like "12", "12%", or "0.12"
     double parsePercent(String raw) {
       final cleaned = raw.trim().replaceAll('%', '').replaceAll(',', '');
       final v = double.tryParse(cleaned) ?? 0.0;
       if (v <= 0) return 0.0;
-      // If user typed 0..1, treat as fraction; if >1, treat as percent
       return v > 1.0 ? (v / 100.0) : v;
     }
     final discountRate = parsePercent(controllers['Payment.Discount']?.text ?? '0');
@@ -299,23 +286,20 @@ class CreateContractService {
     final taxRate = parsePercent(controllers['Payment.Tax']?.text ?? '0');
     final taxAmount = totalSubtotal * taxRate;
 
-    // Calculate Total (subtotal - discountAmount + taxAmount)
     final total = totalSubtotal - discountAmount + taxAmount;
     controllers['Payment.Total']?.text = total.toStringAsFixed(2);
-    // Optionally keep computed amounts if such controllers exist
+
     controllers['Payment.DiscountAmount']?.text = discountAmount.toStringAsFixed(2);
-    // Optionally keep a computed tax amount if such a controller exists
+
     controllers['Payment.TaxAmount']?.text = taxAmount.toStringAsFixed(2);
     
-    // Update legacy fields for compatibility
     controllers['Contract Price']?.text = total.toStringAsFixed(2);
     controllers['Estimated Budget']?.text = total.toStringAsFixed(2);
   }
 
   int getMaxItemCountFromControllers(Map<String, TextEditingController> controllers) {
-    int maxItems = 3; // Default fallback changed to 3
+    int maxItems = 3; 
     
-    // Check for controllers with Item.X.Name pattern to determine max count
     for (String key in controllers.keys) {
       if (key.startsWith('Item.') && key.endsWith('.Name')) {
         final itemNumberStr = key.split('.')[1];
@@ -446,5 +430,17 @@ class CreateContractService {
       fieldValues: fieldValues,
       contractType: contractType,
     );
+  }
+
+  Future<Map<String, dynamic>?> fetchContractFieldValues(String contractId) async {
+    try {
+      final contractData = await FetchService().fetchContractData(contractId);
+      if (contractData != null && contractData['field_values'] != null) {
+        return contractData['field_values'] as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      rethrow;
+    }
   }
 }
