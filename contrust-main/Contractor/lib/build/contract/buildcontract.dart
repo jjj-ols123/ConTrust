@@ -94,7 +94,7 @@ static Future<Map<String, dynamic>?> showSaveDialog(
                       ),
                       items: snapshot.data!.map((project) => DropdownMenuItem<String>(
                         value: project['project_id'],
-                        child: Text(project['title'] ?? project['description'] ?? 'No Title'),
+                        child: Text(project['title'] ?? 'No Title'),
                       )).toList(),
                       onChanged: (value) {
                         selectedProjectId = value;
@@ -178,197 +178,6 @@ class CreateContractBuildMethods {
           child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text('Contract Information', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.blue.shade600)),
-                        ),
-                        if (isLoadingProject)
-                          const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      isLoadingProject ? 'Loading project data and auto-populating fields...' : 'Fill in the following details to generate your contract',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 16),
-                    if (onContractTypeChanged != null)
-                      FutureBuilder<List<Map<String, dynamic>>>(
-                        future: FetchService().fetchContractTypes(),
-                        builder: (context, snapshot) {
-                          const double kSelectorHeight = 88;
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return const SizedBox(
-                              height: kSelectorHeight,
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                ),
-                              ),
-                            );
-                          }
-
-                          if (snapshot.hasError) {
-                            return SizedBox(
-                              height: kSelectorHeight,
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.red.shade200)),
-                                child: Text('Error loading contract types: ${snapshot.error}'),
-                              ),
-                            );
-                          }
-
-                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                            return SizedBox(
-                              height: kSelectorHeight,
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.orange.shade200)),
-                                child: const Text('No contract types found.'),
-                              ),
-                            );
-                          }
-
-                          return SizedBox(
-                            height: kSelectorHeight,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: DropdownButtonFormField<String>(
-                                    isExpanded: true,
-                                    alignment: AlignmentDirectional.centerStart,
-                                    icon: const Icon(Icons.arrow_drop_down),
-                                    decoration: InputDecoration(
-                                      labelText: 'Contract Type',
-                                      hintText: 'Choose a contract type',
-                                      border: const OutlineInputBorder(
-                                        borderSide: BorderSide(color: Colors.black, width: 1),
-                                      ),
-                                      enabledBorder: const OutlineInputBorder(
-                                        borderSide: BorderSide(color: Colors.black, width: 1),
-                                      ),
-                                      focusedBorder: const OutlineInputBorder(
-                                        borderSide: BorderSide(color: Colors.black, width: 2),
-                                      ),
-                                      prefixIcon: const Icon(Icons.description),
-                                    ),
-                                    items: snapshot.data!.map((template) => DropdownMenuItem<String>(
-                                      value: template['contract_type_id'],
-                                      child: Text(template['template_name'] ?? 'Unnamed Template', overflow: TextOverflow.ellipsis),
-                                    )).toList(),
-                                    onChanged: (value) {
-                                      final selectedTemplate = snapshot.data!.firstWhere(
-                                        (template) => template['contract_type_id'] == value,
-                                        orElse: () => <String, dynamic>{},
-                                      );
-                                      onContractTypeChanged!(selectedTemplate.isNotEmpty ? selectedTemplate : null);
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-
-                    FutureBuilder<List<Map<String, dynamic>>>(
-                      future: FetchService().fetchContractorProjectInfo(contractorId),
-                      builder: (context, snapshot) {
-                        const double kProjectBlockHeight = 148;
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const SizedBox(
-                            height: kProjectBlockHeight,
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
-                            ),
-                          );
-                        }
-
-                        if (snapshot.hasError) {
-                          return SizedBox(
-                            height: kProjectBlockHeight,
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.red.shade200)),
-                              child: Text('Error loading projects: ${snapshot.error}'),
-                            ),
-                          );
-                        }
-
-                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                          return SizedBox(
-                            height: kProjectBlockHeight,
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.orange.shade200)),
-                              child: const Text('No projects found.'),
-                            ),
-                          );
-                        }
-
-                        return SizedBox(
-                          height: kProjectBlockHeight,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              DropdownButtonFormField<String>(
-                                isExpanded: true,
-                                alignment: AlignmentDirectional.centerStart,
-                                icon: const Icon(Icons.arrow_drop_down),
-                                decoration: InputDecoration(
-                                  labelText: 'Select Project', 
-                                  border: const OutlineInputBorder(
-                                    borderSide: BorderSide(color: Colors.black, width: 1),
-                                  ),
-                                  enabledBorder: const OutlineInputBorder(
-                                    borderSide: BorderSide(color: Colors.black, width: 1),
-                                  ),
-                                  focusedBorder: const OutlineInputBorder(
-                                    borderSide: BorderSide(color: Colors.black, width: 2),
-                                  ),
-                                  prefixIcon: const Icon(Icons.folder_outlined)
-                                ),
-                                items: [
-                                  const DropdownMenuItem<String>(value: null, child: Text('Select a project...')),
-                                  ...snapshot.data!.map((project) => DropdownMenuItem<String>(value: project['project_id'], child: Text(project['title'] ?? project['description'] ?? 'No Title', overflow: TextOverflow.ellipsis))),
-                                ],
-                                onChanged: (value) {
-                                  onProjectChanged(value);
-                                },
-                              ),
-                              const SizedBox(height: 8),
-                              SizedBox(
-                                height: 40,
-                                child: (projectData != null)
-                                    ? Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.green.shade200)),
-                                        child: Row(children: [Icon(Icons.check_circle, color: Colors.green.shade600, size: 16), const SizedBox(width: 8), Expanded(child: Text('Project data loaded: ${projectData!['title'] ?? projectData!['description'] ?? 'Unnamed Project'}', style: TextStyle(color: Colors.green.shade700, fontSize: 12)))]),
-                                      )
-                                    : const SizedBox.shrink(),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
             const SizedBox(height: 16),
             ...buildFormFields(),
           ],
@@ -1065,7 +874,7 @@ class CreateContractBuildMethods {
     }
   }
 
-  Widget buildPreview({VoidCallback? onEdit}) {
+  Widget buildPreview() {
     final String contractType = (selectedTemplate?['template_name'] as String?) ?? '';
 
     bool shouldShowItemRow(int rowNumber) {
@@ -1397,20 +1206,6 @@ class CreateContractBuildMethods {
 
     final content = Column(
       children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          color: Colors.blue.shade50,
-          child: Row(
-            children: [
-              const Spacer(),
-              OutlinedButton.icon(
-                onPressed: onEdit,
-                icon: const Icon(Icons.edit, size: 18),
-                label: const Text('Edit'),
-              ),
-            ],
-          ),
-        ),
         Expanded(
           child: Container(
             padding: const EdgeInsets.all(16),

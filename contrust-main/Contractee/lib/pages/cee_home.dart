@@ -10,8 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomePage extends StatefulWidget {
-  final String contracteeId;
-  const HomePage({super.key, required this.contracteeId});
+  const HomePage({super.key});
 
   @override
   _HomePageState createState() => _HomePageState();

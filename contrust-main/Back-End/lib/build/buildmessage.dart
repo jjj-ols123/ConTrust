@@ -1,11 +1,15 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
 import 'package:backend/build/buildmessagesdesign.dart';
 import 'package:backend/services/both%20services/be_fetchservice.dart';
 import 'package:backend/services/both%20services/be_contract_service.dart';
+import 'package:backend/services/both%20services/be_project_service.dart';
 import 'package:backend/utils/be_constraint.dart';
 import 'package:backend/utils/be_status.dart';
+import 'package:contractor/Screen/cor_ongoing.dart';
+import 'package:contractee/pages/cee_ongoing.dart';
+import 'package:contractor/build/builddrawer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MessageBuildMethods {}
@@ -387,11 +391,32 @@ class MessageUIBuildMethods {
                         return ContractAgreementBanner(
                           chatRoomId: chatRoomId!,
                           userRole: userRole,
-                          onActiveProjectPressed: () {
-                            // Navigate to project management based on user role
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Navigate to ${userRole == 'contractor' ? 'Contractor' : 'Contractee'} Ongoing Projects')),
-                            );
+                          onActiveProjectPressed: () async {
+                            if (userId == null) return;
+                            try {
+                              final activeProjects = await FetchService().fetchContractorActiveProjects(userId!);
+                              if (activeProjects.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('No current ongoing project found!')),
+                                );
+                                return;
+                              }
+                              final projectId = activeProjects.first['project_id'];
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ContractorShell(
+                                    currentPage: ContractorPage.projectManagement,
+                                    contractorId: userId!,
+                                    child: CorOngoingProjectScreen(projectId: projectId ?? ''),
+                                  ),
+                                ),
+                              );
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Error navigating to project management: $e')),
+                              );
+                            }
                           },
                         );
                       }
@@ -406,11 +431,22 @@ class MessageUIBuildMethods {
                         return ContractAgreementBanner(
                           chatRoomId: chatRoomId!,
                           userRole: userRole,
-                          onActiveProjectPressed: () {
-                            // Navigate to project management based on user role
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Navigate to ${userRole == 'contractor' ? 'Contractor' : 'Contractee'} Ongoing Projects')),
-                            );
+                          onActiveProjectPressed: () async {
+                            try {
+                              final projectId = await ProjectService().getProjectId(chatRoomId!);
+                              if (projectId != null) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => CeeOngoingProjectScreen(projectId: projectId),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Error navigating to project: $e')),
+                              );
+                            }
                           },
                         );
                       }
@@ -787,10 +823,10 @@ class MessageUIBuildMethods {
                           }
 
                           final contract = contractSnapshot.data!;
-                          final contractStatus = contract['status']?.toString() ?? 'unknown';
+
                           final messageStatus = contractMsg['contract_status']?.toString();
-                          final displayStatus = messageStatus ?? contractStatus;
-                          final statusColor = _getContractStatusColor(displayStatus);
+                          final displayStatus = messageStatus;
+                          final statusColor = _getContractStatusColor(displayStatus!);
                           final statusLabel = _getContractStatusLabel(displayStatus);
 
                           return Container(

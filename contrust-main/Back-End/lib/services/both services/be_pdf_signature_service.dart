@@ -18,28 +18,41 @@ class ContractPdfSignatureService {
     Uint8List? contractorSignature,
     Uint8List? contracteeSignature,
   }) async {
-    final contractType = contractData['contract_type'] as String? ?? contractData['contract_type_id'] as String;
+    final contractTypeId = contractData['contract_type_id'] as String?;
+    
+    if (contractTypeId == null) {
+      throw Exception('Contract type ID is missing');
+    }
+    
+    final contractTypeData = await _supabase
+        .from('ContractTypes')
+        .select('template_name')
+        .eq('contract_type_id', contractTypeId)
+        .single();
+    
+    final contractType = contractTypeData['template_name'] as String?;
+    
+    if (contractType == null) {
+      throw Exception('Contract type not found for ID: $contractTypeId');
+    }
     
     List<pw.Widget> pdfWidgets;
     switch (contractType.toLowerCase()) {
-      case 'time and materials':
-      case 'time_and_materials':
+      case 'time and materials contract':
         pdfWidgets = TimeAndMaterialsPDF.buildTimeAndMaterialsPdf(
           fieldValues,
           contractorSignature: contractorSignature,
           contracteeSignature: contracteeSignature,
         );
         break;
-      case 'lump sum':
-      case 'lump_sum':
+      case 'lump sum contract':
         pdfWidgets = LumpSumPDF.buildLumpSumPdf(
           fieldValues,
           contractorSignature: contractorSignature,
           contracteeSignature: contracteeSignature,
         );
         break;
-      case 'cost plus':
-      case 'cost_plus':
+      case 'cost plus contract':
         pdfWidgets = CostPlusPDF.buildCostPlusPdf(
           fieldValues,
           contractorSignature: contractorSignature,
@@ -85,7 +98,7 @@ class ContractPdfSignatureService {
   }) async {
     try {
       final contractData = await ContractService.getContractById(contractId);
-      
+
       final rawFieldValues = contractData['field_values'];
       final fieldValues = rawFieldValues is Map 
           ? Map<String, String>.from(rawFieldValues.map((key, value) => MapEntry(key.toString(), value.toString())))

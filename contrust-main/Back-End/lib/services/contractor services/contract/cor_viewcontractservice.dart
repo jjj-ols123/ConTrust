@@ -77,6 +77,17 @@ class ViewContractService {
     }
   }
 
+  static Future<String?> getSignedContractUrl(String contractPath) async {
+    try {
+      final signedUrl = await Supabase.instance.client.storage
+          .from('contracts')
+          .createSignedUrl(contractPath, 60 * 60 * 24); 
+      return signedUrl;
+    } catch (e) {
+      return null;
+    }
+  }
+
   static String? getPdfUrl(Map<String, dynamic> contractData) {
     String? pdfUrl = contractData['pdf_url'] as String?;
     
