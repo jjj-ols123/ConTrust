@@ -20,6 +20,9 @@ class ContractService {
     required String contractType,
     required Map<String, String> fieldValues,
   }) async {
+
+
+    try {
     final proj = await _supabase
         .from('Projects')
         .select('contractee_id')
@@ -30,14 +33,12 @@ class ContractService {
       throw Exception('Project has no contractee assigned');
     }
 
-    // Generate PDF
     final pdfBytes = await ContractPdfService.generateContractPdf(
       contractType: contractType,
       fieldValues: fieldValues,
       title: title,
     );
 
-    // Upload PDF to storage
     final pdfPath = await ContractPdfService.uploadContractPdf(
       pdfBytes: pdfBytes,
       contractorId: contractorId,
@@ -52,8 +53,12 @@ class ContractService {
       'contract_type_id': contractTypeId,
       'title': title,
       'pdf_url': pdfPath,
+      'field_values': fieldValues,
       'status': 'draft',
     });
+    } catch (e) {
+      throw Exception('Failed to save contract: $e');
+    }
   }
 
   static Future<void> updateContract({
@@ -75,20 +80,29 @@ class ContractService {
       throw Exception('Project has no contractee assigned');
     }
 
-    // Generate new PDF
     final pdfBytes = await ContractPdfService.generateContractPdf(
       contractType: contractType,
       fieldValues: fieldValues,
       title: title,
     );
 
-    // Upload updated PDF to storage
     final pdfPath = await ContractPdfService.uploadContractPdf(
       pdfBytes: pdfBytes,
       contractorId: contractorId,
       projectId: projectId,
       contracteeId: contracteeId,
+      contractId: contractId,
     );
+
+    final currentContract = await _supabase
+        .from('Contracts')
+        .select('status')
+        .eq('contract_id', contractId)
+        .single();
+
+    final currentStatus = currentContract['status'] as String?;
+    
+    final newStatus = (currentStatus == 'rejected') ? 'draft' : currentStatus;
 
     await _supabase.from('Contracts').update({
       'project_id': projectId,
@@ -97,6 +111,8 @@ class ContractService {
       'contract_type_id': contractTypeId,
       'title': title,
       'pdf_url': pdfPath,
+      'field_values': fieldValues,
+      'status': newStatus,
       'updated_at': DateTime.now().toIso8601String(),
     }).eq('contract_id', contractId);
   }
@@ -119,10 +135,13 @@ class ContractService {
           .eq('project_id', contractData['project_id'])
           .single();
 
-      await _supabase.from('Contracts').update({
-        'status': 'sent',
-        'sent_at': DateTime.now().toIso8601String(),
-      }).eq('contract_id', contractId);
+      final currentStatus = contractData['status'] as String?;
+      if (currentStatus != 'approved' && currentStatus != 'rejected' && currentStatus != 'signed') {
+        await _supabase.from('Contracts').update({
+          'status': 'sent',
+          'sent_at': DateTime.now().toIso8601String(),
+        }).eq('contract_id', contractId);
+      }
 
       await _supabase.from('Projects').update({
         'status': 'awaiting_agreement',
@@ -136,6 +155,7 @@ class ContractService {
         'timestamp': DateTime.now().toIso8601String(),
         'message_type': 'contract',
         'contract_id': contractId,
+        'contract_status': 'sent',
       });
 
       await _supabase.from('ChatRoom').update({
@@ -174,6 +194,14 @@ class ContractService {
         .update(updateData)
         .eq('contract_id', contractId);
 
+    if (status == 'approved' || status == 'rejected') {
+      await _supabase
+          .from('Messages')
+          .update({'contract_status': status})
+          .eq('contract_id', contractId)
+          .eq('message_type', 'contract');
+    }
+
     if (status == 'approved') {
       final contractData = await _supabase
           .from('Contracts')
@@ -182,18 +210,28 @@ class ContractService {
           .single();
 
       await _supabase.from('Projects').update({
-        'status': 'awaiting_agreement',
+        'status': 'awaiting_signature',
       }).eq('project_id', contractData['project_id']);
     } else if (status == 'rejected') {
       final contractData = await _supabase
           .from('Contracts')
-          .select('project_id')
+          .select('project_id, contractor_id, contractee_id')
           .eq('contract_id', contractId)
           .single();
 
-      await _supabase.from('Projects').update({
-        'status': 'awaiting_agreement',
-      }).eq('project_id', contractData['project_id']);
+      try {
+        await NotificationService().createContractNotification(
+          receiverId: contractData['contractor_id'],
+          receiverType: 'contractor',
+          senderId: contractData['contractee_id'],
+          senderType: 'contractee',
+          contractId: contractId,
+          type: 'Contract Rejected',
+          message: 'Your contract has been rejected by the contractee.',
+        );
+      } catch (notificationError) {
+        rethrow; 
+      }
     }
   }
 
@@ -232,7 +270,7 @@ class ContractService {
         throw Exception('Invalid user type. Must be contractor or contractee');
       }
 
-      if (signatureBytes.length > 5 * 1024 * 1024) { 
+      if (signatureBytes.length > 5 * 1024 * 1024) {
         throw Exception('Signature image too large. Maximum size is 5MB');
       }
 
@@ -249,17 +287,17 @@ class ContractService {
 
       final contractorId = contractData['contractor_id'] as String?;
       final contracteeId = contractData['contractee_id'] as String?;
-      
+
       if (userType.toLowerCase() == 'contractor' && contractorId != userId) {
         throw Exception('User not authorized to sign as contractor');
       }
       if (userType.toLowerCase() == 'contractee' && contracteeId != userId) {
         throw Exception('User not authorized to sign as contractee');
       }
-      final existingSignature = userType.toLowerCase() == 'contractor' 
-          ? contractData['contractor_signature_url'] 
+      final existingSignature = userType.toLowerCase() == 'contractor'
+          ? contractData['contractor_signature_url']
           : contractData['contractee_signature_url'];
-      
+
       final fileName = '${userType.toLowerCase()}_${contractId}_$userId.png';
       final timestamp = DateTime.now().toIso8601String();
 
@@ -316,8 +354,7 @@ class ContractService {
           type: 'Contract Signed',
           message: notifInfo['message']!,
         );
-      } catch (notificationError) {
-      }
+      } catch (notificationError) {}
 
       await Future.delayed(const Duration(milliseconds: 200));
 
@@ -329,20 +366,32 @@ class ContractService {
           .single();
 
       final hasContractorSignature =
-          (updatedContract['contractor_signature_url'] as String?)?.isNotEmpty ?? false;
+          (updatedContract['contractor_signature_url'] as String?)
+                  ?.isNotEmpty ??
+              false;
       final hasContracteeSignature =
-          (updatedContract['contractee_signature_url'] as String?)?.isNotEmpty ?? false;
+          (updatedContract['contractee_signature_url'] as String?)
+                  ?.isNotEmpty ??
+              false;
       final currentStatus = updatedContract['status'] as String? ?? '';
 
       bool contractActivated = false;
       String? activationError;
 
-      if (hasContractorSignature && hasContracteeSignature && currentStatus != 'active') {
+      if (hasContractorSignature &&
+          hasContracteeSignature &&
+          currentStatus != 'active') {
         try {
           await _supabase.from('Contracts').update({
             'status': 'active',
             'activated_at': DateTime.now().toIso8601String(),
           }).eq('contract_id', contractId);
+
+          await _supabase
+              .from('Messages')
+              .update({'contract_status': 'active'})
+              .eq('contract_id', contractId)
+              .eq('message_type', 'contract');
 
           final projectId = updatedContract['project_id'];
           if (projectId != null) {
@@ -362,7 +411,7 @@ class ContractService {
               senderType: 'system',
               contractId: contractId,
               type: 'Contract Activated',
-              message: 'Contract has been fully signed and is now active',
+              message: 'The project is now active. Proceed to Project Management Page.',
             );
 
             await NotificationService().createContractNotification(
@@ -372,10 +421,9 @@ class ContractService {
               senderType: 'system',
               contractId: contractId,
               type: 'Contract Activated',
-              message: 'Contract has been fully signed and is now active',
+              message: 'The project is now active. Proceed to Project Management Page.',
             );
-          } catch (activationNotifError) {
-          }
+          } catch (activationNotifError) {}
         } catch (activationErr) {
           activationError = activationErr.toString();
         }
@@ -383,8 +431,8 @@ class ContractService {
 
       return {
         'success': true,
-        'message': existingSignature != null 
-            ? 'Signature updated successfully' 
+        'message': existingSignature != null
+            ? 'Signature updated successfully'
             : 'Contract signed successfully',
         'signature_url': fileName,
         'signed_at': timestamp,
@@ -394,7 +442,7 @@ class ContractService {
         'user_type': userType.toLowerCase(),
       };
     } catch (e) {
-      throw Exception('Failed to sign contract: ${e.toString()}');
+      throw Exception('You already submitted your signature');
     }
   }
 
@@ -418,10 +466,8 @@ class ContractService {
       }
 
       try {
-        final files = await _supabase.storage
-            .from('signatures')
-            .list();
-        
+        final files = await _supabase.storage.from('signatures').list();
+
         return files.any((file) => file.name == signaturePath);
       } catch (e) {
         return false;
@@ -452,7 +498,7 @@ class ContractService {
 
       final signedUrl = await _supabase.storage
           .from('signatures')
-          .createSignedUrl(signaturePath, 60 * 60 * 2); 
+          .createSignedUrl(signaturePath, 60 * 60 * 2);
 
       return signedUrl;
     } catch (e) {
@@ -479,21 +525,20 @@ class ContractService {
 
       final contractTitle = contract['title'] as String? ?? 'Contract';
       final contractStatus = contract['status'] as String? ?? 'unknown';
-      
+
       if (contractStatus == 'cancelled') {
         throw Exception('Cannot download cancelled contract');
       }
 
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final fileName = customFileName ?? 
+      final fileName = customFileName ??
           '${contractTitle.replaceAll(RegExp(r'[^\w\s-]'), '')}_$timestamp.pdf';
 
       Uint8List? pdfBytes;
       for (int attempt = 0; attempt < 3; attempt++) {
         try {
-          pdfBytes = await _supabase.storage
-              .from('contracts')
-              .download(pdfPath);
+          pdfBytes =
+              await _supabase.storage.from('contracts').download(pdfPath);
           break;
         } catch (downloadError) {
           if (attempt == 2) rethrow;
@@ -518,11 +563,10 @@ class ContractService {
           if (!kIsWeb && savedFile is File) {
             filePath = savedFile.path;
           } else if (kIsWeb) {
-            filePath = fileName; 
-            savedFile = true; 
+            filePath = fileName;
+            savedFile = true;
           }
-        } catch (saveError) {
-        }
+        } catch (saveError) {}
       }
 
       return {
@@ -572,7 +616,8 @@ class ContractService {
     }
   }
 
-  static Future<Map<String, dynamic>> validateContractPdf(String contractId) async {
+  static Future<Map<String, dynamic>> validateContractPdf(
+      String contractId) async {
     try {
       final contract = await _supabase
           .from('Contracts')
@@ -593,7 +638,7 @@ class ContractService {
         final files = await _supabase.storage
             .from('contracts')
             .list(path: pdfPath.split('/').first);
-        
+
         final fileName = pdfPath.split('/').last;
         final fileExists = files.any((file) => file.name == fileName);
 
@@ -606,7 +651,7 @@ class ContractService {
         }
 
         final fileInfo = files.firstWhere((file) => file.name == fileName);
-        
+
         return {
           'is_valid': true,
           'can_download': true,
@@ -669,8 +714,9 @@ class ContractService {
         }
       }
 
-      final successfulDownloads = downloadResults.where((r) => r['success'] == true).toList();
-      
+      final successfulDownloads =
+          downloadResults.where((r) => r['success'] == true).toList();
+
       return {
         'total_requested': contractIds.length,
         'successful_downloads': successfulDownloads.length,
@@ -681,17 +727,6 @@ class ContractService {
       };
     } catch (e) {
       throw Exception('Bulk download failed: ${e.toString()}');
-    }
-  }
-
-  static Future<String?> getSignedUrl(String signaturePath) async {
-    try {
-      final signedUrl = await Supabase.instance.client.storage
-          .from('signatures')
-          .createSignedUrl(signaturePath, 60 * 60);
-      return signedUrl;
-    } catch (e) {
-      return null;
     }
   }
 }

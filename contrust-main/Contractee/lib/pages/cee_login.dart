@@ -7,8 +7,7 @@ import 'package:contractee/pages/cee_registration.dart';
 import 'package:flutter/material.dart';
 
 class LoginPage extends StatefulWidget {
-  final BuildContext modalContext;
-  const LoginPage({super.key, required this.modalContext});
+  const LoginPage({super.key});
 
   @override
   State<LoginPage> createState() => _LoginPageState();

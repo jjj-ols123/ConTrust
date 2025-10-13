@@ -1,12 +1,17 @@
 // ignore_for_file: file_names
 
+import 'dart:typed_data';
 import 'package:backend/utils/be_contractformat.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 class CostPlusPDF {
 
-  static List<pw.Widget> buildCostPlusPdf(Map<String, String> fieldValues) {
+  static List<pw.Widget> buildCostPlusPdf(
+    Map<String, String> fieldValues, {
+    Uint8List? contractorSignature,
+    Uint8List? contracteeSignature,
+  }) {
     List<pw.Widget> widgets = [];
     widgets.add(
       pw.Center(
@@ -163,19 +168,19 @@ class CostPlusPDF {
 
     widgets.add(
       pw.Bullet(
-        text: 'Labor Costs: Actual hourly rates as specified - ₱${ContractStyle.getFieldValue(fieldValues, 'Labor.Costs')} per hour',
+        text: 'Labor Costs: Actual hourly rates as specified - PHP${ContractStyle.getFieldValue(fieldValues, 'Labor.Costs')} per hour',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Material Costs: Actual cost of materials with receipts - ₱${ContractStyle.getFieldValue(fieldValues, 'Material.Costs')} (estimated)',
+        text: 'Material Costs: Actual cost of materials with receipts - PHP${ContractStyle.getFieldValue(fieldValues, 'Material.Costs')} (estimated)',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Equipment Costs: Actual rental/usage costs - ₱${ContractStyle.getFieldValue(fieldValues, 'Equipment.Costs')} (estimated)',
+        text: 'Equipment Costs: Actual rental/usage costs - PHP${ContractStyle.getFieldValue(fieldValues, 'Equipment.Costs')} (estimated)',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
@@ -644,9 +649,11 @@ class CostPlusPDF {
                     decoration: pw.BoxDecoration(
                       border: pw.Border.all(color: PdfColors.grey400),
                     ),
-                    child: pw.Center(
-                      child: pw.Text('Signature', style: pw.TextStyle(color: PdfColors.grey600)),
-                    ),
+                    child: contracteeSignature != null
+                        ? pw.Image(pw.MemoryImage(contracteeSignature))
+                        : pw.Center(
+                            child: pw.Text('Signature', style: pw.TextStyle(color: PdfColors.grey600)),
+                          ),
                   ),
                   pw.SizedBox(height: 8),
                   pw.Container(
@@ -655,7 +662,12 @@ class CostPlusPDF {
                       border: pw.Border.all(color: PdfColors.grey400),
                     ),
                     child: pw.Center(
-                      child: pw.Text('Date', style: pw.TextStyle(color: PdfColors.grey600)),
+                      child: contracteeSignature != null
+                          ? pw.Text(
+                              DateTime.now().toString().substring(0, 10),
+                              style: const pw.TextStyle(fontSize: 10),
+                            )
+                          : pw.Text('Date', style: pw.TextStyle(color: PdfColors.grey600)),
                     ),
                   ),
                   pw.SizedBox(height: 8),
@@ -678,9 +690,11 @@ class CostPlusPDF {
                     decoration: pw.BoxDecoration(
                       border: pw.Border.all(color: PdfColors.grey400),
                     ),
-                    child: pw.Center(
-                      child: pw.Text('Signature', style: pw.TextStyle(color: PdfColors.grey600)),
-                    ),
+                    child: contractorSignature != null
+                        ? pw.Image(pw.MemoryImage(contractorSignature))
+                        : pw.Center(
+                            child: pw.Text('Signature', style: pw.TextStyle(color: PdfColors.grey600)),
+                          ),
                   ),
                   pw.SizedBox(height: 8),
                   pw.Container(
@@ -689,7 +703,12 @@ class CostPlusPDF {
                       border: pw.Border.all(color: PdfColors.grey400),
                     ),
                     child: pw.Center(
-                      child: pw.Text('Date', style: pw.TextStyle(color: PdfColors.grey600)),
+                      child: contractorSignature != null
+                          ? pw.Text(
+                              DateTime.now().toString().substring(0, 10),
+                              style: const pw.TextStyle(fontSize: 10),
+                            )
+                          : pw.Text('Date', style: pw.TextStyle(color: PdfColors.grey600)),
                     ),
                   ),
                   pw.SizedBox(height: 8),

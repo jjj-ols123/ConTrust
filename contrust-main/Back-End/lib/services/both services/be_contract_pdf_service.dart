@@ -58,9 +58,13 @@ class ContractPdfService {
     required String contractorId,
     required String projectId,
     required String contracteeId,
+    String? contractId, 
   }) async {
     try {
-      final fileName = '${projectId}_$contracteeId.pdf';
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final fileName = contractId != null 
+          ? '${projectId}_${contracteeId}_${contractId}_$timestamp.pdf'
+          : '${projectId}_$contracteeId.pdf';
       final filePath = '$contractorId/$fileName';
 
       await _supabase.storage

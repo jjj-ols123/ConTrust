@@ -132,7 +132,7 @@ class ProjectService {
   }) async {
     try {
       final existingHireRequest =
-          await hasExistingHireRequest(contractorId, contracteeId);
+          await FetchService().hasExistingHireRequest(contractorId, contracteeId);
 
       if (existingHireRequest != null) {
         throw Exception(
@@ -219,11 +219,22 @@ class ProjectService {
       final userType = requestingUserId == project['contractor_id']
           ? 'contractor'
           : 'contractee';
-      final notifInfo = await FetchService().userTypeDecide(
-        contractId: projectId,
-        userType: userType,
-        action: 'requested to cancel the project',
-      );
+      
+      String receiverId, receiverType, senderId, senderType, message;
+      if (userType == 'contractor') {
+        receiverId = project['contractee_id'];
+        receiverType = 'contractee';
+        senderId = project['contractor_id'];
+        senderType = 'contractor';
+        message = 'The contractor has requested to cancel the project';
+      } else {
+        receiverId = project['contractor_id'];
+        receiverType = 'contractor';
+        senderId = project['contractee_id'];
+        senderType = 'contractee';
+        message = 'The contractee has requested to cancel the project';
+      }
+      
       final status = userType == 'contractor'
           ? 'cancellation_requested_by_contractor'
           : 'cancellation_requested_by_contractee';
@@ -233,12 +244,12 @@ class ProjectService {
           .update({'status': status}).eq('project_id', projectId);
 
       await NotificationService().createNotification(
-        receiverId: notifInfo['receiverId'] ?? '',
-        receiverType: notifInfo['receiverType'] ?? '',
-        senderId: notifInfo['senderId'] ?? '',
-        senderType: notifInfo['senderType'] ?? '',
+        receiverId: receiverId,
+        receiverType: receiverType,
+        senderId: senderId,
+        senderType: senderType,
         type: 'Project Cancellation Request',
-        message: notifInfo['message'] ?? '',
+        message: message,
         information: {
           'project_id': projectId,
           'action': 'cancel_request',
@@ -324,13 +335,6 @@ class ProjectService {
     }
   }
 
-  // Helper method to check for existing hire requests
-  Future<Map<String, dynamic>?> hasExistingHireRequest(
-      String contractorId, String contracteeId) async {
-    return await FetchService().hasExistingHireRequest(contractorId, contracteeId);
-  }
-
-  // Helper method to cancel other hire requests
   Future<void> cancelOtherHireRequests(
       String projectId, String contracteeId, String acceptedNotificationId) async {
     try {

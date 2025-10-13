@@ -1,0 +1,68 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Back-End",
+            "cwd": "Back-End",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "Back-End (profile mode)",
+            "cwd": "Back-End",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "Back-End (release mode)",
+            "cwd": "Back-End",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        },
+        {
+            "name": "Contractee",
+            "cwd": "Contractee",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "Contractee (profile mode)",
+            "cwd": "Contractee",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "Contractee (release mode)",
+            "cwd": "Contractee",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        },
+        {
+            "name": "Contractor",
+            "cwd": "Contractor",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "Contractor (profile mode)",
+            "cwd": "Contractor",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "Contractor (release mode)",
+            "cwd": "Contractor",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        }
+    ]
+}

@@ -23,7 +23,6 @@ class ContractTabsBuild {
         indicatorColor: Colors.amber.shade700,
         indicatorWeight: 3,
         onTap: (index) {
-          // When Final Preview tab is tapped and it's unlocked, run pre-processing
           if (index == 2 && canViewFinalPreview) {
             onBeforeFinalPreview?.call();
           }
@@ -69,12 +68,12 @@ class ContractTabsBuild {
         contractForm,
         canViewFinalPreview
             ? finalPreview
-            : _buildDisabledPreview(),
+            : buildDisabledPreview(),
       ],
     );
   }
 
-  static Widget _buildDisabledPreview() {
+  static Widget buildDisabledPreview() {
     return Container(
       padding: const EdgeInsets.all(32),
       child: Center(
@@ -117,7 +116,7 @@ class ContractTabsBuild {
 
   static Widget buildTemplatePreview(String? contractType) {
     if (contractType == null) {
-      return _buildSelectContractTypeMessage();
+      return buildSelectContractTypeMessage();
     }
 
     return Container(
@@ -160,7 +159,7 @@ class ContractTabsBuild {
                   child: SingleChildScrollView(
                     key: const PageStorageKey('template_preview_scroll'),
                     physics: const ClampingScrollPhysics(),
-                    child: _getTemplateWidget(contractType),
+                    child: getTemplateWidget(contractType),
                   ),
                 ),
               ),
@@ -171,7 +170,7 @@ class ContractTabsBuild {
     );
   }
 
-  static Widget _buildSelectContractTypeMessage() {
+  static Widget buildSelectContractTypeMessage() {
     return Container(
       padding: const EdgeInsets.all(32),
       child: Center(
@@ -212,7 +211,7 @@ class ContractTabsBuild {
     );
   }
 
-  static Widget _getTemplateWidget(String contractType) {
+  static Widget getTemplateWidget(String contractType) {
     final normalizedType = contractType.toLowerCase();
     
     if (normalizedType.contains('lump sum')) {
@@ -358,7 +357,6 @@ class ContractTabsBuild {
   }
 }
 
-// Local no-glow clamped scroll behavior for the tabs preview
 class _NoGlowTabsScrollBehavior extends ScrollBehavior {
   const _NoGlowTabsScrollBehavior();
   @override

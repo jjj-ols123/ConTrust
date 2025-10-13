@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/build/builddrawer.dart';
 import 'package:contractor/build/contract/buildcontract.dart';
 import 'package:contractor/build/contract/buildcontracttabs.dart';
@@ -112,6 +113,16 @@ class _CreateContractPageState extends State<CreateContractPage>
         controllers[field.key] = controller;
       }
 
+      if (widget.existingContract != null && widget.existingContract!['field_values'] != null) {
+        final existingFieldValues = widget.existingContract!['field_values'] as Map<String, dynamic>;
+        for (var field in contractFields) {
+          final value = existingFieldValues[field.key];
+          if (value != null) {
+            controllers[field.key]?.text = value.toString();
+          }
+        }
+      }
+
       if (mounted) setState(() {});
     } catch (e) {
       buildDefaultFields();
@@ -133,6 +144,16 @@ class _CreateContractPageState extends State<CreateContractPage>
       });
       controllers[field.key] = controller;
     }
+
+    if (widget.existingContract != null && widget.existingContract!['field_values'] != null) {
+      final existingFieldValues = widget.existingContract!['field_values'] as Map<String, dynamic>;
+      for (var field in contractFields) {
+        final value = existingFieldValues[field.key];
+        if (value != null) {
+          controllers[field.key]?.text = value.toString();
+        }
+      }
+    }
   }
 
   Future<void> fetchProjectData(String projectId) async {
@@ -146,11 +167,14 @@ class _CreateContractPageState extends State<CreateContractPage>
         setState(() {
           this.projectData = projectData;
         });
-        service.populateProjectFields(
-          projectData,
-          controllers,
-          selectedContractType,
-        );
+
+        if (widget.existingContract == null) {
+          service.populateProjectFields(
+            projectData,
+            controllers,
+            selectedContractType,
+          );
+        }
         await service.populateContractorInfo(
           widget.contractorId,
           controllers,
@@ -252,7 +276,8 @@ class _CreateContractPageState extends State<CreateContractPage>
   }
 
   Future<void> saveContract() async {
-    if (!formKey.currentState!.validate()) {
+
+    if (tabController.index == 1 && !formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please fill in all required fields'),
@@ -300,12 +325,7 @@ class _CreateContractPageState extends State<CreateContractPage>
             fieldValues: fieldValues,
             contractType: selectedContractType ?? widget.contractType ?? '',
           );
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Contract updated successfully!'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          ConTrustSnackBar.success(context, 'Contract updated successfully!');
         } else {
           await service.saveContract(
             contractorId: widget.contractorId,
@@ -315,18 +335,14 @@ class _CreateContractPageState extends State<CreateContractPage>
             fieldValues: fieldValues,
             contractType: selectedContractType ?? widget.contractType ?? '',
           );
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Contract saved successfully!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
-          );
+          ConTrustSnackBar.success(context, 'Contract saved successfully!');
         }
         Navigator.pop(context, true);
       }
     } catch (e) {
-      return;
+      if (mounted) {
+        ConTrustSnackBar.error(context, 'Failed to save contract: $e');
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -438,23 +454,7 @@ class _CreateContractPageState extends State<CreateContractPage>
             tabController: tabController,
             canViewFinalPreview: canViewFinalPreview,
             onBeforeFinalPreview: () async {
-              final messenger = ScaffoldMessenger.of(context);
-              messenger.hideCurrentSnackBar();
-              messenger.showSnackBar(
-                const SnackBar(
-                  content: Text('Preparing preview...'),
-                  duration: Duration(milliseconds: 900),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-              FocusScope.of(context).unfocus();
-              service.calculateTimeAndMaterialsRates(controllers);
-              await Future.delayed(const Duration(milliseconds: 75));
-              if (mounted) {
-                setState(() {
-                  _previewRefreshTick++;
-                });
-              }
+              ConTrustSnackBar.info(context, 'Preparing final preview...');
             },
           ),
 

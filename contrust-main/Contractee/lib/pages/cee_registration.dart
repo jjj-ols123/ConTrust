@@ -182,7 +182,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
           onTap: () {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => LoginPage(modalContext: context)),
+              MaterialPageRoute(builder: (context) => LoginPage()),
             );
           },
           child: Text.rich(

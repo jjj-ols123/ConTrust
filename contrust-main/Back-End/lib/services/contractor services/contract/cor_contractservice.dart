@@ -2,7 +2,7 @@
 
 import 'package:backend/services/both services/be_contract_service.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:backend/utils/be_contractsignature.dart';
 import 'dart:typed_data';
 
 class ContractorContractService {
@@ -75,12 +75,13 @@ class ContractorContractService {
     required Uint8List signatureBytes,
     required String userType,
   }) async {
-    return await ContractService.signContract(
+    await SignatureCompletionHandler.signContractWithPdfGeneration(
       contractId: contractId,
       userId: userId,
       signatureBytes: signatureBytes,
       userType: userType,
     );
+    return {};
   }
 
   static Future<bool> verifySignature({
@@ -147,16 +148,5 @@ class ContractorContractService {
 
   static String formatDate(String? dateString) {
     return ContractService.formatDate(dateString);
-  }
-
-  static Future<String?> getSignedUrl(String signaturePath) async {
-    try {
-      final signedUrl = await Supabase.instance.client.storage
-          .from('contracts')
-          .createSignedUrl(signaturePath, 60 * 60);
-      return signedUrl;
-    } catch (e) {
-      return null;
-    }
   }
 }

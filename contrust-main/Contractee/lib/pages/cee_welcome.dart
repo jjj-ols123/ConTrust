@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:ui';
 import 'package:backend/utils/be_pagetransition.dart';
 import 'package:contractee/pages/cee_home.dart';
@@ -134,33 +136,28 @@ class _WelcomePageState extends State<WelcomePage> {
               ),
               textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 50),
-          if (context != null && title == "Design")
-            ElevatedButton(
-              onPressed: () async {
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.setBool('isFirstOpen', false);
-                // ignore: use_build_context_synchronously
-                transitionBuilder(context, HomePage(), replace: true);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-                foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
+            const SizedBox(height: 40),
+            if (context != null && title == "Design")
+              ElevatedButton(
+                onPressed: () async {
+                  SharedPreferences prefs = await SharedPreferences.getInstance();
+                  await prefs.setBool('isFirstOpen', false);
+
+                 // ignore: use_build_context_synchronously
+                 transitionBuilder(context, HomePage(), replace: true);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 24, vertical: 12),
                 ),
-                elevation: 6,
-                shadowColor: Colors.tealAccent,
+                child: const Text(
+                  "Let's Go!",
+                  style: TextStyle(fontSize: 18, color: Colors.white),
+                ),
               ),
-              child: const Text(
-                "Let's Go!",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

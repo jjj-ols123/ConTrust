@@ -1,9 +1,11 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: depend_on_referenced_packages, deprecated_member_use
+
+import 'dart:ui';
 
 import 'package:backend/services/both%20services/be_fetchservice.dart';
-import 'package:backend/services/contractor services/contract/cor_contracttypeservice.dart';
+import 'package:backend/services/contractor%20services/contract/cor_contracttypeservice.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
-import 'dart:ui';
 
 class ContractTypeBuild {
   static Widget buildHeader(BuildContext context) {
@@ -44,7 +46,7 @@ class ContractTypeBuild {
         future: FetchService().fetchContractTypes(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator(color: Colors.amber,));
           }
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(
@@ -52,7 +54,7 @@ class ContractTypeBuild {
             );
           }
           final contractTypes = snapshot.data!;
-          return _buildContractTypesList(
+          return buildContractTypesList(
             context: context,
             contractTypes: contractTypes,
             contractorId: contractorId,
@@ -63,7 +65,7 @@ class ContractTypeBuild {
     );
   }
 
-  static Widget _buildContractTypesList({
+  static Widget buildContractTypesList({
     required BuildContext context,
     required List<Map<String, dynamic>> contractTypes,
     required String contractorId,
@@ -84,7 +86,7 @@ class ContractTypeBuild {
         itemCount: contractTypes.length,
         itemBuilder: (context, index) {
           final template = contractTypes[index];
-          return _buildContractTypeCard(
+          return buildContractTypeCard(
             context: context,
             template: template,
             contractorId: contractorId,
@@ -95,7 +97,7 @@ class ContractTypeBuild {
     );
   }
 
-  static Widget _buildContractTypeCard({
+  static Widget buildContractTypeCard({
     required BuildContext context,
     required Map<String, dynamic> template,
     required String contractorId,
@@ -191,13 +193,13 @@ class ContractTypeBuild {
           future: FetchService().fetchCreatedContracts(contractorId),
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(child: CircularProgressIndicator(color: Colors.amber));
             }
             final contracts = snapshot.data!;
             if (contracts.isEmpty) {
               return const Center(child: Text('No contracts created yet.'));
             }
-            return _buildContractsList(
+            return buildContractsList(
               context: context,
               contracts: contracts,
               contractorId: contractorId,
@@ -209,7 +211,7 @@ class ContractTypeBuild {
     );
   }
 
-  static Widget _buildContractsList({
+  static Widget buildContractsList({
     required BuildContext context,
     required List<Map<String, dynamic>> contracts,
     required String contractorId,
@@ -225,7 +227,7 @@ class ContractTypeBuild {
       ),
       itemBuilder: (context, index) {
         final contract = contracts[index];
-        return _buildContractListItem(
+        return buildContractListItem(
           context: context,
           contract: contract,
           contractorId: contractorId,
@@ -236,7 +238,7 @@ class ContractTypeBuild {
     );
   }
 
-  static Widget _buildContractListItem({
+  static Widget buildContractListItem({
     required BuildContext context,
     required Map<String, dynamic> contract,
     required String contractorId,
@@ -254,7 +256,7 @@ class ContractTypeBuild {
         style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
       ),
       subtitle: Text(
-        '${contract['created_at'] ?? ''}',
+        formatDateTime(contract['created_at']),
         style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[700]),
       ),
       trailing: Builder(
@@ -281,5 +283,18 @@ class ContractTypeBuild {
         );
       },
     );
+}
+
+static String formatDateTime(dynamic dateTimeString) {
+  if (dateTimeString == null || dateTimeString.toString().isEmpty) {
+    return 'Unknown date';
   }
+
+  try {
+    DateTime dateTime = DateTime.parse(dateTimeString.toString());
+    return DateFormat('MMM dd, yyyy • hh:mm a').format(dateTime);
+  } catch (e) {
+    return dateTimeString.toString();
+  }
+}
 }

@@ -1,12 +1,17 @@
 // ignore_for_file: file_names
 
+import 'dart:typed_data';
 import 'package:backend/utils/be_contractformat.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 class LumpSumPDF {
 
-  static List<pw.Widget> buildLumpSumPdf(Map<String, String> fieldValues) {
+  static List<pw.Widget> buildLumpSumPdf(
+    Map<String, String> fieldValues, {
+    Uint8List? contractorSignature,
+    Uint8List? contracteeSignature,
+  }) {
     List<pw.Widget> widgets = [];
 
     widgets.add(
@@ -169,7 +174,7 @@ class LumpSumPDF {
     widgets.add(
       pw.Center(
         child: pw.Text(
-          'TOTAL CONTRACT PRICE: ₱${ContractStyle.getFieldValue(fieldValues, 'Payment.Total')}',
+          'TOTAL CONTRACT PRICE: PHP${ContractStyle.getFieldValue(fieldValues, 'Payment.Total')}',
           style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
         ),
       ),
@@ -777,7 +782,7 @@ class LumpSumPDF {
     );
     widgets.add(
       pw.Text(
-        'If the Contractor fails to complete the Work by the agreed completion date, and such delay is not excusable under the terms of this Contract, the Contractor shall pay liquidated damages in the amount of ₱${ContractStyle.getFieldValue(fieldValues, 'Penalty.DailyAmount')} per calendar day for each day of delay. These liquidated damages represent a reasonable estimate of the damages that the Contractee will suffer as a result of delayed completion.',
+        'If the Contractor fails to complete the Work by the agreed completion date, and such delay is not excusable under the terms of this Contract, the Contractor shall pay liquidated damages in the amount of PHP${ContractStyle.getFieldValue(fieldValues, 'Penalty.DailyAmount')} per calendar day for each day of delay. These liquidated damages represent a reasonable estimate of the damages that the Contractee will suffer as a result of delayed completion.',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),
@@ -877,9 +882,11 @@ class LumpSumPDF {
                     decoration: pw.BoxDecoration(
                       border: pw.Border.all(color: PdfColors.grey400),
                     ),
-                    child: pw.Center(
-                      child: pw.Text('Signature', style: pw.TextStyle(color: PdfColors.grey600)),
-                    ),
+                    child: contracteeSignature != null
+                        ? pw.Image(pw.MemoryImage(contracteeSignature))
+                        : pw.Center(
+                            child: pw.Text('Signature', style: pw.TextStyle(color: PdfColors.grey600)),
+                          ),
                   ),
                   pw.SizedBox(height: 8),
                   pw.Container(
@@ -888,7 +895,12 @@ class LumpSumPDF {
                       border: pw.Border.all(color: PdfColors.grey400),
                     ),
                     child: pw.Center(
-                      child: pw.Text('Date', style: pw.TextStyle(color: PdfColors.grey600)),
+                      child: contracteeSignature != null
+                          ? pw.Text(
+                              DateTime.now().toString().substring(0, 10),
+                              style: const pw.TextStyle(fontSize: 10),
+                            )
+                          : pw.Text('Date', style: pw.TextStyle(color: PdfColors.grey600)),
                     ),
                   ),
                   pw.SizedBox(height: 8),
@@ -911,9 +923,11 @@ class LumpSumPDF {
                     decoration: pw.BoxDecoration(
                       border: pw.Border.all(color: PdfColors.grey400),
                     ),
-                    child: pw.Center(
-                      child: pw.Text('Signature', style: pw.TextStyle(color: PdfColors.grey600)),
-                    ),
+                    child: contractorSignature != null
+                        ? pw.Image(pw.MemoryImage(contractorSignature))
+                        : pw.Center(
+                            child: pw.Text('Signature', style: pw.TextStyle(color: PdfColors.grey600)),
+                          ),
                   ),
                   pw.SizedBox(height: 8),
                   pw.Container(
@@ -922,7 +936,12 @@ class LumpSumPDF {
                       border: pw.Border.all(color: PdfColors.grey400),
                     ),
                     child: pw.Center(
-                      child: pw.Text('Date', style: pw.TextStyle(color: PdfColors.grey600)),
+                      child: contractorSignature != null
+                          ? pw.Text(
+                              DateTime.now().toString().substring(0, 10),
+                              style: const pw.TextStyle(fontSize: 10),
+                            )
+                          : pw.Text('Date', style: pw.TextStyle(color: PdfColors.grey600)),
                     ),
                   ),
                   pw.SizedBox(height: 8),
