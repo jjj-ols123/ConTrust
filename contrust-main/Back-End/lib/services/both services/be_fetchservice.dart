@@ -307,6 +307,7 @@ class FetchService {
             reviewed_at,
             contractor_signed_at,
             contractee_signed_at,
+            field_values,
             project:Projects(type, description, title)
           ''')
           .inFilter('project_id', projectIds)
@@ -385,6 +386,20 @@ class FetchService {
     }
   }
 
+  Future<List<Map<String, dynamic>>> fetchContracteeActiveProjects(String contracteeId) async {
+    try {
+      final res = await _supabase
+          .from('Projects')
+          .select('project_id,title,status')
+          .eq('contractee_id', contracteeId)
+          .inFilter('status', ['active', 'ongoing'])
+          .order('created_at', ascending: false);
+      return List<Map<String, dynamic>>.from(res);
+    } catch (_) {
+      return [];
+    }
+  }
+
   Future<List<Map<String, dynamic>>> fetchRatings(String contractorId) async {
     try {
       final response = await Supabase.instance.client
@@ -398,8 +413,6 @@ class FetchService {
       return [];
     }
   }
-
-  // Contract-specific fetch methods for PDF system
 
   Future<List<Map<String, dynamic>>> fetchContractsForContractee(
       String contracteeId) async {
@@ -451,7 +464,6 @@ class FetchService {
     }
   }
 
-  // Helper method to check for existing hire requests
   Future<Map<String, dynamic>?> hasExistingHireRequest(
       String contractorId, String contracteeId) async {
     try {

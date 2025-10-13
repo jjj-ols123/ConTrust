@@ -138,10 +138,15 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
               } else {
                 final projectStatus = snapshot.data ?? 'pending';
 
-                if (projectStatus == 'awaiting_contract') {
+                if (projectStatus == 'awaiting_contract' || projectStatus == 'active') {
                   return ContractAgreementBanner(
                     chatRoomId: widget.chatRoomId,
                     userRole: 'contractee', 
+                    onActiveProjectPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Navigate to Ongoing Projects')),
+                      );
+                    },
                   );
                 }
               }

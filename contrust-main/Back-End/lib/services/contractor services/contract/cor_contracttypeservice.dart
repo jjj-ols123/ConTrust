@@ -2,6 +2,7 @@
 
 import 'package:backend/services/both services/be_contract_service.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/Screen/cor_createcontract.dart';
 import 'package:contractor/Screen/cor_viewcontract.dart';
 import 'package:flutter/material.dart';
@@ -47,20 +48,49 @@ class ContractTypeService {
     required Map<String, dynamic> contract,
     required String contractorId,
   }) async {
-    final editResult = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CreateContractPage(
-          template: {
-            'contract_type_id': contract['contract_type_id'],
-          },
-          contractType: contract['contract_type_id'] as String,
-          contractorId: contractorId,
-          existingContract: contract,
+    try {
+      // Fetch the contract type details
+      final contractTypes = await FetchService().fetchContractTypes();
+      final contractType = contractTypes.firstWhere(
+        (type) => type['contract_type_id'] == contract['contract_type_id'],
+        orElse: () => <String, dynamic>{},
+      );
+
+      if (contractType.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error: Contract type not found'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return false;
+      }
+
+      final editResult = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CreateContractPage(
+            template: contractType,
+            contractType: contractType['template_name'] ?? '',
+            contractorId: contractorId,
+            existingContract: contract,
+          ),
         ),
-      ),
-    );
-    return editResult;
+      );
+      return editResult;
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading contract for editing: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return false;
+    }
   }
 
   static Future<void> sendContractToContractee({
@@ -78,23 +108,11 @@ class ContractTypeService {
       );
       
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Contract sent to contractee successfully!'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
+        ConTrustSnackBar.success(context, 'Contract sent successfully.');
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error sending contract. Please try again.'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
-          ),
-        );
+        ConTrustSnackBar.error(context, 'Error sending contract. Please try again.');
       }
     }
   }
@@ -154,6 +172,8 @@ class ContractTypeService {
     required String contractorId,
     required VoidCallback onRefreshContracts,
   }) {
+    final contractStatus = contract['status'] as String? ?? 'draft';
+    
     final RenderBox button = context.findRenderObject() as RenderBox;
     final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
     final RelativeRect position = RelativeRect.fromRect(
@@ -164,10 +184,11 @@ class ContractTypeService {
       Offset.zero & overlay.size,
     );
 
-    showMenu<String>(
-      context: context,
-      position: position,
-      items: [
+    final List<PopupMenuEntry<String>> menuItems = [];
+
+    // Only show send option for draft contracts (newly created or edited rejected contracts)
+    if (contractStatus == 'draft') {
+      menuItems.add(
         const PopupMenuItem(
           value: 'send',
           child: Row(
@@ -178,27 +199,36 @@ class ContractTypeService {
             ],
           ),
         ),
-        const PopupMenuItem(
-          value: 'edit',
-          child: Row(
-            children: [
-              Icon(Icons.edit, size: 20),
-              SizedBox(width: 8),
-              Text('Edit Contract'),
-            ],
-          ),
+      );
+    }
+
+    menuItems.addAll([
+      const PopupMenuItem(
+        value: 'edit',
+        child: Row(
+          children: [
+            Icon(Icons.edit, size: 20),
+            SizedBox(width: 8),
+            Text('Edit Contract'),
+          ],
         ),
-        const PopupMenuItem(
-          value: 'delete',
-          child: Row(
-            children: [
-              Icon(Icons.delete, size: 20),
-              SizedBox(width: 8),
-              Text('Delete Contract'),
-            ],
-          ),
+      ),
+      const PopupMenuItem(
+        value: 'delete',
+        child: Row(
+          children: [
+            Icon(Icons.delete, size: 20),
+            SizedBox(width: 8),
+            Text('Delete Contract'),
+          ],
         ),
-      ],
+      ),
+    ]);
+
+    showMenu<String>(
+      context: context,
+      position: position,
+      items: menuItems,
     ).then((choice) async {
       if (choice != null) {
         await _handleMenuAction(

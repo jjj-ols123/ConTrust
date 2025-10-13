@@ -7,7 +7,6 @@ import 'package:backend/services/contractee%20services/cee_checkuser.dart';
 import 'package:backend/utils/be_pagetransition.dart';
 import 'package:contractee/pages/cee_about.dart';
 import 'package:contractee/pages/cee_login.dart';
-import 'package:contractee/pages/cee_materials.dart';
 import 'package:contractee/pages/cee_notification.dart';
 import 'package:contractee/pages/cee_ongoing.dart';
 import 'package:contractee/pages/cee_transaction.dart';
@@ -257,15 +256,6 @@ class MenuDrawerContractee extends StatelessWidget {
             ),
             const SizedBox(height: 0.5),
             ListTile(
-              leading: const Icon(Icons.handyman, color: Colors.blueGrey),
-              title: const Text(
-                'Materials',
-                style: TextStyle(fontSize: 18),
-              ),
-              onTap: () => transitionBuilder(context, const Buildingmaterial()),
-            ),
-            const SizedBox(height: 0.5),
-            ListTile(
               leading: const Icon(Icons.work, color: Colors.blueGrey),
               title: const Text(
                 'Ongoing',
@@ -312,12 +302,12 @@ class MenuDrawerContractee extends StatelessWidget {
               ),
               onTap: () => transitionBuilder(
                 context,
-                LoginPage(modalContext: context),
+                LoginPage()),
               ),
+            ],
             ),
-          ],
-        ),
-      ),
-    );
+          
+        )
+      );
   }
 }

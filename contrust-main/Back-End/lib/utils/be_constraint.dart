@@ -8,7 +8,7 @@ Future<bool> functionConstraint(String contractorId, String contracteeId) async 
       .select('project_id')
       .eq('contractor_id', contractorId)
       .eq('contractee_id', contracteeId)
-      .inFilter('status', ['awaiting_contract', 'active', 'awaiting_agreement'])
+      .inFilter('status', ['awaiting_contract', 'active', 'awaiting_agreement', 'awaiting_signature'])
       .maybeSingle();
   return response != null;
 } 
@@ -42,7 +42,7 @@ Future<Map<String, dynamic>?> hasOngoingProject(String contracteeId) async {
         .select('project_id')
         .eq('contractee_id', contracteeId)
         .not('contractor_id', 'is', null)
-        .inFilter('status', ['awaiting_contract', 'active', 'awaiting_agreement'])
+        .inFilter('status', ['awaiting_contract', 'active', 'awaiting_agreement', 'awaiting_signature'])
         .limit(1)
         .maybeSingle();
   return ongoingProject;

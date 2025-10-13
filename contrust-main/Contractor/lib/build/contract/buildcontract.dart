@@ -204,7 +204,6 @@ class CreateContractBuildMethods {
                       FutureBuilder<List<Map<String, dynamic>>>(
                         future: FetchService().fetchContractTypes(),
                         builder: (context, snapshot) {
-                          // Reserve a consistent vertical space to avoid layout jumps while loading
                           const double kSelectorHeight = 88;
                           if (snapshot.connectionState == ConnectionState.waiting) {
                             return const SizedBox(
@@ -354,7 +353,6 @@ class CreateContractBuildMethods {
                                 },
                               ),
                               const SizedBox(height: 8),
-                              // Reserve space for the status chip to avoid height change when projectData toggles
                               SizedBox(
                                 height: 40,
                                 child: (projectData != null)
@@ -451,15 +449,12 @@ class CreateContractBuildMethods {
 
     List<Widget> widgets = [];
 
-    // Categorize fields based on actual field keys from service methods
-    final dateFields = contractFields.where((f) => 
+    final dateFields = contractFields.where((f) =>
       (f as dynamic).key == 'Date' ||
       (f as dynamic).key == 'Contract.CreationDate' ||
       (f as dynamic).key.contains('Date') ||
       (f as dynamic).key.contains('Duration')
-    ).toList();
-    
-    final contracteeFields = contractFields.where((f) => 
+    ).toList();    final contracteeFields = contractFields.where((f) => 
       (f as dynamic).key.contains('Contractee.')
     ).toList();
     
@@ -476,7 +471,7 @@ class CreateContractBuildMethods {
       (f as dynamic).key.contains('Item.')
     ).toList();
     
-    final paymentFields = contractFields.where((f) => 
+    final paymentFields = contractFields.where((f) =>
       (f as dynamic).key.contains('Payment.') ||
       (f as dynamic).key.contains('Labor Costs') ||
       (f as dynamic).key.contains('Material Costs') ||
@@ -487,24 +482,19 @@ class CreateContractBuildMethods {
       (f as dynamic).key.contains('Retention Fee') ||
       (f as dynamic).key.contains('Late Fee Percentage')
     ).toList();
-    
-    // Extract milestone payment fields separately for special handling
-    final milestonePaymentFields = contractFields.where((f) => 
+
+    final milestonePaymentFields = contractFields.where((f) =>
       (f as dynamic).key.contains('Payment.ProgressPayment') ||
       (f as dynamic).key.contains('Payment.Milestone') ||
       (f as dynamic).key.contains('Payment.DownPaymentPercentage') ||
       (f as dynamic).key.contains('Payment.FinalPaymentPercentage')
     ).toList();
-    
-    // Remove milestone fields from regular payment fields to avoid duplication
-    final regularPaymentFields = paymentFields.where((f) => 
+    final regularPaymentFields = paymentFields.where((f) =>
       !(f as dynamic).key.contains('Payment.ProgressPayment') &&
       !(f as dynamic).key.contains('Payment.Milestone') &&
       !(f as dynamic).key.contains('Payment.DownPaymentPercentage') &&
       !(f as dynamic).key.contains('Payment.FinalPaymentPercentage')
-    ).toList();
-    
-    final bondFields = contractFields.where((f) => 
+    ).toList();    final bondFields = contractFields.where((f) => 
       (f as dynamic).key.contains('Bond.')
     ).toList();
     
@@ -520,7 +510,6 @@ class CreateContractBuildMethods {
       (f as dynamic).key.contains('Tax.')
     ).toList();
 
-    // Build sections only if fields exist
     if (dateFields.isNotEmpty) {
       widgets.add(buildSectionCard('Contract Information', dateFields));
       widgets.add(const SizedBox(height: 16));
@@ -542,13 +531,10 @@ class CreateContractBuildMethods {
     }
     
     if (itemFields.isNotEmpty) {
-      // Check if this is Time and Materials contract by looking for Item fields
-      bool isTimeAndMaterials = itemFields.any((f) => 
-        (f as dynamic).key.contains('Item.') && 
+      bool isTimeAndMaterials = itemFields.any((f) =>
+        (f as dynamic).key.contains('Item.') &&
         (f as dynamic).key.contains('.Name')
-      );
-      
-      if (isTimeAndMaterials) {
+      );      if (isTimeAndMaterials) {
         widgets.add(buildTimeAndMaterialsItemCard('Project Items', itemFields));
       } else {
         widgets.add(buildSectionCard('Project Items', itemFields));
@@ -629,19 +615,17 @@ class CreateContractBuildMethods {
   }
 
   Widget buildTimeAndMaterialsItemCard(String title, List<dynamic> fields) {
-    // Group fields by item number
     Map<int, Map<String, dynamic>> itemGroups = {};
-    
+
     for (var field in fields) {
       final f = field as dynamic;
       final key = f.key as String;
-      
-      // Extract item number from key like "Item.1.Name"
+
       final parts = key.split('.');
       if (parts.length >= 3 && parts[0] == 'Item') {
         final itemNumber = int.tryParse(parts[1]);
         final fieldType = parts[2];
-        
+
         if (itemNumber != null) {
           itemGroups[itemNumber] ??= {};
           itemGroups[itemNumber]![fieldType] = f;
@@ -678,8 +662,7 @@ class CreateContractBuildMethods {
               ],
             ),
             const SizedBox(height: 16),
-            
-            // Table header
+
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -697,17 +680,14 @@ class CreateContractBuildMethods {
                   const Expanded(flex: 2, child: Text('Price (₱)', style: TextStyle(fontWeight: FontWeight.bold))),
                   const Expanded(flex: 2, child: Text('Quantity', style: TextStyle(fontWeight: FontWeight.bold))),
                   const Expanded(flex: 2, child: Text('Subtotal (₱)', style: TextStyle(fontWeight: FontWeight.bold))),
-                  const SizedBox(width: 40), // Space for remove button
+                  const SizedBox(width: 40),
                 ],
               ),
             ),
-            
-            // Item rows
+
             ...itemGroups.entries.map((entry) {
               final itemNumber = entry.key;
-              final itemFields = entry.value;
-              
-              return Container(
+              final itemFields = entry.value;              return Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   border: Border(
@@ -728,7 +708,7 @@ class CreateContractBuildMethods {
                     const SizedBox(width: 8),
                     Expanded(flex: 2, child: buildFormField(itemFields['Subtotal'])),
                     const SizedBox(width: 8),
-                    if (itemGroups.length > 1) // Only show remove button if more than 1 item
+                    if (itemGroups.length > 1)
                       IconButton(
                         onPressed: () => _removeItem(itemNumber),
                         icon: const Icon(Icons.remove_circle, color: Colors.red),
@@ -747,21 +727,17 @@ class CreateContractBuildMethods {
   }
 
   void _addNewItem() {
-    // Get current item count
     int currentItemCount = _getCurrentItemCount();
-    
-    // Add new item (increase count by 1)
+
     if (onItemCountChanged != null) {
       onItemCountChanged!(currentItemCount + 1);
     }
   }
 
   void _removeItem(int itemNumber) {
-    // Get current item count
     int currentItemCount = _getCurrentItemCount();
-    
-    if (currentItemCount > 1) { // Don't allow removing if only 1 item left
-      // Remove the last item (decrease count by 1)
+
+    if (currentItemCount > 1) {
       if (onItemCountChanged != null) {
         onItemCountChanged!(currentItemCount - 1);
       }
@@ -773,13 +749,12 @@ class CreateContractBuildMethods {
   }
 
   int _getCurrentItemCount() {
-    // Count how many items we have by looking at Item.X.Name fields
     int maxItemNumber = 0;
-    
+
     for (var field in contractFields) {
       final f = field as dynamic;
       final key = f.key as String;
-      
+
       if (key.startsWith('Item.') && key.endsWith('.Name')) {
         final parts = key.split('.');
         if (parts.length >= 3) {
@@ -789,9 +764,7 @@ class CreateContractBuildMethods {
           }
         }
       }
-    }
-    
-    return maxItemNumber;
+    }    return maxItemNumber;
   }
 
   Widget buildMilestonePaymentCard(String title, List<dynamic> fields) {
@@ -809,7 +782,6 @@ class CreateContractBuildMethods {
               ),
             ),
             const SizedBox(height: 16),
-            // Group milestone payments with their corresponding milestones
             ...buildMilestonePaymentGroups(fields),
           ],
         ),
@@ -819,33 +791,28 @@ class CreateContractBuildMethods {
 
   List<Widget> buildMilestonePaymentGroups(List<dynamic> fields) {
     List<Widget> widgets = [];
-    
-    // Find down payment field
-    final downPaymentField = fields.where((f) => 
+
+    final downPaymentField = fields.where((f) =>
       (f as dynamic).key.contains('Payment.DownPaymentPercentage')
     ).toList();
-    
-    // Find progress payment and milestone pairs
-    final progressPayment1Field = fields.where((f) => 
+
+    final progressPayment1Field = fields.where((f) =>
       (f as dynamic).key.contains('Payment.ProgressPayment1Percentage')
     ).toList();
-    final milestone1Field = fields.where((f) => 
+    final milestone1Field = fields.where((f) =>
       (f as dynamic).key.contains('Payment.Milestone1')
     ).toList();
-    
-    final progressPayment2Field = fields.where((f) => 
+
+    final progressPayment2Field = fields.where((f) =>
       (f as dynamic).key.contains('Payment.ProgressPayment2Percentage')
     ).toList();
-    final milestone2Field = fields.where((f) => 
+    final milestone2Field = fields.where((f) =>
       (f as dynamic).key.contains('Payment.Milestone2')
     ).toList();
-    
-    // Find final payment field
-    final finalPaymentField = fields.where((f) => 
+
+    final finalPaymentField = fields.where((f) =>
       (f as dynamic).key.contains('Payment.FinalPaymentPercentage')
     ).toList();
-
-    // Build down payment section
     if (downPaymentField.isNotEmpty) {
       widgets.add(
         Container(
@@ -872,7 +839,6 @@ class CreateContractBuildMethods {
       widgets.add(const SizedBox(height: 16));
     }
 
-    // Build progress payment 1 section
     if (progressPayment1Field.isNotEmpty && milestone1Field.isNotEmpty) {
       widgets.add(
         Container(
@@ -905,7 +871,6 @@ class CreateContractBuildMethods {
       widgets.add(const SizedBox(height: 16));
     }
 
-    // Build progress payment 2 section
     if (progressPayment2Field.isNotEmpty && milestone2Field.isNotEmpty) {
       widgets.add(
         Container(
@@ -938,7 +903,6 @@ class CreateContractBuildMethods {
       widgets.add(const SizedBox(height: 16));
     }
 
-    // Build final payment section
     if (finalPaymentField.isNotEmpty) {
       widgets.add(
         Container(
@@ -982,7 +946,6 @@ class CreateContractBuildMethods {
               ),
             ),
             const SizedBox(height: 16),
-            // Two-column layout with full-height divider
             IntrinsicHeight(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1041,7 +1004,6 @@ class CreateContractBuildMethods {
       );
     }
     
-    // Add empty space if odd number of fields to maintain alignment
     if (fields.length % 2 == 1) {
       rightFields.add(const SizedBox(height: 60));
     }
@@ -1093,7 +1055,6 @@ class CreateContractBuildMethods {
           }
         : null,
       onChanged: isEnabled ? (value) {
-        // If this is a price or quantity field, trigger recalculation
         if (key.contains('.Price') || key.contains('.Quantity') || key.contains('Payment.Discount') || key.contains('Payment.Tax')) {
           _triggerCalculation();
         }
@@ -1102,37 +1063,27 @@ class CreateContractBuildMethods {
   }
 
   void _triggerCalculation() {
-    // Trigger the calculation callback if provided
     if (onCalculationTriggered != null) {
       onCalculationTriggered!();
     }
   }
 
   Widget buildPreview({VoidCallback? onEdit}) {
-    // Build a styled Final Preview using the same template widgets but with values injected.
     final String contractType = (selectedTemplate?['template_name'] as String?) ?? '';
 
-    // Add this function to check if a row should be visible
     bool shouldShowItemRow(int rowNumber) {
-      // Check if any field for this item has a value
       final nameKey = 'Item.$rowNumber.Description';
       final quantityKey = 'Item.$rowNumber.Quantity';
       final priceKey = 'Item.$rowNumber.UnitRate';
-      
-      // If any of the main fields have a value, show the row
+
       return (controllers.containsKey(nameKey) && controllers[nameKey]!.text.trim().isNotEmpty) ||
              (controllers.containsKey(quantityKey) && controllers[quantityKey]!.text.trim().isNotEmpty) ||
              (controllers.containsKey(priceKey) && controllers[priceKey]!.text.trim().isNotEmpty);
     }
-    
-    // Set a global function to check item visibility that templates can access
     ContractStyle.setItemRowVisibilityChecker((int rowNum) => shouldShowItemRow(rowNum));
-    
-    // Prepare a resolver to replace placeholders with controller values.
+
     String resolvePlaceholders(String input) {
-      // Map of friendly tokens to controller keys (extend as needed)
       final Map<String, String> tokenToKey = {
-        // People
         'First name of the contractee': 'Contractee.FirstName',
         'Last name of the contractee': 'Contractee.LastName',
         'Contractee street address': 'Contractee.Address',
@@ -1143,18 +1094,12 @@ class CreateContractBuildMethods {
         'Contractor street address': 'Contractor.Address',
         'Contractor city': 'Contractor.City',
         'Contractor postal code': 'Contractor.PostalCode',
-
-
         'Contractor company name': 'Contractor.Company',
         'Contractor firm or company name': 'Contractor.Company',
         'Your Construction Company\'s Name': 'Contractor.Company',
-        
-        // Common company/identifier extras
         'Contractor license number': 'Contractor.License',
         'Contractor phone number': 'Contractor.Phone',
         'Contractor province': 'Contractor.Province',
-
-        // Project basics
         'Date of contract creation': 'Contract.CreationDate',
         'Project description as defined by the contractor': 'Project.ContractorDef',
         'Estimated labor hours': 'Project.LaborHours',
@@ -1164,8 +1109,6 @@ class CreateContractBuildMethods {
         'Start date of the project': 'Project.StartDate',
         'Project schedule': 'Project.Schedule',
         'List of project milestones': 'Project.MilestonesList',
-
-        // Common address/placeholders across templates
         'Project address': 'Project.Address',
         'Project site address': 'Project.Address',
         'Legal description of property': 'Project.LegalDescription',
@@ -1173,12 +1116,8 @@ class CreateContractBuildMethods {
         'Project scope of work': 'Project.ScopeOfWork',
         'List of required materials': 'Materials.List',
         'Scope of work': 'Project.Scope',
-
-        // Taxes/fees
         'Applicable taxes': 'Tax.List',
         'Maximum penalty amount': 'Penalty.Amount',
-
-        // Payment summary fields
         'Total contract price': 'Payment.Total',
         'Total contract price (legacy)': 'Payment.TotalAmount',
         'Payment method': 'Payment.Method',
@@ -1190,54 +1129,42 @@ class CreateContractBuildMethods {
         'Termination notice period in days': 'Contract.TerminationDays',
         'Warranty period in months': 'Contract.WarrantyMonths',
         'Number of days to commence work': 'Project.CommenceDays',
-              
-        // Table cells and other template elements
         'List of work': 'Project.Scope',
         'Time': 'Project.LaborHours',
         'Materials': 'Materials.List',
-
-        // Payment calculation placeholders
         'Subtotal amount': 'Payment.Subtotal',
         'Payment.Subtotal': 'Payment.Subtotal',
-        'Discount amount': 'Payment.Discount',
+        'Discount amount': 'Payment.DiscountAmount',
         'Payment.Discount': 'Payment.Discount',
-        'Tax amount': 'Payment.Tax',
+        'Tax amount': 'Payment.TaxAmount',
         'Payment.Tax': 'Payment.Tax',
         'Total amount': 'Payment.Total',
         'Payment.Total': 'Payment.Total',
-        
-        // Item rows (needs to handle 1-based index)
         'Item 1 name': 'Item.1.Name',
         'Item 1 description': 'Item.1.Description',
         'Item 1 price': 'Item.1.Price',
         'Item 1 quantity': 'Item.1.Quantity',
         'Item 1 subtotal': 'Item.1.Subtotal',
-
         'Item 2 name': 'Item.2.Name',
         'Item 2 description': 'Item.2.Description',
         'Item 2 price': 'Item.2.Price',
         'Item 2 quantity': 'Item.2.Quantity',
         'Item 2 subtotal': 'Item.2.Subtotal',
-
         'Item 3 name': 'Item.3.Name',
         'Item 3 description': 'Item.3.Description',
         'Item 3 price': 'Item.3.Price',
         'Item 3 quantity': 'Item.3.Quantity',
         'Item 3 subtotal': 'Item.3.Subtotal',
-
         'Item 4 name': 'Item.4.Name',
         'Item 4 description': 'Item.4.Description',
         'Item 4 price': 'Item.4.Price',
         'Item 4 quantity': 'Item.4.Quantity',
         'Item 4 subtotal': 'Item.4.Subtotal',
-
         'Item 5 name': 'Item.5.Name',
         'Item 5 description': 'Item.5.Description',
         'Item 5 price': 'Item.5.Price',
         'Item 5 quantity': 'Item.5.Quantity',
         'Item 5 subtotal': 'Item.5.Subtotal',
-
-        // Payment schedule/milestones
         'Down payment percentage': 'Payment.DownPaymentPercentage',
         'Progress payment 1 percentage': 'Payment.ProgressPayment1Percentage',
         'Progress payment 2 percentage': 'Payment.ProgressPayment2Percentage',
@@ -1262,21 +1189,19 @@ class CreateContractBuildMethods {
       };
 
       String out = input;
-      // Case-insensitive regex to match any placeholder content pattern ([...] or {...})
       final reg = RegExp(r'\[(.*?)\]|\{(.*?)\}', caseSensitive: false);
       out = out.replaceAllMapped(reg, (m) {
-        // Get the token inside [] or {} (whichever matched)
+
         final token = (m.group(1) ?? m.group(2) ?? '').trim();
         if (token.isEmpty) return m.group(0)!;
         
-        // Try exact match
+
         final key = tokenToKey[token];
         if (key != null && controllers.containsKey(key)) {
           final v = controllers[key]!.text.trim();
           if (v.isNotEmpty) return v;
         }
         
-        // Try case-insensitive match with token map
         String? caseInsensitiveKey;
         tokenToKey.forEach((k, v) {
           if (k.toLowerCase() == token.toLowerCase()) {
@@ -1288,13 +1213,12 @@ class CreateContractBuildMethods {
           if (v.isNotEmpty) return v;
         }
         
-        // If not mapped, try direct key lookup
+
         if (controllers.containsKey(token)) {
           final v = controllers[token]!.text.trim();
           if (v.isNotEmpty) return v;
         }
         
-        // Try looking for dynamic item fields (Item.N.Property pattern)
         if (token.toLowerCase().contains('item') && 
             (token.toLowerCase().contains('description') || 
              token.toLowerCase().contains('quantity') || 
@@ -1302,13 +1226,11 @@ class CreateContractBuildMethods {
              token.toLowerCase().contains('amount') ||
              token.toLowerCase().contains('price') ||
              token.toLowerCase().contains('subtotal'))) {
-          // Extract item number and property
           final parts = token.split(' ');
           if (parts.length >= 3) {
             final itemNum = int.tryParse(parts[1]);
             final prop = parts.sublist(2).join(' ');
             if (itemNum != null) {
-              // try common variants
               final candidates = [
                 'Item.$itemNum.$prop',
                 'Item.$itemNum.${prop.replaceAll(' ', '')}',
@@ -1328,21 +1250,16 @@ class CreateContractBuildMethods {
           }
         }
 
-        // Special computed payment placeholders: subtotal/discount/tax/total
         final tkn = token.toLowerCase();
         if (tkn == 'subtotal amount' || tkn == 'subtotal' || tkn == 'payment.subtotal') {
-          // Sum item subtotals or price*qty
           double subtotal = 0.0;
-          // First, check for explicit item subtotal controllers
           controllers.forEach((k, ctrl) {
             final m = RegExp(r'^Item\.(\d+)\.(Subtotal|Amount|subtotal|amount)\b').firstMatch(k);
             if (m != null) {
               subtotal += double.tryParse(ctrl.text.replaceAll(',', '')) ?? 0.0;
             }
           });
-          // If none found, compute from price * quantity
           if (subtotal == 0.0) {
-            // detect max item number dynamically
             final itemRe = RegExp(r'^Item\.(\d+)\.');
             final found = <int>{};
             for (var k in controllers.keys) {
@@ -1359,7 +1276,6 @@ class CreateContractBuildMethods {
         }
 
         if (tkn == 'discount amount' || tkn == 'discount' || tkn == 'payment.discount') {
-          // Compute discount as percentage of subtotal: supports "5", "5%", or "0.05"
           double sub = double.tryParse(controllers['Payment.Subtotal']?.text.replaceAll(',', '') ?? '') ?? 0.0;
           if (sub == 0.0) {
             controllers.forEach((k, ctrl) {
@@ -1377,17 +1293,15 @@ class CreateContractBuildMethods {
             rate = v > 0 ? v / 100.0 : 0.0;
           } else {
             final v = double.tryParse(raw.replaceAll(',', '')) ?? 0.0;
-            rate = v > 1.0 ? v / 100.0 : v; // 5 -> 0.05, 0.05 -> 0.05
+            rate = v > 1.0 ? v / 100.0 : v; 
           }
           final discAmt = sub * rate;
           return discAmt != 0.0 ? discAmt.toStringAsFixed(2) : '0.00';
         }
 
         if (tkn == 'tax amount' || tkn == 'tax' || tkn == 'payment.tax') {
-          // Compute tax as percentage of subtotal: supports "12", "12%", or "0.12"
           double sub = double.tryParse(controllers['Payment.Subtotal']?.text.replaceAll(',', '') ?? '') ?? 0.0;
           if (sub == 0.0) {
-            // If subtotal not filled, estimate from item rows
             controllers.forEach((k, ctrl) {
               final m = RegExp(r'^Item\.(\d+)\.(Subtotal|Amount|subtotal|amount)\b').firstMatch(k);
               if (m != null) {
@@ -1403,19 +1317,17 @@ class CreateContractBuildMethods {
             rate = v > 0 ? v / 100.0 : 0.0;
           } else {
             final v = double.tryParse(raw.replaceAll(',', '')) ?? 0.0;
-            rate = v > 1.0 ? v / 100.0 : v; // 12 -> 0.12, 0.12 -> 0.12
+            rate = v > 1.0 ? v / 100.0 : v; 
           }
           final txAmt = sub * rate;
           return txAmt != 0.0 ? txAmt.toStringAsFixed(2) : '0.00';
         }
 
         if (tkn == 'total amount' || tkn == 'total' || tkn == 'payment.total' || tkn == 'total contract price') {
-          // prefer explicit total controller
+  
           final explicit = double.tryParse(controllers['Payment.Total']?.text.replaceAll(',', '') ?? '') ?? double.nan;
           if (!explicit.isNaN) return explicit.toStringAsFixed(2);
-          // compute: subtotal - discount + tax
           final sub = double.tryParse(controllers['Payment.Subtotal']?.text.replaceAll(',', '') ?? '') ?? 0.0;
-          // Compute discount from percentage
           String rawDisc = controllers['Payment.Discount']?.text ?? '';
           rawDisc = rawDisc.trim();
           double discRate;
@@ -1427,7 +1339,6 @@ class CreateContractBuildMethods {
             discRate = v > 1.0 ? v / 100.0 : v;
           }
           final dis = sub * discRate;
-          // Compute tax from percentage
           String raw = controllers['Payment.Tax']?.text ?? '';
           raw = raw.trim();
           double rate;
@@ -1443,20 +1354,18 @@ class CreateContractBuildMethods {
           if (total != 0.0) return total.toStringAsFixed(2);
         }
 
-        // Leave original token if no value; or show underscore for emphasis
         return tokenToKey.containsKey(token) ? '_' : m.group(0)!;
       });
 
       return out;
     }
 
-    // Choose the widget for the contract type (reuse template preview components)
+
     Widget contractWidget;
     final normalizedType = contractType.toLowerCase();
     if (normalizedType.contains('lump sum')) {
-      // Set resolver before building widget, then clear it after frame is built
+
       ContractStyle.setTextResolver(resolvePlaceholders);
-      // Set row visibility checker
       ContractStyle.setItemRowVisibilityChecker((int rowNum) => shouldShowItemRow(rowNum));
       contractWidget = const LumpSumContract();
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1465,7 +1374,7 @@ class CreateContractBuildMethods {
       });
     } else if (normalizedType.contains('cost-plus') || normalizedType.contains('cost plus')) {
       ContractStyle.setTextResolver(resolvePlaceholders);
-      // Set row visibility checker
+
       ContractStyle.setItemRowVisibilityChecker((int rowNum) => shouldShowItemRow(rowNum));
       contractWidget = const CostPlusContract();
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1474,7 +1383,7 @@ class CreateContractBuildMethods {
       });
     } else if (normalizedType.contains('time and materials')) {
       ContractStyle.setTextResolver(resolvePlaceholders);
-      // Set row visibility checker
+
       ContractStyle.setItemRowVisibilityChecker((int rowNum) => shouldShowItemRow(rowNum));
       contractWidget = const TimeMaterialsContract();
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1482,7 +1391,6 @@ class CreateContractBuildMethods {
         ContractStyle.clearItemRowVisibilityChecker();
       });
     } else {
-      // Default to plain filled text
       final filled = resolvePlaceholders(PdfExtractUtils.getDefaultTemplateContent(contractType));
       contractWidget = Padding(
         padding: const EdgeInsets.all(16),
@@ -1523,13 +1431,11 @@ class CreateContractBuildMethods {
       ],
     );
 
-    // Ensure we clear resolver after build to avoid accidental global effect
     WidgetsBinding.instance.addPostFrameCallback((_) => ContractStyle.clearTextResolver());
     return content;
   }
 }
 
-// Custom scroll behavior to remove overscroll glow and clamp physics
 class _NoGlowScrollBehavior extends ScrollBehavior {
   const _NoGlowScrollBehavior();
   @override

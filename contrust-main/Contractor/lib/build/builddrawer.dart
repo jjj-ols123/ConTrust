@@ -65,7 +65,6 @@ class ContractorShell extends StatelessWidget {
     final isDesktop = screenWidth >= 1000;
 
     return Scaffold(
-      // Prevent automatic insets adjustments that can cause vertical jumps
       resizeToAvoidBottomInset: false,
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: ConTrustAppBar(headline: ''),

@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:ui';
 
 import 'package:backend/utils/be_pagetransition.dart';
@@ -112,8 +114,7 @@ class _WelcomePageState extends State<WelcomePage> {
                   SharedPreferences prefs = await SharedPreferences.getInstance();
                   await prefs.setBool('isFirstOpen', false);
 
-                 // ignore: use_build_context_synchronously
-                 transitionBuilder(context, HomePage(), replace: true);
+                 transitionBuilder(context, HomePage(contracteeId: ''), replace: true);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.teal,

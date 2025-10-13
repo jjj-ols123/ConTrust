@@ -10,7 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final String contracteeId;
+  const HomePage({super.key, required this.contracteeId});
 
   @override
   _HomePageState createState() => _HomePageState();
@@ -96,7 +97,6 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bool isWideScreen = MediaQuery.of(context).size.width >= 800;
-    final drawerWidget = const MenuDrawerContractee();
     final pageContent = SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
@@ -301,7 +301,6 @@ class _HomePageState extends State<HomePage> {
               children: [
                 SizedBox(
                   width: 250,
-                  child: drawerWidget,
                 ),
                 Expanded(
                   child: Scaffold(
@@ -331,7 +330,6 @@ class _HomePageState extends State<HomePage> {
               preferredSize: const Size.fromHeight(70),
               child: ConTrustAppBar(headline: "Home"),
             ),
-            drawer: drawerWidget,
             body: pageContent,
             floatingActionButton: ExpandableFloatingButton(
               clearControllers: _clearControllers,

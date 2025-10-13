@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 
 class OngoingBuildMethods {
-  // Build project header card
   static Widget buildProjectHeader({
     required String projectTitle,
     required String clientName,
