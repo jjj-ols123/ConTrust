@@ -223,7 +223,7 @@ class ContractTabsBuild {
     } else {
       return Container(
         padding: const EdgeInsets.all(32),
-        child: Center(
+        child: Center(  
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

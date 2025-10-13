@@ -38,11 +38,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {  
-    final session = Supabase.instance.client.auth.currentSession;
     return MaterialApp(
       scrollBehavior: AppScrollBehavior(),
       debugShowCheckedModeBanner: false,
-      home: isFirstOpen ? WelcomePage() : HomePage(contracteeId: session!.user.id),
+      home: isFirstOpen ? WelcomePage() : HomePage(),
     );
   }
 }

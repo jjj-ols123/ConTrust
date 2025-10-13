@@ -32,6 +32,7 @@ class _CreateContractPageState extends State<CreateContractPage>
   String? initialProjectId;
 
   int _previewRefreshTick = 0;
+  bool isPreparingPreview = false;
 
   final Map<String, TextEditingController> controllers = {};
   final formKey = GlobalKey<FormState>();
@@ -50,7 +51,14 @@ class _CreateContractPageState extends State<CreateContractPage>
     super.initState();
     tabController = TabController(length: 3, vsync: this);
     tabController.addListener(() {
-      if (mounted) setState(() {});
+      if (mounted) {
+        setState(() {});
+        if (tabController.index != 2 && isPreparingPreview) {
+          setState(() {
+            isPreparingPreview = false;
+          });
+        }
+      }
     });
     titleController = TextEditingController(
       text: widget.existingContract?['title'] as String? ?? '',
@@ -62,7 +70,11 @@ class _CreateContractPageState extends State<CreateContractPage>
     checkForProject();
   }
 
-  void initializeFields() {
+  void initializeFields() async {
+    if (widget.existingContract != null) {
+      await loadExistingContractFieldValues();
+    }
+    
     if (selectedTemplate != null) {
       loadTemplateAndBuildFields();
     } else {
@@ -82,6 +94,23 @@ class _CreateContractPageState extends State<CreateContractPage>
           fetchProjectData(projectId);
         }
       });
+    }
+  }
+
+  Future<void> loadExistingContractFieldValues() async {
+    if (widget.existingContract == null) return;
+    
+    try {
+      final contractId = widget.existingContract!['contract_id'] as String?;
+      if (contractId != null) {
+        final fieldValues = await service.fetchContractFieldValues(contractId);
+        if (fieldValues != null) {
+  
+          widget.existingContract!['field_values'] = fieldValues;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching contract field values: $e');
     }
   }
 
@@ -133,6 +162,8 @@ class _CreateContractPageState extends State<CreateContractPage>
     if (selectedTemplate != null) {
       final templateName = selectedTemplate!['template_name'] ?? '';
       contractFields = service.getContractTypeSpecificFields(templateName);
+    } else if (selectedContractType != null) {
+      contractFields = service.getContractTypeSpecificFields(selectedContractType!);
     } else {
       contractFields = [];
     }
@@ -368,6 +399,68 @@ class _CreateContractPageState extends State<CreateContractPage>
     );
   }
 
+  Future<void> prepareFinalPreview() async {
+    setState(() {
+      isPreparingPreview = true;
+    });
+
+    try {
+
+      if (selectedTemplate != null && 
+          selectedTemplate!['template_name']?.toLowerCase().contains('time and materials') == true) {
+        service.calculateTimeAndMaterialsRates(controllers);
+      }
+
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted && tabController.index == 2) {
+        setState(() {
+          _previewRefreshTick++;
+        });
+      }
+
+    } finally {
+      if (mounted) {
+        setState(() {
+          isPreparingPreview = false;
+        });
+      }
+    }
+  }
+
+  Widget buildPreviewLoadingIndicator() {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Preparing Final Preview...',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Calculating values and generating preview',
+              style: TextStyle(
+                color: Colors.grey.shade500,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   @override
   Widget build(BuildContext context) {
@@ -454,7 +547,7 @@ class _CreateContractPageState extends State<CreateContractPage>
             tabController: tabController,
             canViewFinalPreview: canViewFinalPreview,
             onBeforeFinalPreview: () async {
-              ConTrustSnackBar.info(context, 'Preparing final preview...');
+              await prepareFinalPreview();
             },
           ),
 
@@ -465,14 +558,12 @@ class _CreateContractPageState extends State<CreateContractPage>
                 selectedTemplate?['template_name'],
               ),
               contractForm: buildHelper.buildForm(),
-              finalPreview: KeyedSubtree(
-                key: ValueKey(_previewRefreshTick),
-                child: buildHelper.buildPreview(
-                  onEdit: () {
-                    tabController.animateTo(1);
-                  },
-                ),
-              ),
+              finalPreview: isPreparingPreview
+                  ? buildPreviewLoadingIndicator()
+                  : KeyedSubtree(
+                      key: ValueKey(_previewRefreshTick),
+                    child: buildHelper.buildPreview(),
+                    ),
               canViewFinalPreview: canViewFinalPreview,
             ),
           ),

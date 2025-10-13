@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:ui';
+
 import 'package:backend/utils/be_pagetransition.dart';
 import 'package:contractee/pages/cee_home.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -20,74 +21,53 @@ class _WelcomePageState extends State<WelcomePage> {
 
   @override
   Widget build(BuildContext context) {
+    
     return Scaffold(
       body: Stack(
         children: [
-          AnimatedContainer(
-            duration: const Duration(seconds: 2),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.amber, Colors.amberAccent],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-          ),
-          
           ScrollConfiguration(
             behavior: ScrollConfiguration.of(context).copyWith(
-              dragDevices: {PointerDeviceKind.touch, PointerDeviceKind.mouse},
+              dragDevices: {
+                PointerDeviceKind.touch,
+                PointerDeviceKind.mouse,
+              },
             ),
             child: PageView(
               controller: _pageController,
-              children: [
+              children: [ 
                 buildPage(
+                  color: Colors.yellow[700]!,
                   title: "Welcome",
                   description:
                       "Contrust is a platform for creating contracts between contractors and contractees.",
-                  image: Icons.handshake_outlined,
                 ),
                 buildPage(
+                  color: Colors.yellow[700]!,
                   title: "Connect",
-                  description:
-                      "Easily find and connect with reliable contractors.",
-                  image: Icons.people_alt_rounded,
+                  description: "Easily find and connect with reliable contractors.",
                 ),
                 buildPage(
+                  color: Colors.yellow[700]!,
                   title: "Design",
-                  description:
-                      "Use AI to pick a color of your choice for your wall.",
-                  image: Icons.palette_rounded,
+                  description: "Use AI to pick a color of your choice to your wall.",
                   context: context,
                 ),
               ],
             ),
           ),
           Positioned(
-            bottom: 60,
+            bottom: 40,
             left: 0,
             right: 0,
             child: Center(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 10),
-                    color: Colors.black.withOpacity(0.2),
-                    child: SmoothPageIndicator(
-                      controller: _pageController,
-                      count: 3,
-                      effect: ExpandingDotsEffect(
-                        dotHeight: 13,
-                        dotWidth: 13,
-                        expansionFactor: 3,
-                        activeDotColor: Colors.teal,
-                        dotColor: Colors.black26,
-                      ),
-                    ),
-                  ),
+              child: SmoothPageIndicator(
+                controller: _pageController,
+                count: 3,
+                effect: WormEffect(
+                  dotHeight: 10,
+                  dotWidth: 10,
+                  activeDotColor: Colors.black,
+                  dotColor: Colors.black38,
                 ),
               ),
             ),
@@ -98,42 +78,33 @@ class _WelcomePageState extends State<WelcomePage> {
   }
 
   Widget buildPage({
+    required Color color,
     required String title,
     required String description,
-    required IconData image,
     BuildContext? context,
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(image, size: 120, color: Colors.teal[700]),
-          const SizedBox(height: 30),
-          AnimatedOpacity(
-            opacity: 1.0,
-            duration: const Duration(seconds: 1),
-            child: Text(
+    return Container(
+      color: color,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
               title,
               style: const TextStyle(
-                fontSize: 53,
-                fontWeight: FontWeight.w800,
+                fontSize: 50,
+                fontWeight: FontWeight.bold,
                 color: Colors.black,
-                letterSpacing: 1.2,
               ),
               textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 16),
-          AnimatedOpacity(
-            opacity: 1.0,
-            duration: const Duration(seconds: 1),
-            child: Text(
+            const SizedBox(height: 16),
+            Text(
               description,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 18,
-                color: Colors.grey.shade900,
-                height: 1.4,
+                color: Colors.black87,
               ),
               textAlign: TextAlign.center,
             ),
@@ -145,17 +116,21 @@ class _WelcomePageState extends State<WelcomePage> {
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.setBool('isFirstOpen', false);
 
-                final session = Supabase.instance.client.auth.currentSession;
-                final userId = session?.user.id ?? '';
-                transitionBuilder(context, HomePage(contracteeId: userId), replace: true);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                 // ignore: use_build_context_synchronously
+                 transitionBuilder(context, HomePage(), replace: true);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 24, vertical: 12),
+                ),
+                child: const Text(
+                  "Let's Go!",
+                  style: TextStyle(fontSize: 18, color: Colors.white),
+                ),
               ),
-              child: const Text("Let's Go!", style: TextStyle(fontSize: 18, color: Colors.white)),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

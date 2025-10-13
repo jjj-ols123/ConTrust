@@ -1,7 +1,6 @@
 // ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
-import 'package:signature/signature.dart';
 import 'package:flutter/foundation.dart';
 import 'package:backend/services/contractor services/contract/cor_viewcontractservice.dart';
 import 'dart:html' as html;
@@ -64,7 +63,7 @@ class ViewContractBuild {
     );
   }
 
-  static Widget buildPdfViewerPlaceholder(VoidCallback onDownload) {
+  static Widget buildPdfViewerPlaceholder(VoidCallback onDownload, {bool isSignedContract = false}) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -83,9 +82,9 @@ class ViewContractBuild {
               children: [
                 Icon(Icons.picture_as_pdf, color: Colors.amber[700]),
                 const SizedBox(width: 8),
-                const Text(
-                  'Contract PDF',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Text(
+                  isSignedContract ? 'Signed Contract PDF' : 'Contract PDF',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -108,7 +107,7 @@ class ViewContractBuild {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'PDF Contract Viewer',
+                      isSignedContract ? 'Signed Contract PDF' : 'PDF Contract Viewer',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -116,15 +115,12 @@ class ViewContractBuild {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      'Add flutter_pdfview package to view PDF here',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-                    ),
+
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
                       onPressed: onDownload,
                       icon: const Icon(Icons.download),
-                      label: const Text('Download PDF'),
+                      label: Text(isSignedContract ? 'Download Signed Contract' : 'Download PDF'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue[600],
                         foregroundColor: Colors.white,
@@ -144,9 +140,10 @@ class ViewContractBuild {
     required String? pdfUrl,
     required VoidCallback onDownload,
     double height = 600,
+    bool isSignedContract = false,
   }) {
     if (pdfUrl == null || pdfUrl.isEmpty) {
-      return buildPdfViewerPlaceholder(onDownload);
+      return buildPdfViewerPlaceholder(onDownload, isSignedContract: isSignedContract);
     }
 
     return Card(
@@ -300,14 +297,22 @@ class ViewContractBuild {
               ],
             ),
             const SizedBox(height: 16),
-            _buildSignatureSection(
-              title: 'Contractor',
-              signaturePath: contractData?['contractor_signature_url'],
-            ),
-            const SizedBox(height: 24),
-            _buildSignatureSection(
-              title: 'Contractee',
-              signaturePath: contractData?['contractee_signature_url'],
+            Row(
+              children: [
+                Expanded(
+                  child: _buildSignatureSection(
+                    title: 'Contractor',
+                    signaturePath: contractData?['contractor_signature_url'],
+                  ),
+                ),
+                const SizedBox(width: 24),
+                Expanded(
+                  child: _buildSignatureSection(
+                    title: 'Contractee',
+                    signaturePath: contractData?['contractee_signature_url'],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -333,7 +338,7 @@ class ViewContractBuild {
         const SizedBox(height: 6),
         Container(
           width: double.infinity,
-          height: 80,
+          height: 100,
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: Colors.grey[50],
@@ -410,74 +415,97 @@ class ViewContractBuild {
     );
   }
 
-  static Widget buildSignaturePad({
-    required SignatureController controller,
-    double height = 200,
+  static Widget buildEnhancedSignaturesSection(
+    Map<String, dynamic>? contractData, {
+    VoidCallback? onRefresh,
   }) {
+    final contractorSigned = contractData?['contractor_signature_url'] != null &&
+        (contractData!['contractor_signature_url'] as String).isNotEmpty;
+    final contracteeSigned = contractData?['contractee_signature_url'] != null &&
+        (contractData!['contractee_signature_url'] as String).isNotEmpty;
+    final bothSigned = contractorSigned && contracteeSigned;
+    final signedPdfUrl = contractData?['signed_pdf_url'] as String?;
+    final hasSignedPdf = signedPdfUrl != null && signedPdfUrl.isNotEmpty;
+
     return Card(
-      elevation: 6,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: bothSigned ? Colors.green.shade200 : Colors.amber.shade100,
+            width: 1
+          ),
+        ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.draw_rounded, color: Colors.amber[700]),
+                Icon(
+                  bothSigned ? Icons.verified : Icons.draw,
+                  color: bothSigned ? Colors.green[700] : Colors.amber[700],
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
-                Text(
-                  'Draw your signature',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Colors.amber[700],
+                Expanded(
+                  child: Text(
+                    bothSigned ? 'Contract Signed' : 'Signatures',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: bothSigned ? Colors.green[700] : const Color(0xFF2D3748),
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            const Divider(),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.amber[50],
-                border: Border.all(color: Colors.amber[200]!, width: 2),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.amber.withOpacity(0.05),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              width: double.infinity,
-              height: height + 40,
-              child: Signature(
-                controller: controller,
-                backgroundColor: Colors.transparent,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Sign above using your mouse, stylus, or finger.',
-              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () => controller.clear(),
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Clear'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey[600],
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+
+            if (bothSigned && hasSignedPdf) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green[100],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.picture_as_pdf, size: 14, color: Colors.green[700]),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Signed PDF Available',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green[700],
+                      ),
                     ),
+                  ],
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 16),
+
+            Row(
+              children: [
+                Expanded(
+                  child: buildCompactSignatureSection(
+                    title: 'Contractor',
+                    signaturePath: contractData?['contractor_signature_url'],
+                  ),
+                ),
+                const SizedBox(width: 24),
+                Expanded(
+                  child: buildCompactSignatureSection(
+                    title: 'Contractee',
+                    signaturePath: contractData?['contractee_signature_url'],
                   ),
                 ),
               ],
@@ -488,215 +516,102 @@ class ViewContractBuild {
     );
   }
 
-  static Future<void> showSignatureDialog({
-    required BuildContext context,
-    required Future<void> Function(Uint8List? signature) onSign,
-  }) async {
-    await onSign(null);
-  }
-
-  static Widget buildInlineSignaturePad({
-    required SignatureController controller,
-    required VoidCallback onClear,
-    required Future<void> Function(Uint8List? signature) onSign,
-    bool isEnabled = true,
-    required bool isSaving,
-    required Function(bool) onSavingChanged,
-    required BuildContext context,
-    Map<String, dynamic>? contractData,
-    String? userType, 
+  static Widget buildCompactSignatureSection({
+    required String title,
+    String? signaturePath,
   }) {
+    final bool isSigned = signaturePath != null && signaturePath.isNotEmpty;
 
-    final hasExistingSignature = contractData != null && userType != null && 
-      contractData['${userType}_signature_url'] != null && 
-      (contractData['${userType}_signature_url'] as String).isNotEmpty;
-    
-    final effectiveIsEnabled = isEnabled && !hasExistingSignature;
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      margin: const EdgeInsets.symmetric(vertical: 16),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: isEnabled ? Colors.white : Colors.grey[100],
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.amber.shade200, width: 2),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$title Signature',
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: Color(0xFF2D3748),
+          ),
         ),
-        child: AbsorbPointer(
-          absorbing: !effectiveIsEnabled,
-          child: Opacity(
-            opacity: effectiveIsEnabled ? 1.0 : 0.5,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      hasExistingSignature ? Icons.check_circle : Icons.edit, 
-                      color: hasExistingSignature ? Colors.green[700] : Colors.amber[700], 
-                      size: 20
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        hasExistingSignature ? 'Contract Already Signed' : 'Draw Your Signature',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: hasExistingSignature ? Colors.green[700] : const Color(0xFF2D3748),
+        const SizedBox(height: 6),
+        Container(
+          width: double.infinity,
+          height: 100,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isSigned ? Colors.green[50] : Colors.grey[50],
+            border: Border.all(
+              color: isSigned ? Colors.green[300]! : Colors.grey.shade300,
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: signaturePath != null && signaturePath.isNotEmpty
+              ? FutureBuilder<String?>(
+                  future: ViewContractService.getSignedUrl(signaturePath),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            color: Colors.amber,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                      );
+                    }
+
+                    final signedUrl = snapshot.data;
+                    if (signedUrl == null) {
+                      return Center(
+                        child: Text(
+                          'Unable to load',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
+                        ),
+                      );
+                    }
+
+                    return Image.network(
+                      signedUrl,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => Center(
+                        child: Text(
+                          'Failed to load',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                const Divider(),
-                const SizedBox(height: 12),
-
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: hasExistingSignature ? Colors.green[50] : Colors.amber[50],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: hasExistingSignature ? Colors.green[200]! : Colors.amber[200]!),
-                  ),
-                  child: Row(
+                    );
+                  },
+                )
+              : Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        hasExistingSignature ? Icons.check_circle : Icons.info_outline, 
-                        color: hasExistingSignature ? Colors.green[700] : Colors.amber[700], 
-                        size: 16
+                        Icons.pending_outlined,
+                        size: 24,
+                        color: Colors.grey[400],
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          hasExistingSignature 
-                            ? 'You have already signed this contract.'
-                            : 'Draw your signature below using your mouse or stylus. This will be legally binding.',
-                          style: TextStyle(fontSize: 12),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Not signed',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 12,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                Container(
-                  width: double.infinity,
-                  height: 160,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.amber[400]!, width: 3),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(9),
-                    child: Signature(
-                      controller: controller,
-                      backgroundColor: Colors.white,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: isSaving || !effectiveIsEnabled ? null : onClear,
-                        icon: const Icon(Icons.refresh, size: 16),
-                        label: const Text(
-                          'Clear',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          side: BorderSide(color: Colors.grey[400]!, width: 1),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 2,
-                      child: ElevatedButton.icon(
-                        onPressed: isSaving || !effectiveIsEnabled
-                            ? null
-                            : () async {
-                                if (controller.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: const Row(
-                                        children: [
-                                          Icon(Icons.warning, color: Colors.white, size: 16),
-                                          SizedBox(width: 8),
-                                          Text('Please draw your signature first'),
-                                        ],
-                                      ),
-                                      backgroundColor: Colors.orange[600],
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                  return;
-                                }
-                                onSavingChanged(true);
-                                try {
-                                  final signature = await controller.toPngBytes();
-                                  await onSign(signature);
-                                } catch (e) {
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Row(
-                                          children: [
-                                            const Icon(Icons.error, color: Colors.white, size: 16),
-                                            const SizedBox(width: 8),
-                                            Expanded(child: Text('Error saving signature: $e')),
-                                          ],
-                                        ),
-                                        backgroundColor: Colors.red[600],
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
-                                  }
-                                } finally {
-                                  onSavingChanged(false);
-                                }
-                              },
-                        icon: isSaving
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                ),
-                              )
-                            : const Icon(Icons.check_circle, size: 16),
-                        label: Text(
-                          isSaving ? 'Saving...' : 'Sign Contract',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.amber[600],
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
         ),
-      ),
+      ],
     );
   }
 

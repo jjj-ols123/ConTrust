@@ -143,10 +143,6 @@ class ConTrustSnackBar {
     success(context, 'Contract signed successfully');
   }
 
-  static void contractError(BuildContext context, String errorMessage) {
-    ConTrustSnackBar.error(context, 'Contract error: $errorMessage');
-  }
-
   static void contractApproved(BuildContext context) {
     success(context, 'Contract approved! You can now sign it.');
   }
