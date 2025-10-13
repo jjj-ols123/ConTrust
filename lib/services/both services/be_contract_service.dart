@@ -20,42 +20,40 @@ class ContractService {
     required String contractType,
     required Map<String, String> fieldValues,
   }) async {
-
-
     try {
-    final proj = await _supabase
-        .from('Projects')
-        .select('contractee_id')
-        .eq('project_id', projectId)
-        .single();
-    final contracteeId = proj['contractee_id'] as String?;
-    if (contracteeId == null) {
-      throw Exception('Project has no contractee assigned');
-    }
+      final proj = await _supabase
+          .from('Projects')
+          .select('contractee_id')
+          .eq('project_id', projectId)
+          .single();
+      final contracteeId = proj['contractee_id'] as String?;
+      if (contracteeId == null) {
+        throw Exception('Project has no contractee assigned');
+      }
 
-    final pdfBytes = await ContractPdfService.generateContractPdf(
-      contractType: contractType,
-      fieldValues: fieldValues,
-      title: title,
-    );
+      final pdfBytes = await ContractPdfService.generateContractPdf(
+        contractType: contractType,
+        fieldValues: fieldValues,
+        title: title,
+      );
 
-    final pdfPath = await ContractPdfService.uploadContractPdf(
-      pdfBytes: pdfBytes,
-      contractorId: contractorId,
-      projectId: projectId,
-      contracteeId: contracteeId,
-    );
+      final pdfPath = await ContractPdfService.uploadContractPdf(
+        pdfBytes: pdfBytes,
+        contractorId: contractorId,
+        projectId: projectId,
+        contracteeId: contracteeId,
+      );
 
-    await _supabase.from('Contracts').insert({
-      'project_id': projectId,
-      'contractor_id': contractorId,
-      'contractee_id': contracteeId,
-      'contract_type_id': contractTypeId,
-      'title': title,
-      'pdf_url': pdfPath,
-      'field_values': fieldValues,
-      'status': 'draft',
-    });
+      await _supabase.from('Contracts').insert({
+        'project_id': projectId,
+        'contractor_id': contractorId,
+        'contractee_id': contracteeId,
+        'contract_type_id': contractTypeId,
+        'title': title,
+        'pdf_url': pdfPath,
+        'field_values': fieldValues,
+        'status': 'draft',
+      });
     } catch (e) {
       throw Exception('Failed to save contract: $e');
     }
@@ -101,7 +99,7 @@ class ContractService {
         .single();
 
     final currentStatus = currentContract['status'] as String?;
-    
+
     final newStatus = (currentStatus == 'rejected') ? 'draft' : currentStatus;
 
     await _supabase.from('Contracts').update({
@@ -136,7 +134,9 @@ class ContractService {
           .single();
 
       final currentStatus = contractData['status'] as String?;
-      if (currentStatus != 'approved' && currentStatus != 'rejected' && currentStatus != 'signed') {
+      if (currentStatus != 'approved' &&
+          currentStatus != 'rejected' &&
+          currentStatus != 'signed') {
         await _supabase.from('Contracts').update({
           'status': 'sent',
           'sent_at': DateTime.now().toIso8601String(),
@@ -156,6 +156,7 @@ class ContractService {
         'message_type': 'contract',
         'contract_id': contractId,
         'contract_status': 'sent',
+        'pdf_url': contractData['pdf_url'], 
       });
 
       await _supabase.from('ChatRoom').update({
@@ -197,9 +198,11 @@ class ContractService {
     if (status == 'approved' || status == 'rejected') {
       await _supabase
           .from('Messages')
-          .update({'contract_status': status})
+          .update(
+              {'contract_status': status == 'approved' ? 'approved' : status})
           .eq('contract_id', contractId)
-          .eq('message_type', 'contract');
+          .eq('message_type', 'contract')
+          .eq('contract_status', 'sent');
     }
 
     if (status == 'approved') {
@@ -212,6 +215,7 @@ class ContractService {
       await _supabase.from('Projects').update({
         'status': 'awaiting_signature',
       }).eq('project_id', contractData['project_id']);
+
     } else if (status == 'rejected') {
       final contractData = await _supabase
           .from('Contracts')
@@ -230,7 +234,7 @@ class ContractService {
           message: 'Your contract has been rejected by the contractee.',
         );
       } catch (notificationError) {
-        rethrow; 
+        rethrow;
       }
     }
   }
@@ -380,13 +384,11 @@ class ContractService {
 
       if (hasContractorSignature &&
           hasContracteeSignature &&
-          currentStatus != 'active') {
+          currentStatus == 'approved') {
         try {
           await _supabase.from('Contracts').update({
             'status': 'active',
-            'activated_at': DateTime.now().toIso8601String(),
           }).eq('contract_id', contractId);
-
           await _supabase
               .from('Messages')
               .update({'contract_status': 'active'})
@@ -399,6 +401,7 @@ class ContractService {
               'status': 'active',
               'start_date': DateTime.now().toIso8601String(),
             }).eq('project_id', projectId);
+          } else {
           }
 
           contractActivated = true;
@@ -411,7 +414,8 @@ class ContractService {
               senderType: 'system',
               contractId: contractId,
               type: 'Contract Activated',
-              message: 'The project is now active. Proceed to Project Management Page.',
+              message:
+                  'The project is now active. Proceed to Project Management Page.',
             );
 
             await NotificationService().createContractNotification(
@@ -421,9 +425,11 @@ class ContractService {
               senderType: 'system',
               contractId: contractId,
               type: 'Contract Activated',
-              message: 'The project is now active. Proceed to Project Management Page.',
+              message:
+                  'The project is now active. Proceed to Project Management Page.',
             );
-          } catch (activationNotifError) {}
+          } catch (activationNotifError) {
+          }
         } catch (activationErr) {
           activationError = activationErr.toString();
         }
@@ -442,7 +448,7 @@ class ContractService {
         'user_type': userType.toLowerCase(),
       };
     } catch (e) {
-      throw Exception('You already submitted your signature');
+      throw Exception('$e');
     }
   }
 

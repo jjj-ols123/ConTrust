@@ -38,9 +38,11 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
   bool _hasAgreed = false;
   bool otherHasAgreed = false;
   bool contractStarted = false;
+  bool contractSent = false;
   String? projectStatus;
 
   late final StreamSubscription _projectSubscription;
+  late final StreamSubscription _messagesSubscription;
 
   @override
   void initState() {
@@ -76,7 +78,8 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
             if (initiated &&
                 contractorAgreed &&
                 contracteeAgreed &&
-                widget.userRole == 'contractor') {
+                widget.userRole == 'contractor' &&
+                status != 'active') {
               if (mounted) {
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(
@@ -92,6 +95,31 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
               }
               return;
             }
+          }
+        });
+
+    _messagesSubscription = supabase
+        .from('Messages')
+        .stream(primaryKey: ['msg_id'])
+        .order('timestamp', ascending: false)
+        .listen((messages) {
+
+          final contractMessages = messages.where((msg) => 
+            msg['chatroom_id'] == widget.chatRoomId && 
+            msg['message_type'] == 'contract'
+          ).toList();
+          
+          if (contractMessages.isNotEmpty) {
+            final latestContractMessage = contractMessages.first;
+            final contractStatus = latestContractMessage['status'] as String?;
+            
+            setState(() {
+              contractSent = contractStatus == 'sent' || contractStatus == 'approved' || contractStatus == 'rejected';
+            });
+          } else {
+            setState(() {
+              contractSent = false;
+            });
           }
         });
   }
@@ -171,6 +199,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
   @override
   void dispose() {
     _projectSubscription.cancel();
+    _messagesSubscription.cancel();
     super.dispose();
   }
 
@@ -181,7 +210,32 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
     VoidCallback? onPressed;
     Color bannerColor;
 
-    if (!contractStarted) {
+    if (contractSent && widget.userRole == 'contractee') {
+      bannerText = "Contract sent. Waiting for your approval.";
+      buttonText = "Review Contract";
+      onPressed = () async {
+
+        try {
+          final messages = await supabase
+              .from('Messages')
+              .select()
+              .eq('chatroom_id', widget.chatRoomId)
+              .eq('message_type', 'contract')
+              .order('timestamp', ascending: false)
+              .limit(1);
+
+          if (messages.isNotEmpty && mounted) {
+            final contractMessage = messages.first;
+            await _showEnhancedContractView(context, contractMessage['contract_id'], null, contractMessage);
+          }
+        } catch (e) {
+          if (mounted) {
+            ConTrustSnackBar.error(context, 'Failed to load contract');
+          }
+        }
+      };
+      bannerColor = Colors.blue[50]!;
+    } else if (!contractStarted) {
       bannerText = "This project is awaiting for creating contract agreement.";
       buttonText = "Proceed with Contract";
       onPressed = handleProceed;
@@ -202,7 +256,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
         }
       };
       bannerColor = Colors.green[50]!;
-    } else if (_hasAgreed && otherHasAgreed) {
+    } else if (_hasAgreed && otherHasAgreed && projectStatus != 'active') {
       if (widget.userRole == 'contractor') {
         bannerText = "Please proceed to contract creation.";
         buttonText = "Preparing...";
@@ -310,6 +364,12 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
         ),
       ),
     );
+  }
+
+  static Future<void> _showEnhancedContractView(BuildContext context, String contractId, String? currentUserId, [Map<String, dynamic>? messageData]) async {
+    if (context.mounted) {
+      ConTrustSnackBar.info(context, 'Contract view not yet implemented');
+    }
   }
 }
 
@@ -551,7 +611,7 @@ class UIMessage {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (isContractee && displayStatus == 'sent') ...[
+                        if (isContractee && (displayStatus == 'sent')) ...[
                           Card(
                             color: Colors.amber[50],
                             child: Padding(
@@ -567,7 +627,7 @@ class UIMessage {
                                   ConTrustSnackBar.contractRejected(context);
                                 },
                                 onError: (error) {
-                                  ConTrustSnackBar.contractError(context, error);
+                                  ConTrustSnackBar.error(context, error);
                                 },
                               ),
                             ),
@@ -582,7 +642,7 @@ class UIMessage {
                               children: [
                                 ElevatedButton.icon(
                                   onPressed: () async {
-                                    await _downloadContract(contractData, context);
+                                    await _downloadContract(contractData, context, messageData);
                                   },
                                   icon: const Icon(Icons.download),
                                   label: Text(_hasSignedPdf(contractData) ? 'Download Signed Contract' : 'Download Contract'),
@@ -602,7 +662,7 @@ class UIMessage {
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Text(
-                                        _getSignatureMessage(contractData, currentUserId),
+                                        _getSignatureMessage(contractData, currentUserId, displayStatus),
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
                                           color: Colors.grey[600],
@@ -620,7 +680,7 @@ class UIMessage {
                         const SizedBox(height: 16),
 
                         FutureBuilder<String?>(
-                          future: _getPdfUrl(contractData),
+                          future: _getPdfUrl(contractData, messageData),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState == ConnectionState.waiting) {
                               return const Card(
@@ -656,7 +716,7 @@ class UIMessage {
                                         const SizedBox(height: 16),
                                         ElevatedButton.icon(
                                           onPressed: () async {
-                                            await _downloadContract(contractData, context);
+                                            await _downloadContract(contractData, context, messageData);
                                           },
                                           icon: const Icon(Icons.download),
                                           label: const Text('Download Instead'),
@@ -677,7 +737,8 @@ class UIMessage {
                               onDownload: () async {
                                 await _downloadContract(contractData, context);
                               },
-                              height: 500, 
+                              height: 500,
+                              isSignedContract: _hasSignedPdf(contractData),
                             );
                           },
                         ),
@@ -716,9 +777,7 @@ class UIMessage {
                                 ),
                                 const SizedBox(height: 16),
                                 
-                                if (_canUserSign(contractData, currentUserId)) ...[
-                                  _buildSignaturePad(contractData, currentUserId, context),
-                                ],
+                                _buildSignaturePad(contractData, currentUserId, context, _canUserSign(contractData, currentUserId, displayStatus)),
                               ],
                             ),
                           ),
@@ -734,7 +793,7 @@ class UIMessage {
       );
     } catch (e) {
       if (context.mounted) {
-        ConTrustSnackBar.contractError(context, 'Error loading contract: $e');
+        ConTrustSnackBar.error(context, 'Error loading contract: $e');
       }
     }
   }
@@ -834,10 +893,10 @@ class UIMessage {
     );
   }
 
-  static bool _canUserSign(Map<String, dynamic> contractData, String? currentUserId) {
+  static bool _canUserSign(Map<String, dynamic> contractData, String? currentUserId, String? displayStatus) {
     if (currentUserId == null) return false;
     
-    final contractStatus = contractData['status'] as String?;
+    final contractStatus = displayStatus ?? contractData['status'] as String?;
     final isContractee = contractData['contractee_id'] == currentUserId;
     final isContractor = contractData['contractor_id'] == currentUserId;
     
@@ -857,10 +916,10 @@ class UIMessage {
     return false;
   }
 
-  static String _getSignatureMessage(Map<String, dynamic> contractData, String? currentUserId) {
+  static String _getSignatureMessage(Map<String, dynamic> contractData, String? currentUserId, String? displayStatus) {
     if (currentUserId == null) return 'Signature pad disabled';
     
-    final contractStatus = contractData['status'] as String?;
+    final contractStatus = displayStatus ?? contractData['status'] as String?;
     final isContractee = contractData['contractee_id'] == currentUserId;
     final isContractor = contractData['contractor_id'] == currentUserId;
     
@@ -922,17 +981,54 @@ class UIMessage {
     return signedPdfUrl != null && signedPdfUrl.isNotEmpty;
   }
 
-  static Future<String?> _getPdfUrl(Map<String, dynamic> contractData) async {
+  static Future<String?> _getPdfUrl(Map<String, dynamic> contractData, [Map<String, dynamic>? messageData]) async {
+
+    if (messageData != null) {
+      final messagePdfUrl = messageData['pdf_url'] as String?;
+      if (messagePdfUrl != null && messagePdfUrl.isNotEmpty) {
+        if (messagePdfUrl.startsWith('http')) {
+          return messagePdfUrl;
+        }
+        return await ViewContractService.getSignedContractUrl(messagePdfUrl);
+      }
+    }
+
     if (_hasSignedPdf(contractData)) {
       final signedPdfUrl = contractData['signed_pdf_url'] as String?;
-      return await ViewContractService.getSignedUrl(signedPdfUrl!);
+      return await ViewContractService.getSignedContractUrl(signedPdfUrl!);
     }
     
     return await ViewContractService.getPdfSignedUrl(contractData);
   }
 
-  static Future<void> _downloadContract(Map<String, dynamic> contractData, BuildContext context) async {
+  static Future<void> _downloadContract(Map<String, dynamic> contractData, BuildContext context, [Map<String, dynamic>? messageData]) async {
     try {
+      if (messageData != null) {
+        final messagePdfUrl = messageData['pdf_url'] as String?;
+        if (messagePdfUrl != null && messagePdfUrl.isNotEmpty) {
+          Uint8List pdfBytes;
+          if (messagePdfUrl.startsWith('http')) {
+            await ViewContractService.handleDownload(
+              contractData: contractData,
+              context: context,
+            );
+            return;
+          } else {
+            pdfBytes = await Supabase.instance.client.storage
+                .from('contracts')
+                .download(messagePdfUrl);
+          }
+          
+          final fileName = 'Contract_${contractData['title']?.replaceAll(' ', '_') ?? 'Document'}.pdf';
+          await ContractPdfService.saveToDevice(pdfBytes, fileName);
+          
+          if (context.mounted) {
+            ConTrustSnackBar.downloadSuccess(context, 'Contract downloaded successfully');
+          }
+          return;
+        }
+      }
+
       if (_hasSignedPdf(contractData)) {
         final signedPdfUrl = contractData['signed_pdf_url'] as String?;
         final pdfBytes = await Supabase.instance.client.storage
@@ -953,12 +1049,12 @@ class UIMessage {
       }
     } catch (e) {
       if (context.mounted) {
-        ConTrustSnackBar.contractError(context, 'Download failed: $e');
+        ConTrustSnackBar.error(context, 'Download failed');
       }
     }
   }
 
-  static Widget _buildSignaturePad(Map<String, dynamic> contractData, String? currentUserId, BuildContext context) {
+  static Widget _buildSignaturePad(Map<String, dynamic> contractData, String? currentUserId, BuildContext context, bool enabled) {
     final signatureController = SignatureController(
       penStrokeWidth: 3,
       penColor: Colors.black,
@@ -968,17 +1064,18 @@ class UIMessage {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue[50],
-        border: Border.all(color: Colors.blue[300]!),
+        color: enabled ? Colors.blue[50] : Colors.grey[50],
+        border: Border.all(color: enabled ? Colors.blue[300]! : Colors.grey[300]!),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
         children: [
-          const Text(
+          Text(
             'Digital Signature',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
+              color: enabled ? Colors.black : Colors.grey[600],
             ),
           ),
           const SizedBox(height: 12),
@@ -986,18 +1083,20 @@ class UIMessage {
             width: double.infinity,
             height: 150,
             decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.grey[300]!),
+              color: enabled ? Colors.white : Colors.grey[100],
+              border: Border.all(color: enabled ? Colors.grey[300]! : Colors.grey[400]!),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Signature(
+            child: enabled ? Signature(
               controller: signatureController,
               backgroundColor: Colors.white,
+            ) : Container(
+              color: Colors.grey[100],  
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Draw your signature above using your mouse, stylus, or finger',
+            enabled ? 'Draw your signature above using your mouse, stylus, or finger' : 'Signature pad is currently disabled',
             style: TextStyle(
               fontSize: 12,
               color: Colors.grey[600],
@@ -1009,13 +1108,13 @@ class UIMessage {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () {
+                  onPressed: enabled ? () {
                     signatureController.clear();
-                  },
+                  } : null,
                   icon: const Icon(Icons.clear),
                   label: const Text('Clear'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey[600],
+                    backgroundColor: enabled ? Colors.grey[600] : Colors.grey[400],
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -1023,18 +1122,18 @@ class UIMessage {
               const SizedBox(width: 8),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () async {
+                  onPressed: enabled ? () async {
                     final signature = await signatureController.toPngBytes();
                     if (signature == null || signature.isEmpty) {
                       ConTrustSnackBar.error(context, 'Please provide a signature');
                       return;
                     }
                     _showSignatureDialog(context, contractData, currentUserId, signature);
-                  },
+                  } : null,
                   icon: const Icon(Icons.check),
                   label: const Text('Sign Contract'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green[600],
+                    backgroundColor: enabled ? Colors.green[600] : Colors.grey[400],
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -1070,10 +1169,10 @@ class UIMessage {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () async {
-              Navigator.of(dialogContext).pop(); 
-              
+            onPressed: () async {              
               try {
+                Navigator.of(dialogContext).pop(); 
+
                 final userType = isContractee ? 'contractee' : 'contractor';
                 
                 await SignatureCompletionHandler.signContractWithPdfGeneration(
@@ -1083,12 +1182,9 @@ class UIMessage {
                   userType: userType,
                 );
                 
-                Navigator.of(context).pop();
-                Navigator.of(context).pop();
-                
                 ConTrustSnackBar.contractSigned(context);
               } catch (e) {
-                ConTrustSnackBar.contractError(context, 'Failed to sign contract: $e');
+                ConTrustSnackBar.error(context, '$e');
               }
             },
             style: ElevatedButton.styleFrom(
