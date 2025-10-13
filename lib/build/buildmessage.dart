@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:backend/build/buildmessagesdesign.dart';
 import 'package:backend/services/both%20services/be_fetchservice.dart';
+import 'package:backend/services/both%20services/be_contract_service.dart';
 import 'package:backend/utils/be_constraint.dart';
 import 'package:backend/utils/be_status.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -177,7 +178,7 @@ class MessageUIBuildMethods {
                             : chat['contractee_id'],
                       ),
                       builder: (context, constraintSnapshot) {
-                        final canChat = constraintSnapshot.data ?? true;
+                        final canChat = constraintSnapshot.data ?? false;
 
                         return FutureBuilder<Map<String, dynamic>?>(
                           future: loadUserData(otherUserId),
@@ -382,10 +383,16 @@ class MessageUIBuildMethods {
                   FutureBuilder<String?>(
                     future: projectStatus,
                     builder: (context, snapshot) {
-                      if (snapshot.hasData && snapshot.data == 'awaiting_contract') {
+                      if (snapshot.hasData && (snapshot.data == 'awaiting_contract' || snapshot.data == 'active')) {
                         return ContractAgreementBanner(
                           chatRoomId: chatRoomId!,
                           userRole: userRole,
+                          onActiveProjectPressed: () {
+                            // Navigate to project management based on user role
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Navigate to ${userRole == 'contractor' ? 'Contractor' : 'Contractee'} Ongoing Projects')),
+                            );
+                          },
                         );
                       }
                       return Container();
@@ -395,10 +402,16 @@ class MessageUIBuildMethods {
                   FutureBuilder<String?>(
                     future: projectStatus,
                     builder: (context, snapshot) {
-                      if (snapshot.hasData && snapshot.data == 'awaiting_contract') {
+                      if (snapshot.hasData && (snapshot.data == 'awaiting_contract' || snapshot.data == 'active')) {
                         return ContractAgreementBanner(
                           chatRoomId: chatRoomId!,
                           userRole: userRole,
+                          onActiveProjectPressed: () {
+                            // Navigate to project management based on user role
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Navigate to ${userRole == 'contractor' ? 'Contractor' : 'Contractee'} Ongoing Projects')),
+                            );
+                          },
                         );
                       }
                       return Container();
@@ -574,7 +587,7 @@ class MessageUIBuildMethods {
     return Column(
       children: [
         Expanded(
-          flex: 3,
+          flex: 2,
           child: FutureBuilder<Map<String, dynamic>?>(
             future: FetchService()
                 .fetchProjectDetailsByChatRoom(chatRoomId!),
@@ -590,7 +603,7 @@ class MessageUIBuildMethods {
           ),
         ),
         Expanded(
-          flex: 1,
+          flex: 2,
           child: buildContractsSent(),
         ),
       ],
@@ -601,7 +614,7 @@ class MessageUIBuildMethods {
     return Column(
       children: [
         Expanded(
-          flex: 2,
+          flex: 1,
           child: FutureBuilder<Map<String, dynamic>?>(
             future: loadUserData(otherUserId!),
             builder: (context, contractorSnapshot) {
@@ -617,7 +630,7 @@ class MessageUIBuildMethods {
           ),
         ),
         Expanded(
-          flex: 2,
+          flex: 1,
           child: FutureBuilder<Map<String, dynamic>?>(
             future: FetchService()
                 .fetchProjectDetailsByChatRoom(chatRoomId!),
@@ -633,7 +646,7 @@ class MessageUIBuildMethods {
           ),
         ),
         Expanded(
-          flex: 1,
+          flex: 2,
           child: buildContractsSent(),
         ),
       ],
@@ -668,22 +681,205 @@ class MessageUIBuildMethods {
           ),
           SizedBox(height: isDesktop ? 16 : (isTablet ? 12 : 8)),
           Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(isDesktop ? 12 : (isTablet ? 10 : 8)),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Center(
-                child: Text(
-                  'Contracts will appear here',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: subtitleFontSize,
+            child: StreamBuilder<List<Map<String, dynamic>>>(
+              stream: supabase
+                  .from('Messages')
+                  .stream(primaryKey: ['msg_id'])
+                  .eq('chatroom_id', chatRoomId!)
+                  .order('timestamp', ascending: false),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(isDesktop ? 12 : (isTablet ? 10 : 8)),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                      ),
+                    ),
+                  );
+                }
+
+                final allMessages = snapshot.data!;
+                final contractMessages = allMessages.where((msg) => msg['message_type'] == 'contract').toList();
+
+                if (contractMessages.isEmpty) {
+                  return Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(isDesktop ? 12 : (isTablet ? 10 : 8)),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.description_outlined,
+                            size: isDesktop ? 48 : (isTablet ? 36 : 24),
+                            color: Colors.grey.shade400,
+                          ),
+                          SizedBox(height: isDesktop ? 12 : 8),
+                          Text(
+                            'No contracts sent yet',
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: subtitleFontSize,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                return Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(isDesktop ? 12 : (isTablet ? 10 : 8)),
+                    border: Border.all(color: Colors.grey.shade200),
                   ),
-                ),
-              ),
+                  child: ListView.separated(
+                    padding: EdgeInsets.all(isDesktop ? 12 : (isTablet ? 8 : 4)),
+                    itemCount: contractMessages.length,
+                    separatorBuilder: (_, __) => Divider(
+                      height: isDesktop ? 16 : (isTablet ? 12 : 8),
+                      color: Colors.grey.shade200,
+                    ),
+                    itemBuilder: (context, index) {
+                      final contractMsg = contractMessages[index];
+                      return FutureBuilder<Map<String, dynamic>?>(
+                        future: ContractService.getContractById(contractMsg['contract_id']),
+                        builder: (context, contractSnapshot) {
+                          if (!contractSnapshot.hasData || contractSnapshot.data == null) {
+                            return Container(
+                              padding: EdgeInsets.all(isDesktop ? 12 : (isTablet ? 8 : 4)),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[50],
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.description,
+                                    size: isDesktop ? 24 : (isTablet ? 20 : 16),
+                                    color: Colors.grey,
+                                  ),
+                                  SizedBox(width: isDesktop ? 12 : 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Loading contract...',
+                                      style: TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: subtitleFontSize,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+
+                          final contract = contractSnapshot.data!;
+                          final contractStatus = contract['status']?.toString() ?? 'unknown';
+                          final messageStatus = contractMsg['contract_status']?.toString();
+                          final displayStatus = messageStatus ?? contractStatus;
+                          final statusColor = _getContractStatusColor(displayStatus);
+                          final statusLabel = _getContractStatusLabel(displayStatus);
+
+                          return Container(
+                            padding: EdgeInsets.all(isDesktop ? 12 : (isTablet ? 8 : 4)),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[50],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.grey.shade200),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.description,
+                                      size: isDesktop ? 20 : (isTablet ? 18 : 16),
+                                      color: accentColor,
+                                    ),
+                                    SizedBox(width: isDesktop ? 8 : 4),
+                                    Expanded(
+                                      child: Text(
+                                        contract['title']?.toString() ?? 'Contract',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: subtitleFontSize,
+                                          color: Colors.black,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: isDesktop ? 8 : 6,
+                                        vertical: isDesktop ? 4 : 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: statusColor.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: statusColor.withOpacity(0.3)),
+                                      ),
+                                      child: Text(
+                                        statusLabel,
+                                        style: TextStyle(
+                                          color: statusColor,
+                                          fontSize: subtitleFontSize - 2,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: isDesktop ? 8 : 4),
+                                Text(
+                                  contract['message']?.toString() ?? '',
+                                  style: TextStyle(
+                                    color: Colors.grey[700],
+                                    fontSize: subtitleFontSize - 1,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                SizedBox(height: isDesktop ? 8 : 4),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.access_time,
+                                      size: isDesktop ? 14 : 12,
+                                      color: Colors.grey,
+                                    ),
+                                    SizedBox(width: isDesktop ? 4 : 2),
+                                    Text(
+                                      _formatContractTime(contractMsg['timestamp']),
+                                      style: TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: subtitleFontSize - 2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -704,6 +900,66 @@ class MessageUIBuildMethods {
         size: isMobile ? 10 : 12,
       ),
     );
+  }
+
+  Color _getContractStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'draft':
+        return Colors.grey;
+      case 'sent':
+        return Colors.orange;
+      case 'approved':
+        return Colors.green;
+      case 'rejected':
+        return Colors.red;
+      case 'awaiting_signature':
+        return Colors.blue;
+      case 'active':
+        return Colors.green[700]!;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getContractStatusLabel(String status) {
+    switch (status.toLowerCase()) {
+      case 'draft':
+        return 'Draft';
+      case 'sent':
+        return 'Sent';
+      case 'approved':
+        return 'Approved';
+      case 'rejected':
+        return 'Rejected';
+      case 'awaiting_signature':
+        return 'Awaiting Signature';
+      case 'active':
+        return 'Active';
+      default:
+        return status;
+    }
+  }
+
+  String _formatContractTime(dynamic timestamp) {
+    try {
+      final date = timestamp is String
+          ? DateTime.parse(timestamp)
+          : timestamp as DateTime;
+      final now = DateTime.now();
+      final difference = now.difference(date);
+
+      if (difference.inDays > 0) {
+        return '${difference.inDays}d ago';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours}h ago';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes}m ago';
+      } else {
+        return 'Just now';
+      }
+    } catch (e) {
+      return '';
+    }
   }
 
   Widget buildProjectInfoSection(Map<String, dynamic> project) {

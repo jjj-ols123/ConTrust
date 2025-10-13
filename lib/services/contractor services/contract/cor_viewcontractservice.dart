@@ -2,6 +2,8 @@
 
 import 'package:backend/services/both services/be_contract_service.dart';
 import 'package:backend/services/both services/be_contract_pdf_service.dart';
+import 'package:backend/utils/be_contractsignature.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -53,7 +55,7 @@ class ViewContractService {
     required Uint8List signatureBytes,
   }) async {
     try {
-      await ContractService.signContract(
+      await SignatureCompletionHandler.signContractWithPdfGeneration(
         contractId: contractId,
         userId: contractorId,
         signatureBytes: signatureBytes,
@@ -67,8 +69,8 @@ class ViewContractService {
   static Future<String?> getSignedUrl(String signaturePath) async {
     try {
       final signedUrl = await Supabase.instance.client.storage
-          .from('contracts')
-          .createSignedUrl(signaturePath, 60 * 60); 
+          .from('signatures')
+          .createSignedUrl(signaturePath, 60 * 60);
       return signedUrl;
     } catch (e) {
       return null;
@@ -139,42 +141,6 @@ class ViewContractService {
     return signatureBytes != null && signatureBytes.isNotEmpty;
   }
 
-  static void showSuccessMessage(BuildContext context, String message) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
-  }
-
-  static void showErrorMessage(BuildContext context, String message) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    }
-  }
-
-  static void showWarningMessage(BuildContext context, String message) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.orange,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
-  }
-
   static String formatStatus(String? status) {
     if (status == null) return 'Unknown';
     return status.split('_').map((word) => 
@@ -193,23 +159,14 @@ class ViewContractService {
       );
 
       if (kIsWeb) {
-        showSuccessMessage(
-          context,
-          'Contract download started',
-        );
+        ConTrustSnackBar.success(context, 'Contract download started');
       } else if (result is File) {
-        showSuccessMessage(
-          context,
-          'Contract downloaded to: ${result.path}',
-        );
+        ConTrustSnackBar.success(context, 'Contract downloaded to: ${result.path}');
       } else {
-        showSuccessMessage(
-          context,
-          'Contract downloaded successfully',
-        );
+        ConTrustSnackBar.success(context, 'Contract downloaded successfully');
       }
     } catch (e) {
-      showErrorMessage(context, e.toString());
+      ConTrustSnackBar.error(context, e.toString());
     }
   }
 
@@ -221,7 +178,7 @@ class ViewContractService {
     required VoidCallback onSuccess,
   }) async {
     if (!isSignatureValid(signatureBytes)) {
-      showWarningMessage(context, 'Please provide a signature');
+      ConTrustSnackBar.warning(context, 'Please provide a signature');
       return false;
     }
 
@@ -231,12 +188,12 @@ class ViewContractService {
         contractorId: contractorId,
         signatureBytes: signatureBytes!,
       );
-      
-      showSuccessMessage(context, 'Signature saved!');
+
+      ConTrustSnackBar.success(context, 'Signature saved!');
       onSuccess();
       return true;
     } catch (e) {
-      showErrorMessage(context, e.toString());
+      ConTrustSnackBar.error(context, e.toString());
       return false;
     }
   }

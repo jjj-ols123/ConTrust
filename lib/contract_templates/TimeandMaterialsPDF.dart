@@ -3,10 +3,15 @@
 import 'package:backend/utils/be_contractformat.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'dart:typed_data';
 
 class TimeAndMaterialsPDF {
 
-  static List<pw.Widget> buildTimeAndMaterialsPdf(Map<String, String> fieldValues) {
+  static List<pw.Widget> buildTimeAndMaterialsPdf(
+    Map<String, String> fieldValues, {
+    Uint8List? contractorSignature,
+    Uint8List? contracteeSignature,
+  }) {
     List<pw.Widget> widgets = [];
 
     widgets.add(
@@ -330,7 +335,7 @@ class TimeAndMaterialsPDF {
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(8),
-                        child: pw.Text('₱$itemPrice', style: const pw.TextStyle(fontSize: 10)),
+                        child: pw.Text('PHP$itemPrice', style: const pw.TextStyle(fontSize: 10)),
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(8),
@@ -338,7 +343,7 @@ class TimeAndMaterialsPDF {
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(8),
-                        child: pw.Text('₱$itemSubtotal', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                        child: pw.Text('PHP$itemSubtotal', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
                       ),
                     ],
                   ),
@@ -356,7 +361,7 @@ class TimeAndMaterialsPDF {
                     ),
                     pw.Padding(
                       padding: const pw.EdgeInsets.all(8),
-                      child: pw.Text('₱____________', style: const pw.TextStyle(fontSize: 10)),
+                      child: pw.Text('PHP____________', style: const pw.TextStyle(fontSize: 10)),
                     ),
                     pw.Padding(
                       padding: const pw.EdgeInsets.all(8),
@@ -364,7 +369,7 @@ class TimeAndMaterialsPDF {
                     ),
                     pw.Padding(
                       padding: const pw.EdgeInsets.all(8),
-                      child: pw.Text('₱____________', style: const pw.TextStyle(fontSize: 10)),
+                      child: pw.Text('PHP____________', style: const pw.TextStyle(fontSize: 10)),
                     ),
                   ],
                 ),
@@ -386,7 +391,7 @@ class TimeAndMaterialsPDF {
                 padding: const pw.EdgeInsets.all(8),
                 child: () {
                   final sub = ContractStyle.computeSubtotal(fieldValues);
-                  return pw.Text('₱${sub.toStringAsFixed(2)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10));
+                  return pw.Text('PHP${sub.toStringAsFixed(2)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10));
                 }(),
               ),
             ],
@@ -405,7 +410,7 @@ class TimeAndMaterialsPDF {
                   final sub = ContractStyle.computeSubtotal(fieldValues);
                   final discRate = ContractStyle.parsePercent(fieldValues['Payment.Discount']);
                   final discAmt = sub * discRate;
-                  return pw.Text('-₱${discAmt.toStringAsFixed(2)}', style: const pw.TextStyle(color: PdfColors.red, fontSize: 10));
+                  return pw.Text('-PHP${discAmt.toStringAsFixed(2)}', style: const pw.TextStyle(color: PdfColors.red, fontSize: 10));
                 }(),
               ),
             ],
@@ -424,7 +429,7 @@ class TimeAndMaterialsPDF {
                   final sub = ContractStyle.computeSubtotal(fieldValues);
                   final taxRate = ContractStyle.parsePercent(fieldValues['Payment.Tax']);
                   final taxAmt = sub * taxRate;
-                  return pw.Text('₱${taxAmt.toStringAsFixed(2)}', style: const pw.TextStyle(fontSize: 10));
+                  return pw.Text('PHP${taxAmt.toStringAsFixed(2)}', style: const pw.TextStyle(fontSize: 10));
                 }(),
               ),
             ],
@@ -445,7 +450,7 @@ class TimeAndMaterialsPDF {
                   final disc = sub * ContractStyle.parsePercent(fieldValues['Payment.Discount']);
                   final tax = sub * ContractStyle.parsePercent(fieldValues['Payment.Tax']);
                   final total = sub - disc + tax;
-                  return pw.Text('₱${total.toStringAsFixed(2)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12));
+                  return pw.Text('PHP${total.toStringAsFixed(2)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12));
                 }(),
               ),
             ],
@@ -495,9 +500,11 @@ class TimeAndMaterialsPDF {
                     decoration: pw.BoxDecoration(
                       border: pw.Border.all(color: PdfColors.grey400),
                     ),
-                    child: pw.Center(
-                      child: pw.Text('Signature', style: pw.TextStyle(color: PdfColors.grey600)),
-                    ),
+                    child: contracteeSignature != null
+                        ? pw.Image(pw.MemoryImage(contracteeSignature), fit: pw.BoxFit.contain)
+                        : pw.Center(
+                            child: pw.Text('Signature', style: pw.TextStyle(color: PdfColors.grey600)),
+                          ),
                   ),
                   pw.SizedBox(height: 8),
                   pw.Container(
@@ -506,7 +513,15 @@ class TimeAndMaterialsPDF {
                       border: pw.Border.all(color: PdfColors.grey400),
                     ),
                     child: pw.Center(
-                      child: pw.Text('Date', style: pw.TextStyle(color: PdfColors.grey600)),
+                      child: pw.Text(
+                        contracteeSignature != null
+                            ? DateTime.now().toString().split(' ')[0]
+                            : 'Date',
+                        style: pw.TextStyle(
+                          color: contracteeSignature != null ? PdfColors.black : PdfColors.grey600,
+                          fontSize: contracteeSignature != null ? 10 : 12,
+                        ),
+                      ),
                     ),
                   ),
                   pw.SizedBox(height: 8),
@@ -529,9 +544,11 @@ class TimeAndMaterialsPDF {
                     decoration: pw.BoxDecoration(
                       border: pw.Border.all(color: PdfColors.grey400),
                     ),
-                    child: pw.Center(
-                      child: pw.Text('Signature', style: pw.TextStyle(color: PdfColors.grey600)),
-                    ),
+                    child: contractorSignature != null
+                        ? pw.Image(pw.MemoryImage(contractorSignature), fit: pw.BoxFit.contain)
+                        : pw.Center(
+                            child: pw.Text('Signature', style: pw.TextStyle(color: PdfColors.grey600)),
+                          ),
                   ),
                   pw.SizedBox(height: 8),
                   pw.Container(
@@ -540,7 +557,15 @@ class TimeAndMaterialsPDF {
                       border: pw.Border.all(color: PdfColors.grey400),
                     ),
                     child: pw.Center(
-                      child: pw.Text('Date', style: pw.TextStyle(color: PdfColors.grey600)),
+                      child: pw.Text(
+                        contractorSignature != null
+                            ? DateTime.now().toString().split(' ')[0]
+                            : 'Date',
+                        style: pw.TextStyle(
+                          color: contractorSignature != null ? PdfColors.black : PdfColors.grey600,
+                          fontSize: contractorSignature != null ? 10 : 12,
+                        ),
+                      ),
                     ),
                   ),
                   pw.SizedBox(height: 8),

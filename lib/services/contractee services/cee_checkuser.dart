@@ -27,7 +27,7 @@ class CheckUserLogin {
             child: SizedBox(
               width: 600, 
               height: 1000, 
-              child: LoginPage(modalContext: dialogContext),
+              child: LoginPage(),
             ),
           ),
         );
@@ -39,7 +39,7 @@ class CheckUserLogin {
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
-          builder: (modalContext) => LoginPage(modalContext: modalContext),
+          builder: (modalContext) => LoginPage(),
         );
       }
     }
