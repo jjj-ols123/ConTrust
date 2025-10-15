@@ -4,7 +4,6 @@ import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractee/pages/cee_about.dart';
 import 'package:contractee/pages/cee_home.dart';
-import 'package:contractee/pages/cee_notification.dart';
 import 'package:contractee/pages/cee_ongoing.dart';
 import 'package:contractee/pages/cee_transaction.dart';
 import 'package:flutter/material.dart';

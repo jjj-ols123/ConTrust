@@ -42,7 +42,7 @@ class SignInContractee {
 
       Navigator.pushReplacement(
         modalContext,
-        MaterialPageRoute(builder: (context) => const HomePage()),
+        MaterialPageRoute(builder: (context) => const HomePage(contracteeId: '')),
       );
 
       Future.delayed(const Duration(milliseconds: 500), () {
