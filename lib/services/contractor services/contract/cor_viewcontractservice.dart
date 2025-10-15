@@ -105,7 +105,28 @@ class ViewContractService {
   }
 
   static Future<String?> getPdfSignedUrl(Map<String, dynamic> contractData) async {
+    // First check for signed PDF URL
+    final signedPdfUrl = contractData['signed_pdf_url'] as String?;
+    print('Checking for signed PDF URL: $signedPdfUrl');
+    
+    if (signedPdfUrl != null && signedPdfUrl.isNotEmpty) {
+      try {
+        print('Attempting to create signed URL for signed PDF: $signedPdfUrl');
+        final signedUrl = await Supabase.instance.client.storage
+            .from('contracts')
+            .createSignedUrl(signedPdfUrl, 60 * 60 * 24);
+        print('Successfully created signed URL for signed PDF: $signedUrl');
+        return signedUrl;
+      } catch (e) {
+        print('Error getting signed PDF URL: $e');
+        // Fall through to regular PDF URL
+      }
+    }
+    
+    // Fallback to regular PDF URL
     final pdfPath = getPdfUrl(contractData);
+    print('Fallback to regular PDF path: $pdfPath');
+    
     if (pdfPath == null) {
       return null;
     }
@@ -113,14 +134,17 @@ class ViewContractService {
     try {
       final fileExists = await checkFileExists(pdfPath);
       if (!fileExists) {
+        print('Regular PDF file does not exist: $pdfPath');
         return null;
       }
       
       final signedUrl = await Supabase.instance.client.storage
           .from('contracts')
           .createSignedUrl(pdfPath, 60 * 60 * 24); 
+      print('Successfully created signed URL for regular PDF: $signedUrl');
       return signedUrl;
     } catch (e) {
+      print('Error getting PDF signed URL: $e');
       return null;
     }
   }

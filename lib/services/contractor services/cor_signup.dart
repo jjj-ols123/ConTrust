@@ -27,14 +27,19 @@ class SignUpContractor {
 
       if (!context.mounted) return;
 
-      if (signUpResponse.user == null) {
-        ConTrustSnackBar.error(context, 'Error creating account');
+  final String? userId = signUpResponse.user?.id ?? signUpResponse.session?.user.id;
+
+      if (userId == null) {
+        // Account likely created but requires email confirmation.
+        if (!context.mounted) return;
+        ConTrustSnackBar.success(context, 'Account created');
+        Navigator.pop(context);
         return;
       }
 
       if (userType == 'contractor') {
         final contractorData = {
-          'contractor_id': signUpResponse.user!.id,
+          'contractor_id': userId,
           'firm_name': data?['firmName'] ?? '',
           'contact_number': data?['contactNumber'],
           'created_at': DateTime.now().toUtc().toIso8601String(),
@@ -43,9 +48,10 @@ class SignUpContractor {
         final insertResponse = await supabase
             .from('Contractor')
             .insert(contractorData)
-            .select(); 
+            .select();
 
-        if (insertResponse.isEmpty) {
+
+        if ((insertResponse as List).isEmpty) {
           throw Exception("Error saving contractor data");
         }
       }

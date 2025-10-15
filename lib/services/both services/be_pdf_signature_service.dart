@@ -168,13 +168,16 @@ class ContractPdfSignatureService {
       }
 
       try {
+        print('Updating database with signed PDF URL: $filePath');
         await _supabase
             .from('Contracts')
             .update({
               'signed_pdf_url': filePath,
             })
             .eq('contract_id', contractId);
+        print('Successfully updated database with signed PDF URL');
       } catch (dbError) {
+        print('Database update failed: $dbError');
         // If database update fails, try to clean up the uploaded file
         try {
           await _supabase.storage.from('contracts').remove([filePath]);

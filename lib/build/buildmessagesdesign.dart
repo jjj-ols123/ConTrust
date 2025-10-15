@@ -12,6 +12,9 @@ import 'package:backend/utils/be_contractsignature.dart';
 import 'package:backend/build/buildviewcontract.dart';
 import 'package:contractor/Screen/cor_contracttype.dart';
 import 'package:contractor/build/builddrawer.dart';
+import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:contractee/build/builddrawer.dart' show ContracteeShell, ContracteePage;
+import 'package:contractee/pages/cee_ongoing.dart' show CeeOngoingProjectScreen;
 import 'package:flutter/material.dart';
 import 'package:signature/signature.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -283,7 +286,67 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
       if (projectStatus == 'active') {
         bannerText = "Project is now active! Proceed to Project Management.";
         buttonText = "Go to Project Management";
-        onPressed = widget.onActiveProjectPressed;
+        if (widget.userRole == 'contractee') {
+          onPressed = () async {
+            // Find the active project(s) for this user and navigate to the
+            // ContracteeShell -> Ongoing project screen.
+            try {
+              final projects = await FetchService().fetchUserProjects();
+              final activeProjects = projects.where((p) => p['status'] == 'active').toList();
+              if (activeProjects.isEmpty) {
+                if (mounted) ConTrustSnackBar.error(context, 'No active project found');
+                return;
+              }
+
+              if (!mounted) return;
+
+              String projectId;
+              if (activeProjects.length > 1) {
+                // If multiple, open a simple selection dialog
+                projectId = await showDialog<String>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Select Active Project'),
+                    content: SizedBox(
+                      width: double.maxFinite,
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: activeProjects.length,
+                        itemBuilder: (context, index) {
+                          final p = activeProjects[index];
+                          return ListTile(
+                            title: Text(p['title'] ?? 'Untitled Project'),
+                            subtitle: Text(p['location'] ?? 'No location'),
+                            onTap: () => Navigator.of(ctx).pop(p['project_id'] as String),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ) ?? '';
+                if (projectId.isEmpty) return;
+              } else {
+                projectId = activeProjects.first['project_id'];
+              }
+
+              // Navigate to ContracteeShell showing the ongoing project
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ContracteeShell(
+                    currentPage: ContracteePage.ongoing,
+                    contracteeId: supabase.auth.currentUser?.id ?? '',
+                    child: CeeOngoingProjectScreen(projectId: projectId),
+                  ),
+                ),
+              );
+            } catch (e) {
+              if (mounted) ConTrustSnackBar.error(context, 'Error loading ongoing project');
+            }
+          };
+        } else {
+          onPressed = widget.onActiveProjectPressed;
+        }
         bannerColor = Colors.green[50]!;
       } else {
         bannerText = "This project is awaiting for creating contract agreement.";
