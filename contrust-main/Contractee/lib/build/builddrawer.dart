@@ -1,10 +1,10 @@
-// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: deprecated_member_use
 
+import 'package:backend/build/buildnotification.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractee/pages/cee_about.dart';
 import 'package:contractee/pages/cee_home.dart';
-import 'package:contractee/pages/cee_notification.dart';
 import 'package:contractee/pages/cee_ongoing.dart';
 import 'package:contractee/pages/cee_transaction.dart';
 import 'package:flutter/material.dart';
@@ -55,29 +55,19 @@ class ContracteeShell extends StatelessWidget {
       resizeToAvoidBottomInset: false,
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: Text(
-          title(),
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        leading: !isDesktop && !Navigator.canPop(context) ? Builder(
+        backgroundColor: Colors.amber,
+        centerTitle: true,
+        elevation: 4,
+        automaticallyImplyLeading: false,
+        leading: !isDesktop && currentPage == ContracteePage.home ? Builder(
           builder: (context) => IconButton(
             icon: const Icon(Icons.menu, color: Colors.black),
             onPressed: () {
               Scaffold.of(context).openDrawer();
             },
           ),
-        ) : Navigator.canPop(context) ? IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black),
-            onPressed: () => Navigator.of(context).pop(),
-          ) : null,
-        backgroundColor: Colors.amber,
-        centerTitle: true,
-        elevation: 4,
-        automaticallyImplyLeading: false,
+        ) : null,
+        actions: const [NotificationButton()],
       ),
       drawer: !isDesktop ? Builder(
         builder: (context) => Theme(
@@ -308,7 +298,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             active: widget.currentPage == ContracteePage.home,
             onTap: () {
               if (widget.currentPage != ContracteePage.home) {
-                navigateToPage(HomePage(contracteeId: widget.contracteeId ?? ''));
+                navigateToPage(HomePage());
               }
             },
           ),

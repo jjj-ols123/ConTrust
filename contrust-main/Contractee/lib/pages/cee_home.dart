@@ -89,9 +89,11 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    final contracteeId = supabase.auth.currentUser!.id;
+
     return ContracteeShell(
       currentPage: ContracteePage.home,
-      contracteeId: widget.contracteeId,
+      contracteeId: contracteeId,
       child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),

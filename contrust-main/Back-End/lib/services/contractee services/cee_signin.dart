@@ -19,24 +19,14 @@ class SignInContractee {
       );
 
       if (signInResponse.user == null) {
-        ScaffoldMessenger.of(modalContext).showSnackBar(
-          const SnackBar(
-            content: Text('Invalid email or password'),
-            backgroundColor: Colors.red,
-          ),
-        );
+       ConTrustSnackBar.error(modalContext, 'Invalid email or password');
         return;
       }
 
       final userType = signInResponse.user?.userMetadata?['user_type'];
 
       if (userType?.toLowerCase() != 'contractee') {
-        ScaffoldMessenger.of(modalContext).showSnackBar(
-          const SnackBar(
-            content: Text('Not a contractee...'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ConTrustSnackBar.error(modalContext, 'Not a contractee...');
         return;
       }
 
@@ -71,7 +61,7 @@ class SignInGoogleContractee {
         if (event == AuthChangeEvent.signedIn && user != null) {
           handleSignIn(context, user);
         } else if (event == AuthChangeEvent.signedOut) {
-          ConTrustSnackBar.success(context, 'Signed in cancelled');
+          ConTrustSnackBar.warning(context, 'Signed in cancelled');
         }
       });
       

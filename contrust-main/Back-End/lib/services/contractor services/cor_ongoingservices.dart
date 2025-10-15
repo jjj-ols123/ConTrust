@@ -2,6 +2,7 @@
 
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_project_service.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -18,6 +19,7 @@ class CorOngoingService {
       final photos = await _fetchService.fetchProjectPhotos(projectId);
       final costs = await _fetchService.fetchProjectCosts(projectId);
       final tasks = await _fetchService.fetchProjectTasks(projectId);
+      final contracts = await _fetchService.fetchContractsForProject(projectId);
       
       final progress = (projectDetails?['progress'] as num?)?.toDouble() ?? 0.0;
       
@@ -27,6 +29,7 @@ class CorOngoingService {
         'photos': photos,
         'costs': costs,
         'tasks': tasks,
+        'contracts': contracts,
         'progress': progress,
       };
     } catch (e) {
@@ -53,21 +56,17 @@ class CorOngoingService {
       );
       
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Report added successfully!'),
-            backgroundColor: Colors.green,
-          ),
+        ConTrustSnackBar.success(
+          context,
+          'Report added successfully!',
         );
       }
       onSuccess();
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error adding report: $e'),
-            backgroundColor: Colors.red,
-          ),
+        ConTrustSnackBar.error(
+          context,
+          'Error adding report: $e',
         );
       }
     }
@@ -86,21 +85,17 @@ class CorOngoingService {
       );
       
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Task added successfully!'),
-            backgroundColor: Colors.green,
-          ),
+        ConTrustSnackBar.success(
+          context,
+          'Task added successfully!',
         );
       }
       onSuccess();
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error adding task: $e'),
-            backgroundColor: Colors.red,
-          ),
+        ConTrustSnackBar.error(
+          context,
+          'Error adding task: $e',
         );
       }
     }
@@ -145,11 +140,9 @@ class CorOngoingService {
           );
 
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Photo uploaded successfully!'),
-                backgroundColor: Colors.green,
-              ),
+            ConTrustSnackBar.success(
+              context,
+              'Photo uploaded successfully!',
             );
           }
           onSuccess();
@@ -157,11 +150,9 @@ class CorOngoingService {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error uploading photo: $e'),
-            backgroundColor: Colors.red,
-          ),
+        ConTrustSnackBar.error(
+          context,
+          'Error uploading photo: $e',
         );
       }
     }
@@ -212,12 +203,9 @@ class CorOngoingService {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to update task'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
+        ConTrustSnackBar.error(
+          context,
+          'Error updating task status: $e',
         );
       }
       rethrow;
@@ -266,15 +254,17 @@ class CorOngoingService {
       try {
         await _projectService.deleteTask(taskId);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Task deleted successfully!')),
+          ConTrustSnackBar.success(
+            context,
+            'Task deleted successfully!',
           );
         }
         onSuccess();
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting task: $e')),
+          ConTrustSnackBar.error(
+            context,
+            'Error deleting task: $e',
           );
         }
       }
@@ -308,15 +298,17 @@ class CorOngoingService {
       try {
         await _projectService.deleteReport(reportId);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Report deleted successfully!')),
+          ConTrustSnackBar.success(
+            context,
+            'Report deleted successfully!',
           );
         }
         onSuccess();
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting report: $e')),
+          ConTrustSnackBar.error(
+            context,
+            'Error deleting report: $e',
           );
         }
       }
@@ -350,15 +342,17 @@ class CorOngoingService {
       try {
         await _projectService.deletePhoto(photoId);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Photo deleted successfully!')),
+          ConTrustSnackBar.success(
+            context,
+            'Photo deleted successfully!',
           );
         }
         onSuccess();
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting photo: $e')),
+          ConTrustSnackBar.error(
+            context,
+            'Error deleting photo: $e',
           );
         }
       }
@@ -392,15 +386,17 @@ class CorOngoingService {
       try {
         await _projectService.deleteCost(materialId);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Material deleted successfully!')),
+          ConTrustSnackBar.success(
+            context,
+            'Material deleted successfully!',
           );
         }
         onSuccess();
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting material: $e')),
+          ConTrustSnackBar.error(
+            context,
+            'Error deleting material: $e',
           );
         }
       }

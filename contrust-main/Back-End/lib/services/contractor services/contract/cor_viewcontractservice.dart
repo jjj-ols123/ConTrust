@@ -81,7 +81,7 @@ class ViewContractService {
     try {
       final signedUrl = await Supabase.instance.client.storage
           .from('contracts')
-          .createSignedUrl(contractPath, 60 * 60 * 24); 
+          .createSignedUrl(contractPath, 60 * 60 * 24);
       return signedUrl;
     } catch (e) {
       return null;

@@ -1,15 +1,13 @@
-// ignore_for_file: use_build_context_synchronously, deprecated_member_use
+// ignore_for_file: deprecated_member_use
 
-import 'package:backend/models/be_appbar.dart';
+import 'package:backend/build/buildnotification.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/Screen/cor_bidding.dart';
 import 'package:contractor/Screen/cor_chathistory.dart';
-import 'package:contractor/Screen/cor_clienthistory.dart';
 import 'package:contractor/Screen/cor_contracttype.dart';
 import 'package:contractor/Screen/cor_dashboard.dart';
 import 'package:contractor/Screen/cor_ongoing.dart';
-import 'package:contractor/Screen/cor_product.dart';
 import 'package:contractor/Screen/cor_profile.dart';
 import 'package:flutter/material.dart';
 
@@ -18,10 +16,9 @@ enum ContractorPage {
   messages,
   contracts,
   bidding,
-  history,
   profile,
-  materials,
   projectManagement,
+  materials,
 }
 
 class ContractorShell extends StatelessWidget {
@@ -48,14 +45,12 @@ class ContractorShell extends StatelessWidget {
         return 'Contracts';
       case ContractorPage.bidding:
         return 'Bidding';
-      case ContractorPage.history:
-        return 'History';
       case ContractorPage.profile:
         return 'Profile';
-      case ContractorPage.materials:
-        return 'Material Page';
       case ContractorPage.projectManagement:
         return 'Project Management';
+      case ContractorPage.materials:
+        return 'Materials';
     }
   }
 
@@ -67,7 +62,13 @@ class ContractorShell extends StatelessWidget {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: const Color(0xFFF8F9FA),
-      appBar: ConTrustAppBar(headline: ''),
+      appBar: AppBar(
+        backgroundColor: Colors.amber,
+        centerTitle: true,
+        elevation: 4,
+        automaticallyImplyLeading: false,
+        actions: const [NotificationButton()],
+      ),
       body: Row(
         children: [
           if (isDesktop)
@@ -272,22 +273,6 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             },
           ),
           _SidebarItem(
-            icon: Icons.history_outlined,
-            label: 'History',
-            active: widget.currentPage == ContractorPage.history,
-            onTap: () {
-              if (widget.currentPage != ContractorPage.history) {
-                navigateToPage(
-                  ContractorShell(
-                    currentPage: ContractorPage.history,
-                    contractorId: id ?? '',
-                    child: ClientHistoryScreen(),
-                  ),
-                );
-              }
-            },
-          ),
-          _SidebarItem(
             icon: Icons.person_outline,
             label: 'Profile',
             active: widget.currentPage == ContractorPage.profile,
@@ -302,17 +287,6 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
                 );
               }
             },
-          ),
-          _SidebarItem(
-            icon: Icons.build_outlined,
-            label: 'Material Page',
-            active: widget.currentPage == ContractorPage.materials,
-            onTap:
-                () => openMaterials(
-                  context,
-                  widget.contractorId,
-                  fromSidebar: true,
-                ),
           ),
           _SidebarItem(
             icon: Icons.work_outline,
@@ -609,21 +583,6 @@ class DashboardDrawer extends StatelessWidget {
                     },
                   ),
                   DrawerIcon(
-                    icon: Icons.history,
-                    label: 'History',
-                    iconSize: iconSize,
-                    fontSize: fontSize,
-                    color: Colors.purple,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ClientHistoryScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  DrawerIcon(
                     icon: Icons.person,
                     label: 'Profile',
                     iconSize: iconSize,
@@ -640,14 +599,6 @@ class DashboardDrawer extends StatelessWidget {
                         ),
                       );
                     },
-                  ),
-                  DrawerIcon(
-                    icon: Icons.build,
-                    label: 'Material Page',
-                    iconSize: iconSize,
-                    fontSize: fontSize,
-                    color: Colors.indigo,
-                    onTap: () => openMaterials(context, contractorId),
                   ),
                 ],
               ),
@@ -719,61 +670,5 @@ class DrawerIcon extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-Future<void> openMaterials(
-  BuildContext context,
-  String? contractorId, {
-  bool fromSidebar = false,
-}) async {
-  if (contractorId == null) return;
-  try {
-    final projects = await FetchService().fetchContractorProjectInfo(
-      contractorId,
-    );
-
-    final active =
-        projects.where((p) {
-          final s = (p['status'] as String? ?? '').toLowerCase();
-          return s == 'active' || s == 'ongoing';
-        }).toList();
-
-    final productScreen = ProductPanelScreen(
-      contractorId: contractorId,
-      projectId:
-          active.isNotEmpty ? active.first['project_id']?.toString() : null,
-    );
-
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    if (fromSidebar || screenWidth >= 1000) {
-      final page = ContractorShell(
-        currentPage: ContractorPage.materials,
-        contractorId: contractorId,
-        child: productScreen,
-      );
-
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => page,
-          transitionDuration: Duration.zero,
-          reverseTransitionDuration: Duration.zero,
-        ),
-      );
-    } else {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => productScreen),
-      );
-    }
-  } catch (e) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading materials: ${e.toString()}')),
-      );
-    }
-    return;
   }
 }

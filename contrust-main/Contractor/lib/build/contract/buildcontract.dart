@@ -1,3 +1,4 @@
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/utils/be_status.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
@@ -114,9 +115,7 @@ static Future<Map<String, dynamic>?> showSaveDialog(
             ElevatedButton(
               onPressed: () {
                 if (titleController?.text.trim().isEmpty == true || selectedProjectId == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please fill all fields')),
-                  );
+                  ConTrustSnackBar.error(context, 'Please fill all fields');
                   return;
                 }
                 Navigator.of(dialogContext).pop({
@@ -548,9 +547,7 @@ class CreateContractBuildMethods {
         onItemCountChanged!(currentItemCount - 1);
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cannot remove the last item. At least one item is required.')),
-      );
+      ConTrustSnackBar.error(context, 'Cannot remove the last item. At least one item is required.');
     }
   }
 

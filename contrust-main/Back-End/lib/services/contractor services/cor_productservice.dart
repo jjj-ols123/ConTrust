@@ -2,34 +2,12 @@
 
 import 'package:backend/services/both%20services/be_fetchservice.dart';
 import 'package:backend/services/both%20services/be_project_service.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 
 class CorProductService {
   final SupabaseClient _supabase = Supabase.instance.client;
-
-  Future<void> saveMaterial({
-    required String contractorId,
-    required String projectId,
-    required String materialName,
-    String? brand,
-    double quantity = 1,
-    String unit = 'unit',
-    required double unitPrice,
-    String? notes,
-  }) async {
-    await _supabase.from('ProjectMaterials').insert({
-      'project_id': projectId,
-      'contractor_id': contractorId,
-      'material_name': materialName,
-      'brand': brand,
-      'quantity': quantity,
-      'unit': unit,
-      'unit_price': unitPrice,
-      'notes': notes,
-      'created_at': DateTime.now().toIso8601String(),
-    });
-  }
 
   Future<void> updateInventoryItem({
     required String itemId,
@@ -118,19 +96,28 @@ class CorProductService {
     Function(Function()) setState,
     List<Map<String, dynamic>> projectDetails,
   ) async {
-    if (projectId.isEmpty) return;
-    
     try {
-      final project = await FetchService().fetchProjectDetails(projectId);
-      
-      setState(() {
-        projectDetails.clear();
-        if (project is List) {
-          projectDetails.addAll(List<Map<String, dynamic>>.from(project as Iterable));
-        } else if (project is Map<String, dynamic>) {
-          projectDetails.add(project);
-        }
-      });
+      if (projectId.isNotEmpty) {
+
+        final project = await FetchService().fetchProjectDetails(projectId);
+        
+        setState(() {
+          projectDetails.clear();
+          if (project is List) {
+            projectDetails.addAll(List<Map<String, dynamic>>.from(project as Iterable));
+          } else if (project is Map<String, dynamic>) {
+            projectDetails.add(project);
+          }
+        });
+      } else {
+
+        final projects = await FetchService().fetchContractorActiveProjects(contractorId);
+        
+        setState(() {
+          projectDetails.clear();
+          projectDetails.addAll(List<Map<String, dynamic>>.from(projects));
+        });
+      }
     } catch (e) {
       setState(() {
         projectDetails.clear();
@@ -145,57 +132,70 @@ class CorProductService {
     BuildContext context,
   ) async {
     final materials = projectMaterials[projectId] ?? [];
-    if (materials.isEmpty) return;
-
-    final fetchService = FetchService();
-    final existingMaterials = await fetchService.fetchProjectCosts(
-      projectId,
-    );
-    final existingMaterialNames =
-        existingMaterials.map((m) => m['material_name'] as String).toSet();
-
-    int addedCount = 0;
-    int skippedCount = 0;
-
-    for (final item in materials) {
-      final title =
-          (item['brand'] as String).isNotEmpty
-              ? '${item['name']} - ${item['brand']}'
-              : item['name'] as String;
-
-      if (existingMaterialNames.contains(title)) {
-        skippedCount++;
-        continue;
-      }
-
-      final note = item['note'] as String?;
-      final qty = (item['qty'] as num?)?.toDouble() ?? 0.0;
-      final unit = item['unit'] as String? ?? 'pcs';
-      final total = (item['total'] as num?)?.toDouble() ?? 0.0;
-      final unitPrice = (item['unitPrice'] as num?)?.toDouble() ?? 0.0;
-
-      String? formattedNote = note;
-      if (qty > 0) {
-        formattedNote =
-            formattedNote != null
-                ? '$formattedNote\nQuantity: $qty $unit'
-                : 'Quantity: $qty $unit';
-      }
-
-      await ProjectService().addCostToProject(
-        contractor_id: contractorId!,
-        projectId: projectId,
-        material_name: title,
-        unit_price: unitPrice,
-        brand: item['brand'] as String?,
-        unit: unit,
-        quantity: total,
-        notes: formattedNote,
-      );
-      addedCount++;
+    if (materials.isEmpty) {
+      ConTrustSnackBar.error(context, 'No materials to add');
+      return;
     }
 
-    Navigator.pop(context);
+    try {
+      final fetchService = FetchService();
+      final existingMaterials = await fetchService.fetchProjectCosts(
+        projectId,
+      );
+      final existingMaterialNames =
+          existingMaterials.map((m) => m['material_name'] as String).toSet();
+
+      int addedCount = 0;
+      int skippedCount = 0;
+
+      for (final item in materials) {
+        
+        final materialName = item['name'] as String;
+
+        if (existingMaterialNames.contains(materialName)) {
+          skippedCount++;
+          continue;
+        }
+
+        final note = item['note'] as String?;
+        final qty = (item['qty'] as num?)?.toDouble() ?? 0.0;
+        final unit = item['unit'] as String? ?? 'pcs';
+        final total = (item['total'] as num?)?.toDouble() ?? 0.0;
+        final unitPrice = (item['unitPrice'] as num?)?.toDouble() ?? 0.0;
+
+        await ProjectService().addCostToProject(
+          contractor_id: contractorId!,
+          projectId: projectId,
+          material_name: materialName,
+          unit_price: unitPrice,
+          brand: item['brand'] as String?,
+          unit: unit,
+          quantity: total,
+          notes: note,
+        );
+        addedCount++;
+      }
+
+      if (context.mounted) {
+        if (addedCount > 0) {
+          ConTrustSnackBar.success(
+            context,
+            'Successfully added $addedCount material${addedCount > 1 ? 's' : ''} to project costs${skippedCount > 0 ? ' ($skippedCount skipped - already exist)' : ''}',
+          );
+        } else if (skippedCount > 0) {
+          ConTrustSnackBar.info(
+            context,
+            'All materials already exist in project costs ($skippedCount skipped)',
+          );
+        }
+      }
+
+      Navigator.pop(context);
+    } catch (e) {
+      if (context.mounted) {
+        ConTrustSnackBar.error(context, 'Failed to add materials to project costs: $e');
+      }
+    }
   }
 }
 

@@ -213,12 +213,7 @@ class _CreateContractPageState extends State<CreateContractPage>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error fetching project data: $e'),
-            backgroundColor: Colors.orange,
-          ),
-        );
+        ConTrustSnackBar.error(context, 'Error loading project data. Please try again.');
       }
     } finally {
       setState(() {
@@ -288,12 +283,7 @@ class _CreateContractPageState extends State<CreateContractPage>
 
       if (mounted) setState(() {});
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error updating item count: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ConTrustSnackBar.error(context, 'Error updating item count: $e');
     }
   }
 
@@ -309,12 +299,7 @@ class _CreateContractPageState extends State<CreateContractPage>
   Future<void> saveContract() async {
 
     if (tabController.index == 1 && !formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill in all required fields'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ConTrustSnackBar.error(context, 'Please fill in all required fields');
       return;
     }
 
@@ -324,12 +309,7 @@ class _CreateContractPageState extends State<CreateContractPage>
         '';
 
     if (contractTypeId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a contract type'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ConTrustSnackBar.error(context, 'Please select a contract type');
       return;
     }
 

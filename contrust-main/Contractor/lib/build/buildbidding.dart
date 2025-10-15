@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'package:backend/services/contractor services/cor_biddingservice.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:backend/utils/be_validation.dart';
@@ -473,9 +474,7 @@ class BiddingUIBuildMethods {
             onPressed: () async {
               final user = Supabase.instance.client.auth.currentUser?.id;
               if (user == null || selectedProject!['contractee_id'] == null) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text('Missing IDs')));
+                ConTrustSnackBar.error(context, 'Missing IDs');
                 return;
               }
               final already = await hasAlreadyBid(
@@ -483,15 +482,7 @@ class BiddingUIBuildMethods {
                 selectedProject!['project_id'].toString(),
               );
               if (already) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'You have already placed a bid on this project',
-                    ),
-                    duration: Duration(seconds: 2),
-                    backgroundColor: Colors.red,
-                  ),
-                );
+                ConTrustSnackBar.warning(context, 'You have already placed a bid on this project.');
                 return;
               }
               final bidAmount = int.tryParse(bidController.text.trim()) ?? 0;

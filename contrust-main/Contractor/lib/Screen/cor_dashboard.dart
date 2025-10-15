@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously, avoid_print, deprecated_member_use
 import 'package:backend/services/contractor services/cor_dashboardservice.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/build/builddashboard.dart';
 import 'package:contractor/build/builddrawer.dart';
 import 'package:flutter/material.dart';
@@ -125,12 +126,7 @@ class _DashboardUIState extends State<DashboardUI>
     } catch (e) {
       setState(() => loading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error loading dashboard: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ConTrustSnackBar.error(context, 'Error loading dashboard data. Please try again.');
       }
     }
   }

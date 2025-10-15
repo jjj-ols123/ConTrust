@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 import 'package:backend/services/contractor services/cor_biddingservice.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import '../build/buildbidding.dart';
 import 'package:flutter/material.dart';
 
@@ -47,17 +48,13 @@ class _BiddingScreenState extends State<BiddingScreen> {
         });
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(data['error'] ?? 'Error loading data')),
-          );
+          ConTrustSnackBar.error(context, data['error'] ?? 'Error loading data');
         }
         setState(() => isLoading = false);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading data: $e')),
-        );
+        ConTrustSnackBar.error(context, 'Error loading data: $e');
         setState(() => isLoading = false);
       }
     }

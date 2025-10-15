@@ -107,11 +107,6 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
-              'Login to your contractor account',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
-            ),
-            const SizedBox(height: 4),
             Text(
               'Be a part of our community and start your journey with us today!',
               style: TextStyle(

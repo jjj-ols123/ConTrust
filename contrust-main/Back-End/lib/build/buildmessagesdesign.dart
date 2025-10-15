@@ -1,7 +1,8 @@
-// ignore_for_file: deprecated_member_use, file_names, use_build_context_synchronously
+// ignore_for_file: deprecated_member_use, file_names, use_build_context_synchronously, avoid_web_libraries_in_flutter
 
 import 'dart:async';
-import 'dart:typed_data';
+import 'dart:html' as html;
+import 'package:flutter/foundation.dart';
 import 'package:backend/services/both%20services/be_project_service.dart';
 import 'package:backend/services/both%20services/be_contract_service.dart';
 import 'package:backend/services/both%20services/be_contract_pdf_service.dart';
@@ -374,6 +375,18 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
 }
 
 class UIMessage {
+  static List<String>? _activeBlobUrls;
+
+  static void cleanupBlobUrls() {
+    if (_activeBlobUrls != null) {
+      for (final url in _activeBlobUrls!) {
+        if (kIsWeb) {
+          html.Url.revokeObjectUrl(url);
+        }
+      }
+      _activeBlobUrls!.clear();
+    }
+  }
   static Widget buildContractMessage(
     BuildContext context,
     Map<String, dynamic> msg,
@@ -649,6 +662,9 @@ class UIMessage {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.blue[600],
                                     foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
                                   ),
                                 ),
                                 if (isContractee) ...[
@@ -693,7 +709,7 @@ class UIMessage {
                               );
                             }
                             
-                            if (snapshot.hasError) {
+                            if (snapshot.hasError || snapshot.data == null || snapshot.data!.isEmpty) {
                               return Card(
                                 child: SizedBox(
                                   height: 400,
@@ -709,10 +725,20 @@ class UIMessage {
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
-                                          snapshot.error.toString(),
+                                          'Error: ${snapshot.error ?? "No PDF URL available"}',
                                           textAlign: TextAlign.center,
                                           style: TextStyle(color: Colors.grey[600], fontSize: 12),
                                         ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Signed PDF available: ${_hasSignedPdf(contractData)}',
+                                          style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                                        ),
+                                        if (_hasSignedPdf(contractData))
+                                          Text(
+                                            'Signed PDF path: ${contractData['signed_pdf_url']}',
+                                            style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                                          ),
                                         const SizedBox(height: 16),
                                         ElevatedButton.icon(
                                           onPressed: () async {
@@ -723,6 +749,9 @@ class UIMessage {
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: Colors.blue[600],
                                             foregroundColor: Colors.white,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -982,23 +1011,58 @@ class UIMessage {
   }
 
   static Future<String?> _getPdfUrl(Map<String, dynamic> contractData, [Map<String, dynamic>? messageData]) async {
-
-    if (messageData != null) {
-      final messagePdfUrl = messageData['pdf_url'] as String?;
-      if (messagePdfUrl != null && messagePdfUrl.isNotEmpty) {
-        if (messagePdfUrl.startsWith('http')) {
-          return messagePdfUrl;
-        }
-        return await ViewContractService.getSignedContractUrl(messagePdfUrl);
+    try {
+      if (_hasSignedPdf(contractData)) {
       }
-    }
 
-    if (_hasSignedPdf(contractData)) {
-      final signedPdfUrl = contractData['signed_pdf_url'] as String?;
-      return await ViewContractService.getSignedContractUrl(signedPdfUrl!);
+      if (_hasSignedPdf(contractData)) {
+        final signedPdfUrl = contractData['signed_pdf_url'] as String?;
+        if (signedPdfUrl != null && signedPdfUrl.isNotEmpty) {
+          try {
+            final signedUrl = await ViewContractService.getSignedContractUrl(signedPdfUrl);
+            if (signedUrl != null && signedUrl.isNotEmpty) {
+              return signedUrl;
+            } else {
+            }
+          } catch (e) {
+            rethrow;
+          }
+
+          if (kIsWeb) {
+            try {
+              final pdfBytes = await Supabase.instance.client.storage
+                  .from('contracts')
+                  .download(signedPdfUrl);
+
+              final blob = html.Blob([pdfBytes], 'application/pdf');
+              final blobUrl = html.Url.createObjectUrlFromBlob(blob);
+
+              _activeBlobUrls ??= [];
+              _activeBlobUrls!.add(blobUrl);
+
+              return blobUrl;
+            } catch (e) {
+              rethrow;
+            }
+          }
+        }
+      }
+
+      if (messageData != null) {
+        final messagePdfUrl = messageData['pdf_url'] as String?;
+        if (messagePdfUrl != null && messagePdfUrl.isNotEmpty) {
+          if (messagePdfUrl.startsWith('http')) {
+            return messagePdfUrl;
+          }
+          final signedUrl = await ViewContractService.getSignedContractUrl(messagePdfUrl);
+          if (signedUrl != null) return signedUrl;
+        }
+      }
+
+      return await ViewContractService.getPdfSignedUrl(contractData);
+    } catch (e) {
+      return await ViewContractService.getPdfSignedUrl(contractData);
     }
-    
-    return await ViewContractService.getPdfSignedUrl(contractData);
   }
 
   static Future<void> _downloadContract(Map<String, dynamic> contractData, BuildContext context, [Map<String, dynamic>? messageData]) async {
@@ -1116,6 +1180,8 @@ class UIMessage {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: enabled ? Colors.grey[600] : Colors.grey[400],
                     foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
                   ),
                 ),
               ),
