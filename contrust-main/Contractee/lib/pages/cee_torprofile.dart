@@ -1,6 +1,6 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
-import 'package:backend/models/be_appbar.dart';
+import 'package:backend/build/buildtorprofile.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_project_service.dart';
 import 'package:backend/utils/be_constraint.dart';
@@ -26,6 +26,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
   late String bio;
   late String contactNumber;
   late String specialization;
+  late String address;
   late double rating;
   late List<String> pastProjects;
   late String? profileImage;
@@ -38,14 +39,41 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
   double userRating = 0.0;
   bool hasRated = false;
 
+  // Dummy editing variables for buildAbout
+  bool isEditingFirmName = false;
+  bool isEditingBio = false;
+  bool isEditingContact = false;
+  bool isEditingSpecialization = false;
+  bool isEditingAddress = false;
+  late TextEditingController firmNameController;
+  late TextEditingController bioController;
+  late TextEditingController contactController;
+  late TextEditingController specializationController;
+  late TextEditingController addressController;
+
   static const String profileUrl =
       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
 
   @override
   void initState() {
     super.initState();
+    firmNameController = TextEditingController();
+    bioController = TextEditingController();
+    contactController = TextEditingController();
+    specializationController = TextEditingController();
+    addressController = TextEditingController();
     _loadContractorData();
     _checkAgreementWithContractor();
+  }
+
+  @override
+  void dispose() {
+    firmNameController.dispose();
+    bioController.dispose();
+    contactController.dispose();
+    specializationController.dispose();
+    addressController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadContractorData() async {
@@ -67,6 +95,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
               contractorData['contact_number'] ?? "No contact number";
           specialization =
               contractorData['specialization'] ?? "No specialization";
+          address = contractorData['address'] ?? "";
           rating = contractorData['rating']?.toDouble() ?? 0.0;
           final photo = contractorData['profile_photo'];
           profileImage = (photo == null || photo.isEmpty) ? profileUrl : photo;
@@ -78,6 +107,14 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
         });
       } else {
         setState(() {
+          firmName = "No firm name";
+          bio = "No bio available";
+          contactNumber = "No contact number";
+          specialization = "No specialization";
+          address = "";
+          rating = 0.0;
+          profileImage = profileUrl;
+          pastProjects = [];
           completedProjectsCount = completedProjects.length;
           isLoading = false;
         });
@@ -149,6 +186,18 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
       }
     }
   }
+
+  // Dummy methods for buildAbout
+  void toggleEditFirmName() {}
+  void toggleEditBio() {}
+  void toggleEditContact() {}
+  void toggleEditSpecialization() {}
+  void toggleEditAddress() {}
+  void saveFirmName() {}
+  void saveBio() {}
+  void saveContact() {}
+  void saveSpecialization() {}
+  void saveAddress() {}
 
   Future<void> _showRatingDialog() async {
     double tempRating = userRating;
@@ -305,9 +354,6 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
 
     if (isLoading) {
       return Scaffold(
-        appBar: ConTrustAppBar(
-          headline: 'Contractor Profile',
-        ),
         body: const Center(
           child: CircularProgressIndicator(),
         ),
@@ -315,8 +361,11 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
     }
 
     return Scaffold(
-      appBar: ConTrustAppBar(
-        headline: 'Contractor Profile',
+      appBar: AppBar(
+        title: const Text('Contractor Profile'),
+        backgroundColor: Colors.amber,
+        centerTitle: true,
+        elevation: 4,
       ),
       body: RefreshIndicator(
         onRefresh: _loadContractorData,
@@ -443,71 +492,35 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Card(
-                      elevation: 8,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(Icons.info_outline,
-                                    color: Colors.blue.shade700, size: 24),
-                                const SizedBox(width: 12),
-                                Text(
-                                  'About Us',
-                                  style: theme.textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue.shade700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              bio,
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                height: 1.6,
-                                color: Colors.grey.shade700,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Icon(Icons.phone,
-                                    color: Colors.blue.shade600, size: 20),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Contact: $contactNumber',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: Colors.grey.shade700,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Icon(Icons.work,
-                                    color: Colors.blue.shade600, size: 20),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Specialization: $specialization',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: Colors.grey.shade700,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
+                    ProfileBuildMethods.buildAbout(
+                      context: context,
+                      firmName: firmName,
+                      bio: bio,
+                      contactNumber: contactNumber,
+                      specialization: specialization,
+                      address: address,
+                      isEditingFirmName: isEditingFirmName,
+                      isEditingBio: isEditingBio,
+                      isEditingContact: isEditingContact,
+                      isEditingSpecialization: isEditingSpecialization,
+                      isEditingAddress: isEditingAddress,
+                      firmNameController: firmNameController,
+                      bioController: bioController,
+                      contactController: contactController,
+                      specializationController: specializationController,
+                      addressController: addressController,
+                      toggleEditFirmName: toggleEditFirmName,
+                      toggleEditBio: toggleEditBio,
+                      toggleEditContact: toggleEditContact,
+                      toggleEditSpecialization: toggleEditSpecialization,
+                      toggleEditAddress: toggleEditAddress,
+                      saveFirmName: saveFirmName,
+                      saveBio: saveBio,
+                      saveContact: saveContact,
+                      saveSpecialization: saveSpecialization,
+                      saveAddress: saveAddress,
+                      contractorId: widget.contractorId,
+                      userType: 'contractee',
                     ),
                     const SizedBox(height: 24),
                     Card(

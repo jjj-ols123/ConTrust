@@ -19,14 +19,14 @@ enum ContracteePage {
 
 class ContracteeShell extends StatelessWidget {
   final ContracteePage currentPage;
-  final String contracteeId;
+  final String? contracteeId;
   final Widget child;
   final EdgeInsets? contentPadding;
 
   const ContracteeShell({
     super.key,
     required this.currentPage,
-    required this.contracteeId,
+    this.contracteeId,
     required this.child,
     this.contentPadding,
   });
@@ -59,14 +59,6 @@ class ContracteeShell extends StatelessWidget {
         centerTitle: true,
         elevation: 4,
         automaticallyImplyLeading: false,
-        leading: !isDesktop && currentPage == ContracteePage.home ? Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: Colors.black),
-            onPressed: () {
-              Scaffold.of(context).openDrawer();
-            },
-          ),
-        ) : null,
         actions: const [NotificationButton()],
       ),
       drawer: !isDesktop ? Builder(
@@ -81,45 +73,59 @@ class ContracteeShell extends StatelessWidget {
           child: Drawer(
             elevation: 0,
             child: Column(
-              children: [
-                Container(
-                  height: kToolbarHeight,
-                  color: Colors.amber,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: Colors.white,
-                        child: Icon(Icons.person_outline, color: Colors.amber[700]),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Contractee',
-                              style: TextStyle(
-                                color: Colors.amber[900],
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Welcome back!',
-                              style: TextStyle(
-                                color: Colors.amber[700],
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
+              Container(
+              width: 280,
+              decoration: BoxDecoration(
+                color: Colors.amber[500],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(2, 0),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade50,
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Colors.amber.shade200,
+                          width: 1,
                         ),
                       ),
-                    ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.shade600,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.construction,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'ConTrust',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF2D3748),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
                 Expanded(
                   child: SideDashboardDrawer(
                     contracteeId: contracteeId,

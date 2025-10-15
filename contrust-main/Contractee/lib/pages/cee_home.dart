@@ -1,9 +1,10 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:backend/models/be_UIapp.dart';
-import 'package:backend/services/both%20services/be_bidding_service.dart';
-import 'package:backend/services/both%20services/be_fetchservice.dart';
-import 'package:backend/services/both%20services/be_project_service.dart';
+import 'package:backend/services/both services/be_bidding_service.dart';
+import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/services/both services/be_project_service.dart';
+import 'package:backend/services/contractee services/cee_checkuser.dart';
 import 'package:contractee/models/cee_modal.dart';
 import 'package:contractee/build/builddrawer.dart';
 import 'package:flutter/material.dart';
@@ -47,8 +48,12 @@ class _HomePageState extends State<HomePage> {
 
     try {
       final fetchedContractors = await FetchService().fetchContractors();
-      final fetchedProjects = await FetchService().fetchUserProjects();
-      final fetchedHighestBids = await BiddingService().getProjectHighestBids();
+      List<Map<String, dynamic>> fetchedProjects = [];
+      Map<String, double> fetchedHighestBids = {};
+      if (supabase.auth.currentUser != null) {
+        fetchedProjects = await FetchService().fetchUserProjects();
+        fetchedHighestBids = await BiddingService().getProjectHighestBids();
+      }
 
       setState(() {
         contractors = fetchedContractors;
@@ -89,7 +94,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final contracteeId = supabase.auth.currentUser!.id;
+    final contracteeId = supabase.auth.currentUser?.id;
 
     return ContracteeShell(
       currentPage: ContracteePage.home,
@@ -245,17 +250,22 @@ class _HomePageState extends State<HomePage> {
                                 duration: project['duration'] ?? 0,
                                 createdAt: DateTime.parse(
                                     project['created_at'].toString()),
-                                onTap: () async {
-                                  await BidsModal.show(
+                                onTap: () {
+                                  CheckUserLogin.isLoggedIn(
                                     context: context,
-                                    projectId: projectId,
-                                    acceptBidding: (projectId, bidId) async {
-                                      _loadAcceptBidding(projectId, bidId);
-                                      setState(() {
-                                        acceptedBidIds[projectId] = bidId;
-                                      });
+                                    onAuthenticated: () async {
+                                      await BidsModal.show(
+                                        context: context,
+                                        projectId: projectId,
+                                        acceptBidding: (projectId, bidId) async {
+                                          _loadAcceptBidding(projectId, bidId);
+                                          setState(() {
+                                            acceptedBidIds[projectId] = bidId;
+                                          });
+                                        },
+                                        initialAcceptedBidId: acceptedBidId,
+                                      );
                                     },
-                                    initialAcceptedBidId: acceptedBidId,
                                   );
                                 },
                                 handleFinalizeBidding: (bidId) {
