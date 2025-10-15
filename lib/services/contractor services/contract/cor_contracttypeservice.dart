@@ -49,7 +49,6 @@ class ContractTypeService {
     required String contractorId,
   }) async {
     try {
-      // Fetch the contract type details
       final contractTypes = await FetchService().fetchContractTypes();
       final contractType = contractTypes.firstWhere(
         (type) => type['contract_type_id'] == contract['contract_type_id'],
@@ -58,12 +57,7 @@ class ContractTypeService {
 
       if (contractType.isEmpty) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Error: Contract type not found'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          ConTrustSnackBar.error(context, 'Error: Contract type not found');
         }
         return false;
       }
@@ -82,12 +76,7 @@ class ContractTypeService {
       return editResult;
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error loading contract for editing: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ConTrustSnackBar.error(context, 'Error loading contract for editing: $e');
       }
       return false;
     }
@@ -146,22 +135,11 @@ class ContractTypeService {
     try {
       await ContractService.deleteContract(contractId: contractId);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Contract deleted successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        ConTrustSnackBar.success(context, 'Contract deleted successfully');
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error deleting contract. Please try again.'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
-          ),
-        );
+        ConTrustSnackBar.error(context, 'Error deleting contract. Please try again.');
       }
     }
   }
@@ -186,7 +164,6 @@ class ContractTypeService {
 
     final List<PopupMenuEntry<String>> menuItems = [];
 
-    // Only show send option for draft contracts (newly created or edited rejected contracts)
     if (contractStatus == 'draft') {
       menuItems.add(
         const PopupMenuItem(

@@ -191,11 +191,11 @@ class CreateContractService {
     List<ContractField> itemFields = [];
     for (int i = 1; i <= itemCount; i++) {
       itemFields.addAll([
-        ContractField(key: 'Item.$i.Name', label: 'Item $i Name', isRequired: i <= 3), 
-        ContractField(key: 'Item.$i.Description', label: 'Item $i Description', isRequired: i <= 3),
-        ContractField(key: 'Item.$i.Price', label: 'Item $i Price (₱)', isRequired: i <= 3, inputType: TextInputType.number),
-        ContractField(key: 'Item.$i.Quantity', label: 'Item $i Quantity', isRequired: i <= 3, inputType: TextInputType.number),
-        ContractField(key: 'Item.$i.Subtotal', label: 'Item $i Subtotal (₱)', inputType: TextInputType.number, isEnabled: false), 
+        ContractField(key: 'Item.$i.Name', label: 'Item Name', isRequired: i <= 3), 
+        ContractField(key: 'Item.$i.Description', label: 'Item Description', isRequired: i <= 3),
+        ContractField(key: 'Item.$i.Price', label: 'Item Price (₱)', isRequired: i <= 3, inputType: TextInputType.number),
+        ContractField(key: 'Item.$i.Quantity', label: 'Item Quantity', isRequired: i <= 3, inputType: TextInputType.number),
+        ContractField(key: 'Item.$i.Subtotal', label: 'Item Subtotal (₱)', inputType: TextInputType.number, isEnabled: false), 
       ]);
     }
     

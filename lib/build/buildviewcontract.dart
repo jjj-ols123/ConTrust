@@ -78,17 +78,6 @@ class ViewContractBuild {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(Icons.picture_as_pdf, color: Colors.amber[700]),
-                const SizedBox(width: 8),
-                Text(
-                  isSignedContract ? 'Signed Contract PDF' : 'Contract PDF',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
             Container(
               constraints: const BoxConstraints(minHeight: 400),
               decoration: BoxDecoration(
@@ -115,17 +104,6 @@ class ViewContractBuild {
                       ),
                     ),
                     const SizedBox(height: 8),
-
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: onDownload,
-                      icon: const Icon(Icons.download),
-                      label: Text(isSignedContract ? 'Download Signed Contract' : 'Download PDF'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue[600],
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
                   ],
                 ),
               ),

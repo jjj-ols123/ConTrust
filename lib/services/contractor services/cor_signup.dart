@@ -1,4 +1,5 @@
 import 'package:backend/services/both%20services/be_user_service.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -27,12 +28,7 @@ class SignUpContractor {
       if (!context.mounted) return;
 
       if (signUpResponse.user == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error creating account'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ConTrustSnackBar.error(context, 'Error creating account');
         return;
       }
 
@@ -56,29 +52,15 @@ class SignUpContractor {
 
      
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Account successfully created'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      ConTrustSnackBar.success(context, 'Account successfully created');
       Navigator.pop(context);
     } on AuthException {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error creating account'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ConTrustSnackBar.error(context, 'Error creating account');
+      return;
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Unexpected error'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ConTrustSnackBar.error(context, 'Unexpected error');
     }
   }
 }
