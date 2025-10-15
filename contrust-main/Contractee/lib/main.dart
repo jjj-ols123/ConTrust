@@ -41,7 +41,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       scrollBehavior: AppScrollBehavior(),
       debugShowCheckedModeBanner: false,
-      home: isFirstOpen ? WelcomePage() : HomePage(),
+      home: isFirstOpen ? const WelcomePage() : const HomePage(contracteeId: ''),
     );
   }
 }
