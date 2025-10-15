@@ -481,4 +481,19 @@ class FetchService {
       return null;
     }
   }
+
+  Future<List<Map<String, dynamic>>> fetchContractsForProject(
+      String projectId) async {
+    try {
+      final response = await _supabase
+          .from('Contracts')
+          .select('''*, contractee:Contractee(*)''')
+          .eq('project_id', projectId)
+          .order('created_at', ascending: false);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      return [];
+    }
+  }
 }

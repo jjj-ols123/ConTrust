@@ -99,41 +99,91 @@ class ContractPdfSignatureService {
     try {
       final contractData = await ContractService.getContractById(contractId);
 
+      final contractorId = contractData['contractor_id'] as String?;
+      if (contractorId == null) {
+        throw Exception('Contractor ID not found in contract data');
+      }
+
       final rawFieldValues = contractData['field_values'];
-      final fieldValues = rawFieldValues is Map 
+      final fieldValues = rawFieldValues is Map
           ? Map<String, String>.from(rawFieldValues.map((key, value) => MapEntry(key.toString(), value.toString())))
           : <String, String>{};
-      
+
       final contractorSignature = await downloadSignature(
         contractData['contractor_signature_url'],
       );
+
       final contracteeSignature = await downloadSignature(
         contractData['contractee_signature_url'],
       );
-      
+
       final pdfBytes = await generateSignedPdf(
         contractData: contractData,
         fieldValues: fieldValues,
         contractorSignature: contractorSignature,
         contracteeSignature: contracteeSignature,
       );
-      
 
       final fileName = 'signed_${contractId}_${DateTime.now().millisecondsSinceEpoch}.pdf';
-      final filePath = 'contracts/signed/$fileName';
-      
+      final filePath = '$contractorId/$fileName';
+
+      // Upload the signed PDF
       await _supabase.storage
           .from('contracts')
-          .uploadBinary(filePath, pdfBytes);
-      
+          .uploadBinary(filePath, pdfBytes, fileOptions: const FileOptions(upsert: true));
 
-      await _supabase
-          .from('Contracts')
-          .update({
-            'signed_pdf_url': filePath,
-          })
-          .eq('contract_id', contractId);
-      
+      // Verify the upload was successful by checking if we can list the file
+      try {
+        final files = await _supabase.storage
+            .from('contracts')
+            .list(path: contractorId);
+
+        final fileExists = files.any((file) => file.name == fileName);
+
+        if (!fileExists) {
+          throw Exception('File was not found in storage after upload (list check failed)');
+        }
+      } catch (listError) {
+        // Try alternative verification via download
+        try {
+          await _supabase.storage
+              .from('contracts')
+              .download(filePath);
+        } catch (downloadError) {
+          throw Exception('Failed to verify file upload via both list and download: list=$listError, download=$downloadError');
+        }
+      }
+
+      // Test signed URL creation
+      try {
+        final testSignedUrl = await _supabase.storage
+            .from('contracts')
+            .createSignedUrl(filePath, 60);
+
+        if (testSignedUrl.isEmpty) {
+          throw Exception('Failed to create signed URL for uploaded file');
+        }
+      } catch (e) {
+        throw Exception('Signed PDF uploaded but signed URL creation failed: $e');
+      }
+
+      try {
+        await _supabase
+            .from('Contracts')
+            .update({
+              'signed_pdf_url': filePath,
+            })
+            .eq('contract_id', contractId);
+      } catch (dbError) {
+        // If database update fails, try to clean up the uploaded file
+        try {
+          await _supabase.storage.from('contracts').remove([filePath]);
+        } catch (cleanupError) {
+          // Ignore cleanup errors
+        }
+        throw Exception('Database update failed: $dbError');
+      }
+
       return filePath;
     } catch (e) {
       throw Exception('Failed to create signed contract PDF: $e');

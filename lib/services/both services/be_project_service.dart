@@ -2,6 +2,7 @@
 
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_notification_service.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/both services/be_user_service.dart';
@@ -36,11 +37,7 @@ class ProjectService {
 
       if (existingProject != null) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('You cannot post a new project while a project is up.'),
-            duration: Duration(seconds: 3),
-            ),
-          );
+          ConTrustSnackBar.error(context, 'You cannot post a new project while a project is up.');
         }
         return;
       }
@@ -59,15 +56,11 @@ class ProjectService {
       });
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Project created successfully!')),
-        );
+        ConTrustSnackBar.success(context, 'Project created successfully!');
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error creating project: $e')),
-        );
+        ConTrustSnackBar.error(context, 'Error creating project: $e');
       }
       rethrow;
     }

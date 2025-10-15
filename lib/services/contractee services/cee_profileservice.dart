@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 import 'package:backend/services/both%20services/be_user_service.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -121,24 +122,12 @@ class CeeProfileService {
       await saveField(contracteeId, fieldType, newValue);
       
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${fieldType.replaceAll(RegExp('([A-Z])'), ' \$1').toUpperCase()} updated successfully!'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+          ConTrustSnackBar.success(context, '${fieldType.replaceAll(RegExp('([A-Z])'), ' \$1').toUpperCase()} updated successfully!');
       }
       onSuccess();
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error updating ${fieldType.toLowerCase()}'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        ConTrustSnackBar.error(context, 'Error updating ${fieldType.toLowerCase()}');
       }
     }
   }

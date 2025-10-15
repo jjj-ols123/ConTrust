@@ -41,12 +41,15 @@ class TorProfileService {
   }
 
   static Future<void> submitRating(String contractorId, String contracteeId,
-      double rating, bool hasRated) async {
+      double rating, bool hasRated, String reviewText) async {
     try {
       if (hasRated) {
         await Supabase.instance.client
             .from('ContractorRatings')
-            .update({'rating': rating})
+            .update({
+              'rating': rating,
+              'review': reviewText,
+            })
             .eq('contractor_id', contractorId)
             .eq('contractee_id', contracteeId);
       } else {
@@ -54,6 +57,7 @@ class TorProfileService {
           'contractor_id': contractorId,
           'contractee_id': contracteeId,
           'rating': rating,
+          'review': reviewText,
           'created_at': DateTime.now().toIso8601String(),
         });
       }
