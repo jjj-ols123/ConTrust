@@ -49,7 +49,7 @@ class MessageUIBuildMethods {
   final VoidCallback onScrollToBottom;
 
   Color get accentColor =>
-      userRole == 'contractor' ? Colors.amber : Colors.blue;
+      userRole == 'contractor' ? Colors.amber : Colors.amber;
   String get chatStreamColumn =>
       userRole == 'contractor' ? 'contractor_id' : 'contractee_id';
   

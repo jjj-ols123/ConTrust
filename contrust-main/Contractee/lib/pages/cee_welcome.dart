@@ -107,29 +107,28 @@ class _WelcomePageState extends State<WelcomePage> {
               ),
               textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 40),
-          if (context != null && title == 'Design')
-            ElevatedButton(
-              onPressed: () async {
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.setBool('isFirstOpen', false);
+            const SizedBox(height: 40),
+            if (context != null && title == 'Design')
+              ElevatedButton(
+                onPressed: () async {
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setBool('isFirstOpen', false);
 
-                 // ignore: use_build_context_synchronously
-                 transitionBuilder(context, HomePage(), replace: true);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
+                   // ignore: use_build_context_synchronously
+                   transitionBuilder(context, const HomePage(), replace: true);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.teal,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                  child: const Text(
+                    "Let's Go!",
+                    style: TextStyle(fontSize: 18, color: Colors.white),
                   ),
                 ),
-                child: const Text(
-                  "Let's Go!",
-                  style: TextStyle(fontSize: 18, color: Colors.white),
-                ),
-              ),
           ],
         ),
       ),

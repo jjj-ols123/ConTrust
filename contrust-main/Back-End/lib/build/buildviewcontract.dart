@@ -138,6 +138,32 @@ class ViewContractBuild {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Add PDF status indicator
+            if (isSignedContract) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.green[100],
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.verified, size: 16, color: Colors.green[700]),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Signed Contract',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green[700],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             Container(
               height: height,
               decoration: BoxDecoration(
@@ -146,10 +172,9 @@ class ViewContractBuild {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child:
-                    kIsWeb
-                        ? _buildWebPdfViewer(pdfUrl)
-                        : _buildMobilePdfViewer(pdfUrl, onDownload),
+                child: kIsWeb
+                    ? _buildWebPdfViewerWithFallback(pdfUrl, onDownload, height)
+                    : _buildMobilePdfViewer(pdfUrl, onDownload),
               ),
             ),
           ],
@@ -159,32 +184,147 @@ class ViewContractBuild {
   }
 
   static Widget _buildWebPdfViewer(String pdfUrl) {
-    final viewerUrl =
-        'https://mozilla.github.io/pdf.js/web/viewer.html'
-        '?file=${Uri.encodeComponent(pdfUrl)}'
-        '#toolbar=0'
-        '&navpanes=0'
-        '&scrollbar=1'
-        '&spread=0'
-        '&sidebar=0';
-
+    // Use a more reliable PDF viewer approach
     final viewType = 'pdf-viewer-${pdfUrl.hashCode.abs()}';
 
     if (kIsWeb) {
       ui_web.platformViewRegistry.registerViewFactory(viewType, (int viewId) {
-        final iframe =
-            html.IFrameElement()
-              ..src = viewerUrl
-              ..style.border = 'none'
-              ..style.width = '100%'
-              ..style.height = '100%'
-              ..allow = 'fullscreen';
+        final iframe = html.IFrameElement()
+          ..src = pdfUrl
+          ..style.border = 'none'
+          ..style.width = '100%'
+          ..style.height = '100%'
+          ..allow = 'fullscreen'
+          ..onError.listen((event) {
+            print('PDF loading error: $event');
+          });
 
         return iframe;
       });
     }
 
     return HtmlElementView(viewType: viewType);
+  }
+
+  static Widget _buildWebPdfViewerWithFallback(String pdfUrl, VoidCallback onDownload, double height) {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return FutureBuilder<bool>(
+          future: _testPdfUrl(pdfUrl),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return _buildPdfLoadingState();
+            }
+            
+            if (snapshot.hasError || snapshot.data == false) {
+              return _buildPdfErrorState(pdfUrl, onDownload, height);
+            }
+            
+            return _buildWebPdfViewer(pdfUrl);
+          },
+        );
+      },
+    );
+  }
+
+  static Future<bool> _testPdfUrl(String pdfUrl) async {
+    try {
+      final response = await html.HttpRequest.request(
+        pdfUrl,
+        method: 'HEAD',
+      );
+      return response.status == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Widget _buildPdfLoadingState() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(color: Colors.amber),
+            SizedBox(height: 16),
+            Text('Loading PDF...'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget _buildPdfErrorState(String pdfUrl, VoidCallback onDownload, double height) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Colors.red[400],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'PDF Cannot Be Displayed',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'The PDF viewer cannot display this document. This may be due to CORS restrictions or the file format.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      html.window.open(pdfUrl, '_blank');
+                    },
+                    icon: const Icon(Icons.open_in_new),
+                    label: const Text('Open in New Tab'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue[600],
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: onDownload,
+                    icon: const Icon(Icons.download),
+                    label: const Text('Download PDF'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber[600],
+                      foregroundColor: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   static Widget _buildMobilePdfViewer(String pdfUrl, VoidCallback onDownload) {

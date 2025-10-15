@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 import 'package:backend/build/buildmessagesdesign.dart';
+import 'package:backend/build/buildmessage.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -94,14 +95,34 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    final messageUIBuilder = MessageUIBuildMethods(
+      context: context,
+      supabase: supabase,
+      userId: widget.contracteeId,
+      userRole: 'contractee',
+      chatRoomId: widget.chatRoomId,
+      otherUserId: widget.contractorId,
+      userName: widget.contractorName,
+      userProfile: widget.contractorProfile,
+      messageController: _messageController,
+      scrollController: _scrollController,
+      projectStatus: _projectStatus,
+      onSelectChat: (chatRoomId, otherUserId, userName, userProfile) {
+        // This is handled by the parent navigation
+      },
+      onSendMessage: _sendMessage,
+      onScrollToBottom: _scrollToBottom,
+    );
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: AppBar(
+      appBar: screenWidth > 1200 ? null : AppBar(
         elevation: 1,
-        backgroundColor: Colors.yellow[700],
-        foregroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.black),
+        backgroundColor: Colors.blue[700],
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         titleSpacing: 0,
         title: Row(
           children: [
@@ -116,7 +137,7 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
               child: Text(
                 widget.contractorName,
                 style: const TextStyle(
-                  color: Colors.black,
+                  color: Colors.white,
                   fontWeight: FontWeight.w600,
                   fontSize: 18,
                 ),
@@ -126,110 +147,118 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
           ],
         ),
       ),
-      body: Column(
-        children: [
-          FutureBuilder<String?>(
-            future: _projectStatus,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasError) {
-                return Center(child: Text('Error loading status'));
-              } else {
-                final projectStatus = snapshot.data ?? 'pending';
+      body: screenWidth > 1200 
+        ? Row(
+            children: [
+              messageUIBuilder.buildChatHistoryUI(),
+              messageUIBuilder.buildMessagesUI(),
+              messageUIBuilder.buildProjectInfoUI(),
+            ],
+          )
+        : Column(
+            children: [
+              FutureBuilder<String?>(
+                future: _projectStatus,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text('Error loading status'));
+                  } else {
+                    final projectStatus = snapshot.data ?? 'pending';
 
-                if (projectStatus == 'awaiting_contract' || projectStatus == 'active') {
-                  return ContractAgreementBanner(
-                    chatRoomId: widget.chatRoomId,
-                    userRole: 'contractee', 
-                    onActiveProjectPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Navigate to Ongoing Projects')),
+                    if (projectStatus == 'awaiting_contract' || projectStatus == 'active') {
+                      return ContractAgreementBanner(
+                        chatRoomId: widget.chatRoomId,
+                        userRole: 'contractee', 
+                        onActiveProjectPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Navigate to Ongoing Projects')),
+                          );
+                        },
                       );
-                    },
-                  );
-                }
-              }
-              return Container();
-            },
-          ),
-          Expanded(
-            child: StreamBuilder<List<Map<String, dynamic>>>(
-              stream: supabase
-                  .from('Messages')
-                  .stream(primaryKey: ['msg_id'])
-                  .eq('chatroom_id', widget.chatRoomId)
-                  .order('timestamp', ascending: true),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
+                    }
+                  }
                   return Container();
-                }
-                final messages = snapshot.data!;
-                WidgetsBinding.instance
-                    .addPostFrameCallback((_) => _scrollToBottom());
-                if (messages.isEmpty) {
-                  return Container();
-                }
-                return ListView.builder(
-                  controller: _scrollController,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final msg = messages[index];
-                    final isMe = msg['sender_id'] == widget.contracteeId;
-                    return UIMessage.buildContractMessage(
-                      context,
-                      msg,
-                      isMe,
-                      widget.contracteeId,
+                },
+              ),
+              Expanded(
+                child: StreamBuilder<List<Map<String, dynamic>>>(
+                  stream: supabase
+                      .from('Messages')
+                      .stream(primaryKey: ['msg_id'])
+                      .eq('chatroom_id', widget.chatRoomId)
+                      .order('timestamp', ascending: true),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return Container();
+                    }
+                    final messages = snapshot.data!;
+                    WidgetsBinding.instance
+                        .addPostFrameCallback((_) => _scrollToBottom());
+                    if (messages.isEmpty) {
+                      return Container();
+                    }
+                    return ListView.builder(
+                      controller: _scrollController,
+                      padding:
+                          const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) {
+                        final msg = messages[index];
+                        final isMe = msg['sender_id'] == widget.contracteeId;
+                        return UIMessage.buildContractMessage(
+                          context,
+                          msg,
+                          isMe,
+                          widget.contracteeId,
+                        );
+                      },
                     );
                   },
-                );
-              },
-            ),
-          ),
-          SafeArea(
-            child: Container(
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: TextField(
-                        controller: _messageController,
-                        minLines: 1,
-                        maxLines: 4,
-                        decoration: const InputDecoration(
-                          hintText: "Type your message...",
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                        ),
-                        onSubmitted: (_) => _sendMessage(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  CircleAvatar(
-                    backgroundColor: _canSend ? Colors.amber[700] : Colors.grey[400],
-                    radius: 24,
-                    child: IconButton(
-                      icon: const Icon(Icons.send, color: Colors.white),
-                      onPressed: _canSend ? _sendMessage : null,
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+              SafeArea(
+                child: Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: TextField(
+                            controller: _messageController,
+                            minLines: 1,
+                            maxLines: 4,
+                            decoration: const InputDecoration(
+                              hintText: "Type your message...",
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 12),
+                            ),
+                            onSubmitted: (_) => _sendMessage(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      CircleAvatar(
+                        backgroundColor: _canSend ? Colors.blue[700] : Colors.grey[400],
+                        radius: 24,
+                        child: IconButton(
+                          icon: const Icon(Icons.send, color: Colors.white),
+                          onPressed: _canSend ? _sendMessage : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 }

@@ -106,15 +106,24 @@ class _ContractorViewContractPageState extends State<ContractorViewContractPage>
       final signedPdfUrl = contractData!['signed_pdf_url'] as String?;
       
       if (signedPdfUrl != null && signedPdfUrl.isNotEmpty) {
-        final pdfBytes = await Supabase.instance.client.storage
-            .from('contracts')
-            .download(signedPdfUrl);
-        
-        final fileName = 'Signed_Contract_${contractData!['title']?.replaceAll(' ', '_') ?? 'Document'}.pdf';
-        await ContractPdfService.saveToDevice(Uint8List.fromList(pdfBytes), fileName);
-        
-        if (mounted) {
-          ConTrustSnackBar.success(context, 'Signed contract downloaded successfully');
+        try {
+          final pdfBytes = await Supabase.instance.client.storage
+              .from('contracts')
+              .download(signedPdfUrl);
+          
+          final fileName = 'Signed_Contract_${contractData!['title']?.replaceAll(' ', '_') ?? 'Document'}.pdf';
+          await ContractPdfService.saveToDevice(Uint8List.fromList(pdfBytes), fileName);
+          
+          if (mounted) {
+            ConTrustSnackBar.success(context, 'Signed contract downloaded successfully');
+          }
+        } catch (downloadError) {
+          print('Error downloading signed PDF: $downloadError');
+          // Fall back to regular download
+          await ViewContractService.handleDownload(
+            contractData: contractData!,
+            context: context,
+          );
         }
       } else {
         await ViewContractService.handleDownload(
@@ -135,12 +144,12 @@ class _ContractorViewContractPageState extends State<ContractorViewContractPage>
     final signedPdfUrl = contractData!['signed_pdf_url'] as String?;
     if (signedPdfUrl != null && signedPdfUrl.isNotEmpty) {
       try {
-        final signedUrl = await Supabase.instance.client.storage
-            .from('contracts')
-            .createSignedUrl(signedPdfUrl, 60 * 60 * 24);
-        return signedUrl;
+        final signedUrl = await ViewContractService.getSignedContractUrl(signedPdfUrl);
+        if (signedUrl != null && signedUrl.isNotEmpty) {
+          return signedUrl;
+        }
       } catch (e) {
-          rethrow; 
+        rethrow;
       }
     }
     

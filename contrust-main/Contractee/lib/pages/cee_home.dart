@@ -7,13 +7,14 @@ import 'package:backend/services/both services/be_project_service.dart';
 import 'package:backend/services/contractee services/cee_checkuser.dart';
 import 'package:contractee/models/cee_modal.dart';
 import 'package:contractee/build/builddrawer.dart';
+import 'package:contractee/build/buildhome.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomePage extends StatefulWidget {
-  final String contracteeId;
+  final String? contracteeId;
 
-  const HomePage({super.key, required this.contracteeId});
+  const HomePage({super.key, this.contracteeId});
 
   @override
   _HomePageState createState() => _HomePageState();
@@ -29,8 +30,11 @@ class _HomePageState extends State<HomePage> {
   final supabase = Supabase.instance.client;
 
   List<Map<String, dynamic>> contractors = [];
+  List<Map<String, dynamic>> filteredContractors = [];
   List<Map<String, dynamic>> projects = [];
   bool isLoading = true;
+  
+  final TextEditingController _searchController = TextEditingController();
 
 
 
@@ -41,6 +45,92 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _loadData();
+    _searchController.addListener(_filterContractors);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterContractors() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        filteredContractors = contractors;
+      } else {
+        filteredContractors = contractors.where((contractor) {
+          final firmName = contractor['firm_name']?.toString().toLowerCase() ?? '';
+          return firmName.contains(query);
+        }).toList();
+      }
+    });
+  }
+
+  Widget _buildNoContractorsPlaceholder() {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(40),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.amber.shade50, Colors.amber.shade100],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.amber.shade200),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.search_off,
+              size: 60,
+              color: Colors.amber[700],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              "No Contractors Found",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.amber[800],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _searchController.text.isEmpty
+                  ? "No contractors are available at the moment."
+                  : "No contractors match your search '${_searchController.text}'",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[700],
+              ),
+            ),
+            if (_searchController.text.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () {
+                  _searchController.clear();
+                },
+                icon: const Icon(Icons.clear, size: 16),
+                label: const Text("Clear Search"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber[700],
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _loadData() async {
@@ -59,6 +149,7 @@ class _HomePageState extends State<HomePage> {
 
       setState(() {
         contractors = fetchedContractors;
+        filteredContractors = fetchedContractors;
         projects = fetchedProjects;
         highestBids = fetchedHighestBids;
         isLoading = false;
@@ -103,17 +194,19 @@ class _HomePageState extends State<HomePage> {
       contracteeId: contracteeId,
       child: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const SizedBox(height: 30),
             Center(
               child: SizedBox(
                 width: MediaQuery.of(context).size.width * 0.90,
                 height: 50,
                 child: TextField(
+                  controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Search',
+                    hintText: 'Search contractors...',
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
                     fillColor: Colors.grey.shade200,
@@ -128,14 +221,14 @@ class _HomePageState extends State<HomePage> {
                       borderRadius: BorderRadius.circular(12.0),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.blue, width: 2.0),
+                      borderSide: BorderSide(color: Colors.amber, width: 2.0),
                       borderRadius: BorderRadius.circular(12.0),
                     ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 15),
+            const SizedBox(height: 10),
             const Text(
               "Suggested Contractor Firms",
               style: TextStyle(
@@ -143,18 +236,18 @@ class _HomePageState extends State<HomePage> {
                 fontSize: 27,
               ),
             ),
-            const SizedBox(height: 25),
+            const SizedBox(height: 15),
             SizedBox(
               height: 280,
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : contractors.isEmpty
-                      ? const Center(child: Text("No contractors found"))
+                  : filteredContractors.isEmpty
+                      ? _buildNoContractorsPlaceholder()
                       : ListView.builder(
                           scrollDirection: Axis.horizontal,
-                          itemCount: contractors.length,
+                          itemCount: filteredContractors.length,
                           itemBuilder: (context, index) {
-                            final contractor = contractors[index];
+                            final contractor = filteredContractors[index];
                             final profilePhoto = contractor['profile_photo'];
                             final profileImage =
                                 (profilePhoto == null || profilePhoto.isEmpty)
@@ -163,10 +256,15 @@ class _HomePageState extends State<HomePage> {
                             final isSelected = selectedIndex == index;
                             return GestureDetector(
                               onTap: () {
-                                setState(() {
-                                  selectedIndex =
-                                      (selectedIndex == index) ? -1 : index;
-                                });
+                                CheckUserLogin.isLoggedIn(
+                                  context: context,
+                                  onAuthenticated: () {
+                                    setState(() {
+                                      selectedIndex =
+                                          (selectedIndex == index) ? -1 : index;
+                                    });
+                                  },
+                                );
                               },
                               child: Container(
                                 width: 200,
@@ -193,37 +291,38 @@ class _HomePageState extends State<HomePage> {
                         ),
             ),
             const SizedBox(height: 30),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  "Your Posted Projects",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 27,
-                  ),
-                ),
-                TextButton(
-                  onPressed: _loadData,
-                  child: Text(
-                    "Refresh",
+            if (contracteeId != null) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Your Posted Projects",
                     style: TextStyle(
-                      color: theme.colorScheme.primary,
                       fontWeight: FontWeight.bold,
-                      fontSize: 18,
+                      fontSize: 27,
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 15),
-            isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : projects.isEmpty
-                    ? const Center(
-                        child: Text("You haven't posted any projects yet"),
-                      )
-                    : ListView.builder(
+                  TextButton(
+                    onPressed: _loadData,
+                    child: Text(
+                      "Refresh",
+                      style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 15),
+              isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : projects.isEmpty
+                      ? const Center(
+                          child: Text("You haven't posted any projects yet"),
+                        )
+                      : ListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: projects.length,
@@ -299,11 +398,62 @@ class _HomePageState extends State<HomePage> {
                           );
                         },
                       ),
+            ] else ...[
+              HomePageBuilder.buildEmptyProjectsPlaceholder(
+                context: context,
+                supabase: supabase,
+                onPostProject: () {
+                  CheckUserLogin.isLoggedIn(
+                    context: context,
+                    onAuthenticated: () async {
+                      final contracteeId = supabase.auth.currentUser?.id;
+                      if (contracteeId != null) {
+                        final titleController = TextEditingController();
+                        final typeController = TextEditingController();
+                        final minBudgetController = TextEditingController();
+                        final maxBudgetController = TextEditingController();
+                        final locationController = TextEditingController();
+                        final descriptionController = TextEditingController();
+                        final bidTimeController = TextEditingController();
+                        
+                        bidTimeController.text = '7';
+                        
+                        await ProjectModal.show(
+                          context: context,
+                          contracteeId: contracteeId,
+                          titleController: titleController,
+                          constructionTypeController: typeController,
+                          minBudgetController: minBudgetController,
+                          maxBudgetController: maxBudgetController,
+                          locationController: locationController,
+                          descriptionController: descriptionController,
+                          bidTimeController: bidTimeController,
+                        );
+                        
+                        _loadData();
+                      }
+                    },
+                  );
+                },
+              ),
+            ],
+                    
+            const SizedBox(height: 30),
+            HomePageBuilder.buildStatsSection(
+              projects: projects,
+              contractors: contractors,
+            ),
+            
+            const SizedBox(height: 30),
+            HomePageBuilder.buildQuickActionsSection(
+              context: context,
+              supabase: supabase,
+              onProjectPosted: _loadData,
+            ),
+            const SizedBox(height: 30),
           ],
         ),
       ),
     ));
   }
-
-
-}
+  }

@@ -7,6 +7,7 @@ import 'package:contractee/pages/cee_about.dart';
 import 'package:contractee/pages/cee_home.dart';
 import 'package:contractee/pages/cee_ongoing.dart';
 import 'package:contractee/pages/cee_transaction.dart';
+import 'package:contractee/pages/cee_chathistory.dart';
 import 'package:flutter/material.dart';
 
 enum ContracteePage {
@@ -14,7 +15,8 @@ enum ContracteePage {
   transactions,
   ongoing,
   about,
-  notifications
+  notifications,
+  messages
 }
 
 class ContracteeShell extends StatelessWidget {
@@ -43,6 +45,8 @@ class ContracteeShell extends StatelessWidget {
         return 'About';
       case ContracteePage.notifications:
         return 'Notifications';
+      case ContracteePage.messages:
+        return 'Messages';
     }
   }
 
@@ -55,7 +59,7 @@ class ContracteeShell extends StatelessWidget {
       resizeToAvoidBottomInset: false,
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        backgroundColor: Colors.amber,
+        backgroundColor: Colors.amber[700],
         centerTitle: true,
         elevation: 4,
         automaticallyImplyLeading: false,
@@ -73,7 +77,78 @@ class ContracteeShell extends StatelessWidget {
           child: Drawer(
             elevation: 0,
             child: Column(
-              Container(
+              children: [
+                Container(
+                  width: 280,
+                  decoration: BoxDecoration(
+                    color: Colors.amber[500],
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(2, 0),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade50,
+                          border: Border(
+                            bottom: BorderSide(
+                              color: Colors.amber.shade200,
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.amber.shade600,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.construction,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Text(
+                                'ConTrust',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF2D3748),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: SideDashboardDrawer(
+                          contracteeId: contracteeId,
+                          currentPage: currentPage,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ) : null,
+      body: Row(
+        children: [
+          if (isDesktop)
+            Container(
               width: 280,
               decoration: BoxDecoration(
                 color: Colors.amber[500],
@@ -126,78 +201,6 @@ class ContracteeShell extends StatelessWidget {
                       ],
                     ),
                   ),
-                Expanded(
-                  child: SideDashboardDrawer(
-                    contracteeId: contracteeId,
-                    currentPage: currentPage,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ) : null,
-      body: Row(
-        children: [
-          if (isDesktop)
-            Container(
-              width: 280,
-              decoration: BoxDecoration(
-                color: Colors.amber[500],
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(2, 0),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.amber[500],
-                      border: Border(
-                        bottom: BorderSide(
-                          color: Colors.amber.shade200,
-                          width: 1,
-                        ),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: Colors.white,
-                          child: Icon(Icons.person_outline, color: Colors.amber[700]),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Contractee',
-                                style: TextStyle(
-                                  color: Colors.amber[900],
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Welcome back!',
-                                style: TextStyle(
-                                  color: Colors.amber[700],
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                   Expanded(
                     child: SideDashboardDrawer(
                       contracteeId: contracteeId,
@@ -207,6 +210,7 @@ class ContracteeShell extends StatelessWidget {
                 ],
               ),
             ),
+
           Expanded(
             child: Padding(
               padding: contentPadding ?? EdgeInsets.zero,
@@ -242,14 +246,13 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
 
     try {
       final projects = await FetchService().fetchUserProjects();
-      final activeProject = projects.firstWhere(
+      final activeProjects = projects.where(
         (project) => project['status'] == 'active',
-        orElse: () => {},
-      );
+      ).toList();
 
       setState(() => _loadingOngoing = false);
 
-      if (activeProject.isEmpty) {
+      if (activeProjects.isEmpty) {
         if (mounted) {
           ConTrustSnackBar.error(context, 'No active project found');
         }
@@ -258,13 +261,19 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
 
       if (!mounted) return;
 
+      if (activeProjects.length > 1) {
+        _showProjectSelectionDialog(activeProjects);
+        return;
+      }
+
+      final projectId = activeProjects.first['project_id'];
       if (widget.currentPage != ContracteePage.ongoing) {
         navigateToPage(
           ContracteeShell(
             currentPage: ContracteePage.ongoing,
             contracteeId: widget.contracteeId ?? '',
             child: CeeOngoingProjectScreen(
-              projectId: activeProject['project_id'],
+              projectId: projectId,
             ),
           ),
         );
@@ -275,6 +284,47 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
         ConTrustSnackBar.error(context, 'Error loading ongoing project');
       }
     }
+  }
+
+  void _showProjectSelectionDialog(List<Map<String, dynamic>> projects) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Active Project'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: projects.length,
+            itemBuilder: (context, index) {
+              final project = projects[index];
+              return ListTile(
+                title: Text(project['title'] ?? 'Untitled Project'),
+                subtitle: Text(project['location'] ?? 'No location'),
+                onTap: () {
+                  Navigator.pop(context);
+                  navigateToPage(
+                    ContracteeShell(
+                      currentPage: ContracteePage.ongoing,
+                      contracteeId: widget.contracteeId ?? '',
+                      child: CeeOngoingProjectScreen(
+                        projectId: project['project_id'],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
   }
 
   void navigateToPage(Widget page) {
@@ -290,13 +340,11 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth >= 1000;
-    
+    final id = widget.contracteeId;
     return Container(
-      color: isDesktop ? Colors.white : Colors.amber[50],
+      color: Colors.white,
       child: ListView(
-        padding: EdgeInsets.zero,
+        padding: const EdgeInsets.symmetric(vertical: 12),
         children: [
           _SidebarItem(
             icon: Icons.home_outlined,
@@ -304,7 +352,23 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             active: widget.currentPage == ContracteePage.home,
             onTap: () {
               if (widget.currentPage != ContracteePage.home) {
-                navigateToPage(HomePage());
+                navigateToPage(const HomePage());
+              }
+            },
+          ),
+          _SidebarItem(
+            icon: Icons.message_outlined,
+            label: 'Messages',
+            active: widget.currentPage == ContracteePage.messages,
+            onTap: () {
+              if (widget.currentPage != ContracteePage.messages) {
+                navigateToPage(
+                  ContracteeShell(
+                    currentPage: ContracteePage.messages,
+                    contracteeId: id ?? '',
+                    child: const ContracteeChatHistoryPage(),
+                  ),
+                );
               }
             },
           ),
@@ -367,19 +431,14 @@ class _SidebarItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth >= 1000;
     final color = active ? Colors.amber.shade700 : Colors.grey.shade700;
-    
     return InkWell(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: active 
-              ? (isDesktop ? Colors.amber.shade100 : Colors.white)
-              : Colors.transparent,
+          color: active ? Colors.amber.shade100 : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
