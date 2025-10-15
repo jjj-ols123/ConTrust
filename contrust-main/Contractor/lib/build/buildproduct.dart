@@ -91,42 +91,38 @@ class ProductBuildMethods {
                           ),
                         ],
                       )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 24),
-                          buildProjectsOverview(
-                            context: context,
-                            projects: projects,
-                            projectMaterials: projectMaterials,
-                            getProjectTotal: getProjectTotal,
-                            contractorId: contractorId,
-                            isDesktop: isDesktop,
-                            isTablet: isTablet,
-                          ),
-                          const SizedBox(height: 24),
-                          buildSearchHeader(
-                            context: context,
-                            search: search,
-                            onSearchChanged: onSearchChanged,
-                            isDesktop: isDesktop,
-                          ),
-                          const SizedBox(height: 16),
-                          Expanded(
-                            child: SingleChildScrollView(
-                              child: Padding(
-                                padding: const EdgeInsets.only(top: 16),
-                                child: buildMaterialsCatalog(
-                                  context: context,
-                                  filteredCatalog: filteredCatalog,
-                                  crossAxisCount: crossAxisCount,
-                                  openMaterialDialog: openMaterialDialog,
-                                  isDesktop: isDesktop,
-                                ),
-                              ),
+                    : SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 24),
+                            buildProjectsOverview(
+                              context: context,
+                              projects: projects,
+                              projectMaterials: projectMaterials,
+                              getProjectTotal: getProjectTotal,
+                              contractorId: contractorId,
+                              isDesktop: isDesktop,
+                              isTablet: isTablet,
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 24),
+                            buildSearchHeader(
+                              context: context,
+                              search: search,
+                              onSearchChanged: onSearchChanged,
+                              isDesktop: isDesktop,
+                            ),
+                            const SizedBox(height: 16),
+                            buildMaterialsCatalog(
+                              context: context,
+                              filteredCatalog: filteredCatalog,
+                              crossAxisCount: crossAxisCount,
+                              openMaterialDialog: openMaterialDialog,
+                              isDesktop: isDesktop,
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+                        ),
                       ),
               ),
     );
@@ -733,9 +729,7 @@ class ProductBuildMethods {
   ) {
     final projectId = project['project_id']?.toString() ?? '';
     final projectName = project['title'] ?? 'Unnamed Project';
-    final materials = List<Map<String, dynamic>>.from(
-      projectMaterials[projectId] ?? [],
-    );
+    final materials = projectMaterials[projectId] ?? [];
 
     showDialog(
       context: context,
@@ -830,7 +824,34 @@ class ProductBuildMethods {
                                               const SizedBox(height: 12),
                                       itemBuilder: (context, index) {
                                         final material = materials[index];
-                                        return buildMaterialListItem(material);
+                                        return buildMaterialListItem(
+                                          material,
+                                          onDelete: () async {
+                                            final confirmed = await showDialog<bool>(
+                                              context: context,
+                                              builder: (context) => AlertDialog(
+                                                title: const Text('Delete Material'),
+                                                content: const Text('Are you sure you want to delete this material?'),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () => Navigator.pop(context, false),
+                                                    child: const Text('Cancel'),
+                                                  ),
+                                                  TextButton(
+                                                    onPressed: () => Navigator.pop(context, true),
+                                                    child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+
+                                            if (confirmed == true) {
+                                              setDialogState(() => materials.removeAt(index));
+                                              ConTrustSnackBar.success(context, 'Material deleted successfully!');
+                                            }
+                                          },
+                                          onTap: () => showMaterialDetailsDialog(context, material),
+                                        );
                                       },
                                     ),
                           ),
@@ -861,6 +882,30 @@ class ProductBuildMethods {
                                 ),
                               ),
                               const Spacer(),
+                              if (materials.isNotEmpty)
+                                ElevatedButton(
+                                  onPressed: () async {
+                                    if (contractorId != null) {
+                                      await CorProductService().addAllCostsToProject(
+                                        projectId,
+                                        projectMaterials,
+                                        contractorId,
+                                        context,
+                                      );
+                                    } else {
+                                      ConTrustSnackBar.error(
+                                        context,
+                                        'Contractor ID not available',
+                                      );
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.amber,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  child: const Text('Add to Active Project costs'),
+                                ),
+                              const SizedBox(width: 8),
                               TextButton(
                                 onPressed: () => Navigator.pop(context),
                                 child: const Text('Close'),
@@ -909,7 +954,7 @@ class ProductBuildMethods {
     );
   }
 
-  static Widget buildMaterialListItem(Map<String, dynamic> material) {
+  static Widget buildMaterialListItem(Map<String, dynamic> material, {VoidCallback? onDelete, VoidCallback? onTap}) {
     final name = material['name'] ?? 'Unknown Material';
     final brand = material['brand'] ?? '';
     final qty = material['qty'] ?? 0;
@@ -924,66 +969,83 @@ class ProductBuildMethods {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.construction,
+                    color: Colors.blue.shade600,
+                    size: 16,
+                  ),
                 ),
-                child: Icon(
-                  Icons.construction,
-                  color: Colors.blue.shade600,
-                  size: 16,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2D3748),
-                      ),
-                    ),
-                    if (brand.isNotEmpty)
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        brand,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
+                        name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2D3748),
                         ),
                       ),
-                  ],
+                      if (brand.isNotEmpty)
+                        Text(
+                          brand,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              Text(
-                '₱${total.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green.shade600,
+                Text(
+                  '₱${total.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green.shade600,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              buildInfoChip('Qty: $qty $unit', true),
-              const SizedBox(width: 8),
-              buildInfoChip('₱${unitPrice.toStringAsFixed(2)}/$unit', false),
-            ],
-          ),
-        ],
+                if (onDelete != null) ...[
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: Icon(
+                      Icons.delete_outline,
+                      color: Colors.grey.shade400,
+                      size: 20,
+                    ),
+                    onPressed: onDelete,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                buildInfoChip('Qty: $qty $unit', true),
+                const SizedBox(width: 8),
+                buildInfoChip('₱${unitPrice.toStringAsFixed(2)}/$unit', false),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1014,7 +1076,7 @@ class ProductBuildMethods {
     Map<String, dynamic>? existingItem,
     required String? contractorId,
     required String? projectId,
-    required VoidCallback onSuccess,
+    required Function(Map<String, dynamic>) onSuccess,
   }) {
     showDialog(
       context: context,
@@ -1028,6 +1090,8 @@ class ProductBuildMethods {
           ),
     );
   }
+  
+  static void showMaterialDetailsDialog(BuildContext context, Map<String, dynamic> material) {}
 }
 
 class MaterialInputDialog extends StatefulWidget {
@@ -1035,7 +1099,7 @@ class MaterialInputDialog extends StatefulWidget {
   final Map<String, dynamic>? existingItem;
   final String? contractorId;
   final String? projectId;
-  final VoidCallback onSuccess;
+  final Function(Map<String, dynamic>) onSuccess;
 
   const MaterialInputDialog({
     super.key,
@@ -1051,7 +1115,6 @@ class MaterialInputDialog extends StatefulWidget {
 }
 
 class _MaterialInputDialogState extends State<MaterialInputDialog> {
-  final CorProductService _productService = CorProductService();
   late final TextEditingController _nameController;
   late final TextEditingController _brandController;
   late final TextEditingController _qtyController;
@@ -1114,8 +1177,6 @@ class _MaterialInputDialogState extends State<MaterialInputDialog> {
         _noteController.text.trim().isEmpty
             ? null
             : _noteController.text.trim();
-    final isEdit = widget.existingItem != null;
-    final itemId = widget.existingItem?['material_id'] as String?;
     final materialName =
         _isSpecific
             ? _nameController.text.trim()
@@ -1123,51 +1184,25 @@ class _MaterialInputDialogState extends State<MaterialInputDialog> {
 
     if (_isSpecific && materialName.isEmpty) {
       setState(() => _isSaving = false);
-      _showSnackBar('Please enter a material name');
+      ConTrustSnackBar.error(context, 'Please enter a material name');
       return;
     }
 
-    try {
-      if (isEdit && itemId != null) {
-        await _productService.updateInventoryItem(
-          itemId: itemId,
-          brand: _brandController.text.trim(),
-          quantity: qty,
-          unit: _unit,
-          unitPrice: price,
-          notes: note,
-        );
-      } else {
-        await _productService.saveMaterial(
-          projectId: widget.projectId!,
-          contractorId: widget.contractorId!,
-          materialName: materialName,
-          brand: _brandController.text.trim(),
-          quantity: qty,
-          unit: _unit,
-          unitPrice: price,
-          notes: note,
-        );
-      }
+    final materialMap = {
+      'name': materialName,
+      'brand': _brandController.text.trim().isEmpty ? null : _brandController.text.trim(),
+      'qty': qty,
+      'unit': _unit,
+      'unitPrice': price,
+      'total': qty * price,
+      'note': note,
+    };
 
-      Navigator.pop(context);
-      widget.onSuccess();
-      _showSnackBar(
-        isEdit
-            ? 'Material updated successfully'
-            : 'Material added to inventory',
-      );
-    } catch (e) {
-      return;
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
-    }
-  }
+    widget.onSuccess(materialMap);
+    Navigator.pop(context);
+    ConTrustSnackBar.success(context, 'Material added to inventory');
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    if (mounted) setState(() => _isSaving = false);
   }
 
   @override

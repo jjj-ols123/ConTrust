@@ -2,6 +2,7 @@
 
 import 'package:backend/services/both services/be_bidding_service.dart';
 import 'package:backend/services/both services/be_project_service.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/utils/be_validation.dart';
 import 'package:backend/utils/be_constraint.dart';
 import 'package:flutter/material.dart';
@@ -328,13 +329,7 @@ class ProjectModal {
                                       Navigator.pop(context);
                                     }
                                   } catch (e) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content:
-                                            Text('Error submitting request $e'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
+                                    ConTrustSnackBar.error(context, 'Error: $e');
                                   }
                                 },
                                 style: ElevatedButton.styleFrom(
@@ -948,25 +943,11 @@ class HireModal {
 
                                     Navigator.pop(context);
 
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(existingProjectWithContractor !=
-                                                null
-                                            ? 'Hiring request sent using existing project!'
-                                            : 'Hire request sent successfully!'),
-                                        backgroundColor: Colors.green,
-                                      ),
-                                    );
+                                    ConTrustSnackBar.success(context, existingProjectWithContractor != null
+                                        ? 'Hiring request sent using existing project!'
+                                        : 'Hire request sent successfully!');
                                   } catch (e) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(e
-                                            .toString()
-                                            .replaceFirst('Exception: ', '')),
-                                        backgroundColor: Colors.red,
-                                        duration: Duration(seconds: 3),
-                                      ),
-                                    );
+                                    ConTrustSnackBar.error(context, 'Error sending hire request: $e');
                                   }
                                 },
                                 style: ElevatedButton.styleFrom(

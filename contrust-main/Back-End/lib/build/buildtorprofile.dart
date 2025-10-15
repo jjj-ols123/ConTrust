@@ -28,6 +28,7 @@ class ProfileBuildMethods {
     required String selectedTab,
     required Function(String) onTabChanged,
     required Widget mainContent,
+    required String userType,
   }) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -186,6 +187,7 @@ class ProfileBuildMethods {
     required String selectedTab,
     required Function(String) onTabChanged,
     required Widget mainContent,
+    required String userType,
   }) {
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -595,6 +597,7 @@ class ProfileBuildMethods {
     required VoidCallback saveSpecialization,
     required VoidCallback saveAddress,
     required String contractorId,
+    required String userType,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -643,6 +646,7 @@ class ProfileBuildMethods {
               firmNameController,
               toggleEditFirmName,
               saveFirmName,
+              userType,
             ),
             const SizedBox(height: 24),
             
@@ -655,6 +659,7 @@ class ProfileBuildMethods {
               bioController,
               toggleEditBio,
               saveBio,
+              userType,
             ),
             const SizedBox(height: 24),
             
@@ -667,6 +672,7 @@ class ProfileBuildMethods {
               contactController,
               toggleEditContact,
               saveContact,
+              userType,
             ),
             const SizedBox(height: 24),
             
@@ -679,6 +685,7 @@ class ProfileBuildMethods {
               specializationController,
               toggleEditSpecialization,
               saveSpecialization,
+              userType,
             ),
             const SizedBox(height: 24),
             
@@ -691,6 +698,7 @@ class ProfileBuildMethods {
               addressController,
               toggleEditAddress,
               saveAddress,
+              userType,
             ),
           ],
         ),
@@ -1075,6 +1083,7 @@ class ProfileBuildMethods {
     TextEditingController controller,
     VoidCallback onEdit,
     VoidCallback onSave,
+    String userType,
   ) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1137,7 +1146,7 @@ class ProfileBuildMethods {
                     ),
                   ],
                 )
-              else
+              else if (userType == 'contractor')
                 InkWell(
                   onTap: onEdit,
                   borderRadius: BorderRadius.circular(20),

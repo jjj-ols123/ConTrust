@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/build/buildmessagesdesign.dart';
 import 'package:backend/services/both%20services/be_fetchservice.dart';
@@ -396,9 +397,7 @@ class MessageUIBuildMethods {
                             try {
                               final activeProjects = await FetchService().fetchContractorActiveProjects(userId!);
                               if (activeProjects.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('No current ongoing project found!')),
-                                );
+                                ConTrustSnackBar.error(context, 'No active projects found.');
                                 return;
                               }
                               final projectId = activeProjects.first['project_id'];
@@ -413,9 +412,7 @@ class MessageUIBuildMethods {
                                 ),
                               );
                             } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Error navigating to project management: $e')),
-                              );
+                              ConTrustSnackBar.error(context, 'Error navigating to project management: $e');
                             }
                           },
                         );
@@ -443,9 +440,7 @@ class MessageUIBuildMethods {
                                 );
                               }
                             } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Error navigating to project: $e')),
-                              );
+                              ConTrustSnackBar.error(context, 'Error navigating to project: $e');
                             }
                           },
                         );

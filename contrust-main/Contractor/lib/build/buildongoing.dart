@@ -10,6 +10,7 @@ class OngoingBuildMethods {
     required String startDate,
     required String estimatedCompletion,
     required double progress,
+    VoidCallback? onRefresh,
   }) {
     return Card(
       elevation: 3,
@@ -46,6 +47,12 @@ class OngoingBuildMethods {
                     ],
                   ),
                 ),
+                if (onRefresh != null)
+                  IconButton(
+                    onPressed: onRefresh,
+                    icon: const Icon(Icons.refresh, color: Colors.blue),
+                    tooltip: 'Refresh',
+                  ),
               ],
             ),
             const SizedBox(height: 16),
@@ -208,6 +215,7 @@ class OngoingBuildMethods {
   static Widget buildReportsList({
     required List<Map<String, dynamic>> reports,
     required Function(String) onDeleteReport,
+    Function(Map<String, dynamic>)? onViewReport,
   }) {
     if (reports.isEmpty) {
       return const Center(
@@ -222,7 +230,11 @@ class OngoingBuildMethods {
           reports
               .map(
                 (report) =>
-                    buildReportItem(report: report, onDelete: onDeleteReport),
+                    buildReportItem(
+                      report: report,
+                      onDelete: onDeleteReport,
+                      onTap: onViewReport != null ? () => onViewReport(report) : null,
+                    ),
               )
               .toList(),
     );
@@ -232,6 +244,7 @@ class OngoingBuildMethods {
     required List<Map<String, dynamic>> photos,
     required Future<String?> Function(String?) createSignedUrl,
     required Function(String) onDeletePhoto,
+    Function(Map<String, dynamic>)? onViewPhoto,
   }) {
     if (photos.isEmpty) {
       return const Center(
@@ -268,24 +281,27 @@ class OngoingBuildMethods {
 
             return Stack(
               children: [
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    image:
+                GestureDetector(
+                  onTap: onViewPhoto != null ? () => onViewPhoto(photo) : null,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      image:
+                          snapshot.hasData && snapshot.data != null
+                              ? DecorationImage(
+                                image: NetworkImage(snapshot.data!),
+                                fit: BoxFit.fill,
+                              )
+                              : null,
+                      color: Colors.grey[200],
+                    ),
+                    child:
                         snapshot.hasData && snapshot.data != null
-                            ? DecorationImage(
-                              image: NetworkImage(snapshot.data!),
-                              fit: BoxFit.cover,
-                            )
-                            : null,
-                    color: Colors.grey[200],
+                            ? null
+                            : const Center(
+                              child: Icon(Icons.image, color: Colors.grey),
+                            ),
                   ),
-                  child:
-                      snapshot.hasData && snapshot.data != null
-                          ? null
-                          : const Center(
-                            child: Icon(Icons.image, color: Colors.grey),
-                          ),
                 ),
                 Positioned(
                   top: 4,
@@ -317,6 +333,7 @@ class OngoingBuildMethods {
   static Widget buildCostsList({
     required List<Map<String, dynamic>> costs,
     required Function(String) onDeleteCost,
+    Function(Map<String, dynamic>)? onViewMaterial,
   }) {
     if (costs.isEmpty) {
       return const Center(
@@ -337,7 +354,11 @@ class OngoingBuildMethods {
     return Column(
       children: [
         ...costs.map(
-          (cost) => buildCostItem(cost: cost, onDelete: onDeleteCost),
+          (cost) => buildCostItem(
+            cost: cost,
+            onDelete: onDeleteCost,
+            onTap: onViewMaterial != null ? () => onViewMaterial(cost) : null,
+          ),
         ),
         const Divider(),
         Padding(
@@ -367,10 +388,12 @@ class OngoingBuildMethods {
   static Widget buildReportItem({
     required Map<String, dynamic> report,
     required Function(String) onDelete,
+    VoidCallback? onTap,
   }) {
     return Card(
       margin: EdgeInsets.zero,
       child: ListTile(
+        onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: const CircleAvatar(
           backgroundColor: Colors.orange,
@@ -412,7 +435,9 @@ class OngoingBuildMethods {
           overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
-          'Created: ${DateTime.parse(task['created_at']).toLocal().toString().split('.')[0]}',
+          task['created_at'] != null
+              ? 'Created: ${DateTime.parse(task['created_at']).toLocal().toString().split('.')[0]}'
+              : 'Created: Unknown',
           style: TextStyle(fontSize: 12, color: Colors.grey[600]),
         ),
         value: task['done'] == true,
@@ -421,7 +446,7 @@ class OngoingBuildMethods {
           onUpdateStatus(taskId.toString(), val ?? false);
         },
         activeColor: Colors.green,
-        checkColor: Colors.white,
+        checkColor: Colors.amber[700],
         controlAffinity: ListTileControlAffinity.leading,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
         secondary: IconButton(
@@ -435,6 +460,7 @@ class OngoingBuildMethods {
   static Widget buildCostItem({
     required Map<String, dynamic> cost,
     required Function(String) onDelete,
+    VoidCallback? onTap,
   }) {
     final quantity = (cost['quantity'] as num? ?? 0).toDouble();
     final unitPrice = (cost['unit_price'] as num? ?? 0).toDouble();
@@ -443,6 +469,7 @@ class OngoingBuildMethods {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
+        onTap: onTap,
         leading: const CircleAvatar(
           backgroundColor: Colors.green,
           child: Icon(Icons.construction, color: Colors.white),
@@ -496,42 +523,65 @@ class OngoingBuildMethods {
       builder: (context) {
         return Dialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
           ),
+          elevation: 10,
           child: Container(
             width: 600,
             height: 500,
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Add Progress Report',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                Row(
+                  children: [
+                    Icon(Icons.description, color: Colors.orange.shade700, size: 28),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Add Progress Report',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange.shade700,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 8),
+                Text(
+                  'Share updates and progress details for this project',
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                ),
+                const SizedBox(height: 20),
                 Expanded(
-                  child: TextField(
-                    controller: controller,
-                    maxLines: null,
-                    expands: true,
-                    textAlignVertical: TextAlignVertical.top,
-                    decoration: const InputDecoration(
-                      hintText: 'Enter progress details...',
-                      border: OutlineInputBorder(),
-                      alignLabelWithHint: true,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.grey.shade50,
+                    ),
+                    child: TextField(
+                      controller: controller,
+                      maxLines: null,
+                      expands: true,
+                      textAlignVertical: TextAlignVertical.top,
+                      decoration: const InputDecoration(
+                        hintText: 'Enter progress details...',
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.all(16),
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      ),
+                      child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
                     ),
                     const SizedBox(width: 12),
                     ElevatedButton(
@@ -541,6 +591,14 @@ class OngoingBuildMethods {
                           Navigator.pop(context);
                         }
                       },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange.shade700,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                       child: const Text('Add Report'),
                     ),
                   ],
@@ -555,39 +613,159 @@ class OngoingBuildMethods {
 
   static void showAddTaskDialog({
     required BuildContext context,
-    required TextEditingController controller,
-    required VoidCallback onAdd,
+    required Function(List<String>) onAdd,
   }) {
+    final List<TextEditingController> controllers = [TextEditingController()];
+
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Add Task'),
-          content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(
-              hintText: 'Enter task details',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (controller.text.trim().isNotEmpty) {
-                  onAdd();
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('Add Task'),
-            ),
-          ],
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              elevation: 10,
+              child: Container(
+                width: 500,
+                constraints: const BoxConstraints(maxHeight: 600),
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.checklist, color: Colors.blue.shade700, size: 28),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Add Multiple Tasks',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Add one or more tasks for this project',
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                    ),
+                    const SizedBox(height: 20),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            ...controllers.asMap().entries.map((entry) {
+                              final index = entry.key;
+                              final controller = entry.value;
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey.shade300),
+                                  borderRadius: BorderRadius.circular(12),
+                                  color: Colors.grey.shade50,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextField(
+                                        controller: controller,
+                                        decoration: InputDecoration(
+                                          hintText: 'Enter task ...',
+                                          border: InputBorder.none,
+                                          contentPadding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 12,
+                                          ),
+                                        ),
+                                        maxLines: null,
+                                        minLines: 1,
+                                      ),
+                                    ),
+                                    if (controllers.length > 1)
+                                      IconButton(
+                                        icon: Icon(Icons.remove_circle, color: Colors.red.shade400),
+                                        onPressed: () {
+                                          setState(() {
+                                            controllers.removeAt(index);
+                                          });
+                                        },
+                                      ),
+                                  ],
+                                ),
+                              );
+                            }),
+                            const SizedBox(height: 12),
+                            OutlinedButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  controllers.add(TextEditingController());
+                                });
+                              },
+                              icon: Icon(Icons.add, color: Colors.blue.shade700),
+                              label: Text('Add Another Task', style: TextStyle(color: Colors.blue.shade700)),
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: Colors.blue.shade700),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          ),
+                          child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+                        ),
+                        const SizedBox(width: 12),
+                        ElevatedButton(
+                          onPressed: () {
+                            final validTasks = controllers
+                                .map((c) => c.text.trim())
+                                .where((text) => text.isNotEmpty)
+                                .toList();
+                            if (validTasks.isNotEmpty) {
+                              Navigator.pop(context);
+                              onAdd(validTasks);
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue.shade700,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text('Add Tasks'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
-    );
+    ).then((_) {
+      for (final controller in controllers) {
+        controller.dispose();
+      }
+    });
   }
 
   static Widget buildMobileTabNavigation(String selectedTab, Function(String) onTabChanged) {
@@ -647,6 +825,7 @@ class OngoingBuildMethods {
     required String selectedTab,
     required Function(String) onTabChanged,
     required Widget tabContent,
+    VoidCallback? onRefresh,
   }) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -659,6 +838,7 @@ class OngoingBuildMethods {
             startDate: startDate,
             estimatedCompletion: estimatedCompletion,
             progress: progress,
+            onRefresh: onRefresh,
           ),
           const SizedBox(height: 16),
           buildMobileTabNavigation(selectedTab, onTabChanged),
@@ -670,6 +850,7 @@ class OngoingBuildMethods {
   }
 
   static Widget buildTabContent({
+    required BuildContext context,
     required String selectedTab,
     required List<Map<String, dynamic>> tasks,
     required List<Map<String, dynamic>> reports,
@@ -684,6 +865,9 @@ class OngoingBuildMethods {
     required VoidCallback onAddTask,
     required VoidCallback onAddReport,
     required VoidCallback onAddPhoto,
+    VoidCallback? onGoToMaterials,
+    Function(Map<String, dynamic>)? onViewReport,
+    Function(Map<String, dynamic>)? onViewPhoto,
   }) {
     switch (selectedTab) {
       case 'Tasks':
@@ -709,6 +893,7 @@ class OngoingBuildMethods {
           child: buildReportsList(
             reports: reports,
             onDeleteReport: onDeleteReport,
+            onViewReport: onViewReport,
           ),
         );
       case 'Photos':
@@ -722,6 +907,7 @@ class OngoingBuildMethods {
             photos: photos,
             createSignedUrl: createSignedUrl,
             onDeletePhoto: onDeletePhoto,
+            onViewPhoto: onViewPhoto,
           ),
         );
       case 'Materials':
@@ -729,9 +915,12 @@ class OngoingBuildMethods {
           title: 'Materials & Costs',
           icon: Icons.construction,
           iconColor: Colors.purple,
+          onAdd: onGoToMaterials,
+          addButtonText: 'Manage Materials',
           child: buildCostsList(
             costs: costs,
             onDeleteCost: onDeleteCost,
+            onViewMaterial: (material) => showMaterialDetailsDialog(context, material),
           ),
         );
       default:
@@ -751,6 +940,7 @@ class OngoingBuildMethods {
   }
 
   static Widget buildDesktopGridLayout({
+    required BuildContext context,
     required String projectTitle,
     required String clientName,
     required String address,
@@ -770,6 +960,10 @@ class OngoingBuildMethods {
     required VoidCallback onAddTask,
     required VoidCallback onAddReport,
     required VoidCallback onAddPhoto,
+    VoidCallback? onGoToMaterials,
+    Function(Map<String, dynamic>)? onViewReport,
+    Function(Map<String, dynamic>)? onViewPhoto,
+    VoidCallback? onRefresh,
   }) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -782,6 +976,7 @@ class OngoingBuildMethods {
             startDate: startDate,
             estimatedCompletion: estimatedCompletion,
             progress: progress,
+            onRefresh: onRefresh,
           ),
           const SizedBox(height: 20),
           Expanded(
@@ -816,6 +1011,7 @@ class OngoingBuildMethods {
                             photos: photos,
                             createSignedUrl: createSignedUrl,
                             onDeletePhoto: onDeletePhoto,
+                            onViewPhoto: onViewPhoto,
                           ),
                         ),
                       ),
@@ -836,6 +1032,7 @@ class OngoingBuildMethods {
                           child: buildDesktopReportsList(
                             reports: reports,
                             onDeleteReport: onDeleteReport,
+                            onViewReport: onViewReport,
                           ),
                         ),
                       ),
@@ -845,9 +1042,12 @@ class OngoingBuildMethods {
                           title: 'Materials & Costs',
                           icon: Icons.construction,
                           iconColor: Colors.purple,
+                          onAdd: onGoToMaterials,
+                          addButtonText: 'Manage Materials',
                           child: buildDesktopCostsList(
                             costs: costs,
                             onDeleteCost: onDeleteCost,
+                            onViewMaterial: (material) => showMaterialDetailsDialog(context, material),
                           ),
                         ),
                       ),
@@ -954,14 +1154,25 @@ class OngoingBuildMethods {
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               Expanded(
-                child: Text(
-                  task['task'] ?? '',
-                  style: TextStyle(
-                    decoration: task['done'] == true ? TextDecoration.lineThrough : null,
-                    fontSize: 13,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      task['task'] ?? '',
+                      style: TextStyle(
+                        decoration: task['done'] == true ? TextDecoration.lineThrough : null,
+                        fontSize: 13,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      task['created_at'] != null
+                          ? 'Created: ${DateTime.parse(task['created_at']).toLocal().toString().split('.')[0]}'
+                          : 'Created: Unknown',
+                      style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                    ),
+                  ],
                 ),
               ),
               IconButton(
@@ -980,6 +1191,7 @@ class OngoingBuildMethods {
   static Widget buildDesktopReportsList({
     required List<Map<String, dynamic>> reports,
     required Function(String) onDeleteReport,
+    Function(Map<String, dynamic>)? onViewReport,
   }) {
     if (reports.isEmpty) {
       return const Center(
@@ -991,30 +1203,33 @@ class OngoingBuildMethods {
       itemCount: reports.take(8).length,
       itemBuilder: (context, index) {
         final report = reports[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.orange.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  report['content'] ?? '',
-                  style: const TextStyle(fontSize: 13),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+        return GestureDetector(
+          onTap: onViewReport != null ? () => onViewReport(report) : null,
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.orange.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    report['content'] ?? '',
+                    style: const TextStyle(fontSize: 13),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline, size: 16),
-                onPressed: () => onDeleteReport(report['report_id']),
-                constraints: const BoxConstraints(),
-                padding: EdgeInsets.zero,
-              ),
-            ],
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 16),
+                  onPressed: () => onDeleteReport(report['report_id']),
+                  constraints: const BoxConstraints(),
+                  padding: EdgeInsets.zero,
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -1025,6 +1240,7 @@ class OngoingBuildMethods {
     required List<Map<String, dynamic>> photos,
     required Future<String?> Function(String?) createSignedUrl,
     required Function(String) onDeletePhoto,
+    Function(Map<String, dynamic>)? onViewPhoto,
   }) {
     if (photos.isEmpty) {
       return const Center(
@@ -1046,20 +1262,23 @@ class OngoingBuildMethods {
           builder: (context, snapshot) {
             return Stack(
               children: [
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(4),
-                    image: snapshot.hasData && snapshot.data != null
-                        ? DecorationImage(
-                            image: NetworkImage(snapshot.data!),
-                            fit: BoxFit.cover,
-                          )
-                        : null,
-                    color: Colors.grey[200],
+                GestureDetector(
+                  onTap: onViewPhoto != null ? () => onViewPhoto(photo) : null,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(4),
+                      image: snapshot.hasData && snapshot.data != null
+                          ? DecorationImage(
+                              image: NetworkImage(snapshot.data!),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                      color: Colors.grey[200],
+                    ),
+                    child: snapshot.hasData && snapshot.data != null
+                        ? null
+                        : const Center(child: Icon(Icons.image, size: 16)),
                   ),
-                  child: snapshot.hasData && snapshot.data != null
-                      ? null
-                      : const Center(child: Icon(Icons.image, size: 16)),
                 ),
                 Positioned(
                   top: 2,
@@ -1087,6 +1306,7 @@ class OngoingBuildMethods {
   static Widget buildDesktopCostsList({
     required List<Map<String, dynamic>> costs,
     required Function(String) onDeleteCost,
+    Function(Map<String, dynamic>)? onViewMaterial,
   }) {
     if (costs.isEmpty) {
       return const Center(
@@ -1130,49 +1350,444 @@ class OngoingBuildMethods {
               final unitPrice = (cost['unit_price'] as num? ?? 0).toDouble();
               final itemTotal = quantity * unitPrice;
               
-              return Container(
-                margin: const EdgeInsets.only(bottom: 4),
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.purple.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            cost['material_name'] ?? '',
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            '${quantity.toStringAsFixed(1)} × ₱${unitPrice.toStringAsFixed(2)}',
-                            style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-                          ),
-                        ],
+              return InkWell(
+                onTap: onViewMaterial != null ? () => onViewMaterial(cost) : null,
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 4),
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              cost['material_name'] ?? '',
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              '${quantity.toStringAsFixed(1)} × ₱${unitPrice.toStringAsFixed(2)}',
+                              style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    Text(
-                      '₱${itemTotal.toStringAsFixed(2)}',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 14),
-                      onPressed: () => onDeleteCost(cost['material_id']),
-                      constraints: const BoxConstraints(),
-                      padding: EdgeInsets.zero,
-                    ),
-                  ],
+                      Text(
+                        '₱${itemTotal.toStringAsFixed(2)}',
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, size: 14),
+                        onPressed: () => onDeleteCost(cost['material_id']),
+                        constraints: const BoxConstraints(),
+                        padding: EdgeInsets.zero,
+                      ),
+                    ],
+                  ),
                 ),
               );
             },
           ),
         ),
       ],
+    );
+  }
+
+  static void showReportDialog(BuildContext context, Map<String, dynamic> report) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.3,
+            height: MediaQuery.of(context).size.height * 0.3,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Progress Report',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+                const Divider(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Date: ${report['created_at'] != null ? DateTime.parse(report['created_at']).toLocal().toString().split(' ')[0] : 'N/A'}',
+                          style: const TextStyle(fontSize: 14, color: Colors.grey),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          report['content'] ?? 'No content available',
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  static void showPhotoDialog(BuildContext context, Map<String, dynamic> photo, Future<String?> Function(String?) createSignedUrl) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Dialog(
+          insetPadding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          backgroundColor: Colors.grey[900],
+          child: FutureBuilder<String?>(
+            future: createSignedUrl(photo['photo_url']),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Container(
+                  width: MediaQuery.of(context).size.width,
+                  height: MediaQuery.of(context).size.height * 0.6,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[900],
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                    ),
+                  ),
+                );
+              }
+
+              return Container(
+                width: MediaQuery.of(context).size.width * 0.5,
+                height: MediaQuery.of(context).size.height * 0.8,
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: 16,
+                      right: 16,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    Center(
+                      child: snapshot.hasData && snapshot.data != null
+                          ? InteractiveViewer(
+                              minScale: 0.5,
+                              maxScale: 3.0,
+                              child: Image.network(
+                                snapshot.data!,
+                                fit: BoxFit.contain,
+                                width: MediaQuery.of(context).size.width * 0.95,
+                                height: MediaQuery.of(context).size.height * 0.7,
+                              ),
+                            )
+                          : const Center(
+                              child: Icon(
+                                Icons.image,
+                                size: 80,
+                                color: Colors.white54,
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  static void showMaterialDetailsDialog(BuildContext context, Map<String, dynamic> material) {
+    final name = material['material_name'] ?? material['name'] ?? 'Unknown Material';
+    final brand = material['brand'] ?? '';
+    final qty = material['quantity'] ?? material['qty'] ?? 0;
+    final unit = material['unit'] ?? 'pcs';
+    final unitPrice = material['unit_price'] ?? material['unitPrice'] ?? 0;
+    final total = material['total'] ?? ((qty as num) * (unitPrice as num));
+    final notes = material['notes'] ?? material['note'] ?? '';
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.8,
+          constraints: const BoxConstraints(maxWidth: 500),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.white, Colors.grey.shade50],
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade700,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.construction,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Material Details',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Material Name
+                      Text(
+                        'Material Name',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2D3748),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Brand
+                      if (brand.isNotEmpty) ...[
+                        Text(
+                          'Brand',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          brand,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF2D3748),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+
+                      // Quantity and Unit Price
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Quantity',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${qty.toString()} $unit',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Color(0xFF2D3748),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Unit Price',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '₱${unitPrice.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Color(0xFF2D3748),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Total Cost
+                      Text(
+                        'Total Cost',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '₱${(total as num).toDouble().toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Notes
+                      if (notes.isNotEmpty) ...[
+                        Text(
+                          'Notes',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Text(
+                            notes,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF2D3748),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(20),
+                    bottomRight: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -3,6 +3,7 @@
 import 'dart:typed_data';
 
 import 'package:backend/services/both%20services/be_user_service.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -109,23 +110,17 @@ class CorProfileService {
       await saveField(contractorId, fieldType, newValue);
       
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${fieldType.toUpperCase()} updated successfully!'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
+        ConTrustSnackBar.success(
+          context,
+          '${fieldType.toUpperCase()} updated successfully!',
         );
       }
       onSuccess();
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error updating ${fieldType.toLowerCase()}'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
-          ),
+        ConTrustSnackBar.error(
+          context,
+          'Error updating ${fieldType.toLowerCase()}',
         );
       }
     }
@@ -150,11 +145,9 @@ class CorProfileService {
 
         if (success) {
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Project photo uploaded successfully!'),
-                backgroundColor: Colors.green,
-              ),
+            ConTrustSnackBar.success(
+              context,
+              'Project photo uploaded successfully!',
             );
           }
           onSuccess();
@@ -168,13 +161,10 @@ class CorProfileService {
         if (e.toString().contains('Failed to upload')) {
           message = 'Failed to upload project photo. Please try again.';
         }
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
+
+        ConTrustSnackBar.error(
+          context,
+          message,
         );
       }
     } finally {
@@ -233,30 +223,22 @@ class CorProfileService {
         );
 
         if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Project photo uploaded successfully!'),
-              backgroundColor: Colors.green,
-            ),
+          ConTrustSnackBar.success(
+            context,
+            'Project photo uploaded successfully!',
           );
           await loadContractorData();
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to upload project photo. Please try again.'),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 3),
-            ),
+          ConTrustSnackBar.error(
+            context,
+            'Failed to upload project photo. Please try again.',
           );
         }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('An error occurred while uploading the photo.'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
-        ),
+      ConTrustSnackBar.error(
+        context,
+        'An error occurred while uploading the photo.',
       );
     } finally {
       setState(() => isUploading = false);

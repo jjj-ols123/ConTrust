@@ -1,8 +1,12 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'package:backend/services/contractor services/cor_ongoingservices.dart';
+import 'package:backend/utils/be_snackbar.dart';
+import 'package:contractor/Screen/cor_product.dart';
+import 'package:contractor/build/builddrawer.dart';
 import 'package:contractor/build/buildongoing.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CorOngoingProjectScreen extends StatefulWidget {
   final String projectId;
@@ -15,15 +19,14 @@ class CorOngoingProjectScreen extends StatefulWidget {
 
 class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   final TextEditingController reportController = TextEditingController();
-  final TextEditingController taskController = TextEditingController();
-  final TextEditingController costItemController = TextEditingController();
   final TextEditingController costAmountController = TextEditingController();
   final TextEditingController costNoteController = TextEditingController();
   final TextEditingController progressController = TextEditingController();
 
   bool isEditing = false;
-  final ongoingService = CorOngoingService();
   String selectedTab = 'Tasks'; 
+
+  final ongoingService = CorOngoingService();
 
   Map<String, dynamic>? projectData;
   List<Map<String, dynamic>> _localTasks = [];
@@ -51,9 +54,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     } catch (e) {
       setState(() => isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error loading data: $e')));
+        ConTrustSnackBar.error(context, 'Error loading project data. Please try again.');
       }
     }
   }
@@ -85,17 +86,17 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   void addTask() async {
     OngoingBuildMethods.showAddTaskDialog(
       context: context,
-      controller: taskController,
-      onAdd: () async {
-        await ongoingService.addTask(
-          projectId: widget.projectId,
-          task: taskController.text.trim(),
-          context: context,
-          onSuccess: () {
-            taskController.clear();
-            loadData();
-          },
-        );
+      onAdd: (tasks) async {
+        for (final task in tasks) {
+          await ongoingService.addTask(
+            projectId: widget.projectId,
+            task: task,
+            context: context,
+            onSuccess: () {
+              loadData();
+            },
+          );
+        }
       },
     );
   }
@@ -185,11 +186,60 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     );
   }
 
+  void onViewReport(Map<String, dynamic> report) {
+    OngoingBuildMethods.showReportDialog(context, report);
+  }
+
+  void onViewPhoto(Map<String, dynamic> photo) {
+    OngoingBuildMethods.showPhotoDialog(context, photo, createSignedPhotoUrl);
+  }
+
+  Future<void> goToMaterials() async {
+    final contractorId = Supabase.instance.client.auth.currentUser?.id;
+    if (contractorId != null) {
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ContractorShell(
+            currentPage: ContractorPage.materials,
+            contractorId: contractorId,
+            child: ProductPanelScreen(
+              contractorId: contractorId,
+              projectId: widget.projectId,
+            ),
+          ),
+        ),
+      );
+      
+      if (result == true || result == null) {
+        loadData();
+      }
+    }
+  }
+
+  Map<String, String?> _extractContractInfo(List<Map<String, dynamic>> contracts) {
+    if (contracts.isEmpty) return {};
+
+    final contract = contracts.first;
+    final fieldValues = contract['field_values'] as Map<String, dynamic>? ?? {};
+
+    final contractee = contract['contractee'] as Map<String, dynamic>? ?? {};
+    final clientName = fieldValues['Contractee.FirstName'] != null && fieldValues['Contractee.LastName'] != null
+        ? '${fieldValues['Contractee.FirstName']} ${fieldValues['Contractee.LastName']}'
+        : contractee['full_name'] ?? '';
+    final estimateDate = fieldValues['Project.CompletionDate'] ?? '';
+
+    return {
+      'clientName': clientName,
+      'estimateDate': estimateDate,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: Colors.amber,))
           : projectData == null
               ? const Center(child: Text('Project not found.'))
               : _buildResponsiveContent(),
@@ -212,25 +262,29 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     final reports = projectData!['reports'] as List<Map<String, dynamic>>;
     final photos = projectData!['photos'] as List<Map<String, dynamic>>;
     final costs = projectData!['costs'] as List<Map<String, dynamic>>;
+    final contracts = projectData!['contracts'] as List<Map<String, dynamic>>;
 
     final projectTitle = project['title'] ?? 'Project';
     final clientName = project['full_name'] ?? 'Client';
     final address = project['location'] ?? '';
     final startDate = project['start_date'] ?? '';
-    final estimatedCompletion = project['estimated_completion'] ?? '';
+
+    final contractInfo = _extractContractInfo(contracts);
 
     return RefreshIndicator(
       onRefresh: () async => loadData(),
       child: OngoingBuildMethods.buildMobileLayout(
         projectTitle: projectTitle,
-        clientName: clientName,
+        clientName: contractInfo['clientName'] ?? clientName,
         address: address,
         startDate: startDate,
-        estimatedCompletion: estimatedCompletion,
+        estimatedCompletion: contractInfo['estimateDate'] ?? '',
         progress: _localProgress,
         selectedTab: selectedTab,
         onTabChanged: onTabChanged,
+        onRefresh: loadData,
         tabContent: OngoingBuildMethods.buildTabContent(
+          context: context,
           selectedTab: selectedTab,
           tasks: _localTasks,
           reports: reports,
@@ -245,6 +299,9 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
           onAddTask: addTask,
           onAddReport: addReport,
           onAddPhoto: pickImage,
+          onGoToMaterials: goToMaterials,
+          onViewReport: onViewReport,
+          onViewPhoto: onViewPhoto,
         ),
       ),
     );
@@ -255,21 +312,24 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     final reports = projectData!['reports'] as List<Map<String, dynamic>>;
     final photos = projectData!['photos'] as List<Map<String, dynamic>>;
     final costs = projectData!['costs'] as List<Map<String, dynamic>>;
+    final contracts = projectData!['contracts'] as List<Map<String, dynamic>>;
 
     final projectTitle = project['title'] ?? 'Project';
     final clientName = project['full_name'] ?? 'Client';
     final address = project['location'] ?? '';
     final startDate = project['start_date'] ?? '';
-    final estimatedCompletion = project['estimated_completion'] ?? '';
+
+    final contractInfo = _extractContractInfo(contracts);
 
     return RefreshIndicator(
       onRefresh: () async => loadData(),
       child: OngoingBuildMethods.buildDesktopGridLayout(
+        context: context,
         projectTitle: projectTitle,
-        clientName: clientName,
+        clientName: contractInfo['clientName'] ?? clientName,
         address: address,
         startDate: startDate,
-        estimatedCompletion: estimatedCompletion,
+        estimatedCompletion: contractInfo['estimateDate'] ?? '',
         progress: _localProgress,
         tasks: _localTasks,
         reports: reports,
@@ -284,6 +344,10 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
         onAddTask: addTask,
         onAddReport: addReport,
         onAddPhoto: pickImage,
+        onGoToMaterials: goToMaterials,
+        onViewReport: onViewReport,
+        onViewPhoto: onViewPhoto,
+        onRefresh: loadData,
       ),
     );
   }

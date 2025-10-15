@@ -1,4 +1,4 @@
-import 'package:backend/models/be_appbar.dart';
+
 import 'package:flutter/material.dart';
 
 class AboutPage extends StatelessWidget {
@@ -7,7 +7,6 @@ class AboutPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const ConTrustAppBar(headline: "About"),
       body: const Center(
         child: Text(
           '',

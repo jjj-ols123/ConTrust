@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously, unused_local_variable
 import 'package:backend/services/both services/be_user_service.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/build/buildproduct.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/services/contractor services/cor_productservice.dart';
@@ -20,15 +21,10 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
     {'name': 'Wood', 'icon': Icons.forest},
     {'name': 'Steel', 'icon': Icons.construction},
     {'name': 'Glass', 'icon': Icons.window},
-    {'name': 'Asphalt', 'icon': Icons.aod},
-    {'name': 'Sand', 'icon': Icons.grain},
-    {'name': 'Stone', 'icon': Icons.landscape},
-    {'name': 'Concrete', 'icon': Icons.foundation},
     {'name': 'Cement', 'icon': Icons.architecture},
-    {'name': 'Ceramics', 'icon': Icons.emoji_objects},
-    {'name': 'Tile', 'icon': Icons.grid_on},
     {'name': 'Paint', 'icon': Icons.format_paint},
-    {'name': 'Cool Roofing', 'icon': Icons.roofing},
+    {'name': 'Nails', 'icon': Icons.build}, 
+    {'name': 'Steel Bars', 'icon': Icons.bar_chart}
   ];
 
   String search = '';
@@ -94,6 +90,11 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
   }
 
   void openMaterialDialog(Map<String, dynamic> material, {int? editIndex}) {
+    if (projectId == null) {
+      ConTrustSnackBar.error(context, 'No current ongoing project found!');
+      return;
+    }
+
     final existing = editIndex != null ? inventory[editIndex] : null;
 
     ProductBuildMethods.showMaterialDialog(
@@ -102,7 +103,14 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
       existingItem: existing,
       contractorId: contractorId,
       projectId: projectId,
-      onSuccess: _loadData,
+      onSuccess: (Map<String, dynamic> materialMap) {
+        setState(() {
+          if (projectMaterials[projectId] == null) {
+            projectMaterials[projectId!] = [];
+          }
+          projectMaterials[projectId]!.add(materialMap);
+        });
+      },
     );
   }
 
@@ -147,6 +155,38 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
                       color: Colors.black,
                     ),
                     overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+            ),
+            child: Row(
+              children: [
+                InkWell(
+                  onTap: () => Navigator.of(context).pop(true),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.arrow_back,
+                        color: Colors.amber.shade700,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Back to Project',
+                        style: TextStyle(
+                          color: Colors.amber.shade700,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

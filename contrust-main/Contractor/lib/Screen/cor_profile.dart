@@ -1,7 +1,8 @@
 // ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously, deprecated_member_use
+import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/contractor services/cor_profileservice.dart';
 import 'package:flutter/material.dart';
-import 'package:contractor/build/buildprofile.dart';
+import 'package:backend/build/buildtorprofile.dart';
 
 class ContractorUserProfileScreen extends StatefulWidget {
   final String contractorId;
@@ -44,6 +45,10 @@ class _ContractorUserProfileScreenState
   late TextEditingController firmNameController;
   late TextEditingController addressController;
 
+  List<Map<String, dynamic>> completedProjects = [];
+  List<Map<String, dynamic>> filteredProjects = [];
+  late TextEditingController searchController;
+
   List<Map<String, dynamic>> allRatings = [];
   Map<int, int> ratingDistribution = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
   int totalReviews = 0;
@@ -52,11 +57,14 @@ class _ContractorUserProfileScreenState
   void initState() {
     super.initState();
     loadContractorData();
+    _loadCompletedProjects();
     bioController = TextEditingController();
     contactController = TextEditingController();
     specializationController = TextEditingController();
     firmNameController = TextEditingController();
     addressController = TextEditingController();
+    searchController = TextEditingController();
+    searchController.addListener(_onSearchChanged);
   }
 
   @override
@@ -66,6 +74,8 @@ class _ContractorUserProfileScreenState
     specializationController.dispose();
     firmNameController.dispose();
     addressController.dispose();
+    searchController.removeListener(_onSearchChanged);
+    searchController.dispose();
     super.dispose();
   }
 
@@ -98,6 +108,7 @@ class _ContractorUserProfileScreenState
       });
       
       _updateControllers();
+      await _loadCompletedProjects();
     } catch (e) {
       setState(() => isLoading = false);
     }
@@ -109,6 +120,28 @@ class _ContractorUserProfileScreenState
     specializationController.text = specialization;
     firmNameController.text = firmName;
     addressController.text = address;
+  }
+
+  Future<void> _loadCompletedProjects() async {
+    final projects = await FetchService().fetchCompletedProjects();
+    setState(() {
+      completedProjects = projects;
+      filteredProjects = projects;
+    });
+  }
+
+  void _onSearchChanged() {
+    final query = searchController.text.toLowerCase();
+    setState(() {
+      filteredProjects = completedProjects.where((project) {
+        final clientName = (project['contractee']?['full_name'] ?? '').toLowerCase();
+        final type = (project['type'] ?? '').toLowerCase();
+        final description = (project['description'] ?? '').toLowerCase();
+        return clientName.contains(query) ||
+            type.contains(query) ||
+            description.contains(query);
+      }).toList();
+    });
   }
 
   @override
@@ -178,6 +211,7 @@ class _ContractorUserProfileScreenState
                           });
                         },
                         mainContent: _buildMainContent(),
+                        userType: 'contractor',
                       ),
                     );
                   } else {
@@ -196,6 +230,7 @@ class _ContractorUserProfileScreenState
                         });
                       },
                       mainContent: _buildMainContent(),
+                      userType: 'contractor',
                     );
                   }
                 },
@@ -217,6 +252,7 @@ class _ContractorUserProfileScreenState
       () => _buildPortfolio(),
       () => _buildAboutContent(),
       () => _buildReviewsContent(),
+      () => _buildClientHistory(),
     );
   }
 
@@ -264,6 +300,7 @@ class _ContractorUserProfileScreenState
       saveSpecialization: () => _saveField('specialization', specializationController.text),
       saveAddress: () => _saveField('address', addressController.text),
       contractorId: widget.contractorId,
+      userType: 'contractor',
     );
   }
 
@@ -276,6 +313,13 @@ class _ContractorUserProfileScreenState
       allRatings: allRatings,
       buildReviewCard: _buildReviewCard,
       getTimeAgo: _getTimeAgo,
+    );
+  }
+
+  Widget _buildClientHistory() {
+    return ProfileBuildMethods.buildClientHistory(
+      filteredProjects: filteredProjects,
+      searchController: searchController,
     );
   }
 

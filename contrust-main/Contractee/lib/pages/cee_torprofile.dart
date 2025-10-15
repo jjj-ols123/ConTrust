@@ -4,6 +4,7 @@ import 'package:backend/models/be_appbar.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_project_service.dart';
 import 'package:backend/utils/be_constraint.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractee/models/cee_modal.dart';
 import 'package:contractee/pages/cee_messages.dart';
 import 'package:backend/services/contractee services/cee_torprofileservice.dart';
@@ -83,12 +84,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to load contractor data'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ConTrustSnackBar.error(context, 'Failed to load contractor data');
       }
       setState(() => isLoading = false);
     }
@@ -135,37 +131,28 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
     });
   }
 
-  Future<void> _submitRating(double rating) async {
+  Future<void> _submitRating(double rating, String reviewText) async {
     final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
     try {
       await TorProfileService.submitRating(
-          widget.contractorId, currentUserId, rating, hasRated);
+          widget.contractorId, currentUserId, rating, hasRated, reviewText);
       await _loadContractorData();
       await _checkRatingEligibility();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(hasRated
-                ? 'Rating updated successfully!'
-                : 'Rating submitted successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        ConTrustSnackBar.success(context, hasRated
+            ? 'Rating updated successfully!'
+            : 'Rating submitted successfully!');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error submitting rating: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ConTrustSnackBar.error(context, 'Error submitting rating: $e');
       }
     }
   }
 
   Future<void> _showRatingDialog() async {
     double tempRating = userRating;
+    String reviewText = '';
 
     await showDialog(
       context: context,
@@ -215,6 +202,19 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                     color: Colors.amber,
                   ),
                 ),
+                const SizedBox(height: 20),
+                TextField(
+                  maxLines: 3,
+                  maxLength: 500,
+                  decoration: const InputDecoration(
+                    labelText: 'Write a review (optional)',
+                    border: OutlineInputBorder(),
+                    hintText: 'Share your experience...',
+                  ),
+                  onChanged: (value) {
+                    reviewText = value;
+                  },
+                ),
               ],
             ),
             actions: [
@@ -225,7 +225,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
               ElevatedButton(
                 onPressed: () async {
                   Navigator.pop(context);
-                  await _submitRating(tempRating);
+                  await _submitRating(tempRating, reviewText);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.amber,
@@ -308,7 +308,6 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
         appBar: ConTrustAppBar(
           headline: 'Contractor Profile',
         ),
-        drawer: const MenuDrawerContractee(),
         body: const Center(
           child: CircularProgressIndicator(),
         ),
@@ -319,7 +318,6 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
       appBar: ConTrustAppBar(
         headline: 'Contractor Profile',
       ),
-      drawer: const MenuDrawerContractee(),
       body: RefreshIndicator(
         onRefresh: _loadContractorData,
         child: SingleChildScrollView(
@@ -353,11 +351,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                             contracteeId: currentUserId,
                           );
                           if (chatRoomId == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('You should have a project with this contractor to chat.'),
-                              ),
-                            );
+                            ConTrustSnackBar.error(context, 'You should have a project with this contractor to chat.');
                             return;
                           }
                           Navigator.push(
@@ -854,12 +848,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                                             Supabase.instance.client.auth
                                                 .currentUser!.id,
                                           );
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            const SnackBar(
-                                                content: Text(
-                                                    'Cancellation request sent.')),
-                                          );
+                                          ConTrustSnackBar.success(context, 'Cancellation request sent.');
                                           setState(() {
                                             isHiring = false;
                                           });

@@ -137,38 +137,7 @@ class DashboardBuildMethods {
               ],
             ),
             SizedBox(height: isTablet ? 16 : 12),
-            if (recentActivities.isEmpty)
-              Center(
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    vertical: isTablet ? 30 : 20,
-                    horizontal: 16,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.person_outline,
-                        size: isTablet ? 40 : 32,
-                        color: Colors.grey.shade400,
-                      ),
-                      SizedBox(height: isTablet ? 12 : 8),
-                      Text(
-                        'No active projects',
-                        style: TextStyle(
-                          fontSize: isTablet ? 14 : 12,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            else
-              buildContracteeInfo(recentActivities.first),
+            buildContracteeInfo(_getContracteeToShow()),
           ],
         ),
       ),
@@ -559,48 +528,9 @@ class DashboardBuildMethods {
               ],
             ),
             SizedBox(height: isTablet ? 20 : 16),
-            if (recentActivities.isEmpty)
-              Center(
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    vertical: isTablet ? 60 : 40,
-                    horizontal: 20,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.work_off_outlined,
-                        size: isTablet ? 64 : 48,
-                        color: Colors.grey.shade400,
-                      ),
-                      SizedBox(height: isTablet ? 20 : 16),
-                      Text(
-                        'No active projects',
-                        style: TextStyle(
-                          fontSize: isTablet ? 22 : 18,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: isTablet ? 12 : 8),
-                      Text(
-                        'All your active projects will appear here',
-                        style: TextStyle(
-                          color: Colors.grey.shade500,
-                          fontSize: isTablet ? 16 : 14,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            else
-              ...recentActivities.map(
-                (project) => projectView(context, project),
-              ),
+            ..._getProjectsToShow().map(
+              (project) => projectView(context, project),
+            ),
           ],
         ),
       ),
@@ -734,80 +664,121 @@ class DashboardBuildMethods {
     );
   }
 
-  Widget projectView(BuildContext context, project) {
-    return InkWell(
-      onTap: () => dashboardservice.navigateToProject(
-        context: context,
-        project: project,
-        onNavigate: () {},
-      ),
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 18),
-        elevation: 6,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        shadowColor: Colors.amber.shade100,
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      project['title'] ?? 'No title given',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
+  List<Map<String, dynamic>> _getProjectsToShow() {
+    if (recentActivities.isEmpty) {
+      return [_getPlaceholderProject()];
+    }
+    return recentActivities;
+  }
+
+  Map<String, dynamic> _getContracteeToShow() {
+    if (recentActivities.isEmpty) {
+      return _getPlaceholderContractee();
+    }
+    return recentActivities.first;
+  }
+
+  Map<String, dynamic> _getPlaceholderContractee() {
+    return {
+      'contractee_name': 'No Contractee',
+      'contractee_photo': null,
+      'title': 'No Active Project',
+      'status': 'inactive',
+    };
+  }
+
+  Map<String, dynamic> _getPlaceholderProject() {
+    return {
+      'title': 'No Active Projects',
+      'description': 'You have no active projects at the moment.',
+      'type': 'N/A',
+      'contractee_name': 'No Contractee',
+      'contractee_photo': null,
+      'status': 'inactive',
+      'isPlaceholder': true,
+    };
+  }
+
+  Widget projectView(BuildContext context, Map<String, dynamic> project) {
+    bool isPlaceholder = project['isPlaceholder'] == true;
+    Widget card = Card(
+      margin: const EdgeInsets.only(bottom: 18),
+      elevation: 6,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shadowColor: Colors.amber.shade100,
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    project['title'] ?? 'No title given',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Description: ${project['description'] ?? 'No description'}',
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 16, color: Colors.black87),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Type: ${project['type'] ?? 'No type'}',
-                style: const TextStyle(fontSize: 16, color: Colors.black87),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  const Icon(Icons.info_outline, size: 18, color: Colors.grey),
-                  const SizedBox(width: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: status.getStatusColor(
-                        project['status'],
-                      ).withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'Status: ${status.getStatusLabel(project['status'])}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: status.getStatusColor(project['status']),
-                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Description: ${project['description'] ?? 'No description'}',
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 16, color: Colors.black87),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Type: ${project['type'] ?? 'No type'}',
+              style: const TextStyle(fontSize: 16, color: Colors.black87),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Icon(Icons.info_outline, size: 18, color: Colors.grey),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: status.getStatusColor(
+                      project['status'],
+                    ).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'Status: ${status.getStatusLabel(project['status'])}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: status.getStatusColor(project['status']),
                     ),
                   ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
+    if (isPlaceholder) {
+      return card;
+    } else {
+      return InkWell(
+        onTap: () => dashboardservice.navigateToProject(
+          context: context,
+          project: project,
+          onNavigate: () {},
+        ),
+        child: card,
+      );
+    }
   }
 }
