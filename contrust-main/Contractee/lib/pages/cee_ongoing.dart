@@ -237,27 +237,41 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
 
     return RefreshIndicator(
       onRefresh: () async => loadData(),
-      child: CeeOngoingBuildMethods.buildDesktopGridLayout(
-        context: context,
-        projectTitle: projectTitle,
-        clientName: contractorName,
-        address: address,
-        startDate: startDate,
-        estimatedCompletion: estimatedCompletion,
-        progress: _localProgress,
-        tasks: _localTasks,
-        reports: [], // Will be loaded separately
-        photos: [], // Will be loaded separately
-        costs: [], // Will be loaded separately
-        createSignedUrl: createSignedPhotoUrl,
-        onViewReport: onViewReport,
-        onViewPhoto: onViewPhoto,
-        onViewMaterial: onViewMaterial,
-        onRefresh: loadData,
-        onChat: _canChat && _chatRoomId != null ? _navigateToChat : null,
-        canChat: _canChat,
-                                  ),
-                                );
+      child: FutureBuilder<List<List<Map<String, dynamic>>>>(
+        future: _getTabData(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final data = snapshot.data ?? [[], [], []];
+          final reports = data[0];
+          final photos = data[1];
+          final costs = data[2];
+
+          return CeeOngoingBuildMethods.buildDesktopGridLayout(
+            context: context,
+            projectTitle: projectTitle,
+            clientName: contractorName,
+            address: address,
+            startDate: startDate,
+            estimatedCompletion: estimatedCompletion,
+            progress: _localProgress,
+            tasks: _localTasks,
+            reports: reports,
+            photos: photos,
+            costs: costs,
+            createSignedUrl: createSignedPhotoUrl,
+            onViewReport: onViewReport,
+            onViewPhoto: onViewPhoto,
+            onViewMaterial: onViewMaterial,
+            onRefresh: loadData,
+            onChat: _canChat && _chatRoomId != null ? _navigateToChat : null,
+            canChat: _canChat,
+          );
+        },
+      ),
+    );
                               }
 
   Widget _buildTabContent() {
