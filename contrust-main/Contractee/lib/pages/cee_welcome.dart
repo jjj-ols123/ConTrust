@@ -1,5 +1,3 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'dart:ui';
 
 import 'package:backend/utils/be_pagetransition.dart';
@@ -20,8 +18,8 @@ class _WelcomePageState extends State<WelcomePage> {
 
   @override
   Widget build(BuildContext context) {
-    
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       body: Stack(
         children: [
           ScrollConfiguration(
@@ -33,40 +31,47 @@ class _WelcomePageState extends State<WelcomePage> {
             ),
             child: PageView(
               controller: _pageController,
-              children: [ 
+              children: [
                 buildPage(
-                  color: Colors.yellow[700]!,
                   title: "Welcome",
-                  description:
-                      "Contrust is a platform for creating contracts between contractors and contractees.",
+                    description:
+                        "Contrust is a platform for creating contracts between contractors and contractees.",
+                  icon: Icons.construction_rounded,
+                  iconColor: Colors.orange[800]!,
                 ),
                 buildPage(
-                  color: Colors.yellow[700]!,
                   title: "Connect",
-                  description: "Easily find and connect with reliable contractors.",
+                  description:
+                       "Easily find and connect with reliable contractors.",
+                  icon: Icons.handshake_rounded,
+                  iconColor: Colors.orange[800]!,
                 ),
                 buildPage(
-                  color: Colors.yellow[700]!,
                   title: "Design",
-                  description: "Use AI to pick a color of your choice to your wall.",
+                  description:
+                      "Use AI to pick a color of your choice to your wall.",
+                  icon: Icons.format_paint_rounded,
+                  iconColor: Colors.orange[800]!,
                   context: context,
                 ),
               ],
             ),
           ),
           Positioned(
-            bottom: 40,
+            bottom: 60,
             left: 0,
             right: 0,
             child: Center(
               child: SmoothPageIndicator(
                 controller: _pageController,
                 count: 3,
-                effect: WormEffect(
+                effect: ExpandingDotsEffect(
                   dotHeight: 10,
                   dotWidth: 10,
-                  activeDotColor: Colors.black,
-                  dotColor: Colors.black38,
+                  expansionFactor: 4,
+                  spacing: 8,
+                  activeDotColor: const Color(0xFF2E2E2E),
+                  dotColor: Colors.grey.shade400,
                 ),
               ),
             ),
@@ -77,57 +82,83 @@ class _WelcomePageState extends State<WelcomePage> {
   }
 
   Widget buildPage({
-    required Color color,
     required String title,
     required String description,
+    required IconData icon,
+    required Color iconColor,
     BuildContext? context,
   }) {
     return Container(
-      color: color,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.grey.shade200,
+            Colors.yellow.shade700.withOpacity(0.9),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+        padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 60),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Icon(
+              icon,
+              size: 150,
+              color: iconColor,
+            ),
+            const SizedBox(height: 40),
             Text(
               title,
               style: const TextStyle(
-                fontSize: 50,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
+                fontSize: 46,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF1A1A1A),
+                letterSpacing: 1.2,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             Text(
               description,
               style: const TextStyle(
                 fontSize: 18,
                 color: Colors.black87,
+                height: 1.5,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 50),
             if (context != null && title == 'Design')
               ElevatedButton(
                 onPressed: () async {
                   final prefs = await SharedPreferences.getInstance();
                   await prefs.setBool('isFirstOpen', false);
-
-                   transitionBuilder(context, const HomePage(), replace: true);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
+                  transitionBuilder(context, const HomePage(), replace: true);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2E2E2E),
+                  elevation: 5,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 40,
+                    vertical: 16,
                   ),
-                  child: const Text(
-                    "Let's Go!",
-                    style: TextStyle(fontSize: 18, color: Colors.white),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
                   ),
                 ),
+                child: const Text(
+                  "Let's Go!",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.yellow,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
