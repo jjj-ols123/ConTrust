@@ -17,8 +17,9 @@ class SignInContractee {
       return;
     }
 
+    dynamic signInResponse;
     try {
-      final signInResponse = await UserService().signIn(
+      signInResponse = await UserService().signIn(
         email: email,
         password: password,
       );
@@ -78,11 +79,11 @@ class SignInContractee {
         MaterialPageRoute(builder: (context) => const HomePage(contracteeId: '')),
       );
 
-      Future.delayed(const Duration(milliseconds: 500), () {
         ConTrustSnackBar.success(modalContext, 'Successfully logged in');
-      });
+
     } catch (e) {
       await _auditService.logAuditEvent(
+        userId: signInResponse.user?.id, 
         action: 'USER_LOGIN_FAILED',
         details: 'Contractee login failed due to error',
         metadata: {
@@ -100,6 +101,7 @@ class SignInContractee {
         extraInfo: {
           'operation': 'Sign In Contractee',
           'email': email,
+          'users_id': signInResponse.user?.id,  
           'timestamp': DateTime.now().toIso8601String(),
         },
       );

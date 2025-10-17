@@ -128,8 +128,8 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ],
-        ),
-      ),
+          ),
+      )
     );
   }
 
@@ -183,11 +183,47 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  void _postProject() {
+    CheckUserLogin.isLoggedIn(
+      context: context,
+      onAuthenticated: () async {
+        final contracteeId = supabase.auth.currentUser?.id;
+        if (contracteeId != null) {
+          final titleController = TextEditingController();
+          final typeController = TextEditingController();
+          final minBudgetController = TextEditingController();
+          final maxBudgetController = TextEditingController();
+          final locationController = TextEditingController();
+          final descriptionController = TextEditingController();
+          final bidTimeController = TextEditingController();
+          
+          bidTimeController.text = '7';
+          
+          await ProjectModal.show(
+            context: context,
+            contracteeId: contracteeId,
+            titleController: titleController,
+            constructionTypeController: typeController,
+            minBudgetController: minBudgetController,
+            maxBudgetController: maxBudgetController,
+            locationController: locationController,
+            descriptionController: descriptionController,
+            bidTimeController: bidTimeController,
+          );
+          
+          _loadData();
+        }
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     final contracteeId = supabase.auth.currentUser?.id;
+
+    final projectsToShow = projects.isEmpty ? [HomePageBuilder.getPlaceholderProject()] : projects;
 
     return ContracteeShell(
       currentPage: ContracteePage.home,
@@ -291,17 +327,10 @@ class _HomePageState extends State<HomePage> {
                         ),
             ),
             const SizedBox(height: 30),
-            if (contracteeId != null) ...[
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    "Your Posted Projects",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 27,
-                    ),
-                  ),
+
                   TextButton(
                     onPressed: _loadData,
                     child: Text(
@@ -318,139 +347,88 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 15),
               isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : projects.isEmpty
-                      ? const Center(
-                          child: Text("You haven't posted any projects yet"),
-                        )
-                      : ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: projects.length,
-                        itemBuilder: (context, index) {
-                          final project = projects[index];
-                          final projectId = project['project_id'].toString();
-                          final highestBid = highestBids[projectId] ?? 0.0;
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: projectsToShow.length,
+                      itemBuilder: (context, index) {
+                        final project = projectsToShow[index];
+                        final isPlaceholder = project['isPlaceholder'] == true;
 
-                          return FutureBuilder<Map<String, dynamic>>(
-                            future: supabase
-                                .from('Projects')
-                                .select('bid_id')
-                                .eq('project_id', projectId)
-                                .single(),
-                            builder: (context, snapshot) {
-                              String? acceptedBidId;
-                              if (snapshot.connectionState ==
-                                      ConnectionState.done &&
-                                  snapshot.hasData) {
-                                acceptedBidId = snapshot.data?['bid_id'];
-                              }
-                              return ProjectView(
-                                project: project,
-                                projectId: projectId,
-                                highestBid: highestBid,
-                                duration: project['duration'] ?? 0,
-                                createdAt: DateTime.parse(
-                                    project['created_at'].toString()),
-                                onTap: () {
-                                  CheckUserLogin.isLoggedIn(
-                                    context: context,
-                                    onAuthenticated: () async {
-                                      await BidsModal.show(
-                                        context: context,
-                                        projectId: projectId,
-                                        acceptBidding: (projectId, bidId) async {
-                                          _loadAcceptBidding(projectId, bidId);
-                                          setState(() {
-                                            acceptedBidIds[projectId] = bidId;
-                                          });
-                                        },
-                                        initialAcceptedBidId: acceptedBidId,
-                                      );
-                                    },
-                                  );
-                                },
-                                handleFinalizeBidding: (bidId) {
-                                  return BiddingService()
-                                      .acceptProjectBid(projectId, bidId);
-                                },
-                                onDeleteProject: (projectId) async {
-                                  try {
-                                    await ProjectService()
-                                        .deleteProject(projectId);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                            'Project deleted successfully.'),
-                                      ),
-                                    );
-                                    _loadData();
-                                  } catch (e) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content:
-                                            Text('Failed to delete project'),
-                                      ),
-                                    );
-                                  }
-                                },
-                              );
-                            },
+                        if (isPlaceholder) {
+                          return HomePageBuilder.buildProjectsSection(
+                            context: context,
+                            projects: [project],
+                            supabase: supabase,
+                            onPostProject: _postProject,
                           );
-                        },
-                      ),
-            ] else ...[
-              HomePageBuilder.buildEmptyProjectsPlaceholder(
-                context: context,
-                supabase: supabase,
-                onPostProject: () {
-                  CheckUserLogin.isLoggedIn(
-                    context: context,
-                    onAuthenticated: () async {
-                      final contracteeId = supabase.auth.currentUser?.id;
-                      if (contracteeId != null) {
-                        final titleController = TextEditingController();
-                        final typeController = TextEditingController();
-                        final minBudgetController = TextEditingController();
-                        final maxBudgetController = TextEditingController();
-                        final locationController = TextEditingController();
-                        final descriptionController = TextEditingController();
-                        final bidTimeController = TextEditingController();
-                        
-                        bidTimeController.text = '7';
-                        
-                        await ProjectModal.show(
-                          context: context,
-                          contracteeId: contracteeId,
-                          titleController: titleController,
-                          constructionTypeController: typeController,
-                          minBudgetController: minBudgetController,
-                          maxBudgetController: maxBudgetController,
-                          locationController: locationController,
-                          descriptionController: descriptionController,
-                          bidTimeController: bidTimeController,
+                        }
+
+                        final projectId = project['project_id'].toString();
+                        final highestBid = highestBids[projectId] ?? 0.0;
+
+                        return FutureBuilder<Map<String, dynamic>>(
+                          future: supabase
+                              .from('Projects')
+                              .select('bid_id')
+                              .eq('project_id', projectId)
+                              .single(),
+                          builder: (context, snapshot) {
+                            String? acceptedBidId;
+                            if (snapshot.connectionState == ConnectionState.done &&
+                                snapshot.hasData) {
+                              acceptedBidId = snapshot.data?['bid_id'];
+                            }
+                            return ProjectView(
+                              project: project,
+                              projectId: projectId,
+                              highestBid: highestBid,
+                              duration: project['duration'] ?? 0,
+                              createdAt: DateTime.parse(project['created_at'].toString()),
+                              onTap: () {
+                                CheckUserLogin.isLoggedIn(
+                                  context: context,
+                                  onAuthenticated: () async {
+                                    await BidsModal.show(
+                                      context: context,
+                                      projectId: projectId,
+                                      acceptBidding: (projectId, bidId) async {
+                                        _loadAcceptBidding(projectId, bidId);
+                                        setState(() {
+                                          acceptedBidIds[projectId] = bidId;
+                                        });
+                                      },
+                                      initialAcceptedBidId: acceptedBidId,
+                                    );
+                                  },
+                                );
+                              },
+                              handleFinalizeBidding: (bidId) {
+                                return BiddingService().acceptProjectBid(projectId, bidId);
+                              },
+                              onDeleteProject: (projectId) async {
+                                try {
+                                  await ProjectService().deleteProject(projectId);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Project deleted successfully.')),
+                                  );
+                                  _loadData();
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Failed to delete project')),
+                                  );
+                                }
+                              },
+                            );
+                          },
                         );
-                        
-                        _loadData();
-                      }
-                    },
-                  );
-                },
-              ),
-            ],
-                    
+                      },
+                    ),
             const SizedBox(height: 30),
             HomePageBuilder.buildStatsSection(
               projects: projects,
               contractors: contractors,
             ),
-            
-            const SizedBox(height: 30),
-            HomePageBuilder.buildQuickActionsSection(
-              context: context,
-              supabase: supabase,
-              onProjectPosted: _loadData,
-            ),
-            const SizedBox(height: 30),
           ],
         ),
       ),

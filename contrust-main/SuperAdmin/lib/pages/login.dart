@@ -116,7 +116,6 @@ class _SuperAdminLoginScreenState extends State<SuperAdminLoginScreen> {
             onSignIn: _signIn,
             onTogglePasswordVisibility: _togglePasswordVisibility,
           ),
-          if (_isLoading) BuildAdminLogin.buildLoadingOverlay(),
         ],
       ),
     );

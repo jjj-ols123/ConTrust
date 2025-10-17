@@ -2,6 +2,9 @@
 
 import 'package:backend/build/buildnotification.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/services/both%20services/be_user_service.dart';
+import 'package:backend/services/superadmin%20services/auditlogs_service.dart';
+import 'package:backend/services/superadmin%20services/errorlogs_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractee/pages/cee_about.dart';
 import 'package:contractee/pages/cee_home.dart';
@@ -239,6 +242,8 @@ class SideDashboardDrawer extends StatefulWidget {
 
 class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
   bool _loadingOngoing = false;
+  final SuperAdminAuditService _auditService = SuperAdminAuditService(); 
+  final SuperAdminErrorService _errorService = SuperAdminErrorService();
 
   Future<void> goToOngoing() async {
     if (widget.contracteeId == null) return;
@@ -338,6 +343,42 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
     );
   }
 
+  void logout() async {
+    try {
+      await UserService().signOut();
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const HomePage()),
+          (route) => false,
+        );
+      }
+
+       await _auditService.logAuditEvent(
+        userId: widget.contracteeId,
+        action: 'LOGOUT_ATTEMPT',
+        details: 'Contractee logout failed due to error',
+        category: 'User',
+        metadata: {
+          'user_type': 'contractee',
+        },
+      );
+
+    } catch (e) {
+      if (mounted) {
+        await _errorService.logError(
+          errorMessage: 'Logout failed $e',
+          module: 'Logout Button Drawer', 
+          severity: 'Medium', 
+          extraInfo: { 
+            'operation': 'Logout attempt',
+            'error_id': widget.contracteeId,
+            'timestamp': DateTime.now().toIso8601String(),
+          },
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final id = widget.contracteeId;
@@ -409,6 +450,13 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
                 );
               }
             },
+          ),
+          const Divider(), 
+          _SidebarItem(
+            icon: Icons.logout_outlined,
+            label: 'Logout',
+            active: true, 
+            onTap: logout,
           ),
         ],
       ),

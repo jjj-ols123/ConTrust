@@ -1,9 +1,5 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
-import 'package:backend/services/contractee services/cee_checkuser.dart';
-import 'package:contractee/build/builddrawer.dart';
-import 'package:contractee/models/cee_modal.dart';
-import 'package:contractee/pages/cee_chathistory.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -41,7 +37,7 @@ class HomePageBuilder {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.amber[800],
+                  color: Colors.black,
                 ),
               ),
             ],
@@ -54,7 +50,7 @@ class HomePageBuilder {
                   "Active Projects",
                   "${projects.where((p) => p['status'] == 'active').length}",
                   Icons.work,
-                  Colors.green,
+                  Colors.black,
                 ),
               ),
               const SizedBox(width: 12),
@@ -63,7 +59,7 @@ class HomePageBuilder {
                   "Pending Projects",
                   "${projects.where((p) => p['status'] == 'pending').length}",
                   Icons.pending,
-                  Colors.orange,
+                  Colors.black,
                 ),
               ),
               const SizedBox(width: 12),
@@ -72,12 +68,12 @@ class HomePageBuilder {
                   "Completed",
                   "${projects.where((p) => p['status'] == 'ended').length}",
                   Icons.check_circle,
-                  Colors.purple,
+                  Colors.black,
                 ),
               ),
             ],
           ),
-        ]
+        ],
       ),
     );
   }
@@ -115,151 +111,6 @@ class HomePageBuilder {
     );
   }
 
-  static Widget buildQuickActionsSection({
-    required BuildContext context,
-    required SupabaseClient supabase,
-    VoidCallback? onProjectPosted,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.amber.shade50, Colors.amber.shade100],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.amber.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.flash_on, color: Colors.amber[700], size: 24),
-              const SizedBox(width: 8),
-              Text(
-                "Quick Actions",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.amber[800],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildQuickActionButton(
-                  "Post Project",
-                  Icons.add_circle,
-                  () {
-                    CheckUserLogin.isLoggedIn(
-                      context: context,
-                      onAuthenticated: () async {
-                        final contracteeId = supabase.auth.currentUser?.id;
-                        if (contracteeId != null) {
-                          // Create controllers for the modal
-                          final titleController = TextEditingController();
-                          final typeController = TextEditingController();
-                          final minBudgetController = TextEditingController();
-                          final maxBudgetController = TextEditingController();
-                          final locationController = TextEditingController();
-                          final descriptionController = TextEditingController();
-                          final bidTimeController = TextEditingController();
-                          
-                          // Set default bid time
-                          bidTimeController.text = '7';
-                          
-                          await ProjectModal.show(
-                            context: context,
-                            contracteeId: contracteeId,
-                            titleController: titleController,
-                            constructionTypeController: typeController,
-                            minBudgetController: minBudgetController,
-                            maxBudgetController: maxBudgetController,
-                            locationController: locationController,
-                            descriptionController: descriptionController,
-                            bidTimeController: bidTimeController,
-                          );
-                          
-                          // Call the callback to refresh data
-                          onProjectPosted?.call();
-                        }
-                      },
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildQuickActionButton(
-                  "View Messages",
-                  Icons.message,
-                  () {
-                    CheckUserLogin.isLoggedIn(
-                      context: context,
-                      onAuthenticated: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ContracteeShell(
-                              currentPage: ContracteePage.messages,
-                              contracteeId: supabase.auth.currentUser?.id ?? '',
-                              child: const ContracteeChatHistoryPage(),
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  static Widget _buildQuickActionButton(String title, IconData icon, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 5,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: Colors.amber[700], size: 32),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.amber[800],
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   static Widget buildEmptyProjectsPlaceholder({
     required BuildContext context,
     required SupabaseClient supabase,
@@ -269,7 +120,7 @@ class HomePageBuilder {
       padding: const EdgeInsets.all(40),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.amber.shade50, Colors.amber.shade100],
+          colors: [Colors.white],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -290,7 +141,7 @@ class HomePageBuilder {
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.amber[800],
+              color: Colors.black,
             ),
           ),
           const SizedBox(height: 12),
@@ -304,8 +155,145 @@ class HomePageBuilder {
             ),
           ),
           const SizedBox(height: 20),
-        
         ],
+      ),
+    );
+  }
+
+  static Map<String, dynamic> getPlaceholderProject() {
+    return {
+      'title': 'No Projects Yet',
+      'description': 'You have no active projects at the moment. Start by posting your first project.',
+      'type': 'N/A',
+      'contractee_name': 'You',
+      'contractee_photo': null,
+      'status': 'inactive',
+      'isPlaceholder': true,
+    };
+  }
+
+  static List<Map<String, dynamic>> getProjectsToShow(List<Map<String, dynamic>> projects) {
+    if (projects.isEmpty) {
+      return [getPlaceholderProject()];
+    }
+    return projects;
+  }
+
+  static Widget buildProjectsSection({
+    required BuildContext context,
+    required List<Map<String, dynamic>> projects,
+    required SupabaseClient supabase,
+    VoidCallback? onPostProject,
+  }) {
+    final projectsToShow = getProjectsToShow(projects);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.work_outline, color: Colors.amber[700], size: 24),
+              const SizedBox(width: 8),
+              Text(
+                "Your Projects",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              const Spacer(),
+              ElevatedButton.icon(
+                onPressed: onPostProject,
+                icon: const Icon(Icons.add),
+                label: const Text('Post Your Project'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber[700],
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...projectsToShow.map((project) => _buildProjectCard(context, project, supabase)),
+        ],
+      ),
+    );
+  }
+
+  static Widget _buildProjectCard(BuildContext context, Map<String, dynamic> project, SupabaseClient supabase) {
+    bool isPlaceholder = project['isPlaceholder'] == true;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: isPlaceholder ? null : () {
+         
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                project['title'] ?? 'No title',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                project['description'] ?? 'No description',
+                style: TextStyle(color: Colors.grey[700]),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.category, size: 16, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Type: ${project['type'] ?? 'N/A'}',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isPlaceholder ? Colors.grey.withOpacity(0.1) : Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      isPlaceholder ? 'Placeholder' : 'Active',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isPlaceholder ? Colors.grey : Colors.green,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

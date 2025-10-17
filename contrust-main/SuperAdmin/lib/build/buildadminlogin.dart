@@ -123,7 +123,6 @@ class BuildAdminLogin {
     );
   }
 
-  // Build sign in button
   static Widget buildSignInButton({
     required bool isLoading,
     required VoidCallback onPressed,
@@ -142,16 +141,7 @@ class BuildAdminLogin {
       ),
     );
   }
-
-  static Widget buildLoadingOverlay() {
-    return Container(
-      color: Colors.black.withOpacity(0.5),
-      child: const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-  }
-
+  
   static Widget buildLoginForm({
     required BuildContext context,
     required TextEditingController emailController,

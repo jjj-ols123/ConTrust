@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../build/buildaudit.dart';
-import '../build/builderror.dart';
 
 class Auditlogs extends StatelessWidget {
   const Auditlogs({super.key});
@@ -38,38 +37,7 @@ class Auditlogs extends StatelessWidget {
                   ),
                 ],
               ),
-            ),
-            Container(
-              width: 1,
-              color: Colors.grey.shade300,
-            ),
-            Expanded(
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    color: Colors.white,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.error_outline, color: Colors.grey, size: 24),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Error Logs',
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Expanded(
-                    child: ErrorLogsTable(),
-                  ),
-                ],
-              ),
-            ),
+            )
           ],
         ),
       ),

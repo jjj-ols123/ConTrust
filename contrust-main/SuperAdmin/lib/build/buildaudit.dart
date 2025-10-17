@@ -437,18 +437,16 @@ class AuditLogsTableState extends State<AuditLogsTable> {
                             ],
                             rows: _filteredLogs.map((log) => DataRow(
                               cells: [
-                                DataCell(Text(_formatTimestamp(log['timestamp']) as String)),
-                                DataCell(Text(log['users_id']?.toString() ?? 'N/A')),
+                                DataCell(Text(formatTimestamp(log['timestamp']), style: const TextStyle(color: Colors.black))),
+                                DataCell(Text(log['users_id']?.toString() ?? 'N/A', style: const TextStyle(color: Colors.black))),
                                 DataCell(_buildActionChip(log['action']?.toString() ?? 'unknown')),
                                 DataCell(_buildCategoryChip(log['category']?.toString() ?? 'unknown')),
                                 DataCell(
-                                  SizedBox(
-                                    width: 200,
-                                    child: Text(
-                                      _formatDetails(log['details']),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
+                                  Text(
+                                    _formatDetails(log['details']),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(color: Colors.black),
                                   ),
                                 ),
                               ],
@@ -464,25 +462,16 @@ class AuditLogsTableState extends State<AuditLogsTable> {
     );
   }
 
-  Future<String> _formatTimestamp(String? timestamp) async {
-    if (timestamp == null) return 'N/A';
-    try {
-      final dateTime = DateTime.parse(timestamp);
-      return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} '
-             '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-    } catch (e) {
-      await SuperAdminErrorService().logError(
-        errorMessage: 'Timestamp formatting error: $e',
-        module: 'Audit Logs',
-        severity: 'Low',
-        extraInfo: {
-          'operation': 'Load Error Data',
-          'timestamp': DateTime.now().toIso8601String(),
-        },
-      );
-      return timestamp;
-    }
+  String formatTimestamp(String? timestamp) {
+  if (timestamp == null) return 'N/A';
+  try {
+    final dateTime = DateTime.parse(timestamp);
+    return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} '
+           '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+  } catch (e) {
+    return timestamp;
   }
+}
 
   String _formatDetails(dynamic details) {
     if (details == null) return 'N/A';

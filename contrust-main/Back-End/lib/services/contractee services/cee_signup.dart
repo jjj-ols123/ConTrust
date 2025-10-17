@@ -20,13 +20,14 @@ class SignUpContractee {
   
     final supabase = Supabase.instance.client;
     int project = 0;
+    dynamic signUpResponse; 
 
     if (!validateFields()) {
       return;
     }
 
     try {
-      final signUpResponse = await UserService().signUp(
+      signUpResponse = await UserService().signUp(
         email: email,
         password: password,
         data: data,
@@ -110,6 +111,7 @@ class SignUpContractee {
       Navigator.pop(context);
     } on AuthException catch (e) {
       await _auditService.logAuditEvent(
+        userId: signUpResponse.user?.id, 
         action: 'USER_REGISTRATION_FAILED',
         details: 'Contractee registration failed due to authentication error',
         metadata: {
@@ -123,11 +125,12 @@ class SignUpContractee {
       await _errorService.logError(
         errorMessage: 'Contractee sign-up failed - AuthException: $e',
         module: 'Contractee Sign-up',
-        severity: 'High',
+        severity: 'Medium',
         extraInfo: {
           'operation': 'Sign Up Contractee',
           'email': email,
           'user_type': userType,
+          'users_id': signUpResponse.user?.id, 
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
@@ -136,6 +139,7 @@ class SignUpContractee {
       return;
     } catch (e) {
       await _auditService.logAuditEvent(
+        userId: signUpResponse.user?.id,  
         action: 'USER_REGISTRATION_FAILED',
         details: 'Contractee registration failed due to unexpected error',
         metadata: {
@@ -149,11 +153,12 @@ class SignUpContractee {
       await _errorService.logError(
         errorMessage: 'Contractee sign-up failed - Unexpected error: $e',
         module: 'Contractee Sign-up',
-        severity: 'High',
+        severity: 'Medium',
         extraInfo: {
           'operation': 'Sign Up Contractee',
           'email': email,
           'user_type': userType,
+          'users_id': signUpResponse.user?.id, 
           'timestamp': DateTime.now().toIso8601String(),
         },
       );

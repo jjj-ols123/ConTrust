@@ -2,6 +2,9 @@
 
 import 'package:backend/build/buildnotification.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/services/both%20services/be_user_service.dart';
+import 'package:backend/services/superadmin%20services/auditlogs_service.dart';
+import 'package:backend/services/superadmin%20services/errorlogs_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/Screen/cor_bidding.dart';
 import 'package:contractor/Screen/cor_chathistory.dart';
@@ -9,6 +12,7 @@ import 'package:contractor/Screen/cor_contracttype.dart';
 import 'package:contractor/Screen/cor_dashboard.dart';
 import 'package:contractor/Screen/cor_ongoing.dart';
 import 'package:contractor/Screen/cor_profile.dart';
+import 'package:contractor/Screen/cor_startup.dart'; // Add this import
 import 'package:flutter/material.dart';
 
 enum ContractorPage {
@@ -162,6 +166,8 @@ class SideDashboardDrawer extends StatefulWidget {
 
 class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
   bool _loadingPM = false;
+  final SuperAdminAuditService _auditService = SuperAdminAuditService();
+  final SuperAdminErrorService _errorService = SuperAdminErrorService();
 
   Future<void> goProjectManagement() async {
     if (widget.contractorId == null) return;
@@ -204,6 +210,39 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
         reverseTransitionDuration: Duration.zero,
       ),
     );
+  }
+
+  void logout() async {
+    try {
+      await UserService().signOut();
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const ToLoginScreen()),
+        (route) => false,
+      );
+
+      await _auditService.logAuditEvent(
+        userId: widget.contractorId,
+        action: 'LOGOUT_ATTEMPT',
+        details: 'Contractor logout',
+        metadata: {
+          'user_type': 'contractor',
+        },
+      );
+
+    } catch (e) {
+      if (!mounted) return;
+        await _errorService.logError(
+          errorMessage: 'Logout failed $e',
+          module: 'Logout Button Drawer', 
+          severity: 'Medium', 
+          extraInfo: { 
+            'operation': 'Logout attempt',
+            'error_id': widget.contractorId,
+            'timestamp': DateTime.now().toIso8601String(),
+          },
+        );
+    }
   }
 
   @override
@@ -293,6 +332,13 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             label: _loadingPM ? 'Loading...' : 'Project Management',
             active: widget.currentPage == ContractorPage.projectManagement,
             onTap: _loadingPM ? null : goProjectManagement,
+          ),
+          const Divider(), 
+          _SidebarItem(
+            icon: Icons.logout_outlined,
+            label: 'Logout',
+            active: true, 
+            onTap: logout,
           ),
         ],
       ),

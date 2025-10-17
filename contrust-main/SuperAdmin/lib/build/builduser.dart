@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:backend/services/superadmin%20services/userlogs_service.dart';
+import 'package:backend/utils/be_contractformat.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 
@@ -105,7 +106,7 @@ class BuildUsers {
   static Widget buildUsersTable(BuildContext context, String title, List<Map<String, dynamic>> users, VoidCallback? onRefresh) {
     return Card(
       elevation: 4,
-      margin: const EdgeInsets.all(16),
+      margin: EdgeInsets.zero, // Remove space at the sides
       color: Colors.white,
       child: Column(
         children: [
@@ -147,6 +148,7 @@ class BuildUsers {
                     ),
                   )
                 : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
                     child: DataTable(
                       columns: const [
                         DataColumn(label: Text('Name', style: TextStyle(color: Colors.black))),
@@ -154,6 +156,7 @@ class BuildUsers {
                         DataColumn(label: Text('Status', style: TextStyle(color: Colors.black))),
                         DataColumn(label: Text('Verified', style: TextStyle(color: Colors.black))),
                         DataColumn(label: Text('Created', style: TextStyle(color: Colors.black))),
+                        DataColumn(label: Text('Last Login', style: TextStyle(color: Colors.black))), // New column
                       ],
                       rows: users.map((user) => DataRow(
                         cells: [
@@ -161,7 +164,8 @@ class BuildUsers {
                           DataCell(Text(user['email']?.toString() ?? 'N/A', style: const TextStyle(color: Colors.black))),
                           DataCell(_buildStatusChip(user['status']?.toString() ?? 'unknown')),
                           DataCell(_buildVerificationChip(user['verified'] ?? false)),
-                          DataCell(Text(_formatDate(user['created_at']), style: const TextStyle(color: Colors.black))),
+                          DataCell(Text(ContractStyle.formatDate(user['created_at']), style: const TextStyle(color: Colors.black))),
+                          DataCell(Text(ContractStyle().formatTimestamp(user['last_login']), style: const TextStyle(color: Colors.black))), // New cell
                         ],
                       )).toList(),
                     ),
@@ -217,27 +221,6 @@ class BuildUsers {
       padding: EdgeInsets.zero,
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
-  }
-
-  static String _formatDate(String? dateString) {
-    if (dateString == null) return 'N/A';
-    try {
-      final dateTime = DateTime.parse(dateString);
-      return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';
-    } catch (e) {
-      // Log error for date parsing issues
-      SuperAdminErrorService().logError(
-        errorMessage: 'Failed to parse date: $dateString, error: $e',
-        module: 'Super Admin Users',
-        severity: 'Low',
-        extraInfo: {
-          'operation': 'Format Date',
-          'dateString': dateString,
-          'timestamp': DateTime.now().toIso8601String(),
-        },
-      );
-      return 'Invalid Date';
-    }
   }
 }
 
@@ -407,7 +390,7 @@ class UsersManagementTableState extends State<UsersManagementTable> {
               Expanded(
                 child: BuildUsers.buildUsersTable(context, 'Contractors', _contractors, _refreshContractors),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 0), // Remove space between tables
               Expanded(
                 child: BuildUsers.buildUsersTable(context, 'Contractees', _contractees, _refreshContractees),
               ),

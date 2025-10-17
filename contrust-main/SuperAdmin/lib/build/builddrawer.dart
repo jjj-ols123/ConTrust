@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:superadmin/pages/login.dart';
 import '../pages/dashboard.dart';
 import '../pages/auditlogs.dart';
+import '../pages/errorlog.dart';
 import '../pages/users.dart';
 import '../pages/projects.dart';
 import '../pages/systemmonitor.dart';
@@ -14,6 +15,7 @@ enum SuperAdminPage {
   users,
   projects,
   auditLogs,
+  errorLogs,
   systemMonitor,
 }
 
@@ -39,6 +41,8 @@ class SuperAdminShell extends StatelessWidget {
         return 'Projects Management';
       case SuperAdminPage.auditLogs:
         return 'Audit Logs';
+      case SuperAdminPage.errorLogs:
+        return 'Error Logs';
       case SuperAdminPage.systemMonitor:
         return 'System Monitor';
     }
@@ -325,6 +329,21 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
                   SuperAdminShell(
                     currentPage: SuperAdminPage.auditLogs,
                     child: Auditlogs(),
+                  ),
+                );
+              }
+            },
+          ),
+          _SidebarItem(
+            icon: Icons.error_outline,
+            label: 'Error Logs',
+            active: widget.currentPage == SuperAdminPage.errorLogs,
+            onTap: () {
+              if (widget.currentPage != SuperAdminPage.errorLogs) {
+                navigateToPage(
+                  SuperAdminShell(
+                    currentPage: SuperAdminPage.errorLogs,
+                    child: ErrorLogs(),
                   ),
                 );
               }
@@ -659,6 +678,27 @@ class DashboardDrawer extends StatelessWidget {
                               SuperAdminShell(
                                 currentPage: SuperAdminPage.auditLogs,
                                 child: const Auditlogs(),
+                              ),
+                          transitionDuration: Duration.zero,
+                          reverseTransitionDuration: Duration.zero,
+                        ),
+                      );
+                    },
+                  ),
+                  DrawerIcon(
+                    icon: Icons.error,
+                    label: 'Error Logs',
+                    iconSize: iconSize,
+                    fontSize: fontSize,
+                    color: Colors.red,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        PageRouteBuilder(
+                          pageBuilder: (context, animation, secondaryAnimation) =>
+                              const SuperAdminShell(
+                                currentPage: SuperAdminPage.errorLogs,
+                                child: ErrorLogs(),
                               ),
                           transitionDuration: Duration.zero,
                           reverseTransitionDuration: Duration.zero,

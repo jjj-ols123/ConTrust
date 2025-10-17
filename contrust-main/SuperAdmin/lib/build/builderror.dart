@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
+import 'package:backend/utils/be_contractformat.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 
@@ -332,28 +333,6 @@ class ErrorLogsTableState extends State<ErrorLogsTable> {
     }).toList();
   }
 
-  Future<void> _markResolved(String errorId) async {
-    try {
-      await _errorService.markErrorResolved(errorId);
-      await _refreshErrorLogs();
-      await _refreshErrorStatistics();
-    } catch (e) {
-      await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to mark error as resolved: $e',
-        module: 'Super Admin Error Logs',
-        severity: 'medium',
-        extraInfo: {
-          'operation': 'mark_error_resolved',
-          'error_id': errorId,
-          'timestamp': DateTime.now().toIso8601String(),
-        },
-      );
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to mark as resolved: $e')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -444,43 +423,69 @@ class ErrorLogsTableState extends State<ErrorLogsTable> {
                           ),
                         )
                       : SingleChildScrollView(
-                          child: DataTable(
-                            columns: const [
-                              DataColumn(label: Text('Timestamp', style: TextStyle(color: Colors.black))),
-                              DataColumn(label: Text('Severity', style: TextStyle(color: Colors.black))),
-                              DataColumn(label: Text('Module', style: TextStyle(color: Colors.black))),
-                              DataColumn(label: Text('Message', style: TextStyle(color: Colors.black))),
-                              DataColumn(label: Text('Resolved', style: TextStyle(color: Colors.black))),
-                            ],
-                            rows: _filteredLogs.map((log) => DataRow(
-                              cells: [
-                                DataCell(Text(_formatTimestamp(log['timestamp']), style: const TextStyle(color: Colors.black))),
-                                DataCell(_buildSeverityChip(log['severity']?.toString() ?? 'medium')),
-                                DataCell(Text(log['module']?.toString() ?? 'N/A', style: const TextStyle(color: Colors.black))),
-                                DataCell(
-                                  Container(
-                                    constraints: const BoxConstraints(maxWidth: 200),
-                                    child: Text(
-                                      log['error_message']?.toString() ?? 'N/A',
-                                      style: const TextStyle(color: Colors.black),
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 2,
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              return SingleChildScrollView(
+                                scrollDirection: Axis.vertical,
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                                    child: DataTable(
+                                      columnSpacing: 32,
+                                      columns: const [
+                                        DataColumn(label: Text('Resolved', style: TextStyle(color: Colors.black))),
+                                        DataColumn(label: Text('Timestamp', style: TextStyle(color: Colors.black))),
+                                        DataColumn(label: Text('Severity', style: TextStyle(color: Colors.black))),
+                                        DataColumn(label: Text('Module', style: TextStyle(color: Colors.black))),
+                                        DataColumn(label: Text('Message', style: TextStyle(color: Colors.black))),
+                                      ],
+                                      rows: _filteredLogs.map((log) => DataRow(
+                                        cells: [
+                                          DataCell(
+                                            Align(
+                                              alignment: Alignment.centerLeft,
+                                              child: Checkbox(
+                                                value: log['resolved'] ?? false,
+                                                onChanged: (value) async {
+                                                  try {
+                                                    if (value == true) {
+                                                      await _errorService.markErrorResolved(log['error_id'].toString());
+                                                    } else {
+                                                      await _errorService.markErrorUnresolved(log['error_id'].toString());
+                                                    }
+                                                    setState(() {
+                                                      log['resolved'] = value;
+                                                    });
+                                                    await _refreshErrorStatistics();
+                                                  } catch (e) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      SnackBar(content: Text('Failed to update resolved status: $e')),
+                                                    );
+                                                  }
+                                                },
+                                                activeColor: Colors.green,
+                                              ),
+                                            ),
+                                          ),
+                                          DataCell(Text(ContractStyle().formatTimestamp(log['timestamp']), style: const TextStyle(color: Colors.black))),
+                                          DataCell(_buildSeverityChip(log['severity']?.toString() ?? 'medium')),
+                                          DataCell(Text(log['module']?.toString() ?? 'N/A', style: const TextStyle(color: Colors.black))),
+                                          DataCell(
+                                            Text(
+                                              log['error_message']?.toString() ?? 'N/A',
+                                              style: const TextStyle(color: Colors.black),
+                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 2,
+                                            ),
+                                          ),
+                                        ],
+                                      )).toList(),
                                     ),
                                   ),
                                 ),
-                                DataCell(
-                                  Checkbox(
-                                    value: log['resolved'] ?? false,
-                                    onChanged: (log['resolved'] ?? false) ? null : (value) {
-                                      if (value == true) {
-                                        _markResolved(log['error_id']);
-                                      }
-                                    },
-                                    activeColor: Colors.green,
-                                  ),
-                                ),
-                              ],
-                            )).toList(),
+                              );
+                            },
                           ),
                         ),
                 ),
@@ -490,17 +495,6 @@ class ErrorLogsTableState extends State<ErrorLogsTable> {
         ),
       ],
     );
-  }
-
-  String _formatTimestamp(String? timestamp) {
-    if (timestamp == null) return 'N/A';
-    try {
-      final dateTime = DateTime.parse(timestamp);
-      return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} '
-             '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-    } catch (e) {
-      return timestamp;
-    }
   }
 
   Widget _buildSeverityChip(String severity) {

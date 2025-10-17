@@ -13,6 +13,29 @@ class ContractStyle {
     textResolver = null;
   }
 
+  String formatTimestamp(String? timestamp) {
+    if (timestamp == null) return 'N/A';
+    try {
+      final dateTime = DateTime.parse(timestamp);
+      return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} '
+             '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return timestamp;
+    }
+  }
+
+   static String formatDate(String? dateString) {
+    if (dateString == null) return 'N/A';
+    try {
+      final dateTime = DateTime.parse(dateString);
+      return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return dateString;
+    }
+  }
+
+
+
   static void setItemRowVisibilityChecker(bool Function(int) checker) {
     itemRowVisibilityChecker = checker;
   }

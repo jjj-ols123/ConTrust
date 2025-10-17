@@ -3,7 +3,6 @@ import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/contractor services/cor_biddingservice.dart';
 import 'package:backend/utils/be_status.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractee/models/cee_expandable.dart';
 import 'package:contractee/models/cee_modal.dart';
 import 'package:contractee/pages/cee_chathistory.dart';
 import 'package:contractee/pages/cee_torprofile.dart';
@@ -154,7 +153,7 @@ class ProjectView extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.amber.shade50, Colors.amber.shade100],
+              colors: [Colors.white, Colors.white],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -426,117 +425,6 @@ class ProjectView extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class ExpandableFloatingButton extends StatelessWidget {
-  final VoidCallback clearControllers;
-  final VoidCallback? onRefresh;
-  final TextEditingController title;
-  final TextEditingController typeConstruction;
-  final TextEditingController minBudget;
-  final TextEditingController maxBudget;
-  final TextEditingController location;
-  final TextEditingController description;
-  final TextEditingController bidTime;
-
-  const ExpandableFloatingButton({
-    Key? key,
-    required this.clearControllers,
-    this.onRefresh,
-    required this.title,
-    required this.typeConstruction,
-    required this.minBudget,
-    required this.maxBudget,
-    required this.location,
-    required this.description,
-    required this.bidTime,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return ExpandableFloating(
-      distance: 120,
-      children: [
-        FloatingActionButton(
-          heroTag: 'projectButton',
-          onPressed: () async {
-            try {
-              CheckUserLogin.isLoggedIn(
-                context: context,
-                onAuthenticated: () async {
-                  if (!context.mounted) return;
-
-                  final user = Supabase.instance.client.auth.currentUser?.id;
-                  if (user == null) {
-                    if (!context.mounted) return;
-                    ConTrustSnackBar.loginError(context);
-                    return;
-                  }
-
-                  if (!context.mounted) return;
-
-                  clearControllers();
-
-                  await ProjectModal.show(
-                    context: context,
-                    contracteeId: user,
-                    titleController: title,
-                    constructionTypeController: typeConstruction,
-                    minBudgetController: minBudget,
-                    maxBudgetController: maxBudget,
-                    locationController: location,
-                    descriptionController: description,
-                    bidTimeController: bidTime,
-                  );
-                  onRefresh?.call();
-                },
-              );
-            } catch (e) {
-              if (!context.mounted) return;
-              ConTrustSnackBar.error(context, 'Error showing modal');
-            }
-          },
-          backgroundColor: Colors.amber[700],
-          foregroundColor: Colors.black,
-          hoverColor: Colors.amber[800],
-          child: const Icon(Icons.construction, color: Colors.black),
-        ),
-        FloatingActionButton(
-          heroTag: 'cameraButton',
-          onPressed: () {
-            CheckUserLogin.isLoggedIn(
-              context: context,
-              onAuthenticated: () async {},
-            );
-          },
-          backgroundColor: Colors.amber[700],
-          foregroundColor: Colors.black,
-          hoverColor: Colors.amber[800],
-          child: const Icon(Icons.camera_alt, color: Colors.black),
-        ),
-        FloatingActionButton(
-          heroTag: 'messageButton',
-          backgroundColor: Colors.amber[700],
-          foregroundColor: Colors.black,
-          hoverColor: Colors.amber[800],
-          child: const Icon(Icons.message),
-          onPressed: () {
-            CheckUserLogin.isLoggedIn(
-              context: context,
-              onAuthenticated: () async {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ContracteeChatHistoryPage(),
-                  ),
-                );
-              },
-            );
-          },
-        ),
-      ],
     );
   }
 }
