@@ -1,9 +1,14 @@
-import 'package:backend/services/both services/be_user_service.dart';
+import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:backend/services/superadmin services/errorlogs_service.dart';
+import 'package:backend/services/superadmin services/auditlogs_service.dart';
 
 class SignUpContractee {
+  final SuperAdminErrorService _errorService = SuperAdminErrorService();
+  final SuperAdminAuditService _auditService = SuperAdminAuditService();
+
   void signUpContractee(
     BuildContext context,
     String email,
@@ -35,6 +40,18 @@ class SignUpContractee {
       }
 
       if (userType == 'contractee') {
+        await supabase.from('Users').upsert({
+          'users_id': signUpResponse.user!.id,
+          'email': email,
+          'name': data?['full_name'] ?? 'User',
+          'role': 'contractee',
+          'status': 'active',
+          'created_at': DateTime.now().toIso8601String(),
+          'profile_image_url': data?['profilePhoto'],
+          'phone_number': '',
+          'verified': false,
+        }, onConflict: 'users_id');
+
         final contracteeData = {
           'contractee_id': signUpResponse.user!.id,
           'full_name': data?['full_name'],
@@ -49,19 +66,99 @@ class SignUpContractee {
             .select(); 
 
         if (insertResponse.isEmpty) {
+          await _auditService.logAuditEvent(
+            userId: signUpResponse.user!.id,
+            action: 'USER_REGISTRATION_FAILED',
+            details: 'Contractee registration failed - data insertion error',
+            metadata: {
+              'user_type': userType,
+              'email': email,
+              'full_name': data?['full_name'],
+              'failure_reason': 'contractee_data_insertion_failed',
+            },
+          );
+
+          await _errorService.logError(
+            errorMessage: 'Failed to insert contractee data',
+            module: 'Contractee Sign-up',
+            severity: 'High',
+            extraInfo: {
+              'operation': 'Insert Contractee Data',
+              'contractee_id': signUpResponse.user!.id,
+              'email': email,
+              'timestamp': DateTime.now().toIso8601String(),
+            },
+          );
           throw Exception("Error saving contractee data");
         }
       }
 
+      await _auditService.logAuditEvent(
+        userId: signUpResponse.user!.id,
+        action: 'USER_REGISTRATION',
+        details: 'Contractee account created successfully',
+        metadata: {
+          'user_type': userType,
+          'email': email,
+          'full_name': data?['full_name'],
+          'registration_method': 'email_password',
+        },
+      );
+
       if (!context.mounted) return;
       ConTrustSnackBar.success(context, 'Account successfully created');
       Navigator.pop(context);
-    } on AuthException {
+    } on AuthException catch (e) {
+      await _auditService.logAuditEvent(
+        action: 'USER_REGISTRATION_FAILED',
+        details: 'Contractee registration failed due to authentication error',
+        metadata: {
+          'user_type': userType,
+          'email': email,
+          'error_type': 'AuthException',
+          'error_message': e.message,
+        },
+      );
+
+      await _errorService.logError(
+        errorMessage: 'Contractee sign-up failed - AuthException: $e',
+        module: 'Contractee Sign-up',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Sign Up Contractee',
+          'email': email,
+          'user_type': userType,
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
       if (!context.mounted) return;
-      ConTrustSnackBar.error(context, 'Error creating account');
+      ConTrustSnackBar.error(context, 'Error creating account: $e');
+      return;
     } catch (e) {
+      await _auditService.logAuditEvent(
+        action: 'USER_REGISTRATION_FAILED',
+        details: 'Contractee registration failed due to unexpected error',
+        metadata: {
+          'user_type': userType,
+          'email': email,
+          'error_type': 'UnexpectedError',
+          'error_message': e.toString(),
+        },
+      );
+
+      await _errorService.logError(
+        errorMessage: 'Contractee sign-up failed - Unexpected error: $e',
+        module: 'Contractee Sign-up',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Sign Up Contractee',
+          'email': email,
+          'user_type': userType,
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
       if (!context.mounted) return;
-      ConTrustSnackBar.error(context, 'Unexpected error');
+      ConTrustSnackBar.error(context, 'Unexpected error: $e');
     }
   }
 }

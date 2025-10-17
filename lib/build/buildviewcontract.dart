@@ -196,7 +196,6 @@ class ViewContractBuild {
           ..style.height = '100%'
           ..allow = 'fullscreen'
           ..onError.listen((event) {
-            print('PDF loading error: $event');
           });
 
         return iframe;

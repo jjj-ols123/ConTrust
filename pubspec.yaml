@@ -21,6 +21,9 @@ version: 1.0.0+1
 environment:
   sdk: ^3.6.0
 
+resolution: workspace
+
+
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
 # consider running `flutter pub upgrade --major-versions`. Alternatively,
@@ -30,12 +33,14 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  contractor:
+    path: ../Contractor
+  contractee:
+    path: ../Contractee
+  superadmin:
+    path: ../SuperAdmin
   smooth_page_indicator: ^1.2.0+3
   supabase_flutter: ^2.8.4
-  contractor: 
-    path: ../Contractor
-  contractee: 
-    path: ../Contractee
   flutter_quill: ^11.4.1
   flutter_keyboard_visibility: ^6.0.0
   flutter_localizations: 
@@ -81,9 +86,6 @@ flutter:
 
   assets: 
     - assets/ 
-
-dependency_overrides:
-  intl: 0.19.0
 
   # To add assets to your application, add an assets section, like this:
   # An image asset can refer to one or more resolution-specific "variants", see

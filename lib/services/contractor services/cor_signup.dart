@@ -2,8 +2,13 @@ import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:backend/services/superadmin services/errorlogs_service.dart';
+import 'package:backend/services/superadmin services/auditlogs_service.dart';
 
 class SignUpContractor {
+  final SuperAdminErrorService _errorService = SuperAdminErrorService();
+  final SuperAdminAuditService _auditService = SuperAdminAuditService();
+
   void signUpContractor(
     BuildContext context,
     String email,
@@ -27,10 +32,9 @@ class SignUpContractor {
 
       if (!context.mounted) return;
 
-  final String? userId = signUpResponse.user?.id ?? signUpResponse.session?.user.id;
+      final String? userId = signUpResponse.user?.id ?? signUpResponse.session?.user.id;
 
       if (userId == null) {
-        // Account likely created but requires email confirmation.
         if (!context.mounted) return;
         ConTrustSnackBar.success(context, 'Account created');
         Navigator.pop(context);
@@ -38,6 +42,19 @@ class SignUpContractor {
       }
 
       if (userType == 'contractor') {
+        await supabase.from('Users').upsert({
+          'users_id': userId,
+          'email': email,
+          'name': data?['firmName'] ?? 'Contractor Firm',
+          'role': 'contractor',
+          'status': 'active',
+          'created_at': DateTime.now().toIso8601String(),
+          'last_login': DateTime.now().toIso8601String(),
+          'profile_image_url': data?['profilePhoto'],
+          'phone_number': data?['contactNumber'] ?? '',
+          'verified': false,
+        }, onConflict: 'users_id');
+
         final contractorData = {
           'contractor_id': userId,
           'firm_name': data?['firmName'] ?? '',
@@ -50,23 +67,100 @@ class SignUpContractor {
             .insert(contractorData)
             .select();
 
-
         if ((insertResponse as List).isEmpty) {
+          await _auditService.logAuditEvent(
+            userId: userId,
+            action: 'USER_REGISTRATION_FAILED',
+            details: 'Contractor registration failed - data insertion error',
+            metadata: {
+              'user_type': userType,
+              'email': email,
+              'firm_name': data?['firmName'],
+              'failure_reason': 'contractor_data_insertion_failed',
+            },
+          );
+
+          await _errorService.logError(
+            errorMessage: 'Failed to insert contractor data for user ID $userId',
+            module: 'Contractor Sign-up',
+            severity: 'High',
+            extraInfo: {
+              'operation': 'Insert Contractor Data',
+              'users_id': userId,
+              'email': email,
+              'timestamp': DateTime.now().toIso8601String(),
+            },
+          );
           throw Exception("Error saving contractor data");
         }
       }
 
-     
+      await _auditService.logAuditEvent(
+        userId: userId,
+        action: 'USER_REGISTRATION',
+        details: 'Contractor account created successfully',
+        metadata: {
+          'user_type': userType,
+          'email': email,
+          'firm_name': data?['firmName'],
+          'registration_method': 'email_password',
+        },
+      );
+
       if (!context.mounted) return;
       ConTrustSnackBar.success(context, 'Account successfully created');
       Navigator.pop(context);
-    } on AuthException {
+    } on AuthException catch (e) {
+      await _auditService.logAuditEvent(
+        action: 'USER_REGISTRATION_FAILED',
+        details: 'Contractor registration failed due to authentication error',
+        metadata: {
+          'user_type': userType,
+          'email': email,
+          'error_type': 'AuthException',
+          'error_message': e.message,
+        },
+      );
+
+      await _errorService.logError(
+        errorMessage: 'Contractor sign-up failed - AuthException: $e',
+        module: 'Contractor Sign-up',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Sign Up Contractor',
+          'email': email,
+          'user_type': userType,
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
       if (!context.mounted) return;
-      ConTrustSnackBar.error(context, 'Error creating account');
+      ConTrustSnackBar.error(context, 'Error creating account: $e');
       return;
     } catch (e) {
+      await _auditService.logAuditEvent(
+        action: 'USER_REGISTRATION_FAILED',
+        details: 'Contractor registration failed due to unexpected error',
+        metadata: {
+          'user_type': userType,
+          'email': email,
+          'error_type': 'UnexpectedError',
+          'error_message': e.toString(),
+        },
+      );
+
+      await _errorService.logError(
+        errorMessage: 'Contractor sign-up failed - Unexpected error: $e',
+        module: 'Contractor Sign-up',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Sign Up Contractor',
+          'email': email,
+          'user_type': userType,
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
       if (!context.mounted) return;
-      ConTrustSnackBar.error(context, 'Unexpected error');
+      ConTrustSnackBar.error(context, 'Unexpected error: $e');
     }
   }
 }
