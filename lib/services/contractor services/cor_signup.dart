@@ -23,6 +23,7 @@ class SignUpContractor {
       return;
     }
 
+    dynamic signUpResponse; 
     try {
       final signUpResponse = await UserService().signUp(
         email: email,
@@ -112,6 +113,7 @@ class SignUpContractor {
       Navigator.pop(context);
     } on AuthException catch (e) {
       await _auditService.logAuditEvent(
+        userId: signUpResponse.user?.id, 
         action: 'USER_REGISTRATION_FAILED',
         details: 'Contractor registration failed due to authentication error',
         metadata: {
@@ -125,11 +127,12 @@ class SignUpContractor {
       await _errorService.logError(
         errorMessage: 'Contractor sign-up failed - AuthException: $e',
         module: 'Contractor Sign-up',
-        severity: 'High',
+        severity: 'Medium',
         extraInfo: {
           'operation': 'Sign Up Contractor',
           'email': email,
           'user_type': userType,
+          'users_id': signUpResponse.user?.id, 
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
@@ -138,6 +141,7 @@ class SignUpContractor {
       return;
     } catch (e) {
       await _auditService.logAuditEvent(
+        userId: signUpResponse.user?.id, 
         action: 'USER_REGISTRATION_FAILED',
         details: 'Contractor registration failed due to unexpected error',
         metadata: {
@@ -156,6 +160,7 @@ class SignUpContractor {
           'operation': 'Sign Up Contractor',
           'email': email,
           'user_type': userType,
+          'users_id': signUpResponse.user?.id,
           'timestamp': DateTime.now().toIso8601String(),
         },
       );

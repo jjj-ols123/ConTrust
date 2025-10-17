@@ -240,4 +240,25 @@ class SuperAdminErrorService {
       throw Exception('Failed to mark error as resolved: $e');
     }
   }
+
+  Future<void> markErrorUnresolved(String errorId) async {
+    try {
+      await _supabase
+          .from('ErrorLogs')
+          .update({'resolved': false})
+          .eq('error_id', errorId);
+    } catch (e) {
+      SuperAdminErrorService().logError(
+        errorMessage: 'Failed to mark error as unresolved: $e',
+        module: 'Error Logs Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Mark Error as Unresolved',
+          'error_id': errorId,
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+      throw Exception('Failed to mark error as unresolved: $e');
+    }
+  }
 }

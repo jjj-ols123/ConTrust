@@ -21,8 +21,9 @@ class SignInContractor {
       return;
     }
 
+    dynamic signInResponse;
     try {
-      final signInResponse = await UserService().signIn(
+      signInResponse = await UserService().signIn(
         email: email,
         password: password,
       );
@@ -92,8 +93,9 @@ class SignInContractor {
       });
     } catch (e) {
       await _auditService.logAuditEvent(
+        userId: signInResponse.user?.id,  
         action: 'USER_LOGIN_FAILED',
-        details: 'Contractor login failed due to error',
+        details: 'Contractor login failed due to error $e',
         metadata: {
           'user_type': 'contractor',
           'email': email,
@@ -105,10 +107,11 @@ class SignInContractor {
       await _errorService.logError(
         errorMessage: 'Contractor sign-in failed: $e',
         module: 'Contractor Sign-in',
-        severity: 'High',
+        severity: 'Medium',
         extraInfo: {
           'operation': 'Sign In Contractor',
           'email': email,
+          'users_id': signInResponse.user?.id, 
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
@@ -294,7 +297,7 @@ class SignInGoogleContractor {
       await _errorService.logError(
         errorMessage: 'Contractor setup failed during Google sign-in: $e',
         module: 'Contractor Google Sign-in',
-        severity: 'High',
+        severity: 'Medium',
         extraInfo: {
           'operation': 'Setup Contractor Google',
           'users_id': user.id,
