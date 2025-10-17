@@ -54,7 +54,7 @@ class HomePageBuilder {
                   "Active Projects",
                   "${projects.where((p) => p['status'] == 'active').length}",
                   Icons.work,
-                  Colors.green,
+                  Colors.amber.shade700,
                 ),
               ),
               const SizedBox(width: 12),
