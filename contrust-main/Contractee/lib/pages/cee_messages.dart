@@ -110,7 +110,6 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
       scrollController: _scrollController,
       projectStatus: _projectStatus,
       onSelectChat: (chatRoomId, otherUserId, userName, userProfile) {
-        // This is handled by the parent navigation
       },
       onSendMessage: _sendMessage,
       onScrollToBottom: _scrollToBottom,
@@ -120,7 +119,7 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
       backgroundColor: Colors.grey[100],
       appBar: screenWidth > 1200 ? null : AppBar(
         elevation: 1,
-        backgroundColor: Colors.blue[700],
+        backgroundColor: Colors.amber[700],
         foregroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.white),
         titleSpacing: 0,

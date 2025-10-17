@@ -114,7 +114,6 @@ class _WelcomePageState extends State<WelcomePage> {
                   final prefs = await SharedPreferences.getInstance();
                   await prefs.setBool('isFirstOpen', false);
 
-                   // ignore: use_build_context_synchronously
                    transitionBuilder(context, const HomePage(), replace: true);
                   },
                   style: ElevatedButton.styleFrom(

@@ -21,6 +21,9 @@ version: 1.0.0+1
 environment:
   sdk: ^3.7.0
 
+resolution: workspace
+
+
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
 # consider running `flutter pub upgrade --major-versions`. Alternatively,
@@ -38,9 +41,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   image_picker: ^1.1.2
   supabase_flutter: ^2.8.4
+  shared_preferences: ^2.5.2
   backend: 
     path: ../Back-End
-  shared_preferences: ^2.5.2
   flutter_quill: ^11.4.1
   flutter_keyboard_visibility: ^6.0.0
   flutter_quill_extensions: ^11.0.0

@@ -1,3 +1,5 @@
+// ignore_for_file: unused_field, use_build_context_synchronously, deprecated_member_use
+
 import 'dart:async';
 import 'dart:convert';
 import 'package:backend/services/both%20services/be_notification_service.dart';
@@ -262,7 +264,7 @@ class _NotificationButtonState extends State<NotificationButton> {
         _refreshBadge();
       });
     } catch (e) {
-      // Handle error silently
+      rethrow;
     }
   }
 
@@ -273,7 +275,7 @@ class _NotificationButtonState extends State<NotificationButton> {
         setState(() => _userType = userType);
       }
     } catch (e) {
-      // Handle error silently
+      rethrow;  
     }
   }
 
@@ -314,7 +316,6 @@ class _NotificationButtonState extends State<NotificationButton> {
             if (userType == null) return;
 
             if (_isMobile(context)) {
-              // Navigate to notification pages for mobile
               if (userType.toLowerCase() == 'contractee') {
                 Navigator.push(
                   context,

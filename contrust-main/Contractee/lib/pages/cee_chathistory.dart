@@ -134,18 +134,6 @@ class _ContracteeChatHistoryPageState
     );
 
     return Scaffold(
-      appBar: screenWidth > 1200 ? null : AppBar(
-        backgroundColor: Colors.blue[700],
-        title: const Text(
-          "Messages",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        centerTitle: true,
-        elevation: 0,
-      ),
       backgroundColor: Colors.grey[100],
       body: screenWidth > 1200 
         ? Row(

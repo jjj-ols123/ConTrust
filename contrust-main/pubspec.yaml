@@ -1,0 +1,13 @@
+name: contrust_workspace
+publish_to: none
+environment:
+  sdk: ^3.9.2
+
+flutter:
+  uses-material-design: true
+
+workspace:
+  - Back-End
+  - Contractee
+  - Contractor
+  - SuperAdmin

@@ -118,8 +118,6 @@ class _ContractorViewContractPageState extends State<ContractorViewContractPage>
             ConTrustSnackBar.success(context, 'Signed contract downloaded successfully');
           }
         } catch (downloadError) {
-          print('Error downloading signed PDF: $downloadError');
-          // Fall back to regular download
           await ViewContractService.handleDownload(
             contractData: contractData!,
             context: context,

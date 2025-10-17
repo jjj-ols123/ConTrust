@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'package:backend/services/contractee services/cee_checkuser.dart';
 import 'package:contractee/build/builddrawer.dart';
@@ -303,70 +303,10 @@ class HomePageBuilder {
               height: 1.5,
             ),
           ),
-          const SizedBox(height: 30),
-          ElevatedButton.icon(
-            onPressed: onPostProject,
-            icon: const Icon(Icons.add_circle, size: 20),
-            label: const Text("Post Your First Project"),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.amber[700],
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 4,
-            ),
-          ),
           const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildFeatureItem(Icons.search, "Find Contractors"),
-              const SizedBox(width: 20),
-              _buildFeatureItem(Icons.gavel, "Receive Bids"),
-              const SizedBox(width: 20),
-              _buildFeatureItem(Icons.handshake, "Start Building"),
-            ],
-          ),
+        
         ],
       ),
-    );
-  }
-
-  static Widget _buildFeatureItem(IconData icon, String text) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Icon(
-            icon,
-            color: Colors.amber[700],
-            size: 24,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Colors.amber[800],
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
     );
   }
 }
