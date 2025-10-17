@@ -2,13 +2,9 @@
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/contractor services/cor_biddingservice.dart';
 import 'package:backend/utils/be_status.dart';
-import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractee/models/cee_modal.dart';
-import 'package:contractee/pages/cee_chathistory.dart';
 import 'package:contractee/pages/cee_torprofile.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/services/contractee services/cee_checkuser.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ContractorsView extends StatelessWidget {
   final String id;

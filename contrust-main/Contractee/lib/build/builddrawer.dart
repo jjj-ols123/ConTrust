@@ -64,7 +64,6 @@ class ContracteeShell extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.amber[700],
         centerTitle: true,
-        title: Text(title()),
         elevation: 4,
         leading: !isDesktop 
           ? Builder(
