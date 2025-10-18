@@ -1002,6 +1002,12 @@
       "rootUri": "../SuperAdmin",
       "packageUri": "lib/",
       "languageVersion": "3.7"
+    },
+    {
+      "name": "website_start",
+      "rootUri": "../website_start",
+      "packageUri": "lib/",
+      "languageVersion": "3.9"
     }
   ],
   "generator": "pub",
