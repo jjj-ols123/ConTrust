@@ -2,6 +2,8 @@
 
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_notification_service.dart';
+import 'package:backend/services/superadmin services/auditlogs_service.dart';
+import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -10,6 +12,8 @@ import 'package:backend/services/both services/be_user_service.dart';
 class ProjectService {
   final SupabaseClient _supabase = Supabase.instance.client;
   final UserService _userService = UserService();
+  final SuperAdminAuditService _auditService = SuperAdminAuditService();
+  final SuperAdminErrorService _errorService = SuperAdminErrorService();
 
   //For Contractees
 
@@ -55,10 +59,32 @@ class ProjectService {
         'start_date': startDate.toIso8601String(),
       });
 
+      await _auditService.logAuditEvent(
+        userId: contracteeId,
+        action: 'PROJECT_POSTED',
+        details: 'Contractee posted a new project',
+        category: 'Project',
+        metadata: {
+          'project_title': title,
+          'project_type': type,
+          'contractee_id': contracteeId,
+        },
+      );
+
       if (context.mounted) {
         ConTrustSnackBar.success(context, 'Project created successfully!');
       }
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to post project: $e',
+        module: 'Project Service',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Post Project',
+          'users_id': contracteeId,
+          'project_title': title,
+        },
+      );
       if (context.mounted) {
         ConTrustSnackBar.error(context, 'Error creating project: $e');
       }
@@ -110,7 +136,25 @@ class ProjectService {
         }).eq('notification_id', notif['notification_id']);
       }
       await _supabase.from('Projects').delete().eq('project_id', projectId);
+
+      await _auditService.logAuditEvent(
+        action: 'PROJECT_DELETED',
+        details: 'Project deleted successfully',
+        category: 'Project',
+        metadata: {
+          'project_id': projectId,
+        },
+      );
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to delete project: $e',
+        module: 'Project Service',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Delete Project',
+          'project_id': projectId,
+        },
+      );
       throw Exception('Error updating notifications and deleting project');
     }
   }
@@ -193,7 +237,29 @@ class ProjectService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
+
+      await _auditService.logAuditEvent(
+        userId: contracteeId,
+        action: 'CONTRACTOR_NOTIFIED',
+        details: 'Contractee notified contractor about project thru hire request',
+        category: 'Notification',
+        metadata: {
+          'contractor_id': contractorId,
+          'contractee_id': contracteeId,
+          'project_title': title,
+        },
+      );
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to notify contractor: $e',
+        module: 'Project Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Notify Contractor',
+          'users_id': contracteeId,
+          'contractor_id': contractorId,
+        },
+      );
       rethrow;
     }
   }
@@ -236,6 +302,14 @@ class ProjectService {
           .from('Projects')
           .update({'status': status}).eq('project_id', projectId);
 
+      final senderData = userType == 'contractor'
+          ? await FetchService().fetchContractorData(senderId)
+          : await FetchService().fetchContracteeData(senderId);
+      final senderName = userType == 'contractor'
+          ? (senderData != null ? senderData['firm_name'] ?? 'A contractor' : 'A contractor')
+          : (senderData != null ? senderData['full_name'] ?? 'A contractee' : 'A contractee');
+      final senderPhoto = senderData?['profile_photo'] ?? '';
+
       await NotificationService().createNotification(
         receiverId: receiverId,
         receiverType: receiverType,
@@ -248,11 +322,34 @@ class ProjectService {
           'action': 'cancel_request',
           'status': status,
           'timestamp': DateTime.now().toIso8601String(),
+          'sender_name': senderName,
+          'sender_photo': senderPhoto,
+        },
+      );
+
+      await _auditService.logAuditEvent(
+        userId: requestingUserId,
+        action: 'AGREEMENT_CANCEL_REQUESTED',
+        details: 'User requested to cancel project agreement',
+        category: 'Project',
+        metadata: {
+          'project_id': projectId,
+          'requesting_user_id': requestingUserId,
         },
       );
 
       return project;
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to cancel agreement: $e',
+        module: 'Project Service',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Cancel Agreement',
+          'users_id': requestingUserId,
+          'project_id': projectId,
+        },
+      );
       throw Exception('Failed to cancel agreement');
     }
   }
@@ -321,9 +418,33 @@ class ProjectService {
           'action': 'hire_accepted',
           'original_notification_id': notificationId,
           'timestamp': DateTime.now().toIso8601String(),
+          'sender_name': contractorName,
+          'sender_photo': contactorPhoto,
+        },
+      );
+
+      await _auditService.logAuditEvent(
+        userId: contractorId,
+        action: 'HIRING_ACCEPTED',
+        details: 'Contractor accepted hiring request',
+        category: 'Project',
+        metadata: {
+          'project_id': projectId,
+          'contractor_id': contractorId,
+          'contractee_id': contracteeId,
         },
       );
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to accept hiring: $e',
+        module: 'Project Service',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Accept Hiring',
+          'users_id': contractorId,
+          'project_id': projectId,
+        },
+      );
       rethrow;
     }
   }
@@ -348,8 +469,29 @@ class ProjectService {
         await _supabase.from('Notifications').update({
           'information': info,
         }).eq('notification_id', request['notification_id']);
+
+        await _auditService.logAuditEvent(
+          userId: contracteeId,
+          action: 'HIRE_REQUEST_CANCELLED',
+          details: 'Hire request cancelled due to another contractor selected',
+          category: 'Notification',
+          metadata: {
+            'notification_id': request['notification_id'],
+            'project_id': projectId,
+          },
+        );
       }
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to cancel other hire requests: $e',
+        module: 'Project Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Cancel Other Hire Requests',
+          'users_id': contracteeId,
+          'project_id': projectId,
+        },
+      );
       return;
     }
   }
@@ -394,9 +536,31 @@ class ProjectService {
           'action': 'hire_declined',
           'original_notification_id': notificationId,
           'timestamp': DateTime.now().toIso8601String(),
+          'sender_name': contractorName,
+          'sender_photo': contractorPhoto,
+        },
+      );
+
+      await _auditService.logAuditEvent(
+        userId: contractorId,
+        action: 'HIRING_DECLINED',
+        details: 'Contractor declined hiring request',
+        category: 'Project',
+        metadata: {
+          'contractor_id': contractorId,
+          'contractee_id': contracteeId,
         },
       );
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to decline hiring: $e',
+        module: 'Project Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Decline Hiring',
+          'users_id': contractorId,
+        },
+      );
       throw Exception('Failed to decline hiring request');
     }
   }
@@ -431,6 +595,14 @@ class ProjectService {
         'contractor_id': null,
       }).eq('project_id', projectId);
 
+      final senderData = senderType == 'contractor'
+          ? await FetchService().fetchContractorData(senderId)
+          : await FetchService().fetchContracteeData(senderId);
+      final senderName = senderType == 'contractor'
+          ? (senderData != null ? senderData['firm_name'] ?? 'A contractor' : 'A contractor')
+          : (senderData != null ? senderData['full_name'] ?? 'A contractee' : 'A contractee');
+      final senderPhoto = senderData?['profile_photo'] ?? '';
+
       await NotificationService().createNotification(
         receiverId: receiverId,
         receiverType: receiverType,
@@ -443,11 +615,34 @@ class ProjectService {
           'action': 'cancel_agreed',
           'status': 'cancelled',
           'timestamp': DateTime.now().toIso8601String(),
+          'sender_name': senderName,
+          'sender_photo': senderPhoto,
+        },
+      );
+
+      await _auditService.logAuditEvent(
+        userId: agreeingUserId,
+        action: 'AGREEMENT_CANCEL_AGREED',
+        details: 'User agreed to cancel project agreement',
+        category: 'Project',
+        metadata: {
+          'project_id': projectId,
+          'agreeing_user_id': agreeingUserId,
         },
       );
 
       return project;
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to agree to cancel agreement: $e',
+        module: 'Project Service',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Agree Cancel Agreement',
+          'users_id': agreeingUserId,
+          'project_id': projectId,
+        },
+      );
       throw Exception('Failed to agree to cancellation');
     }
   }
@@ -476,6 +671,14 @@ class ProjectService {
           .from('Projects')
           .update({'status': 'awaiting_contract'}).eq('project_id', projectId);
 
+      final senderData = userType == 'contractor'
+          ? await FetchService().fetchContractorData(decliningUserId)
+          : await FetchService().fetchContracteeData(decliningUserId);
+      final senderName = userType == 'contractor'
+          ? (senderData != null ? senderData['firm_name']: 'A contractor')
+          : senderData?['full_name'] ?? 'A contractee';
+      final senderPhoto = senderData?['profile_photo'] ?? '';
+
       await NotificationService().createNotification(
         receiverId: notifInfo['receiverId'] ?? '',
         receiverType: notifInfo['receiverType'] ?? '',
@@ -488,11 +691,34 @@ class ProjectService {
           'action': 'cancel_declined',
           'status': 'active',
           'timestamp': DateTime.now().toIso8601String(),
+          'sender_name': senderName,
+          'sender_photo': senderPhoto,
+        },
+      );
+
+      await _auditService.logAuditEvent(
+        userId: decliningUserId,
+        action: 'AGREEMENT_CANCEL_DECLINED',
+        details: 'User declined to cancel project agreement',
+        category: 'Project',
+        metadata: {
+          'project_id': projectId,
+          'declining_user_id': decliningUserId,
         },
       );
 
       return project;
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to decline cancel agreement: $e',
+        module: 'Project Service',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Decline Cancel Agreement',
+          'users_id': decliningUserId,
+          'project_id': projectId,
+        },
+      );
       throw Exception('Failed to decline cancellation');
     }
   }
@@ -502,12 +728,35 @@ class ProjectService {
     required String task,
     bool done = false,
   }) async {
-    await _supabase.from('ProjectTasks').insert({
-      'project_id': projectId,
-      'task': task,
-      'done': done,
-      'created_at': DateTime.now().toIso8601String(),
-    });
+    try {
+      await _supabase.from('ProjectTasks').insert({
+        'project_id': projectId,
+        'task': task,
+        'done': done,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      await _auditService.logAuditEvent(
+        action: 'TASK_ADDED',
+        details: 'Task added to project',
+        category: 'Project',
+        metadata: {
+          'project_id': projectId,
+          'task': task,
+        },
+      );
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to add task to project: $e',
+        module: 'Project Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Add Task to Project',
+          'project_id': projectId,
+        },
+      );
+      rethrow;
+    }
   }
 
   Future<void> addReportToProject({
@@ -515,12 +764,37 @@ class ProjectService {
     required String content,
     required String authorId,
   }) async {
-    await _supabase.from('ProjectReports').insert({
-      'project_id': projectId,
-      'content': content,
-      'author_id': authorId,
-      'created_at': DateTime.now().toIso8601String(),
-    });
+    try {
+      await _supabase.from('ProjectReports').insert({
+        'project_id': projectId,
+        'content': content,
+        'author_id': authorId,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      await _auditService.logAuditEvent(
+        userId: authorId,
+        action: 'REPORT_ADDED',
+        details: 'Report added to project',
+        category: 'Project',
+        metadata: {
+          'project_id': projectId,
+          'author_id': authorId,
+        },
+      );
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to add report to project: $e',
+        module: 'Project Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Add Report to Project',
+          'users_id': authorId,
+          'project_id': projectId,
+        },
+      );
+      rethrow;
+    }
   }
 
   Future<void> addPhotoToProject({
@@ -528,12 +802,37 @@ class ProjectService {
     required String photoUrl,
     required String uploaderId,
   }) async {
-    await _supabase.from('ProjectPhotos').insert({
-      'project_id': projectId,
-      'photo_url': photoUrl,
-      'uploader_id': uploaderId,
-      'created_at': DateTime.now().toIso8601String(),
-    });
+    try {
+      await _supabase.from('ProjectPhotos').insert({
+        'project_id': projectId,
+        'photo_url': photoUrl,
+        'uploader_id': uploaderId,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      await _auditService.logAuditEvent(
+        userId: uploaderId,
+        action: 'PHOTO_ADDED',
+        details: 'Photo added to project',
+        category: 'Project',
+        metadata: {
+          'project_id': projectId,
+          'uploader_id': uploaderId,
+        },
+      );
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to add photo to project: $e',
+        module: 'Project Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Add Photo to Project',
+          'users_id': uploaderId,
+          'project_id': projectId,
+        },
+      );
+      rethrow;
+    }
   }
 
   Future<void> addCostToProject({
@@ -546,68 +845,205 @@ class ProjectService {
     num? unit_price,
     String? notes,
   }) async {
-    await _supabase.from('ProjectMaterials').insert({
-      'contractor_id': contractor_id,
-      'project_id': projectId,
-      'material_name': material_name,
-      'brand': brand,
-      'unit': unit,
-      'quantity': quantity,
-      'unit_price': unit_price,
-      if (notes != null) 'notes': notes,
-      'created_at': DateTime.now().toIso8601String(),
-    });
+    try {
+      await _supabase.from('ProjectMaterials').insert({
+        'contractor_id': contractor_id,
+        'project_id': projectId,
+        'material_name': material_name,
+        'brand': brand,
+        'unit': unit,
+        'quantity': quantity,
+        'unit_price': unit_price,
+        if (notes != null) 'notes': notes,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      await _auditService.logAuditEvent(
+        userId: contractor_id,
+        action: 'COST_ADDED',
+        details: 'Cost/material added to project',
+        category: 'Project',
+        metadata: {
+          'project_id': projectId,
+          'contractor_id': contractor_id,
+          'material_name': material_name,
+        },
+      );
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to add cost to project: $e',
+        module: 'Project Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Add Cost to Project',
+          'users_id': contractor_id,
+          'project_id': projectId,
+        },
+      );
+      rethrow;
+    }
   }
 
   Future<void> updateTaskStatus(String taskId, bool done) async {
-    await _supabase
-        .from('ProjectTasks')
-        .update({'done': done})
-        .eq('task_id', taskId);
+    try {
+      await _supabase
+          .from('ProjectTasks')
+          .update({'done': done})
+          .eq('task_id', taskId);
+
+      await _auditService.logAuditEvent(
+        action: 'TASK_STATUS_UPDATED',
+        details: 'Task status updated',
+        category: 'Project',
+        metadata: {
+          'task_id': taskId,
+          'done': done,
+        },
+      );
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to update task status: $e',
+        module: 'Project Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Update Task Status',
+          'task_id': taskId,
+        },
+      );
+      rethrow;
+    }
   }
 
   Future<void> deleteTask(String taskId) async {
-    await _supabase
-        .from('ProjectTasks')
-        .delete()
-        .eq('task_id', taskId);
+    try {
+      await _supabase
+          .from('ProjectTasks')
+          .delete()
+          .eq('task_id', taskId);
+
+      await _auditService.logAuditEvent(
+        action: 'TASK_DELETED',
+        details: 'Task deleted from project',
+        category: 'Project',
+        metadata: {
+          'task_id': taskId,
+        },
+      );
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to delete task: $e',
+        module: 'Project Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Delete Task',
+          'task_id': taskId,
+        },
+      );
+      rethrow;
+    }
   }
 
   Future<void> deleteReport(String reportId) async {
-    await _supabase
-        .from('ProjectReports')
-        .delete()
-        .eq('report_id', reportId);
+    try {
+      await _supabase
+          .from('ProjectReports')
+          .delete()
+          .eq('report_id', reportId);
+
+      await _auditService.logAuditEvent(
+        action: 'REPORT_DELETED',
+        details: 'Report deleted from project',
+        category: 'Project',
+        metadata: {
+          'report_id': reportId,
+        },
+      );
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to delete report: $e',
+        module: 'Project Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Delete Report',
+          'report_id': reportId,
+        },
+      );
+      rethrow;
+    }
   }
 
   Future<void> deletePhoto(String photoId) async {
-    final photo = await _supabase
-        .from('ProjectPhotos')
-        .select('photo_url')
-        .eq('photo_id', photoId)
-        .single();
-    
-    final photoUrl = photo['photo_url'] as String?;
-    
-    await _supabase
-        .from('ProjectPhotos')
-        .delete()
-        .eq('photo_id', photoId);
-    
-    if (photoUrl != null && photoUrl.isNotEmpty) {
-      try {
-        await _supabase.storage
-            .from('projectphotos')
-            .remove([photoUrl]);
-      } catch (e) {
+    try {
+      final photo = await _supabase
+          .from('ProjectPhotos')
+          .select('photo_url')
+          .eq('photo_id', photoId)
+          .single();
+      
+      final photoUrl = photo['photo_url'] as String?;
+      
+      await _supabase
+          .from('ProjectPhotos')
+          .delete()
+          .eq('photo_id', photoId);
+      
+      if (photoUrl != null && photoUrl.isNotEmpty) {
+        try {
+          await _supabase.storage
+              .from('projectphotos')
+              .remove([photoUrl]);
+        } catch (e) {
+        }
       }
+
+      await _auditService.logAuditEvent(
+        action: 'PHOTO_DELETED',
+        details: 'Photo deleted from project',
+        category: 'Project',
+        metadata: {
+          'photo_id': photoId,
+        },
+      );
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to delete photo: $e',
+        module: 'Project Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Delete Photo',
+          'photo_id': photoId,
+        },
+      );
+      rethrow;
     }
   }
 
   Future<void> deleteCost(String materialId) async {
-    await _supabase
-        .from('ProjectMaterials')
-        .delete()
-        .eq('material_id', materialId);
+    try {
+      await _supabase
+          .from('ProjectMaterials')
+          .delete()
+          .eq('material_id', materialId);
+
+      await _auditService.logAuditEvent(
+        action: 'COST_DELETED',
+        details: 'Cost/material deleted from project',
+        category: 'Project',
+        metadata: {
+          'material_id': materialId,
+        },
+      );
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to delete cost: $e',
+        module: 'Project Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Delete Cost',
+          'material_id': materialId,
+        },
+      );
+      rethrow;
+    }
   }
 }
