@@ -23,6 +23,7 @@ class ContractService {
     required String title,
     required String contractType,
     required Map<String, String> fieldValues,
+    String? pdfPath,
   }) async {
     try {
       final proj = await _supabase
@@ -41,7 +42,7 @@ class ContractService {
         title: title,
       );
 
-      final pdfPath = await ContractPdfService.uploadContractPdf(
+      final pdfPath = await ContractPdfService.uploadContractPdfToStorage(
         pdfBytes: pdfBytes,
         contractorId: contractorId,
         projectId: projectId,
@@ -111,7 +112,7 @@ class ContractService {
         title: title,
       );
 
-      final pdfPath = await ContractPdfService.uploadContractPdf(
+      final pdfPath = await ContractPdfService.uploadContractPdfToStorage(
         pdfBytes: pdfBytes,
         contractorId: contractorId,
         projectId: projectId,

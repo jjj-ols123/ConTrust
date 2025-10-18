@@ -2,12 +2,15 @@
 
 import 'package:backend/services/both services/be_contract_service.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/services/superadmin%20services/auditlogs_service.dart';
 import 'package:backend/utils/be_contractsignature.dart';
 import 'dart:typed_data';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ContractorContractService {
   static final SuperAdminErrorService _errorService = SuperAdminErrorService();
+  static final SuperAdminAuditService _auditService = SuperAdminAuditService();
 
   static Future<List<Map<String, dynamic>>> fetchContractTypes() async {
     try {
@@ -25,7 +28,8 @@ class ContractorContractService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> fetchCreatedContracts(String contractorId) async {
+  static Future<List<Map<String, dynamic>>> fetchCreatedContracts(
+      String contractorId) async {
     try {
       return await FetchService().fetchCreatedContracts(contractorId);
     } catch (e) {
@@ -42,6 +46,55 @@ class ContractorContractService {
     }
   }
 
+  static Future<void> uploadCustomContract({
+    required String projectId,
+    required String contractorId,
+    required String contracteeId,
+    required String title,
+    required String contractType,
+    required String pdfPath,
+  }) async {
+    try {
+      final supabase = Supabase.instance.client;
+      await supabase.from('Contracts').insert({
+        'project_id': projectId,
+        'contractor_id': contractorId,
+        'contractee_id': contracteeId,
+        'contract_type_id': 'd9d78420-7765-44d5-966c-6f0e0297c07d',
+        'title': title,
+        'pdf_url': pdfPath,
+        'field_values': {},
+        'status': 'draft',
+        'created_at': DateTime.now().toIso8601String(),
+      });
+      
+      _auditService.logAuditEvent(
+        userId: contractorId,
+        action: 'CUSTOM_CONTRACT_UPLOADED',
+        details: 'Custom contract PDF uploaded',
+        category: 'Contract',
+        metadata: {
+          'contractor_id': contractorId,
+          'project_id': projectId,
+          'contractee_id': contracteeId,
+          'pdf_path': pdfPath,
+        },
+      );
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to upload custom contract: $e',
+        module: 'Contractor Contract Service',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Upload Custom Contract',
+          'contractor_id': contractorId,
+          'project_id': projectId,
+        },
+      );
+      rethrow;
+    }
+  }
+
   static Future<void> saveContract({
     required String projectId,
     required String contractorId,
@@ -49,6 +102,7 @@ class ContractorContractService {
     required String title,
     required String contractType,
     required Map<String, String> fieldValues,
+    String? pdfPath,
   }) async {
     try {
       await ContractService.saveContract(
@@ -58,6 +112,7 @@ class ContractorContractService {
         title: title,
         contractType: contractType,
         fieldValues: fieldValues,
+        pdfPath: pdfPath,
       );
     } catch (e) {
       await _errorService.logError(
@@ -108,7 +163,8 @@ class ContractorContractService {
     }
   }
 
-  static Future<Map<String, dynamic>?> fetchProjectDetails(String projectId) async {
+  static Future<Map<String, dynamic>?> fetchProjectDetails(
+      String projectId) async {
     try {
       return await FetchService().fetchProjectDetails(projectId);
     } catch (e) {
@@ -125,7 +181,8 @@ class ContractorContractService {
     }
   }
 
-  static Future<Map<String, dynamic>?> fetchContractorData(String contractorId) async {
+  static Future<Map<String, dynamic>?> fetchContractorData(
+      String contractorId) async {
     try {
       return await FetchService().fetchContractorData(contractorId);
     } catch (e) {
@@ -142,7 +199,8 @@ class ContractorContractService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> fetchContractorProjectInfo(String contractorId) async {
+  static Future<List<Map<String, dynamic>>> fetchContractorProjectInfo(
+      String contractorId) async {
     try {
       return await FetchService().fetchContractorProjectInfo(contractorId);
     } catch (e) {
@@ -175,7 +233,6 @@ class ContractorContractService {
       rethrow;
     }
   }
-
 
   static Future<Map<String, dynamic>> signContract({
     required String contractId,
@@ -279,7 +336,8 @@ class ContractorContractService {
     }
   }
 
-  static Future<Map<String, dynamic>> validateContractPdf(String contractId) async {
+  static Future<Map<String, dynamic>> validateContractPdf(
+      String contractId) async {
     try {
       return await ContractService.validateContractPdf(contractId);
     } catch (e) {

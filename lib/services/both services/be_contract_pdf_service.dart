@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter
 
 import 'dart:io';
+import 'package:uuid/uuid.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
@@ -71,7 +72,7 @@ class ContractPdfService {
     }
   }
 
-  static Future<String> uploadContractPdf({
+  static Future<String> uploadContractPdfToStorage({
     required Uint8List pdfBytes,
     required String contractorId,
     required String projectId,
@@ -79,15 +80,13 @@ class ContractPdfService {
     String? contractId, 
   }) async {
     try {
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final fileName = contractId != null 
-          ? '${projectId}_${contracteeId}_${contractId}_$timestamp.pdf'
-          : '${projectId}_$contracteeId.pdf';
-      final filePath = '$contractorId/$fileName';
+      final uuid = const Uuid().v4();
+    final fileName = '${projectId}_${contracteeId}_$uuid.pdf';
+      final filePath = '$contractorId/$fileName'; 
 
       await _supabase.storage
           .from('contracts')
-          .uploadBinary(filePath, pdfBytes, fileOptions: const FileOptions(upsert: true));
+          .uploadBinary(filePath, pdfBytes, fileOptions: const FileOptions(upsert: false));
 
       await _auditService.logAuditEvent(
         userId: contractorId,
