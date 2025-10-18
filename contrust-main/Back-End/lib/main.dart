@@ -1,5 +1,4 @@
 import 'package:backend/utils/supabase_config.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'models/app_websitestart.dart';
@@ -20,22 +19,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'ConTrust',
-      home: kIsWeb ? const WebsiteStartPage() : const _NonWebPlaceholder(),
+      home: WebsiteStartPage(),
     );
-  }
 }
-
-class _NonWebPlaceholder extends StatelessWidget {
-  const _NonWebPlaceholder();
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text('Use platform-specific apps on mobile. This entry is for web.'),
-      ),
-    );
-  }
 }
