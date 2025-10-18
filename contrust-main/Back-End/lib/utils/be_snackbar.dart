@@ -19,39 +19,82 @@ class ConTrustSnackBar {
     SnackBarAction? action,
   }) {
     final config = getSnackBarConfig(type);
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              config.icon,
-              color: Colors.white,
-              size: 20,
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[50],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: config.backgroundColor,
+              width: 2,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                message,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+          ),
+          title: Row(
+            children: [
+              Icon(
+                config.icon,
+                color: config.backgroundColor,
+                size: 26,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                _getDialogTitle(type),
+                style: TextStyle(
+                  color: config.backgroundColor,
+                  fontWeight: FontWeight.bold,
                 ),
+              ),
+            ],
+          ),
+          content: Text(
+            message,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
+            ),
+          ),
+          actions: [
+            if (action != null)
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  action.onPressed?.call();
+                },
+                child: Text(
+                  action.label,
+                  style: TextStyle(color: config.backgroundColor),
+                ),
+              ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'OK',
+                style: TextStyle(color: config.backgroundColor),
               ),
             ),
           ],
-        ),
-        backgroundColor: config.backgroundColor,
-        duration: duration,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        margin: const EdgeInsets.all(16),
-        action: action,
-      ),
+        );
+      },
     );
+  }
+
+  static String _getDialogTitle(SnackBarType type) {
+    switch (type) {
+      case SnackBarType.success:
+        return 'Success';
+      case SnackBarType.error:
+        return 'Error';
+      case SnackBarType.warning:
+        return 'Warning';
+      case SnackBarType.info:
+        return 'Information';
+      case SnackBarType.loading:
+        return 'Loading';
+    }
   }
 
   static void success(
@@ -97,7 +140,6 @@ class ConTrustSnackBar {
   }) {
     show(context, message, type: SnackBarType.loading, duration: duration);
   }
-
 
   static void dashboardRefresh(BuildContext context) {
     success(context, 'Dashboard refreshed successfully');
@@ -158,9 +200,11 @@ class ConTrustSnackBar {
   static void agreementConfirmed(BuildContext context) {
     success(context, 'Agreement confirmed!');
   }
+
   static void waitingForOther(BuildContext context) {
     info(context, 'Waiting for the other party to agree...');
   }
+
   static void messageSent(BuildContext context) {
     success(context, 'Message sent');
   }
@@ -180,7 +224,6 @@ class ConTrustSnackBar {
   static void logoutSuccess(BuildContext context) {
     info(context, 'You have been logged out');
   }
-
 
   static void fileUploadSuccess(BuildContext context, String fileName) {
     success(context, '$fileName uploaded successfully');
