@@ -5,7 +5,7 @@
     "contractor",
     "contrust_workspace",
     "superadmin",
-    "website_start"
+    "websitepoint"
   ],
   "packages": [
     {
@@ -38,7 +38,7 @@
         "superadmin",
         "syncfusion_flutter_pdfviewer",
         "url_launcher",
-        "website_start"
+        "websitepoint"
       ],
       "devDependencies": [
         "flutter_lints",
@@ -114,7 +114,7 @@
       ]
     },
     {
-      "name": "website_start",
+      "name": "websitepoint",
       "version": "1.0.0+1",
       "dependencies": [
         "backend",

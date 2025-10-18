@@ -39,8 +39,8 @@ dependencies:
     path: ../Contractee
   superadmin:
     path: ../SuperAdmin
-  website_start:
-    path: ../website_start
+  websitepoint:
+    path: ../websitepoint
   smooth_page_indicator: ^1.2.0+3
   supabase_flutter: ^2.8.4
   flutter_quill: ^11.4.1

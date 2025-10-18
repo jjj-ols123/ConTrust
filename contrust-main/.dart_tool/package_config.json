@@ -1004,8 +1004,8 @@
       "languageVersion": "3.7"
     },
     {
-      "name": "website_start",
-      "rootUri": "../website_start",
+      "name": "websitepoint",
+      "rootUri": "../websitepoint",
       "packageUri": "lib/",
       "languageVersion": "3.9"
     }

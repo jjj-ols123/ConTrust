@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
+import 'package:backend/models/be_UIapp.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -294,6 +295,192 @@ class HomePageBuilder {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  static Widget buildNoContractorsPlaceholder(TextEditingController searchController) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(40),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.amber.shade50, Colors.amber.shade100],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.amber.shade200),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.search_off,
+              size: 60,
+              color: Colors.amber[700],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              "No Contractors Found",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.amber[800],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              searchController.text.isEmpty
+                  ? "No contractors are available at the moment."
+                  : "No contractors match your search '${searchController.text}'",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[700],
+              ),
+            ),
+            if (searchController.text.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () {
+                  searchController.clear();
+                },
+                icon: const Icon(Icons.clear, size: 16),
+                label: const Text("Clear Search"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber[700],
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget buildContractorsSection({
+    required BuildContext context,
+    required bool isLoading,
+    required List<Map<String, dynamic>> filteredContractors,
+    required TextEditingController searchController,
+    required int selectedIndex,
+    required Function(int) onSelect,
+    required String profileUrl,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.business, color: Colors.amber[700], size: 24),
+              const SizedBox(width: 8),
+              const Text(
+                "Suggested Contractor Firms",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.90,
+              height: 50,
+              child: TextField(
+                controller: searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search contractors...',
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: Colors.grey.shade200,
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20, vertical: 14),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey, width: 1.5),
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.amber, width: 2.0),
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 280,
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : filteredContractors.isEmpty
+                    ? buildNoContractorsPlaceholder(searchController)
+                    : ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: filteredContractors.length,
+                        itemBuilder: (context, index) {
+                          final contractor = filteredContractors[index];
+                          final profilePhoto = contractor['profile_photo'];
+                          final profileImage =
+                              (profilePhoto == null || profilePhoto.isEmpty)
+                                  ? profileUrl
+                                  : profilePhoto;
+                          final isSelected = selectedIndex == index;
+                          return GestureDetector(
+                            onTap: () {
+                              onSelect(index);
+                            },
+                            child: Container(
+                              width: 200,
+                              height: 250,
+                              margin:
+                                  const EdgeInsets.symmetric(horizontal: 10),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: isSelected
+                                      ? const Color.fromARGB(255, 99, 98, 98)
+                                      : Colors.transparent,
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: ContractorsView(
+                                id: contractor['contractor_id'] ?? '',
+                                name: contractor['firm_name'] ?? 'Unknown',
+                                profileImage: profileImage,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+          ),
+        ],
       ),
     );
   }
