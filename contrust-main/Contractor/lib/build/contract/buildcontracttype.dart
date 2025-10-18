@@ -1,9 +1,10 @@
-// ignore_for_file: depend_on_referenced_packages, deprecated_member_use
-
+// ignore_for_file: depend_on_referenced_packages, deprecated_member_use, use_build_context_synchronously
 import 'dart:ui';
-
+import 'package:backend/services/both%20services/be_contract_pdf_service.dart';
 import 'package:backend/services/both%20services/be_fetchservice.dart';
+import 'package:backend/services/contractor%20services/contract/cor_contractservice.dart';
 import 'package:backend/services/contractor%20services/contract/cor_contracttypeservice.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 
@@ -103,18 +104,28 @@ class ContractTypeBuild {
     required String contractorId,
     required VoidCallback onRefreshContracts,
   }) {
+    final templateName = template['template_name'] ?? '';
+    final isUploadOption = templateName.toLowerCase().contains('upload') || templateName.toLowerCase().contains('custom');  // More flexible check
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
         onTap: () async {
-          final result = await ContractTypeService.navigateToCreateContract(
-            context: context,
-            template: template,
-            contractorId: contractorId,
-          );
-          if (result == true) {
-            onRefreshContracts();
+          print('Tapped template: $templateName, isUploadOption: $isUploadOption');
+
+          if (isUploadOption) {
+            await showUploadContractDialog(
+              context: context,
+              contractorId: contractorId,
+              onRefreshContracts: onRefreshContracts,
+            );
+          } else {
+            await ContractTypeService.navigateToCreateContract(
+              context: context,
+              template: template,
+              contractorId: contractorId,
+            );
           }
         },
         child: Container(
@@ -283,18 +294,158 @@ class ContractTypeBuild {
         );
       },
     );
-}
-
-static String formatDateTime(dynamic dateTimeString) {
-  if (dateTimeString == null || dateTimeString.toString().isEmpty) {
-    return 'Unknown date';
   }
 
-  try {
-    DateTime dateTime = DateTime.parse(dateTimeString.toString());
-    return DateFormat('MMM dd, yyyy • hh:mm a').format(dateTime);
-  } catch (e) {
-    return dateTimeString.toString();
+  static Future<void> showUploadContractDialog({
+    required BuildContext context,
+    required String contractorId,
+    required VoidCallback onRefreshContracts,
+  }) async {
+    XFile? selectedFile;
+    String title = '';
+    String? selectedProjectId;
+    List<Map<String, dynamic>> projects = [];
+    bool isLoading = false;
+
+    // Load projects
+    final fetchService = FetchService();
+    projects = await fetchService.fetchContractorProjectInfo(contractorId);
+    projects = projects.where((p) => p['status'] == 'awaiting_contract').toList();
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            Future<void> pickFile() async {
+              try {
+                const XTypeGroup pdfType = XTypeGroup(
+                  label: 'PDF files',
+                  extensions: ['pdf'],
+                );
+                final XFile? file = await openFile(acceptedTypeGroups: [pdfType]);
+                if (file != null) {
+                  setState(() {
+                    selectedFile = file;
+                  });
+                } else {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    const SnackBar(content: Text('No PDF file selected. Please try again.')),
+                  );
+                }
+              } catch (e) {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  SnackBar(content: Text('Failed to pick file: $e')),
+                );
+              }
+            }
+
+            Future<void> saveCustomContract() async {
+              if (selectedFile == null || title.isEmpty || selectedProjectId == null) {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  const SnackBar(content: Text('Please fill all fields and select a file.')),
+                );
+                return;
+              }
+
+              setState(() => isLoading = true);
+
+              try {
+                final bytes = await selectedFile!.readAsBytes();  
+                final projectData = await fetchService.fetchProjectDetails(selectedProjectId!);
+                final contracteeId = projectData?['contractee_id'];
+
+                if (contracteeId == null) {
+                  throw Exception('Project has no contractee.');
+                }
+
+                final pdfPath = await ContractPdfService.uploadContractPdfToStorage(
+                  pdfBytes: bytes,
+                  contractorId: contractorId,
+                  projectId: selectedProjectId!,
+                  contracteeId: contracteeId,
+                );
+
+
+                await ContractorContractService.uploadCustomContract(
+                  contractorId: contractorId,
+                  contracteeId: contracteeId,
+                  projectId: selectedProjectId!,
+                  title: title,
+                  pdfPath: pdfPath, 
+                  contractType: 'Custom',
+                );
+
+
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  const SnackBar(content: Text('Contract uploaded successfully!')),
+                );
+                Navigator.of(dialogContext).pop();
+                onRefreshContracts();
+              } catch (e) {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  SnackBar(content: Text('Upload failed: $e')),
+                );
+              } finally {
+                setState(() => isLoading = false);
+              }
+            }
+
+            return AlertDialog(
+              title: const Text('Upload Custom Contract'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      decoration: const InputDecoration(labelText: 'Contract Title'),
+                      onChanged: (value) => title = value,
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(labelText: 'Select Project'),
+                      value: selectedProjectId,
+                      items: projects.map<DropdownMenuItem<String>>((p) => DropdownMenuItem<String>(
+                        value: p['project_id'] as String,
+                        child: Text(p['title'] ?? 'Project'),
+                      )).toList(),
+                      onChanged: (value) => setState(() => selectedProjectId = value),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: pickFile,
+                      child: Text(selectedFile == null ? 'Select PDF File' : 'File Selected: ${selectedFile!.name}'),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: isLoading ? null : saveCustomContract,
+                  child: isLoading ? const CircularProgressIndicator() : const Text('Upload'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
-}
+
+  static String formatDateTime(dynamic dateTimeString) {
+    if (dateTimeString == null || dateTimeString.toString().isEmpty) {
+      return 'Unknown date';
+    }
+
+    try {
+      DateTime dateTime = DateTime.parse(dateTimeString.toString());
+      return DateFormat('MMM dd, yyyy • hh:mm a').format(dateTime);
+    } catch (e) {
+      return dateTimeString.toString();
+    }
+  }
 }

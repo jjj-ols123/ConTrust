@@ -10,8 +10,6 @@ import 'package:backend/services/contractor%20services/contract/cor_viewcontract
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/utils/be_contractsignature.dart';
 import 'package:backend/build/buildviewcontract.dart';
-import 'package:contractor/Screen/cor_contracttype.dart';
-import 'package:contractor/build/builddrawer.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:contractee/build/builddrawer.dart' show ContracteeShell, ContracteePage;
 import 'package:contractee/pages/cee_ongoing.dart' show CeeOngoingProjectScreen;
@@ -84,27 +82,6 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
                 otherHasAgreed =
                     isContractor ? contracteeAgreed : contractorAgreed;
               });
-
-              if (initiated &&
-                  contractorAgreed &&
-                  contracteeAgreed &&
-                  widget.userRole == 'contractor' &&
-                  status != 'active') {
-                if (mounted) {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                      builder: (_) => ContractorShell(
-                        currentPage: ContractorPage.contracts,
-                        contractorId: project['contractor_id'] ?? '',
-                        child: ContractType(
-                          contractorId: project['contractor_id'] ?? '',
-                        ),
-                      ),
-                    ),
-                  );
-                }
-                return;
-              }
             }
           });
 
@@ -393,7 +370,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
         bannerText = "Please proceed to contract creation.";
         buttonText = "Preparing...";
         onPressed = null;
-        bannerColor = Colors.amber[500]!;
+        bannerColor = Colors.white;
       } else {
         bannerText = "Please wait for the contractor to send a contract.";
         buttonText = "Waiting for contract...";
@@ -416,8 +393,6 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
         buttonText = "Go to Project Management";
         if (widget.userRole == 'contractee') {
           onPressed = () async {
-            // Find the active project(s) for this user and navigate to the
-            // ContracteeShell -> Ongoing project screen.
             try {
               final projects = await FetchService().fetchUserProjects();
               final activeProjects = projects.where((p) => p['status'] == 'active').toList();
@@ -430,7 +405,6 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
 
               String projectId;
               if (activeProjects.length > 1) {
-                // If multiple, open a simple selection dialog
                 projectId = await showDialog<String>(
                   context: context,
                   builder: (ctx) => AlertDialog(
