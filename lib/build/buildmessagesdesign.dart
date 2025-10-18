@@ -15,6 +15,8 @@ import 'package:contractor/build/builddrawer.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:contractee/build/builddrawer.dart' show ContracteeShell, ContracteePage;
 import 'package:contractee/pages/cee_ongoing.dart' show CeeOngoingProjectScreen;
+import 'package:backend/services/superadmin services/auditlogs_service.dart';
+import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:flutter/material.dart';
 import 'package:signature/signature.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -48,6 +50,9 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
   late final StreamSubscription _projectSubscription;
   late final StreamSubscription _messagesSubscription;
 
+  final SuperAdminAuditService _auditService = SuperAdminAuditService();
+  final SuperAdminErrorService _errorService = SuperAdminErrorService();
+
   @override
   void initState() {
     super.initState();
@@ -55,105 +60,170 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
   }
 
   void checkProject() async {
-    final projectId = await ProjectService().getProjectId(widget.chatRoomId);
-    if (projectId == null) return;
+    try {
+      final projectId = await ProjectService().getProjectId(widget.chatRoomId);
+      if (projectId == null) return;
 
-    _projectSubscription = supabase
-        .from('Projects')
-        .stream(primaryKey: ['project_id'])
-        .eq('project_id', projectId)
-        .listen((event) {
-          if (event.isNotEmpty) {
-            final project = event.first;
-            final initiated = project['contract_started'] == true;
-            final contractorAgreed = project['contractor_agree'] == true;
-            final contracteeAgreed = project['contractee_agree'] == true;
-            final status = project['status'] as String?;
+      _projectSubscription = supabase
+          .from('Projects')
+          .stream(primaryKey: ['project_id'])
+          .eq('project_id', projectId)
+          .listen((event) {
+            if (event.isNotEmpty) {
+              final project = event.first;
+              final initiated = project['contract_started'] == true;
+              final contractorAgreed = project['contractor_agree'] == true;
+              final contracteeAgreed = project['contractee_agree'] == true;
+              final status = project['status'] as String?;
 
-            setState(() {
-              contractStarted = initiated;
-              projectStatus = status;
-              final isContractor = widget.userRole == 'contractor';
-              _hasAgreed = isContractor ? contractorAgreed : contracteeAgreed;
-              otherHasAgreed =
-                  isContractor ? contracteeAgreed : contractorAgreed;
-            });
+              setState(() {
+                contractStarted = initiated;
+                projectStatus = status;
+                final isContractor = widget.userRole == 'contractor';
+                _hasAgreed = isContractor ? contractorAgreed : contracteeAgreed;
+                otherHasAgreed =
+                    isContractor ? contracteeAgreed : contractorAgreed;
+              });
 
-            if (initiated &&
-                contractorAgreed &&
-                contracteeAgreed &&
-                widget.userRole == 'contractor' &&
-                status != 'active') {
-              if (mounted) {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(
-                    builder: (_) => ContractorShell(
-                      currentPage: ContractorPage.contracts,
-                      contractorId: project['contractor_id'] ?? '',
-                      child: ContractType(
+              if (initiated &&
+                  contractorAgreed &&
+                  contracteeAgreed &&
+                  widget.userRole == 'contractor' &&
+                  status != 'active') {
+                if (mounted) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (_) => ContractorShell(
+                        currentPage: ContractorPage.contracts,
                         contractorId: project['contractor_id'] ?? '',
+                        child: ContractType(
+                          contractorId: project['contractor_id'] ?? '',
+                        ),
                       ),
                     ),
-                  ),
-                );
+                  );
+                }
+                return;
               }
-              return;
             }
-          }
-        });
+          });
 
-    _messagesSubscription = supabase
-        .from('Messages')
-        .stream(primaryKey: ['msg_id'])
-        .order('timestamp', ascending: false)
-        .listen((messages) {
+      _messagesSubscription = supabase
+          .from('Messages')
+          .stream(primaryKey: ['msg_id'])
+          .order('timestamp', ascending: false)
+          .listen((messages) {
 
-          final contractMessages = messages.where((msg) => 
-            msg['chatroom_id'] == widget.chatRoomId && 
-            msg['message_type'] == 'contract'
-          ).toList();
-          
-          if (contractMessages.isNotEmpty) {
-            final latestContractMessage = contractMessages.first;
-            final contractStatus = latestContractMessage['status'] as String?;
+            final contractMessages = messages.where((msg) => 
+              msg['chatroom_id'] == widget.chatRoomId && 
+              msg['message_type'] == 'contract'
+            ).toList();
             
-            setState(() {
-              contractSent = contractStatus == 'sent' || contractStatus == 'approved' || contractStatus == 'rejected';
-            });
-          } else {
-            setState(() {
-              contractSent = false;
-            });
-          }
-        });
+            if (contractMessages.isNotEmpty) {
+              final latestContractMessage = contractMessages.first;
+              final contractStatus = latestContractMessage['status'] as String?;
+              
+              setState(() {
+                contractSent = contractStatus == 'sent' || contractStatus == 'approved' || contractStatus == 'rejected';
+              });
+            } else {
+              setState(() {
+                contractSent = false;
+              });
+            }
+          });
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to check project: $e',
+        module: 'Contract Agreement Banner',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Check Project',
+          'chat_room_id': widget.chatRoomId,
+          'user_role': widget.userRole,
+        },
+      );
+    }
   }
 
   Future<void> handleProceed() async {
-    final projectId = await ProjectService().getProjectId(widget.chatRoomId);
-    if (projectId == null) return;
+    try {
+      final projectId = await ProjectService().getProjectId(widget.chatRoomId);
+      if (projectId == null) return;
 
-    await supabase
-        .from('Projects')
-        .update({'contract_started': true}).eq('project_id', projectId);
+      await supabase
+          .from('Projects')
+          .update({'contract_started': true}).eq('project_id', projectId);
 
-    ConTrustSnackBar.waitingForOther(context);
+      await _auditService.logAuditEvent(
+        action: 'CONTRACT_INITIATED',
+        details: 'Contract agreement initiated for project',
+        category: 'Project',
+        metadata: {
+          'project_id': projectId,
+          'chat_room_id': widget.chatRoomId,
+          'user_role': widget.userRole,
+        },
+      );
 
-    await Future.delayed(const Duration(milliseconds: 400));
+      ConTrustSnackBar.waitingForOther(context);
 
-    if (mounted) setState(() {});
+      await Future.delayed(const Duration(milliseconds: 400));
+
+      if (mounted) setState(() {});
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to proceed with contract: $e',
+        module: 'Contract Agreement Banner',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Handle Proceed',
+          'chat_room_id': widget.chatRoomId,
+          'user_role': widget.userRole,
+        },
+      );
+      rethrow;
+    }
   }
 
   Future<void> handleAgree(String projectId) async {
-    final column = widget.userRole == 'contractor'
-        ? 'contractor_agree'
-        : 'contractee_agree';
+    try {
+      final column = widget.userRole == 'contractor'
+          ? 'contractor_agree'
+          : 'contractee_agree';
 
-    await supabase
-        .from('Projects')
-        .update({column: true}).eq('project_id', projectId);
+      await supabase
+          .from('Projects')
+          .update({column: true}).eq('project_id', projectId);
 
-    if (mounted) {
-      ConTrustSnackBar.agreementConfirmed(context);
+      await _auditService.logAuditEvent(
+        userId: supabase.auth.currentUser?.id,
+        action: 'CONTRACT_AGREED',
+        details: '${widget.userRole} agreed to contract',
+        category: 'Project',
+        metadata: {
+          'project_id': projectId,
+          'chat_room_id': widget.chatRoomId,
+          'user_role': widget.userRole,
+        },
+      );
+
+      if (mounted) {
+        ConTrustSnackBar.agreementConfirmed(context);
+      }
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to agree to contract: $e',
+        module: 'Contract Agreement Banner',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Handle Agree',
+          'project_id': projectId,
+          'chat_room_id': widget.chatRoomId,
+          'user_role': widget.userRole,
+        },
+      );
+      rethrow;
     }
   }
 
@@ -161,6 +231,19 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
   Future<void> _handleAgreeCancellation(String projectId) async {
     try {
       await ProjectService().agreeCancelAgreement(projectId, supabase.auth.currentUser!.id);
+
+      await _auditService.logAuditEvent(
+        userId: supabase.auth.currentUser?.id,
+        action: 'CANCELLATION_AGREED',
+        details: '${widget.userRole} agreed to cancel project',
+        category: 'Project',
+        metadata: {
+          'project_id': projectId,
+          'chat_room_id': widget.chatRoomId,
+          'user_role': widget.userRole,
+        },
+      );
+
       if (mounted) {
         ConTrustSnackBar.show(
           context,
@@ -169,6 +252,17 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
         );
       }
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to agree to cancellation: $e',
+        module: 'Contract Agreement Banner',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Handle Agree Cancellation',
+          'project_id': projectId,
+          'chat_room_id': widget.chatRoomId,
+          'user_role': widget.userRole,
+        },
+      );
       if (mounted) {
         ConTrustSnackBar.show(
           context,
@@ -182,6 +276,19 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
   Future<void> _handleDeclineCancellation(String projectId) async {
     try {
       await ProjectService().declineCancelAgreement(projectId, supabase.auth.currentUser!.id);
+
+      await _auditService.logAuditEvent(
+        userId: supabase.auth.currentUser?.id,
+        action: 'CANCELLATION_DECLINED',
+        details: '${widget.userRole} declined to cancel project',
+        category: 'Project',
+        metadata: {
+          'project_id': projectId,
+          'chat_room_id': widget.chatRoomId,
+          'user_role': widget.userRole,
+        },
+      );
+
       if (mounted) {
         ConTrustSnackBar.show(
           context,
@@ -190,6 +297,17 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
         );
       }
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to decline cancellation: $e',
+        module: 'Contract Agreement Banner',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Handle Decline Cancellation',
+          'project_id': projectId,
+          'chat_room_id': widget.chatRoomId,
+          'user_role': widget.userRole,
+        },
+      );
       if (mounted) {
         ConTrustSnackBar.show(
           context,
@@ -233,6 +351,16 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
             await _showEnhancedContractView(context, contractMessage['contract_id'], null, contractMessage);
           }
         } catch (e) {
+          await _errorService.logError(
+            errorMessage: 'Failed to review contract: $e',
+            module: 'Contract Agreement Banner',
+            severity: 'Medium',
+            extraInfo: {
+              'operation': 'Review Contract',
+              'chat_room_id': widget.chatRoomId,
+              'user_role': widget.userRole,
+            },
+          );
           if (mounted) {
             ConTrustSnackBar.error(context, 'Failed to load contract');
           }
@@ -329,7 +457,6 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
                 projectId = activeProjects.first['project_id'];
               }
 
-              // Navigate to ContracteeShell showing the ongoing project
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -341,6 +468,16 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
                 ),
               );
             } catch (e) {
+              await _errorService.logError(
+                errorMessage: 'Failed to navigate to ongoing project: $e',
+                module: 'Contract Agreement Banner',
+                severity: 'Medium',
+                extraInfo: {
+                  'operation': 'Go to Project Management',
+                  'chat_room_id': widget.chatRoomId,
+                  'user_role': widget.userRole,
+                },
+              );
               if (mounted) ConTrustSnackBar.error(context, 'Error loading ongoing project');
             }
           };
@@ -440,6 +577,9 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
 class UIMessage {
   static List<String>? _activeBlobUrls;
 
+  static final SuperAdminAuditService _auditService = SuperAdminAuditService();
+  static final SuperAdminErrorService _errorService = SuperAdminErrorService();
+
   static void cleanupBlobUrls() {
     if (_activeBlobUrls != null) {
       for (final url in _activeBlobUrls!) {
@@ -505,7 +645,7 @@ class UIMessage {
               ],
             ),
             const SizedBox(height: 8),
-            Text(msg['message'] ?? '', style: const TextStyle(fontSize: 15)),
+             Text(msg['message'] ?? '', style: const TextStyle(fontSize: 15)),
             const SizedBox(height: 14),
             Align(
               alignment: Alignment.centerRight,
@@ -636,7 +776,7 @@ class UIMessage {
       final isContractee = currentUserId != null && contractData['contractee_id'] == currentUserId;
 
       final contractStatus = contractData['status'] as String?;
-      final messageStatus = messageData?['contract_status'] as String?;
+      final messageStatus = messageData?['status'] as String?;
       final displayStatus = messageStatus ?? contractStatus;
       
       showDialog(
@@ -758,7 +898,7 @@ class UIMessage {
                         ),
                         const SizedBox(height: 16),
 
-                        FutureBuilder<String?>(
+                        FutureBuilder<String?>( 
                           future: _getPdfUrl(contractData, messageData),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -884,6 +1024,16 @@ class UIMessage {
         ),
       );
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to show enhanced contract view: $e',
+        module: 'UI Message',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Show Enhanced Contract View',
+          'contract_id': contractId,
+          'current_user_id': currentUserId,
+        },
+      );
       if (context.mounted) {
         ConTrustSnackBar.error(context, 'Error loading contract: $e');
       }
@@ -951,7 +1101,7 @@ class UIMessage {
                       errorBuilder: (context, error, stackTrace) =>
                           const Center(child: Text('Failed to load', style: TextStyle(fontSize: 10))),
                     )
-                  : FutureBuilder<String?>(
+                  : FutureBuilder<String?>( 
                       future: ViewContractService.getSignedUrl(signaturePath),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -1074,58 +1224,16 @@ class UIMessage {
   }
 
   static Future<String?> _getPdfUrl(Map<String, dynamic> contractData, [Map<String, dynamic>? messageData]) async {
-    try {
-      if (_hasSignedPdf(contractData)) {
-      }
-
-      if (_hasSignedPdf(contractData)) {
-        final signedPdfUrl = contractData['signed_pdf_url'] as String?;
-        if (signedPdfUrl != null && signedPdfUrl.isNotEmpty) {
-          try {
-            final signedUrl = await ViewContractService.getSignedContractUrl(signedPdfUrl);
-            if (signedUrl != null && signedUrl.isNotEmpty) {
-              return signedUrl;
-            } else {
-            }
-          } catch (e) {
-            rethrow;
-          }
-
-          if (kIsWeb) {
-            try {
-              final pdfBytes = await Supabase.instance.client.storage
-                  .from('contracts')
-                  .download(signedPdfUrl);
-
-              final blob = html.Blob([pdfBytes], 'application/pdf');
-              final blobUrl = html.Url.createObjectUrlFromBlob(blob);
-
-              _activeBlobUrls ??= [];
-              _activeBlobUrls!.add(blobUrl);
-
-              return blobUrl;
-            } catch (e) {
-              rethrow;
-            }
-          }
+    if (messageData != null) {
+      final messagePdfUrl = messageData['pdf_url'] as String?;
+      if (messagePdfUrl != null && messagePdfUrl.isNotEmpty) {
+        if (messagePdfUrl.startsWith('http')) {
+          return messagePdfUrl;
         }
+        return await ViewContractService.getSignedContractUrl(messagePdfUrl);
       }
-
-      if (messageData != null) {
-        final messagePdfUrl = messageData['pdf_url'] as String?;
-        if (messagePdfUrl != null && messagePdfUrl.isNotEmpty) {
-          if (messagePdfUrl.startsWith('http')) {
-            return messagePdfUrl;
-          }
-          final signedUrl = await ViewContractService.getSignedContractUrl(messagePdfUrl);
-          if (signedUrl != null) return signedUrl;
-        }
-      }
-
-      return await ViewContractService.getPdfSignedUrl(contractData);
-    } catch (e) {
-      return await ViewContractService.getPdfSignedUrl(contractData);
     }
+    return await ViewContractService.getPdfSignedUrl(contractData);
   }
 
   static Future<void> _downloadContract(Map<String, dynamic> contractData, BuildContext context, [Map<String, dynamic>? messageData]) async {
@@ -1175,6 +1283,15 @@ class UIMessage {
         );
       }
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to download contract: $e',
+        module: 'UI Message',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Download Contract',
+          'contract_id': contractData['contract_id'],
+        },
+      );
       if (context.mounted) {
         ConTrustSnackBar.error(context, 'Download failed');
       }
@@ -1310,9 +1427,30 @@ class UIMessage {
                   signatureBytes: signatureBytes,
                   userType: userType,
                 );
-                
+
+                await _auditService.logAuditEvent(
+                  userId: currentUserId,
+                  action: 'CONTRACT_SIGNED',
+                  details: '${userType} signed the contract',
+                  category: 'Contract',
+                  metadata: {
+                    'contract_id': contractId,
+                    'user_type': userType,
+                  },
+                );
+
                 ConTrustSnackBar.contractSigned(context);
               } catch (e) {
+                await _errorService.logError(
+                  errorMessage: 'Failed to sign contract: $e',
+                  module: 'UI Message',
+                  severity: 'High',
+                  extraInfo: {
+                    'operation': 'Sign Contract',
+                    'contract_id': contractId,
+                    'user_type': isContractee ? 'contractee' : 'contractor',
+                  },
+                );
                 ConTrustSnackBar.error(context, '$e');
               }
             },
@@ -1358,8 +1496,27 @@ class _ContractApprovalButtonsState extends State<_ContractApprovalButtons> {
         contractId: widget.contractId,
         status: 'approved'
       );
+
+      await UIMessage._auditService.logAuditEvent(
+        action: 'CONTRACT_APPROVED',
+        details: 'Contract approved by contractee',
+        category: 'Contract',
+        metadata: {
+          'contract_id': widget.contractId,
+        },
+      );
+
       widget.onApproved();
     } catch (e) {
+      await UIMessage._errorService.logError(
+        errorMessage: 'Failed to approve contract: $e',
+        module: 'Contract Approval Buttons',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Approve Contract',
+          'contract_id': widget.contractId,
+        },
+      );
       widget.onError('Failed to approve contract: $e');
     } finally {
       if (mounted) {
@@ -1377,8 +1534,27 @@ class _ContractApprovalButtonsState extends State<_ContractApprovalButtons> {
         contractId: widget.contractId,
         status: 'rejected'
       );
+
+      await UIMessage._auditService.logAuditEvent(
+        action: 'CONTRACT_REJECTED',
+        details: 'Contract rejected by contractee',
+        category: 'Contract',
+        metadata: {
+          'contract_id': widget.contractId,
+        },
+      );
+
       widget.onRejected();
     } catch (e) {
+      await UIMessage._errorService.logError(
+        errorMessage: 'Failed to reject contract: $e',
+        module: 'Contract Approval Buttons',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Reject Contract',
+          'contract_id': widget.contractId,
+        },
+      );
       widget.onError('Failed to reject contract: $e');
     } finally {
       if (mounted) {

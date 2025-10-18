@@ -2,6 +2,8 @@
 
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_contract_pdf_service.dart';
+import 'package:backend/services/superadmin services/auditlogs_service.dart';
+import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
@@ -9,6 +11,8 @@ import 'package:backend/services/both services/be_notification_service.dart';
 
 class ContractService {
   static final SupabaseClient _supabase = Supabase.instance.client;
+  static final SuperAdminAuditService _auditService = SuperAdminAuditService();
+  static final SuperAdminErrorService _errorService = SuperAdminErrorService();
 
   //For Contractors
 
@@ -54,7 +58,29 @@ class ContractService {
         'field_values': fieldValues,
         'status': 'draft',
       });
+
+      await _auditService.logAuditEvent(
+        userId: contractorId,
+        action: 'CONTRACT_SAVED',
+        details: 'Contract saved as draft',
+        category: 'Contract',
+        metadata: {
+          'project_id': projectId,
+          'contractee_id': contracteeId,
+          'contract_title': title,
+        },
+      );
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to save contract: $e',
+        module: 'Contract Service',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Save Contract',
+          'project_id': projectId,
+          'contractor_id': contractorId,
+        },
+      );
       throw Exception('Failed to save contract: $e');
     }
   }
@@ -68,51 +94,77 @@ class ContractService {
     required String contractType,
     required Map<String, String> fieldValues,
   }) async {
-    final proj = await _supabase
-        .from('Projects')
-        .select('contractee_id')
-        .eq('project_id', projectId)
-        .single();
-    final contracteeId = proj['contractee_id'] as String?;
-    if (contracteeId == null) {
-      throw Exception('Project has no contractee assigned');
+    try {
+      final proj = await _supabase
+          .from('Projects')
+          .select('contractee_id')
+          .eq('project_id', projectId)
+          .single();
+      final contracteeId = proj['contractee_id'] as String?;
+      if (contracteeId == null) {
+        throw Exception('Project has no contractee assigned');
+      }
+
+      final pdfBytes = await ContractPdfService.generateContractPdf(
+        contractType: contractType,
+        fieldValues: fieldValues,
+        title: title,
+      );
+
+      final pdfPath = await ContractPdfService.uploadContractPdf(
+        pdfBytes: pdfBytes,
+        contractorId: contractorId,
+        projectId: projectId,
+        contracteeId: contracteeId,
+        contractId: contractId,
+      );
+
+      final currentContract = await _supabase
+          .from('Contracts')
+          .select('status')
+          .eq('contract_id', contractId)
+          .single();
+
+      final currentStatus = currentContract['status'] as String?;
+
+      final newStatus = (currentStatus == 'rejected') ? 'draft' : currentStatus;
+
+      await _supabase.from('Contracts').update({
+        'project_id': projectId,
+        'contractor_id': contractorId,
+        'contractee_id': contracteeId,
+        'contract_type_id': contractTypeId,
+        'title': title,
+        'pdf_url': pdfPath,
+        'field_values': fieldValues,
+        'status': newStatus,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('contract_id', contractId);
+
+      await _auditService.logAuditEvent(
+        userId: contractorId,
+        action: 'CONTRACT_UPDATED',
+        details: 'Contract updated',
+        category: 'Contract',
+        metadata: {
+          'contract_id': contractId,
+          'project_id': projectId,
+          'new_status': newStatus,
+        },
+      );
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to update contract: $e',
+        module: 'Contract Service',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Update Contract',
+          'contract_id': contractId,
+          'contractor_id': contractorId,
+        },
+      );
+      rethrow;
     }
-
-    final pdfBytes = await ContractPdfService.generateContractPdf(
-      contractType: contractType,
-      fieldValues: fieldValues,
-      title: title,
-    );
-
-    final pdfPath = await ContractPdfService.uploadContractPdf(
-      pdfBytes: pdfBytes,
-      contractorId: contractorId,
-      projectId: projectId,
-      contracteeId: contracteeId,
-      contractId: contractId,
-    );
-
-    final currentContract = await _supabase
-        .from('Contracts')
-        .select('status')
-        .eq('contract_id', contractId)
-        .single();
-
-    final currentStatus = currentContract['status'] as String?;
-
-    final newStatus = (currentStatus == 'rejected') ? 'draft' : currentStatus;
-
-    await _supabase.from('Contracts').update({
-      'project_id': projectId,
-      'contractor_id': contractorId,
-      'contractee_id': contracteeId,
-      'contract_type_id': contractTypeId,
-      'title': title,
-      'pdf_url': pdfPath,
-      'field_values': fieldValues,
-      'status': newStatus,
-      'updated_at': DateTime.now().toIso8601String(),
-    }).eq('contract_id', contractId);
   }
 
   static Future<void> sendContractToContractee({
@@ -163,7 +215,29 @@ class ContractService {
         'last_message': '📄 Contract sent: $message',
         'last_message_time': DateTime.now().toIso8601String(),
       }).eq('chatroom_id', chatRoomData['chatroom_id']);
+
+      await _auditService.logAuditEvent(
+        userId: contractData['contractor_id'],
+        action: 'CONTRACT_SENT',
+        details: 'Contract sent to contractee',
+        category: 'Contract',
+        metadata: {
+          'contract_id': contractId,
+          'contractee_id': contracteeId,
+          'project_id': contractData['project_id'],
+        },
+      );
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to send contract to contractee: $e',
+        module: 'Contract Service',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Send Contract to Contractee',
+          'contract_id': contractId,
+          'contractee_id': contracteeId,
+        },
+      );
       rethrow;
     }
   }
@@ -173,7 +247,25 @@ class ContractService {
   }) async {
     try {
       await _supabase.from('Contracts').delete().eq('contract_id', contractId);
+
+      await _auditService.logAuditEvent(
+        action: 'CONTRACT_DELETED',
+        details: 'Contract deleted',
+        category: 'Contract',
+        metadata: {
+          'contract_id': contractId,
+        },
+      );
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to delete contract: $e',
+        module: 'Contract Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Delete Contract',
+          'contract_id': contractId,
+        },
+      );
       throw Exception('Error deleting contract: $e');
     }
   }
@@ -182,60 +274,84 @@ class ContractService {
     required String contractId,
     required String status,
   }) async {
-    Map<String, dynamic> updateData = {
-      'status': status,
-      'updated_at': DateTime.now().toIso8601String(),
-    };
-    if (status == 'approved' || status == 'rejected') {
-      updateData['reviewed_at'] = DateTime.now().toIso8601String();
-    }
-
-    await _supabase
-        .from('Contracts')
-        .update(updateData)
-        .eq('contract_id', contractId);
-
-    if (status == 'approved' || status == 'rejected') {
-      await _supabase
-          .from('Messages')
-          .update(
-              {'contract_status': status == 'approved' ? 'approved' : status})
-          .eq('contract_id', contractId)
-          .eq('message_type', 'contract')
-          .eq('contract_status', 'sent');
-    }
-
-    if (status == 'approved') {
-      final contractData = await _supabase
-          .from('Contracts')
-          .select('project_id')
-          .eq('contract_id', contractId)
-          .single();
-
-      await _supabase.from('Projects').update({
-        'status': 'awaiting_signature',
-      }).eq('project_id', contractData['project_id']);
-
-    } else if (status == 'rejected') {
-      final contractData = await _supabase
-          .from('Contracts')
-          .select('project_id, contractor_id, contractee_id')
-          .eq('contract_id', contractId)
-          .single();
-
-      try {
-        await NotificationService().createContractNotification(
-          receiverId: contractData['contractor_id'],
-          receiverType: 'contractor',
-          senderId: contractData['contractee_id'],
-          senderType: 'contractee',
-          contractId: contractId,
-          type: 'Contract Rejected',
-          message: 'Your contract has been rejected by the contractee.',
-        );
-      } catch (notificationError) {
-        rethrow;
+    try {
+      Map<String, dynamic> updateData = {
+        'status': status,
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+      if (status == 'approved' || status == 'rejected') {
+        updateData['reviewed_at'] = DateTime.now().toIso8601String();
       }
+
+      await _supabase
+          .from('Contracts')
+          .update(updateData)
+          .eq('contract_id', contractId);
+
+      if (status == 'approved' || status == 'rejected') {
+        await _supabase
+            .from('Messages')
+            .update(
+                {'contract_status': status == 'approved' ? 'approved' : status})
+            .eq('contract_id', contractId)
+            .eq('message_type', 'contract')
+            .eq('contract_status', 'sent');
+      }
+
+      if (status == 'approved') {
+        final contractData = await _supabase
+            .from('Contracts')
+            .select('project_id')
+            .eq('contract_id', contractId)
+            .single();
+
+        await _supabase.from('Projects').update({
+          'status': 'awaiting_signature',
+        }).eq('project_id', contractData['project_id']);
+
+      } else if (status == 'rejected') {
+        final contractData = await _supabase
+            .from('Contracts')
+            .select('project_id, contractor_id, contractee_id')
+            .eq('contract_id', contractId)
+            .single();
+
+        try {
+          await NotificationService().createContractNotification(
+            receiverId: contractData['contractor_id'],
+            receiverType: 'contractor',
+            senderId: contractData['contractee_id'],
+            senderType: 'contractee',
+            contractId: contractId,
+            type: 'Contract Rejected',
+            message: 'Your contract has been rejected by the contractee.',
+          );
+        } catch (notificationError) {
+          rethrow;
+        }
+      }
+
+      await _auditService.logAuditEvent(
+        action: 'CONTRACT_STATUS_UPDATED',
+        details: 'Contract status updated',
+        category: 'Contract',
+        metadata: {
+          'contract_id': contractId,
+          'new_status': status,
+        },
+      );
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to update contract status: $e',
+        module: 'Contract Service',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Update Contract Status',
+          'contract_id': contractId,
+          'new_status': status,
+        },
+      );
+      rethrow;
     }
   }
 
@@ -252,11 +368,24 @@ class ContractService {
   // For Both Users
 
   static Future<Map<String, dynamic>> getContractById(String contractId) async {
-    return await _supabase
-        .from('Contracts')
-        .select('*')
-        .eq('contract_id', contractId)
-        .single();
+    try {
+      return await _supabase
+          .from('Contracts')
+          .select('*')
+          .eq('contract_id', contractId)
+          .single();
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to get contract by ID: $e',
+        module: 'Contract Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Get Contract by ID',
+          'contract_id': contractId,
+        },
+      );
+      rethrow;
+    }
   }
 
   static Future<Map<String, dynamic>> signContract({
@@ -399,7 +528,6 @@ class ContractService {
           if (projectId != null) {
             await _supabase.from('Projects').update({
               'status': 'active',
-              'start_date': DateTime.now().toIso8601String(),
             }).eq('project_id', projectId);
           } else {
           }
@@ -435,6 +563,18 @@ class ContractService {
         }
       }
 
+      await _auditService.logAuditEvent(
+        userId: userId,
+        action: 'CONTRACT_SIGNED',
+        details: '$userType signed the contract',
+        category: 'Contract',
+        metadata: {
+          'contract_id': contractId,
+          'user_type': userType,
+          'contract_activated': contractActivated,
+        },
+      );
+
       return {
         'success': true,
         'message': existingSignature != null
@@ -448,6 +588,17 @@ class ContractService {
         'user_type': userType.toLowerCase(),
       };
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to sign contract: $e',
+        module: 'Contract Service',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Sign Contract',
+          'contract_id': contractId,
+          'user_id': userId,
+          'user_type': userType,
+        },
+      );
       throw Exception('$e');
     }
   }
@@ -479,6 +630,16 @@ class ContractService {
         return false;
       }
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to verify signature: $e',
+        module: 'Contract Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Verify Signature',
+          'contract_id': contractId,
+          'user_type': userType,
+        },
+      );
       return false;
     }
   }
@@ -508,6 +669,16 @@ class ContractService {
 
       return signedUrl;
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to get signature URL: $e',
+        module: 'Contract Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Get Signature URL',
+          'contract_id': contractId,
+          'user_type': userType,
+        },
+      );
       return null;
     }
   }
@@ -587,6 +758,15 @@ class ContractService {
         'contract_status': contractStatus,
       };
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to download contract PDF: $e',
+        module: 'Contract Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Download Contract PDF',
+          'contract_id': contractId,
+        },
+      );
       throw Exception('Download failed: ${e.toString()}');
     }
   }
@@ -618,6 +798,15 @@ class ContractService {
 
       return signedUrl;
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to get contract PDF preview URL: $e',
+        module: 'Contract Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Get Contract PDF Preview URL',
+          'contract_id': contractId,
+        },
+      );
       throw Exception('Failed to generate preview URL: ${e.toString()}');
     }
   }
@@ -675,6 +864,15 @@ class ContractService {
         };
       }
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to validate contract PDF: $e',
+        module: 'Contract Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Validate Contract PDF',
+          'contract_id': contractId,
+        },
+      );
       return {
         'is_valid': false,
         'error': 'Contract validation failed: ${e.toString()}',
@@ -732,6 +930,15 @@ class ContractService {
         'download_time': DateTime.now().toIso8601String(),
       };
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to download multiple contracts: $e',
+        module: 'Contract Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Download Multiple Contracts',
+          'contract_ids': contractIds,
+        },
+      );
       throw Exception('Bulk download failed: ${e.toString()}');
     }
   }

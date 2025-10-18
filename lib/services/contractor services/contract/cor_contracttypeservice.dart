@@ -5,26 +5,42 @@ import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/Screen/cor_createcontract.dart';
 import 'package:contractor/Screen/cor_viewcontract.dart';
+import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:flutter/material.dart';
 
 class ContractTypeService {
+
+  static final SuperAdminErrorService _errorService = SuperAdminErrorService();
   
   static Future<bool?> navigateToCreateContract({
     required BuildContext context,
     required Map<String, dynamic> template,
     required String contractorId,
   }) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CreateContractPage(
-          contractType: template['template_name'] ?? '',
-          template: template,
-          contractorId: contractorId,
+    try {
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CreateContractPage(
+            contractType: template['template_name'] ?? '',
+            template: template,
+            contractorId: contractorId,
+          ),
         ),
-      ),
-    );
-    return result;
+      );
+      return result;
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to navigate to create contract: $e',
+        module: 'Contract Type Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Navigate to Create Contract',
+          'contractor_id': contractorId,
+        },
+      );
+      rethrow;
+    }
   }
 
   static Future<void> navigateToViewContract({
@@ -32,15 +48,29 @@ class ContractTypeService {
     required String contractId,
     required String contractorId,
   }) async {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ContractorViewContractPage(
-          contractId: contractId,
-          contractorId: contractorId,
+    try {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ContractorViewContractPage(
+            contractId: contractId,
+            contractorId: contractorId,
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to navigate to view contract: $e',
+        module: 'Contract Type Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Navigate to View Contract',
+          'contract_id': contractId,
+          'contractor_id': contractorId,
+        },
+      );
+      rethrow;
+    }
   }
 
   static Future<bool?> navigateToEditContract({
@@ -75,6 +105,15 @@ class ContractTypeService {
       );
       return editResult;
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to navigate to edit contract: $e',
+        module: 'Contract Type Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Navigate to Edit Contract',
+          'contractor_id': contractorId,
+        },
+      );
       if (context.mounted) {
         ConTrustSnackBar.error(context, 'Error loading contract for editing: $e');
       }
@@ -100,6 +139,15 @@ class ContractTypeService {
         ConTrustSnackBar.success(context, 'Contract sent successfully.');
       }
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to send contract to contractee: $e',
+        module: 'Contract Type Service',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Send Contract to Contractee',
+          'contract_id': contract['contract_id'],
+        },
+      );
       if (context.mounted) {
         ConTrustSnackBar.error(context, 'Error sending contract. Please try again.');
       }
@@ -107,25 +155,37 @@ class ContractTypeService {
   }
 
   static Future<bool> showDeleteConfirmationDialog(BuildContext context) async {
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Contract'),
-        content: const Text('Are you sure you want to delete this contract? This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    return shouldDelete ?? false;
+    try {
+      final shouldDelete = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Delete Contract'),
+          content: const Text('Are you sure you want to delete this contract? This action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        ),
+      );
+      return shouldDelete ?? false;
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to show delete confirmation dialog: $e',
+        module: 'Contract Type Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Show Delete Confirmation Dialog',
+        },
+      );
+      return false;
+    }
   }
 
   static Future<void> deleteContract({
@@ -138,6 +198,15 @@ class ContractTypeService {
         ConTrustSnackBar.success(context, 'Contract deleted successfully');
       }
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to delete contract: $e',
+        module: 'Contract Type Service',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Delete Contract',
+          'contract_id': contractId,
+        },
+      );
       if (context.mounted) {
         ConTrustSnackBar.error(context, 'Error deleting contract. Please try again.');
       }
@@ -150,73 +219,85 @@ class ContractTypeService {
     required String contractorId,
     required VoidCallback onRefreshContracts,
   }) {
-    final contractStatus = contract['status'] as String? ?? 'draft';
-    
-    final RenderBox button = context.findRenderObject() as RenderBox;
-    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-    final RelativeRect position = RelativeRect.fromRect(
-      Rect.fromPoints(
-        button.localToGlobal(Offset.zero, ancestor: overlay),
-        button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
-      ),
-      Offset.zero & overlay.size,
-    );
+    try {
+      final contractStatus = contract['status'] as String? ?? 'draft';
+      
+      final RenderBox button = context.findRenderObject() as RenderBox;
+      final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+      final RelativeRect position = RelativeRect.fromRect(
+        Rect.fromPoints(
+          button.localToGlobal(Offset.zero, ancestor: overlay),
+          button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
+        ),
+        Offset.zero & overlay.size,
+      );
 
-    final List<PopupMenuEntry<String>> menuItems = [];
+      final List<PopupMenuEntry<String>> menuItems = [];
 
-    if (contractStatus == 'draft') {
-      menuItems.add(
+      if (contractStatus == 'draft') {
+        menuItems.add(
+          const PopupMenuItem(
+            value: 'send',
+            child: Row(
+              children: [
+                Icon(Icons.send, size: 20),
+                SizedBox(width: 8),
+                Text('Send to Contractee'),
+              ],
+            ),
+          ),
+        );
+      }
+
+      menuItems.addAll([
         const PopupMenuItem(
-          value: 'send',
+          value: 'edit',
           child: Row(
             children: [
-              Icon(Icons.send, size: 20),
+              Icon(Icons.edit, size: 20),
               SizedBox(width: 8),
-              Text('Send to Contractee'),
+              Text('Edit Contract'),
             ],
           ),
         ),
+        const PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete, size: 20),
+              SizedBox(width: 8),
+              Text('Delete Contract'),
+            ],
+          ),
+        ),
+      ]);
+
+      showMenu<String>(
+        context: context,
+        position: position,
+        items: menuItems,
+      ).then((choice) async {
+        if (choice != null) {
+          await _handleMenuAction(
+            choice: choice,
+            context: context,
+            contract: contract,
+            contractorId: contractorId,
+            onRefreshContracts: onRefreshContracts,
+          );
+        }
+      });
+    } catch (e) {
+      _errorService.logError(
+        errorMessage: 'Failed to show contract menu: $e',
+        module: 'Contract Type Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Show Contract Menu',
+          'contractor_id': contractorId,
+        },
       );
     }
-
-    menuItems.addAll([
-      const PopupMenuItem(
-        value: 'edit',
-        child: Row(
-          children: [
-            Icon(Icons.edit, size: 20),
-            SizedBox(width: 8),
-            Text('Edit Contract'),
-          ],
-        ),
-      ),
-      const PopupMenuItem(
-        value: 'delete',
-        child: Row(
-          children: [
-            Icon(Icons.delete, size: 20),
-            SizedBox(width: 8),
-            Text('Delete Contract'),
-          ],
-        ),
-      ),
-    ]);
-
-    showMenu<String>(
-      context: context,
-      position: position,
-      items: menuItems,
-    ).then((choice) async {
-      if (choice != null) {
-        await _handleMenuAction(
-          choice: choice,
-          context: context,
-          contract: contract,
-          contractorId: contractorId,
-          onRefreshContracts: onRefreshContracts,
-        );
-      }
-    });
   }
 
   static Future<void> _handleMenuAction({
@@ -226,30 +307,43 @@ class ContractTypeService {
     required String contractorId,
     required VoidCallback onRefreshContracts,
   }) async {
-    switch (choice) {
-      case 'send':
-        await sendContractToContractee(context: context, contract: contract);
-        break;
-      case 'edit':
-        final editResult = await navigateToEditContract(
-          context: context,
-          contract: contract,
-          contractorId: contractorId,
-        );
-        if (editResult == true) {
-          onRefreshContracts();
-        }
-        break;
-      case 'delete':
-        final shouldDelete = await showDeleteConfirmationDialog(context);
-        if (shouldDelete) {
-          await deleteContract(
+    try {
+      switch (choice) {
+        case 'send':
+          await sendContractToContractee(context: context, contract: contract);
+          break;
+        case 'edit':
+          final editResult = await navigateToEditContract(
             context: context,
-            contractId: contract['contract_id'] as String,
+            contract: contract,
+            contractorId: contractorId,
           );
-          onRefreshContracts();
-        }
-        break;
+          if (editResult == true) {
+            onRefreshContracts();
+          }
+          break;
+        case 'delete':
+          final shouldDelete = await showDeleteConfirmationDialog(context);
+          if (shouldDelete) {
+            await deleteContract(
+              context: context,
+              contractId: contract['contract_id'] as String,
+            );
+            onRefreshContracts();
+          }
+          break;
+      }
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to handle menu action: $e',
+        module: 'Contract Type Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Handle Menu Action',
+          'choice': choice,
+          'contractor_id': contractorId,
+        },
+      );
     }
   }
 }

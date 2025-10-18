@@ -138,7 +138,6 @@ class ViewContractBuild {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Add PDF status indicator
             if (isSignedContract) ...[
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -184,7 +183,6 @@ class ViewContractBuild {
   }
 
   static Widget _buildWebPdfViewer(String pdfUrl) {
-    // Use a more reliable PDF viewer approach
     final viewType = 'pdf-viewer-${pdfUrl.hashCode.abs()}';
 
     if (kIsWeb) {

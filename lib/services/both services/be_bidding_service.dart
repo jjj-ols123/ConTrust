@@ -2,11 +2,14 @@
 
 import 'package:backend/services/both services/be_notification_service.dart';
 import 'package:backend/services/both services/be_message_service.dart';
+import 'package:backend/services/superadmin services/auditlogs_service.dart';
+import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 
 class BiddingService {
   final SupabaseClient _supabase = Supabase.instance.client;
+  final SuperAdminAuditService _auditService = SuperAdminAuditService();
+  final SuperAdminErrorService _errorService = SuperAdminErrorService();
 
   // For Both Users 
 
@@ -30,6 +33,14 @@ class BiddingService {
 
       return highestBids;
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to get project highest bids: $e',
+        module: 'Bidding Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Get Project Highest Bids',
+        },
+      );
       return {};
     }
   }
@@ -37,93 +48,162 @@ class BiddingService {
   //For Contractees 
 
   Future<void> acceptProjectBid(String projectId, String bidId) async {
-    final bidResponse =
-        await _supabase.from('Bids').select().eq('bid_id', bidId).single();
-
-    if (bidResponse.isEmpty) return;
-
-    final contractorId = bidResponse['contractor_id'];
-
-    final projectResponse = await _supabase
-        .from('Projects')
-        .select()
-        .eq('project_id', projectId)
-        .single();
-
-    if (projectResponse.isEmpty) return;
-
-    await _supabase.from('Projects').update({
-      'status': 'awaiting_contract',
-      'bid_id': bidId,
-      'contractor_id': contractorId,
-    }).eq('project_id', projectId);
-
-    final allBids =
-        await _supabase.from('Bids').select().eq('project_id', projectId);
-
-    final losingBidIds = allBids
-        .where((bid) => bid['bid_id'] != bidId)
-        .map((bid) => bid['bid_id'])
-        .toList();
-
-    if (losingBidIds.isNotEmpty) {
-      await _supabase
-          .from('Bids')
-          .update({'status': 'rejected'}).inFilter('bid_id', losingBidIds);
-    }
-
-    await _supabase
-        .from('Bids')
-        .update({'status': 'accepted'}).eq('bid_id', bidId);
-
     try {
-      final messageService = MessageService();
-      await messageService.getOrCreateChatRoom(
-        contractorId: contractorId,
-        contracteeId: projectResponse['contractee_id'],
-        projectId: projectId,
-      );
-    } catch (e) {
-        rethrow;
-    }
+      final bidResponse =
+          await _supabase.from('Bids').select().eq('bid_id', bidId).single();
 
-    try {
-      final contracteeId = projectResponse['contractee_id'];
-      final projectType = projectResponse['type'];
+      if (bidResponse.isEmpty) return;
 
-      final contracteeResponse = await _supabase
-          .from('Contractee')
-          .select('full_name, profile_photo')
-          .eq('contractee_id', contracteeId)
+      final contractorId = bidResponse['contractor_id'];
+
+      final projectResponse = await _supabase
+          .from('Projects')
+          .select()
+          .eq('project_id', projectId)
           .single();
 
-      final contracteeName = contracteeResponse['full_name'] ?? 'Unknown';
-      final contracteePhoto = contracteeResponse['profile_photo'] ?? '';
+      if (projectResponse.isEmpty) return;
 
-      final notificationService = NotificationService();
+      await _supabase.from('Projects').update({
+        'status': 'awaiting_contract',
+        'bid_id': bidId,
+        'contractor_id': contractorId,
+      }).eq('project_id', projectId);
 
-      await notificationService.createNotification(
-        receiverId: contractorId,
-        receiverType: 'contractor',
-        senderId: contracteeId,
-        senderType: 'contractee',
-        type: 'Bid Accepted',
-        message:
-            'Congratulations! Your bid for the $projectType project has been accepted. \nPlease proceed to Messages to discuss further details.',
-        information: {
-          'project_type': projectType,
+      final allBids =
+          await _supabase.from('Bids').select().eq('project_id', projectId);
+
+      final losingBidIds = allBids
+          .where((bid) => bid['bid_id'] != bidId)
+          .map((bid) => bid['bid_id'])
+          .toList();
+
+      if (losingBidIds.isNotEmpty) {
+        await _supabase
+            .from('Bids')
+            .update({'status': 'rejected'}).inFilter('bid_id', losingBidIds);
+      }
+
+      await _supabase
+          .from('Bids')
+          .update({'status': 'accepted'}).eq('bid_id', bidId);
+
+      await _auditService.logAuditEvent(
+        action: 'BID_ACCEPTED',
+        details: 'Contractee accepted a bid for the project',
+        category: 'Project',
+        metadata: {
+          'project_id': projectId,
           'bid_id': bidId,
-          'full_name': contracteeName,
-          'profile_photo': contracteePhoto,
+          'contractor_id': contractorId,
         },
       );
+
+      try {
+        final messageService = MessageService();
+        await messageService.getOrCreateChatRoom(
+          contractorId: contractorId,
+          contracteeId: projectResponse['contractee_id'],
+          projectId: projectId,
+        );
+      } catch (e) {
+        await _errorService.logError(
+          errorMessage: 'Failed to create chat room after accepting bid: $e',
+          module: 'Bidding Service',
+          severity: 'Medium',
+          extraInfo: {
+            'operation': 'Accept Project Bid - Create Chat Room',
+            'project_id': projectId,
+            'bid_id': bidId,
+          },
+        );
+        rethrow;
+      }
+
+      try {
+        final contracteeId = projectResponse['contractee_id'];
+        final projectType = projectResponse['type'];
+
+        final contracteeResponse = await _supabase
+            .from('Contractee')
+            .select('full_name, profile_photo')
+            .eq('contractee_id', contracteeId)
+            .single();
+
+        final contracteeName = contracteeResponse['full_name'] ?? 'Unknown';
+        final contracteePhoto = contracteeResponse['profile_photo'] ?? '';
+
+        final notificationService = NotificationService();
+
+        await notificationService.createNotification(
+          receiverId: contractorId,
+          receiverType: 'contractor',
+          senderId: contracteeId,
+          senderType: 'contractee',
+          type: 'Bid Accepted',
+          message:
+              'Congratulations! Your bid for the $projectType project has been accepted. \nPlease proceed to Messages to discuss further details.',
+          information: {
+            'project_type': projectType,
+            'bid_id': bidId,
+            'full_name': contracteeName,
+            'profile_photo': contracteePhoto,
+          },
+        );
+      } catch (e) {
+        await _errorService.logError(
+          errorMessage: 'Failed to send notification after accepting bid: $e',
+          module: 'Bidding Service',
+          severity: 'Medium',
+          extraInfo: {
+            'operation': 'Accept Project Bid - Send Notification',
+            'project_id': projectId,
+            'bid_id': bidId,
+          },
+        );
+      }
     } catch (e) {
-      
+      await _errorService.logError(
+        errorMessage: 'Failed to accept project bid: $e',
+        module: 'Bidding Service',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Accept Project Bid',
+          'project_id': projectId,
+          'bid_id': bidId,
+        },
+      );
+      rethrow;
     }
   }
 
-  Future<void> deleteBid(String bidId) async {
-    await _supabase.from('Bids').delete().eq('bid_id', bidId);
+  Future<void> rejectBid(String bidId) async {
+    try {
+      await _supabase
+          .from('Bids')
+          .update({'status': 'rejected'})
+          .eq('bid_id', bidId);
+
+      await _auditService.logAuditEvent(
+        action: 'BID_REJECTED',
+        details: 'Bid rejected by contractee',
+        category: 'Project',
+        metadata: {
+          'bid_id': bidId,
+        },
+      );
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to reject bid: $e',
+        module: 'Bidding Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Reject Bid',
+          'bid_id': bidId,
+        },
+      );
+      rethrow;
+    }
   }
 
   Future<List<Map<String, dynamic>>> getBidsForProject(String projectId) async {
@@ -142,6 +222,15 @@ class BiddingService {
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to get bids for project: $e',
+        module: 'Bidding Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Get Bids for Project',
+          'project_id': projectId,
+        },
+      );
       return [];
     }
   }

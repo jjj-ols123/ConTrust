@@ -7,13 +7,26 @@ import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'dart:io';
 
 class ViewContractService {
+
+  static final SuperAdminErrorService _errorService = SuperAdminErrorService();
+
   static Future<Map<String, dynamic>> loadContract(String contractId) async {
     try {
       return await ContractService.getContractById(contractId);
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to load contract: $e',
+        module: 'View Contract Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Load Contract',
+          'contract_id': contractId,
+        },
+      );
       throw Exception('Error loading contract: $e');
     }
   }
@@ -22,29 +35,42 @@ class ViewContractService {
     required Map<String, dynamic> contractData,
     required BuildContext context,
   }) async {
-    String? pdfUrl = contractData['pdf_url'] as String?;
-    
-    if (pdfUrl == null || pdfUrl.isEmpty) {
-      final contractorId = contractData['contractor_id'] as String?;
-      final projectId = contractData['project_id'] as String?;
-      final contracteeId = contractData['contractee_id'] as String?;
-      
-      if (contractorId != null && projectId != null && contracteeId != null) {
-        pdfUrl = '$contractorId/${projectId}_$contracteeId.pdf';
-      }
-    }
-    
-    if (pdfUrl == null) {
-      throw Exception('No PDF contract available');
-    }
-
     try {
-      final pdfBytes = await ContractPdfService.downloadContractPdf(pdfUrl);
-      final fileName = 'Contract_${contractData['title']?.replaceAll(' ', '_') ?? 'Document'}.pdf';
-      final result = await ContractPdfService.saveToDevice(pdfBytes, fileName);
+      String? pdfUrl = contractData['pdf_url'] as String?;
       
-      return result;
+      if (pdfUrl == null || pdfUrl.isEmpty) {
+        final contractorId = contractData['contractor_id'] as String?;
+        final projectId = contractData['project_id'] as String?;
+        final contracteeId = contractData['contractee_id'] as String?;
+        
+        if (contractorId != null && projectId != null && contracteeId != null) {
+          pdfUrl = '$contractorId/${projectId}_$contracteeId.pdf';
+        }
+      }
+      
+      if (pdfUrl == null) {
+        throw Exception('No PDF contract available');
+      }
+
+      try {
+        final pdfBytes = await ContractPdfService.downloadContractPdf(pdfUrl);
+        final fileName = 'Contract_${contractData['title']?.replaceAll(' ', '_') ?? 'Document'}.pdf';
+        final result = await ContractPdfService.saveToDevice(pdfBytes, fileName);
+        
+        return result;
+      } catch (e) {
+        rethrow;
+      }
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to download contract: $e',
+        module: 'View Contract Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Download Contract',
+          'contract_id': contractData['contract_id'],
+        },
+      );
       rethrow;
     }
   }
@@ -62,6 +88,16 @@ class ViewContractService {
         userType: 'contractor',
       );
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to sign contract: $e',
+        module: 'View Contract Service',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Sign Contract',
+          'contract_id': contractId,
+          'contractor_id': contractorId,
+        },
+      );
       rethrow;
     }
   }
@@ -73,6 +109,15 @@ class ViewContractService {
           .createSignedUrl(signaturePath, 60 * 60);
       return signedUrl;
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to get signed URL: $e',
+        module: 'View Contract Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Get Signed URL',
+          'signature_path': signaturePath,
+        },
+      );
       return null;
     }
   }
@@ -84,57 +129,90 @@ class ViewContractService {
           .createSignedUrl(contractPath, 60 * 60 * 24);
       return signedUrl;
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to get signed contract URL: $e',
+        module: 'View Contract Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Get Signed Contract URL',
+          'contract_path': contractPath,
+        },
+      );
       return null;
     }
   }
 
   static String? getPdfUrl(Map<String, dynamic> contractData) {
-    String? pdfUrl = contractData['pdf_url'] as String?;
-    
-    if (pdfUrl == null || pdfUrl.isEmpty) {
-      final contractorId = contractData['contractor_id'] as String?;
-      final projectId = contractData['project_id'] as String?;
-      final contracteeId = contractData['contractee_id'] as String?;
+    try {
+      String? pdfUrl = contractData['pdf_url'] as String?;
       
-      if (contractorId != null && projectId != null && contracteeId != null) {
-        pdfUrl = '$contractorId/${projectId}_$contracteeId.pdf';
+      if (pdfUrl == null || pdfUrl.isEmpty) {
+        final contractorId = contractData['contractor_id'] as String?;
+        final projectId = contractData['project_id'] as String?;
+        final contracteeId = contractData['contractee_id'] as String?;
+        
+        if (contractorId != null && projectId != null && contracteeId != null) {
+          pdfUrl = '$contractorId/${projectId}_$contracteeId.pdf';
+        }
       }
+      
+      return pdfUrl;
+    } catch (e) {
+      _errorService.logError(
+        errorMessage: 'Failed to get PDF URL: $e',
+        module: 'View Contract Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Get PDF URL',
+        },
+      );
+      return null;
     }
-    
-    return pdfUrl;
   }
 
   static Future<String?> getPdfSignedUrl(Map<String, dynamic> contractData) async {
-    final signedPdfUrl = contractData['signed_pdf_url'] as String?;
+    try {
+      final signedPdfUrl = contractData['signed_pdf_url'] as String?;
 
-    if (signedPdfUrl != null && signedPdfUrl.isNotEmpty) {
+      if (signedPdfUrl != null && signedPdfUrl.isNotEmpty) {
+        try {
+          final signedUrl = await Supabase.instance.client.storage
+              .from('contracts')
+              .createSignedUrl(signedPdfUrl, 60 * 60 * 24);
+          return signedUrl;
+        } catch (e) {
+          return null;
+        }
+      }
+      
+      final pdfPath = getPdfUrl(contractData);
+      
+      if (pdfPath == null) {
+        return null;
+      }
+      
       try {
+        final fileExists = await checkFileExists(pdfPath);
+        if (!fileExists) {
+          return null;
+        }
+        
         final signedUrl = await Supabase.instance.client.storage
             .from('contracts')
-            .createSignedUrl(signedPdfUrl, 60 * 60 * 24);
+            .createSignedUrl(pdfPath, 60 * 60 * 24); 
         return signedUrl;
       } catch (e) {
         return null;
       }
-    }
-    
-    final pdfPath = getPdfUrl(contractData);
-    
-    if (pdfPath == null) {
-      return null;
-    }
-    
-    try {
-      final fileExists = await checkFileExists(pdfPath);
-      if (!fileExists) {
-        return null;
-      }
-      
-      final signedUrl = await Supabase.instance.client.storage
-          .from('contracts')
-          .createSignedUrl(pdfPath, 60 * 60 * 24); 
-      return signedUrl;
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to get PDF signed URL: $e',
+        module: 'View Contract Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Get PDF Signed URL',
+        },
+      );
       return null;
     }
   }
@@ -147,23 +225,68 @@ class ViewContractService {
       
       return response.any((file) => file.name == filePath.split('/').last);
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to check file exists: $e',
+        module: 'View Contract Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Check File Exists',
+          'file_path': filePath,
+        },
+      );
       return false;
     }
   }
 
   static bool canSignContract(Map<String, dynamic>? contractData) {
-    if (contractData == null) return false;
-    final status = contractData['status'] as String?;
-    return status != null && status != 'signed';
+    try {
+      if (contractData == null) return false;
+      final status = contractData['status'] as String?;
+      return status != null && status != 'signed';
+    } catch (e) {
+      _errorService.logError(
+        errorMessage: 'Failed to check if can sign contract: $e',
+        module: 'View Contract Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Can Sign Contract',
+        },
+      );
+      return false;
+    }
   }
 
   static String generateFileName(Map<String, dynamic> contractData) {
-    final title = contractData['title'] as String?;
-    return 'Contract_${title?.replaceAll(' ', '_') ?? 'Document'}.pdf';
+    try {
+      final title = contractData['title'] as String?;
+      return 'Contract_${title?.replaceAll(' ', '_') ?? 'Document'}.pdf';
+    } catch (e) {
+      _errorService.logError(
+        errorMessage: 'Failed to generate file name: $e',
+        module: 'View Contract Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Generate File Name',
+        },
+      );
+      return 'Contract_Document.pdf';
+    }
   }
 
   static bool isSignatureValid(Uint8List? signatureBytes) {
-    return signatureBytes != null && signatureBytes.isNotEmpty;
+    try {
+      return signatureBytes != null && signatureBytes.isNotEmpty;
+    } catch (e) {
+      _errorService.logError(
+        errorMessage: 'Failed to check signature validity: $e',
+        module: 'View Contract Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Is Signature Valid',
+        },
+      );
+      return false;
+    }
   }
 
   static String formatStatus(String? status) {
@@ -191,6 +314,15 @@ class ViewContractService {
         ConTrustSnackBar.success(context, 'Contract downloaded successfully');
       }
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to handle download: $e',
+        module: 'View Contract Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Handle Download',
+          'contract_id': contractData['contract_id'],
+        },
+      );
       ConTrustSnackBar.error(context, e.toString());
     }
   }
@@ -202,22 +334,37 @@ class ViewContractService {
     required BuildContext context,
     required VoidCallback onSuccess,
   }) async {
-    if (!isSignatureValid(signatureBytes)) {
-      ConTrustSnackBar.warning(context, 'Please provide a signature');
-      return false;
-    }
-
     try {
-      await signContract(
-        contractId: contractId,
-        contractorId: contractorId,
-        signatureBytes: signatureBytes!,
-      );
+      if (!isSignatureValid(signatureBytes)) {
+        ConTrustSnackBar.warning(context, 'Please provide a signature');
+        return false;
+      }
 
-      ConTrustSnackBar.success(context, 'Signature saved!');
-      onSuccess();
-      return true;
+      try {
+        await signContract(
+          contractId: contractId,
+          contractorId: contractorId,
+          signatureBytes: signatureBytes!,
+        );
+
+        ConTrustSnackBar.success(context, 'Signature saved!');
+        onSuccess();
+        return true;
+      } catch (e) {
+        ConTrustSnackBar.error(context, e.toString());
+        return false;
+      }
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to handle signature: $e',
+        module: 'View Contract Service',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Handle Signature',
+          'contract_id': contractId,
+          'contractor_id': contractorId,
+        },
+      );
       ConTrustSnackBar.error(context, e.toString());
       return false;
     }
