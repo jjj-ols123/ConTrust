@@ -1,7 +1,9 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:backend/services/superadmin services/errorlogs_service.dart';
 
 class FetchService {
   final SupabaseClient _supabase = Supabase.instance.client;
+  static final SuperAdminErrorService _errorService = SuperAdminErrorService();
 
   //For Contractees
 
@@ -12,17 +14,38 @@ class FetchService {
           .select('contractor_id, firm_name, profile_photo, bio');
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch contractors: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Contractors',
+        },
+      );
       return [];
     }
   }
 
   Future<String?> fetchChatRoomId(String projectId) async {
-    final response = await _supabase
-        .from('ChatRoom')
-        .select('chatroom_id')
-        .eq('project_id', projectId)
-        .maybeSingle();
-    return response?['chatroom_id'];
+    try {
+      final response = await _supabase
+          .from('ChatRoom')
+          .select('chatroom_id')
+          .eq('project_id', projectId)
+          .maybeSingle();
+      return response?['chatroom_id'];
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch chat room ID: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Chat Room ID',
+          'project_id': projectId,
+        },
+      );
+      return null;
+    }
   }
 
   //For Both Users
@@ -36,6 +59,15 @@ class FetchService {
           .single();
       return Map<String, dynamic>.from(response);
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch contractor data: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Contractor Data',
+          'contractor_id': contractorId,
+        },
+      );
       return null;
     }
   }
@@ -49,6 +81,15 @@ class FetchService {
           .single();
       return Map<String, dynamic>.from(response);
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch contractee data: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Contractee Data',
+          'contractee_id': contracteeId,
+        },
+      );
       return null;
     }
   }
@@ -67,6 +108,14 @@ class FetchService {
           .order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch user projects: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch User Projects',
+        },
+      );
       return [];
     }
   }
@@ -111,6 +160,15 @@ class FetchService {
 
       return status;
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch project status: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Project Status',
+          'chatroom_id': chatRoomId,
+        },
+      );
       return null;
     }
   }
@@ -125,6 +183,15 @@ class FetchService {
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch project tasks: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Project Tasks',
+          'project_id': projectId,
+        },
+      );
       return [];
     }
   }
@@ -139,6 +206,15 @@ class FetchService {
           .order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch project reports: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Project Reports',
+          'project_id': projectId,
+        },
+      );
       return [];
     }
   }
@@ -153,6 +229,15 @@ class FetchService {
           .order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch project photos: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Project Photos',
+          'project_id': projectId,
+        },
+      );
       return [];
     }
   }
@@ -166,6 +251,15 @@ class FetchService {
           .order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch project costs: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Project Costs',
+          'project_id': projectId,
+        },
+      );
       return [];
     }
   }
@@ -181,6 +275,15 @@ class FetchService {
 
       return response;
     } catch (error) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch project details: $error',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Project Details',
+          'project_id': projectId,
+        },
+      );
       return null;
     }
   }
@@ -207,6 +310,15 @@ class FetchService {
 
       return projectResponse;
     } catch (error) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch project details by chat room: $error',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Project Details by Chat Room',
+          'chatroom_id': chatRoomId,
+        },
+      );
       return null;
     }
   }
@@ -216,29 +328,43 @@ class FetchService {
     required String userType,
     required String action,
   }) async {
-    final contract = await fetchContractData(contractId);
+    try {
+      final contract = await fetchContractData(contractId);
 
-    String receiverId, receiverType, senderId, senderType, message;
-    if (userType == 'contractor') {
-      receiverId = contract?['contractee_id'];
-      receiverType = 'contractee';
-      senderId = contract?['contractor_id'];
-      senderType = 'contractor';
-      message = 'The $userType has $action';
-    } else {
-      receiverId = contract?['contractor_id'];
-      receiverType = 'contractor';
-      senderId = contract?['contractee_id'];
-      senderType = 'contractee';
-      message = 'The $userType has $action';
+      String receiverId, receiverType, senderId, senderType, message;
+      if (userType == 'contractor') {
+        receiverId = contract?['contractee_id'];
+        receiverType = 'contractee';
+        senderId = contract?['contractor_id'];
+        senderType = 'contractor';
+        message = 'The $userType has $action';
+      } else {
+        receiverId = contract?['contractor_id'];
+        receiverType = 'contractor';
+        senderId = contract?['contractee_id'];
+        senderType = 'contractee';
+        message = 'The $userType has $action';
+      }
+      return {
+        'receiverId': receiverId,
+        'receiverType': receiverType,
+        'senderId': senderId,
+        'senderType': senderType,
+        'message': message,
+      };
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to decide user type: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'User Type Decide',
+          'contract_id': contractId,
+          'user_type': userType,
+        },
+      );
+      rethrow;
     }
-    return {
-      'receiverId': receiverId,
-      'receiverType': receiverType,
-      'senderId': senderId,
-      'senderType': senderType,
-      'message': message,
-    };
   }
 
   //For Contractors
@@ -262,6 +388,14 @@ class FetchService {
           .order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch completed projects: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Completed Projects',
+        },
+      );
       return [];
     }
   }
@@ -275,6 +409,14 @@ class FetchService {
           .order('template_name', ascending: true);
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch contract types: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Contract Types',
+        },
+      );
       return [];
     }
   }
@@ -315,6 +457,15 @@ class FetchService {
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch created contracts: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Created Contracts',
+          'contractor_id': contractorId,
+        },
+      );
       return [];
     }
   }
@@ -330,28 +481,63 @@ class FetchService {
 
       return response;
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch contractor project info: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Contractor Project Info',
+          'contractor_id': contractorId,
+        },
+      );
       return [];
     }
   }
 
   Future<Map<String, dynamic>?> fetchContractData(String contractId) async {
-    final contract = await _supabase
-        .from('Contracts')
-        .select()
-        .eq('contract_id', contractId)
-        .single();
-    return contract;
+    try {
+      final contract = await _supabase
+          .from('Contracts')
+          .select()
+          .eq('contract_id', contractId)
+          .single();
+      return contract;
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch contract data: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Contract Data',
+          'contract_id': contractId,
+        },
+      );
+      return null;
+    }
   }
 
   Future<List<Map<String, dynamic>>> fetchHiringRequestsForProject(
       String projectId) async {
-    final response = await _supabase
-        .from('Notifications')
-        .select('receiver_id, information, headline')
-        .eq('headline', 'Hiring Request')
-        .filter('information->>project_id', 'eq', projectId);
+    try {
+      final response = await _supabase
+          .from('Notifications')
+          .select('receiver_id, information, headline')
+          .eq('headline', 'Hiring Request')
+          .filter('information->>project_id', 'eq', projectId);
 
-    return List<Map<String, dynamic>>.from(response);
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch hiring requests for project: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Hiring Requests for Project',
+          'project_id': projectId,
+        },
+      );
+      return [];
+    }
   }
 
   Future<Map<String, dynamic>?> fetchContracteeFromProject(
@@ -368,6 +554,15 @@ class FetchService {
 
       return response['contractee'];
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch contractee from project: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Contractee from Project',
+          'project_id': projectId,
+        },
+      );
       return null;
     }
   }
@@ -382,6 +577,15 @@ class FetchService {
           .order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(res);
     } catch (_) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch contractor active projects: $_',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Contractor Active Projects',
+          'contractor_id': contractorId,
+        },
+      );
       return [];
     }
   }
@@ -396,6 +600,15 @@ class FetchService {
           .order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(res);
     } catch (_) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch contractee active projects: $_',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Contractee Active Projects',
+          'contractee_id': contracteeId,
+        },
+      );
       return [];
     }
   }
@@ -410,6 +623,15 @@ class FetchService {
 
       return List<Map<String, dynamic>>.from(response);
     } catch (_) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch ratings: $_',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Ratings',
+          'contractor_id': contractorId,
+        },
+      );
       return [];
     }
   }
@@ -440,6 +662,15 @@ class FetchService {
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch contracts for contractee: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Contracts for Contractee',
+          'contractee_id': contracteeId,
+        },
+      );
       return [];
     }
   }
@@ -460,6 +691,15 @@ class FetchService {
 
       return response;
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch contract with details: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Contract with Details',
+          'contract_id': contractId,
+        },
+      );
       return null;
     }
   }
@@ -478,6 +718,16 @@ class FetchService {
 
       return response;
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to check existing hire request: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Has Existing Hire Request',
+          'contractor_id': contractorId,
+          'contractee_id': contracteeId,
+        },
+      );
       return null;
     }
   }
@@ -493,6 +743,15 @@ class FetchService {
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch contracts for project: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Contracts for Project',
+          'project_id': projectId,
+        },
+      );
       return [];
     }
   }

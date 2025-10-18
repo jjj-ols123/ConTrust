@@ -1,4 +1,4 @@
-// ignore_for_file: non_constant_identifier_names, use_build_context_synchronously, unnecessary_type_check, deprecated_member_use, depend_on_referenced_packages
+// ignore_for_file: non_constant_identifier_names, use_build_context_synchronously, unnecessary_type_check, deprecated_member_use, depend_on_referenced_packages, unused_local_variable
 
 import 'package:backend/services/both services/be_bidding_service.dart';
 import 'package:backend/services/both services/be_project_service.dart';
@@ -359,9 +359,9 @@ class ProjectModal {
                     ),
                   ),
                 ],
-              ),
-            ),
-          );
+                  )
+                )
+              );
             },
           ),
         )
@@ -433,7 +433,6 @@ class BidsModal {
               ),
               child: StatefulBuilder(
                 builder: (context, setState) {
-                  int? selectedBidIndex;
                   return Stack(
                     children: [
                       Padding(
@@ -466,6 +465,8 @@ class BidsModal {
                                           'No bids for this project yet.')),
                                 );
                               }
+                              // Check if any bid is accepted
+                              final anyAccepted = bids.any((bid) => bid['status'] == 'accepted');
                               return SizedBox(
                                 height: 500,
                                 child: ListView.separated(
@@ -489,8 +490,7 @@ class BidsModal {
                                         bid['message'] as String? ?? '';
                                     final createdAtStr =
                                         bid['created_at'] as String? ?? '';
-                                    final isAccepted =
-                                        acceptedBidId == bid['bid_id'];
+                                    final status = bid['status'] as String? ?? 'pending';
                                     DateTime? createdAt;
                                     if (createdAtStr.isNotEmpty) {
                                       try {
@@ -501,290 +501,280 @@ class BidsModal {
                                       }
                                     }
 
-                                    return InkWell(
-                                      onTap: () {
-                                        setState(() {
-                                          selectedBidIndex = selectedBidIndex == index ? null : index;
-                                        });
-                                      },
-                                      child: Row(
-                                        children: [
-                                          Expanded(
-                                            child: Padding(
-                                              padding: const EdgeInsets.symmetric(
-                                                  horizontal: 16, vertical: 8),
-                                              child: Container(
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white,
-                                                  border: Border.all(
-                                                      color: Colors.grey.shade300,
-                                                      width: 1),
-                                                  borderRadius:
-                                                      BorderRadius.circular(14),
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                      color:
-                                                          Colors.black.withOpacity(0.05),
-                                                      blurRadius: 4,
-                                                      offset: const Offset(0, 2),
-                                                    ),
-                                                  ],
-                                                ),
-                                                padding: const EdgeInsets.all(16),
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Row(
-                                                      children: [
-                                                        CircleAvatar(
-                                                          radius: 28,
-                                                          backgroundImage:
-                                                              profilePhoto.isNotEmpty
-                                                                  ? NetworkImage(
-                                                                      profilePhoto)
-                                                                  : NetworkImage(
-                                                                      profileUrl),
-                                                        ),
-                                                        const SizedBox(width: 12),
-                                                        Expanded(
-                                                          child: Column(
-                                                            crossAxisAlignment:
-                                                                CrossAxisAlignment
-                                                                    .start,
-                                                            children: [
-                                                              Text(
-                                                                firmName,
-                                                                style: const TextStyle(
-                                                                  fontWeight:
-                                                                      FontWeight.w700,
-                                                                  fontSize: 16,
-                                                                ),
-                                                              ),
-                                                              const SizedBox(height: 4),
-                                                              Text(
-                                                                'Bid Amount: ₱$bidAmount',
-                                                                style: const TextStyle(
-                                                                  fontSize: 14,
-                                                                  fontWeight:
-                                                                      FontWeight.w500,
-                                                                  color: Colors.black87,
-                                                                ),
-                                                              ),
-                                                              const SizedBox(height: 4),
-                                                              Text(
-                                                                createdAt != null
-                                                                    ? DateFormat.yMMMd()
-                                                                        .add_jm()
-                                                                        .format(
-                                                                            createdAt)
-                                                                    : '',
-                                                                style: const TextStyle(
-                                                                  fontSize: 12,
-                                                                  color: Colors.grey,
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    const SizedBox(height: 12),
-                                                    isAccepted
-                                                        ? Container(
-                                                            padding: const EdgeInsets
-                                                                .symmetric(
-                                                                vertical: 6,
-                                                                horizontal: 10),
-                                                            decoration: BoxDecoration(
-                                                              color:
-                                                                  Colors.green.shade600,
-                                                              borderRadius:
-                                                                  BorderRadius.circular(
-                                                                      6),
-                                                            ),
-                                                            child: const Text(
-                                                              'Accepted Bid',
-                                                              style: TextStyle(
-                                                                color: Colors.white,
-                                                                fontWeight:
-                                                                    FontWeight.bold,
-                                                                fontSize: 14,
-                                                              ),
-                                                            ),
-                                                          )
-                                                        : Row(
-                                                            mainAxisAlignment:
-                                                                MainAxisAlignment.end,
-                                                            children: [
-                                                              TextButton(
-                                                                onPressed: () async {
-                                                                  await BiddingService()
-                                                                      .deleteBid(bid[
-                                                                          'bid_id']);
-                                                                  if (context.mounted) {
-                                                                    setState(() {
-                                                                      bidsFuture =
-                                                                          BiddingService()
-                                                                              .getBidsForProject(
-                                                                                  projectId);
-                                                                    });
-                                                                  }
-                                                                },
-                                                                style: TextButton
-                                                                    .styleFrom(
-                                                                  backgroundColor:
-                                                                      Colors
-                                                                          .red.shade50,
-                                                                  foregroundColor:
-                                                                      Colors.red.shade700,
-                                                                  side: BorderSide(
-                                                                      color: Colors
-                                                                          .red.shade300,
-                                                                      width: 1),
-                                                                  padding:
-                                                                      const EdgeInsets
-                                                                          .symmetric(
-                                                                          horizontal:
-                                                                              16,
-                                                                          vertical: 8),
-                                                                  shape:
-                                                                      RoundedRectangleBorder(
-                                                                    borderRadius:
-                                                                        BorderRadius
-                                                                            .circular(
-                                                                                6),
-                                                                  ),
-                                                                  textStyle:
-                                                                      const TextStyle(
-                                                                    fontWeight:
-                                                                        FontWeight.w600,
-                                                                    fontSize: 14,
-                                                                  ),
-                                                                ),
-                                                                child: const Text(
-                                                                    'Reject'),
-                                                              ),
-                                                              const SizedBox(width: 8),
-                                                              ElevatedButton(
-                                                                onPressed: () async {
-                                                                  await acceptBidding(
-                                                                      projectId,
-                                                                      bid['bid_id']);
-                                                                  if (context.mounted) {
-                                                                    setState(() {
-                                                                      acceptedBidId =
-                                                                          bid['bid_id'];
-                                                                      bidsFuture =
-                                                                          BiddingService()
-                                                                              .getBidsForProject(
-                                                                                  projectId);
-                                                                    });
-                                                                  }
-                                                                },
-                                                                style: ElevatedButton
-                                                                    .styleFrom(
-                                                                  backgroundColor:
-                                                                      Colors.green
-                                                                          .shade600,
-                                                                  side: BorderSide(
-                                                                      color: Colors
-                                                                          .green
-                                                                          .shade600,
-                                                                      width: 1),
-                                                                  foregroundColor:
-                                                                      Colors.white,
-                                                                  padding:
-                                                                      const EdgeInsets
-                                                                          .symmetric(
-                                                                          horizontal:
-                                                                              16,
-                                                                          vertical: 8),
-                                                                  shape:
-                                                                      RoundedRectangleBorder(
-                                                                    borderRadius:
-                                                                        BorderRadius
-                                                                            .circular(
-                                                                                6),
-                                                                  ),
-                                                                  textStyle:
-                                                                      const TextStyle(
-                                                                    fontWeight:
-                                                                        FontWeight.w600,
-                                                                    fontSize: 14,
-                                                                  ),
-                                                                ),
-                                                                child: const Text(
-                                                                    'Accept'),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                  ],
-                                                ),
-                                              ),
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 8),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          border: Border.all(
+                                              color: Colors.grey.shade300,
+                                              width: 1),
+                                          borderRadius:
+                                              BorderRadius.circular(14),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color:
+                                                  Colors.black.withOpacity(0.05),
+                                              blurRadius: 4,
+                                              offset: const Offset(0, 2),
                                             ),
-                                          ),
-                                          if (selectedBidIndex == index)
-                                            Container(
-                                              width: 250,
-                                              margin: const EdgeInsets.only(right: 16),
-                                              padding: const EdgeInsets.all(12),
-                                              decoration: BoxDecoration(
-                                                color: Colors.blue.shade50,
-                                                border: Border.all(
-                                                    color: Colors.blue.shade200,
-                                                    width: 1),
-                                                borderRadius: BorderRadius.circular(12),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: Colors.black.withOpacity(0.1),
-                                                    blurRadius: 6,
-                                                    offset: const Offset(0, 3),
-                                                  ),
-                                                ],
-                                              ),
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Row(
-                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          ],
+                                        ),
+                                        padding: const EdgeInsets.all(16),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                CircleAvatar(
+                                                  radius: 28,
+                                                  backgroundImage:
+                                                      profilePhoto.isNotEmpty
+                                                          ? NetworkImage(
+                                                              profilePhoto)
+                                                          : NetworkImage(
+                                                              profileUrl),
+                                                ),
+                                                const SizedBox(width: 12),
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
                                                     children: [
-                                                      const Text(
-                                                        'Bid Message',
-                                                        style: TextStyle(
-                                                          fontWeight: FontWeight.bold,
+                                                      Text(
+                                                        firmName,
+                                                        style: const TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.w700,
                                                           fontSize: 16,
-                                                          color: Colors.blue,
                                                         ),
                                                       ),
-                                                      IconButton(
-                                                        icon: const Icon(Icons.close, size: 20),
-                                                        onPressed: () {
-                                                          setState(() {
-                                                            selectedBidIndex = null;
-                                                          });
-                                                        },
-                                                        tooltip: 'Close',
+                                                      const SizedBox(height: 4),
+                                                      Text(
+                                                        'Bid Amount: ₱$bidAmount',
+                                                        style: const TextStyle(
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                          color: Colors.black87,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 4),
+                                                      Text(
+                                                        createdAt != null
+                                                            ? DateFormat.yMMMd()
+                                                                .add_jm()
+                                                                .format(
+                                                                    createdAt)
+                                                            : '',
+                                                        style: const TextStyle(
+                                                          fontSize: 12,
+                                                          color: Colors.grey,
+                                                        ),
                                                       ),
                                                     ],
                                                   ),
-                                                  const SizedBox(height: 8),
-                                                  Text(
-                                                    message,
-                                                    style: const TextStyle(
-                                                      fontSize: 14,
-                                                      color: Colors.black87,
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 12),
+                                            if (status == 'accepted') ...[
+                                              Container(
+                                                padding: const EdgeInsets
+                                                    .symmetric(
+                                                    vertical: 6,
+                                                    horizontal: 10),
+                                                decoration: BoxDecoration(
+                                                  color:
+                                                      Colors.green.shade600,
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          6),
+                                                ),
+                                                child: const Text(
+                                                  'Accepted Bid',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontWeight:
+                                                        FontWeight.bold,
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                              ),
+                                            ] else if (status == 'rejected') ...[
+                                              Container(
+                                                padding: const EdgeInsets
+                                                    .symmetric(
+                                                    vertical: 6,
+                                                    horizontal: 10),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.red.shade100,
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          6),
+                                                  border: Border.all(
+                                                      color: Colors.red.shade300),
+                                                ),
+                                                child: const Text(
+                                                  'Rejected',
+                                                  style: TextStyle(
+                                                    color: Colors.red,
+                                                    fontWeight:
+                                                        FontWeight.bold,
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                              ),
+                                            ] else if (!anyAccepted) ...[
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  TextButton.icon(
+                                                    onPressed: () {
+                                                      showDialog(
+                                                        context: context,
+                                                        builder: (context) => AlertDialog(
+                                                          title: const Text('Bid Description'),
+                                                          content: Text(message),
+                                                          actions: [
+                                                            TextButton(
+                                                              onPressed: () => Navigator.pop(context),
+                                                              child: const Text('Close'),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      );
+                                                    },
+                                                    icon: const Icon(Icons.info_outline, size: 16),
+                                                    label: const Text('More Details'),
+                                                    style: TextButton.styleFrom(
+                                                      foregroundColor: Colors.blue.shade700,
+                                                      textStyle: const TextStyle(
+                                                        fontWeight: FontWeight.w600,
+                                                        fontSize: 14,
+                                                      ),
                                                     ),
+                                                  ),
+                                                  Row(
+                                                    children: [
+                                                      TextButton(
+                                                        onPressed: () async {
+                                                          await BiddingService()
+                                                              .rejectBid(bid[
+                                                                  'bid_id']);
+                                                          if (context.mounted) {
+                                                            setState(() {
+                                                              bidsFuture =
+                                                                  BiddingService()
+                                                                      .getBidsForProject(
+                                                                          projectId);
+                                                            });
+                                                            Navigator.pop(context);
+                                                          }
+                                                        },
+                                                        style: TextButton
+                                                            .styleFrom(
+                                                          backgroundColor:
+                                                              Colors
+                                                                  .red.shade50,
+                                                          foregroundColor:
+                                                              Colors.red.shade700,
+                                                          side: BorderSide(
+                                                              color: Colors
+                                                                  .red.shade300,
+                                                              width: 1),
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      16,
+                                                                  vertical: 8),
+                                                          shape:
+                                                              RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        6),
+                                                          ),
+                                                          textStyle:
+                                                              const TextStyle(
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            fontSize: 14,
+                                                          ),
+                                                        ),
+                                                        child: const Text(
+                                                            'Reject'),
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      ElevatedButton(
+                                                        onPressed: () async {
+                                                          await acceptBidding(
+                                                              projectId,
+                                                              bid['bid_id']);
+                                                          if (context.mounted) {
+                                                            setState(() {
+                                                              acceptedBidId =
+                                                                  bid['bid_id'];
+                                                              bidsFuture =
+                                                                  BiddingService()
+                                                                      .getBidsForProject(
+                                                                          projectId);
+                                                            });
+                                                            Navigator.pop(context);
+                                                          }
+                                                        },
+                                                        style: ElevatedButton
+                                                            .styleFrom(
+                                                          backgroundColor:
+                                                              Colors.green
+                                                                  .shade600,
+                                                          side: BorderSide(
+                                                              color: Colors
+                                                                  .green
+                                                                  .shade600,
+                                                              width: 1),
+                                                          foregroundColor:
+                                                              Colors.white,
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      16,
+                                                                  vertical: 8),
+                                                          shape:
+                                                              RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        6),
+                                                          ),
+                                                          textStyle:
+                                                              const TextStyle(
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            fontSize: 14,
+                                                          ),
+                                                        ),
+                                                        child: const Text(
+                                                            'Accept'),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ],
                                               ),
-                                            ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                ),
-                              );
+                                            ],
+                                          ],
+                                        ),
+                                      )
+                                      );
+                                    },
+                                  ),
+                                );
                             }),
                       ),
                       Positioned(
@@ -831,8 +821,7 @@ class HireModal {
     } else {
       titleController.text = existingProjectWithContractor['title'] ?? '';
       typeController.text = existingProjectWithContractor['type'] ?? '';
-      descriptionController.text =
-          existingProjectWithContractor['description'] ?? '';
+      descriptionController.text = existingProjectWithContractor['description'] ?? '';
       locationController.text = existingProjectWithContractor['location'] ?? '';
     }
 

@@ -3,10 +3,12 @@
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/utils/be_status.dart';
 import 'package:backend/utils/be_snackbar.dart';
+import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:flutter/material.dart';
 
 class CorDashboardService {
   final _fetchService = FetchService();
+  static final SuperAdminErrorService _errorService = SuperAdminErrorService();
 
   Future<Map<String, dynamic>> loadDashboardData(String contractorId) async {
     try {
@@ -69,6 +71,15 @@ class CorDashboardService {
         'localTasks': localTasks,
       };
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to load dashboard data: $e',
+        module: 'Contractor Dashboard Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Load Dashboard Data',
+          'contractor_id': contractorId,
+        },
+      );
       rethrow;
     }
   }
@@ -78,36 +89,47 @@ class CorDashboardService {
     required Map<String, dynamic> project,
     required VoidCallback onNavigate,
   }) async {
-    final projectStatus = project['status']?.toString().toLowerCase();
-    
-    if (projectStatus != 'active') {
-      if (context.mounted) {
-        ConTrustSnackBar.warning(context, 
-          'Project is not active yet. Current status: ${ProjectStatus().getStatusLabel(projectStatus)}');
+    try {
+      final projectStatus = project['status']?.toString().toLowerCase();
+      
+      if (projectStatus != 'active') {
+        if (context.mounted) {
+          ConTrustSnackBar.warning(context, 
+            'Project is not active yet. Current status: ${ProjectStatus().getStatusLabel(projectStatus)}');
+        }
+        return;
       }
-      return;
-    }
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('View Project Management'),
-        content: const Text('Do you want to go to Project Management Page?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Confirm'),
-          ),
-        ],
-      ),
-    );
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('View Project Management'),
+          content: const Text('Do you want to go to Project Management Page?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Confirm'),
+            ),
+          ],
+        ),
+      );
 
-    if (confirmed == true) {
-      onNavigate();
+      if (confirmed == true) {
+        onNavigate();
+      }
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to navigate to project: $e',
+        module: 'Contractor Dashboard Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Navigate to Project',
+        },
+      );
     }
   }
 }

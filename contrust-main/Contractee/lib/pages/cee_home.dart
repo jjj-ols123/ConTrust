@@ -152,7 +152,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
 
     final contracteeId = supabase.auth.currentUser?.id;
 
@@ -186,23 +185,16 @@ class _HomePageState extends State<HomePage> {
                 },
                 profileUrl: HomePageBuilder.profileUrl,
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    "Your Posted Projects",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 27,
-                    ),
-                  ),
                   TextButton(
                     onPressed: _loadData,
                     child: Text(
                       "Refresh",
                       style: TextStyle(
-                        color: theme.colorScheme.primary,
+                        color: Colors.amber[700],
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
                       ),

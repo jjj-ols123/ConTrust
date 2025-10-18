@@ -81,7 +81,7 @@ class HomePageBuilder {
 
   static Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
@@ -245,7 +245,17 @@ class HomePageBuilder {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: isPlaceholder ? null : () {
-         
+          final projectStatus = project['status']?.toString().toLowerCase();
+          if (projectStatus != 'active') {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Project is not active yet. Current status: ${projectStatus ?? 'Unknown'}'),
+                backgroundColor: Colors.orange,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+            return;
+          }
         },
         child: Padding(
           padding: const EdgeInsets.all(16),

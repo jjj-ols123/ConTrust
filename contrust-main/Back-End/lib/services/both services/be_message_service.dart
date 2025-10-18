@@ -1,3 +1,5 @@
+import 'package:backend/services/superadmin%20services/auditlogs_service.dart';
+import 'package:backend/services/superadmin%20services/errorlogs_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MessageService {
@@ -31,9 +33,31 @@ class MessageService {
           .select('chatroom_id')
           .single();
 
+      await SuperAdminAuditService().logAuditEvent(
+        action: 'CHATROOM_CREATED',
+        details:
+            'Chat room created between $contractorId and $contracteeId for project $projectId',
+        category: 'Contract',
+        metadata: {
+          'contract_id': contracteeId,
+          'contractor_id': contractorId,
+          'chatroom_id': response['chatroom_id'],
+        },
+      );
+
       return response['chatroom_id'] as String?;
     } catch (e) {
-      return null;
+      await SuperAdminErrorService().logError(
+        errorMessage: 'Failed to create chat room: $e',
+        module: 'UI Message',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Create Chat Room',
+          'contractor_id': contractorId,
+          'contractee_id': contracteeId,
+        },
+      );
     }
+    return null;
   }
 }

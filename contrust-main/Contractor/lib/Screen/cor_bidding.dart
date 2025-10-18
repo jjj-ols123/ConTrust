@@ -21,6 +21,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
   bool isLoading = true;
   String? contractorId;
   Map<String, dynamic>? selectedProject;
+  List<Map<String, dynamic>> contractorBids = [];
 
   @override
   void initState() {
@@ -44,6 +45,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
           projects = data['projects'];
           contracteeInfo = data['contracteeInfo'];
           highestBids = data['highestBids'];
+          contractorBids = data['contractorBids'];
           isLoading = false;
         });
       } else {
@@ -75,6 +77,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
       finalizedProjects: finalizedProjects,
       selectedProject: selectedProject,
       contracteeInfo: contracteeInfo,
+      contractorBids: contractorBids,
       onProjectSelected: (project) {
         if (mounted) {
           setState(() {

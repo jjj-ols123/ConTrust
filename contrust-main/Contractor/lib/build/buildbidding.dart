@@ -18,8 +18,9 @@ class BiddingUIBuildMethods {
     required this.finalizedProjects,
     required this.selectedProject,
     required this.contracteeInfo,
-    required this.onProjectSelected,
-  });
+    required this.contractorBids,
+    required this.onProjectSelected, 
+  }) ;
 
   final BuildContext context;
   final bool isLoading;
@@ -32,6 +33,7 @@ class BiddingUIBuildMethods {
   final Map<String, Map<String, dynamic>> contracteeInfo;
   final Function(Map<String, dynamic>?) onProjectSelected;
   final CorBiddingService _service = CorBiddingService();
+  final List<Map<String, dynamic>> contractorBids;
 
   Widget buildBiddingUI() {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -66,6 +68,7 @@ class BiddingUIBuildMethods {
               ],
             ),
           ),
+          buildContractorBidsOverview(),
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -137,6 +140,82 @@ class BiddingUIBuildMethods {
                     : buildProjectGrid(),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget buildContractorBidsOverview() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ExpansionTile(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Your Bids',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            ...contractorBids.take(2).map(buildBidItem),
+            if (contractorBids.length > 2)
+              Text(
+                '... and ${contractorBids.length - 2} more',
+                style: TextStyle(color: Colors.grey, fontSize: 14),
+              ),
+          ],
+        ),
+        children: contractorBids.skip(2).map(buildBidItem).toList(),
+      ),
+    );
+  }
+
+  Widget buildBidItem(Map<String, dynamic> bid) {
+    final project = bid['project'] ?? {};
+    final status = bid['status'] ?? 'pending';
+    final amount = bid['bid_amount'] ?? 0;
+    final projectType = project['type'] ?? 'Unknown Project';
+
+    Color statusColor;
+    switch (status) {
+      case 'accepted':
+        statusColor = Colors.green;
+        break;
+      case 'rejected':
+        statusColor = Colors.red;
+        break;
+      case 'stopped':
+        statusColor = Colors.grey;
+        break;
+      default:
+        statusColor = Colors.orange;
+    }
+
+    return ListTile(
+      leading: Icon(Icons.assignment, color: Colors.amber),
+      title: Text(projectType, style: const TextStyle(fontWeight: FontWeight.w600)),
+      subtitle: Text('Bid: ₱$amount'),
+      trailing: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: statusColor.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: statusColor),
+        ),
+        child: Text(
+          status.toUpperCase(),
+          style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }
@@ -580,10 +659,17 @@ class BiddingUIBuildMethods {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      project['type'] ?? 'Project',
+                      project['title'] ?? 'Untitled',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 22,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      project['type'] ?? 'Project',
+                      style: const TextStyle(
+                        fontSize: 18,
                         color: Color(0xFF2C3E50),
                       ),
                     ),
@@ -753,8 +839,8 @@ class BiddingUIBuildMethods {
                   ],
                 ),
               ),
-            ),
-          ),
+            )
+          )
     );
   }
 
@@ -826,15 +912,15 @@ class BiddingUIBuildMethods {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  project['type'] ?? 'Unknown',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2C3E50),
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+          "${project['title'] ?? 'Unknown'}",
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF2C3E50),
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
                 const SizedBox(height: 8),
                 Container(
                   height: 2,

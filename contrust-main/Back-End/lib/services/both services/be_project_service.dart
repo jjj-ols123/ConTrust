@@ -41,7 +41,8 @@ class ProjectService {
 
       if (existingProject != null) {
         if (context.mounted) {
-          ConTrustSnackBar.error(context, 'You cannot post a new project while a project is up.');
+          ConTrustSnackBar.error(
+              context, 'You cannot post a new project while a project is up.');
         }
         return;
       }
@@ -159,7 +160,7 @@ class ProjectService {
     }
   }
 
-   Future<void> notifyContractor({
+  Future<void> notifyContractor({
     required String contractorId,
     required String contracteeId,
     required String title,
@@ -168,8 +169,8 @@ class ProjectService {
     required String location,
   }) async {
     try {
-      final existingHireRequest =
-          await FetchService().hasExistingHireRequest(contractorId, contracteeId);
+      final existingHireRequest = await FetchService()
+          .hasExistingHireRequest(contractorId, contracteeId);
 
       if (existingHireRequest != null) {
         throw Exception(
@@ -241,7 +242,8 @@ class ProjectService {
       await _auditService.logAuditEvent(
         userId: contracteeId,
         action: 'CONTRACTOR_NOTIFIED',
-        details: 'Contractee notified contractor about project thru hire request',
+        details:
+            'Contractee notified contractor about project thru hire request',
         category: 'Notification',
         metadata: {
           'contractor_id': contractorId,
@@ -278,7 +280,7 @@ class ProjectService {
       final userType = requestingUserId == project['contractor_id']
           ? 'contractor'
           : 'contractee';
-      
+
       String receiverId, receiverType, senderId, senderType, message;
       if (userType == 'contractor') {
         receiverId = project['contractee_id'];
@@ -293,7 +295,7 @@ class ProjectService {
         senderType = 'contractee';
         message = 'The contractee has requested to cancel the project';
       }
-      
+
       final status = userType == 'contractor'
           ? 'cancellation_requested_by_contractor'
           : 'cancellation_requested_by_contractee';
@@ -306,8 +308,12 @@ class ProjectService {
           ? await FetchService().fetchContractorData(senderId)
           : await FetchService().fetchContracteeData(senderId);
       final senderName = userType == 'contractor'
-          ? (senderData != null ? senderData['firm_name'] ?? 'A contractor' : 'A contractor')
-          : (senderData != null ? senderData['full_name'] ?? 'A contractee' : 'A contractee');
+          ? (senderData != null
+              ? senderData['firm_name'] ?? 'A contractor'
+              : 'A contractor')
+          : (senderData != null
+              ? senderData['full_name'] ?? 'A contractee'
+              : 'A contractee');
       final senderPhoto = senderData?['profile_photo'] ?? '';
 
       await NotificationService().createNotification(
@@ -365,7 +371,7 @@ class ProjectService {
     return chatRoom?['project_id'];
   }
 
-  //For Contractors 
+  //For Contractors
 
   Future<void> acceptHiring({
     required String notificationId,
@@ -449,8 +455,8 @@ class ProjectService {
     }
   }
 
-  Future<void> cancelOtherHireRequests(
-      String projectId, String contracteeId, String acceptedNotificationId) async {
+  Future<void> cancelOtherHireRequests(String projectId, String contracteeId,
+      String acceptedNotificationId) async {
     try {
       final otherRequests = await _supabase
           .from('Notifications')
@@ -599,8 +605,12 @@ class ProjectService {
           ? await FetchService().fetchContractorData(senderId)
           : await FetchService().fetchContracteeData(senderId);
       final senderName = senderType == 'contractor'
-          ? (senderData != null ? senderData['firm_name'] ?? 'A contractor' : 'A contractor')
-          : (senderData != null ? senderData['full_name'] ?? 'A contractee' : 'A contractee');
+          ? (senderData != null
+              ? senderData['firm_name'] ?? 'A contractor'
+              : 'A contractor')
+          : (senderData != null
+              ? senderData['full_name'] ?? 'A contractee'
+              : 'A contractee');
       final senderPhoto = senderData?['profile_photo'] ?? '';
 
       await NotificationService().createNotification(
@@ -675,7 +685,7 @@ class ProjectService {
           ? await FetchService().fetchContractorData(decliningUserId)
           : await FetchService().fetchContracteeData(decliningUserId);
       final senderName = userType == 'contractor'
-          ? (senderData != null ? senderData['firm_name']: 'A contractor')
+          ? (senderData != null ? senderData['firm_name'] : 'A contractor')
           : senderData?['full_name'] ?? 'A contractee';
       final senderPhoto = senderData?['profile_photo'] ?? '';
 
@@ -836,7 +846,7 @@ class ProjectService {
   }
 
   Future<void> addCostToProject({
-    required String contractor_id, 
+    required String contractor_id,
     required String projectId,
     required String material_name,
     required num quantity,
@@ -888,8 +898,7 @@ class ProjectService {
     try {
       await _supabase
           .from('ProjectTasks')
-          .update({'done': done})
-          .eq('task_id', taskId);
+          .update({'done': done}).eq('task_id', taskId);
 
       await _auditService.logAuditEvent(
         action: 'TASK_STATUS_UPDATED',
@@ -916,10 +925,7 @@ class ProjectService {
 
   Future<void> deleteTask(String taskId) async {
     try {
-      await _supabase
-          .from('ProjectTasks')
-          .delete()
-          .eq('task_id', taskId);
+      await _supabase.from('ProjectTasks').delete().eq('task_id', taskId);
 
       await _auditService.logAuditEvent(
         action: 'TASK_DELETED',
@@ -945,10 +951,7 @@ class ProjectService {
 
   Future<void> deleteReport(String reportId) async {
     try {
-      await _supabase
-          .from('ProjectReports')
-          .delete()
-          .eq('report_id', reportId);
+      await _supabase.from('ProjectReports').delete().eq('report_id', reportId);
 
       await _auditService.logAuditEvent(
         action: 'REPORT_DELETED',
@@ -979,21 +982,15 @@ class ProjectService {
           .select('photo_url')
           .eq('photo_id', photoId)
           .single();
-      
+
       final photoUrl = photo['photo_url'] as String?;
-      
-      await _supabase
-          .from('ProjectPhotos')
-          .delete()
-          .eq('photo_id', photoId);
-      
+
+      await _supabase.from('ProjectPhotos').delete().eq('photo_id', photoId);
+
       if (photoUrl != null && photoUrl.isNotEmpty) {
         try {
-          await _supabase.storage
-              .from('projectphotos')
-              .remove([photoUrl]);
-        } catch (e) {
-        }
+          await _supabase.storage.from('projectphotos').remove([photoUrl]);
+        } catch (e) {}
       }
 
       await _auditService.logAuditEvent(
