@@ -24,57 +24,70 @@ class ConTrustSnackBar {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: Colors.grey[50],
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: config.backgroundColor,
-              width: 2,
-            ),
-          ),
-          title: Row(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: Colors.white,
+          elevation: 12,
+          contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          title: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                config.icon,
-                color: config.backgroundColor,
-                size: 26,
+              // Icon Circle
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: config.backgroundColor.withOpacity(0.1),
+                ),
+                padding: const EdgeInsets.all(12),
+                child: Icon(
+                  config.icon,
+                  color: config.backgroundColor,
+                  size: 40,
+                ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(height: 10),
               Text(
                 _getDialogTitle(type),
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: config.backgroundColor,
                   fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: config.backgroundColor,
                 ),
               ),
             ],
           ),
           content: Text(
             message,
+            textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 15,
-              fontWeight: FontWeight.w500,
               color: Colors.black87,
+              height: 1.3,
             ),
           ),
+          actionsAlignment: MainAxisAlignment.center,
           actions: [
             if (action != null)
               TextButton(
+                style: TextButton.styleFrom(
+                  foregroundColor: config.backgroundColor,
+                ),
                 onPressed: () {
                   Navigator.pop(context);
                   action.onPressed?.call();
                 },
-                child: Text(
-                  action.label,
-                  style: TextStyle(color: config.backgroundColor),
+                child: Text(action.label),
+              ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: config.backgroundColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
-            TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text(
-                'OK',
-                style: TextStyle(color: config.backgroundColor),
-              ),
+              child: const Text('OK'),
             ),
           ],
         );
@@ -141,6 +154,7 @@ class ConTrustSnackBar {
     show(context, message, type: SnackBarType.loading, duration: duration);
   }
 
+  // --- Reusable success/error/info methods below ---
   static void dashboardRefresh(BuildContext context) {
     success(context, 'Dashboard refreshed successfully');
   }
@@ -154,7 +168,7 @@ class ConTrustSnackBar {
   }
 
   static void materialError(BuildContext context, String errorMessage) {
-    ConTrustSnackBar.error(context, 'Failed to save material: $errorMessage');
+    error(context, 'Failed to save material: $errorMessage');
   }
 
   static void missingInfo(BuildContext context, String field) {
@@ -162,7 +176,7 @@ class ConTrustSnackBar {
   }
 
   static void projectError(BuildContext context) {
-    ConTrustSnackBar.error(context, 'No active / ongoing project found');
+    error(context, 'No active / ongoing project found');
   }
 
   static void projectLoading(BuildContext context) {
@@ -174,7 +188,7 @@ class ConTrustSnackBar {
   }
 
   static void bidError(BuildContext context, String errorMessage) {
-    ConTrustSnackBar.error(context, 'Failed to submit bid: $errorMessage');
+    error(context, 'Failed to submit bid: $errorMessage');
   }
 
   static void contractSent(BuildContext context) {
@@ -210,7 +224,7 @@ class ConTrustSnackBar {
   }
 
   static void messageError(BuildContext context) {
-    ConTrustSnackBar.error(context, 'Failed to send message');
+    error(context, 'Failed to send message');
   }
 
   static void loginSuccess(BuildContext context, String name) {
@@ -218,7 +232,7 @@ class ConTrustSnackBar {
   }
 
   static void loginError(BuildContext context) {
-    ConTrustSnackBar.error(context, 'Invalid credentials. Please try again.');
+    error(context, 'Invalid credentials. Please try again.');
   }
 
   static void logoutSuccess(BuildContext context) {
@@ -230,7 +244,7 @@ class ConTrustSnackBar {
   }
 
   static void fileUploadError(BuildContext context) {
-    ConTrustSnackBar.error(context, 'Failed to upload file');
+    error(context, 'Failed to upload file');
   }
 
   static void fileDownloadSuccess(BuildContext context, String fileName) {
@@ -242,7 +256,7 @@ class ConTrustSnackBar {
   }
 
   static void profileError(BuildContext context, String errorMessage) {
-    ConTrustSnackBar.error(context, 'Failed to update profile: $errorMessage');
+    error(context, 'Failed to update profile: $errorMessage');
   }
 }
 
