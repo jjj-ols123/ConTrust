@@ -1,7 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractor/Screen/cor_dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
@@ -80,20 +79,11 @@ class SignInContractor {
 
       ConTrustSnackBar.success(context, 'Successfully logged in');
 
-      Future.delayed(const Duration(milliseconds: 500), () {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder:
-                (context) =>
-                    DashboardScreen(contractorId: signInResponse.user!.id),
-          ),
-          (route) => false,
-        );
-      });
+      Navigator.pushNamedAndRemoveUntil(
+          context, '/dashboard', (route) => false);
     } catch (e) {
       await _auditService.logAuditEvent(
-        userId: signInResponse.user?.id,  
+        userId: signInResponse.user?.id,
         action: 'USER_LOGIN_FAILED',
         details: 'Contractor login failed due to error $e',
         metadata: {
@@ -111,7 +101,7 @@ class SignInContractor {
         extraInfo: {
           'operation': 'Sign In Contractor',
           'email': email,
-          'users_id': signInResponse.user?.id, 
+          'users_id': signInResponse.user?.id,
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
@@ -141,7 +131,6 @@ class SignInGoogleContractor {
           ConTrustSnackBar.warning(context, 'Signed in cancelled');
         }
       });
-
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Google sign-in failed for contractor: $e',
@@ -184,7 +173,8 @@ class SignInGoogleContractor {
             },
           );
 
-          ConTrustSnackBar.error(context, 'This Google account is not registered as a contractor');
+          ConTrustSnackBar.error(
+              context, 'This Google account is not registered as a contractor');
           await supabase.auth.signOut();
           return;
         }
@@ -200,13 +190,8 @@ class SignInGoogleContractor {
           },
         );
 
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (context) => DashboardScreen(contractorId: user.id),
-          ),
-          (route) => false,
-        );
+        Navigator.pushNamedAndRemoveUntil(
+            context, '/dashboard', (route) => false);
       }
     } catch (e) {
       await _errorService.logError(
@@ -272,16 +257,11 @@ class SignInGoogleContractor {
         },
       );
 
-      ConTrustSnackBar.success(context, 'Welcome! Your contractor account has been created.');
+      ConTrustSnackBar.success(
+          context, 'Welcome! Your contractor account has been created.');
 
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (context) => DashboardScreen(contractorId: user.id),
-        ),
-        (route) => false,
-      );
-
+      Navigator.pushNamedAndRemoveUntil(
+          context, '/dashboard', (route) => false);
     } catch (e) {
       await _auditService.logAuditEvent(
         action: 'USER_REGISTRATION_FAILED',
