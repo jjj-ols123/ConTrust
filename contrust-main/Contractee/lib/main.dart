@@ -1,6 +1,8 @@
 import 'dart:ui';
+import 'package:contractee/pages/cee_authredirect.dart';
 import 'package:contractee/pages/cee_home.dart';
 import 'package:contractee/pages/cee_welcome.dart';
+import 'package:contractee/pages/cee_login.dart'; 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -37,11 +39,23 @@ class MyApp extends StatelessWidget {
   
 
   @override
-  Widget build(BuildContext context) {  
+  Widget build(BuildContext context) {
+    final session = Supabase.instance.client.auth.currentSession;
+
     return MaterialApp(
       scrollBehavior: AppScrollBehavior(),
       debugShowCheckedModeBanner: false,
-      home: isFirstOpen ? const WelcomePage() : const HomePage(contracteeId: ''),
+      initialRoute: isFirstOpen
+          ? '/welcome'
+          : (session != null ? '/home' : '/login'),
+      routes: {
+        '/welcome': (context) => const WelcomePage(),
+        '/login': (context) => const LoginPage(), 
+        '/home': (context) => session != null
+            ? const HomePage()  
+            : const LoginPage(),
+        '/auth/callback': (context) => const AuthRedirectPage(),  
+      },
     );
   }
 }

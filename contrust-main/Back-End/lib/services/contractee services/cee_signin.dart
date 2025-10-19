@@ -74,10 +74,7 @@ class SignInContractee {
         },
       );
 
-      Navigator.pushReplacement(
-        modalContext,
-        MaterialPageRoute(builder: (context) => const HomePage(contracteeId: '')),
-      );
+      Navigator.pushNamedAndRemoveUntil(modalContext, '/home', (route) => false);
 
         ConTrustSnackBar.success(modalContext, 'Successfully logged in');
 
