@@ -12,3 +12,6 @@ workspace:
   - Contractor
   - SuperAdmin
   - websitepoint
+
+assets: 
+  - assets/bgloginscreen.jpg

@@ -633,7 +633,7 @@
     },
     {
       "name": "file_selector_ios",
-      "version": "0.5.3+3",
+      "version": "0.5.3+2",
       "dependencies": [
         "file_selector_platform_interface",
         "flutter"
@@ -641,7 +641,7 @@
     },
     {
       "name": "file_selector_android",
-      "version": "0.5.2+1",
+      "version": "0.5.1+17",
       "dependencies": [
         "file_selector_platform_interface",
         "flutter",
