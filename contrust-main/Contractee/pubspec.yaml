@@ -81,7 +81,6 @@ flutter:
   assets:
     - assets/
     - assets/defaultpic.png
-    - assets/kitchen.jpg
     - assets/googleicon.png
   
   # An image asset can refer to one or more resolution-specific "variants", see
