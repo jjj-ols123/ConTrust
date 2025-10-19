@@ -74,7 +74,7 @@ class ConTrustSnackBar {
                 ),
                 onPressed: () {
                   Navigator.pop(context);
-                  action.onPressed?.call();
+                  action.onPressed.call();
                 },
                 child: Text(action.label),
               ),
