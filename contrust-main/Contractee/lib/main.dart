@@ -2,12 +2,11 @@ import 'dart:ui';
 import 'package:contractee/pages/cee_authredirect.dart';
 import 'package:contractee/pages/cee_home.dart';
 import 'package:contractee/pages/cee_welcome.dart';
-import 'package:contractee/pages/cee_login.dart'; 
+import 'package:contractee/pages/cee_login.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/utils/supabase_config.dart';
-
 
 class AppScrollBehavior extends MaterialScrollBehavior {
   @override
@@ -19,6 +18,7 @@ class AppScrollBehavior extends MaterialScrollBehavior {
 }
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(
     url: SupabaseConfig.url,
@@ -27,34 +27,56 @@ Future<void> main() async {
 
   SharedPreferences prefs = await SharedPreferences.getInstance();
   bool isFirstOpen = prefs.getBool('isFirstOpen') ?? true;
+
   runApp(MyApp(isFirstOpen: isFirstOpen));
 }
 
-class MyApp extends StatelessWidget {
-
+class MyApp extends StatefulWidget {
   final bool isFirstOpen;
+  const MyApp({super.key, required this.isFirstOpen});
 
-  const MyApp({super.key, required this.isFirstOpen}); 
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
 
-  
+class _MyAppState extends State<MyApp> {
+  Session? _session;
+
+  @override
+  void initState() {
+    super.initState();
+    final supabase = Supabase.instance.client;
+    _session = supabase.auth.currentSession;
+
+    supabase.auth.onAuthStateChange.listen((data) {
+      final session = data.session;
+      setState(() {
+        _session = session;
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final session = Supabase.instance.client.auth.currentSession;
+    Widget initialPage;
+
+    if (widget.isFirstOpen) {
+      initialPage = const WelcomePage();
+    } else if (_session != null) {
+      initialPage = const HomePage();
+    } else {
+      initialPage = const LoginPage();
+    }
 
     return MaterialApp(
       scrollBehavior: AppScrollBehavior(),
       debugShowCheckedModeBanner: false,
-      initialRoute: isFirstOpen
-          ? '/welcome'
-          : (session != null ? '/home' : '/login'),
+      home: initialPage,
       routes: {
         '/welcome': (context) => const WelcomePage(),
-        '/login': (context) => const LoginPage(), 
-        '/home': (context) => session != null
-            ? const HomePage()  
-            : const LoginPage(),
-        '/auth/callback': (context) => const AuthRedirectPage(),  
+        '/login': (context) => const LoginPage(),
+        '/home': (context) => const HomePage(),
+        '/auth/callback': (context) => const AuthRedirectPage(),
       },
     );
   }

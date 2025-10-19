@@ -39,16 +39,23 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         FlutterQuillLocalizations.delegate,
       ],
+
       initialRoute: session != null ? '/dashboard' : '/login',
       routes: {
         '/login': (context) => const LoginScreen(),
-        '/dashboard': (context) => session != null
-            ? DashboardScreen(contractorId: session.user.id)
-            : const LoginScreen(),
         '/auth/callback': (context) => const AuthRedirectPage(),
+        '/dashboard': (context) {
+          final currentSession = Supabase.instance.client.auth.currentSession;
+          if (currentSession != null) {
+            return DashboardScreen(contractorId: currentSession.user.id);
+          } else {
+            return const LoginScreen();
+          }
+        },
       },
+      onUnknownRoute: (settings) => MaterialPageRoute(
+        builder: (_) => const LoginScreen(),
+      ),
     );
   }
 }
-
-
