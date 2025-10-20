@@ -110,7 +110,7 @@ class _CreateContractPageState extends State<CreateContractPage>
         }
       }
     } catch (e) {
-      debugPrint('Error fetching contract field values: $e');
+      debugPrint('Error fetching contract field values');
     }
   }
 
@@ -283,7 +283,7 @@ class _CreateContractPageState extends State<CreateContractPage>
 
       if (mounted) setState(() {});
     } catch (e) {
-      ConTrustSnackBar.error(context, 'Error updating item count: $e');
+      ConTrustSnackBar.error(context, 'Error updating item count');
     }
   }
 
@@ -352,7 +352,7 @@ class _CreateContractPageState extends State<CreateContractPage>
       }
     } catch (e) {
       if (mounted) {
-        ConTrustSnackBar.error(context, 'Failed to save contract: $e');
+        ConTrustSnackBar.error(context, 'Failed to save contract');
       }
     } finally {
       if (mounted) {

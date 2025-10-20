@@ -111,7 +111,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
           });
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to check project: $e',
+        errorMessage: 'Failed to check project:',
         module: 'Contract Agreement Banner',
         severity: 'Medium',
         extraInfo: {
@@ -150,7 +150,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
       if (mounted) setState(() {});
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to proceed with contract: $e',
+        errorMessage: 'Failed to proceed with contract: ',
         module: 'Contract Agreement Banner',
         severity: 'High',
         extraInfo: {
@@ -190,7 +190,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to agree to contract: $e',
+        errorMessage: 'Failed to agree to contract: ',
         module: 'Contract Agreement Banner',
         severity: 'High',
         extraInfo: {
@@ -230,7 +230,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to agree to cancellation: $e',
+        errorMessage: 'Failed to agree to cancellation: ',
         module: 'Contract Agreement Banner',
         severity: 'High',
         extraInfo: {
@@ -243,7 +243,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
       if (mounted) {
         ConTrustSnackBar.show(
           context,
-          'Failed to cancel project: $e',
+          'Failed to cancel project: ',
           type: SnackBarType.error,
         );
       }
@@ -275,7 +275,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to decline cancellation: $e',
+        errorMessage: 'Failed to decline cancellation: ',
         module: 'Contract Agreement Banner',
         severity: 'Medium',
         extraInfo: {
@@ -288,7 +288,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
       if (mounted) {
         ConTrustSnackBar.show(
           context,
-          'Failed to decline cancellation: $e',
+          'Failed to decline cancellation: ',
           type: SnackBarType.error,
         );
       }
@@ -329,7 +329,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
           }
         } catch (e) {
           await _errorService.logError(
-            errorMessage: 'Failed to review contract: $e',
+            errorMessage: 'Failed to review contract: ',
             module: 'Contract Agreement Banner',
             severity: 'Medium',
             extraInfo: {
@@ -443,7 +443,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
               );
             } catch (e) {
               await _errorService.logError(
-                errorMessage: 'Failed to navigate to ongoing project: $e',
+                errorMessage: 'Failed to navigate to ongoing project: ',
                 module: 'Contract Agreement Banner',
                 severity: 'Medium',
                 extraInfo: {
@@ -999,7 +999,7 @@ class UIMessage {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to show enhanced contract view: $e',
+        errorMessage: 'Failed to show enhanced contract view: ',
         module: 'UI Message',
         severity: 'Medium',
         extraInfo: {
@@ -1009,7 +1009,7 @@ class UIMessage {
         },
       );
       if (context.mounted) {
-        ConTrustSnackBar.error(context, 'Error loading contract: $e');
+        ConTrustSnackBar.error(context, 'Error loading contract: ');
       }
     }
   }
@@ -1258,7 +1258,7 @@ class UIMessage {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to download contract: $e',
+        errorMessage: 'Failed to download contract: ',
         module: 'UI Message',
         severity: 'Medium',
         extraInfo: {
@@ -1416,7 +1416,7 @@ class UIMessage {
                 ConTrustSnackBar.contractSigned(context);
               } catch (e) {
                 await _errorService.logError(
-                  errorMessage: 'Failed to sign contract: $e',
+                  errorMessage: 'Failed to sign contract: ',
                   module: 'UI Message',
                   severity: 'High',
                   extraInfo: {
@@ -1425,7 +1425,7 @@ class UIMessage {
                     'user_type': isContractee ? 'contractee' : 'contractor',
                   },
                 );
-                ConTrustSnackBar.error(context, '$e');
+                ConTrustSnackBar.error(context, '');
               }
             },
             style: ElevatedButton.styleFrom(
@@ -1483,7 +1483,7 @@ class _ContractApprovalButtonsState extends State<_ContractApprovalButtons> {
       widget.onApproved();
     } catch (e) {
       await UIMessage._errorService.logError(
-        errorMessage: 'Failed to approve contract: $e',
+        errorMessage: 'Failed to approve contract: ',
         module: 'Contract Approval Buttons',
         severity: 'High',
         extraInfo: {
@@ -1491,7 +1491,7 @@ class _ContractApprovalButtonsState extends State<_ContractApprovalButtons> {
           'contract_id': widget.contractId,
         },
       );
-      widget.onError('Failed to approve contract: $e');
+      widget.onError('Failed to approve contract: ');
     } finally {
       if (mounted) {
         setState(() => _isApproving = false);
@@ -1521,7 +1521,7 @@ class _ContractApprovalButtonsState extends State<_ContractApprovalButtons> {
       widget.onRejected();
     } catch (e) {
       await UIMessage._errorService.logError(
-        errorMessage: 'Failed to reject contract: $e',
+        errorMessage: 'Failed to reject contract:',
         module: 'Contract Approval Buttons',
         severity: 'High',
         extraInfo: {
@@ -1529,7 +1529,7 @@ class _ContractApprovalButtonsState extends State<_ContractApprovalButtons> {
           'contract_id': widget.contractId,
         },
       );
-      widget.onError('Failed to reject contract: $e');
+      widget.onError('Failed to reject contract: ');
     } finally {
       if (mounted) {
         setState(() => _isRejecting = false);

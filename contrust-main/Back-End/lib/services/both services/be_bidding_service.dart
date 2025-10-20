@@ -34,7 +34,7 @@ class BiddingService {
       return highestBids;
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to get project highest bids: $e',
+        errorMessage: 'Failed to get project highest bids: ',
         module: 'Bidding Service',
         severity: 'Medium',
         extraInfo: {
@@ -108,7 +108,7 @@ class BiddingService {
         );
       } catch (e) {
         await _errorService.logError(
-          errorMessage: 'Failed to create chat room after accepting bid: $e',
+          errorMessage: 'Failed to create chat room after accepting bid: ',
           module: 'Bidding Service',
           severity: 'Medium',
           extraInfo: {
@@ -152,7 +152,7 @@ class BiddingService {
         );
       } catch (e) {
         await _errorService.logError(
-          errorMessage: 'Failed to send notification after accepting bid: $e',
+          errorMessage: 'Failed to send notification after accepting bid: ',
           module: 'Bidding Service',
           severity: 'Medium',
           extraInfo: {
@@ -164,7 +164,7 @@ class BiddingService {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to accept project bid: $e',
+        errorMessage: 'Failed to accept project bid: ',
         module: 'Bidding Service',
         severity: 'High',
         extraInfo: {
@@ -194,7 +194,7 @@ class BiddingService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to reject bid: $e',
+        errorMessage: 'Failed to reject bid:',
         module: 'Bidding Service',
         severity: 'Medium',
         extraInfo: {
@@ -223,7 +223,7 @@ class BiddingService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to get bids for project: $e',
+        errorMessage: 'Failed to get bids for project: ',
         module: 'Bidding Service',
         severity: 'Medium',
         extraInfo: {

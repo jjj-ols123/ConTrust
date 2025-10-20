@@ -10,7 +10,7 @@ import 'package:contractee/build/builddrawer.dart';
 import 'package:contractee/build/buildhome.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+  
 class HomePage extends StatefulWidget {
   final String? contracteeId;
 
