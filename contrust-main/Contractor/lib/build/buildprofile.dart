@@ -638,7 +638,6 @@ class ProfileBuildMethods {
               'Firm Name',
               firmName,
               Icons.business,
-              Colors.purple,
               isEditingFirmName,
               firmNameController,
               toggleEditFirmName,
@@ -650,7 +649,6 @@ class ProfileBuildMethods {
               'Bio',
               bio,
               Icons.description,
-              Colors.blue,
               isEditingBio,
               bioController,
               toggleEditBio,
@@ -662,7 +660,6 @@ class ProfileBuildMethods {
               'Contact Information',
               contactNumber,
               Icons.phone,
-              Colors.green,
               isEditingContact,
               contactController,
               toggleEditContact,
@@ -674,7 +671,6 @@ class ProfileBuildMethods {
               'Specialization',
               specialization,
               Icons.work,
-              Colors.orange,
               isEditingSpecialization,
               specializationController,
               toggleEditSpecialization,
@@ -686,7 +682,6 @@ class ProfileBuildMethods {
               'Address',
               address,
               Icons.location_on,
-              Colors.red,
               isEditingAddress,
               addressController,
               toggleEditAddress,
@@ -1066,11 +1061,10 @@ class ProfileBuildMethods {
     );
   }
 
-  static Widget buildContractorInfo(
+   static Widget buildContractorInfo(
     String title,
     String content,
     IconData icon,
-    Color color,
     bool isEditing,
     TextEditingController controller,
     VoidCallback onEdit,
@@ -1079,23 +1073,22 @@ class ProfileBuildMethods {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: color, size: 20),
+              Icon(icon, color: Colors.grey.shade800, size: 20),
               const SizedBox(width: 8),
               Text(
                 title,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: color,
+                  color: Colors.black87,
                 ),
               ),
               const Spacer(),
@@ -1108,13 +1101,13 @@ class ProfileBuildMethods {
                       child: Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: Colors.grey.withOpacity(0.1),
+                          color: Colors.transparent,
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.close,
                           size: 16,
-                          color: Colors.grey,
+                          color: Colors.grey.shade600,
                         ),
                       ),
                     ),
@@ -1125,13 +1118,13 @@ class ProfileBuildMethods {
                       child: Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: color.withOpacity(0.1),
+                          color: Colors.transparent,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Icon(
                           Icons.check,
                           size: 16,
-                          color: color,
+                          color: Colors.grey.shade600,
                         ),
                       ),
                     ),
@@ -1144,13 +1137,13 @@ class ProfileBuildMethods {
                   child: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
+                      color: Colors.transparent,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Icon(
                       Icons.edit,
                       size: 16,
-                      color: color,
+                      color: Colors.grey.shade600,
                     ),
                   ),
                 ),
@@ -1164,11 +1157,11 @@ class ProfileBuildMethods {
               decoration: InputDecoration(
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: color),
+                  borderSide: BorderSide(color: Colors.grey.shade500),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: color, width: 2),
+                  borderSide: BorderSide(color: Colors.grey.shade700, width: 2),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 12,

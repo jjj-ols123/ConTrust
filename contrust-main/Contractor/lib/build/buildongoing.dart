@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:backend/utils/be_contractformat.dart'; 
 
 class OngoingBuildMethods {
   static Widget buildProjectHeader({
@@ -8,10 +9,56 @@ class OngoingBuildMethods {
     required String clientName,
     required String address,
     required String startDate,
-    required String estimatedCompletion,
+    String? estimatedCompletion,
+    required int? duration,
+    required bool isCustomContract,
     required double progress,
     VoidCallback? onRefresh,
+    VoidCallback? onEditCompletion,
   }) {
+    // Resolve estimated completion:
+    // 1) accept a parseable estimatedCompletion string
+    // 2) ignore common placeholders like 'placeholder', 'tbd', 'n/a'
+    // 3) fallback to startDate + duration when possible
+    DateTime? completionDate;
+    final raw = estimatedCompletion?.trim().toLowerCase();
+    if (raw != null && raw.isNotEmpty && raw != 'placeholder' && raw != 'tbd' && raw != 'n/a') {
+      try {
+        // try direct parse first
+        completionDate = DateTime.parse(estimatedCompletion!);
+      } catch (_) {
+        // try common fallback formats (date part only)
+        try {
+          final parts = estimatedCompletion!.split(' ');
+          completionDate = DateTime.parse(parts.first);
+        } catch (_) {
+          completionDate = null;
+        }
+      }
+    }
+
+    if (completionDate == null && startDate.isNotEmpty && duration != null) {
+      try {
+        final start = DateTime.parse(startDate);
+        completionDate = start.add(Duration(days: duration));
+      } catch (_) {
+        completionDate = null;
+      }
+    }
+
+    String countdownText = 'Duration: Not set';
+    if (completionDate != null) {
+      final now = DateTime.now();
+      final daysLeft = completionDate.difference(now).inDays;
+      if (daysLeft > 0) {
+        countdownText = 'Duration: $daysLeft days left';
+      } else if (daysLeft == 0) {
+        countdownText = 'Duration: Due today';
+      } else {
+        countdownText = 'Duration: Overdue by ${daysLeft.abs()} days';
+      }
+    }
+
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -47,6 +94,12 @@ class OngoingBuildMethods {
                     ],
                   ),
                 ),
+                if (isCustomContract && onEditCompletion != null)
+                  IconButton(
+                    onPressed: onEditCompletion,
+                    icon: const Icon(Icons.edit, color: Colors.blue),
+                    tooltip: 'Edit Completion Date',
+                  ),
                 if (onRefresh != null)
                   IconButton(
                     onPressed: onRefresh,
@@ -74,7 +127,7 @@ class OngoingBuildMethods {
                 const Icon(Icons.calendar_today, color: Colors.blue, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  'Started: $startDate',
+                  'Started: ${ContractStyle.formatDate(startDate)}', 
                   style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                 ),
               ],
@@ -85,8 +138,27 @@ class OngoingBuildMethods {
                 const Icon(Icons.schedule, color: Colors.green, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  'Est. Completion: $estimatedCompletion',
+                  'Est. Completion: ${ContractStyle.formatDate(estimatedCompletion)}', 
                   style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(
+                  Icons.timer,
+                  color: Colors.red,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  countdownText,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
                 ),
               ],
             ),
@@ -132,6 +204,23 @@ class OngoingBuildMethods {
     );
   }
 
+  static void showEditCompletionDialog({
+    required BuildContext context,
+    required DateTime? currentCompletion,
+    required Function(DateTime) onSave,
+  }) async {
+    final selectedDate = await showDatePicker(
+      context: context,
+      initialDate: currentCompletion ?? DateTime.now().add(const Duration(days: 30)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+    );
+
+    if (selectedDate != null) {
+      onSave(selectedDate);
+    }
+  }
+
   static Widget buildSectionCard({
     required String title,
     required IconData icon,
@@ -148,34 +237,41 @@ class OngoingBuildMethods {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(icon, color: iconColor, size: 24),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-                if (onAdd != null)
-                  ElevatedButton.icon(
-                    onPressed: onAdd,
-                    icon: const Icon(Icons.add, size: 18),
-                    label: Text(addButtonText ?? 'Add'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: iconColor,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(icon, color: iconColor, size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
                       ),
                     ),
                   ),
-              ],
+                  if (onAdd != null)
+                    ElevatedButton.icon(
+                      onPressed: onAdd,
+                      icon: const Icon(Icons.add, size: 18),
+                      label: Text(addButtonText ?? 'Add'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
             const SizedBox(height: 16),
             child,
@@ -229,12 +325,12 @@ class OngoingBuildMethods {
       children:
           reports
               .map(
-                (report) =>
-                    buildReportItem(
-                      report: report,
-                      onDelete: onDeleteReport,
-                      onTap: onViewReport != null ? () => onViewReport(report) : null,
-                    ),
+                (report) => buildReportItem(
+                  report: report,
+                  onDelete: onDeleteReport,
+                  onTap:
+                      onViewReport != null ? () => onViewReport(report) : null,
+                ),
               )
               .toList(),
     );
@@ -357,7 +453,6 @@ class OngoingBuildMethods {
           (cost) => buildCostItem(
             cost: cost,
             onDelete: onDeleteCost,
-            onTap: onViewMaterial != null ? () => onViewMaterial(cost) : null,
           ),
         ),
         const Divider(),
@@ -460,7 +555,6 @@ class OngoingBuildMethods {
   static Widget buildCostItem({
     required Map<String, dynamic> cost,
     required Function(String) onDelete,
-    VoidCallback? onTap,
   }) {
     final quantity = (cost['quantity'] as num? ?? 0).toDouble();
     final unitPrice = (cost['unit_price'] as num? ?? 0).toDouble();
@@ -469,7 +563,6 @@ class OngoingBuildMethods {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        onTap: onTap,
         leading: const CircleAvatar(
           backgroundColor: Colors.green,
           child: Icon(Icons.construction, color: Colors.white),
@@ -503,10 +596,6 @@ class OngoingBuildMethods {
               ),
             ),
             const SizedBox(width: 10),
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () => onDelete(cost['material_id']),
-            ),
           ],
         ),
       ),
@@ -535,7 +624,11 @@ class OngoingBuildMethods {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.description, color: Colors.orange.shade700, size: 28),
+                    Icon(
+                      Icons.description,
+                      color: Colors.orange.shade700,
+                      size: 28,
+                    ),
                     const SizedBox(width: 12),
                     Text(
                       'Add Progress Report',
@@ -579,9 +672,15 @@ class OngoingBuildMethods {
                     TextButton(
                       onPressed: () => Navigator.pop(context),
                       style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
                       ),
-                      child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(color: Colors.grey.shade600),
+                      ),
                     ),
                     const SizedBox(width: 12),
                     ElevatedButton(
@@ -592,9 +691,12 @@ class OngoingBuildMethods {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange.shade700,
+                        backgroundColor: Colors.amber, 
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -637,11 +739,17 @@ class OngoingBuildMethods {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.checklist, color: Colors.blue.shade700, size: 28),
+                        Icon(
+                          Icons.checklist,
+                          color: Colors.blue.shade700,
+                          size: 28,
+                        ),
                         const SizedBox(width: 12),
                         Text(
                           'Add Multiple Tasks',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          style: Theme.of(
+                            context,
+                          ).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.blue.shade700,
                           ),
@@ -651,7 +759,10 @@ class OngoingBuildMethods {
                     const SizedBox(height: 8),
                     Text(
                       'Add one or more tasks for this project',
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
+                      ),
                     ),
                     const SizedBox(height: 20),
                     Flexible(
@@ -664,7 +775,9 @@ class OngoingBuildMethods {
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 12),
                                 decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey.shade300),
+                                  border: Border.all(
+                                    color: Colors.grey.shade300,
+                                  ),
                                   borderRadius: BorderRadius.circular(12),
                                   color: Colors.grey.shade50,
                                 ),
@@ -676,10 +789,11 @@ class OngoingBuildMethods {
                                         decoration: InputDecoration(
                                           hintText: 'Enter task ...',
                                           border: InputBorder.none,
-                                          contentPadding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 12,
-                                          ),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 12,
+                                              ),
                                         ),
                                         maxLines: null,
                                         minLines: 1,
@@ -687,7 +801,10 @@ class OngoingBuildMethods {
                                     ),
                                     if (controllers.length > 1)
                                       IconButton(
-                                        icon: Icon(Icons.remove_circle, color: Colors.red.shade400),
+                                        icon: Icon(
+                                          Icons.remove_circle,
+                                          color: Colors.red.shade400,
+                                        ),
                                         onPressed: () {
                                           setState(() {
                                             controllers.removeAt(index);
@@ -705,14 +822,23 @@ class OngoingBuildMethods {
                                   controllers.add(TextEditingController());
                                 });
                               },
-                              icon: Icon(Icons.add, color: Colors.blue.shade700),
-                              label: Text('Add Another Task', style: TextStyle(color: Colors.blue.shade700)),
+                              icon: Icon(
+                                Icons.add,
+                                color: Colors.blue.shade700,
+                              ),
+                              label: Text(
+                                'Add Another Task',
+                                style: TextStyle(color: Colors.blue.shade700),
+                              ),
                               style: OutlinedButton.styleFrom(
                                 side: BorderSide(color: Colors.blue.shade700),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
                               ),
                             ),
                           ],
@@ -726,26 +852,36 @@ class OngoingBuildMethods {
                         TextButton(
                           onPressed: () => Navigator.pop(context),
                           style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 12,
+                            ),
                           ),
-                          child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+                          child: Text(
+                            'Cancel',
+                            style: TextStyle(color: Colors.grey.shade600),
+                          ),
                         ),
                         const SizedBox(width: 12),
                         ElevatedButton(
                           onPressed: () {
-                            final validTasks = controllers
-                                .map((c) => c.text.trim())
-                                .where((text) => text.isNotEmpty)
-                                .toList();
+                            final validTasks =
+                                controllers
+                                    .map((c) => c.text.trim())
+                                    .where((text) => text.isNotEmpty)
+                                    .toList();
                             if (validTasks.isNotEmpty) {
                               Navigator.pop(context);
                               onAdd(validTasks);
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue.shade700,
+                            backgroundColor: Colors.amber, 
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -768,9 +904,12 @@ class OngoingBuildMethods {
     });
   }
 
-  static Widget buildMobileTabNavigation(String selectedTab, Function(String) onTabChanged) {
+  static Widget buildMobileTabNavigation(
+    String selectedTab,
+    Function(String) onTabChanged,
+  ) {
     final tabs = ['Tasks', 'Reports', 'Photos', 'Materials'];
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
@@ -785,47 +924,55 @@ class OngoingBuildMethods {
         ],
       ),
       child: Row(
-        children: tabs.map((tab) {
-          final isActive = selectedTab == tab;
-          return Expanded(
-            child: InkWell(
-              onTap: () => onTabChanged(tab),
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  color: isActive ? Colors.orange.shade50 : Colors.transparent,
+        children:
+            tabs.map((tab) {
+              final isActive = selectedTab == tab;
+              return Expanded(
+                child: InkWell(
+                  onTap: () => onTabChanged(tab),
                   borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  tab,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                    color: isActive ? Colors.orange.shade700 : Colors.grey.shade600,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      color:
+                          isActive ? Colors.orange.shade50 : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      tab,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight:
+                            isActive ? FontWeight.w600 : FontWeight.w500,
+                        color:
+                            isActive
+                                ? Colors.orange.shade700
+                                : Colors.grey.shade600,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-          );
-        }).toList(),
+              );
+            }).toList(),
       ),
     );
   }
 
- 
   static Widget buildMobileLayout({
     required String projectTitle,
     required String clientName,
     required String address,
     required String startDate,
     required String estimatedCompletion,
+    required int? duration, 
+    required bool isCustomContract, 
     required double progress,
     required String selectedTab,
     required Function(String) onTabChanged,
     required Widget tabContent,
     VoidCallback? onRefresh,
+    VoidCallback? onEditCompletion, 
   }) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -837,6 +984,8 @@ class OngoingBuildMethods {
             address: address,
             startDate: startDate,
             estimatedCompletion: estimatedCompletion,
+            duration: duration,
+            isCustomContract: isCustomContract, 
             progress: progress,
             onRefresh: onRefresh,
           ),
@@ -874,7 +1023,7 @@ class OngoingBuildMethods {
         return buildSectionCard(
           title: 'Tasks & Progress',
           icon: Icons.checklist,
-          iconColor: Colors.blue,
+          iconColor: Colors.black,
           onAdd: onAddTask,
           addButtonText: 'Add Task',
           child: buildTasksList(
@@ -887,7 +1036,7 @@ class OngoingBuildMethods {
         return buildSectionCard(
           title: 'Progress Reports',
           icon: Icons.description,
-          iconColor: Colors.orange,
+          iconColor: Colors.black,
           onAdd: onAddReport,
           addButtonText: 'Add Report',
           child: buildReportsList(
@@ -900,7 +1049,7 @@ class OngoingBuildMethods {
         return buildSectionCard(
           title: 'Project Photos',
           icon: Icons.photo_library,
-          iconColor: Colors.green,
+          iconColor: Colors.black,
           onAdd: onAddPhoto,
           addButtonText: 'Add Photo',
           child: buildPhotosList(
@@ -914,13 +1063,14 @@ class OngoingBuildMethods {
         return buildSectionCard(
           title: 'Materials & Costs',
           icon: Icons.construction,
-          iconColor: Colors.purple,
+          iconColor: Colors.black,
           onAdd: onGoToMaterials,
           addButtonText: 'Manage Materials',
           child: buildCostsList(
             costs: costs,
             onDeleteCost: onDeleteCost,
-            onViewMaterial: (material) => showMaterialDetailsDialog(context, material),
+            onViewMaterial:
+                (material) => showMaterialDetailsDialog(context, material),
           ),
         );
       default:
@@ -946,6 +1096,8 @@ class OngoingBuildMethods {
     required String address,
     required String startDate,
     required String estimatedCompletion,
+    required int? duration,
+    required bool isCustomContract,
     required double progress,
     required List<Map<String, dynamic>> tasks,
     required List<Map<String, dynamic>> reports,
@@ -964,6 +1116,7 @@ class OngoingBuildMethods {
     Function(Map<String, dynamic>)? onViewReport,
     Function(Map<String, dynamic>)? onViewPhoto,
     VoidCallback? onRefresh,
+    VoidCallback? onEditCompletion,
   }) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -975,8 +1128,11 @@ class OngoingBuildMethods {
             address: address,
             startDate: startDate,
             estimatedCompletion: estimatedCompletion,
+            duration: duration, 
+            isCustomContract: isCustomContract,
             progress: progress,
             onRefresh: onRefresh,
+            onEditCompletion: onEditCompletion,
           ),
           const SizedBox(height: 20),
           Expanded(
@@ -1047,7 +1203,11 @@ class OngoingBuildMethods {
                           child: buildDesktopCostsList(
                             costs: costs,
                             onDeleteCost: onDeleteCost,
-                            onViewMaterial: (material) => showMaterialDetailsDialog(context, material),
+                            onViewMaterial:
+                                (material) => showMaterialDetailsDialog(
+                                  context,
+                                  material,
+                                ),
                           ),
                         ),
                       ),
@@ -1078,7 +1238,7 @@ class OngoingBuildMethods {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
+              color: Colors.grey.shade200,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),
@@ -1104,9 +1264,12 @@ class OngoingBuildMethods {
                     child: ElevatedButton.icon(
                       onPressed: onAdd,
                       icon: const Icon(Icons.add, size: 14),
-                      label: Text(addButtonText ?? 'Add', style: const TextStyle(fontSize: 12)),
+                      label: Text(
+                        addButtonText ?? 'Add',
+                        style: const TextStyle(fontSize: 12),
+                      ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: iconColor,
+                        backgroundColor: Colors.amber,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         shape: RoundedRectangleBorder(
@@ -1119,10 +1282,7 @@ class OngoingBuildMethods {
             ),
           ),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: child,
-            ),
+            child: Padding(padding: const EdgeInsets.all(12), child: child),
           ),
         ],
       ),
@@ -1139,9 +1299,9 @@ class OngoingBuildMethods {
         child: Text('No tasks yet', style: TextStyle(color: Colors.grey)),
       );
     }
-    
+
     return ListView.builder(
-      itemCount: tasks.take(10).length, 
+      itemCount: tasks.take(10).length,
       itemBuilder: (context, index) {
         final task = tasks[index];
         return Container(
@@ -1150,7 +1310,11 @@ class OngoingBuildMethods {
             children: [
               Checkbox(
                 value: task['done'] == true,
-                onChanged: (val) => onUpdateTaskStatus(task['task_id'].toString(), val ?? false),
+                onChanged:
+                    (val) => onUpdateTaskStatus(
+                      task['task_id'].toString(),
+                      val ?? false,
+                    ),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               Expanded(
@@ -1160,7 +1324,10 @@ class OngoingBuildMethods {
                     Text(
                       task['task'] ?? '',
                       style: TextStyle(
-                        decoration: task['done'] == true ? TextDecoration.lineThrough : null,
+                        decoration:
+                            task['done'] == true
+                                ? TextDecoration.lineThrough
+                                : null,
                         fontSize: 13,
                       ),
                       maxLines: 1,
@@ -1198,7 +1365,7 @@ class OngoingBuildMethods {
         child: Text('No reports yet', style: TextStyle(color: Colors.grey)),
       );
     }
-    
+
     return ListView.builder(
       itemCount: reports.take(8).length,
       itemBuilder: (context, index) {
@@ -1267,17 +1434,19 @@ class OngoingBuildMethods {
                   child: Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(4),
-                      image: snapshot.hasData && snapshot.data != null
-                          ? DecorationImage(
-                              image: NetworkImage(snapshot.data!),
-                              fit: BoxFit.cover,
-                            )
-                          : null,
+                      image:
+                          snapshot.hasData && snapshot.data != null
+                              ? DecorationImage(
+                                image: NetworkImage(snapshot.data!),
+                                fit: BoxFit.cover,
+                              )
+                              : null,
                       color: Colors.grey[200],
                     ),
-                    child: snapshot.hasData && snapshot.data != null
-                        ? null
-                        : const Center(child: Icon(Icons.image, size: 16)),
+                    child:
+                        snapshot.hasData && snapshot.data != null
+                            ? null
+                            : const Center(child: Icon(Icons.image, size: 16)),
                   ),
                 ),
                 Positioned(
@@ -1291,7 +1460,11 @@ class OngoingBuildMethods {
                         color: Colors.red,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.close, color: Colors.white, size: 12),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 12,
+                      ),
                     ),
                   ),
                 ),
@@ -1332,10 +1505,17 @@ class OngoingBuildMethods {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Total:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              const Text(
+                'Total:',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
               Text(
                 '₱${totalCost.toStringAsFixed(2)}',
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 14),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                  fontSize: 14,
+                ),
               ),
             ],
           ),
@@ -1349,9 +1529,10 @@ class OngoingBuildMethods {
               final quantity = (cost['quantity'] as num? ?? 0).toDouble();
               final unitPrice = (cost['unit_price'] as num? ?? 0).toDouble();
               final itemTotal = quantity * unitPrice;
-              
+
               return InkWell(
-                onTap: onViewMaterial != null ? () => onViewMaterial(cost) : null,
+                onTap:
+                    onViewMaterial != null ? () => onViewMaterial(cost) : null,
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 4),
                   padding: const EdgeInsets.all(6),
@@ -1367,20 +1548,29 @@ class OngoingBuildMethods {
                           children: [
                             Text(
                               cost['material_name'] ?? '',
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             Text(
                               '${quantity.toStringAsFixed(1)} × ₱${unitPrice.toStringAsFixed(2)}',
-                              style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey[600],
+                              ),
                             ),
                           ],
                         ),
                       ),
                       Text(
                         '₱${itemTotal.toStringAsFixed(2)}',
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete_outline, size: 14),
@@ -1399,7 +1589,10 @@ class OngoingBuildMethods {
     );
   }
 
-  static void showReportDialog(BuildContext context, Map<String, dynamic> report) {
+  static void showReportDialog(
+    BuildContext context,
+    Map<String, dynamic> report,
+  ) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -1438,7 +1631,10 @@ class OngoingBuildMethods {
                       children: [
                         Text(
                           'Date: ${report['created_at'] != null ? DateTime.parse(report['created_at']).toLocal().toString().split(' ')[0] : 'N/A'}',
-                          style: const TextStyle(fontSize: 14, color: Colors.grey),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -1457,7 +1653,11 @@ class OngoingBuildMethods {
     );
   }
 
-  static void showPhotoDialog(BuildContext context, Map<String, dynamic> photo, Future<String?> Function(String?) createSignedUrl) {
+  static void showPhotoDialog(
+    BuildContext context,
+    Map<String, dynamic> photo,
+    Future<String?> Function(String?) createSignedUrl,
+  ) {
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -1480,9 +1680,7 @@ class OngoingBuildMethods {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Center(
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                    ),
+                    child: CircularProgressIndicator(color: Colors.white),
                   ),
                 );
               }
@@ -1516,24 +1714,27 @@ class OngoingBuildMethods {
                     ),
 
                     Center(
-                      child: snapshot.hasData && snapshot.data != null
-                          ? InteractiveViewer(
-                              minScale: 0.5,
-                              maxScale: 3.0,
-                              child: Image.network(
-                                snapshot.data!,
-                                fit: BoxFit.contain,
-                                width: MediaQuery.of(context).size.width * 0.95,
-                                height: MediaQuery.of(context).size.height * 0.7,
+                      child:
+                          snapshot.hasData && snapshot.data != null
+                              ? InteractiveViewer(
+                                minScale: 0.5,
+                                maxScale: 3.0,
+                                child: Image.network(
+                                  snapshot.data!,
+                                  fit: BoxFit.contain,
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.95,
+                                  height:
+                                      MediaQuery.of(context).size.height * 0.7,
+                                ),
+                              )
+                              : const Center(
+                                child: Icon(
+                                  Icons.image,
+                                  size: 80,
+                                  color: Colors.white54,
+                                ),
                               ),
-                            )
-                          : const Center(
-                              child: Icon(
-                                Icons.image,
-                                size: 80,
-                                color: Colors.white54,
-                              ),
-                            ),
                     ),
                   ],
                 ),
@@ -1545,8 +1746,12 @@ class OngoingBuildMethods {
     );
   }
 
-  static void showMaterialDetailsDialog(BuildContext context, Map<String, dynamic> material) {
-    final name = material['material_name'] ?? material['name'] ?? 'Unknown Material';
+  static void showMaterialDetailsDialog(
+    BuildContext context,
+    Map<String, dynamic> material,
+  ) {
+    final name =
+        material['material_name'] ?? material['name'] ?? 'Unknown Material';
     final brand = material['brand'] ?? '';
     final qty = material['quantity'] ?? material['qty'] ?? 0;
     final unit = material['unit'] ?? 'pcs';
@@ -1556,238 +1761,233 @@ class OngoingBuildMethods {
 
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.8,
-          constraints: const BoxConstraints(maxWidth: 500),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Colors.white, Colors.grey.shade50],
+      builder:
+          (context) => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
             ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.amber.shade700,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.construction,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Material Details',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close, color: Colors.white),
-                    ),
-                  ],
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.8,
+              constraints: const BoxConstraints(maxWidth: 500),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.white, Colors.grey.shade50],
                 ),
               ),
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Material Name
-                      Text(
-                        'Material Name',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
-                        ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade700,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        name,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF2D3748),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Brand
-                      if (brand.isNotEmpty) ...[
-                        Text(
-                          'Brand',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          brand,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF2D3748),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-
-                      // Quantity and Unit Price
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Quantity',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${qty.toString()} $unit',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Color(0xFF2D3748),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Unit Price',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '₱${unitPrice.toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Color(0xFF2D3748),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Total Cost
-                      Text(
-                        'Total Cost',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '₱${(total as num).toDouble().toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green.shade600,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Notes
-                      if (notes.isNotEmpty) ...[
-                        Text(
-                          'Notes',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
+                    ),
+                    child: Row(
+                      children: [
                         Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
+                            color: Colors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey.shade200),
                           ),
+                          child: const Icon(
+                            Icons.construction,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
                           child: Text(
-                            notes,
+                            'Material Details',
                             style: const TextStyle(
-                              fontSize: 14,
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.close, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Material Name',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            name,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
                               color: Color(0xFF2D3748),
                             ),
                           ),
+                          const SizedBox(height: 16),
+
+                          if (brand.isNotEmpty) ...[
+                            Text(
+                              'Brand',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              brand,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF2D3748),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Quantity',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${qty.toString()} $unit',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Color(0xFF2D3748),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Unit Price',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '₱${unitPrice.toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Color(0xFF2D3748),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Total Cost',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '₱${(total as num).toDouble().toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green.shade600,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          if (notes.isNotEmpty) ...[
+                            Text(
+                              'Notes',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade50,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade200),
+                              ),
+                              child: Text(
+                                notes,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF2D3748),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(20),
+                        bottomRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Spacer(),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Close'),
                         ),
                       ],
-                    ],
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(20),
-                    bottomRight: Radius.circular(20),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Spacer(),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Close'),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 }

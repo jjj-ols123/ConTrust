@@ -1,7 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractee/pages/cee_home.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
@@ -74,16 +73,14 @@ class SignInContractee {
         },
       );
 
-      Navigator.pushReplacement(
-        modalContext,
-        MaterialPageRoute(builder: (context) => const HomePage(contracteeId: '')),
-      );
+      ConTrustSnackBar.success(modalContext, 'Successfully logged in');
 
-        ConTrustSnackBar.success(modalContext, 'Successfully logged in');
+      Navigator.of(modalContext, rootNavigator: true)
+          .pushNamedAndRemoveUntil('/home', (route) => false);
 
     } catch (e) {
       await _auditService.logAuditEvent(
-        userId: signInResponse.user?.id, 
+        userId: signInResponse.user?.id,
         action: 'USER_LOGIN_FAILED',
         details: 'Contractee login failed due to error',
         metadata: {
@@ -101,7 +98,7 @@ class SignInContractee {
         extraInfo: {
           'operation': 'Sign In Contractee',
           'email': email,
-          'users_id': signInResponse.user?.id,  
+          'users_id': signInResponse.user?.id,
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
@@ -131,7 +128,6 @@ class SignInGoogleContractee {
           ConTrustSnackBar.warning(context, 'Signed in cancelled');
         }
       });
-
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Google sign-in failed for contractee: $e',
@@ -174,7 +170,8 @@ class SignInGoogleContractee {
             },
           );
 
-          ConTrustSnackBar.error(context, 'This Google account is not registered as a contractee');
+          ConTrustSnackBar.error(
+              context, 'This Google account is not registered as a contractee');
           await supabase.auth.signOut();
           return;
         }
@@ -257,14 +254,14 @@ class SignInGoogleContractee {
         },
       );
 
-      ConTrustSnackBar.success(context, 'Welcome! Your contractee account has been created.');
+      ConTrustSnackBar.success(
+          context, 'Welcome! Your contractee account has been created.');
 
       Navigator.pushNamedAndRemoveUntil(
         context,
         '/home',
         (route) => false,
       );
-
     } catch (e) {
       await _auditService.logAuditEvent(
         action: 'USER_REGISTRATION_FAILED',

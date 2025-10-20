@@ -1,5 +1,8 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:contractor/Screen/cor_dashboard.dart';
 import 'package:contractor/Screen/cor_login.dart';
+import 'package:contractor/Screen/cor_authredirect.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
@@ -9,7 +12,7 @@ import 'package:backend/utils/supabase_config.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-   await Supabase.initialize(
+  await Supabase.initialize(
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.anonKey,
   );
@@ -26,7 +29,7 @@ class MyApp extends StatelessWidget {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Contrust',
+      title: 'ConTrust - Contractor',
       supportedLocales: const [
         Locale('en', 'US'),
       ],
@@ -36,9 +39,23 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         FlutterQuillLocalizations.delegate,
       ],
-      home: session != null
-          ? DashboardScreen(contractorId: session.user.id)
-          : const LoginScreen(),
+
+      initialRoute: session != null ? '/dashboard' : '/login',
+      routes: {
+        '/login': (context) => const LoginScreen(),
+        '/auth/callback': (context) => const AuthRedirectPage(),
+        '/dashboard': (context) {
+          final currentSession = Supabase.instance.client.auth.currentSession;
+          if (currentSession != null) {
+            return DashboardScreen(contractorId: currentSession.user.id);
+          } else {
+            return const LoginScreen();
+          }
+        },
+      },
+      onUnknownRoute: (settings) => MaterialPageRoute(
+        builder: (_) => const LoginScreen(),
+      ),
     );
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:backend/utils/supabase_config.dart'; // Ensure backend package is added as a dependency
-import 'app_websitestart.dart';
+import 'package:backend/utils/supabase_config.dart';
+import 'package:websitepoint/app_websitestart.dart'; 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,7 +21,6 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'ConTrust',
       home: WebsiteStartPage(),
     );
   }

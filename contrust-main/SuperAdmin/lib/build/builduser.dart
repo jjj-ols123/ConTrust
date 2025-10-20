@@ -1,11 +1,12 @@
 // ignore_for_file: deprecated_member_use
 
-import 'package:backend/services/superadmin%20services/userlogs_service.dart';
-import 'package:backend/utils/be_contractformat.dart';
 import 'package:flutter/material.dart';
+import 'package:backend/services/superadmin services/userlogs_service.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 
-class BuildUsers {
+class BuildUser {
+  final SuperAdminErrorService errorService = SuperAdminErrorService();
+
   static Widget buildUserStatisticsCard(BuildContext context, Map<String, dynamic> stats, VoidCallback? onRefresh) {
     return Card(
       elevation: 4,
@@ -38,28 +39,31 @@ class BuildUsers {
               children: [
                 Expanded(
                   child: _buildStatItem(
-                    'Total Users',
+                    context,
+                    'All Users',
                     stats['total']?.toString() ?? '0',
-                    Icons.people_outlined,
-                    Colors.grey,
+                    Icons.group_outlined,
+                    Colors.transparent,
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: _buildStatItem(
+                    context,
                     'Contractors',
                     stats['contractors']?.toString() ?? '0',
                     Icons.business_outlined,
-                    Colors.grey,
+                    Colors.transparent,
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: _buildStatItem(
+                    context,
                     'Contractees',
                     stats['contractees']?.toString() ?? '0',
                     Icons.person_outlined,
-                    Colors.grey,
+                    Colors.transparent,
                   ),
                 ),
               ],
@@ -70,18 +74,19 @@ class BuildUsers {
     );
   }
 
-  static Widget _buildStatItem(String label, String value, IconData icon, Color color) {
+  static Widget _buildStatItem(BuildContext context, String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: Colors.white, // keep background white (no extra colors)
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: Colors.grey.shade300), // visible grey border for each item
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 4),
+          Icon(icon, color: Colors.black54, size: 20),
+          const SizedBox(height: 8),
           Text(
             value,
             style: const TextStyle(
@@ -90,11 +95,12 @@ class BuildUsers {
               color: Colors.black,
             ),
           ),
+          const SizedBox(height: 4),
           Text(
             label,
             style: const TextStyle(
               fontSize: 12,
-              color: Colors.black,
+              color: Colors.black54,
             ),
             textAlign: TextAlign.center,
           ),
@@ -103,146 +109,78 @@ class BuildUsers {
     );
   }
 
-  static Widget buildUsersTable(BuildContext context, String title, List<Map<String, dynamic>> users, VoidCallback? onRefresh) {
+  static Widget buildUserFilters(BuildContext context, UserTableState state) {
     return Card(
-      elevation: 4,
-      margin: EdgeInsets.zero, // Remove space at the sides
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       color: Colors.white,
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Filters',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.black),
             ),
-            child: Row(
+            const SizedBox(height: 12),
+            Row(
               children: [
-                Text(
-                  '$title (${users.length})',
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500, color: Colors.black),
-                ),
-                const Spacer(),
-                if (onRefresh != null)
-                  IconButton(
-                    onPressed: onRefresh,
-                    icon: const Icon(Icons.refresh_outlined, color: Colors.grey),
-                    tooltip: 'Refresh $title',
+                Expanded(
+                  child: TextField(
+                    decoration: InputDecoration(
+                      labelText: 'Search',
+                      hintText: 'Search by name, email, or role...',
+                      prefixIcon: const Icon(Icons.search_outlined, color: Colors.black),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      labelStyle: const TextStyle(color: Colors.black),
+                      hintStyle: const TextStyle(color: Colors.grey),
+                    ),
+                    onChanged: (value) => state.filterUsers(value),
                   ),
+                ),
               ],
             ),
-          ),
-          Expanded(
-            child: users.isEmpty
-                ? const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.people_outlined, size: 64, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text('No users found', style: TextStyle(color: Colors.black)),
-                      ],
-                    ),
-                  )
-                : SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: DataTable(
-                      columns: const [
-                        DataColumn(label: Text('Name', style: TextStyle(color: Colors.black))),
-                        DataColumn(label: Text('Email', style: TextStyle(color: Colors.black))),
-                        DataColumn(label: Text('Status', style: TextStyle(color: Colors.black))),
-                        DataColumn(label: Text('Verified', style: TextStyle(color: Colors.black))),
-                        DataColumn(label: Text('Created', style: TextStyle(color: Colors.black))),
-                        DataColumn(label: Text('Last Login', style: TextStyle(color: Colors.black))), // New column
-                      ],
-                      rows: users.map((user) => DataRow(
-                        cells: [
-                          DataCell(Text(user['name']?.toString() ?? 'N/A', style: const TextStyle(color: Colors.black))),
-                          DataCell(Text(user['email']?.toString() ?? 'N/A', style: const TextStyle(color: Colors.black))),
-                          DataCell(_buildStatusChip(user['status']?.toString() ?? 'unknown')),
-                          DataCell(_buildVerificationChip(user['verified'] ?? false)),
-                          DataCell(Text(ContractStyle.formatDate(user['created_at']), style: const TextStyle(color: Colors.black))),
-                          DataCell(Text(ContractStyle().formatTimestamp(user['last_login']), style: const TextStyle(color: Colors.black))), // New cell
-                        ],
-                      )).toList(),
-                    ),
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static Widget _buildStatusChip(String status) {
-    Color color;
-    switch (status.toLowerCase()) {
-      case 'active':
-        color = Colors.green;
-        break;
-      case 'inactive':
-        color = Colors.grey;
-        break;
-      case 'suspended':
-        color = Colors.red;
-        break;
-      default:
-        color = Colors.grey;
-    }
-
-    return Chip(
-      label: Text(
-        status.toUpperCase(),
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
+          ],
         ),
       ),
-      backgroundColor: color,
-      padding: EdgeInsets.zero,
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    );
-  }
-
-  static Widget _buildVerificationChip(bool verified) {
-    return Chip(
-      label: Text(
-        verified ? 'VERIFIED' : 'PENDING',
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      backgroundColor: verified ? Colors.blue : Colors.orange,
-      padding: EdgeInsets.zero,
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }
 }
 
-class UsersManagementTable extends StatefulWidget {
-  const UsersManagementTable({super.key});
+class UserTable extends StatefulWidget {
+  const UserTable({super.key});
 
   @override
-  UsersManagementTableState createState() => UsersManagementTableState();
+  UserTableState createState() => UserTableState();
 }
 
-class UsersManagementTableState extends State<UsersManagementTable> {
+class UserTableState extends State<UserTable> with SingleTickerProviderStateMixin {
   final SuperAdminUserService _userService = SuperAdminUserService();
+  List<Map<String, dynamic>> _allUsers = [];
   List<Map<String, dynamic>> _contractors = [];
   List<Map<String, dynamic>> _contractees = [];
   Map<String, dynamic> _statistics = {};
   bool _isLoading = true;
+  String _searchQuery = '';
+  String selectedRole = 'All';
   String? _error;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _loadUserData();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadUserData() async {
@@ -252,16 +190,15 @@ class UsersManagementTableState extends State<UsersManagementTable> {
         _error = null;
       });
 
-      final results = await Future.wait([
-        _userService.getUsersByRole('contractor'),
-        _userService.getUsersByRole('contractee'),
-        _userService.getUserStatistics(),
-      ]);
+      final contractors = await _userService.getUsersByRole('contractor');
+      final contractees = await _userService.getUsersByRole('contractee');
+      final stats = await _userService.getUserStatistics();
 
       setState(() {
-        _contractors = results[0] as List<Map<String, dynamic>>;
-        _contractees = results[1] as List<Map<String, dynamic>>;
-        _statistics = results[2] as Map<String, dynamic>;
+        _allUsers = [...contractors, ...contractees];
+        _contractors = contractors;
+        _contractees = contractees;
+        _statistics = stats;
         _isLoading = false;
       });
     } catch (e) {
@@ -281,7 +218,7 @@ class UsersManagementTableState extends State<UsersManagementTable> {
     }
   }
 
-  Future<void> _refreshStatistics() async {
+  Future<void> _refreshUserStatistics() async {
     try {
       final stats = await _userService.getUserStatistics();
       setState(() {
@@ -301,42 +238,42 @@ class UsersManagementTableState extends State<UsersManagementTable> {
     }
   }
 
-  Future<void> _refreshContractors() async {
-    try {
-      final contractors = await _userService.getUsersByRole('contractor');
-      setState(() {
-        _contractors = contractors;
-      });
-    } catch (e) {
-      await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to refresh contractors: $e',
-        module: 'Super Admin Users',
-        severity: 'Medium',
-        extraInfo: {
-          'operation': 'Refresh Contractors',
-          'timestamp': DateTime.now().toIso8601String(),
-        },
-      );
-    }
+  void filterUsers(String query) {
+    setState(() {
+      _searchQuery = query.toLowerCase();
+      _applyFilters();
+    });
   }
 
-  Future<void> _refreshContractees() async {
-    try {
-      final contractees = await _userService.getUsersByRole('contractee');
-      setState(() {
-        _contractees = contractees;
-      });
-    } catch (e) {
-      await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to refresh contractees: $e',
-        module: 'Super Admin Users',
-        severity: 'Medium',
-        extraInfo: {
-          'operation': 'Refresh Contractees',
-          'timestamp': DateTime.now().toIso8601String(),
-        },
-      );
-    }
+  void filterByRole(String role) {
+    setState(() {
+      selectedRole = role;
+      _applyFilters();
+    });
+  }
+
+  void clearFilters() {
+    setState(() {
+      _searchQuery = '';
+      selectedRole = 'All';
+      _applyFilters();
+    });
+  }
+
+  void _applyFilters() {
+    List<Map<String, dynamic>> filtered = _allUsers.where((user) {
+      final matchesSearch = _searchQuery.isEmpty ||
+          (user['name']?.toString().toLowerCase().contains(_searchQuery) ?? false) ||
+          (user['email']?.toString().toLowerCase().contains(_searchQuery) ?? false) ||
+          (user['role']?.toString().toLowerCase().contains(_searchQuery) ?? false);
+
+      final matchesRole = selectedRole == 'All' || user['role'] == selectedRole;
+
+      return matchesSearch && matchesRole;
+    }).toList();
+
+    _contractors = filtered.where((user) => user['role'] == 'contractor').toList();
+    _contractees = filtered.where((user) => user['role'] == 'contractee').toList();
   }
 
   @override
@@ -363,12 +300,12 @@ class UsersManagementTableState extends State<UsersManagementTable> {
             const SizedBox(height: 16),
             Text(
               'Error loading users',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w500, color: Colors.black),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500, color: Colors.black),
             ),
             const SizedBox(height: 8),
             Text(
               _error!,
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
+              style: TextStyle(fontSize: 14, color: Colors.grey),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -383,21 +320,166 @@ class UsersManagementTableState extends State<UsersManagementTable> {
 
     return Column(
       children: [
-        BuildUsers.buildUserStatisticsCard(context, _statistics, _refreshStatistics),
+        BuildUser.buildUserStatisticsCard(context, _statistics, _refreshUserStatistics),
+        BuildUser.buildUserFilters(context, this),
         Expanded(
-          child: Row(
-            children: [
-              Expanded(
-                child: BuildUsers.buildUsersTable(context, 'Contractors', _contractors, _refreshContractors),
-              ),
-              const SizedBox(width: 0), // Remove space between tables
-              Expanded(
-                child: BuildUsers.buildUsersTable(context, 'Contractees', _contractees, _refreshContractees),
-              ),
-            ],
+          child: DefaultTabController(
+            length: 2,
+            child: Column(
+              children: [
+                TabBar(
+                  controller: _tabController,
+                  tabs: const [
+                    Tab(text: 'Contractors'),
+                    Tab(text: 'Contractees'),
+                  ],
+                  labelColor: Colors.black,
+                  unselectedLabelColor: Colors.grey,
+                ),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildUserTable(_contractors, 'Contractors'),
+                      _buildUserTable(_contractees, 'Contractees'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
     );
+  }
+
+  Widget _buildUserTable(List<Map<String, dynamic>> users, String title) {
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.all(16),
+      color: Colors.white,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  '$title (${users.length})',
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500, color: Colors.black),
+                ),
+                const Spacer(),
+                IconButton(
+                  onPressed: _loadUserData,
+                  icon: const Icon(Icons.refresh_outlined, color: Colors.grey),
+                  tooltip: 'Refresh Users',
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: users.isEmpty
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.people_outlined, size: 64, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text('No users found', style: TextStyle(color: Colors.black)),
+                      ],
+                    ),
+                  )
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                          child: SingleChildScrollView(
+                            child: DataTable(
+                              columnSpacing: 15,
+                              headingRowHeight: 56,
+                              dataRowHeight: 56,
+                              columns: const [
+                                DataColumn(label: Text('Name', style: TextStyle(color: Colors.black))),
+                                DataColumn(label: Text('Email', style: TextStyle(color: Colors.black))),
+                                DataColumn(label: Text('Role', style: TextStyle(color: Colors.black))),
+                                DataColumn(label: Text('Last Login', style: TextStyle(color: Colors.black))),
+                              ],
+                              rows: users.map((user) => DataRow(
+                                cells: [
+                                  DataCell(Text(user['name']?.toString() ?? 'N/A', style: const TextStyle(color: Colors.black))),
+                                  DataCell(Text(user['email']?.toString() ?? 'N/A', style: const TextStyle(color: Colors.black))),
+                                  DataCell(_buildRoleChip(user['role']?.toString() ?? 'unknown')),
+                                  DataCell(Text(_formatLastLogin(user['last_login']), style: const TextStyle(color: Colors.black))),
+                                ],
+                              )).toList(),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRoleChip(String role) {
+    Color color;
+    switch (role.toLowerCase()) {
+      case 'contractor':
+        color = Colors.green;
+        break;
+      case 'contractee':
+        color = Colors.orange;
+        break;
+      default:
+        color = Colors.grey;
+    }
+
+    return Chip(
+      label: Text(
+        role.toUpperCase(),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      backgroundColor: color,
+      padding: EdgeInsets.zero,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    );
+  }
+
+  String _formatLastLogin(dynamic timestamp) {
+    if (timestamp == null) return 'N/A';
+    try {
+      DateTime dt;
+      if (timestamp is String) {
+        dt = DateTime.parse(timestamp).toLocal();
+      } else if (timestamp is DateTime) {
+        dt = timestamp.toLocal();
+      } else {
+        if (timestamp is int) {
+          dt = DateTime.fromMillisecondsSinceEpoch(timestamp).toLocal();
+        } else {
+          return timestamp.toString();
+        }
+      }
+      return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
+             '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return timestamp.toString();
+    }
   }
 }

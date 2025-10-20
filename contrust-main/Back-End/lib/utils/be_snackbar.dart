@@ -1,4 +1,4 @@
-// ignore_for_file: library_private_types_in_public_api
+// ignore_for_file: library_private_types_in_public_api, deprecated_member_use
 
 import 'package:flutter/material.dart';
 
@@ -74,7 +74,7 @@ class ConTrustSnackBar {
                 ),
                 onPressed: () {
                   Navigator.pop(context);
-                  action.onPressed?.call();
+                  action.onPressed.call();
                 },
                 child: Text(action.label),
               ),

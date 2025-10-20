@@ -20,7 +20,6 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -30,7 +29,7 @@ class _LoginPageState extends State<LoginPage> {
             margin: const EdgeInsets.symmetric(horizontal: 20),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(50),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.08),

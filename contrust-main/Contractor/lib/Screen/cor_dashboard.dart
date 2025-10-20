@@ -4,6 +4,7 @@ import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/build/builddashboard.dart';
 import 'package:contractor/build/builddrawer.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DashboardScreen extends StatefulWidget {
   final String contractorId;
@@ -17,9 +18,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session == null || session.user.id.isEmpty) {
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+      }
+    });
   }
 
-    @override
+  @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isWebSize = screenWidth >= 1000;
@@ -29,7 +36,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         currentPage: ContractorPage.dashboard,
         contractorId: widget.contractorId,
         child: widget.contractorId.isEmpty
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator())  
             : isWebSize
                 ? DashboardUI(contractorId: widget.contractorId)
                 : Stack(

@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
+
 import 'dart:ui';
 
 import 'package:backend/utils/be_pagetransition.dart';

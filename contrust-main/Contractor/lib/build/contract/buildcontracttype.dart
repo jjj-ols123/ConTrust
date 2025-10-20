@@ -112,8 +112,6 @@ class ContractTypeBuild {
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
         onTap: () async {
-          print('Tapped template: $templateName, isUploadOption: $isUploadOption');
-
           if (isUploadOption) {
             await showUploadContractDialog(
               context: context,

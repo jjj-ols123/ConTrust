@@ -308,6 +308,7 @@ class ContractService {
 
         await _supabase.from('Projects').update({
           'status': 'awaiting_signature',
+          'contract_id': contractId,  
         }).eq('project_id', contractData['project_id']);
 
       } else if (status == 'rejected') {
