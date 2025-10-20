@@ -581,7 +581,7 @@ class DashboardDrawer extends StatelessWidget {
                     label: 'Messages',
                     iconSize: iconSize,
                     fontSize: fontSize,
-                    color: Colors.blue,
+                    color: Colors.black,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -599,7 +599,7 @@ class DashboardDrawer extends StatelessWidget {
                     label: 'Contracts',
                     iconSize: iconSize,
                     fontSize: fontSize,
-                    color: Colors.green,
+                    color: Colors.black,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -616,7 +616,7 @@ class DashboardDrawer extends StatelessWidget {
                     label: 'Bidding',
                     iconSize: iconSize,
                     fontSize: fontSize,
-                    color: Colors.orange,
+                    color: Colors.black,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -633,7 +633,7 @@ class DashboardDrawer extends StatelessWidget {
                     label: 'Profile',
                     iconSize: iconSize,
                     fontSize: fontSize,
-                    color: Colors.teal,
+                    color: Colors.black,
                     onTap: () {
                       Navigator.push(
                         context,
