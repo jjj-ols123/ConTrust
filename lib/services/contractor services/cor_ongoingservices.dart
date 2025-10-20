@@ -12,6 +12,42 @@ class CorOngoingService {
   final _projectService = ProjectService();
   final SupabaseClient _supabase = Supabase.instance.client;
 
+  static const String kCustomContractTypeId = 'd9d78420-7765-44d5-966c-6f0e0297c07d';
+
+  Future<List<Map<String, dynamic>>> getContractsForProject(String projectId) async {
+    final res = await Supabase.instance.client
+        .from('Contracts')
+        .select('contract_id, contract_type_id, pdf_url, signed_pdf_url, contractor_signature_url, contractee_signature_url, field_values, created_at')
+        .eq('project_id', projectId)
+        .order('created_at', ascending: true);
+
+    return (res as List<dynamic>?)
+            ?.map((e) => Map<String, dynamic>.from(e as Map))
+            .toList() ??
+        [];
+  }
+
+  Future<Map<String, dynamic>?> getContractById(String contractId) async {
+  try {
+    final res = await _supabase
+        .from('Contracts')
+        .select('contract_id, contract_type_id, pdf_url, signed_pdf_url, contractor_signature_url, contractee_signature_url, field_values, created_at')
+        .eq('contract_id', contractId)
+        .single();
+
+    return Map<String, dynamic>.from(res);
+  } catch (e) {
+    return null;
+  }
+}
+
+
+  Future<bool> hasCustomContractForProject(String projectId) async {
+    final contracts = await getContractsForProject(projectId);
+    return contracts.any((c) =>
+        (c['contract_type_id']?.toString() ?? '') == kCustomContractTypeId);
+  }
+
   Future<Map<String, dynamic>> loadProjectData(String projectId) async {
     try {
       final projectDetails = await _fetchService.fetchProjectDetails(projectId);
@@ -19,16 +55,17 @@ class CorOngoingService {
       final photos = await _fetchService.fetchProjectPhotos(projectId);
       final costs = await _fetchService.fetchProjectCosts(projectId);
       final tasks = await _fetchService.fetchProjectTasks(projectId);
-      final contracts = await _fetchService.fetchContractsForProject(projectId);
       
+      final contracts = await getContractsForProject(projectId);
+
       final progress = (projectDetails?['progress'] as num?)?.toDouble() ?? 0.0;
       
       return {
         'projectDetails': projectDetails,
+        'tasks': tasks,
         'reports': reports,
         'photos': photos,
         'costs': costs,
-        'tasks': tasks,
         'contracts': contracts,
         'progress': progress,
       };
@@ -399,6 +436,36 @@ class CorOngoingService {
             'Error deleting material: $e',
           );
         }
+      }
+    }
+  }
+
+  Future<void> updateEstimatedCompletion({
+    required String projectId,
+    required DateTime estimatedCompletion,
+    required BuildContext context,
+    required VoidCallback onSuccess,
+  }) async {
+    try {
+      final projectDetails = await _fetchService.fetchProjectDetails(projectId);
+      final startDate = DateTime.parse(projectDetails?['start_date']);
+      final duration = estimatedCompletion.difference(startDate).inDays;
+
+      await _supabase
+          .from('Projects')
+          .update({
+            'estimated_completion': estimatedCompletion.toIso8601String(),
+            'duration': duration,
+          })
+          .eq('project_id', projectId);
+
+      if (context.mounted) {
+        ConTrustSnackBar.success(context, 'Updated successfully!');
+      }
+      onSuccess();
+    } catch (e) {
+      if (context.mounted) {
+        ConTrustSnackBar.error(context, 'Error updating estimated completion: $e');
       }
     }
   }
