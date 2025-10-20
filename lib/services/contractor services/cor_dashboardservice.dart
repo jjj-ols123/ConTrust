@@ -72,7 +72,7 @@ class CorDashboardService {
       };
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to load dashboard data: $e',
+        errorMessage: 'Failed to load dashboard data: ',
         module: 'Contractor Dashboard Service',
         severity: 'Medium',
         extraInfo: {
@@ -123,7 +123,7 @@ class CorDashboardService {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to navigate to project: $e',
+        errorMessage: 'Failed to navigate to project: ',
         module: 'Contractor Dashboard Service',
         severity: 'Low',
         extraInfo: {

@@ -85,7 +85,7 @@ class SignInContractor {
       await _auditService.logAuditEvent(
         userId: signInResponse.user?.id,
         action: 'USER_LOGIN_FAILED',
-        details: 'Contractor login failed due to error $e',
+        details: 'Contractor login failed due to error ',
         metadata: {
           'user_type': 'contractor',
           'email': email,
@@ -95,7 +95,7 @@ class SignInContractor {
       );
 
       await _errorService.logError(
-        errorMessage: 'Contractor sign-in failed: $e',
+        errorMessage: 'Contractor sign-in failed: ',
         module: 'Contractor Sign-in',
         severity: 'Medium',
         extraInfo: {
@@ -105,7 +105,7 @@ class SignInContractor {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      ConTrustSnackBar.error(context, 'Error logging in: $e');
+      ConTrustSnackBar.error(context, 'Error logging in: ');
     }
   }
 }
@@ -133,7 +133,7 @@ class SignInGoogleContractor {
       });
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Google sign-in failed for contractor: $e',
+        errorMessage: 'Google sign-in failed for contractor: ',
         module: 'Contractor Google Sign-in',
         severity: 'High',
         extraInfo: {
@@ -141,7 +141,7 @@ class SignInGoogleContractor {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      ConTrustSnackBar.error(context, 'Google sign-in failed: $e');
+      ConTrustSnackBar.error(context, 'Google sign-in failed: ');
     }
   }
 
@@ -195,7 +195,7 @@ class SignInGoogleContractor {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Google sign-in handling failed for contractor: $e',
+        errorMessage: 'Google sign-in handling failed for contractor: ',
         module: 'Contractor Google Sign-in',
         severity: 'High',
         extraInfo: {
@@ -204,7 +204,7 @@ class SignInGoogleContractor {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      ConTrustSnackBar.error(context, 'Sign-in failed: $e');
+      ConTrustSnackBar.error(context, 'Sign-in failed: ');
     }
   }
 
@@ -275,7 +275,7 @@ class SignInGoogleContractor {
       );
 
       await _errorService.logError(
-        errorMessage: 'Contractor setup failed during Google sign-in: $e',
+        errorMessage: 'Contractor setup failed during Google sign-in: ',
         module: 'Contractor Google Sign-in',
         severity: 'Medium',
         extraInfo: {
@@ -284,7 +284,7 @@ class SignInGoogleContractor {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      ConTrustSnackBar.error(context, 'Account setup failed: $e');
+      ConTrustSnackBar.error(context, 'Account setup failed: ');
     }
   }
 }

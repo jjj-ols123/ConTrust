@@ -193,7 +193,7 @@ class CorProductService {
       Navigator.pop(context);
     } catch (e) {
       if (context.mounted) {
-        ConTrustSnackBar.error(context, 'Failed to add materials to project costs: $e');
+        ConTrustSnackBar.error(context, 'Failed to add materials to project costs: ');
       }
     }
   }

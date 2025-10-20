@@ -125,7 +125,7 @@ class SignUpContractor {
       );
 
       await _errorService.logError(
-        errorMessage: 'Contractor sign-up failed - AuthException: $e',
+        errorMessage: 'Contractor sign-up failed - AuthException: ',
         module: 'Contractor Sign-up',
         severity: 'Medium',
         extraInfo: {
@@ -137,7 +137,7 @@ class SignUpContractor {
         },
       );
       if (!context.mounted) return;
-      ConTrustSnackBar.error(context, 'Error creating account: $e');
+      ConTrustSnackBar.error(context, 'Error creating account: ');
       return;
     } catch (e) {
       await _auditService.logAuditEvent(
@@ -153,7 +153,7 @@ class SignUpContractor {
       );
 
       await _errorService.logError(
-        errorMessage: 'Contractor sign-up failed - Unexpected error: $e',
+        errorMessage: 'Contractor sign-up failed - Unexpected error: ',
         module: 'Contractor Sign-up',
         severity: 'High',
         extraInfo: {
@@ -165,7 +165,7 @@ class SignUpContractor {
         },
       );
       if (!context.mounted) return;
-      ConTrustSnackBar.error(context, 'Unexpected error: $e');
+      ConTrustSnackBar.error(context, 'Unexpected error: ');
     }
   }
 }

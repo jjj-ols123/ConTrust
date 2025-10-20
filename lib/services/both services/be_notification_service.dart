@@ -234,7 +234,7 @@ class NotificationService {
       );
     } catch (e, st) {
       await _errorService.logError(
-        errorMessage: 'Failed to create bid notification: $e',
+        errorMessage: 'Failed to create bid notification: ',
         module: 'Notification Service',
         severity: 'Medium',
         extraInfo: {
@@ -342,7 +342,7 @@ class NotificationService {
       }
     } catch (e, st) {
       await _errorService.logError(
-        errorMessage: 'Failed to compile bid notification: $e',
+        errorMessage: 'Failed to compile bid notification: ',
         module: 'Notification Service',
         severity: 'Medium',
         extraInfo: {

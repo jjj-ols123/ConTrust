@@ -75,7 +75,7 @@ class CeeProfileService {
         'ongoingProjects': ongoingProjectsWithNames,
       };
     } catch (e) {
-      throw Exception('Error loading contractee data: $e');
+      throw Exception('Error loading contractee data: ');
     }
   }
 
@@ -107,7 +107,7 @@ class CeeProfileService {
           .update({columnName: newValue})
           .eq('contractee_id', contracteeId);
     } catch (e) {
-      throw Exception('Error saving field: $e');
+      throw Exception('Error saving field: ');
     }
   }
 

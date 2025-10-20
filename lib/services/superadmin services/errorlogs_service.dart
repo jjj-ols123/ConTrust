@@ -15,7 +15,7 @@ class SuperAdminErrorService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch all error logs: $e',
+        errorMessage: 'Failed to fetch all error logs:',
         module: 'Error Logs Service',
         severity: 'Medium',
         extraInfo: {
@@ -23,7 +23,7 @@ class SuperAdminErrorService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to fetch error logs: $e');
+      throw Exception('Failed to fetch error logs: ');
     }
   }
 
@@ -38,7 +38,7 @@ class SuperAdminErrorService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch error logs by user: $e',
+        errorMessage: 'Failed to fetch error logs by user: ',
         module: 'Error Logs Service',
         severity: 'Medium',
         extraInfo: {
@@ -47,7 +47,7 @@ class SuperAdminErrorService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to fetch error logs by user: $e');
+      throw Exception('Failed to fetch error logs by user: ');
     }
   }
 
@@ -62,7 +62,7 @@ class SuperAdminErrorService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch error logs by severity: $e',
+        errorMessage: 'Failed to fetch error logs by severity: ',
         module: 'Error Logs Service',
         severity: 'Medium',
         extraInfo: {
@@ -71,7 +71,7 @@ class SuperAdminErrorService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to fetch error logs by severity: $e');
+      throw Exception('Failed to fetch error logs by severity: ');
     }
   }
 
@@ -86,7 +86,7 @@ class SuperAdminErrorService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch error logs by module: $e',
+        errorMessage: 'Failed to fetch error logs by module:',
         module: 'Error Logs Service',
         severity: 'Medium',
         extraInfo: {
@@ -95,7 +95,7 @@ class SuperAdminErrorService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to fetch error logs by module: $e');
+      throw Exception('Failed to fetch error logs by module: ');
     }
   }
 
@@ -110,7 +110,7 @@ class SuperAdminErrorService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch unresolved error logs: $e',
+        errorMessage: 'Failed to fetch unresolved error logs:',
         module: 'Error Logs Service',
         severity: 'Medium',
         extraInfo: {
@@ -118,7 +118,7 @@ class SuperAdminErrorService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to fetch unresolved error logs: $e');
+      throw Exception('Failed to fetch unresolved error logs: ');
     }
   }
 
@@ -133,7 +133,7 @@ class SuperAdminErrorService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch recent error logs: $e',
+        errorMessage: 'Failed to fetch recent error logs:',
         module: 'Error Logs Service',
         severity: 'Medium',
         extraInfo: {
@@ -142,7 +142,7 @@ class SuperAdminErrorService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to fetch recent error logs: $e');
+      throw Exception('Failed to fetch recent error logs: ');
     }
   }
 
@@ -184,7 +184,7 @@ class SuperAdminErrorService {
       };
     } catch (e) {
       SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch error statistics: $e',
+        errorMessage: 'Failed to fetch error statistics:',
         module: 'Error Logs Service',
         severity: 'High',
         extraInfo: {
@@ -192,7 +192,7 @@ class SuperAdminErrorService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to get error statistics: $e');
+      throw Exception('Failed to get error statistics: ');
     }
   }
 
@@ -216,7 +216,7 @@ class SuperAdminErrorService {
         'extra_info': extraInfo,
       });
     } catch (e) {
-      throw Exception('Failed to log error: $e');
+      throw Exception('Failed to log error: ');
     }
   }
 
@@ -228,7 +228,7 @@ class SuperAdminErrorService {
           .eq('error_id', errorId);
     } catch (e) {
       SuperAdminErrorService().logError(
-        errorMessage: 'Failed to mark error as resolved: $e',
+        errorMessage: 'Failed to mark error as resolved: ',
         module: 'Error Logs Service',
         severity: 'Low',
         extraInfo: {
@@ -237,7 +237,7 @@ class SuperAdminErrorService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to mark error as resolved: $e');
+      throw Exception('Failed to mark error as resolved: ');
     }
   }
 
@@ -249,7 +249,7 @@ class SuperAdminErrorService {
           .eq('error_id', errorId);
     } catch (e) {
       SuperAdminErrorService().logError(
-        errorMessage: 'Failed to mark error as unresolved: $e',
+        errorMessage: 'Failed to mark error as unresolved: ',
         module: 'Error Logs Service',
         severity: 'Low',
         extraInfo: {
@@ -258,7 +258,7 @@ class SuperAdminErrorService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to mark error as unresolved: $e');
+      throw Exception('Failed to mark error as unresolved: ');
     }
   }
 }

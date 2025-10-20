@@ -80,7 +80,7 @@ class ContractPdfSignatureService {
       return await pdf.save();
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to generate signed PDF: $e',
+        errorMessage: 'Failed to generate signed PDF:',
         module: 'Contract PDF Signature Service',
         severity: 'High',
         extraInfo: {
@@ -107,7 +107,7 @@ class ContractPdfSignatureService {
       return response;
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to download signature: $e',
+        errorMessage: 'Failed to download signature: ',
         module: 'Contract PDF Signature Service',
         severity: 'Low',
         extraInfo: {
@@ -186,7 +186,7 @@ class ContractPdfSignatureService {
           throw Exception('Failed to create signed URL for uploaded file');
         }
       } catch (e) {
-        throw Exception('Signed PDF uploaded but signed URL creation failed: $e');
+        throw Exception('Signed PDF uploaded but signed URL creation failed: ');
       }
 
       try {
@@ -227,7 +227,7 @@ class ContractPdfSignatureService {
       return filePath;
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to create signed contract PDF: $e',
+        errorMessage: 'Failed to create signed contract PDF: ',
         module: 'Contract PDF Signature Service',
         severity: 'High',
         extraInfo: {
@@ -235,7 +235,7 @@ class ContractPdfSignatureService {
           'contract_id': contractId,
         },
       );
-      throw Exception('Failed to create signed contract PDF: $e');
+      throw Exception('Failed to create signed contract PDF: ');
     }
   }
 
@@ -257,7 +257,7 @@ class ContractPdfSignatureService {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to check and generate signed PDF: $e',
+        errorMessage: 'Failed to check and generate signed PDF: ',
         module: 'Contract PDF Signature Service',
         severity: 'Medium',
         extraInfo: {

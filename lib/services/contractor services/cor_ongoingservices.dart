@@ -70,7 +70,7 @@ class CorOngoingService {
         'progress': progress,
       };
     } catch (e) {
-      throw Exception('Error loading project data: $e');
+      throw Exception('Error loading project data:');
     }
   }
 
@@ -103,7 +103,7 @@ class CorOngoingService {
       if (context.mounted) {
         ConTrustSnackBar.error(
           context,
-          'Error adding report: $e',
+          'Error adding report: ',
         );
       }
     }
@@ -132,7 +132,7 @@ class CorOngoingService {
       if (context.mounted) {
         ConTrustSnackBar.error(
           context,
-          'Error adding task: $e',
+          'Error adding task: ',
         );
       }
     }
@@ -189,7 +189,7 @@ class CorOngoingService {
       if (context.mounted) {
         ConTrustSnackBar.error(
           context,
-          'Error uploading photo: $e',
+          'Error uploading photo: ',
         );
       }
     }
@@ -242,7 +242,7 @@ class CorOngoingService {
       if (context.mounted) {
         ConTrustSnackBar.error(
           context,
-          'Error updating task status: $e',
+          'Error updating task status: ',
         );
       }
       rethrow;
@@ -301,7 +301,7 @@ class CorOngoingService {
         if (context.mounted) {
           ConTrustSnackBar.error(
             context,
-            'Error deleting task: $e',
+            'Error deleting task: ',
           );
         }
       }
@@ -345,7 +345,7 @@ class CorOngoingService {
         if (context.mounted) {
           ConTrustSnackBar.error(
             context,
-            'Error deleting report: $e',
+            'Error deleting report: ',
           );
         }
       }
@@ -389,7 +389,7 @@ class CorOngoingService {
         if (context.mounted) {
           ConTrustSnackBar.error(
             context,
-            'Error deleting photo: $e',
+            'Error deleting photo: ',
           );
         }
       }
@@ -433,7 +433,7 @@ class CorOngoingService {
         if (context.mounted) {
           ConTrustSnackBar.error(
             context,
-            'Error deleting material: $e',
+            'Error deleting material:',
           );
         }
       }
@@ -465,7 +465,7 @@ class CorOngoingService {
       onSuccess();
     } catch (e) {
       if (context.mounted) {
-        ConTrustSnackBar.error(context, 'Error updating estimated completion: $e');
+        ConTrustSnackBar.error(context, 'Error updating estimated completion: ');
       }
     }
   }

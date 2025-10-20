@@ -77,7 +77,7 @@ class ProjectService {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to post project: $e',
+        errorMessage: 'Failed to post project: ',
         module: 'Project Service',
         severity: 'High',
         extraInfo: {
@@ -87,7 +87,7 @@ class ProjectService {
         },
       );
       if (context.mounted) {
-        ConTrustSnackBar.error(context, 'Error creating project: $e');
+        ConTrustSnackBar.error(context, 'Error creating project: ');
       }
       rethrow;
     }
@@ -148,7 +148,7 @@ class ProjectService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to delete project: $e',
+        errorMessage: 'Failed to delete project: ',
         module: 'Project Service',
         severity: 'High',
         extraInfo: {
@@ -253,7 +253,7 @@ class ProjectService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to notify contractor: $e',
+        errorMessage: 'Failed to notify contractor: ',
         module: 'Project Service',
         severity: 'Medium',
         extraInfo: {
@@ -347,7 +347,7 @@ class ProjectService {
       return project;
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to cancel agreement: $e',
+        errorMessage: 'Failed to cancel agreement: ',
         module: 'Project Service',
         severity: 'High',
         extraInfo: {
@@ -442,7 +442,7 @@ class ProjectService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to accept hiring: $e',
+        errorMessage: 'Failed to accept hiring: ',
         module: 'Project Service',
         severity: 'High',
         extraInfo: {
@@ -489,7 +489,7 @@ class ProjectService {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to cancel other hire requests: $e',
+        errorMessage: 'Failed to cancel other hire requests: ',
         module: 'Project Service',
         severity: 'Medium',
         extraInfo: {
@@ -559,7 +559,7 @@ class ProjectService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to decline hiring: $e',
+        errorMessage: 'Failed to decline hiring: ',
         module: 'Project Service',
         severity: 'Medium',
         extraInfo: {
@@ -644,7 +644,7 @@ class ProjectService {
       return project;
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to agree to cancel agreement: $e',
+        errorMessage: 'Failed to agree to cancel agreement: ',
         module: 'Project Service',
         severity: 'High',
         extraInfo: {
@@ -720,7 +720,7 @@ class ProjectService {
       return project;
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to decline cancel agreement: $e',
+        errorMessage: 'Failed to decline cancel agreement: ',
         module: 'Project Service',
         severity: 'High',
         extraInfo: {
@@ -757,7 +757,7 @@ class ProjectService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to add task to project: $e',
+        errorMessage: 'Failed to add task to project: ',
         module: 'Project Service',
         severity: 'Medium',
         extraInfo: {
@@ -794,7 +794,7 @@ class ProjectService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to add report to project: $e',
+        errorMessage: 'Failed to add report to project:',
         module: 'Project Service',
         severity: 'Medium',
         extraInfo: {
@@ -832,7 +832,7 @@ class ProjectService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to add photo to project: $e',
+        errorMessage: 'Failed to add photo to project: ',
         module: 'Project Service',
         severity: 'Medium',
         extraInfo: {
@@ -881,7 +881,7 @@ class ProjectService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to add cost to project: $e',
+        errorMessage: 'Failed to add cost to project: ',
         module: 'Project Service',
         severity: 'Medium',
         extraInfo: {
@@ -911,7 +911,7 @@ class ProjectService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to update task status: $e',
+        errorMessage: 'Failed to update task status: ',
         module: 'Project Service',
         severity: 'Low',
         extraInfo: {
@@ -963,7 +963,7 @@ class ProjectService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to delete report: $e',
+        errorMessage: 'Failed to delete report: ',
         module: 'Project Service',
         severity: 'Low',
         extraInfo: {
@@ -1003,7 +1003,7 @@ class ProjectService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to delete photo: $e',
+        errorMessage: 'Failed to delete photo: ',
         module: 'Project Service',
         severity: 'Low',
         extraInfo: {
@@ -1032,7 +1032,7 @@ class ProjectService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to delete cost: $e',
+        errorMessage: 'Failed to delete cost: ',
         module: 'Project Service',
         severity: 'Low',
         extraInfo: {

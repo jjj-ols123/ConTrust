@@ -36,7 +36,7 @@ class CreateContractService {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to check for single project: $e',
+        errorMessage: 'Failed to check for single project: ',
         module: 'Create Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -54,7 +54,7 @@ class CreateContractService {
       return getTemplateSpecificFields(normalizedType, itemCount: itemCount);
     } catch (e) {
       _errorService.logError(
-        errorMessage: 'Failed to get contract type specific fields: $e',
+        errorMessage: 'Failed to get contract type specific fields:',
         module: 'Create Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -78,7 +78,7 @@ class CreateContractService {
       return [];
     } catch (e) {
       _errorService.logError(
-        errorMessage: 'Failed to get template specific fields: $e',
+        errorMessage: 'Failed to get template specific fields: ',
         module: 'Create Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -134,7 +134,7 @@ class CreateContractService {
       ];
     } catch (e) {
       _errorService.logError(
-        errorMessage: 'Failed to get lump sum fields: $e',
+        errorMessage: 'Failed to get lump sum fields: ',
         module: 'Create Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -191,7 +191,7 @@ class CreateContractService {
       ];
     } catch (e) {
       _errorService.logError(
-        errorMessage: 'Failed to get cost plus fields: $e',
+        errorMessage: 'Failed to get cost plus fields: ',
         module: 'Create Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -245,7 +245,7 @@ class CreateContractService {
     ];
     } catch (e) {
       _errorService.logError(
-        errorMessage: 'Failed to get time and materials fields: $e',
+        errorMessage: 'Failed to get time and materials fields: ',
         module: 'Create Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -280,7 +280,7 @@ class CreateContractService {
       return fields;
     } catch (e) {
       _errorService.logError(
-        errorMessage: 'Failed to get time and materials fields with items: $e',
+        errorMessage: 'Failed to get time and materials fields with items: ',
         module: 'Create Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -297,7 +297,7 @@ class CreateContractService {
       return await FetchService().fetchProjectDetails(projectId);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch project data: $e',
+        errorMessage: 'Failed to fetch project data:',
         module: 'Create Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -348,7 +348,7 @@ class CreateContractService {
       }
     } catch (e) {
       _errorService.logError(
-        errorMessage: 'Failed to populate project fields: $e',
+        errorMessage: 'Failed to populate project fields: ',
         module: 'Create Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -405,7 +405,7 @@ class CreateContractService {
       controllers['Estimated Budget']?.text = total.toStringAsFixed(2);
     } catch (e) {
       _errorService.logError(
-        errorMessage: 'Failed to calculate time and materials rates: $e',
+        errorMessage: 'Failed to calculate time and materials rates: ',
         module: 'Create Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -432,7 +432,7 @@ class CreateContractService {
       return maxItems;
     } catch (e) {
       _errorService.logError(
-        errorMessage: 'Failed to get max item count from controllers: $e',
+        errorMessage: 'Failed to get max item count from controllers: ',
         module: 'Create Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -479,7 +479,7 @@ class CreateContractService {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to populate contractor info: $e',
+        errorMessage: 'Failed to populate contractor info:',
         module: 'Create Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -533,7 +533,7 @@ class CreateContractService {
       controllers['Late Fee Percentage']?.clear();
     } catch (e) {
       _errorService.logError(
-        errorMessage: 'Failed to clear auto populated fields: $e',
+        errorMessage: 'Failed to clear auto populated fields: ',
         module: 'Create Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -562,7 +562,7 @@ class CreateContractService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to save contract: $e',
+        errorMessage: 'Failed to save contract: ',
         module: 'Create Contract Service',
         severity: 'High',
         extraInfo: {
@@ -596,7 +596,7 @@ class CreateContractService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to update contract: $e',
+        errorMessage: 'Failed to update contract: ',
         module: 'Create Contract Service',
         severity: 'High',
         extraInfo: {
@@ -618,7 +618,7 @@ class CreateContractService {
       return null;
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch contract field values: $e',
+        errorMessage: 'Failed to fetch contract field values: ',
         module: 'Create Contract Service',
         severity: 'Low',
         extraInfo: {

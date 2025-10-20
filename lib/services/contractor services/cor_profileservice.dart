@@ -63,7 +63,7 @@ class CorProfileService {
         'totalReviews': totalReviews,
       };
     } catch (e) {
-      throw Exception('Error loading contractor data: $e');
+      throw Exception('Error loading contractor data: ');
     }
   }
 
@@ -95,7 +95,7 @@ class CorProfileService {
           .update({columnName: newValue})
           .eq('contractor_id', contractorId);
     } catch (e) {
-      throw Exception('Error saving field: $e');
+      throw Exception('Error saving field: ');
     }
   }
 

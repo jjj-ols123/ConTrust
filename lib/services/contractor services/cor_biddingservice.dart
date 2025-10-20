@@ -108,7 +108,7 @@ class CorBiddingService {
         }
       } catch (e) {
         await _errorService.logError(
-          errorMessage: 'Failed to send notification after posting bid: $e',
+          errorMessage: 'Failed to send notification after posting bid: ',
           module: 'Contractor Bidding Service',
           severity: 'Medium',
           extraInfo: {
@@ -127,7 +127,7 @@ class CorBiddingService {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to post bid: $e',
+        errorMessage: 'Failed to post bid: ',
         module: 'Contractor Bidding Service',
         severity: 'High',
         extraInfo: {
@@ -178,7 +178,7 @@ class CorBiddingService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to get contractor bids: $e',
+        errorMessage: 'Failed to get contractor bids: ',
         module: 'Contractor Bidding Service',
         severity: 'Medium',
         extraInfo: {
@@ -214,7 +214,7 @@ class CorBiddingService {
       };
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to load bidding data: $e',
+        errorMessage: 'Failed to load bidding data: ',
         module: 'Contractor Bidding Service',
         severity: 'Medium',
         extraInfo: {
@@ -223,7 +223,7 @@ class CorBiddingService {
       );
       return {
         'success': false,
-        'error': 'Error loading bidding data: $e',
+        'error': 'Error loading bidding data: ',
         'contractorId': null,
         'projects': <Map<String, dynamic>>[],
         'contracteeInfo': <String, Map<String, dynamic>>{},
@@ -238,7 +238,7 @@ class CorBiddingService {
       return await _userService.getContractorId();
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to load contractor ID: $e',
+        errorMessage: 'Failed to load contractor ID: ',
         module: 'Contractor Bidding Service',
         severity: 'Low',
         extraInfo: {
@@ -318,14 +318,14 @@ class CorBiddingService {
       };
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to load projects: $e',
+        errorMessage: 'Failed to load projects: ',
         module: 'Contractor Bidding Service',
         severity: 'Medium',
         extraInfo: {
           'operation': 'Load Projects',
         },
       );
-      throw Exception('Failed to load projects: $e');
+      throw Exception('Failed to load projects: ');
     }
   }
 
@@ -334,7 +334,7 @@ class CorBiddingService {
       return await _biddingService.getProjectHighestBids();
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to load highest bids: $e',
+        errorMessage: 'Failed to load highest bids: ',
         module: 'Contractor Bidding Service',
         severity: 'Low',
         extraInfo: {
@@ -357,7 +357,7 @@ class CorBiddingService {
       return response != null;
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to check if already bid: $e',
+        errorMessage: 'Failed to check if already bid: ',
         module: 'Contractor Bidding Service',
         severity: 'Low',
         extraInfo: {
