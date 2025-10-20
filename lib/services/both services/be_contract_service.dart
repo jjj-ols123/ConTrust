@@ -82,7 +82,7 @@ class ContractService {
           'contractor_id': contractorId,
         },
       );
-      throw Exception('Failed to save contract: $e');
+      throw Exception('Failed to save contract: ');
     }
   }
 

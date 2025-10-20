@@ -59,7 +59,7 @@ class ContractPdfService {
       return pdf.save();
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to generate contract PDF: $e',
+        errorMessage: 'Failed to generate contract PDF: ',
         module: 'Contract PDF Service',
         severity: 'High',
         extraInfo: {
@@ -104,7 +104,7 @@ class ContractPdfService {
       return filePath;
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to upload contract PDF: $e',
+        errorMessage: 'Failed to upload contract PDF: ',
         module: 'Contract PDF Service',
         severity: 'High',
         extraInfo: {
@@ -113,7 +113,7 @@ class ContractPdfService {
           'project_id': projectId,
         },
       );
-      throw Exception('Failed to upload contract PDF: $e');
+      throw Exception('Failed to upload contract PDF: ');
     }
   }
 
@@ -126,7 +126,7 @@ class ContractPdfService {
       return response;
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to download contract PDF: $e',
+        errorMessage: 'Failed to download contract PDF: ',
         module: 'Contract PDF Service',
         severity: 'Medium',
         extraInfo: {
@@ -134,7 +134,7 @@ class ContractPdfService {
           'pdf_path': pdfPath,
         },
       );
-      throw Exception('Failed to download contract PDF: $e');
+      throw Exception('Failed to download contract PDF: ');
     }
   }
 
@@ -150,7 +150,7 @@ class ContractPdfService {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to save contract PDF to device: $e',
+        errorMessage: 'Failed to save contract PDF to device: ',
         module: 'Contract PDF Service',
         severity: 'Medium',
         extraInfo: {
@@ -173,7 +173,7 @@ class ContractPdfService {
       }
     } catch (e) {
       _errorService.logError(
-        errorMessage: 'Failed to download file on web: $e',
+        errorMessage: 'Failed to download file on web: ',
         module: 'Contract PDF Service',
         severity: 'Medium',
         extraInfo: {

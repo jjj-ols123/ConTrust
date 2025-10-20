@@ -412,7 +412,7 @@ class MessageUIBuildMethods {
                                 ),
                               );
                             } catch (e) {
-                              ConTrustSnackBar.error(context, 'Error navigating to project management: $e');
+                              ConTrustSnackBar.error(context, 'Error navigating to project management: ');
                             }
                           },
                         );
@@ -440,7 +440,7 @@ class MessageUIBuildMethods {
                                 );
                               }
                             } catch (e) {
-                              ConTrustSnackBar.error(context, 'Error navigating to project: $e');
+                              ConTrustSnackBar.error(context, 'Error navigating to project:');
                             }
                           },
                         );
