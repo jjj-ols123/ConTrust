@@ -17,7 +17,7 @@ class ContractorContractService {
       return await FetchService().fetchContractTypes();
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch contract types: $e',
+        errorMessage: 'Failed to fetch contract types: ',
         module: 'Contractor Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -34,7 +34,7 @@ class ContractorContractService {
       return await FetchService().fetchCreatedContracts(contractorId);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch created contracts: $e',
+        errorMessage: 'Failed to fetch created contracts: ',
         module: 'Contractor Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -82,7 +82,7 @@ class ContractorContractService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to upload custom contract: $e',
+        errorMessage: 'Failed to upload custom contract: ',
         module: 'Contractor Contract Service',
         severity: 'High',
         extraInfo: {
@@ -116,7 +116,7 @@ class ContractorContractService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to save contract: $e',
+        errorMessage: 'Failed to save contract: ',
         module: 'Contractor Contract Service',
         severity: 'High',
         extraInfo: {
@@ -150,7 +150,7 @@ class ContractorContractService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to update contract: $e',
+        errorMessage: 'Failed to update contract: ',
         module: 'Contractor Contract Service',
         severity: 'High',
         extraInfo: {
@@ -169,7 +169,7 @@ class ContractorContractService {
       return await FetchService().fetchProjectDetails(projectId);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch project details: $e',
+        errorMessage: 'Failed to fetch project details:',
         module: 'Contractor Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -187,7 +187,7 @@ class ContractorContractService {
       return await FetchService().fetchContractorData(contractorId);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch contractor data: $e',
+        errorMessage: 'Failed to fetch contractor data: ',
         module: 'Contractor Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -205,7 +205,7 @@ class ContractorContractService {
       return await FetchService().fetchContractorProjectInfo(contractorId);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch contractor project info: $e',
+        errorMessage: 'Failed to fetch contractor project info: ',
         module: 'Contractor Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -222,7 +222,7 @@ class ContractorContractService {
       return await ContractService.getContractById(contractId);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to get contract by ID: $e',
+        errorMessage: 'Failed to get contract by ID: ',
         module: 'Contractor Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -250,7 +250,7 @@ class ContractorContractService {
       return {};
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to sign contract: $e',
+        errorMessage: 'Failed to sign contract: ',
         module: 'Contractor Contract Service',
         severity: 'High',
         extraInfo: {
@@ -275,7 +275,7 @@ class ContractorContractService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to verify signature: $e',
+        errorMessage: 'Failed to verify signature: ',
         module: 'Contractor Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -301,7 +301,7 @@ class ContractorContractService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to download contract PDF: $e',
+        errorMessage: 'Failed to download contract PDF: ',
         module: 'Contractor Contract Service',
         severity: 'Medium',
         extraInfo: {
@@ -324,7 +324,7 @@ class ContractorContractService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to get contract PDF preview URL: $e',
+        errorMessage: 'Failed to get contract PDF preview URL: ',
         module: 'Contractor Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -342,7 +342,7 @@ class ContractorContractService {
       return await ContractService.validateContractPdf(contractId);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to validate contract PDF: $e',
+        errorMessage: 'Failed to validate contract PDF: ',
         module: 'Contractor Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -365,7 +365,7 @@ class ContractorContractService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to download multiple contracts: $e',
+        errorMessage: 'Failed to download multiple contracts: ',
         module: 'Contractor Contract Service',
         severity: 'Medium',
         extraInfo: {
@@ -390,7 +390,7 @@ class ContractorContractService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to send contract to contractee: $e',
+        errorMessage: 'Failed to send contract to contractee: ',
         module: 'Contractor Contract Service',
         severity: 'High',
         extraInfo: {
@@ -408,7 +408,7 @@ class ContractorContractService {
       await ContractService.deleteContract(contractId: contractId);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to delete contract: $e',
+        errorMessage: 'Failed to delete contract: ',
         module: 'Contractor Contract Service',
         severity: 'Medium',
         extraInfo: {

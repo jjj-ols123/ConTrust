@@ -365,7 +365,7 @@ class BuildProjects {
       return '${dateTime.month}/${dateTime.day}/${dateTime.year}';
     } catch (e) {
       SuperAdminErrorService().logError(
-        errorMessage: 'Failed to parse date: $dateString, error: $e',
+        errorMessage: 'Failed to parse date: $dateString, error: ',
         module: 'Super Admin Projects',
         severity: 'Low',
         extraInfo: {
@@ -437,7 +437,7 @@ class ProjectsManagementTableState extends State<ProjectsManagementTable> {
       });
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to load project data: $e',
+        errorMessage: 'Failed to load project data: ',
         module: 'Super Admin Projects',
         severity: 'High',
         extraInfo: {
@@ -460,7 +460,7 @@ class ProjectsManagementTableState extends State<ProjectsManagementTable> {
       });
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to refresh project statistics: $e',
+        errorMessage: 'Failed to refresh project statistics: ',
         module: 'Super Admin Projects',
         severity: 'Medium',
         extraInfo: {
@@ -469,7 +469,7 @@ class ProjectsManagementTableState extends State<ProjectsManagementTable> {
         },
       );
       SuperAdminErrorService().logError(
-        errorMessage: 'Error Refreshing Project Statistics: $e',
+        errorMessage: 'Error Refreshing Project Statistics: ',
         module: 'Super Admin Projects',
         severity: 'Medium',
         extraInfo: {
@@ -490,7 +490,7 @@ class ProjectsManagementTableState extends State<ProjectsManagementTable> {
       });
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to refresh projects: $e',
+        errorMessage: 'Failed to refresh projects: ',
         module: 'Super Admin Projects',
         severity: 'Medium',
         extraInfo: {

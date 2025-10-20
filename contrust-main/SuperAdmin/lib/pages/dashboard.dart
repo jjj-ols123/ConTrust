@@ -49,7 +49,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
       });
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to load Super Admin Dashboard data: $e',
+        errorMessage: 'Failed to load Super Admin Dashboard data: ',
         module: 'Super Admin Dashboard',
         severity: 'Medium',
         extraInfo: {

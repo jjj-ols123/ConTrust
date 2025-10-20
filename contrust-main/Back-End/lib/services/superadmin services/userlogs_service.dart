@@ -15,7 +15,7 @@ class SuperAdminUserService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch users by role: $e',
+        errorMessage: 'Failed to fetch users by role: ',
         module: 'Super Admin Users',
         severity: 'Medium',
         extraInfo: {
@@ -24,7 +24,7 @@ class SuperAdminUserService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to fetch users by role: $e');
+      throw Exception('Failed to fetch users by role: ');
     }
   }
 
@@ -51,7 +51,7 @@ class SuperAdminUserService {
       };
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to get user statistics: $e',
+        errorMessage: 'Failed to get user statistics: ',
         module: 'Super Admin Users',
         severity: 'Medium',
         extraInfo: {
@@ -59,7 +59,7 @@ class SuperAdminUserService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to get user statistics: $e');
+      throw Exception('Failed to get user statistics: ');
     }
   }
 
@@ -71,7 +71,7 @@ class SuperAdminUserService {
           .eq('users_id', userId);
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to update user status: $e',
+        errorMessage: 'Failed to update user status: ',
         module: 'Super Admin Users',
         severity: 'Medium',
         extraInfo: {
@@ -81,7 +81,7 @@ class SuperAdminUserService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to update user status: $e');
+      throw Exception('Failed to update user status: ');
     }
   }
 
@@ -93,7 +93,7 @@ class SuperAdminUserService {
           .eq('users_id', userId);
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to update user verification: $e',
+        errorMessage: 'Failed to update user verification: ',
         module: 'Super Admin Users',
         severity: 'Medium',
         extraInfo: {
@@ -103,7 +103,7 @@ class SuperAdminUserService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to update user verification: $e');
+      throw Exception('Failed to update user verification: ');
     }
   }
 
@@ -115,7 +115,7 @@ class SuperAdminUserService {
           .eq('users_id', userId);
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to delete user: $e',
+        errorMessage: 'Failed to delete user: ',
         module: 'Super Admin Users',
         severity: 'High',
         extraInfo: {
@@ -124,7 +124,7 @@ class SuperAdminUserService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to delete user: $e');
+      throw Exception('Failed to delete user: ');
     }
   }
 
@@ -139,7 +139,7 @@ class SuperAdminUserService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to search users: $e',
+        errorMessage: 'Failed to search users: ',
         module: 'Super Admin Users',
         severity: 'Medium',
         extraInfo: {
@@ -148,7 +148,7 @@ class SuperAdminUserService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to search users: $e');
+      throw Exception('Failed to search users: ');
     }
   }
 
@@ -163,7 +163,7 @@ class SuperAdminUserService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch users by status: $e',
+        errorMessage: 'Failed to fetch users by status: ',
         module: 'Super Admin Users',
         severity: 'Medium',
         extraInfo: {
@@ -172,7 +172,7 @@ class SuperAdminUserService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to fetch users by status: $e');
+      throw Exception('Failed to fetch users by status: ');
     }
   }
 }

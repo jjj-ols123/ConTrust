@@ -168,7 +168,7 @@ class ConTrustSnackBar {
   }
 
   static void materialError(BuildContext context, String errorMessage) {
-    error(context, 'Failed to save material: $errorMessage');
+    error(context, 'Failed to save material: ');
   }
 
   static void missingInfo(BuildContext context, String field) {
@@ -188,7 +188,7 @@ class ConTrustSnackBar {
   }
 
   static void bidError(BuildContext context, String errorMessage) {
-    error(context, 'Failed to submit bid: $errorMessage');
+    error(context, 'Failed to submit bid: ');
   }
 
   static void contractSent(BuildContext context) {
@@ -256,7 +256,7 @@ class ConTrustSnackBar {
   }
 
   static void profileError(BuildContext context, String errorMessage) {
-    error(context, 'Failed to update profile: $errorMessage');
+    error(context, 'Failed to update profile: ');
   }
 }
 

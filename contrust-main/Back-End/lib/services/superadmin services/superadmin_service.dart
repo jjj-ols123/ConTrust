@@ -44,7 +44,7 @@ class SuperAdminServiceBackend {
       };
     } catch (e) {
       SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch system statistics: $e',
+        errorMessage: 'Failed to fetch system statistics: ',
         module: 'Super Admin Service',
         severity: 'Medium',
         extraInfo: {
@@ -52,7 +52,7 @@ class SuperAdminServiceBackend {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to fetch system statistics: $e');
+      throw Exception('Failed to fetch system statistics: ');
     }
   }
 
@@ -86,7 +86,7 @@ class SuperAdminServiceBackend {
       };
     } catch (e) {
        SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch dashboard data: $e',
+        errorMessage: 'Failed to fetch dashboard data: ',
         module: 'Super Admin Service',
         severity: 'Medium',
         extraInfo: {
@@ -94,7 +94,7 @@ class SuperAdminServiceBackend {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to fetch dashboard data: $e');
+      throw Exception('Failed to fetch dashboard data: ');
     }
   }
 
@@ -130,7 +130,7 @@ class SuperAdminServiceBackend {
       };
     } catch (e) {
         SuperAdminErrorService().logError(
-          errorMessage: 'Failed to fetch system health status: $e',
+          errorMessage: 'Failed to fetch system health status: ',
           module: 'Super Admin Service',
           severity: 'Medium',
           extraInfo: {
@@ -138,7 +138,7 @@ class SuperAdminServiceBackend {
             'timestamp': DateTime.now().toIso8601String(),
           },
         );
-      throw Exception('Failed to fetch system health status: $e');
+      throw Exception('Failed to fetch system health status: ');
     }
   }
 
@@ -162,7 +162,7 @@ class SuperAdminServiceBackend {
       }).toList();
     } catch (e) {
       SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch system alerts: $e',
+        errorMessage: 'Failed to fetch system alerts: ',
         module: 'Super Admin Service',
         severity: 'Medium',
         extraInfo: {
@@ -170,7 +170,7 @@ class SuperAdminServiceBackend {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to fetch system alerts: $e');
+      throw Exception('Failed to fetch system alerts: ');
     }
   }
 
@@ -226,7 +226,7 @@ class SuperAdminServiceBackend {
       };
     } catch (e) {
       SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch backend performance metrics: $e',
+        errorMessage: 'Failed to fetch backend performance metrics: ',
         module: 'Super Admin Service',
         severity: 'Medium',
         extraInfo: {
@@ -234,7 +234,7 @@ class SuperAdminServiceBackend {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to fetch backend performance metrics: $e');
+      throw Exception('Failed to fetch backend performance metrics: ');
     }
   }
 

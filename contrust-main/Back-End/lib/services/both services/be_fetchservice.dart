@@ -15,7 +15,7 @@ class FetchService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch contractors: $e',
+        errorMessage: 'Failed to fetch contractors: ',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -36,7 +36,7 @@ class FetchService {
       return response?['chatroom_id'];
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch chat room ID: $e',
+        errorMessage: 'Failed to fetch chat room ID: ',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -60,7 +60,7 @@ class FetchService {
       return Map<String, dynamic>.from(response);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch contractor data: $e',
+        errorMessage: 'Failed to fetch contractor data: ',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -82,7 +82,7 @@ class FetchService {
       return Map<String, dynamic>.from(response);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch contractee data: $e',
+        errorMessage: 'Failed to fetch contractee data: ',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -109,7 +109,7 @@ class FetchService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch user projects: $e',
+        errorMessage: 'Failed to fetch user projects: ',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -161,7 +161,7 @@ class FetchService {
       return status;
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch project status: $e',
+        errorMessage: 'Failed to fetch project status: ',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -184,7 +184,7 @@ class FetchService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch project tasks: $e',
+        errorMessage: 'Failed to fetch project tasks: ',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -207,7 +207,7 @@ class FetchService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch project reports: $e',
+        errorMessage: 'Failed to fetch project reports:',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -230,7 +230,7 @@ class FetchService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch project photos: $e',
+        errorMessage: 'Failed to fetch project photos:',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -252,7 +252,7 @@ class FetchService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch project costs: $e',
+        errorMessage: 'Failed to fetch project costs: ',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -276,7 +276,7 @@ class FetchService {
       return response;
     } catch (error) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch project details: $error',
+        errorMessage: 'Failed to fetch project details: ',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -311,7 +311,7 @@ class FetchService {
       return projectResponse;
     } catch (error) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch project details by chat room: $error',
+        errorMessage: 'Failed to fetch project details by chat room: ',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -354,7 +354,7 @@ class FetchService {
       };
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to decide user type: $e',
+        errorMessage: 'Failed to decide user type: ',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -389,7 +389,7 @@ class FetchService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch completed projects: $e',
+        errorMessage: 'Failed to fetch completed projects: ',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -410,7 +410,7 @@ class FetchService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch contract types: $e',
+        errorMessage: 'Failed to fetch contract types: ',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -448,7 +448,7 @@ class FetchService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch created contracts: $e',
+        errorMessage: 'Failed to fetch created contracts: ',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -472,7 +472,7 @@ class FetchService {
       return response;
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch contractor project info: $e',
+        errorMessage: 'Failed to fetch contractor project info: ',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -494,7 +494,7 @@ class FetchService {
       return contract;
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch contract data: $e',
+        errorMessage: 'Failed to fetch contract data: ',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -518,7 +518,7 @@ class FetchService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch hiring requests for project: $e',
+        errorMessage: 'Failed to fetch hiring requests for project: ',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -545,7 +545,7 @@ class FetchService {
       return response['contractee'];
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch contractee from project: $e',
+        errorMessage: 'Failed to fetch contractee from project: ',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -653,7 +653,7 @@ class FetchService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch contracts for contractee: $e',
+        errorMessage: 'Failed to fetch contracts for contractee: ',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -682,7 +682,7 @@ class FetchService {
       return response;
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch contract with details: $e',
+        errorMessage: 'Failed to fetch contract with details: ',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -709,7 +709,7 @@ class FetchService {
       return response;
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to check existing hire request: $e',
+        errorMessage: 'Failed to check existing hire request: ',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -734,7 +734,7 @@ class FetchService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch contracts for project: $e',
+        errorMessage: 'Failed to fetch contracts for project: ',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {

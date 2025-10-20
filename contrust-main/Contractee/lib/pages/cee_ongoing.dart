@@ -61,7 +61,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
         _chatRoomId = chatRoomId;
       });
     } catch (e) {
-      ConTrustSnackBar.error(context, 'Error getting chatroom_id: $e');
+      ConTrustSnackBar.error(context, 'Error getting chatroom_id:');
     }
   }
 
@@ -79,7 +79,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
         }
       }
     } catch (e) {
-      ConTrustSnackBar.error(context, 'Error checking chat permission: $e');
+      ConTrustSnackBar.error(context, 'Error checking chat permission: ');
     }
   }
 
@@ -100,7 +100,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
         }
       }
     } catch (e) {
-      ConTrustSnackBar.error(context, 'Error loading contractor data: $e');
+      ConTrustSnackBar.error(context, 'Error loading contractor data: ');
     }
   }
 

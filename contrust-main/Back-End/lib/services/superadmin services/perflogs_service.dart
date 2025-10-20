@@ -14,7 +14,7 @@ class SuperAdminPerfLogsService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch all performance logs: $e',
+        errorMessage: 'Failed to fetch all performance logs: ',
         module: 'Super Admin Perf Logs',
         severity: 'Medium',
         extraInfo: {
@@ -22,7 +22,7 @@ class SuperAdminPerfLogsService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to fetch performance logs: $e');
+      throw Exception('Failed to fetch performance logs: ');
     }
   }
 
@@ -37,7 +37,7 @@ class SuperAdminPerfLogsService {
       });
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to log performance metric: $e',
+        errorMessage: 'Failed to log performance metric: ',
         module: 'Super Admin Perf Logs',
         severity: 'Medium',
         extraInfo: {
@@ -46,7 +46,7 @@ class SuperAdminPerfLogsService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to log performance metric: $e');
+      throw Exception('Failed to log performance metric: ');
     }
   }
 }

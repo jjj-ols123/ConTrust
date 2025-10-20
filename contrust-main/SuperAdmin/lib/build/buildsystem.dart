@@ -470,7 +470,7 @@ class SystemMonitorTableState extends State<SystemMonitorTable> {
       });
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to load system monitor data: $e',
+        errorMessage: 'Failed to load system monitor data: ',
         module: 'Super Admin System Monitor',
         severity: 'High',
         extraInfo: {
@@ -493,7 +493,7 @@ class SystemMonitorTableState extends State<SystemMonitorTable> {
       });
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to refresh system health: $e',
+        errorMessage: 'Failed to refresh system health: ',
         module: 'Super Admin System Monitor',
         severity: 'Medium',
         extraInfo: {
@@ -513,7 +513,7 @@ class SystemMonitorTableState extends State<SystemMonitorTable> {
       });
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to refresh performance metrics: $e',
+        errorMessage: 'Failed to refresh performance metrics: ',
         module: 'Super Admin System Monitor',
         severity: 'Medium',
         extraInfo: {
@@ -532,7 +532,7 @@ class SystemMonitorTableState extends State<SystemMonitorTable> {
       });
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to refresh system alerts: $e',
+        errorMessage: 'Failed to refresh system alerts: ',
         module: 'Super Admin System Monitor',
         severity: 'Medium',
         extraInfo: {

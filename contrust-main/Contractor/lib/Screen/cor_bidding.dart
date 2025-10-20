@@ -56,7 +56,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ConTrustSnackBar.error(context, 'Error loading data: $e');
+        ConTrustSnackBar.error(context, 'Error loading data: ');
         setState(() => isLoading = false);
       }
     }

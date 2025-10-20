@@ -92,7 +92,7 @@ class SignInContractee {
       );
 
       await _errorService.logError(
-        errorMessage: 'Contractee sign-in failed: $e',
+        errorMessage: 'Contractee sign-in failed: ',
         module: 'Contractee Sign-in',
         severity: 'High',
         extraInfo: {
@@ -102,7 +102,7 @@ class SignInContractee {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      ConTrustSnackBar.error(modalContext, 'Error logging in: $e');
+      ConTrustSnackBar.error(modalContext, 'Error logging in: ');
     }
   }
 }
@@ -130,7 +130,7 @@ class SignInGoogleContractee {
       });
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Google sign-in failed for contractee: $e',
+        errorMessage: 'Google sign-in failed for contractee: ',
         module: 'Contractee Google Sign-in',
         severity: 'High',
         extraInfo: {
@@ -138,7 +138,7 @@ class SignInGoogleContractee {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      ConTrustSnackBar.error(context, 'Google sign-in failed: $e');
+      ConTrustSnackBar.error(context, 'Google sign-in failed: ');
     }
   }
 
@@ -195,7 +195,7 @@ class SignInGoogleContractee {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Google sign-in handling failed for contractee: $e',
+        errorMessage: 'Google sign-in handling failed for contractee: ',
         module: 'Contractee Google Sign-in',
         severity: 'High',
         extraInfo: {
@@ -204,7 +204,7 @@ class SignInGoogleContractee {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      ConTrustSnackBar.error(context, 'Sign-in failed: $e');
+      ConTrustSnackBar.error(context, 'Sign-in failed: ');
     }
   }
 
@@ -275,7 +275,7 @@ class SignInGoogleContractee {
       );
 
       await _errorService.logError(
-        errorMessage: 'Contractee setup failed during Google sign-in: $e',
+        errorMessage: 'Contractee setup failed during Google sign-in: ',
         module: 'Contractee Google Sign-in',
         severity: 'High',
         extraInfo: {
@@ -284,7 +284,7 @@ class SignInGoogleContractee {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      ConTrustSnackBar.error(context, 'Account setup failed: $e');
+      ConTrustSnackBar.error(context, 'Account setup failed: ');
     }
   }
 }

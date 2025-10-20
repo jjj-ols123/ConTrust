@@ -329,7 +329,7 @@ class ProjectModal {
                                       Navigator.pop(context);
                                     }
                                   } catch (e) {
-                                    ConTrustSnackBar.error(context, 'Error: $e');
+                                    ConTrustSnackBar.error(context, 'Error:');
                                   }
                                 },
                                 style: ElevatedButton.styleFrom(
@@ -1005,7 +1005,7 @@ class HireModal {
                                         ? 'Hiring request sent using existing project!'
                                         : 'Hire request sent successfully!');
                                   } catch (e) {
-                                    ConTrustSnackBar.error(context, 'Error sending hire request: $e');
+                                    ConTrustSnackBar.error(context, 'Error sending hire request: ');
                                   }
                                 },
                                 style: ElevatedButton.styleFrom(

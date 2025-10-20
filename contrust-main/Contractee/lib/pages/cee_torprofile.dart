@@ -182,7 +182,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ConTrustSnackBar.error(context, 'Error submitting rating: $e');
+        ConTrustSnackBar.error(context, 'Error submitting rating: ');
       }
     }
   }

@@ -84,7 +84,7 @@ class AdminLoginService {
       );
 
       await SuperAdminErrorService().logError(
-        errorMessage: 'Admin authentication failed: $e',
+        errorMessage: 'Admin authentication failed: ',
         module: 'Super Admin Login',
         severity: 'High',
         extraInfo: {
@@ -118,7 +118,7 @@ class AdminLoginService {
       }
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Admin sign out failed: $e',
+        errorMessage: 'Admin sign out failed: ',
         module: 'Super Admin Login',
         severity: 'Medium',
         extraInfo: {
@@ -126,7 +126,7 @@ class AdminLoginService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Sign out failed: $e');
+      throw Exception('Sign out failed: ');
     }
   }
 }

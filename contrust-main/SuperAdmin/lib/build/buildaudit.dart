@@ -231,7 +231,7 @@ class AuditLogsTableState extends State<AuditLogsTable> {
       });
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to load audit data: $e',
+        errorMessage: 'Failed to load audit data: ',
         module: 'Super Admin Audit Logs',
         severity: 'High',
         extraInfo: {
@@ -254,7 +254,7 @@ class AuditLogsTableState extends State<AuditLogsTable> {
       });
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to refresh audit statistics: $e',
+        errorMessage: 'Failed to refresh audit statistics:',
         module: 'Super Admin Audit Logs',
         severity: 'Medium',
         extraInfo: {
@@ -276,7 +276,7 @@ class AuditLogsTableState extends State<AuditLogsTable> {
       });
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to refresh audit logs: $e',
+        errorMessage: 'Failed to refresh audit logs: ',
         module: 'Super Admin Audit Logs',
         severity: 'Medium',
         extraInfo: {

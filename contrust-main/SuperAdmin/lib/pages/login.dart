@@ -75,7 +75,7 @@ class _SuperAdminLoginScreenState extends State<SuperAdminLoginScreen> {
       }
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Super Admin login failed: $e',
+        errorMessage: 'Super Admin login failed: ',
         module: 'Super Admin Login',
         severity: 'High',
         extraInfo: {

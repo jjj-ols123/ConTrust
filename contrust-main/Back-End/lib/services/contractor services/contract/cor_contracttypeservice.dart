@@ -31,7 +31,7 @@ class ContractTypeService {
       return result;
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to navigate to create contract: $e',
+        errorMessage: 'Failed to navigate to create contract: ',
         module: 'Contract Type Service',
         severity: 'Low',
         extraInfo: {
@@ -60,7 +60,7 @@ class ContractTypeService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to navigate to view contract: $e',
+        errorMessage: 'Failed to navigate to view contract: ',
         module: 'Contract Type Service',
         severity: 'Low',
         extraInfo: {
@@ -106,7 +106,7 @@ class ContractTypeService {
       return editResult;
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to navigate to edit contract: $e',
+        errorMessage: 'Failed to navigate to edit contract: ',
         module: 'Contract Type Service',
         severity: 'Medium',
         extraInfo: {
@@ -115,7 +115,7 @@ class ContractTypeService {
         },
       );
       if (context.mounted) {
-        ConTrustSnackBar.error(context, 'Error loading contract for editing: $e');
+        ConTrustSnackBar.error(context, 'Error loading contract for editing: ');
       }
       return false;
     }
@@ -140,7 +140,7 @@ class ContractTypeService {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to send contract to contractee: $e',
+        errorMessage: 'Failed to send contract to contractee: ',
         module: 'Contract Type Service',
         severity: 'High',
         extraInfo: {
@@ -177,7 +177,7 @@ class ContractTypeService {
       return shouldDelete ?? false;
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to show delete confirmation dialog: $e',
+        errorMessage: 'Failed to show delete confirmation dialog: ',
         module: 'Contract Type Service',
         severity: 'Low',
         extraInfo: {
@@ -199,7 +199,7 @@ class ContractTypeService {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to delete contract: $e',
+        errorMessage: 'Failed to delete contract: ',
         module: 'Contract Type Service',
         severity: 'High',
         extraInfo: {
@@ -289,7 +289,7 @@ class ContractTypeService {
       });
     } catch (e) {
       _errorService.logError(
-        errorMessage: 'Failed to show contract menu: $e',
+        errorMessage: 'Failed to show contract menu: ',
         module: 'Contract Type Service',
         severity: 'Low',
         extraInfo: {
@@ -335,7 +335,7 @@ class ContractTypeService {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to handle menu action: $e',
+        errorMessage: 'Failed to handle menu action:',
         module: 'Contract Type Service',
         severity: 'Medium',
         extraInfo: {

@@ -92,7 +92,7 @@ class CeeOngoingBuildMethods {
                 const Icon(Icons.schedule, color: Colors.green, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  'Est. Completion: $estimatedCompletion',
+                  'Est. Completion: ',
                   style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                 ),
               ],

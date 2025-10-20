@@ -18,7 +18,7 @@ class SuperAdminAuditService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch all audit logs: $e',
+        errorMessage: 'Failed to fetch all audit logs: ',
         module: 'Audit Logs Service',
         severity: 'Medium',
         extraInfo: {
@@ -26,7 +26,7 @@ class SuperAdminAuditService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to fetch audit logs: $e');
+      throw Exception('Failed to fetch audit logs: ');
     }
   }
 
@@ -41,7 +41,7 @@ class SuperAdminAuditService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch audit logs by action: $e',
+        errorMessage: 'Failed to fetch audit logs by action: ',
         module: 'Audit Logs Service',
         severity: 'Medium',
         extraInfo: {
@@ -50,7 +50,7 @@ class SuperAdminAuditService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to fetch audit logs by action: $e');
+      throw Exception('Failed to fetch audit logs by action: ');
     }
   }
 
@@ -65,7 +65,7 @@ class SuperAdminAuditService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch recent audit logs: $e',
+        errorMessage: 'Failed to fetch recent audit logs: ',
         module: 'Audit Logs Service',
         severity: 'Medium',
         extraInfo: {
@@ -74,7 +74,7 @@ class SuperAdminAuditService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to fetch recent audit logs: $e');
+      throw Exception('Failed to fetch recent audit logs: ');
     }
   }
 
@@ -109,7 +109,7 @@ class SuperAdminAuditService {
       };
     } catch (e) {
       SuperAdminErrorService().logError(
-        errorMessage: 'Failed to get audit statistics: $e',
+        errorMessage: 'Failed to get audit statistics: ',
         module: 'Audit Logs Service',
         severity: 'Medium',
         extraInfo: {
@@ -117,7 +117,7 @@ class SuperAdminAuditService {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to get audit statistics: $e');
+      throw Exception('Failed to get audit statistics: ');
     }
   }
 
@@ -140,7 +140,7 @@ class SuperAdminAuditService {
       });
     } catch (e) {
       SuperAdminErrorService().logError(
-        errorMessage: 'Failed to log audit event: $e',
+        errorMessage: 'Failed to log audit event: ',
         module: 'Audit Logs Service',
         severity: 'Medium',
         extraInfo: {

@@ -233,7 +233,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
     } catch (e) {
       if (!mounted) return;
         await _errorService.logError(
-          errorMessage: 'Logout failed $e',
+          errorMessage: 'Logout failed ',
           module: 'Logout Button Drawer', 
           severity: 'Medium', 
           extraInfo: { 

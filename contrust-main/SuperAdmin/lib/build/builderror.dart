@@ -225,7 +225,7 @@ class ErrorLogsTableState extends State<ErrorLogsTable> {
       });
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to load error data: $e',
+        errorMessage: 'Failed to load error data: ',
         module: 'Super Admin Error Logs',
         severity: 'High',
         extraInfo: {
@@ -248,7 +248,7 @@ class ErrorLogsTableState extends State<ErrorLogsTable> {
       });
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to refresh error statistics: $e',
+        errorMessage: 'Failed to refresh error statistics: ',
         module: 'Super Admin Error Logs',
         severity: 'Medium',
         extraInfo: {
@@ -269,7 +269,7 @@ class ErrorLogsTableState extends State<ErrorLogsTable> {
       });
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to refresh error logs: $e',
+        errorMessage: 'Failed to refresh error logs: ',
         module: 'Super Admin Error Logs',
         severity: 'Medium',
         extraInfo: {
@@ -460,7 +460,7 @@ class ErrorLogsTableState extends State<ErrorLogsTable> {
                                                     await _refreshErrorStatistics();
                                                   } catch (e) {
                                                     ScaffoldMessenger.of(context).showSnackBar(
-                                                      SnackBar(content: Text('Failed to update resolved status: $e')),
+                                                      SnackBar(content: Text('Failed to update resolved status: ')),
                                                     );
                                                   }
                                                 },

@@ -333,7 +333,7 @@ class ContractTypeBuild {
                 }
               } catch (e) {
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  SnackBar(content: Text('Failed to pick file: $e')),
+                  SnackBar(content: Text('Failed to pick file: ')),
                 );
               }
             }
@@ -382,7 +382,7 @@ class ContractTypeBuild {
                 onRefreshContracts();
               } catch (e) {
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  SnackBar(content: Text('Upload failed: $e')),
+                  SnackBar(content: Text('Upload failed: ')),
                 );
               } finally {
                 setState(() => isLoading = false);

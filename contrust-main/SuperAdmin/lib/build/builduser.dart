@@ -203,7 +203,7 @@ class UserTableState extends State<UserTable> with SingleTickerProviderStateMixi
       });
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to load user data: $e',
+        errorMessage: 'Failed to load user data: ',
         module: 'Super Admin Users',
         severity: 'High',
         extraInfo: {
@@ -226,7 +226,7 @@ class UserTableState extends State<UserTable> with SingleTickerProviderStateMixi
       });
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to refresh user statistics: $e',
+        errorMessage: 'Failed to refresh user statistics: ',
         module: 'Super Admin Users',
         severity: 'Medium',
         extraInfo: {

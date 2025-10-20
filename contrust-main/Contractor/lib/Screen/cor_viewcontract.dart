@@ -89,7 +89,7 @@ class _ContractorViewContractPageState extends State<ContractorViewContractPage>
         pdfLoaded = true;
       });
     } catch (e) {
-      ConTrustSnackBar.error(context, 'Failed to load PDF: $e');
+      ConTrustSnackBar.error(context, 'Failed to load PDF:');
     }
   }
 
@@ -131,7 +131,7 @@ class _ContractorViewContractPageState extends State<ContractorViewContractPage>
       }
     } catch (e) {
       if (mounted) {
-        ConTrustSnackBar.error(context, 'Download failed: $e');
+        ConTrustSnackBar.error(context, 'Download failed: ');
       }
     }
   }
