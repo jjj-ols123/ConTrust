@@ -776,16 +776,14 @@ class UIMessage {
           context: context,
           builder: (dialogContext) =>
               StatefulBuilder(builder: (context, setState) {
-                // FIXED: Proper refresh callback
                 void onRefresh() async {
                   try {
                     final updatedData = await ContractService.getContractById(contractId);
                     setState(() {
                       contractData = updatedData;
                     });
-                    print('=== DIALOG REFRESHED SUCCESSFULLY ===');
                   } catch (e) {
-                    print('Refresh error: $e');
+                    ConTrustSnackBar.error(context, 'Failed to refresh contract data'); 
                   }
                 }
 
@@ -1562,7 +1560,7 @@ class UIMessage {
                 await _auditService.logAuditEvent(
                   userId: currentUserId,
                   action: 'CONTRACT_SIGNED',
-                  details: '${userType} signed the contract',
+                  details: '$userType signed the contract',
                   category: 'Contract',
                   metadata: {
                     'contract_id': contractId,

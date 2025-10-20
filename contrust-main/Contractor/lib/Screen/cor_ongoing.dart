@@ -24,7 +24,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   final TextEditingController progressController = TextEditingController();
 
   bool isEditing = false;
-  String selectedTab = 'Tasks'; 
+  String selectedTab = 'Tasks';
 
   final ongoingService = CorOngoingService();
 
@@ -40,24 +40,33 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   }
 
   void loadData() async {
-    try {
-      setState(() => isLoading = true);
+  try {
+    setState(() => isLoading = true);
 
-      final data = await ongoingService.loadProjectData(widget.projectId);
+    final data = await ongoingService.loadProjectData(widget.projectId);
 
-      setState(() {
-        projectData = data;
-        _localTasks = data['tasks'];
-        _localProgress = data['progress'];
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() => isLoading = false);
-      if (mounted) {
-        ConTrustSnackBar.error(context, 'Error loading project data. Please try again.');
-      }
+    final contractId = data['projectDetails']['contract_id'];
+    if (contractId != null) {
+      final contract = await ongoingService.getContractById(contractId);
+      data['contracts'] = contract != null ? [contract] : [];
+    } else {
+      data['contracts'] = [];
+    }
+
+    setState(() {
+      projectData = data;
+      _localTasks = List<Map<String, dynamic>>.from(data['tasks'] ?? []);
+      _localProgress = (data['progress'] as num?)?.toDouble() ?? 0.0;
+      isLoading = false;
+    });
+  } catch (e) {
+    setState(() => isLoading = false);
+    if (mounted) {
+      ConTrustSnackBar.error(
+          context, 'Error loading project data. Please try again.');
     }
   }
+}
 
   void onTabChanged(String tab) {
     setState(() {
@@ -210,7 +219,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
           ),
         ),
       );
-      
+
       if (result == true || result == null) {
         loadData();
       }
@@ -223,8 +232,10 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     final contract = contracts.first;
     final fieldValues = contract['field_values'] as Map<String, dynamic>? ?? {};
 
-    final contractee = contract['contractee'] as Map<String, dynamic>? ?? {};
-    final clientName = fieldValues['Contractee.FirstName'] != null && fieldValues['Contractee.LastName'] != null
+    final contractee =
+        contract['contractee'] as Map<String, dynamic>? ?? <String, dynamic>{};
+    final clientName = fieldValues['Contractee.FirstName'] != null &&
+            fieldValues['Contractee.LastName'] != null
         ? '${fieldValues['Contractee.FirstName']} ${fieldValues['Contractee.LastName']}'
         : contractee['full_name'] ?? '';
     final estimateDate = fieldValues['Project.CompletionDate'] ?? '';
@@ -235,11 +246,53 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     };
   }
 
+  bool _isCustomContract() {
+    final contractsRaw = projectData?['contracts'];
+    if (contractsRaw is List) {
+      final contracts = contractsRaw
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+      return contracts.any((contract) =>
+          (contract['contract_type_id']?.toString() ?? '') ==
+          CorOngoingService.kCustomContractTypeId);
+    }
+    return false;
+  }
+
+  void _editCompletion() {
+    final currentCompletion = projectData?['projectDetails']
+        ?['estimated_completion']; // may be null
+    DateTime? completionDate;
+    if (currentCompletion != null) {
+      try {
+        completionDate = DateTime.parse(currentCompletion);
+      } catch (_) {
+        completionDate = null;
+      }
+    }
+
+    OngoingBuildMethods.showEditCompletionDialog(
+      context: context,
+      currentCompletion: completionDate,
+      onSave: (selectedDate) async {
+        await ongoingService.updateEstimatedCompletion(
+          projectId: widget.projectId,
+          estimatedCompletion: selectedDate,
+          context: context,
+          onSuccess: loadData,
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.amber,))
+          ? const Center(
+              child: CircularProgressIndicator(
+              color: Colors.amber,
+            ))
           : projectData == null
               ? const Center(child: Text('Project not found.'))
               : _buildResponsiveContent(),
@@ -258,11 +311,12 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   }
 
   Widget _buildMobileContent() {
-    final project = projectData!['projectDetails'];
+    final project = projectData!['projectDetails'] as Map<String, dynamic>;
     final reports = projectData!['reports'] as List<Map<String, dynamic>>;
     final photos = projectData!['photos'] as List<Map<String, dynamic>>;
     final costs = projectData!['costs'] as List<Map<String, dynamic>>;
-    final contracts = projectData!['contracts'] as List<Map<String, dynamic>>;
+    final contractsRaw = projectData!['contracts'];
+    final contracts = contractsRaw is List ? contractsRaw.map((e) => Map<String, dynamic>.from(e as Map)).toList() : <Map<String, dynamic>>[];
 
     final projectTitle = project['title'] ?? 'Project';
     final clientName = project['full_name'] ?? 'Client';
@@ -271,6 +325,16 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
 
     final contractInfo = _extractContractInfo(contracts);
 
+    final int? duration = project['duration'] != null
+        ? (project['duration'] is int
+            ? project['duration'] as int
+            : int.tryParse(project['duration'].toString()))
+        : null;
+
+    final estimatedCompletion = _isCustomContract() 
+        ? (project['estimated_completion'] ?? '') 
+        : (contractInfo['estimateDate'] ?? project['estimated_completion'] ?? '');
+
     return RefreshIndicator(
       onRefresh: () async => loadData(),
       child: OngoingBuildMethods.buildMobileLayout(
@@ -278,11 +342,15 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
         clientName: contractInfo['clientName'] ?? clientName,
         address: address,
         startDate: startDate,
-        estimatedCompletion: contractInfo['estimateDate'] ?? '',
+        estimatedCompletion: estimatedCompletion,
+        duration: duration,
+        isCustomContract: _isCustomContract(),
         progress: _localProgress,
         selectedTab: selectedTab,
         onTabChanged: onTabChanged,
         onRefresh: loadData,
+        onEditCompletion:
+            _isCustomContract() ? _editCompletion : null, 
         tabContent: OngoingBuildMethods.buildTabContent(
           context: context,
           selectedTab: selectedTab,
@@ -308,11 +376,12 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   }
 
   Widget _buildDesktopContent() {
-    final project = projectData!['projectDetails'];
+    final project = projectData!['projectDetails'] as Map<String, dynamic>;
     final reports = projectData!['reports'] as List<Map<String, dynamic>>;
     final photos = projectData!['photos'] as List<Map<String, dynamic>>;
     final costs = projectData!['costs'] as List<Map<String, dynamic>>;
-    final contracts = projectData!['contracts'] as List<Map<String, dynamic>>;
+    final contractsRaw = projectData!['contracts'];
+    final contracts = contractsRaw is List ? contractsRaw.map((e) => Map<String, dynamic>.from(e as Map)).toList() : <Map<String, dynamic>>[];
 
     final projectTitle = project['title'] ?? 'Project';
     final clientName = project['full_name'] ?? 'Client';
@@ -320,6 +389,16 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     final startDate = project['start_date'] ?? '';
 
     final contractInfo = _extractContractInfo(contracts);
+
+    final int? duration = project['duration'] != null
+        ? (project['duration'] is int
+            ? project['duration'] as int
+            : int.tryParse(project['duration'].toString()))
+        : null;
+
+    final estimatedCompletion = _isCustomContract() 
+        ? (project['estimated_completion'] ?? '') 
+        : (contractInfo['estimateDate'] ?? project['estimated_completion'] ?? '');
 
     return RefreshIndicator(
       onRefresh: () async => loadData(),
@@ -329,7 +408,9 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
         clientName: contractInfo['clientName'] ?? clientName,
         address: address,
         startDate: startDate,
-        estimatedCompletion: contractInfo['estimateDate'] ?? '',
+        estimatedCompletion: estimatedCompletion,
+        duration: duration,
+        isCustomContract: _isCustomContract(),
         progress: _localProgress,
         tasks: _localTasks,
         reports: reports,
@@ -348,6 +429,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
         onViewReport: onViewReport,
         onViewPhoto: onViewPhoto,
         onRefresh: loadData,
+        onEditCompletion: _isCustomContract() ? _editCompletion : null,
       ),
     );
   }

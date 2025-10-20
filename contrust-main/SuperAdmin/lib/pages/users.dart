@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:superadmin/build/builduser.dart';
 
-class UsersManagementPage extends StatelessWidget {
-  const UsersManagementPage({super.key});
+class UsersPage extends StatelessWidget {
+  const UsersPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
+     body: Container(
         color: Colors.white,
-        child: const UsersManagementTable(),
+        child: UserTable(),
       ),
     );
   }

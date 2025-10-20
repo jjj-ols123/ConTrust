@@ -123,7 +123,9 @@
         "contractee",
         "contractor",
         "cupertino_icons",
-        "flutter"
+        "flutter",
+        "supabase_flutter",
+        "superadmin"
       ],
       "devDependencies": [
         "flutter_lints",
@@ -161,6 +163,24 @@
       "dependencies": []
     },
     {
+      "name": "supabase_flutter",
+      "version": "2.10.3",
+      "dependencies": [
+        "app_links",
+        "async",
+        "crypto",
+        "flutter",
+        "http",
+        "logging",
+        "meta",
+        "path_provider",
+        "shared_preferences",
+        "supabase",
+        "url_launcher",
+        "web"
+      ]
+    },
+    {
       "name": "flutter",
       "version": "0.0.0",
       "dependencies": [
@@ -179,24 +199,6 @@
         "clock",
         "meta",
         "path"
-      ]
-    },
-    {
-      "name": "supabase_flutter",
-      "version": "2.10.3",
-      "dependencies": [
-        "app_links",
-        "async",
-        "crypto",
-        "flutter",
-        "http",
-        "logging",
-        "meta",
-        "path_provider",
-        "shared_preferences",
-        "supabase",
-        "url_launcher",
-        "web"
       ]
     },
     {
@@ -508,23 +510,6 @@
       ]
     },
     {
-      "name": "sky_engine",
-      "version": "0.0.0",
-      "dependencies": []
-    },
-    {
-      "name": "material_color_utilities",
-      "version": "0.11.1",
-      "dependencies": [
-        "collection"
-      ]
-    },
-    {
-      "name": "characters",
-      "version": "1.4.0",
-      "dependencies": []
-    },
-    {
       "name": "web",
       "version": "1.1.1",
       "dependencies": []
@@ -583,6 +568,23 @@
         "app_links_web",
         "flutter"
       ]
+    },
+    {
+      "name": "sky_engine",
+      "version": "0.0.0",
+      "dependencies": []
+    },
+    {
+      "name": "material_color_utilities",
+      "version": "0.11.1",
+      "dependencies": [
+        "collection"
+      ]
+    },
+    {
+      "name": "characters",
+      "version": "1.4.0",
+      "dependencies": []
     },
     {
       "name": "file_selector_windows",

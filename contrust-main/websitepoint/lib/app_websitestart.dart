@@ -5,6 +5,7 @@ import 'package:contractor/Screen/cor_login.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/utils/be_snackbar.dart';
+import 'package:superadmin/pages/login.dart'; 
 
 class WebsiteStartPage extends StatelessWidget {
   const WebsiteStartPage({super.key});
@@ -81,6 +82,22 @@ class WebsiteStartPage extends StatelessWidget {
                       'Tip: This chooser is intended for web builds.',
                       style: TextStyle(color: Colors.black45),
                     ),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const SuperAdminLoginScreen()),
+                      );
+                    },
+                    child: const Text(
+                      'Go to Super Admin Module',
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

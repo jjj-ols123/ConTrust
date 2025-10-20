@@ -298,7 +298,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
                 navigateToPage(
                   SuperAdminShell(
                     currentPage: SuperAdminPage.users,
-                    child: UsersManagementPage(),
+                    child: UsersPage(),
                   ),
                 );
               }
@@ -635,7 +635,7 @@ class DashboardDrawer extends StatelessWidget {
                           pageBuilder: (context, animation, secondaryAnimation) =>
                               SuperAdminShell(
                                 currentPage: SuperAdminPage.users,
-                                child: UsersManagementPage(),
+                                child: UsersPage(),
                               ),
                           transitionDuration: Duration.zero,
                           reverseTransitionDuration: Duration.zero,
