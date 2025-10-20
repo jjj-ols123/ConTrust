@@ -424,16 +424,6 @@ class FetchService {
   Future<List<Map<String, dynamic>>> fetchCreatedContracts(
       String contractorId) async {
     try {
-      final projectsResponse = await _supabase
-          .from('Projects')
-          .select('project_id')
-          .eq('contractor_id', contractorId);
-
-      final projectIds =
-          projectsResponse.map((project) => project['project_id']).toList();
-
-      if (projectIds.isEmpty) return [];
-
       final response = await _supabase
           .from('Contracts')
           .select('''
@@ -450,9 +440,9 @@ class FetchService {
             contractor_signed_at,
             contractee_signed_at,
             field_values,
-            project:Projects(type, description, title)
+            project:Projects!Contracts_project_id_fkey(type, description, title)
           ''')
-          .inFilter('project_id', projectIds)
+          .eq('contractor_id', contractorId)
           .order('created_at', ascending: false);
 
       return List<Map<String, dynamic>>.from(response);
@@ -578,7 +568,7 @@ class FetchService {
       return List<Map<String, dynamic>>.from(res);
     } catch (_) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch contractor active projects: $_',
+        errorMessage: 'Failed to fetch contractor active projects',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -601,7 +591,7 @@ class FetchService {
       return List<Map<String, dynamic>>.from(res);
     } catch (_) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch contractee active projects: $_',
+        errorMessage: 'Failed to fetch contractee active projects',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -624,7 +614,7 @@ class FetchService {
       return List<Map<String, dynamic>>.from(response);
     } catch (_) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch ratings: $_',
+        errorMessage: 'Failed to fetch ratings',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
