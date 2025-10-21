@@ -26,7 +26,7 @@ class _ContractorUserProfileScreenState
   late String? profileImage;
   bool isLoading = true;
   bool isUploading = false;
-  bool isUploadingProfile = false; // add this
+  bool isUploadingProfile = false;
   int completedProjectsCount = 0;
 
   static const String profileUrl =

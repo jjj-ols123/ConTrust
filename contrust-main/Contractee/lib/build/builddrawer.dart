@@ -65,6 +65,7 @@ class ContracteeShell extends StatelessWidget {
         backgroundColor: Colors.amber[700],
         centerTitle: true,
         elevation: 4,
+        automaticallyImplyLeading: false,
         leading: !isDesktop 
           ? Builder(
               builder: (context) => IconButton(
