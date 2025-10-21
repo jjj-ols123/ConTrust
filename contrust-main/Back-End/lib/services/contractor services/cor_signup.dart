@@ -4,12 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:backend/services/superadmin services/auditlogs_service.dart';
+import 'dart:typed_data';
 
 class SignUpContractor {
   final SuperAdminErrorService _errorService = SuperAdminErrorService();
   final SuperAdminAuditService _auditService = SuperAdminAuditService();
 
-  void signUpContractor(
+  Future<void> signUpContractor(
     BuildContext context,
     String email,
     String password,
@@ -23,9 +24,17 @@ class SignUpContractor {
       return;
     }
 
-    dynamic signUpResponse; 
+    final List<Uint8List> verificationImages = (data?['verificationImages'] as List<Uint8List>? ?? []);
+    if (verificationImages.isEmpty) {
+      if (context.mounted) {
+        ConTrustSnackBar.error(context, 'Please upload a verification ID before signing up.');
+      }
+      return;
+    }
+
+    dynamic signUpResponse;
     try {
-      final signUpResponse = await UserService().signUp(
+      signUpResponse = await UserService().signUp(
         email: email,
         password: password,
         data: data,
@@ -94,6 +103,24 @@ class SignUpContractor {
           );
           throw Exception("Error saving contractor data");
         }
+
+        for (int i = 0; i < verificationImages.length; i++) {
+          final imageBytes = verificationImages[i];
+          final fileName = 'doc_$i.jpg';
+
+          final url = await UserService().uploadImage(
+            imageBytes,
+            'verification',
+            folderPath: 'contractor/$userId',
+            fileName: fileName,
+          );
+
+          await supabase.from('Verification').insert({
+            'contractor_id': userId,
+            'doc_url': url,
+            'uploaded_at': DateTime.now().toIso8601String(),
+          });
+        }
       }
 
       await _auditService.logAuditEvent(
@@ -113,7 +140,7 @@ class SignUpContractor {
       Navigator.pop(context);
     } on AuthException catch (e) {
       await _auditService.logAuditEvent(
-        userId: signUpResponse.user?.id, 
+        userId: signUpResponse.user?.id,
         action: 'USER_REGISTRATION_FAILED',
         details: 'Contractor registration failed due to authentication error',
         metadata: {
@@ -132,7 +159,7 @@ class SignUpContractor {
           'operation': 'Sign Up Contractor',
           'email': email,
           'user_type': userType,
-          'users_id': signUpResponse.user?.id, 
+          'users_id': signUpResponse.user?.id,
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
@@ -141,7 +168,7 @@ class SignUpContractor {
       return;
     } catch (e) {
       await _auditService.logAuditEvent(
-        userId: signUpResponse.user?.id, 
+        userId: signUpResponse.user?.id,
         action: 'USER_REGISTRATION_FAILED',
         details: 'Contractor registration failed due to unexpected error',
         metadata: {
