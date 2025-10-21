@@ -202,8 +202,7 @@ class UserService {
   ) async {
     final String contractorFolder = 'contractor_$contractorId';
     
-    final String? imageUrl = await uploadImage(imageBytes, 'pastprojects', folderPath: contractorFolder);
-    if (imageUrl == null) return false;
+    final String imageUrl = await uploadImage(imageBytes, 'pastprojects', folderPath: contractorFolder);
 
     try {
       final response = await _supabase

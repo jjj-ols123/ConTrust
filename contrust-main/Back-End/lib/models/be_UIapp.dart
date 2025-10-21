@@ -2,6 +2,7 @@
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/contractor services/cor_biddingservice.dart';
 import 'package:backend/utils/be_status.dart';
+import 'package:contractee/build/builddrawer.dart';
 import 'package:contractee/pages/cee_torprofile.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/services/contractee services/cee_checkuser.dart';
@@ -71,7 +72,7 @@ class ContractorsView extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 10),
-                  ElevatedButton(
+                 ElevatedButton(
                     onPressed: () {
                       CheckUserLogin.isLoggedIn(
                         context: context,
@@ -80,8 +81,11 @@ class ContractorsView extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => ContractorProfileScreen(
-                                contractorId: id,
+                              builder: (context) => ContracteeShell(
+                                currentPage: ContracteePage.home, 
+                                child: ContractorProfileScreen(
+                                  contractorId: id,
+                                ),
                               ),
                             ),
                           );

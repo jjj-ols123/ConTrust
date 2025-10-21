@@ -9,6 +9,7 @@ import '../pages/errorlog.dart';
 import '../pages/users.dart';
 import '../pages/projects.dart';
 import '../pages/systemmonitor.dart';
+import '../pages/verify.dart'; 
 
 enum SuperAdminPage {
   dashboard,
@@ -17,6 +18,7 @@ enum SuperAdminPage {
   auditLogs,
   errorLogs,
   systemMonitor,
+  verify, 
 }
 
 class SuperAdminShell extends StatelessWidget {
@@ -45,6 +47,8 @@ class SuperAdminShell extends StatelessWidget {
         return 'Error Logs';
       case SuperAdminPage.systemMonitor:
         return 'System Monitor';
+      case SuperAdminPage.verify: 
+        return 'Verify Contractors';
     }
   }
 
@@ -320,6 +324,21 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             },
           ),
           _SidebarItem(
+            icon: Icons.verified_user_outlined,
+            label: 'Verify Contractors',
+            active: widget.currentPage == SuperAdminPage.verify,
+            onTap: () {
+              if (widget.currentPage != SuperAdminPage.verify) {
+                navigateToPage(
+                  const SuperAdminShell(
+                    currentPage: SuperAdminPage.verify,
+                    child: VerifyPage(),
+                  ),
+                );
+              }
+            },
+          ),
+          _SidebarItem(
             icon: Icons.history_outlined,
             label: 'Audit Logs',
             active: widget.currentPage == SuperAdminPage.auditLogs,
@@ -341,7 +360,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             onTap: () {
               if (widget.currentPage != SuperAdminPage.errorLogs) {
                 navigateToPage(
-                  SuperAdminShell(
+                  const SuperAdminShell(
                     currentPage: SuperAdminPage.errorLogs,
                     child: ErrorLogs(),
                   ),
@@ -665,6 +684,27 @@ class DashboardDrawer extends StatelessWidget {
                     },
                   ),
                   DrawerIcon(
+                    icon: Icons.verified_user, 
+                    label: 'Verify Contractors',
+                    iconSize: iconSize,
+                    fontSize: fontSize,
+                    color: Colors.indigo,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        PageRouteBuilder(
+                          pageBuilder: (context, animation, secondaryAnimation) =>
+                              const SuperAdminShell(
+                                currentPage: SuperAdminPage.verify,
+                                child: VerifyPage(),
+                              ),
+                          transitionDuration: Duration.zero,
+                          reverseTransitionDuration: Duration.zero,
+                        ),
+                      );
+                    },
+                  ),
+                  DrawerIcon(
                     icon: Icons.history,
                     label: 'Audit Logs',
                     iconSize: iconSize,
@@ -675,9 +715,9 @@ class DashboardDrawer extends StatelessWidget {
                         context,
                         PageRouteBuilder(
                           pageBuilder: (context, animation, secondaryAnimation) =>
-                              SuperAdminShell(
+                              const SuperAdminShell(
                                 currentPage: SuperAdminPage.auditLogs,
-                                child: const Auditlogs(),
+                                child: Auditlogs(),
                               ),
                           transitionDuration: Duration.zero,
                           reverseTransitionDuration: Duration.zero,
