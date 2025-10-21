@@ -65,13 +65,6 @@ class SuperAdminShell extends StatelessWidget {
         centerTitle: true,
         elevation: 4,
         automaticallyImplyLeading: false,
-        title: Text(
-          title(),
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),

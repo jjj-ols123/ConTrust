@@ -128,7 +128,7 @@ class BuildDashboard {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              alert['message'] ?? 'Unknown alert',
+              alert['error_message'] ?? 'Unknown alert',
               style: const TextStyle(fontSize: 14, color: Colors.black),
             ),
           ),
@@ -359,7 +359,7 @@ class BuildDashboard {
           Expanded(
             child: Text(
               user['email'] ?? 'Unknown User',
-              style: const TextStyle(fontSize: 14),
+              style: const TextStyle(fontSize: 14, color: Colors.black),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -385,7 +385,7 @@ class BuildDashboard {
                   children: [
                     Text(
                       project['title'] ?? 'Untitled Project',
-                      style: const TextStyle(fontSize: 14),
+                      style: const TextStyle(fontSize: 14, color: Colors.black),
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
@@ -417,7 +417,7 @@ class BuildDashboard {
           Expanded(
             child: Text(
               '${log['action'] ?? 'Unknown action'} - ${log['category'] ?? 'general'}',
-              style: const TextStyle(fontSize: 14),
+              style: const TextStyle(fontSize: 14, color: Colors.black),
               overflow: TextOverflow.ellipsis,
             ),
           ),

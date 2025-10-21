@@ -20,13 +20,6 @@ class BuildAdminLogin {
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-          'Secure admin access to your platform',
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: Colors.grey[600],
-          ),
-          textAlign: TextAlign.center,
-        ),
       ],
     );
   }

@@ -5,6 +5,7 @@ import 'package:backend/services/both services/be_bidding_service.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_project_service.dart';
 import 'package:backend/services/contractee services/cee_checkuser.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractee/models/cee_modal.dart';
 import 'package:contractee/build/builddrawer.dart';
 import 'package:contractee/build/buildhome.dart';
@@ -62,52 +63,6 @@ class _HomePageState extends State<HomePage> {
     });
   }
   
-  Future<void> _showConstructionDialog(BuildContext context, String title, String message, {bool isError = false}) async {
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[100],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: isError ? Colors.red.shade400 : Colors.amber.shade700, width: 2),
-        ),
-        title: Row(
-          children: [
-            Icon(
-              isError ? Icons.warning_amber_rounded : Icons.construction_rounded,
-              color: isError ? Colors.red.shade400 : Colors.amber.shade700,
-              size: 28,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              title,
-              style: TextStyle(
-                color: isError ? Colors.red.shade700 : Colors.amber.shade800,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          message,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.black87),
-        ),
-        actions: [
-          TextButton(
-            style: TextButton.styleFrom(
-              backgroundColor: isError ? Colors.red.shade400 : Colors.amber.shade700,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () => Navigator.pop(context),
-            child: const Text("OK"),
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _loadData() async {
     setState(() {
       isLoading = true;
@@ -134,7 +89,7 @@ class _HomePageState extends State<HomePage> {
         isLoading = false;
       });
       if (!mounted) return;
-      await _showConstructionDialog(context, "Loading Error", "⚠️ Unable to load data. Please check your connection.", isError: true);
+      ConTrustSnackBar.error(context, 'Unable to load data. Please check your connection.');
     }
   }
 
@@ -142,12 +97,12 @@ class _HomePageState extends State<HomePage> {
     try {
       await BiddingService().acceptProjectBid(projectId, bidId);
       if (mounted) {
-        await _showConstructionDialog(context, "Bid Accepted", "The bid has been accepted successfully! 🏗️");
+        ConTrustSnackBar.success(context, 'The bid has been accepted successfully!');
         _loadData();
       }
     } catch (e) {
       if (mounted) {
-        await _showConstructionDialog(context, "Bid Error", "Something went wrong while accepting the bid.", isError: true);
+        ConTrustSnackBar.error(context, 'Something went wrong while accepting the bid.');
       }
     }
   }
@@ -290,6 +245,7 @@ class _HomePageState extends State<HomePage> {
                                         });
                                       },
                                       initialAcceptedBidId: acceptedBidId,
+                                      onRefresh: _loadData,  
                                     );
                                   },
                                 );
@@ -300,10 +256,10 @@ class _HomePageState extends State<HomePage> {
                               onDeleteProject: (projectId) async {
                                 try {
                                   await ProjectService().deleteProject(projectId);
-                                  await _showConstructionDialog(context, "Project Deleted", "The project has been deleted successfully. 🧱");
+                                  ConTrustSnackBar.success(context, 'The project has been deleted successfully.');
                                   _loadData();
                                 } catch (e) {
-                                  await _showConstructionDialog(context, "Delete Failed", "Failed to delete project. Please try again.", isError: true);
+                                  ConTrustSnackBar.error(context, 'Failed to delete project. Please try again.');
                                 }
                               },
                             );
