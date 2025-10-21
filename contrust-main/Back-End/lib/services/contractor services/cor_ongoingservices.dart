@@ -2,6 +2,8 @@
 
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_project_service.dart';
+import 'package:backend/services/superadmin services/auditlogs_service.dart';
+import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,6 +13,8 @@ class CorOngoingService {
   final _fetchService = FetchService();
   final _projectService = ProjectService();
   final SupabaseClient _supabase = Supabase.instance.client;
+  final SuperAdminAuditService _auditService = SuperAdminAuditService();
+  final SuperAdminErrorService _errorService = SuperAdminErrorService();
 
   static const String kCustomContractTypeId = 'd9d78420-7765-44d5-966c-6f0e0297c07d';
 
@@ -85,21 +89,40 @@ class CorOngoingService {
       if (userId == null) {
         throw Exception('User not authenticated');
       }
-      
+
       await _projectService.addReportToProject(
         projectId: projectId,
         content: content,
         authorId: userId,
       );
-      
+
       if (context.mounted) {
         ConTrustSnackBar.success(
           context,
           'Report added successfully!',
         );
       }
+
+      await _auditService.logAuditEvent(
+        userId: userId,
+        action: 'REPORT_ADDED',
+        details: content.length > 200 ? content.substring(0, 200) : content,
+        metadata: {
+          'project_id': projectId,
+          'author_id': userId,
+        },
+      );
+
       onSuccess();
     } catch (e) {
+      await _errorService.logError(
+        userId: _supabase.auth.currentUser?.id,
+        errorMessage: 'Failed to add report: $e',
+        module: 'CorOngoingService',
+        severity: 'Medium',
+        extraInfo: {'project_id': projectId},
+      );
+
       if (context.mounted) {
         ConTrustSnackBar.error(
           context,
@@ -120,15 +143,31 @@ class CorOngoingService {
         projectId: projectId,
         task: task,
       );
-      
+
       if (context.mounted) {
         ConTrustSnackBar.success(
           context,
           'Task added successfully!',
         );
       }
+
+      await _auditService.logAuditEvent(
+        userId: _supabase.auth.currentUser?.id,
+        action: 'TASK_ADDED',
+        details: task,
+        metadata: {'project_id': projectId},
+      );
+
       onSuccess();
     } catch (e) {
+      await _errorService.logError(
+        userId: _supabase.auth.currentUser?.id,
+        errorMessage: 'Failed to add task: $e',
+        module: 'CorOngoingService',
+        severity: 'Medium',
+        extraInfo: {'project_id': projectId},
+      );
+
       if (context.mounted) {
         ConTrustSnackBar.error(
           context,
@@ -182,10 +221,30 @@ class CorOngoingService {
               'Photo uploaded successfully!',
             );
           }
+
+          await _auditService.logAuditEvent(
+            userId: userId,
+            action: 'PROJECT_PHOTO_UPLOADED',
+            details: storagePath,
+            metadata: {
+              'project_id': projectId,
+              'uploader_id': userId,
+              'path': storagePath,
+            },
+          );
+
           onSuccess();
         }
       }
     } catch (e) {
+      await _errorService.logError(
+        userId: _supabase.auth.currentUser?.id,
+        errorMessage: 'Failed to upload photo: $e',
+        module: 'CorOngoingService',
+        severity: 'Medium',
+        extraInfo: {'project_id': projectId},
+      );
+
       if (context.mounted) {
         ConTrustSnackBar.error(
           context,
@@ -224,6 +283,18 @@ class CorOngoingService {
 
       onProgressUpdate(newProgress);
 
+      await _auditService.logAuditEvent(
+        userId: _supabase.auth.currentUser?.id,
+        action: 'TASK_STATUS_UPDATED',
+        details: 'Task $taskId status updated',
+        metadata: {
+          'project_id': projectId,
+          'task_id': taskId,
+          'done': done,
+          'new_progress': newProgress,
+        },
+      );
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -239,6 +310,14 @@ class CorOngoingService {
         );
       }
     } catch (e) {
+      await _errorService.logError(
+        userId: _supabase.auth.currentUser?.id,
+        errorMessage: 'Failed to update task status: $e',
+        module: 'CorOngoingService',
+        severity: 'Medium',
+        extraInfo: {'project_id': projectId, 'task_id': taskId},
+      );
+
       if (context.mounted) {
         ConTrustSnackBar.error(
           context,

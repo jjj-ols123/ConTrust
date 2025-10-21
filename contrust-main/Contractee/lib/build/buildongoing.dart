@@ -987,6 +987,7 @@ class CeeOngoingBuildMethods {
                         '₱${itemTotal.toStringAsFixed(2)}',
                         style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                       ),
+                      const SizedBox(width: 4),
                       if (onViewMaterial != null) const Icon(Icons.visibility, size: 14),
                     ],
                   ),

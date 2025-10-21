@@ -5,9 +5,13 @@ import 'package:backend/services/both%20services/be_project_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:backend/services/superadmin services/auditlogs_service.dart';
+import 'package:backend/services/superadmin services/errorlogs_service.dart';
 
 class CorProductService {
   final SupabaseClient _supabase = Supabase.instance.client;
+  final SuperAdminAuditService _auditService = SuperAdminAuditService();
+  final SuperAdminErrorService _errorService = SuperAdminErrorService();
 
   Future<void> updateInventoryItem({
     required String itemId,
@@ -17,36 +21,81 @@ class CorProductService {
     double? unitPrice,
     String? notes,
   }) async {
-    final updates = {
-      if (brand != null) 'brand': brand,
-      if (quantity != null) 'quantity': quantity,
-      if (unit != null) 'unit': unit,
-      if (unitPrice != null) 'unit_price': unitPrice,
-      if (notes != null) 'notes': notes,
-    };
+    try {
+      final updates = {
+        if (brand != null) 'brand': brand,
+        if (quantity != null) 'quantity': quantity,
+        if (unit != null) 'unit': unit,
+        if (unitPrice != null) 'unit_price': unitPrice,
+        if (notes != null) 'notes': notes,
+      };
 
-    if (updates.isNotEmpty) {
-      await _supabase
-          .from('ProjectMaterials')
-          .update(updates)
-          .eq('material_id', itemId);
+      if (updates.isNotEmpty) {
+        await _supabase
+            .from('ProjectMaterials')
+            .update(updates)
+            .eq('material_id', itemId);
+
+        await _auditService.logAuditEvent(
+          userId: _supabase.auth.currentUser?.id,
+          action: 'INVENTORY_ITEM_UPDATED',
+          details: 'Updated inventory item $itemId',
+          metadata: updates,
+        );
+      }
+    } catch (e) {
+      await _errorService.logError(
+        userId: _supabase.auth.currentUser?.id,
+        errorMessage: 'Failed to update inventory item: $e',
+        module: 'CorProductService',
+        severity: 'Medium',
+        extraInfo: {'item_id': itemId},
+      );
+      rethrow;
     }
   }
 
   Future<void> deleteInventoryItem(String itemId) async {
-    await _supabase.from('ProjectMaterials').delete().eq('material_id', itemId);
+    try {
+      await _supabase.from('ProjectMaterials').delete().eq('material_id', itemId);
+
+      await _auditService.logAuditEvent(
+        userId: _supabase.auth.currentUser?.id,
+        action: 'INVENTORY_ITEM_DELETED',
+        details: 'Deleted inventory item $itemId',
+        metadata: {'item_id': itemId},
+      );
+    } catch (e) {
+      await _errorService.logError(
+        userId: _supabase.auth.currentUser?.id,
+        errorMessage: 'Failed to delete inventory item: $e',
+        module: 'CorProductService',
+        severity: 'Medium',
+        extraInfo: {'item_id': itemId},
+      );
+      rethrow;
+    }
   }
 
-  Future<List<Map<String, dynamic>>> getInventoryItems(
-    String contractorId,
-  ) async {
-    final response = await _supabase
-        .from('ProjectMaterials')
-        .select()
-        .eq('contractor_id', contractorId)
-        .order('created_at', ascending: false);
+  Future<List<Map<String, dynamic>>> getInventoryItems(String contractorId) async {
+    try {
+      final response = await _supabase
+          .from('ProjectMaterials')
+          .select()
+          .eq('contractor_id', contractorId)
+          .order('created_at', ascending: false);
 
-    return List<Map<String, dynamic>>.from(response);
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      await _errorService.logError(
+        userId: _supabase.auth.currentUser?.id,
+        errorMessage: 'Failed to fetch inventory items: $e',
+        module: 'CorProductService',
+        severity: 'Low',
+        extraInfo: {'contractor_id': contractorId},
+      );
+      return [];
+    }
   }
 
   Future<void> loadInventory(
@@ -55,39 +104,56 @@ class CorProductService {
     List<Map<String, dynamic>> inventory,
     Map<String, List<Map<String, dynamic>>> projectMaterials,
   ) async {
-    final items = await getInventoryItems(contractorId);
-    
-    final mappedItems = items.map((item) {
-      final qty = (item['quantity'] as num).toDouble();
-      final price = (item['unit_price'] as num).toDouble();
-      return {
-        'material_id': item['material_id'],
-        'project_id': item['project_id'],
-        'name': item['material_name'],
-        'brand': item['brand'] ?? '',
-        'qty': qty,
-        'unit': item['unit'] ?? 'pcs',
-        'unitPrice': price,
-        'total': qty * price,
-        'note': item['notes'],
-      };
-    }).toList();
+    try {
+      final items = await getInventoryItems(contractorId);
 
-    final newProjectMaterials = <String, List<Map<String, dynamic>>>{};
-    for (final item in mappedItems) {
-      final projectId = item['project_id'] as String;
-      if (!newProjectMaterials.containsKey(projectId)) {
-        newProjectMaterials[projectId] = [];
+      final mappedItems = items.map((item) {
+        final qty = (item['quantity'] as num).toDouble();
+        final price = (item['unit_price'] as num).toDouble();
+        return {
+          'material_id': item['material_id'],
+          'project_id': item['project_id'],
+          'name': item['material_name'],
+          'brand': item['brand'] ?? '',
+          'qty': qty,
+          'unit': item['unit'] ?? 'pcs',
+          'unitPrice': price,
+          'total': qty * price,
+          'note': item['notes'],
+        };
+      }).toList();
+
+      final newProjectMaterials = <String, List<Map<String, dynamic>>>{};
+      for (final item in mappedItems) {
+        final projectId = item['project_id'] as String;
+        if (!newProjectMaterials.containsKey(projectId)) {
+          newProjectMaterials[projectId] = [];
+        }
+        newProjectMaterials[projectId]!.add(item);
       }
-      newProjectMaterials[projectId]!.add(item);
+
+      setState(() {
+        inventory.clear();
+        inventory.addAll(mappedItems);
+        projectMaterials.clear();
+        projectMaterials.addAll(newProjectMaterials);
+      });
+
+      await _auditService.logAuditEvent(
+        userId: _supabase.auth.currentUser?.id,
+        action: 'INVENTORY_LOADED',
+        details: 'Loaded inventory for contractor $contractorId',
+        metadata: {'contractor_id': contractorId},
+      );
+    } catch (e) {
+      await _errorService.logError(
+        userId: _supabase.auth.currentUser?.id,
+        errorMessage: 'Failed to load inventory: $e',
+        module: 'CorProductService',
+        severity: 'Medium',
+        extraInfo: {'contractor_id': contractorId},
+      );
     }
-    
-    setState(() {
-      inventory.clear();
-      inventory.addAll(mappedItems);
-      projectMaterials.clear();
-      projectMaterials.addAll(newProjectMaterials);
-    });
   }
 
   Future<void> loadProjects(

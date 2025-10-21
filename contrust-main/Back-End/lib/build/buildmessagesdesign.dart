@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'dart:html' as html;
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:backend/services/both%20services/be_project_service.dart';
 import 'package:backend/services/both%20services/be_contract_service.dart';
@@ -114,7 +115,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
           });
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to check project:',
+        errorMessage: 'Failed to check project: $e',
         module: 'Contract Agreement Banner',
         severity: 'Medium',
         extraInfo: {
@@ -153,7 +154,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
       if (mounted) setState(() {});
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to proceed with contract: ',
+        errorMessage: 'Failed to proceed with contract: $e',
         module: 'Contract Agreement Banner',
         severity: 'High',
         extraInfo: {
@@ -193,7 +194,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to agree to contract: ',
+        errorMessage: 'Failed to agree to contract: $e',
         module: 'Contract Agreement Banner',
         severity: 'High',
         extraInfo: {
@@ -233,7 +234,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to agree to cancellation: ',
+        errorMessage: 'Failed to agree to cancellation: $e',
         module: 'Contract Agreement Banner',
         severity: 'High',
         extraInfo: {
@@ -246,7 +247,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
       if (mounted) {
         ConTrustSnackBar.show(
           context,
-          'Failed to cancel project: ',
+          'Failed to cancel project: $e',
           type: SnackBarType.error,
         );
       }
@@ -279,7 +280,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to decline cancellation: ',
+        errorMessage: 'Failed to decline cancellation: $e',
         module: 'Contract Agreement Banner',
         severity: 'Medium',
         extraInfo: {
@@ -292,7 +293,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
       if (mounted) {
         ConTrustSnackBar.show(
           context,
-          'Failed to decline cancellation: ',
+          'Failed to decline cancellation: $e',
           type: SnackBarType.error,
         );
       }
@@ -333,7 +334,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
           }
         } catch (e) {
           await _errorService.logError(
-            errorMessage: 'Failed to review contract: ',
+            errorMessage: 'Failed to review contract: $e',
             module: 'Contract Agreement Banner',
             severity: 'Medium',
             extraInfo: {
@@ -453,7 +454,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
               );
             } catch (e) {
               await _errorService.logError(
-                errorMessage: 'Failed to navigate to ongoing project: ',
+                errorMessage: 'Failed to navigate to ongoing project: $e',
                 module: 'Contract Agreement Banner',
                 severity: 'Medium',
                 extraInfo: {
@@ -1079,7 +1080,7 @@ class UIMessage {
               }));
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to show enhanced contract view: ',
+        errorMessage: 'Failed to show enhanced contract view: $e',
         module: 'UI Message',
         severity: 'Medium',
         extraInfo: {
@@ -1089,7 +1090,7 @@ class UIMessage {
         },
       );
       if (context.mounted) {
-        ConTrustSnackBar.error(context, 'Error loading contract: ');
+        ConTrustSnackBar.error(context, 'Error loading contract: $e');
       }
     }
   }
@@ -1374,7 +1375,7 @@ class UIMessage {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to download contract: ',
+        errorMessage: 'Failed to download contract: $e',
         module: 'UI Message',
         severity: 'Medium',
         extraInfo: {
@@ -1440,7 +1441,7 @@ class UIMessage {
           const SizedBox(height: 8),
           Text(
             enabled
-                ? 'Draw your signature above using your mouse, stylus, or finger'
+                ? 'Draw your signature above using your mouse, stylus, or finger, or upload an image'
                 : 'Signature pad is currently disabled',
             style: TextStyle(
               fontSize: 12,
@@ -1463,6 +1464,29 @@ class UIMessage {
                   style: ElevatedButton.styleFrom(
                     backgroundColor:
                         enabled ? Colors.grey[600] : Colors.grey[400],
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: enabled
+                      ? () async {
+                          final signatureBytes = await _pickSignatureImage(context);
+                          if (signatureBytes != null) {
+                            _showSignatureDialog(context, contractData,
+                                currentUserId, signatureBytes, onRefresh);
+                          }
+                        }
+                      : null,
+                  icon: const Icon(Icons.upload),
+                  label: const Text('Upload'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        enabled ? Colors.orange[600] : Colors.grey[400],
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8)),
@@ -1499,6 +1523,34 @@ class UIMessage {
         ],
       ),
     );
+  }
+
+  static Future<Uint8List?> _pickSignatureImage(BuildContext context) async {
+    try {
+      final input = html.FileUploadInputElement()..accept = 'image/*';
+      input.click();
+      final file = input.files?.first;
+      if (file == null) return null;
+
+      final reader = html.FileReader();
+      reader.readAsArrayBuffer(file);
+      await reader.onLoad.first;
+      return Uint8List.view(reader.result as ByteBuffer);
+    } catch (e) {
+      ConTrustSnackBar.error(
+          context, 'Failed to pick signature image');
+      
+      _errorService.logError(
+        errorMessage: 'Failed to pick signature image: $e',
+        module: 'UI Message',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Pick Signature Image',
+        },
+      );
+
+      return null;
+    }
   }
 
   static void _showSignatureDialog(
@@ -1577,7 +1629,7 @@ class UIMessage {
                 
               } catch (e) {
                 await _errorService.logError(
-                  errorMessage: 'Failed to sign contract: ',
+                  errorMessage: 'Failed to sign contract: $e',
                   module: 'UI Message',
                   severity: 'High',
                   extraInfo: {
@@ -1586,7 +1638,7 @@ class UIMessage {
                     'user_type': isContractee ? 'contractee' : 'contractor',
                   },
                 );
-                ConTrustSnackBar.error(context, '');
+                ConTrustSnackBar.error(context, '$e');
               }
             },
             style: ElevatedButton.styleFrom(
@@ -1644,7 +1696,7 @@ class _ContractApprovalButtonsState extends State<_ContractApprovalButtons> {
       widget.onApproved();
     } catch (e) {
       await UIMessage._errorService.logError(
-        errorMessage: 'Failed to approve contract: ',
+        errorMessage: 'Failed to approve contract: $e',
         module: 'Contract Approval Buttons',
         severity: 'High',
         extraInfo: {
@@ -1652,7 +1704,7 @@ class _ContractApprovalButtonsState extends State<_ContractApprovalButtons> {
           'contract_id': widget.contractId,
         },
       );
-      widget.onError('Failed to approve contract: ');
+      widget.onError('Failed to approve contract: $e');
     } finally {
       if (mounted) {
         setState(() => _isApproving = false);
@@ -1680,7 +1732,7 @@ class _ContractApprovalButtonsState extends State<_ContractApprovalButtons> {
       widget.onRejected();
     } catch (e) {
       await UIMessage._errorService.logError(
-        errorMessage: 'Failed to reject contract:',
+        errorMessage: 'Failed to reject contract: $e',
         module: 'Contract Approval Buttons',
         severity: 'High',
         extraInfo: {
@@ -1688,7 +1740,7 @@ class _ContractApprovalButtonsState extends State<_ContractApprovalButtons> {
           'contract_id': widget.contractId,
         },
       );
-      widget.onError('Failed to reject contract: ');
+      widget.onError('Failed to reject contract: $e');
     } finally {
       if (mounted) {
         setState(() => _isRejecting = false);

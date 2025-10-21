@@ -174,16 +174,30 @@ class ContractService {
     required String message,
   }) async {
     try {
+
       final contractData = await _supabase
           .from('Contracts')
-          .select('*, contractor_id, project_id')
+          .select('*, project_id, contractor_id')
           .eq('contract_id', contractId)
           .single();
+
+      final projectId = contractData['project_id'] as String;
+
+      final existingApprovedContracts = await _supabase
+          .from('Contracts')
+          .select('contract_id')
+          .eq('project_id', projectId)
+          .neq('contract_id', contractId)
+          .inFilter('status', ['approved', 'active', 'signed']);
+
+      if (existingApprovedContracts.isNotEmpty) {
+        throw Exception('Cannot send new contract: An approved contract already exists for this project.');
+      }
 
       final chatRoomData = await _supabase
           .from('ChatRoom')
           .select('chatroom_id')
-          .eq('project_id', contractData['project_id'])
+          .eq('project_id', projectId)
           .single();
 
       final currentStatus = contractData['status'] as String?;
@@ -230,7 +244,7 @@ class ContractService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to send contract to contractee: ',
+        errorMessage: 'Failed to send contract to contractee: ${e.toString()}',
         module: 'Contract Service',
         severity: 'High',
         extraInfo: {

@@ -2,7 +2,7 @@
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/contractor services/cor_profileservice.dart';
 import 'package:flutter/material.dart';
-import 'package:backend/build/buildtorprofile.dart';
+import 'package:contractor/build/buildprofile.dart';
 
 class ContractorUserProfileScreen extends StatefulWidget {
   final String contractorId;
@@ -26,6 +26,7 @@ class _ContractorUserProfileScreenState
   late String? profileImage;
   bool isLoading = true;
   bool isUploading = false;
+  bool isUploadingProfile = false; // add this
   int completedProjectsCount = 0;
 
   static const String profileUrl =
@@ -211,7 +212,16 @@ class _ContractorUserProfileScreenState
                           });
                         },
                         mainContent: _buildMainContent(),
-                        userType: 'contractor',
+                        onProfilePhotoUpload: () => CorProfileService().handleUploadProfilePhoto(
+                          contractorId: widget.contractorId,
+                          context: context,
+                          setUploading: (loading) => setState(() => isUploadingProfile = loading),
+                          onSuccess: loadContractorData,
+                        ),
+                        onViewProfilePhoto: () => ProfileBuildMethods.showPhotoDialog(
+                          context,
+                          {'photo_url': profileImage ?? profileUrl},
+                        ),
                       ),
                     );
                   } else {
@@ -230,7 +240,16 @@ class _ContractorUserProfileScreenState
                         });
                       },
                       mainContent: _buildMainContent(),
-                      userType: 'contractor',
+                      onProfilePhotoUpload: () => CorProfileService().handleUploadProfilePhoto(
+                        contractorId: widget.contractorId,
+                        context: context,
+                        setUploading: (loading) => setState(() => isUploadingProfile = loading),
+                        onSuccess: loadContractorData,
+                      ),
+                      onViewProfilePhoto: () => ProfileBuildMethods.showPhotoDialog(
+                        context,
+                        {'photo_url': profileImage ?? profileUrl},
+                      ),
                     );
                   }
                 },
@@ -268,6 +287,10 @@ class _ContractorUserProfileScreenState
         onSuccess: loadContractorData,
       ),
       context: context,
+      onViewPhoto: (String photoUrl) => ProfileBuildMethods.showPhotoDialog(
+        context,
+        {'photo_url': photoUrl},
+      ),
     );
   }
 
@@ -300,7 +323,6 @@ class _ContractorUserProfileScreenState
       saveSpecialization: () => _saveField('specialization', specializationController.text),
       saveAddress: () => _saveField('address', addressController.text),
       contractorId: widget.contractorId,
-      userType: 'contractor',
     );
   }
 

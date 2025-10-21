@@ -28,6 +28,8 @@ class ProfileBuildMethods {
     required String selectedTab,
     required Function(String) onTabChanged,
     required Widget mainContent,
+    required VoidCallback? onProfilePhotoUpload,
+    required VoidCallback? onViewProfilePhoto, // add this
   }) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -48,36 +50,69 @@ class ProfileBuildMethods {
             ),
             child: Column(
               children: [
-                Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.grey.shade200,
-                      width: 3,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 20,
-                        offset: const Offset(0, 5),
+                GestureDetector(
+                  onTap: onViewProfilePhoto,
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.grey.shade200,
+                            width: 3,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 20,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          radius: 50,
+                          backgroundColor: Colors.grey.shade100,
+                          backgroundImage: (profileImage != null && profileImage.isNotEmpty)
+                              ? NetworkImage(profileImage)
+                              : NetworkImage(profileUrl),
+                          child: (profileImage == null || profileImage.isEmpty)
+                              ? Icon(
+                                  Icons.business,
+                                  size: 35,
+                                  color: Colors.grey.shade400,
+                                )
+                              : null,
+                        ),
                       ),
+                      if (onProfilePhotoUpload != null)
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: InkWell(
+                            onTap: onProfilePhotoUpload,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.08),
+                                    blurRadius: 6,
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                Icons.camera_alt,
+                                size: 18,
+                                color: Colors.amber.shade800,
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
-                  ),
-                  child: CircleAvatar(
-                    radius: 50,
-                    backgroundColor: Colors.grey.shade100,
-                    backgroundImage: (profileImage != null && profileImage.isNotEmpty)
-                        ? NetworkImage(profileImage)
-                        : NetworkImage(profileUrl),
-                    child: (profileImage == null || profileImage.isEmpty)
-                        ? Icon(
-                            Icons.business,
-                            size: 35,
-                            color: Colors.grey.shade400,
-                          )
-                        : null,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -186,6 +221,8 @@ class ProfileBuildMethods {
     required String selectedTab,
     required Function(String) onTabChanged,
     required Widget mainContent,
+    required VoidCallback? onProfilePhotoUpload,
+    required VoidCallback? onViewProfilePhoto,
   }) {
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -211,36 +248,69 @@ class ProfileBuildMethods {
                   ),
                   child: Column(
                     children: [
-                      Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.grey.shade200,
-                            width: 3,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 20,
-                              offset: const Offset(0, 5),
+                      GestureDetector(
+                        onTap: onViewProfilePhoto,
+                        child: Stack(
+                          children: [
+                            Container(
+                              width: 120,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.grey.shade200,
+                                  width: 3,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 5),
+                                  ),
+                                ],
+                              ),
+                              child: CircleAvatar(
+                                radius: 60,
+                                backgroundColor: Colors.grey.shade100,
+                                backgroundImage: (profileImage != null && profileImage.isNotEmpty)
+                                    ? NetworkImage(profileImage)
+                                    : NetworkImage(profileUrl),
+                                child: (profileImage == null || profileImage.isEmpty)
+                                    ? Icon(
+                                        Icons.business,
+                                        size: 40,
+                                        color: Colors.grey.shade400,
+                                      )
+                                    : null,
+                              ),
                             ),
+                            if (onProfilePhotoUpload != null)
+                              Positioned(
+                                right: 0,
+                                bottom: 0,
+                                child: InkWell(
+                                  onTap: onProfilePhotoUpload,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.08),
+                                          blurRadius: 6,
+                                        ),
+                                      ],
+                                    ),
+                                    child: Icon(
+                                      Icons.camera_alt,
+                                      size: 18,
+                                      color: Colors.amber.shade800,
+                                    ),
+                                  ),
+                                ),
+                              ),
                           ],
-                        ),
-                        child: CircleAvatar(
-                          radius: 60,
-                          backgroundColor: Colors.grey.shade100,
-                          backgroundImage: (profileImage != null && profileImage.isNotEmpty)
-                              ? NetworkImage(profileImage)
-                              : NetworkImage(profileUrl),
-                          child: (profileImage == null || profileImage.isEmpty)
-                              ? Icon(
-                                  Icons.business,
-                                  size: 40,
-                                  color: Colors.grey.shade400,
-                                )
-                              : null,
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -371,6 +441,7 @@ class ProfileBuildMethods {
     required bool isUploading,
     required VoidCallback uploadProjectPhoto,
     required BuildContext context,
+    required Function(String) onViewPhoto, // add this
   }) {
 
     final screenWidth = MediaQuery.of(context).size.width;
@@ -510,54 +581,57 @@ class ProfileBuildMethods {
               crossAxisCount: screenWidth > 1200 ? 3 : screenWidth > 800 ? 2 : 1,
               crossAxisSpacing: 16,
               mainAxisSpacing: 20,
-              childAspectRatio: screenWidth > 1200 ? 1.3 : 1.7,
+              childAspectRatio: screenWidth > 1200 ? 1.9: 1.7,
             ),
             itemCount: pastProjects.length,
             itemBuilder: (context, index) {
-              return Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.amber.shade50,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.amber.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: Image.network(
-                          pastProjects[index],
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: Colors.grey.shade100,
-                              child: Icon(
-                                Icons.broken_image,
-                                color: Colors.grey.shade400,
-                                size: 32,
-                              ),
-                            );
-                          },
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              color: Colors.grey.shade100,
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  color: Colors.amber.shade600,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+              return GestureDetector(
+                onTap: () => onViewPhoto(pastProjects[index]),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.amber.shade50,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.amber.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
                       ),
                     ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Image.network(
+                            pastProjects[index],
+                            fit: BoxFit.fill,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey.shade100,
+                                child: Icon(
+                                  Icons.broken_image,
+                                  color: Colors.grey.shade400,
+                                  size: 32,
+                                ),
+                              );
+                            },
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                color: Colors.grey.shade100,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: Colors.amber.shade600,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -1075,6 +1149,7 @@ class ProfileBuildMethods {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.black, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1359,6 +1434,64 @@ class ProfileBuildMethods {
           ],
         ),
       ),
+    );
+  }
+
+  static void showPhotoDialog(BuildContext context, Map<String, dynamic> photo) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Dialog(
+          insetPadding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          backgroundColor: Colors.grey[900],
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.5,
+            height: MediaQuery.of(context).size.height * 0.8,
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Stack(
+              children: [
+                Positioned(
+                  top: 16,
+                  right: 16,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                  ),
+                ),
+                Center(
+                  child: InteractiveViewer(
+                    minScale: 0.5,
+                    maxScale: 3.0,
+                    child: Image.network(
+                      photo['photo_url'],
+                      fit: BoxFit.contain,
+                      width: MediaQuery.of(context).size.width * 0.95,
+                      height: MediaQuery.of(context).size.height * 0.7,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
