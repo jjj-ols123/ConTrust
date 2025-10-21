@@ -16,6 +16,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
   final _fNameController = TextEditingController();
   final _lNameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
@@ -23,32 +25,110 @@ class _RegistrationPageState extends State<RegistrationPage> {
   bool _isConfirmPasswordVisible = false;
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey.shade100,
-      body: Center(
+Widget build(BuildContext context) {
+  return Scaffold(
+    body: Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.amber.shade100,
+            Colors.white,
+            Colors.grey.shade100,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 400),
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
+          padding: const EdgeInsets.all(24),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              bool isDesktop = constraints.maxWidth > 800;
+
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                width: isDesktop ? 850 : double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.95),
+                  borderRadius: BorderRadius.circular(25),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.amber.withOpacity(0.15),
+                      blurRadius: 25,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: _buildRegistrationForm(context),
+                child: isDesktop
+                    ? Row(
+                        children: [
+                          Expanded(
+                            flex: 1,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.amber.shade400,
+                                    Colors.amber.shade700,
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 60, horizontal: 30),
+                              child: const Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.verified_user_outlined,
+                                    size: 80,
+                                    color: Colors.white,
+                                  ),
+                                  SizedBox(height: 30),
+                                  Text(
+                                    "Join ConTrust",
+                                    style: TextStyle(
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  SizedBox(height: 10),
+                                  Text(
+                                    "Connect with reliable contractors and manage your projects securely and efficiently.",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 15,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 30),
+                          Expanded(
+                            flex: 2,
+                            child: _buildRegistrationForm(context),
+                          ),
+                        ],
+                      )
+                    : _buildRegistrationForm(context),
+              );
+            },
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildRegistrationForm(BuildContext context) {
     InputDecoration _inputStyle(String label, IconData icon, {Widget? suffix}) {
@@ -61,6 +141,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
         fillColor: Colors.grey.shade100,
       );
     }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -96,6 +177,17 @@ class _RegistrationPageState extends State<RegistrationPage> {
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
           decoration: _inputStyle('Email', Icons.email_outlined),
+        ),
+        const SizedBox(height: 15),
+        TextField(
+          controller: _addressController,
+          decoration: _inputStyle('Address', Icons.home_outlined),
+        ),
+        const SizedBox(height: 15),
+        TextField(
+          controller: _phoneController,
+          keyboardType: TextInputType.phone,
+          decoration: _inputStyle('Phone Number', Icons.phone_android_outlined),
         ),
         const SizedBox(height: 15),
         TextField(
@@ -147,7 +239,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
               'contractee',
               {
                 'user_type': 'contractee',
-                'address': 'address',
+                'address': _addressController.text,
+                'phone_number': _phoneController.text,
                 'full_name':
                     '${_fNameController.text} ${_lNameController.text}',
               },
