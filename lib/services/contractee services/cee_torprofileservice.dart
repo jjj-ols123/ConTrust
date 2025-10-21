@@ -125,4 +125,19 @@ class TorProfileService {
       return response['chatroom_id'] as String?;
     }
   }
+
+  static Future<List<Map<String, dynamic>>> getContractorReviews(String contractorId) async {
+    final response = await Supabase.instance.client
+        .from('ContractorRatings')
+        .select('rating, review, created_at, Contractee!inner(full_name)')
+        .eq('contractor_id', contractorId)
+        .order('created_at', ascending: false);
+
+    return (response as List).map((review) => {
+      'rating': (review['rating'] as num).toDouble(),
+      'review': review['review'],
+      'created_at': review['created_at'],
+      'client_name': review['Contractee']?['full_name'] ?? 'Anonymous',
+    }).toList();
+  }
 }
