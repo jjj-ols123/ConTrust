@@ -1,13 +1,17 @@
-// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously, unnecessary_type_check
 
 import 'dart:typed_data';
 
 import 'package:backend/services/both%20services/be_user_service.dart';
+import 'package:backend/services/superadmin%20services/auditlogs_service.dart';
+import 'package:backend/services/superadmin%20services/errorlogs_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CorProfileService { 
+  final SuperAdminAuditService _auditService = SuperAdminAuditService();
+  final SuperAdminErrorService _errorService = SuperAdminErrorService();
 
   Future<Map<String, dynamic>> loadContractorData(String contractorId) async {
     try {
@@ -115,6 +119,17 @@ class CorProfileService {
           '${fieldType.toUpperCase()} updated successfully!',
         );
       }
+
+      await _auditService.logAuditEvent(
+        userId: Supabase.instance.client.auth.currentUser?.id,
+        action: 'Profile_Field_Updated',
+        details: '$fieldType updated',
+        metadata: {
+          'contractor_id': contractorId,
+          'field': fieldType,
+        },
+      );
+
       onSuccess();
     } catch (e) {
       if (context.mounted) {
@@ -123,6 +138,13 @@ class CorProfileService {
           'Error updating ${fieldType.toLowerCase()}',
         );
       }
+      await _errorService.logError(
+        userId: Supabase.instance.client.auth.currentUser?.id,
+        errorMessage: 'Failed to save field: $e',
+        module: 'CorProfileService',
+        severity: 'Medium',
+        extraInfo: {'contractor_id': contractorId, 'field': fieldType},
+      );
     }
   }
 
@@ -150,11 +172,19 @@ class CorProfileService {
               'Project photo uploaded successfully!',
             );
           }
+
+          await _auditService.logAuditEvent(
+            userId: Supabase.instance.client.auth.currentUser?.id,
+            action: 'Project_Photo_Uploaded',
+            details: 'Uploaded project photo',
+            metadata: {
+              'contractor_id': contractorId,
+              'timestamp': DateTime.now().toIso8601String(),
+            },
+          );
+
           onSuccess();
-        } else {
-          throw Exception('Failed to upload project photo');
-        }
-      }
+      }   }
     } catch (e) {
       if (context.mounted) {
         String message = 'An error occurred while uploading the photo.';
@@ -167,10 +197,72 @@ class CorProfileService {
           message,
         );
       }
+
+      await _errorService.logError(
+        userId: Supabase.instance.client.auth.currentUser?.id,
+        errorMessage: 'Project photo upload failed: $e',
+        module: 'CorProfileService',
+        severity: 'Medium',
+        extraInfo: {'contractor_id': contractorId},
+      );
     } finally {
       setUploading(false);
     }
   } 
+
+  Future<void> handleUploadProfilePhoto({
+    required String contractorId,
+    required BuildContext context,
+    required Function(bool) setUploading,
+    required VoidCallback onSuccess,
+  }) async {
+    setUploading(true);
+    try {
+      Uint8List? imageBytes = await UserService().pickImage();
+      if (imageBytes == null) return;
+
+      final imageUrl = await UserService().uploadImage(
+        imageBytes,
+        'profilephotos',
+        folderPath: 'contractor',
+        fileName: '$contractorId.png',
+        upsert: true,
+      );
+
+      final updated = await UserService().updateProfilePhoto(
+        contractorId,
+        imageUrl,
+        isContractor: true,
+      );
+
+      if (!updated) throw Exception('Failed to update profile record');
+
+      if (context.mounted) ConTrustSnackBar.success(context, 'Profile photo uploaded successfully!');
+
+      await _auditService.logAuditEvent(
+        userId: Supabase.instance.client.auth.currentUser?.id,
+        action: 'PROFILE_PHOTO_UPDATED',
+        details: imageUrl,
+        metadata: {
+          'contractor_id': contractorId,
+          'path': 'profilephotos/contractor/$contractorId.png',
+        },
+      );
+
+      onSuccess();
+    } catch (e) {
+      if (context.mounted) ConTrustSnackBar.error(context, 'Failed to upload profile photo: ${e.toString()}');
+      await _errorService.logError(
+        userId: Supabase.instance.client.auth.currentUser?.id,
+        errorMessage: 'Upload profile photo failed: $e',
+        module: 'CorProfileService',
+        severity: 'Medium',
+        extraInfo: {'contractor_id': contractorId},
+      );
+    } finally {
+      setUploading(false);
+    }
+  }
 
   String getTimeAgo(DateTime dateTime) {
     final now = DateTime.now();
@@ -207,41 +299,6 @@ class CorProfileService {
         ratingDistribution[ratingValue] = (ratingDistribution[ratingValue] ?? 0) + 1;
         totalReviews++;
       }
-    }
-  }
-
-  Future<void> uploadProjectPhoto(bool isUploading, setState, String contractorId, BuildContext context, Function loadContractorData) async {
-    setState(() => isUploading = true);
-
-    try {
-      Uint8List? imageBytes = await UserService().pickImage();
-
-      if (imageBytes != null) {
-        bool success = await UserService().addPastProjectPhoto(
-          contractorId,
-          imageBytes,
-        );
-
-        if (success) {
-          ConTrustSnackBar.success(
-            context,
-            'Project photo uploaded successfully!',
-          );
-          await loadContractorData();
-        } else {
-          ConTrustSnackBar.error(
-            context,
-            'Failed to upload project photo. Please try again.',
-          );
-        }
-      }
-    } catch (e) {
-      ConTrustSnackBar.error(
-        context,
-        'An error occurred while uploading the photo.',
-      );
-    } finally {
-      setState(() => isUploading = false);
     }
   }
 }

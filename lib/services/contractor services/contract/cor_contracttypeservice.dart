@@ -149,7 +149,7 @@ class ContractTypeService {
         },
       );
       if (context.mounted) {
-        ConTrustSnackBar.error(context, 'Error sending contract. Please try again.');
+        ConTrustSnackBar.error(context, 'You have an existing approved contract for this project. Cannot send a new contract.');
       }
     }
   }
