@@ -37,7 +37,7 @@ class _ClientHistoryScreenState extends State<ClientHistoryScreen> {
     final query = searchController.text.toLowerCase();
     setState(() {
       filteredProjects = completedProjects.where((project) {
-        final clientName = (project['contractee_id']?['full_name'] ?? '').toLowerCase();
+        final clientName = (project['contractee']?['full_name'] ?? '').toLowerCase();
         final type = (project['type'] ?? '').toLowerCase();
         final description = (project['description'] ?? '').toLowerCase();
         return clientName.contains(query) ||

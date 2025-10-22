@@ -6,7 +6,7 @@ import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/services/superadmin%20services/auditlogs_service.dart';
 import 'package:backend/services/superadmin%20services/errorlogs_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractee/pages/cee_about.dart';
+import 'package:contractee/pages/cee_profile.dart';
 import 'package:contractee/pages/cee_home.dart';
 import 'package:contractee/pages/cee_ongoing.dart';
 import 'package:contractee/pages/cee_transaction.dart';
@@ -17,7 +17,7 @@ enum ContracteePage {
   home,
   transactions,
   ongoing,
-  about,
+  profile,
   notifications,
   messages
 }
@@ -44,8 +44,8 @@ class ContracteeShell extends StatelessWidget {
         return 'Transaction History';
       case ContracteePage.ongoing:
         return 'Ongoing Projects';
-      case ContracteePage.about:
-        return 'About';
+      case ContracteePage.profile:
+        return 'Profile';
       case ContracteePage.notifications:
         return 'Notifications';
       case ContracteePage.messages:
@@ -417,16 +417,16 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             onTap: _loadingOngoing ? null : goToOngoing,
           ),
           _SidebarItem(
-            icon: Icons.info_outline,
-            label: 'About',
-            active: widget.currentPage == ContracteePage.about,
+            icon: Icons.person,
+            label: 'Profile',
+            active: widget.currentPage == ContracteePage.profile,
             onTap: () {
-              if (widget.currentPage != ContracteePage.about) {
+              if (widget.currentPage != ContracteePage.profile) {
                 navigateToPage(
                   ContracteeShell(
-                    currentPage: ContracteePage.about,
+                    currentPage: ContracteePage.profile,
                     contracteeId: widget.contracteeId ?? '',
-                    child: const AboutPage(),
+                    child: CeeProfilePage(contracteeId: widget.contracteeId ?? ''),
                   ),
                 );
               }

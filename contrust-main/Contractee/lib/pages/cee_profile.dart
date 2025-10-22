@@ -13,12 +13,12 @@ class CeeProfilePage extends StatefulWidget {
 }
 
 class _CeeProfilePageState extends State<CeeProfilePage> {
-  late String firstName;
-  late String lastName;
-  late String bio;
-  late String contactNumber;
-  late String address;
-  late String? profileImage;
+  String firstName = '';
+  String lastName = '';
+  String bio = '';
+  String contactNumber = '';
+  String address = '';
+  String? profileImage;
   bool isLoading = true;
   bool isUploading = false;
   int completedProjectsCount = 0;
@@ -35,11 +35,11 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
   bool isEditingLastName = false;
   bool isEditingAddress = false;
   
-  late TextEditingController bioController;
-  late TextEditingController contactController;
-  late TextEditingController firstNameController;
-  late TextEditingController lastNameController;
-  late TextEditingController addressController;
+  final TextEditingController bioController = TextEditingController();
+  final TextEditingController contactController = TextEditingController();
+  final TextEditingController firstNameController = TextEditingController();
+  final TextEditingController lastNameController = TextEditingController();
+  final TextEditingController addressController = TextEditingController();
 
   List<Map<String, dynamic>> projectHistory = [];
   List<Map<String, dynamic>> ongoingProjects = [];
@@ -48,11 +48,6 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
   void initState() {
     super.initState();
     loadContracteeData();
-    bioController = TextEditingController();
-    contactController = TextEditingController();
-    firstNameController = TextEditingController();
-    lastNameController = TextEditingController();
-    addressController = TextEditingController();
   }
 
   @override
@@ -108,7 +103,7 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
     if (isLoading) {
       return const Scaffold(
         backgroundColor: Color(0xFFF8F9FA),
-        body: Center(child: CircularProgressIndicator(color: Colors.blue,)),
+        body: Center(child: CircularProgressIndicator(color: Colors.amber,)),
       );
     }
 
@@ -123,14 +118,14 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
               vertical: 8,
             ),
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
+              color: Colors.amber.shade50,
               border: Border(
                 bottom: BorderSide(color: Colors.grey.shade200),
               ),
             ),
             child: Row(
               children: [
-                Icon(Icons.person_outline, color: Colors.blue, size: 20),
+                Icon(Icons.person_outline, color: Colors.amber, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
