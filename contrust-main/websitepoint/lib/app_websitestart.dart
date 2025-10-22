@@ -5,7 +5,7 @@ import 'package:contractor/Screen/cor_login.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:superadmin/pages/login.dart'; 
+import 'package:superadmin/pages/login.dart';
 
 class WebsiteStartPage extends StatelessWidget {
   const WebsiteStartPage({super.key});
@@ -16,111 +16,142 @@ class WebsiteStartPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final bool isDesktop = screenWidth >= 900;
-    final theme = Theme.of(context);
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Background Image
+          const Image(
             image: AssetImage('assets/bgloginscreen.jpg'),
             fit: BoxFit.cover,
           ),
-        ),
-        child: Stack(
-          children: [
-            Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: isDesktop ? 1100 : screenWidth * 0.9,
-                ),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isDesktop ? 24 : 16,
-                    vertical: 32,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Welcome to ConTrust',
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: Colors.black87,
-                          fontSize: isDesktop ? null : 24,
-                        ),
-                        textAlign: TextAlign.center,
+
+          // Gradient Overlay for readability
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.black.withOpacity(0.6),
+                  Colors.black.withOpacity(0.2),
+                ],
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+              ),
+            ),
+          ),
+
+          // Content
+          Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: isDesktop ? 1100 : screenWidth * 0.9,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Title
+                    Text(
+                      'Welcome to ConTrust',
+                      style: TextStyle(
+                        fontSize: isDesktop ? 48 : 30,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 1.2,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.4),
+                            blurRadius: 6,
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Choose how you want to continue',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: Colors.black54,
-                          fontSize: isDesktop ? null : 16,
-                        ),
-                        textAlign: TextAlign.center,
+                      textAlign: TextAlign.center,
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Subtitle
+                    Text(
+                      'Choose how you want to continue',
+                      style: TextStyle(
+                        fontSize: isDesktop ? 20 : 16,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w400,
                       ),
-                      SizedBox(height: isDesktop ? 32 : 24),
-                      isDesktop
+                      textAlign: TextAlign.center,
+                    ),
+
+                    SizedBox(height: isDesktop ? 48 : 32),
+
+                    // Cards
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 400),
+                      child: isDesktop
                           ? Row(
                               mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Expanded(child: _buildContracteeCard(context)),
-                                const SizedBox(width: 24),
+                                const SizedBox(width: 32),
                                 Expanded(child: _buildContractorCard(context)),
                               ],
                             )
-                          : Column( 
+                          : Column(
                               children: [
                                 _buildContracteeCard(context),
                                 const SizedBox(height: 24),
                                 _buildContractorCard(context),
                               ],
                             ),
-                      SizedBox(height: isDesktop ? 24 : 16),
-                      if (!_isWeb)
-                        const Text(
-                          'Tip: This chooser is intended for web builds.',
-                          style: TextStyle(color: Colors.black45),
-                        ),
-                    ],
-                  ),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    if (!_isWeb)
+                      const Text(
+                        'Tip: This chooser is intended for web builds.',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                  ],
                 ),
               ),
             ),
-            Positioned(
-              bottom: 16,
-              right: 16,
-              child: TextButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const SuperAdminLoginScreen()),
-                  );
-                },
-                child: const Text(
-                  'Go to Super Admin Module',
-                  style: TextStyle(
-                    color: Colors.white,  
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
+          ),
+
+          // Super Admin Button
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: TextButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const SuperAdminLoginScreen()),
+                );
+              },
+              icon: const Icon(Icons.admin_panel_settings, color: Colors.white70),
+              label: const Text(
+                'Super Admin Module',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildContracteeCard(BuildContext context) {
     return _RoleCard(
-      color: Colors.amber[700]!,
+      color: Colors.amber[600]!,
       icon: Icons.person_outline,
       title: 'Contractee',
       description:
-          'Browse contractors, view contracts, and monitor your projects.',
+          'Browse contractors, view contracts, and monitor your projects seamlessly.',
       buttonText: 'Continue as Contractee',
       onPressed: () {
         try {
@@ -136,11 +167,11 @@ class WebsiteStartPage extends StatelessWidget {
 
   Widget _buildContractorCard(BuildContext context) {
     return _RoleCard(
-      color: Colors.amber[700]!,
+      color: Colors.amber[600]!,
       icon: Icons.engineering_outlined,
       title: 'Contractor',
       description:
-          'Sign in to bid for projects, create and manage contracts, clients, and ongoing projects.',
+          'Sign in to bid for projects, manage contracts, and track your ongoing work.',
       buttonText: 'Continue as Contractor',
       onPressed: () {
         try {
@@ -154,7 +185,6 @@ class WebsiteStartPage extends StatelessWidget {
     );
   }
 }
-
 
 class _RoleCard extends StatefulWidget {
   final Color color;
@@ -190,74 +220,75 @@ class _RoleCardState extends State<_RoleCard> {
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        transform: Matrix4.identity()..scale(_isHovered ? 1.02 : 1.0),
+        duration: const Duration(milliseconds: 250),
+        transform: Matrix4.identity()..scale(_isHovered ? 1.04 : 1.0),
+        curve: Curves.easeOut,
         child: Card(
-          elevation: _isHovered ? 12 : 6,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          color: Colors.white.withOpacity(0.9),
+          elevation: _isHovered ? 16 : 6,
+          shadowColor: widget.color.withOpacity(0.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: () {
-              widget.onPressed();
-            },
+            borderRadius: BorderRadius.circular(20),
+            onTap: widget.onPressed,
             child: Padding(
-              padding: EdgeInsets.all(isWide ? 24 : 16),
+              padding: EdgeInsets.all(isWide ? 28 : 20),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
                     decoration: BoxDecoration(
-                      color: widget.color.withOpacity(0.1),
+                      color: widget.color.withOpacity(_isHovered ? 0.25 : 0.1),
                       shape: BoxShape.circle,
                     ),
-                    padding: EdgeInsets.all(isWide ? 16 : 12), 
+                    padding: const EdgeInsets.all(18),
                     child: Icon(
                       widget.icon,
                       color: widget.color,
-                      size: isWide ? 36 : 28, 
+                      size: isWide ? 44 : 36,
                     ),
                   ),
-                  SizedBox(height: isWide ? 16 : 12),
+                  const SizedBox(height: 18),
                   Text(
                     widget.title,
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w800,
-                      fontSize: isWide ? null : 18, 
+                      fontSize: isWide ? 22 : 18,
+                      color: Colors.black87,
                     ),
                   ),
-                  SizedBox(height: isWide ? 8 : 6),
+                  const SizedBox(height: 8),
                   Text(
                     widget.description,
+                    textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.black54,
-                      fontSize: isWide ? null : 14, 
+                      fontSize: isWide ? 15 : 13,
                     ),
                   ),
-                  SizedBox(height: isWide ? 16 : 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: widget.color,
-                        foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(
-                          vertical: isWide ? 14 : 12, 
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        elevation: _isHovered ? 8 : 4,
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: widget.color,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 14,
+                        horizontal: 24,
                       ),
-                      onPressed: () {
-                        widget.onPressed();
-                      },
-                      child: Text(
-                        widget.buttonText,
-                        style: TextStyle(
-                          fontSize: isWide ? 16 : 14, 
-                          fontWeight: FontWeight.w600,
-                        ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: _isHovered ? 10 : 4,
+                    ),
+                    onPressed: widget.onPressed,
+                    child: Text(
+                      widget.buttonText,
+                      style: TextStyle(
+                        fontSize: isWide ? 16 : 14,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -270,4 +301,3 @@ class _RoleCardState extends State<_RoleCard> {
     );
   }
 }
-
