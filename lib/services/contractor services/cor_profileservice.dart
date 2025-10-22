@@ -36,12 +36,12 @@ class CorProfileService {
       for (var rating in ratingsData) {
         final contracteeData = await Supabase.instance.client
             .from('Contractee')
-            .select('first_name, last_name')
+            .select('full_name')
             .eq('contractee_id', rating['contractee_id'])
             .single();
             
         if (contracteeData.isNotEmpty) {
-          rating['client_name'] = '${contracteeData['first_name']} ${contracteeData['last_name']}';
+          rating['client_name'] = contracteeData['full_name'];
         } else {
           rating['client_name'] = 'Anonymous Client';
         }
@@ -67,7 +67,7 @@ class CorProfileService {
         'totalReviews': totalReviews,
       };
     } catch (e) {
-      throw Exception('Error loading contractor data: ');
+      throw Exception('Error loading contractor data: $e ');
     }
   }
 

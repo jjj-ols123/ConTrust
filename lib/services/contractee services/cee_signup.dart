@@ -2,6 +2,7 @@
 
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
+import 'package:contractee/pages/cee_home.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
@@ -82,7 +83,7 @@ class SignUpContractee {
           );
 
           await _errorService.logError(
-            errorMessage: 'Failed to insert contractee data for user ID ${signUpResponse.user!.id} - insert response was empty',
+            errorMessage: 'Failed to insert contractee data for user ID ${signUpResponse.user?.id} - insert response was empty',
             module: 'Contractee Sign-up',
             severity: 'High',
             extraInfo: {
@@ -97,7 +98,7 @@ class SignUpContractee {
       }
 
       await _auditService.logAuditEvent(
-        userId: signUpResponse?.user?.id,
+        userId: signUpResponse?.user?.id, 
         action: 'USER_REGISTRATION',
         details: 'Contractee account created successfully',
         metadata: {
@@ -111,12 +112,14 @@ class SignUpContractee {
       if (!context.mounted) return;
       ConTrustSnackBar.success(context, 'Account successfully created');
 
-      await Future.delayed(const Duration(seconds: 2));  
-      Navigator.pop(context);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => HomePage()),
+      );
 
     } on AuthException catch (e) {
       await _auditService.logAuditEvent(
-        userId: signUpResponse?.user?.id, 
+        userId: signUpResponse?.user?.id,  
         action: 'USER_REGISTRATION_FAILED',
         details: 'Contractee registration failed due to authentication error',
         metadata: {
@@ -135,7 +138,7 @@ class SignUpContractee {
           'operation': 'Sign Up Contractee',
           'email': email,
           'user_type': userType,
-          'users_id': signUpResponse.user?.id, 
+          'users_id': signUpResponse?.user?.id, 
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
@@ -144,7 +147,7 @@ class SignUpContractee {
       return;
     } catch (e) {
       await _auditService.logAuditEvent(
-        userId: signUpResponse?.user?.id,  
+        userId: signUpResponse?.user?.id, 
         action: 'USER_REGISTRATION_FAILED',
         details: 'Contractee registration failed due to unexpected error',
         metadata: {
@@ -163,7 +166,7 @@ class SignUpContractee {
           'operation': 'Sign Up Contractee',
           'email': email,
           'user_type': userType,
-          'users_id': signUpResponse.user?.id, 
+          'users_id': signUpResponse?.user?.id, 
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
