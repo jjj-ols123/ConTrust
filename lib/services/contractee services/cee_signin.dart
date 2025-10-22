@@ -97,17 +97,6 @@ class SignInContractee {
       }
           
     } catch (e) {
-      await _auditService.logAuditEvent(
-        userId: signInResponse != null && signInResponse.user != null ? signInResponse.user!.id : null,
-        action: 'USER_LOGIN_FAILED',
-        details: 'Contractee login failed due to error: $e',
-        metadata: {
-          'user_type': 'contractee',
-          'email': email,
-          'error_message': e.toString(),
-          'failure_reason': 'system_error',
-        },
-      );
 
       await _errorService.logError(
         errorMessage: 'Contractee sign-in failed: $e',
@@ -200,7 +189,7 @@ class SignInGoogleContractee {
           await supabase.auth.signOut();
           return;
         }
-        
+
         await _auditService.logAuditEvent(
           userId: user.id,
           action: 'USER_LOGIN',
