@@ -97,7 +97,7 @@ class SignUpContractee {
       }
 
       await _auditService.logAuditEvent(
-        userId: signUpResponse?.user?.id,
+        userId: signUpResponse?.user?.id, 
         action: 'USER_REGISTRATION',
         details: 'Contractee account created successfully',
         metadata: {
@@ -116,7 +116,7 @@ class SignUpContractee {
 
     } on AuthException catch (e) {
       await _auditService.logAuditEvent(
-        userId: signUpResponse?.user?.id, 
+        userId: signUpResponse?.user?.id,  
         action: 'USER_REGISTRATION_FAILED',
         details: 'Contractee registration failed due to authentication error',
         metadata: {
@@ -135,7 +135,7 @@ class SignUpContractee {
           'operation': 'Sign Up Contractee',
           'email': email,
           'user_type': userType,
-          'users_id': signUpResponse.user?.id, 
+          'users_id': signUpResponse?.user?.id, 
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
@@ -144,7 +144,7 @@ class SignUpContractee {
       return;
     } catch (e) {
       await _auditService.logAuditEvent(
-        userId: signUpResponse?.user?.id,  
+        userId: signUpResponse?.user?.id, 
         action: 'USER_REGISTRATION_FAILED',
         details: 'Contractee registration failed due to unexpected error',
         metadata: {
@@ -163,7 +163,7 @@ class SignUpContractee {
           'operation': 'Sign Up Contractee',
           'email': email,
           'user_type': userType,
-          'users_id': signUpResponse.user?.id, 
+          'users_id': signUpResponse?.user?.id, 
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
