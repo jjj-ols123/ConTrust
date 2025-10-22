@@ -25,6 +25,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final List<Map<String, dynamic>> _verificationFiles = [];  // [{ 'name': String, 'bytes': Uint8List, 'isImage': bool }]
 
   final bool _isUploadingVerification = false;
+  bool _isSigningUp = false;  // Add this
 
   bool get canSignUp => _verificationFiles.isNotEmpty && !_isUploadingVerification;
 
@@ -459,30 +460,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: canSignUp
+                      onPressed: canSignUp && !_isSigningUp  
                           ? () async {
-                              final signUpContractor = SignUpContractor();
-                              signUpContractor.signUpContractor(
-                                context,
-                                emailController.text,
-                                passwordController.text,
-                                "contractor",
-                                {
-                                  'user_type': "contractor",
-                                  'firmName': firmNameController.text,
-                                  'contactNumber': contactNumberController.text,
-                                  'address': addressController.text, 
-                                  'verificationFiles': _verificationFiles,  // fixed mismatch
-                                },
-                                () => validateFieldsContractor(
+                              setState(() => _isSigningUp = true);  
+                              try {
+                                final signUpContractor = SignUpContractor();
+                                await signUpContractor.signUpContractor(
                                   context,
-                                  firmNameController.text,
-                                  contactNumberController.text,
                                   emailController.text,
                                   passwordController.text,
-                                  confirmPasswordController.text,
-                                ),
-                              );
+                                  "contractor",
+                                  {
+                                    'user_type': "contractor",
+                                    'firmName': firmNameController.text,
+                                    'contactNumber': contactNumberController.text,
+                                    'address': addressController.text, 
+                                    'verificationFiles': _verificationFiles,  
+                                  },
+                                  () => validateFieldsContractor(
+                                    context,
+                                    firmNameController.text,
+                                    contactNumberController.text,
+                                    emailController.text,
+                                    passwordController.text,
+                                    confirmPasswordController.text,
+                                  ),
+                                );
+                              } finally {
+                                if (mounted) setState(() => _isSigningUp = false);  
+                              }
                             }
                           : null,
                       style: ElevatedButton.styleFrom(
@@ -493,14 +499,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         elevation: 4,
                       ),
-                      child: const Text(
-                        'Sign Up',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
+                      child: _isSigningUp
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Text(
+                              'Sign Up',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ),
                 ],
@@ -535,30 +550,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: canSignUp
+                      onPressed: canSignUp && !_isSigningUp  // Disable during sign-up
                           ? () async {
-                              final signUpContractor = SignUpContractor();
-                              signUpContractor.signUpContractor(
-                                context,
-                                emailController.text,
-                                passwordController.text,
-                                "contractor",
-                                {
-                                  'user_type': "contractor",
-                                  'firmName': firmNameController.text,
-                                  'contactNumber': contactNumberController.text,
-                                  'address': addressController.text, // added
-                                  'verificationFiles': _verificationFiles,
-                                },
-                                () => validateFieldsContractor(
+                              setState(() => _isSigningUp = true);  // Start loading
+                              try {
+                                final signUpContractor = SignUpContractor();
+                                await signUpContractor.signUpContractor(
                                   context,
-                                  firmNameController.text,
-                                  contactNumberController.text,
                                   emailController.text,
                                   passwordController.text,
-                                  confirmPasswordController.text,
-                                ),
-                              );
+                                  "contractor",
+                                  {
+                                    'user_type': "contractor",
+                                    'firmName': firmNameController.text,
+                                    'contactNumber': contactNumberController.text,
+                                    'address': addressController.text, // added
+                                    'verificationFiles': _verificationFiles,
+                                  },
+                                  () => validateFieldsContractor(
+                                    context,
+                                    firmNameController.text,
+                                    contactNumberController.text,
+                                    emailController.text,
+                                    passwordController.text,
+                                    confirmPasswordController.text,
+                                  ),
+                                );
+                              } finally {
+                                if (mounted) setState(() => _isSigningUp = false);  // Stop loading
+                              }
                             }
                           : null,
                       style: ElevatedButton.styleFrom(
@@ -569,14 +589,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         elevation: 4,
                       ),
-                      child: const Text(
-                        'Sign Up',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
+                      child: _isSigningUp
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Text(
+                              'Sign Up',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ),
                 ],
