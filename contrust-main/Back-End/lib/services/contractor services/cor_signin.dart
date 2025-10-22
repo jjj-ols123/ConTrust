@@ -38,7 +38,18 @@ class SignInContractor {
           },
         );
 
-        ConTrustSnackBar.error(context, 'Invalid email or password');
+        await _errorService.logError(
+          errorMessage: 'Contractor login failed - invalid email or password',
+          module: 'Contractor Sign-in',
+          severity: 'Low',
+          extraInfo: {
+            'operation': 'Sign In Contractor',
+            'email': email,
+            'timestamp': DateTime.now().toIso8601String(),
+          },
+        );
+
+        ConTrustSnackBar.error(context, 'Wrong password or email');
         return;
       }
 
@@ -116,7 +127,7 @@ class SignInContractor {
       await _auditService.logAuditEvent(
         userId: signInResponse.user?.id,
         action: 'USER_LOGIN_FAILED',
-        details: 'Contractor login failed due to error ',
+        details: 'Contractor login failed due to error: $e',
         metadata: {
           'user_type': 'contractor',
           'email': email,
@@ -128,7 +139,7 @@ class SignInContractor {
       await _errorService.logError(
         errorMessage: 'Contractor sign-in failed: $e',
         module: 'Contractor Sign-in',
-        severity: 'Medium',
+        severity: 'High',
         extraInfo: {
           'operation': 'Sign In Contractor',
           'email': email,
@@ -136,7 +147,7 @@ class SignInContractor {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      ConTrustSnackBar.error(context, 'Error logging in $e');
+      ConTrustSnackBar.error(context, 'Error logging in: $e');
     }
   }
 }
