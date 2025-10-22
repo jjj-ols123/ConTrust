@@ -69,10 +69,7 @@ class SignInContractor {
           .eq('users_id', user.id)
           .maybeSingle();
 
-      bool verified = false;
-      if (userRow != null && userRow['verified'] != null) {
-        verified = userRow['verified'] as bool;
-      }
+      final verified = userRow?['verified'] as bool? ?? false;
 
       if (!verified) {
         await supabase.auth.signOut();

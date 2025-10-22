@@ -10,8 +10,12 @@ class SignInContractee {
   final SuperAdminErrorService _errorService = SuperAdminErrorService();
   final SuperAdminAuditService _auditService = SuperAdminAuditService();
 
-  void signInContractee(BuildContext modalContext, String email,
-      String password, bool Function() validateFields) async {
+  void signInContractee(
+    BuildContext context,
+    String email,
+    String password,
+    bool Function() validateFields,
+  ) async {
     if (!validateFields()) {
       return;
     }
@@ -23,26 +27,26 @@ class SignInContractee {
         password: password,
       );
 
-      if (signInResponse.user == null) {
+      if (signInResponse.user?.id == null) {
         await _auditService.logAuditEvent(
           action: 'USER_LOGIN_FAILED',
-          details: 'Contractee login failed - invalid credentials',
+          details: 'Contractee login failed - no user ID returned',
           metadata: {
             'user_type': 'contractee',
             'email': email,
-            'failure_reason': 'invalid_credentials',
+            'failure_reason': 'no_user_id',
           },
         );
-
-        ConTrustSnackBar.error(modalContext, 'Invalid email or password');
+        ConTrustSnackBar.error(context, 'Authentication failed');
         return;
       }
 
-      final userType = signInResponse.user?.userMetadata?['user_type'];
+      final user = signInResponse.user!;
+      final userType = user.userMetadata?['user_type'];
 
       if (userType?.toLowerCase() != 'contractee') {
         await _auditService.logAuditEvent(
-          userId: signInResponse?.user?.id,
+          userId: user.id,
           action: 'USER_LOGIN_FAILED',
           details: 'Login attempt with wrong user type',
           metadata: {
@@ -52,18 +56,59 @@ class SignInContractee {
             'failure_reason': 'wrong_user_type',
           },
         );
-
-        ConTrustSnackBar.error(modalContext, 'Not a contractee...');
+        ConTrustSnackBar.error(context, 'Not a contractee account');
         return;
       }
 
       final supabase = Supabase.instance.client;
-      await supabase.from('Users').update({
-        'last_login': DateTime.now().toIso8601String(),
-      }).eq('users_id', signInResponse.user?.id);
+      
+      final userRow = await supabase
+          .from('Users')
+          .select('verified')
+          .eq('users_id', user.id)
+          .maybeSingle();
+
+      final verified = userRow?['verified'] as bool? ?? false;
+
+      if (!verified) {
+        await supabase.auth.signOut();
+        await _auditService.logAuditEvent(
+          userId: user.id,
+          action: 'USER_LOGIN_FAILED',
+          details: 'Contractee login blocked - account not verified',
+          metadata: {
+            'user_type': 'contractee',
+            'email': email,
+            'failure_reason': 'account_not_verified',
+          },
+        );
+        ConTrustSnackBar.show(
+          context,
+          'Please wait for your account to be verified to login',
+          type: SnackBarType.info,
+        );
+        return;
+      }
+
+      try {
+        await supabase.from('Users').update({
+          'last_login': DateTime.now().toIso8601String(),
+        }).eq('users_id', user.id);
+      } catch (e) {
+        await _errorService.logError(
+          errorMessage: 'Failed to update last_login for contractee: $e',
+          module: 'Contractee Sign-in',
+          severity: 'Low',
+          extraInfo: {
+            'operation': 'Update Last Login',
+            'users_id': user.id,
+            'timestamp': DateTime.now().toIso8601String(),
+          },
+        );
+      }
 
       await _auditService.logAuditEvent(
-        userId: signInResponse?.user?.id,
+        userId: user.id,
         action: 'USER_LOGIN',
         details: 'Contractee logged in successfully',
         metadata: {
@@ -73,16 +118,15 @@ class SignInContractee {
         },
       );
 
-      ConTrustSnackBar.success(modalContext, 'Successfully logged in');
-
-      Navigator.of(modalContext, rootNavigator: true)
-          .pushNamedAndRemoveUntil('/home', (route) => false);
-
+      ConTrustSnackBar.success(context, 'Successfully logged in');
+      Navigator.pushNamedAndRemoveUntil(
+          context, '/dashboard', (route) => false);
+          
     } catch (e) {
       await _auditService.logAuditEvent(
         userId: signInResponse?.user?.id,
         action: 'USER_LOGIN_FAILED',
-        details: 'Contractee login failed due to error',
+        details: 'Contractee login failed due to error: $e',
         metadata: {
           'user_type': 'contractee',
           'email': email,
@@ -102,7 +146,12 @@ class SignInContractee {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      ConTrustSnackBar.error(modalContext, 'Error logging in: $e');
+      
+      if (e.toString().contains('null check')) {
+        ConTrustSnackBar.error(context, 'Authentication error. Please try again.');
+      } else {
+        ConTrustSnackBar.error(context, 'Error logging in: ${e.toString()}');
+      }
     }
   }
 }
@@ -176,6 +225,36 @@ class SignInGoogleContractee {
           return;
         }
 
+        // Add verified check
+        final userRow = await supabase
+            .from('Users')
+            .select('verified')
+            .eq('users_id', user.id)
+            .maybeSingle();
+
+        final verified = userRow?['verified'] as bool? ?? false;
+
+        if (!verified) {
+          await supabase.auth.signOut();
+          await _auditService.logAuditEvent(
+            userId: user.id,
+            action: 'USER_LOGIN_FAILED',
+            details: 'Contractee Google login blocked - account not verified',
+            metadata: {
+              'user_type': 'contractee',
+              'email': user.email,
+              'login_method': 'google_oauth',
+              'failure_reason': 'account_not_verified',
+            },
+          );
+          ConTrustSnackBar.show(
+            context,
+            'Please wait for your account to be verified to login',
+            type: SnackBarType.info,
+          );
+          return;
+        }
+
         await _auditService.logAuditEvent(
           userId: user.id,
           action: 'USER_LOGIN',
@@ -188,10 +267,7 @@ class SignInGoogleContractee {
         );
 
         Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/home',
-          (route) => false,
-        );
+            context, '/dashboard', (route) => false);
       }
     } catch (e) {
       await _errorService.logError(

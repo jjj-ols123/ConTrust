@@ -45,7 +45,6 @@ class SignUpContractee {
           'users_id': signUpResponse.user?.id,
           'email': email,
           'name': data?['full_name'] ?? 'User',
-          'address': data?['address'] ?? '',
           'role': 'contractee',
           'status': 'active',
           'created_at': DateTime.now().toIso8601String(),
