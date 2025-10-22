@@ -204,7 +204,7 @@ class SignInGoogleContractee {
 
         if (context.mounted) {
           Navigator.pushNamedAndRemoveUntil(
-              context, '/dashboard', (route) => false);
+              context, '/home', (route) => false);
         }
       }
     } catch (e) {
@@ -274,7 +274,7 @@ class SignInGoogleContractee {
           context, 'Welcome! Your contractee account has been created.');
 
       Navigator.push(context, MaterialPageRoute(builder: (context) => HomePage()));
-      
+
     } catch (e) {
       await _auditService.logAuditEvent(
         action: 'USER_REGISTRATION_FAILED',
