@@ -91,11 +91,9 @@ class SignInContractee {
         },
       );
 
-      if (context.mounted) {
-        ConTrustSnackBar.success(context, 'Successfully logged in');
-        Navigator.pushNamedAndRemoveUntil(
-            context, '/home', (route) => false);
-      }
+      ConTrustSnackBar.success(context, 'Successfully logged in');
+      
+      Navigator.push(context, MaterialPageRoute(builder: (context) => HomePage()));
           
     } catch (e) {
 
