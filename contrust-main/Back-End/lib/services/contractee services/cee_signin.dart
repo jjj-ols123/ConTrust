@@ -200,40 +200,7 @@ class SignInGoogleContractee {
           await supabase.auth.signOut();
           return;
         }
-
-        // Add verified check
-        final userRow = await supabase
-            .from('Users')
-            .select('verified')
-            .eq('users_id', user.id)
-            .maybeSingle();
-
-        bool verified = false;
-        if (userRow != null && userRow['verified'] != null && userRow['verified'] is bool) {
-          verified = userRow['verified'] as bool;
-        }
-
-        if (!verified) {
-          await supabase.auth.signOut();
-          await _auditService.logAuditEvent(
-            userId: user.id,
-            action: 'USER_LOGIN_FAILED',
-            details: 'Contractee Google login blocked - account not verified',
-            metadata: {
-              'user_type': 'contractee',
-              'email': user.email,
-              'login_method': 'google_oauth',
-              'failure_reason': 'account_not_verified',
-            },
-          );
-          ConTrustSnackBar.show(
-            context,
-            'Please wait for your account to be verified to login',
-            type: SnackBarType.info,
-          );
-          return;
-        }
-
+        
         await _auditService.logAuditEvent(
           userId: user.id,
           action: 'USER_LOGIN',
