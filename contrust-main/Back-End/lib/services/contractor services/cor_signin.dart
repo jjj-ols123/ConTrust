@@ -27,37 +27,27 @@ class SignInContractor {
         password: password,
       );
 
-      if (signInResponse.user == null) {
+      // Check if user exists and has an ID
+      if (signInResponse.user?.id == null) {
         await _auditService.logAuditEvent(
           action: 'USER_LOGIN_FAILED',
-          details: 'Contractor login failed - invalid credentials',
+          details: 'Contractor login failed - no user ID returned',
           metadata: {
             'user_type': 'contractor',
             'email': email,
-            'failure_reason': 'invalid_credentials',
+            'failure_reason': 'no_user_id',
           },
         );
-
-        await _errorService.logError(
-          errorMessage: 'Contractor login failed - invalid email or password',
-          module: 'Contractor Sign-in',
-          severity: 'Low',
-          extraInfo: {
-            'operation': 'Sign In Contractor',
-            'email': email,
-            'timestamp': DateTime.now().toIso8601String(),
-          },
-        );
-
-        ConTrustSnackBar.error(context, 'Wrong password or email');
+        ConTrustSnackBar.error(context, 'Authentication failed');
         return;
       }
 
-      final userType = signInResponse.user?.userMetadata?['user_type'];
+      final user = signInResponse.user!;
+      final userType = user.userMetadata?['user_type'];
 
       if (userType?.toLowerCase() != 'contractor') {
         await _auditService.logAuditEvent(
-          userId: signInResponse?.user?.id,
+          userId: user.id,
           action: 'USER_LOGIN_FAILED',
           details: 'Login attempt with wrong user type',
           metadata: {
@@ -67,27 +57,29 @@ class SignInContractor {
             'failure_reason': 'wrong_user_type',
           },
         );
-
-        ConTrustSnackBar.error(context, 'Not a contractor...');
+        ConTrustSnackBar.error(context, 'Not a contractor account');
         return;
       }
 
       final supabase = Supabase.instance.client;
+      
+      // Safe query to Users table
       final userRow = await supabase
           .from('Users')
           .select('verified')
-          .eq('users_id', signInResponse.user?.id)
+          .eq('users_id', user.id)
           .maybeSingle();
 
-      final verified = (userRow is Map && userRow?['verified'] != null)
-          ? (userRow?['verified'] as bool)
-          : false;
+      // Safe verification check
+      bool verified = false;
+      if (userRow != null && userRow['verified'] != null) {
+        verified = userRow['verified'] as bool;
+      }
 
       if (!verified) {
-
         await supabase.auth.signOut();
         await _auditService.logAuditEvent(
-          userId: signInResponse?.user?.id,
+          userId: user.id,
           action: 'USER_LOGIN_FAILED',
           details: 'Contractor login blocked - account not verified',
           metadata: {
@@ -104,12 +96,18 @@ class SignInContractor {
         return;
       }
 
-      await supabase.from('Users').update({
-        'last_login': DateTime.now().toIso8601String(),
-      }).eq('users_id', signInResponse.user?.id);
+      // Update last_login - handle potential null
+      try {
+        await supabase.from('Users').update({
+          'last_login': DateTime.now().toIso8601String(),
+        }).eq('users_id', user.id);
+      } catch (e) {
+        // Log but don't block login for this error
+        print('Failed to update last_login: $e');
+      }
 
       await _auditService.logAuditEvent(
-        userId: signInResponse?.user?.id,
+        userId: user.id,
         action: 'USER_LOGIN',
         details: 'Contractor logged in successfully',
         metadata: {
@@ -120,10 +118,11 @@ class SignInContractor {
       );
 
       ConTrustSnackBar.success(context, 'Successfully logged in');
-
       Navigator.pushNamedAndRemoveUntil(
           context, '/dashboard', (route) => false);
+          
     } catch (e) {
+      // Safe error logging
       await _auditService.logAuditEvent(
         userId: signInResponse?.user?.id,
         action: 'USER_LOGIN_FAILED',
@@ -143,11 +142,17 @@ class SignInContractor {
         extraInfo: {
           'operation': 'Sign In Contractor',
           'email': email,
-          'users_id': signInResponse.user?.id,
+          'users_id': signInResponse?.user?.id, // Safe access
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      ConTrustSnackBar.error(context, 'Error logging in: $e');
+      
+      // Show user-friendly error message
+      if (e.toString().contains('null check')) {
+        ConTrustSnackBar.error(context, 'Authentication error. Please try again.');
+      } else {
+        ConTrustSnackBar.error(context, 'Error logging in: ${e.toString()}');
+      }
     }
   }
 }
