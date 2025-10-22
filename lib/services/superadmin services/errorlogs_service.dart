@@ -1,5 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:convert';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SuperAdminErrorService {
@@ -196,29 +198,42 @@ class SuperAdminErrorService {
     }
   }
 
-  Future<void> logError({
-    String? userId,
-    required String errorMessage,
-    String? stackTrace,
-    String? module,
-    String? severity = 'medium',
-    Map<String, dynamic>? extraInfo,
-  }) async {
-    try {
-      await _supabase.from('ErrorLogs').insert({
-        'users_id': userId,
-        'error_message': errorMessage,
-        'stack_trace': stackTrace,
-        'module': module,
-        'severity': severity,
-        'timestamp': DateTime.now().toIso8601String(),
-        'resolved': false,
-        'extra_info': extraInfo,
+ Future<void> logError({
+  String? userId,
+  required String errorMessage,
+  String? stackTrace,
+  String? module,
+  String? severity = 'medium',
+  Map<String, dynamic>? extraInfo,
+}) async {
+  try {
+    Map<String, dynamic>? safeExtraInfo;
+    if (extraInfo != null) {
+      safeExtraInfo = extraInfo.map((key, value) {
+        if (value is DateTime) {
+          return MapEntry(key, value.toIso8601String());
+        }
+        if (value is! String && value is! num && value is! bool && value != null) {
+          return MapEntry(key, value.toString());
+        }
+        return MapEntry(key, value);
       });
-    } catch (e) {
-      throw Exception('Failed to log error: ');
     }
+
+    await _supabase.from('ErrorLogs').insert({
+      'users_id': userId,
+      'error_message': errorMessage,
+      'stack_trace': stackTrace,
+      'module': module,
+      'severity': severity,
+      'timestamp': DateTime.now().toIso8601String(),
+      'resolved': false,
+      'extra_info': safeExtraInfo != null ? jsonEncode(safeExtraInfo) : null,
+    });
+  } catch (e) {
+    print('Failed to log error: $e');
   }
+}
 
   Future<void> markErrorResolved(String errorId) async {
     try {
