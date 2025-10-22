@@ -11,111 +11,127 @@ class SignInContractee {
   final SuperAdminErrorService _errorService = SuperAdminErrorService();
   final SuperAdminAuditService _auditService = SuperAdminAuditService();
 
-  void signInContractee(
+  void signUpContractee(
     BuildContext context,
     String email,
     String password,
+    String userType,
+    Map<String, dynamic>? data,
     bool Function() validateFields,
   ) async {
     if (!validateFields()) {
       return;
     }
 
-    dynamic signInResponse;
+    dynamic signUpResponse;
     try {
-      signInResponse = await UserService().signIn(
+      signUpResponse = await UserService().signUp(
         email: email,
         password: password,
+        data: data,
       );
 
-      if (signInResponse == null || signInResponse.user == null || signInResponse.user!.id == null) {
-        await _auditService.logAuditEvent(
-          action: 'USER_LOGIN_FAILED',
-          details: 'Contractee login failed - no user ID returned',
-          metadata: {
-            'user_type': 'contractee',
-            'email': email,
-            'failure_reason': 'no_user_id',
-          },
-        );
-        ConTrustSnackBar.error(context, 'Authentication failed');
+      if (signUpResponse.user == null) {
+        if (!context.mounted) return;
+        ConTrustSnackBar.success(context, 'Account created! Please check your email to confirm and complete registration.');
+        Navigator.push(context, MaterialPageRoute(builder: (context) => HomePage()));
         return;
       }
 
-      final user = signInResponse.user!;
-      final userType = user.userMetadata != null ? user.userMetadata!['user_type'] : null;
-
-      if (userType == null || userType.toLowerCase() != 'contractee') {
-        await _auditService.logAuditEvent(
-          userId: user.id,
-          action: 'USER_LOGIN_FAILED',
-          details: 'Login attempt with wrong user type',
-          metadata: {
-            'user_type': userType,
-            'expected_type': 'contractee',
-            'email': email,
-            'failure_reason': 'wrong_user_type',
-          },
-        );
-        ConTrustSnackBar.error(context, 'Not a contractee account');
-        return;
-      }
-
+      final user = signUpResponse.user!;
+      
       final supabase = Supabase.instance.client;
- 
-      try {
-        await supabase.from('Users').update({
-          'last_login': DateTime.now().toIso8601String(),
-        }).eq('users_id', user.id);
-      } catch (e) {
-        await _errorService.logError(
-          errorMessage: 'Failed to update last_login for contractee: $e',
-          module: 'Contractee Sign-in',
-          severity: 'Low',
-          extraInfo: {
-            'operation': 'Update Last Login',
-            'users_id': user.id,
-            'timestamp': DateTime.now().toIso8601String(),
-          },
-        );
+
+      await supabase.from('Users').upsert({
+        'users_id': user.id,
+        'email': email,
+        'name': data?['full_name'] ?? 'Contractee',
+        'role': 'contractee',
+        'status': 'active',
+        'created_at': DateTime.now().toIso8601String(),
+        'last_login': DateTime.now().toIso8601String(),
+        'profile_image_url': data?['profilePhoto'],
+        'phone_number': data?['phone_number'] ?? '',
+        'verified': false,
+      }, onConflict: 'users_id');
+
+      final insertResponse = await supabase.from('Contractee').insert({
+        'contractee_id': user.id,
+        'full_name': data?['full_name'] ?? 'Contractee',
+        'address': data?['address'] ?? '',
+        'created_at': DateTime.now().toUtc().toIso8601String(),
+      }).select();
+
+      if (insertResponse.isEmpty) {
+        throw Exception('Failed to save contractee data');
       }
 
       await _auditService.logAuditEvent(
         userId: user.id,
-        action: 'USER_LOGIN',
-        details: 'Contractee logged in successfully',
+        action: 'USER_REGISTRATION',
+        details: 'Contractee account created successfully',
         metadata: {
-          'user_type': 'contractee',
+          'user_type': userType,
           'email': email,
-          'login_method': 'email_password',
+          'full_name': data?['full_name'],
+          'registration_method': 'email_password',
         },
       );
 
-      ConTrustSnackBar.success(context, 'Successfully logged in');
-      
+      if (!context.mounted) return;
+      ConTrustSnackBar.success(context, 'Account successfully created');
+      await Future.delayed(const Duration(seconds: 2));
       Navigator.push(context, MaterialPageRoute(builder: (context) => HomePage()));
-          
-    } catch (e) {
+
+    } on AuthException catch (e) {
+      await _auditService.logAuditEvent(
+        action: 'USER_REGISTRATION_FAILED',
+        details: 'Contractee registration failed due to authentication error',
+        metadata: {
+          'user_type': userType,
+          'email': email,
+          'error_type': 'AuthException',
+          'error_message': e.message,
+        },
+      );
 
       await _errorService.logError(
-        errorMessage: 'Contractee sign-in failed: $e',
-        module: 'Contractee Sign-in',
-        severity: 'High',
+        errorMessage: 'Contractee sign-up failed - AuthException: ${e.message}',
+        module: 'Contractee Sign-up',
+        severity: 'Medium',
         extraInfo: {
-          'operation': 'Sign In Contractee',
+          'operation': 'Sign Up Contractee',
           'email': email,
-          'users_id': signInResponse != null && signInResponse.user != null ? signInResponse.user!.id : null,
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      
-      if (context.mounted) {
-        if (e.toString().contains('null check')) {
-          ConTrustSnackBar.error(context, 'Authentication error. Please try again.');
-        } else {
-          ConTrustSnackBar.error(context, 'Error logging in: ${e.toString()}');
-        }
-      }
+      if (!context.mounted) return;
+      ConTrustSnackBar.error(context, 'Error creating account: ${e.message}');
+      return;
+    } catch (e) {
+      await _auditService.logAuditEvent(
+        action: 'USER_REGISTRATION_FAILED',
+        details: 'Contractee registration failed due to unexpected error',
+        metadata: {
+          'user_type': userType,
+          'email': email,
+          'error_type': 'UnexpectedError',
+          'error_message': e.toString(),
+        },
+      );
+
+      await _errorService.logError(
+        errorMessage: 'Contractee sign-up failed - Unexpected error: $e',
+        module: 'Contractee Sign-up',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Sign Up Contractee',
+          'email': email,
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+      if (!context.mounted) return;
+      ConTrustSnackBar.error(context, 'Unexpected error: $e');
     }
   }
 }
