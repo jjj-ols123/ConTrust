@@ -42,7 +42,7 @@ class SignInContractee {
 
       if (userType?.toLowerCase() != 'contractee') {
         await _auditService.logAuditEvent(
-          userId: signInResponse.user!.id,
+          userId: signInResponse?.user!.id,
           action: 'USER_LOGIN_FAILED',
           details: 'Login attempt with wrong user type',
           metadata: {
@@ -63,7 +63,7 @@ class SignInContractee {
       }).eq('users_id', signInResponse.user!.id);
 
       await _auditService.logAuditEvent(
-        userId: signInResponse.user!.id,
+        userId: signInResponse?.user!.id,
         action: 'USER_LOGIN',
         details: 'Contractee logged in successfully',
         metadata: {
@@ -80,7 +80,7 @@ class SignInContractee {
 
     } catch (e) {
       await _auditService.logAuditEvent(
-        userId: signInResponse.user?.id,
+        userId: signInResponse?.user?.id,
         action: 'USER_LOGIN_FAILED',
         details: 'Contractee login failed due to error',
         metadata: {
@@ -98,7 +98,7 @@ class SignInContractee {
         extraInfo: {
           'operation': 'Sign In Contractee',
           'email': email,
-          'users_id': signInResponse.user?.id,
+          'users_id': signInResponse?.user?.id,
           'timestamp': DateTime.now().toIso8601String(),
         },
       );

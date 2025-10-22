@@ -1,3 +1,4 @@
+// ignore_for_file: use_build_context_synchronously_user_service.dart';
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
@@ -166,7 +167,7 @@ class SignUpContractor {
       Navigator.pop(context);
     } on AuthException catch (e) {
       await _auditService.logAuditEvent(
-        userId: signUpResponse.user?.id,
+        userId: signUpResponse?.user?.id, 
         action: 'USER_REGISTRATION_FAILED',
         details: 'Contractor registration failed due to authentication error',
         metadata: {
@@ -185,7 +186,7 @@ class SignUpContractor {
           'operation': 'Sign Up Contractor',
           'email': email,
           'user_type': userType,
-          'users_id': signUpResponse.user?.id,
+          'users_id': signUpResponse?.user?.id, 
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
@@ -194,7 +195,7 @@ class SignUpContractor {
       return;
     } catch (e) {
       await _auditService.logAuditEvent(
-        userId: signUpResponse.user?.id,
+        userId: signUpResponse?.user?.id,  
         action: 'USER_REGISTRATION_FAILED',
         details: 'Contractor registration failed due to unexpected error',
         metadata: {
@@ -213,7 +214,7 @@ class SignUpContractor {
           'operation': 'Sign Up Contractor',
           'email': email,
           'user_type': userType,
-          'users_id': signUpResponse.user?.id,
+          'users_id': signUpResponse?.user?.id,  
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
