@@ -126,7 +126,7 @@ class SignInContractor {
       );
 
       await _errorService.logError(
-        errorMessage: 'Contractor sign-in failed: ',
+        errorMessage: 'Contractor sign-in failed: $e',
         module: 'Contractor Sign-in',
         severity: 'Medium',
         extraInfo: {
@@ -136,7 +136,7 @@ class SignInContractor {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      ConTrustSnackBar.error(context, 'Error logging in: ');
+      ConTrustSnackBar.error(context, 'Error logging in $e');
     }
   }
 }
