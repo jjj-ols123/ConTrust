@@ -27,7 +27,7 @@ class SignInContractee {
         password: password,
       );
 
-      if (signInResponse.user?.id == null) {
+      if (signInResponse == null || signInResponse.user == null || signInResponse.user!.id == null) {
         await _auditService.logAuditEvent(
           action: 'USER_LOGIN_FAILED',
           details: 'Contractee login failed - no user ID returned',
@@ -42,9 +42,9 @@ class SignInContractee {
       }
 
       final user = signInResponse.user!;
-      final userType = user.userMetadata?['user_type'];
+      final userType = user.userMetadata != null ? user.userMetadata!['user_type'] : null;
 
-      if (userType?.toLowerCase() != 'contractee') {
+      if (userType == null || userType.toLowerCase() != 'contractee') {
         await _auditService.logAuditEvent(
           userId: user.id,
           action: 'USER_LOGIN_FAILED',
@@ -62,6 +62,37 @@ class SignInContractee {
 
       final supabase = Supabase.instance.client;
       
+      final userRow = await supabase
+          .from('Users')
+          .select('verified')
+          .eq('users_id', user.id)
+          .maybeSingle();
+
+      bool verified = false;
+      if (userRow != null && userRow['verified'] != null && userRow['verified'] is bool) {
+        verified = userRow['verified'] as bool;
+      }
+
+      if (!verified) {
+        await supabase.auth.signOut();
+        await _auditService.logAuditEvent(
+          userId: user.id,
+          action: 'USER_LOGIN_FAILED',
+          details: 'Contractee login blocked - account not verified',
+          metadata: {
+            'user_type': 'contractee',
+            'email': email,
+            'failure_reason': 'account_not_verified',
+          },
+        );
+        ConTrustSnackBar.show(
+          context,
+          'Please wait for your account to be verified to login',
+          type: SnackBarType.info,
+        );
+        return;
+      }
+
       try {
         await supabase.from('Users').update({
           'last_login': DateTime.now().toIso8601String(),
@@ -90,13 +121,15 @@ class SignInContractee {
         },
       );
 
-      ConTrustSnackBar.success(context, 'Successfully logged in');
-      Navigator.pushNamedAndRemoveUntil(
-          context, '/dashboard', (route) => false);
+      if (context.mounted) {
+        ConTrustSnackBar.success(context, 'Successfully logged in');
+        Navigator.pushNamedAndRemoveUntil(
+            context, '/dashboard', (route) => false);
+      }
           
     } catch (e) {
       await _auditService.logAuditEvent(
-        userId: signInResponse?.user?.id,
+        userId: signInResponse != null && signInResponse.user != null ? signInResponse.user!.id : null,
         action: 'USER_LOGIN_FAILED',
         details: 'Contractee login failed due to error: $e',
         metadata: {
@@ -114,15 +147,17 @@ class SignInContractee {
         extraInfo: {
           'operation': 'Sign In Contractee',
           'email': email,
-          'users_id': signInResponse?.user?.id,
+          'users_id': signInResponse != null && signInResponse.user != null ? signInResponse.user!.id : null,
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
       
-      if (e.toString().contains('null check')) {
-        ConTrustSnackBar.error(context, 'Authentication error. Please try again.');
-      } else {
-        ConTrustSnackBar.error(context, 'Error logging in: ${e.toString()}');
+      if (context.mounted) {
+        if (e.toString().contains('null check')) {
+          ConTrustSnackBar.error(context, 'Authentication error. Please try again.');
+        } else {
+          ConTrustSnackBar.error(context, 'Error logging in: ${e.toString()}');
+        }
       }
     }
   }
@@ -176,8 +211,8 @@ class SignInGoogleContractee {
       if (existingContractee == null) {
         await setupContractee(context, user);
       } else {
-        final userType = user.userMetadata?['user_type'];
-        if (userType?.toLowerCase() != 'contractee') {
+        final userType = user.userMetadata != null ? user.userMetadata!['user_type'] : null;
+        if (userType == null || userType.toLowerCase() != 'contractee') {
           await _auditService.logAuditEvent(
             userId: user.id,
             action: 'USER_LOGIN_FAILED',
@@ -204,7 +239,10 @@ class SignInGoogleContractee {
             .eq('users_id', user.id)
             .maybeSingle();
 
-        final verified = userRow?['verified'] as bool? ?? false;
+        bool verified = false;
+        if (userRow != null && userRow['verified'] != null && userRow['verified'] is bool) {
+          verified = userRow['verified'] as bool;
+        }
 
         if (!verified) {
           await supabase.auth.signOut();
@@ -238,8 +276,10 @@ class SignInGoogleContractee {
           },
         );
 
-        Navigator.pushNamedAndRemoveUntil(
-            context, '/dashboard', (route) => false);
+        if (context.mounted) {
+          Navigator.pushNamedAndRemoveUntil(
+              context, '/dashboard', (route) => false);
+        }
       }
     } catch (e) {
       await _errorService.logError(
@@ -252,7 +292,9 @@ class SignInGoogleContractee {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      ConTrustSnackBar.error(context, 'Sign-in failed: $e');
+      if (context.mounted) {
+        ConTrustSnackBar.error(context, 'Sign-in failed: $e');
+      }
     }
   }
 

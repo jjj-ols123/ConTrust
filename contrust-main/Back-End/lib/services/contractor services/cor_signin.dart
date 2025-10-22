@@ -28,7 +28,7 @@ class SignInContractor {
         password: password,
       );
 
-      if (signInResponse.user?.id == null) {
+      if (signInResponse == null || signInResponse.user == null || signInResponse.user!.id == null) {
         await _auditService.logAuditEvent(
           action: 'USER_LOGIN_FAILED',
           details: 'Contractor login failed - no user ID returned',
@@ -43,9 +43,9 @@ class SignInContractor {
       }
 
       final user = signInResponse.user!;
-      final userType = user.userMetadata?['user_type'];
+      final userType = user.userMetadata != null ? user.userMetadata!['user_type'] : null;
 
-      if (userType?.toLowerCase() != 'contractor') {
+      if (userType == null || userType.toLowerCase() != 'contractor') {
         await _auditService.logAuditEvent(
           userId: user.id,
           action: 'USER_LOGIN_FAILED',
@@ -69,7 +69,10 @@ class SignInContractor {
           .eq('users_id', user.id)
           .maybeSingle();
 
-      final verified = (userRow?['verified'] is bool) ? (userRow!['verified'] as bool) : false;
+      bool verified = false;
+      if (userRow != null && userRow['verified'] != null && userRow['verified'] is bool) {
+        verified = userRow['verified'] as bool;
+      }
 
       if (!verified) {
         await supabase.auth.signOut();
@@ -120,16 +123,15 @@ class SignInContractor {
         },
       );
 
-      ConTrustSnackBar.success(context, 'Successfully logged in');
-
-      if (!context.mounted) return;
-
-      Navigator.pushNamedAndRemoveUntil(
-          context, '/dashboard', (route) => false);
+      if (context.mounted) {
+        ConTrustSnackBar.success(context, 'Successfully logged in');
+        Navigator.pushNamedAndRemoveUntil(
+            context, '/dashboard', (route) => false);
+      }
           
     } catch (e) {
       await _auditService.logAuditEvent(
-        userId: signInResponse?.user?.id,
+        userId: signInResponse != null && signInResponse.user != null ? signInResponse.user!.id : null,
         action: 'USER_LOGIN_FAILED',
         details: 'Contractor login failed due to error: $e',
         metadata: {
@@ -147,17 +149,17 @@ class SignInContractor {
         extraInfo: {
           'operation': 'Sign In Contractor',
           'email': email,
-          'users_id': signInResponse?.user?.id,
+          'users_id': signInResponse != null && signInResponse.user != null ? signInResponse.user!.id : null,
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
       
-      if (!context.mounted) return;
-
-      if (e.toString().contains('null check')) {
-        ConTrustSnackBar.error(context, 'Authentication error. Please try again.');
-      } else {
-        ConTrustSnackBar.error(context, 'Error logging in: ${e.toString()}');
+      if (context.mounted) {
+        if (e.toString().contains('null check')) {
+          ConTrustSnackBar.error(context, 'Authentication error. Please try again.');
+        } else {
+          ConTrustSnackBar.error(context, 'Error logging in: ${e.toString()}');
+        }
       }
     }
   }
@@ -173,17 +175,7 @@ class SignInGoogleContractor {
       await supabase.auth.signInWithOAuth(
         OAuthProvider.google,
       );
-
-      supabase.auth.onAuthStateChange.listen((data) {
-        final event = data.event;
-        final user = data.session?.user;
-
-        if (event == AuthChangeEvent.signedIn && user != null) {
-          handleSignIn(context, user);
-        } else if (event == AuthChangeEvent.signedOut) {
-          ConTrustSnackBar.warning(context, 'Signed in cancelled');
-        }
-      });
+      // Removed the listen—AuthRedirectPage handles auth state changes globally
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Google sign-in failed for contractor: $e',
@@ -211,8 +203,8 @@ class SignInGoogleContractor {
       if (existingContractor == null) {
         await setupContractor(context, user);
       } else {
-        final userType = user.userMetadata?['user_type'];
-        if (userType?.toLowerCase() != 'contractor') {
+        final userType = user.userMetadata != null ? user.userMetadata!['user_type'] : null;
+        if (userType == null || userType.toLowerCase() != 'contractor') {
           await _auditService.logAuditEvent(
             userId: user.id,
             action: 'USER_LOGIN_FAILED',
@@ -232,6 +224,39 @@ class SignInGoogleContractor {
           return;
         }
 
+        // Add verified check
+        final userRow = await supabase
+            .from('Users')
+            .select('verified')
+            .eq('users_id', user.id)
+            .maybeSingle();
+
+        bool verified = false;
+        if (userRow != null && userRow['verified'] != null && userRow['verified'] is bool) {
+          verified = userRow['verified'] as bool;
+        }
+
+        if (!verified) {
+          await supabase.auth.signOut();
+          await _auditService.logAuditEvent(
+            userId: user.id,
+            action: 'USER_LOGIN_FAILED',
+            details: 'Contractor Google login blocked - account not verified',
+            metadata: {
+              'user_type': 'contractor',
+              'email': user.email,
+              'login_method': 'google_oauth',
+              'failure_reason': 'account_not_verified',
+            },
+          );
+          ConTrustSnackBar.show(
+            context,
+            'Please wait for your account to be verified to login',
+            type: SnackBarType.info,
+          );
+          return;
+        }
+
         await _auditService.logAuditEvent(
           userId: user.id,
           action: 'USER_LOGIN',
@@ -243,8 +268,10 @@ class SignInGoogleContractor {
           },
         );
 
-        Navigator.pushNamedAndRemoveUntil(
-            context, '/dashboard', (route) => false);
+        if (context.mounted) {
+          Navigator.pushNamedAndRemoveUntil(
+              context, '/dashboard', (route) => false);
+        }
       }
     } catch (e) {
       await _errorService.logError(
@@ -257,7 +284,9 @@ class SignInGoogleContractor {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      ConTrustSnackBar.error(context, 'Sign-in failed: $e');
+      if (context.mounted) {
+        ConTrustSnackBar.error(context, 'Sign-in failed: $e');
+      }
     }
   }
 
