@@ -49,13 +49,15 @@ class _MyAppState extends State<MyApp> {
       debugShowCheckedModeBanner: false,
       home: initialPage,
       routes: {
-        '/welcome': (context) => const WelcomePage(),
+        '/': (context) => const AuthRedirectPage(),
         '/login': (context) => const LoginPage(),
-        '/home': (context) => const HomePage(),
-        '/auth/callback': (context) => const AuthRedirectPage(),
-        '/dashboard': (context) => _session != null 
-    ? DashboardScreen(contractorId: _session!.user.id) 
-    : const LoginPage(),  
+        '/dashboard': (context) {
+          final user = Supabase.instance.client.auth.currentUser;
+          if (user == null) {
+            return const LoginPage(); 
+          }
+          return DashboardScreen(contractorId: user.id);
+        },
       },
     );
   }
