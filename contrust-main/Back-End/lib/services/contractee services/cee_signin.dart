@@ -92,7 +92,7 @@ class SignInContractee {
       );
 
       await _errorService.logError(
-        errorMessage: 'Contractee sign-in failed: ',
+        errorMessage: 'Contractee sign-in failed: $e',
         module: 'Contractee Sign-in',
         severity: 'High',
         extraInfo: {
@@ -102,7 +102,7 @@ class SignInContractee {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      ConTrustSnackBar.error(modalContext, 'Error logging in: ');
+      ConTrustSnackBar.error(modalContext, 'Error logging in: $e ');
     }
   }
 }
