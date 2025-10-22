@@ -57,7 +57,7 @@ class SignInContractor {
 
       if (userType?.toLowerCase() != 'contractor') {
         await _auditService.logAuditEvent(
-          userId: signInResponse.user!.id,
+          userId: signInResponse?.user!.id,
           action: 'USER_LOGIN_FAILED',
           details: 'Login attempt with wrong user type',
           metadata: {
@@ -87,7 +87,7 @@ class SignInContractor {
 
         await supabase.auth.signOut();
         await _auditService.logAuditEvent(
-          userId: signInResponse.user!.id,
+          userId: signInResponse?.user!.id,
           action: 'USER_LOGIN_FAILED',
           details: 'Contractor login blocked - account not verified',
           metadata: {
@@ -109,7 +109,7 @@ class SignInContractor {
       }).eq('users_id', signInResponse.user!.id);
 
       await _auditService.logAuditEvent(
-        userId: signInResponse.user!.id,
+        userId: signInResponse?.user!.id,
         action: 'USER_LOGIN',
         details: 'Contractor logged in successfully',
         metadata: {
@@ -125,7 +125,7 @@ class SignInContractor {
           context, '/dashboard', (route) => false);
     } catch (e) {
       await _auditService.logAuditEvent(
-        userId: signInResponse.user?.id,
+        userId: signInResponse?.user?.id,
         action: 'USER_LOGIN_FAILED',
         details: 'Contractor login failed due to error: $e',
         metadata: {

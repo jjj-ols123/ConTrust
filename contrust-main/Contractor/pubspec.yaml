@@ -82,9 +82,9 @@ flutter:
   uses-material-design: true
 
   assets:
-    - kitchen.jpg
-    - bgloginscreen.jpg
-    - googleicon.png
+    - assets/images/kitchen.jpg
+    - assets/images/bgloginscreen.jpg
+    - assets/images/googleicon.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

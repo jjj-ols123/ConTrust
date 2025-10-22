@@ -70,7 +70,7 @@ class SignUpContractee {
 
         if (insertResponse.isEmpty) {
           await _auditService.logAuditEvent(
-            userId: signUpResponse.user!.id,
+            userId: signUpResponse?.user!.id,
             action: 'USER_REGISTRATION_FAILED',
             details: 'Contractee registration failed - data insertion error',
             metadata: {
@@ -97,7 +97,7 @@ class SignUpContractee {
       }
 
       await _auditService.logAuditEvent(
-        userId: signUpResponse.user!.id,
+        userId: signUpResponse?.user!.id,
         action: 'USER_REGISTRATION',
         details: 'Contractee account created successfully',
         metadata: {
@@ -113,7 +113,7 @@ class SignUpContractee {
       Navigator.pop(context);
     } on AuthException catch (e) {
       await _auditService.logAuditEvent(
-        userId: signUpResponse.user?.id, 
+        userId: signUpResponse?.user?.id, 
         action: 'USER_REGISTRATION_FAILED',
         details: 'Contractee registration failed due to authentication error',
         metadata: {
@@ -141,7 +141,7 @@ class SignUpContractee {
       return;
     } catch (e) {
       await _auditService.logAuditEvent(
-        userId: signUpResponse.user?.id,  
+        userId: signUpResponse?.user?.id,  
         action: 'USER_REGISTRATION_FAILED',
         details: 'Contractee registration failed due to unexpected error',
         metadata: {

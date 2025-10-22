@@ -38,7 +38,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('bgloginscreen.jpg'),
+            image: AssetImage('images/bgloginscreen.jpg'),
             fit: BoxFit.cover,
           ),
         ),
@@ -218,7 +218,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       children: [
         Column(
           children: [
-            Image.asset('logo3.png', width: 80, height: 80),
+            Image.asset('images/logo3.png', width: 80, height: 80),
             const SizedBox(height: 16),
             Text(
               'Join ConTrust',

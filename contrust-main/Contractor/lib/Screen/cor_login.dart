@@ -16,7 +16,7 @@ class LoginScreen extends StatelessWidget {
       body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('bgloginscreen.jpg'),
+            image: AssetImage('images/bgloginscreen.jpg'),
             fit: BoxFit.cover,
           ),
         ),
@@ -29,7 +29,7 @@ class LoginScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Image.asset(
-                      'logo3.png',
+                      'images/logo3.png',
                       width: screenWidth * 0.18,
                     ),
                     const SizedBox(height: 25),
