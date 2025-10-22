@@ -36,10 +36,14 @@ class SignUpContractor {
 
     dynamic signUpResponse;
     try {
+
+      Map<String, dynamic> signUpData = Map.from(data ?? {});
+      signUpData.remove('verificationFiles');
+
       signUpResponse = await UserService().signUp(
         email: email,
         password: password,
-        data: data,
+        data: signUpData,
       );
 
       if (!context.mounted) return;
