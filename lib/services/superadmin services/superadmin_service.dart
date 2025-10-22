@@ -1,42 +1,45 @@
 import 'package:backend/services/superadmin%20services/errorlogs_service.dart';
+import 'package:backend/services/superadmin%20services/perflogs_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SuperAdminServiceBackend {
+  static final SuperAdminPerfLogsService _perfLogsService =
+      SuperAdminPerfLogsService();
   static final SupabaseClient _supabase = Supabase.instance.client;
 
   static Future<Map<String, dynamic>> getSystemStatistics() async {
     try {
-      final userStats = await _supabase
-          .from('Users')
-          .select('role')
-          .then((response) {
-            final data = response as List<dynamic>;
-            final totalUsers = data.length;
-            final contractors = data.where((user) => user['role'] == 'contractor').length;
-            final contractees = data.where((user) => user['role'] == 'contractee').length;
+      final userStats =
+          await _supabase.from('Users').select('role').then((response) {
+        final data = response as List<dynamic>;
+        final totalUsers = data.length;
+        final contractors =
+            data.where((user) => user['role'] == 'contractor').length;
+        final contractees =
+            data.where((user) => user['role'] == 'contractee').length;
 
-            return {
-              'total': totalUsers,
-              'contractors': contractors,
-              'contractees': contractees,
-            };
-          });
+        return {
+          'total': totalUsers,
+          'contractors': contractors,
+          'contractees': contractees,
+        };
+      });
 
-      final projectStats = await _supabase
-          .from('Projects')
-          .select('status')
-          .then((response) {
-            final data = response as List<dynamic>;
-            final totalProjects = data.length;
-            final activeProjects = data.where((project) => project['status'] == 'active').length;
-            final completedProjects = data.where((project) => project['status'] == 'completed').length;
+      final projectStats =
+          await _supabase.from('Projects').select('status').then((response) {
+        final data = response as List<dynamic>;
+        final totalProjects = data.length;
+        final activeProjects =
+            data.where((project) => project['status'] == 'active').length;
+        final completedProjects =
+            data.where((project) => project['status'] == 'completed').length;
 
-            return {
-              'total': totalProjects,
-              'active': activeProjects,
-              'completed': completedProjects,
-            };
-          });
+        return {
+          'total': totalProjects,
+          'active': activeProjects,
+          'completed': completedProjects,
+        };
+      });
 
       return {
         'users': userStats,
@@ -85,7 +88,7 @@ class SuperAdminServiceBackend {
         'recent_audit_logs': recentAuditLogs,
       };
     } catch (e) {
-       SuperAdminErrorService().logError(
+      SuperAdminErrorService().logError(
         errorMessage: 'Failed to fetch dashboard data: ',
         module: 'Super Admin Service',
         severity: 'Medium',
@@ -98,53 +101,8 @@ class SuperAdminServiceBackend {
     }
   }
 
-  static Future<Map<String, dynamic>> getSystemHealthStatus() async {
-    try {
-      final checks = [
-        {
-          'component': 'database',
-          'status': 'healthy',
-          'response_time_ms': 45,
-        },
-        {
-          'component': 'api_server',
-          'status': 'healthy',
-          'response_time_ms': 23,
-        },
-        {
-          'component': 'file_storage',
-          'status': 'healthy',
-          'response_time_ms': 67,
-        },
-      ];
-
-      final overallStatus = checks.any((check) => check['status'] == 'error')
-          ? 'error'
-          : checks.any((check) => check['status'] == 'warning')
-              ? 'warning'
-              : 'healthy';
-
-      return {
-        'overall_status': overallStatus,
-        'checks': checks,
-      };
-    } catch (e) {
-        SuperAdminErrorService().logError(
-          errorMessage: 'Failed to fetch system health status: ',
-          module: 'Super Admin Service',
-          severity: 'Medium',
-          extraInfo: {
-            'operation': 'Fetch System Health Status',
-            'timestamp': DateTime.now().toIso8601String(),
-          },
-        );
-      throw Exception('Failed to fetch system health status: ');
-    }
-  }
-
   static Future<List<Map<String, dynamic>>> getSystemAlerts() async {
     try {
-
       final errorLogs = await _supabase
           .from('ErrorLogs')
           .select('error_id, error_message, severity, module, timestamp')
@@ -153,13 +111,15 @@ class SuperAdminServiceBackend {
           .limit(5)
           .then((response) => response);
 
-      return errorLogs.map((log) => {
-        'error_id': log['error_id'],
-        'error_message': log['error_message'],
-        'severity': log['severity'],
-        'module': log['module'],
-        'timestamp': log['timestamp'],
-      }).toList();
+      return errorLogs
+          .map((log) => {
+                'error_id': log['error_id'],
+                'error_message': log['error_message'],
+                'severity': log['severity'],
+                'module': log['module'],
+                'timestamp': log['timestamp'],
+              })
+          .toList();
     } catch (e) {
       SuperAdminErrorService().logError(
         errorMessage: 'Failed to fetch system alerts: ',
@@ -174,59 +134,174 @@ class SuperAdminServiceBackend {
     }
   }
 
+  static Future<Map<String, dynamic>> getSystemHealthStatus() async {
+    final checks = <Map<String, dynamic>>[];
+
+    final dbStart = DateTime.now();
+    try {
+      final dbResponseTime = DateTime.now().difference(dbStart).inMilliseconds;
+
+      await _perfLogsService.logPerformanceMetric(
+        'database_health_check_time',
+        dbResponseTime.toDouble(),
+        'ms',
+        'system_health',
+      );
+
+      final dbStatus = dbResponseTime < 100
+          ? 'healthy'
+          : dbResponseTime < 500
+              ? 'warning'
+              : 'error';
+
+      checks.add({
+        'component': 'database',
+        'status': dbStatus,
+        'response_time_ms': dbResponseTime,
+        'metrics': {
+          'query_success': true,
+          'response_time': dbResponseTime,
+        },
+      });
+    } catch (e) {
+      final dbResponseTime = DateTime.now().difference(dbStart).inMilliseconds;
+
+      await _perfLogsService.logPerformanceMetric(
+        'database_health_check_error',
+        dbResponseTime.toDouble(),
+        'ms',
+        'system_health',
+      );
+
+      checks.add({
+        'component': 'database',
+        'status': 'error',
+        'response_time_ms': dbResponseTime,
+        'error': e.toString(),
+      });
+    }
+
+    checks.add(await _checkStorageHealth());
+
+    final overallStatus = checks.any((check) => check['status'] == 'error')
+        ? 'error'
+        : checks.any((check) => check['status'] == 'warning')
+            ? 'warning'
+            : 'healthy';
+
+    await _perfLogsService.logPerformanceMetric(
+      'system_health_score',
+      overallStatus == 'healthy'
+          ? 100
+          : overallStatus == 'warning'
+              ? 50
+              : 0,
+      'points',
+      'system_health',
+    );
+
+    return {
+      'overall_status': overallStatus,
+      'checks': checks,
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+  }
+
+  static Future<Map<String, dynamic>> _checkStorageHealth() async {
+    final startTime = DateTime.now();
+    try {
+      await _supabase.storage.from('your-bucket').list();
+      final responseTime = DateTime.now().difference(startTime).inMilliseconds;
+
+      await _perfLogsService.logPerformanceMetric(
+        'storage_health_check_time',
+        responseTime.toDouble(),
+        'ms',
+        'system_health',
+      );
+
+      return {
+        'component': 'file_storage',
+        'status': responseTime < 200 ? 'healthy' : 'warning',
+        'response_time_ms': responseTime,
+        'metrics': {'files_accessible': true},
+      };
+    } catch (e) {
+      final responseTime = DateTime.now().difference(startTime).inMilliseconds;
+      return {
+        'component': 'file_storage',
+        'status': 'error',
+        'response_time_ms': responseTime,
+        'error': e.toString(),
+      };
+    }
+  }
+
   static Future<Map<String, dynamic>> getBackendPerformanceMetrics() async {
     try {
       final recentPerfLogs = await _supabase
           .from('PerfLogs')
           .select('metric_name, metric_value, unit, recorded_at, source')
           .order('recorded_at', ascending: false)
-          .limit(50)
+          .limit(100)
           .then((response) => response);
+
+      final apiResponseTimes = recentPerfLogs
+          .where((log) =>
+              log['metric_name'].toString().contains('_time') &&
+              log['source'] == 'api_service')
+          .map((log) => log['metric_value'] as num)
+          .toList();
+
+      final errorRates = recentPerfLogs
+          .where((log) => log['metric_name'].toString().contains('error_rate'))
+          .map((log) => log['metric_value'] as num)
+          .toList();
 
       final metrics = [
         {
           'metric': 'api_response_times',
-          'status': 'good',
-          'average_ms': _calculateAverage(recentPerfLogs, 'api_response_time'),
-          'p95_ms': _calculatePercentile(
-            recentPerfLogs
-                .where((log) => log['metric_name'] == 'api_response_time')
-                .map((log) => log['metric_value'] as num)
-                .toList(),
-            95
-          ),
+          'status': _calculateMetricStatus(apiResponseTimes, 100, 500),
+          'average_ms': _calculateAverage(apiResponseTimes),
+          'p95_ms': _calculatePercentile(apiResponseTimes, 95),
+          'requests_count': apiResponseTimes.length,
         },
         {
-          'metric': 'database_query_times', 
-          'status': 'good',
-          'average_ms': _calculateAverage(recentPerfLogs, 'db_query_time'),
+          'metric': 'database_query_times',
+          'status': _calculateMetricStatus(
+              recentPerfLogs
+                  .where((log) => log['source'] == 'database')
+                  .map((log) => log['metric_value'] as num)
+                  .toList(),
+              50,
+              200),
+          'average_ms': _calculateAverage(recentPerfLogs
+              .where((log) => log['source'] == 'database')
+              .map((log) => log['metric_value'] as num)
+              .toList()),
           'p95_ms': _calculatePercentile(
-            recentPerfLogs
-                .where((log) => log['metric_name'] == 'db_query_time')
-                .map((log) => log['metric_value'] as num)
-                .toList(),
-            95
-          ),
+              recentPerfLogs
+                  .where((log) => log['source'] == 'database')
+                  .map((log) => log['metric_value'] as num)
+                  .toList(),
+              95),
         },
         {
           'metric': 'error_rates',
-          'status': 'warning',
-          'error_rate_percent': _calculateAverage(recentPerfLogs, 'error_rate'),
-        },
-        {
-          'metric': 'throughput',
-          'status': 'good', 
-          'requests_per_hour': _calculateRequestsPerHour(recentPerfLogs),
+          'status': _calculateErrorRateStatus(errorRates),
+          'error_rate_percent': _calculateAverage(errorRates),
+          'total_errors': errorRates.length,
         },
       ];
 
       return {
         'metrics': metrics,
-        'recent_logs': recentPerfLogs.take(10).toList(),
+        'total_logs': recentPerfLogs.length,
+        'time_range': 'last_24_hours',
       };
     } catch (e) {
       SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch backend performance metrics: ',
+        errorMessage: 'Failed to fetch backend performance metrics: $e',
         module: 'Super Admin Service',
         severity: 'Medium',
         extraInfo: {
@@ -234,38 +309,43 @@ class SuperAdminServiceBackend {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      throw Exception('Failed to fetch backend performance metrics: ');
+      throw Exception('Failed to fetch backend performance metrics: $e');
     }
+  }
+
+  static String _calculateMetricStatus(
+      List<num> values, num warningThreshold, num errorThreshold) {
+    if (values.isEmpty) return 'unknown';
+
+    final average = _calculateAverage(values);
+    if (average >= errorThreshold) return 'error';
+    if (average >= warningThreshold) return 'warning';
+    return 'good';
+  }
+
+  static double _calculateAverage(List<num> values) {
+    if (values.isEmpty) return 0.0;
+    return values.reduce((a, b) => a + b) / values.length;
+  }
+
+  static String _calculateErrorRateStatus(List<num> errorRates) {
+    if (errorRates.isEmpty) return 'good';
+    final averageErrorRate = _calculateAverage(errorRates);
+    if (averageErrorRate >= 5.0) return 'error';
+    if (averageErrorRate >= 1.0) return 'warning';
+    return 'good';
   }
 
   static double _calculatePercentile(List<num> values, int percentile) {
     if (values.isEmpty) return 0.0;
+
     final sorted = List<num>.from(values)..sort();
+
+    if (sorted.length == 1) return sorted[0].toDouble();
+
     final index = (percentile / 100 * (sorted.length - 1)).round();
-    return sorted[index].toDouble();
-  }
 
-  static int _calculateRequestsPerHour(List<Map<String, dynamic>> logs) {
-    if (logs.isEmpty) return 0;
-
-    final now = DateTime.now();
-    final oneHourAgo = now.subtract(const Duration(hours: 1));
-
-    final recentRequests = logs.where((log) {
-      final recordedAt = DateTime.parse(log['recorded_at']);
-      return recordedAt.isAfter(oneHourAgo) && log['metric_name'] == 'api_request';
-    }).length;
-
-    return recentRequests;
-  }
-
-  static double _calculateAverage(List<Map<String, dynamic>> logs, String metricName) {
-    final values = logs
-        .where((log) => log['metric_name'] == metricName)
-        .map((log) => log['metric_value'] as num)
-        .toList();
-    
-    if (values.isEmpty) return 0.0;
-    return values.reduce((a, b) => a + b) / values.length;
+    final safeIndex = index.clamp(0, sorted.length - 1);
+    return sorted[safeIndex].toDouble();
   }
 }

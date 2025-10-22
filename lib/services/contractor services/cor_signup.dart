@@ -1,3 +1,4 @@
+// ignore_for_file: use_build_context_synchronously_user_service.dart';, use_build_context_synchronously, use_build_context_synchronously, use_build_context_synchronously
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
@@ -24,20 +25,25 @@ class SignUpContractor {
       return;
     }
 
-    final List<Uint8List> verificationImages = (data?['verificationImages'] as List<Uint8List>? ?? []);
-    if (verificationImages.isEmpty) {
+    final List<Map<String, dynamic>> verificationFiles = (data?['verificationFiles'] as List<Map<String, dynamic>>? ?? []);
+
+    if (verificationFiles.isEmpty) {
       if (context.mounted) {
-        ConTrustSnackBar.error(context, 'Please upload a verification ID before signing up.');
+        ConTrustSnackBar.error(context, 'Please upload verification documents before signing up.');
       }
       return;
     }
 
     dynamic signUpResponse;
     try {
+
+      Map<String, dynamic> signUpData = Map.from(data ?? {});
+      signUpData.remove('verificationFiles');
+
       signUpResponse = await UserService().signUp(
         email: email,
         password: password,
-        data: data,
+        data: signUpData,
       );
 
       if (!context.mounted) return;
@@ -45,9 +51,29 @@ class SignUpContractor {
       final String? userId = signUpResponse.user?.id ?? signUpResponse.session?.user.id;
 
       if (userId == null) {
+        await _auditService.logAuditEvent(
+          action: 'USER_REGISTRATION_FAILED',
+          details: 'Contractor registration failed - no user ID returned',
+          metadata: {
+            'user_type': userType,
+            'email': email,
+            'failure_reason': 'no_user_id',
+          },
+        );
+
+        await _errorService.logError(
+          errorMessage: 'Contractor sign-up failed - no user ID returned from sign-up response',
+          module: 'Contractor Sign-up',
+          severity: 'High',
+          extraInfo: {
+            'operation': 'Sign Up Contractor',
+            'email': email,
+            'timestamp': DateTime.now().toIso8601String(),
+          },
+        );
+
         if (!context.mounted) return;
-        ConTrustSnackBar.success(context, 'Account created');
-        Navigator.pop(context);
+        ConTrustSnackBar.error(context, 'Failed to create account. Please try again.');
         return;
       }
 
@@ -69,6 +95,7 @@ class SignUpContractor {
           'contractor_id': userId,
           'firm_name': data?['firmName'] ?? '',
           'contact_number': data?['contactNumber'],
+          'address': data?['address'] ?? '', 
           'created_at': DateTime.now().toUtc().toIso8601String(),
         };
 
@@ -91,7 +118,7 @@ class SignUpContractor {
           );
 
           await _errorService.logError(
-            errorMessage: 'Failed to insert contractor data for user ID $userId',
+            errorMessage: 'Failed to insert contractor data for user ID $userId - insert response was empty',
             module: 'Contractor Sign-up',
             severity: 'High',
             extraInfo: {
@@ -104,12 +131,14 @@ class SignUpContractor {
           throw Exception("Error saving contractor data");
         }
 
-        for (int i = 0; i < verificationImages.length; i++) {
-          final imageBytes = verificationImages[i];
-          final fileName = 'doc_$i.jpg';
+        for (int i = 0; i < verificationFiles.length; i++) {
+          final fileData = verificationFiles[i];
+          final fileBytes = fileData['bytes'] as Uint8List;
+          final fileName = fileData['name'] as String;
+          final isImage = fileData['isImage'] as bool;
 
           final url = await UserService().uploadImage(
-            imageBytes,
+            fileBytes,
             'verification',
             folderPath: 'contractor/$userId',
             fileName: fileName,
@@ -119,6 +148,7 @@ class SignUpContractor {
             'contractor_id': userId,
             'doc_url': url,
             'uploaded_at': DateTime.now().toIso8601String(),
+            'file_type': isImage ? 'image' : 'document', 
           });
         }
       }
@@ -137,10 +167,13 @@ class SignUpContractor {
 
       if (!context.mounted) return;
       ConTrustSnackBar.success(context, 'Account successfully created');
+
+      await Future.delayed(const Duration(seconds: 2));  
       Navigator.pop(context);
+      
     } on AuthException catch (e) {
       await _auditService.logAuditEvent(
-        userId: signUpResponse.user?.id,
+        userId: signUpResponse?.user?.id, 
         action: 'USER_REGISTRATION_FAILED',
         details: 'Contractor registration failed due to authentication error',
         metadata: {
@@ -152,23 +185,23 @@ class SignUpContractor {
       );
 
       await _errorService.logError(
-        errorMessage: 'Contractor sign-up failed - AuthException: ',
+        errorMessage: 'Contractor sign-up failed - AuthException: ${e.message}',
         module: 'Contractor Sign-up',
         severity: 'Medium',
         extraInfo: {
           'operation': 'Sign Up Contractor',
           'email': email,
           'user_type': userType,
-          'users_id': signUpResponse.user?.id,
+          'users_id': signUpResponse?.user?.id, 
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
       if (!context.mounted) return;
-      ConTrustSnackBar.error(context, 'Error creating account: ');
+      ConTrustSnackBar.error(context, 'Error creating account: ${e.message}');
       return;
     } catch (e) {
       await _auditService.logAuditEvent(
-        userId: signUpResponse.user?.id,
+        userId: signUpResponse?.user?.id,  
         action: 'USER_REGISTRATION_FAILED',
         details: 'Contractor registration failed due to unexpected error',
         metadata: {
@@ -180,19 +213,19 @@ class SignUpContractor {
       );
 
       await _errorService.logError(
-        errorMessage: 'Contractor sign-up failed - Unexpected error: ',
+        errorMessage: 'Contractor sign-up failed - Unexpected error: $e',
         module: 'Contractor Sign-up',
         severity: 'High',
         extraInfo: {
           'operation': 'Sign Up Contractor',
           'email': email,
           'user_type': userType,
-          'users_id': signUpResponse.user?.id,
+          'users_id': signUpResponse?.user?.id,  
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
       if (!context.mounted) return;
-      ConTrustSnackBar.error(context, 'Unexpected error: ');
+      ConTrustSnackBar.error(context, 'Unexpected error: $e');
     }
   }
 }
