@@ -3,6 +3,7 @@ import 'package:contractee/pages/cee_authredirect.dart';
 import 'package:contractee/pages/cee_home.dart';
 import 'package:contractee/pages/cee_login.dart';
 import 'package:contractee/pages/cee_welcome.dart';
+import 'package:contractor/Screen/cor_dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -52,6 +53,9 @@ class _MyAppState extends State<MyApp> {
         '/login': (context) => const LoginPage(),
         '/home': (context) => const HomePage(),
         '/auth/callback': (context) => const AuthRedirectPage(),
+        '/dashboard': (context) => _session != null 
+    ? DashboardScreen(contractorId: _session!.user.id) 
+    : const LoginPage(),  
       },
     );
   }
