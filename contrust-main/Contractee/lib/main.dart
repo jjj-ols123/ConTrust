@@ -21,9 +21,9 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(
-    url: SupabaseConfig.url,
-    anonKey: SupabaseConfig.anonKey,
-  );
+  url: const String.fromEnvironment('SUPABASE_URL'),
+  anonKey: const String.fromEnvironment('SUPABASE_ANON_KEY'),
+);
 
   SharedPreferences prefs = await SharedPreferences.getInstance();
   bool isFirstOpen = prefs.getBool('isFirstOpen') ?? true;

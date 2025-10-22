@@ -224,7 +224,6 @@ class SignInGoogleContractor {
           return;
         }
 
-        // Add verified check
         final userRow = await supabase
             .from('Users')
             .select('verified')
