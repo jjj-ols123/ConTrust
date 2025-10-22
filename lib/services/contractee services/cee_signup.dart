@@ -82,7 +82,7 @@ class SignUpContractee {
           );
 
           await _errorService.logError(
-            errorMessage: 'Failed to insert contractee data',
+            errorMessage: 'Failed to insert contractee data for user ID ${signUpResponse.user!.id} - insert response was empty',
             module: 'Contractee Sign-up',
             severity: 'High',
             extraInfo: {
@@ -125,7 +125,7 @@ class SignUpContractee {
       );
 
       await _errorService.logError(
-        errorMessage: 'Contractee sign-up failed - AuthException: ',
+        errorMessage: 'Contractee sign-up failed - AuthException: ${e.message}',
         module: 'Contractee Sign-up',
         severity: 'Medium',
         extraInfo: {
@@ -137,7 +137,7 @@ class SignUpContractee {
         },
       );
       if (!context.mounted) return;
-      ConTrustSnackBar.error(context, 'Error creating account: ');
+      ConTrustSnackBar.error(context, 'Error creating account: ${e.message}');
       return;
     } catch (e) {
       await _auditService.logAuditEvent(
@@ -153,9 +153,9 @@ class SignUpContractee {
       );
 
       await _errorService.logError(
-        errorMessage: 'Contractee sign-up failed - Unexpected error: ',
+        errorMessage: 'Contractee sign-up failed - Unexpected error: $e',
         module: 'Contractee Sign-up',
-        severity: 'Medium',
+        severity: 'High',
         extraInfo: {
           'operation': 'Sign Up Contractee',
           'email': email,
@@ -165,7 +165,7 @@ class SignUpContractee {
         },
       );
       if (!context.mounted) return;
-      ConTrustSnackBar.error(context, 'Unexpected error: ');
+      ConTrustSnackBar.error(context, 'Unexpected error: $e');
     }
   }
 }
