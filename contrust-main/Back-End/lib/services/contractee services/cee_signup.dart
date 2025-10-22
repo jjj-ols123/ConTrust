@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
@@ -42,24 +44,23 @@ class SignUpContractee {
 
       if (userType == 'contractee') {
         await supabase.from('Users').upsert({
-          'users_id': signUpResponse.user!.id,
+          'users_id': signUpResponse.user?.id,
           'email': email,
           'name': data?['full_name'] ?? 'User',
           'role': 'contractee',
           'status': 'active',
           'created_at': DateTime.now().toIso8601String(),
           'profile_image_url': data?['profilePhoto'],
-          'phone_number': '',
+          'phone_number': data?['phone_number'] ?? '',
           'verified': false,
         }, onConflict: 'users_id');
-
+        
         final contracteeData = {
-          'contractee_id': signUpResponse.user!.id,
+          'contractee_id': signUpResponse.user?.id,
           'full_name': data?['full_name'],
           'address': data?['address'] ?? '',
           'created_at': DateTime.now().toIso8601String(),
           'project_history_count': project,
-          'verified': false,
         };
 
         final insertResponse = await supabase
@@ -69,7 +70,7 @@ class SignUpContractee {
 
         if (insertResponse.isEmpty) {
           await _auditService.logAuditEvent(
-            userId: signUpResponse.user!.id,
+            userId: signUpResponse?.user?.id,
             action: 'USER_REGISTRATION_FAILED',
             details: 'Contractee registration failed - data insertion error',
             metadata: {
@@ -81,12 +82,12 @@ class SignUpContractee {
           );
 
           await _errorService.logError(
-            errorMessage: 'Failed to insert contractee data',
+            errorMessage: 'Failed to insert contractee data for user ID ${signUpResponse.user!.id} - insert response was empty',
             module: 'Contractee Sign-up',
             severity: 'High',
             extraInfo: {
               'operation': 'Insert Contractee Data',
-              'contractee_id': signUpResponse.user!.id,
+              'contractee_id': signUpResponse.user?.id,
               'email': email,
               'timestamp': DateTime.now().toIso8601String(),
             },
@@ -96,7 +97,7 @@ class SignUpContractee {
       }
 
       await _auditService.logAuditEvent(
-        userId: signUpResponse.user!.id,
+        userId: signUpResponse?.user?.id,
         action: 'USER_REGISTRATION',
         details: 'Contractee account created successfully',
         metadata: {
@@ -109,10 +110,13 @@ class SignUpContractee {
 
       if (!context.mounted) return;
       ConTrustSnackBar.success(context, 'Account successfully created');
+
+      await Future.delayed(const Duration(seconds: 2));  
       Navigator.pop(context);
+
     } on AuthException catch (e) {
       await _auditService.logAuditEvent(
-        userId: signUpResponse.user?.id, 
+        userId: signUpResponse?.user?.id, 
         action: 'USER_REGISTRATION_FAILED',
         details: 'Contractee registration failed due to authentication error',
         metadata: {
@@ -124,7 +128,7 @@ class SignUpContractee {
       );
 
       await _errorService.logError(
-        errorMessage: 'Contractee sign-up failed - AuthException: ',
+        errorMessage: 'Contractee sign-up failed - AuthException: ${e.message}',
         module: 'Contractee Sign-up',
         severity: 'Medium',
         extraInfo: {
@@ -136,11 +140,11 @@ class SignUpContractee {
         },
       );
       if (!context.mounted) return;
-      ConTrustSnackBar.error(context, 'Error creating account: ');
+      ConTrustSnackBar.error(context, 'Error creating account: ${e.message}');
       return;
     } catch (e) {
       await _auditService.logAuditEvent(
-        userId: signUpResponse.user?.id,  
+        userId: signUpResponse?.user?.id,  
         action: 'USER_REGISTRATION_FAILED',
         details: 'Contractee registration failed due to unexpected error',
         metadata: {
@@ -152,9 +156,9 @@ class SignUpContractee {
       );
 
       await _errorService.logError(
-        errorMessage: 'Contractee sign-up failed - Unexpected error: ',
+        errorMessage: 'Contractee sign-up failed - Unexpected error: $e',
         module: 'Contractee Sign-up',
-        severity: 'Medium',
+        severity: 'High',
         extraInfo: {
           'operation': 'Sign Up Contractee',
           'email': email,
@@ -164,7 +168,7 @@ class SignUpContractee {
         },
       );
       if (!context.mounted) return;
-      ConTrustSnackBar.error(context, 'Unexpected error: ');
+      ConTrustSnackBar.error(context, 'Unexpected error: $e');
     }
   }
 }

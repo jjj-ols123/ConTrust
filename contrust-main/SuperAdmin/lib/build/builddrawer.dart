@@ -8,7 +8,6 @@ import '../pages/auditlogs.dart';
 import '../pages/errorlog.dart';
 import '../pages/users.dart';
 import '../pages/projects.dart';
-import '../pages/systemmonitor.dart';
 import '../pages/verify.dart'; 
 
 enum SuperAdminPage {
@@ -65,13 +64,6 @@ class SuperAdminShell extends StatelessWidget {
         centerTitle: true,
         elevation: 4,
         automaticallyImplyLeading: false,
-        title: Text(
-          title(),
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
@@ -368,21 +360,6 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
               }
             },
           ),
-          _SidebarItem(
-            icon: Icons.monitor_outlined,
-            label: 'System Monitor',
-            active: widget.currentPage == SuperAdminPage.systemMonitor,
-            onTap: () {
-              if (widget.currentPage != SuperAdminPage.systemMonitor) {
-                navigateToPage(
-                  const SuperAdminShell(
-                    currentPage: SuperAdminPage.systemMonitor,
-                    child: SystemMonitorPage(),
-                  ),
-                );
-              }
-            },
-          )
         ],
       ),
     );
@@ -739,27 +716,6 @@ class DashboardDrawer extends StatelessWidget {
                               const SuperAdminShell(
                                 currentPage: SuperAdminPage.errorLogs,
                                 child: ErrorLogs(),
-                              ),
-                          transitionDuration: Duration.zero,
-                          reverseTransitionDuration: Duration.zero,
-                        ),
-                      );
-                    },
-                  ),
-                  DrawerIcon(
-                    icon: Icons.monitor,
-                    label: 'System Monitor',
-                    iconSize: iconSize,
-                    fontSize: fontSize,
-                    color: Colors.teal,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        PageRouteBuilder(
-                          pageBuilder: (context, animation, secondaryAnimation) =>
-                              const SuperAdminShell(
-                                currentPage: SuperAdminPage.systemMonitor,
-                                child: SystemMonitorPage(),
                               ),
                           transitionDuration: Duration.zero,
                           reverseTransitionDuration: Duration.zero,

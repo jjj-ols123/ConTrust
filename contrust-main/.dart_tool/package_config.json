@@ -122,6 +122,12 @@
       "languageVersion": "3.0"
     },
     {
+      "name": "dbus",
+      "rootUri": "file:///C:/Users/Pau/AppData/Local/Pub/Cache/hosted/pub.dev/dbus-0.7.11",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    },
+    {
       "name": "device_info_plus",
       "rootUri": "file:///C:/Users/Pau/AppData/Local/Pub/Cache/hosted/pub.dev/device_info_plus-11.5.0",
       "packageUri": "lib/",
@@ -156,6 +162,12 @@
       "rootUri": "file:///C:/Users/Pau/AppData/Local/Pub/Cache/hosted/pub.dev/file-7.0.1",
       "packageUri": "lib/",
       "languageVersion": "3.0"
+    },
+    {
+      "name": "file_picker",
+      "rootUri": "file:///C:/Users/Pau/AppData/Local/Pub/Cache/hosted/pub.dev/file_picker-10.3.3",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
     },
     {
       "name": "file_selector",
@@ -1034,7 +1046,7 @@
       "languageVersion": "3.7"
     }
   ],
-  "generated": "2025-10-22T01:07:25.637622Z",
+  "generated": "2025-10-22T05:45:27.624902Z",
   "generator": "pub",
   "generatorVersion": "3.7.2",
   "flutterRoot": "file:///C:/flutter",

@@ -10,7 +10,7 @@ class BuildVerifyMethods {
   }) {
     if (contractors.isEmpty) {
       return const Center(
-        child: Text('No contractors up for verification.'),
+        child: Text('No contractors up for verification.', style: TextStyle(fontSize: 16, color: Colors.black)),
       );
     }
 

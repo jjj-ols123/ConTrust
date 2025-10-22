@@ -88,9 +88,11 @@ class _SuperAdminLoginScreenState extends State<SuperAdminLoginScreen> {
         _errorMessage = 'An unexpected error occurred. Please try again.';
       });
     } finally {
+      if (mounted) {  
       setState(() {
         _isLoading = false;
       });
+      }
     }
   }
 
@@ -103,6 +105,7 @@ class _SuperAdminLoginScreenState extends State<SuperAdminLoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       body: Stack(
         children: [
           BuildAdminLogin.buildLoginForm(

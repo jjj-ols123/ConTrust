@@ -56,6 +56,8 @@ dependencies:
   syncfusion_flutter_pdfviewer: ^28.2.7
   url_launcher: ^6.3.1 
   file_selector: ^1.0.4
+  file_picker: ^10.3.3
+  
 
 dev_dependencies:
   flutter_test:
@@ -80,10 +82,10 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/
-    - assets/kitchen.jpg
-    - assets/bgloginscreen.jpg
-    - assets/googleicon.png
+    - assets/images/kitchen.jpg
+    - assets/images/bgloginscreen.jpg
+    - assets/images/googleicon.png
+    - assets/images/logo3.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

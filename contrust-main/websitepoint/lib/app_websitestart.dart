@@ -22,86 +22,93 @@ class WebsiteStartPage extends StatelessWidget {
       body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('bgloginscreen.jpg'),
+            image: AssetImage('assets/bgloginscreen.jpg'),
             fit: BoxFit.cover,
           ),
         ),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: isDesktop ? 1100 : screenWidth * 0.9,
-            ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: isDesktop ? 24 : 16,
-                vertical: 32,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    'Welcome to ConTrust',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: Colors.black87,
-                      fontSize: isDesktop ? null : 24,
-                    ),
-                    textAlign: TextAlign.center,
+        child: Stack(
+          children: [
+            Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: isDesktop ? 1100 : screenWidth * 0.9,
+                ),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isDesktop ? 24 : 16,
+                    vertical: 32,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Choose how you want to continue',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: Colors.black54,
-                      fontSize: isDesktop ? null : 16,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: isDesktop ? 32 : 24),
-                  isDesktop
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(child: _buildContracteeCard(context)),
-                            const SizedBox(width: 24),
-                            Expanded(child: _buildContractorCard(context)),
-                          ],
-                        )
-                      : Column( 
-                          children: [
-                            _buildContracteeCard(context),
-                            const SizedBox(height: 24),
-                            _buildContractorCard(context),
-                          ],
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Welcome to ConTrust',
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: Colors.black87,
+                          fontSize: isDesktop ? null : 24,
                         ),
-                  SizedBox(height: isDesktop ? 24 : 16),
-                  if (!_isWeb)
-                    const Text(
-                      'Tip: This chooser is intended for web builds.',
-                      style: TextStyle(color: Colors.black45),
-                    ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const SuperAdminLoginScreen()),
-                      );
-                    },
-                    child: const Text(
-                      'Go to Super Admin Module',
-                      style: TextStyle(
-                        color: Colors.black87,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                        textAlign: TextAlign.center,
                       ),
-                    ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Choose how you want to continue',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: Colors.black54,
+                          fontSize: isDesktop ? null : 16,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: isDesktop ? 32 : 24),
+                      isDesktop
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(child: _buildContracteeCard(context)),
+                                const SizedBox(width: 24),
+                                Expanded(child: _buildContractorCard(context)),
+                              ],
+                            )
+                          : Column( 
+                              children: [
+                                _buildContracteeCard(context),
+                                const SizedBox(height: 24),
+                                _buildContractorCard(context),
+                              ],
+                            ),
+                      SizedBox(height: isDesktop ? 24 : 16),
+                      if (!_isWeb)
+                        const Text(
+                          'Tip: This chooser is intended for web builds.',
+                          style: TextStyle(color: Colors.black45),
+                        ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
-          ),
+            Positioned(
+              bottom: 16,
+              right: 16,
+              child: TextButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SuperAdminLoginScreen()),
+                  );
+                },
+                child: const Text(
+                  'Go to Super Admin Module',
+                  style: TextStyle(
+                    color: Colors.white,  
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -113,7 +120,7 @@ class WebsiteStartPage extends StatelessWidget {
       icon: Icons.person_outline,
       title: 'Contractee',
       description:
-          'Browse contractors, manage contracts and monitor your projects.',
+          'Browse contractors, view contracts, and monitor your projects.',
       buttonText: 'Continue as Contractee',
       onPressed: () {
         try {
@@ -133,7 +140,7 @@ class WebsiteStartPage extends StatelessWidget {
       icon: Icons.engineering_outlined,
       title: 'Contractor',
       description:
-          'Sign in to manage bids, contracts, clients, and ongoing projects.',
+          'Sign in to bid for projects, create and manage contracts, clients, and ongoing projects.',
       buttonText: 'Continue as Contractor',
       onPressed: () {
         try {

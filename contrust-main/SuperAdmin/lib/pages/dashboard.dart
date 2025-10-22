@@ -41,7 +41,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
       ]);
 
       setState(() {
-        _systemStats = results[0] as Map<String, dynamic>;
+        _systemStats = results[0] as Map<String, dynamic>; 
         _systemHealth = results[1] as Map<String, dynamic>;
         _dashboardData = results[2] as Map<String, dynamic>;
         _systemAlerts = results[3] as List<Map<String, dynamic>>;

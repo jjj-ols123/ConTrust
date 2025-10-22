@@ -25,7 +25,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
       body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('assets/bgloginscreen.jpg'),
+            image: AssetImage('assets/images/bgloginscreen.jpg'),
             fit: BoxFit.cover,
           ),
         ),
@@ -96,7 +96,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
       children: [
         Column(
           children: [
-            Image.asset('logo3.png', width: 80, height: 80),
+            Image.asset('assets/images/logo3.png', width: 80, height: 80),
             const SizedBox(height: 16),
             Text(
               'Welcome Back',
@@ -218,7 +218,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.asset('assets/googleicon.png', height: 28),
+                Image.asset('assets/images/googleicon.png', height: 28),
                 const SizedBox(width: 12),
                 const Text(
                   "Continue with Google",

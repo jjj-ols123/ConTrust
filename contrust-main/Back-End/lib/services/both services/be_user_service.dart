@@ -3,13 +3,14 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 
 class UserService {
-  final SupabaseClient _supabase = Supabase.instance.client;
+  SupabaseClient get _supabase => Supabase.instance.client;
 
   Future<AuthResponse> signIn({
     required String email,
     required String password,
   }) async {
-    return await _supabase.auth
+    final supabase = _supabase;
+    return await supabase.auth
         .signInWithPassword(email: email, password: password);
   }
 

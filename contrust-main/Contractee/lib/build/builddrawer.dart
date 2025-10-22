@@ -62,7 +62,7 @@ class ContracteeShell extends StatelessWidget {
       resizeToAvoidBottomInset: false,
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        backgroundColor: Colors.amber[700],
+        backgroundColor: Colors.amber,
         centerTitle: true,
         elevation: 4,
         automaticallyImplyLeading: false,

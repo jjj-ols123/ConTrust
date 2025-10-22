@@ -401,9 +401,9 @@ class BidsModal {
   static Future<void> show({
     required BuildContext context,
     required String projectId,
-    required Future<void> Function(String projectId, String bidId)
-        acceptBidding,
+    required Future<void> Function(String projectId, String bidId) acceptBidding,
     String? initialAcceptedBidId,
+    VoidCallback? onRefresh, 
   }) async {
     String? acceptedBidId = initialAcceptedBidId;
     Future<List<Map<String, dynamic>>> bidsFuture =
@@ -465,7 +465,6 @@ class BidsModal {
                                           'No bids for this project yet.')),
                                 );
                               }
-                              // Check if any bid is accepted
                               final anyAccepted = bids.any((bid) => bid['status'] == 'accepted');
                               return SizedBox(
                                 height: 500,
@@ -725,7 +724,10 @@ class BidsModal {
                                                                       .getBidsForProject(
                                                                           projectId);
                                                             });
+                                                     
                                                             Navigator.pop(context);
+                                                            onRefresh?.call();
+                                                            ConTrustSnackBar.show(context, 'You accepted $firmName\'s bid', type: SnackBarType.success);
                                                           }
                                                         },
                                                         style: ElevatedButton

@@ -1,3 +1,4 @@
+import 'package:backend/services/superadmin%20services/perflogs_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/utils/supabase_config.dart';
@@ -21,6 +22,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SuperAdminPerfLogsService.recordAppStart();
+    });
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
