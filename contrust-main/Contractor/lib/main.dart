@@ -12,8 +12,14 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
 await Supabase.initialize(
-  url: const String.fromEnvironment('SUPABASE_URL'),
-  anonKey: const String.fromEnvironment('SUPABASE_ANON_KEY'),
+  url: const String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: 'https://bgihfdqruamnjionhkeq.supabase.co',
+  ),
+  anonKey: const String.fromEnvironment(
+    'SUPABASE_ANON_KEY',
+    defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJnaWhmZHFydWFtbmppb25oa2VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4NzIyODksImV4cCI6MjA1NjQ0ODI4OX0.-GRaolUVu1hW6NUaEAwJuYJo8C2X5_1wZ-qB4a-9Txs',
+  ),
 );
 
   runApp(const MyApp());
