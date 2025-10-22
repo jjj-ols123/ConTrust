@@ -57,7 +57,7 @@ class SignInContractor {
 
       if (userType?.toLowerCase() != 'contractor') {
         await _auditService.logAuditEvent(
-          userId: signInResponse?.user!.id,
+          userId: signInResponse?.user?.id,
           action: 'USER_LOGIN_FAILED',
           details: 'Login attempt with wrong user type',
           metadata: {
@@ -76,7 +76,7 @@ class SignInContractor {
       final userRow = await supabase
           .from('Users')
           .select('verified')
-          .eq('users_id', signInResponse.user!.id)
+          .eq('users_id', signInResponse.user?.id)
           .maybeSingle();
 
       final verified = (userRow is Map && userRow?['verified'] != null)
@@ -87,7 +87,7 @@ class SignInContractor {
 
         await supabase.auth.signOut();
         await _auditService.logAuditEvent(
-          userId: signInResponse?.user!.id,
+          userId: signInResponse?.user?.id,
           action: 'USER_LOGIN_FAILED',
           details: 'Contractor login blocked - account not verified',
           metadata: {
@@ -106,10 +106,10 @@ class SignInContractor {
 
       await supabase.from('Users').update({
         'last_login': DateTime.now().toIso8601String(),
-      }).eq('users_id', signInResponse.user!.id);
+      }).eq('users_id', signInResponse.user?.id);
 
       await _auditService.logAuditEvent(
-        userId: signInResponse?.user!.id,
+        userId: signInResponse?.user?.id,
         action: 'USER_LOGIN',
         details: 'Contractor logged in successfully',
         metadata: {
