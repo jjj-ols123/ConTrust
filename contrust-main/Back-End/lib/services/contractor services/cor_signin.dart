@@ -1,4 +1,5 @@
 // ignore_for_file: use_build_context_synchronously
+
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
@@ -27,7 +28,6 @@ class SignInContractor {
         password: password,
       );
 
-      // Check if user exists and has an ID
       if (signInResponse.user?.id == null) {
         await _auditService.logAuditEvent(
           action: 'USER_LOGIN_FAILED',
@@ -63,14 +63,12 @@ class SignInContractor {
 
       final supabase = Supabase.instance.client;
       
-      // Safe query to Users table
       final userRow = await supabase
           .from('Users')
           .select('verified')
           .eq('users_id', user.id)
           .maybeSingle();
 
-      // Safe verification check
       bool verified = false;
       if (userRow != null && userRow['verified'] != null) {
         verified = userRow['verified'] as bool;
@@ -96,14 +94,12 @@ class SignInContractor {
         return;
       }
 
-      // Update last_login - handle potential null
       try {
         await supabase.from('Users').update({
           'last_login': DateTime.now().toIso8601String(),
         }).eq('users_id', user.id);
       } catch (e) {
-        // Log but don't block login for this error
-        print('Failed to update last_login: $e');
+          rethrow;
       }
 
       await _auditService.logAuditEvent(
@@ -122,7 +118,6 @@ class SignInContractor {
           context, '/dashboard', (route) => false);
           
     } catch (e) {
-      // Safe error logging
       await _auditService.logAuditEvent(
         userId: signInResponse?.user?.id,
         action: 'USER_LOGIN_FAILED',
@@ -142,12 +137,11 @@ class SignInContractor {
         extraInfo: {
           'operation': 'Sign In Contractor',
           'email': email,
-          'users_id': signInResponse?.user?.id, // Safe access
+          'users_id': signInResponse?.user?.id,
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
       
-      // Show user-friendly error message
       if (e.toString().contains('null check')) {
         ConTrustSnackBar.error(context, 'Authentication error. Please try again.');
       } else {
@@ -180,7 +174,7 @@ class SignInGoogleContractor {
       });
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Google sign-in failed for contractor: ',
+        errorMessage: 'Google sign-in failed for contractor: $e',
         module: 'Contractor Google Sign-in',
         severity: 'High',
         extraInfo: {
@@ -188,7 +182,7 @@ class SignInGoogleContractor {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      ConTrustSnackBar.error(context, 'Google sign-in failed: ');
+      ConTrustSnackBar.error(context, 'Google sign-in failed: $e');
     }
   }
 
@@ -242,7 +236,7 @@ class SignInGoogleContractor {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Google sign-in handling failed for contractor: ',
+        errorMessage: 'Google sign-in handling failed for contractor: $e',
         module: 'Contractor Google Sign-in',
         severity: 'High',
         extraInfo: {
@@ -251,7 +245,7 @@ class SignInGoogleContractor {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      ConTrustSnackBar.error(context, 'Sign-in failed: ');
+      ConTrustSnackBar.error(context, 'Sign-in failed: $e');
     }
   }
 
@@ -322,7 +316,7 @@ class SignInGoogleContractor {
       );
 
       await _errorService.logError(
-        errorMessage: 'Contractor setup failed during Google sign-in: ',
+        errorMessage: 'Contractor setup failed during Google sign-in: $e',
         module: 'Contractor Google Sign-in',
         severity: 'Medium',
         extraInfo: {
@@ -331,7 +325,7 @@ class SignInGoogleContractor {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      ConTrustSnackBar.error(context, 'Account setup failed: ');
+      ConTrustSnackBar.error(context, 'Account setup failed: $e');
     }
   }
 }
