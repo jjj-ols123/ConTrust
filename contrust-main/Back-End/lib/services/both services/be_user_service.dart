@@ -5,13 +5,42 @@ import 'dart:typed_data';
 class UserService {
   SupabaseClient get _supabase => Supabase.instance.client;
 
-  Future<AuthResponse> signIn({
+ Future<AuthResponse?> signIn({
     required String email,
     required String password,
   }) async {
-    final supabase = _supabase;
-    return await supabase.auth
-        .signInWithPassword(email: email, password: password);
+    try {
+      final response = await _supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+     
+      await _waitForAuthConsistency(response.user?.id);
+      
+      return response;
+    } catch (e) {
+      print('SignIn error in UserService: $e');
+      rethrow; 
+    }
+  }
+
+  Future<void> _waitForAuthConsistency(String? userId) async {
+    if (userId == null) return;
+    
+   
+    int retries = 0;
+    while (retries < 5) {
+      final currentUser = _supabase.auth.currentUser;
+      if (currentUser?.id == userId) {
+ 
+        await Future.delayed(const Duration(milliseconds: 200));
+        return;
+      }
+      await Future.delayed(const Duration(milliseconds: 100));
+      retries++;
+    }
+    
+    print('Warning: Auth state consistency check timed out');
   }
 
   Future<AuthResponse> signUp({
@@ -19,9 +48,24 @@ class UserService {
     required String password,
     Map<String, dynamic>? data,
   }) async {
-    return await _supabase.auth
-        .signUp(email: email, password: password, data: data);
+    try {
+      final response = await _supabase.auth.signUp(
+        email: email, 
+        password: password, 
+        data: data
+      );
+      
+      if (response.user != null) {
+        await _waitForAuthConsistency(response.user?.id);
+      }
+      
+      return response;
+    } catch (e) {
+      print('SignUp error in UserService: $e');
+      rethrow;
+    }
   }
+
 
   Future<void> signOut() async {
     await _supabase.auth.signOut();
