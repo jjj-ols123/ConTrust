@@ -175,7 +175,6 @@ class SignInGoogleContractor {
       await supabase.auth.signInWithOAuth(
         OAuthProvider.google,
       );
-      // Removed the listen—AuthRedirectPage handles auth state changes globally
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Google sign-in failed for contractor: $e',
@@ -343,6 +342,7 @@ class SignInGoogleContractor {
 
       Navigator.pushNamedAndRemoveUntil(
           context, '/dashboard', (route) => false);
+
     } catch (e) {
       await _auditService.logAuditEvent(
         action: 'USER_REGISTRATION_FAILED',
