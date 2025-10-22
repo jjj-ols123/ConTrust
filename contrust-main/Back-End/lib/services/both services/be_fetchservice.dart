@@ -270,13 +270,13 @@ class FetchService {
           .from('Projects')
           .select('*')
           .eq('project_id', projectId)
-          .maybeSingle()
-          .order('created_at', ascending: false);
+          .order('created_at', ascending: false)
+          .maybeSingle();
 
       return response;
     } catch (error) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch project details: ',
+        errorMessage: 'Failed to fetch project details: $error',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -535,7 +535,7 @@ class FetchService {
     try {
       final response = await _supabase.from('Projects').select('''
           contractee_id,
-          contractee:"Contractee"(
+          contractee:Contractee(
             full_name,
             profile_photo,
             contractee_id
@@ -545,7 +545,7 @@ class FetchService {
       return response['contractee'];
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch contractee from project: ',
+        errorMessage: 'Failed to fetch contractee from project: $e',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -563,12 +563,12 @@ class FetchService {
           .from('Projects')
           .select('project_id,title,status')
           .eq('contractor_id', contractorId)
-          .inFilter('status', ['active', 'ongoing'])
+          .inFilter('status', ['active', 'ongoing']) 
           .order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(res);
-    } catch (_) {
+    } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch contractor active projects',
+        errorMessage: 'Failed to fetch contractor active projects: $e',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -586,12 +586,12 @@ class FetchService {
           .from('Projects')
           .select('project_id,title,status')
           .eq('contractee_id', contracteeId)
-          .inFilter('status', ['active', 'ongoing'])
+          .inFilter('status', ['active', 'ongoing'])  
           .order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(res);
-    } catch (_) {
+    } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch contractee active projects',
+        errorMessage: 'Failed to fetch contractee active projects: $e',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -605,16 +605,16 @@ class FetchService {
 
   Future<List<Map<String, dynamic>>> fetchRatings(String contractorId) async {
     try {
-      final response = await Supabase.instance.client
+      final response = await _supabase
           .from('ContractorRatings')
           .select('rating, review, created_at, contractee_id')
           .eq('contractor_id', contractorId)
           .order('created_at', ascending: false);
 
       return List<Map<String, dynamic>>.from(response);
-    } catch (_) {
+    } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch ratings',
+        errorMessage: 'Failed to fetch ratings: $e',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -645,7 +645,7 @@ class FetchService {
             contractor_signed_at,
             contractee_signed_at,
             project:Projects(type, description, title),
-            contractor:Projects!inner(contractor_id, contractor:Contractor(firm_name, profile_photo))
+            contractor:Contractor(firm_name, profile_photo)  // Simplified
           ''')
           .eq('contractee_id', contracteeId)
           .order('created_at', ascending: false);
@@ -653,7 +653,7 @@ class FetchService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch contracts for contractee: ',
+        errorMessage: 'Failed to fetch contracts for contractee: $e',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -672,7 +672,7 @@ class FetchService {
           .select('''
             *,
             project:Projects(*),
-            contractor:Projects!inner(contractor:Contractor(*)),
+            contractor:Contractor(*),  // Simplified
             contractee:Contractee(*),
             contract_type:ContractTypes(*)
           ''')
@@ -682,7 +682,7 @@ class FetchService {
       return response;
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch contract with details: ',
+        errorMessage: 'Failed to fetch contract with details: $e',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {

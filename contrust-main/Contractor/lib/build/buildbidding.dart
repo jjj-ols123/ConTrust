@@ -362,7 +362,7 @@ class BiddingUIBuildMethods {
                                           stackTrace,
                                         ) {
                                           return Image.asset(
-                                            'defaultpic.png',
+                                            'images/defaultpic.png',
                                             width: 40,
                                             height: 40,
                                             fit: BoxFit.cover,
@@ -370,7 +370,7 @@ class BiddingUIBuildMethods {
                                         },
                                       )
                                       : Image.asset(
-                                        'defaultpic.png',
+                                        'images/defaultpic.png',
                                         width: 40,
                                         height: 40,
                                         fit: BoxFit.cover,
@@ -654,7 +654,7 @@ class BiddingUIBuildMethods {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        child: Image.asset('kitchen.jpg', fit: BoxFit.cover),
+                        child: Image.asset('images/kitchen.jpg', fit: BoxFit.cover),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -882,7 +882,7 @@ class BiddingUIBuildMethods {
             child: Stack(
               children: [
                 Image.asset(
-                  'kitchen.jpg',
+                  'images/kitchen.jpg',
                   fit: BoxFit.cover,
                   width: double.infinity,
                   height: double.infinity,

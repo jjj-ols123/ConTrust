@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
+import 'package:contractee/pages/cee_home.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
@@ -61,38 +62,7 @@ class SignInContractee {
       }
 
       final supabase = Supabase.instance.client;
-      
-      final userRow = await supabase
-          .from('Users')
-          .select('verified')
-          .eq('users_id', user.id)
-          .maybeSingle();
-
-      bool verified = false;
-      if (userRow != null && userRow['verified'] != null && userRow['verified'] is bool) {
-        verified = userRow['verified'] as bool;
-      }
-
-      if (!verified) {
-        await supabase.auth.signOut();
-        await _auditService.logAuditEvent(
-          userId: user.id,
-          action: 'USER_LOGIN_FAILED',
-          details: 'Contractee login blocked - account not verified',
-          metadata: {
-            'user_type': 'contractee',
-            'email': email,
-            'failure_reason': 'account_not_verified',
-          },
-        );
-        ConTrustSnackBar.show(
-          context,
-          'Please wait for your account to be verified to login',
-          type: SnackBarType.info,
-        );
-        return;
-      }
-
+ 
       try {
         await supabase.from('Users').update({
           'last_login': DateTime.now().toIso8601String(),
@@ -128,17 +98,6 @@ class SignInContractee {
       }
           
     } catch (e) {
-      await _auditService.logAuditEvent(
-        userId: signInResponse != null && signInResponse.user != null ? signInResponse.user!.id : null,
-        action: 'USER_LOGIN_FAILED',
-        details: 'Contractee login failed due to error: $e',
-        metadata: {
-          'user_type': 'contractee',
-          'email': email,
-          'error_message': e.toString(),
-          'failure_reason': 'system_error',
-        },
-      );
 
       await _errorService.logError(
         errorMessage: 'Contractee sign-in failed: $e',
@@ -232,39 +191,6 @@ class SignInGoogleContractee {
           return;
         }
 
-        // Add verified check
-        final userRow = await supabase
-            .from('Users')
-            .select('verified')
-            .eq('users_id', user.id)
-            .maybeSingle();
-
-        bool verified = false;
-        if (userRow != null && userRow['verified'] != null && userRow['verified'] is bool) {
-          verified = userRow['verified'] as bool;
-        }
-
-        if (!verified) {
-          await supabase.auth.signOut();
-          await _auditService.logAuditEvent(
-            userId: user.id,
-            action: 'USER_LOGIN_FAILED',
-            details: 'Contractee Google login blocked - account not verified',
-            metadata: {
-              'user_type': 'contractee',
-              'email': user.email,
-              'login_method': 'google_oauth',
-              'failure_reason': 'account_not_verified',
-            },
-          );
-          ConTrustSnackBar.show(
-            context,
-            'Please wait for your account to be verified to login',
-            type: SnackBarType.info,
-          );
-          return;
-        }
-
         await _auditService.logAuditEvent(
           userId: user.id,
           action: 'USER_LOGIN',
@@ -347,11 +273,8 @@ class SignInGoogleContractee {
       ConTrustSnackBar.success(
           context, 'Welcome! Your contractee account has been created.');
 
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/home',
-        (route) => false,
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (context) => HomePage()));
+      
     } catch (e) {
       await _auditService.logAuditEvent(
         action: 'USER_REGISTRATION_FAILED',

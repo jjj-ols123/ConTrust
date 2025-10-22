@@ -23,6 +23,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
 
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
+  bool _isSigningUp = false; 
 
   @override
   Widget build(BuildContext context) {
@@ -231,28 +232,34 @@ class _RegistrationPageState extends State<RegistrationPage> {
         const SizedBox(height: 25),
         ElevatedButton(
           onPressed: () async {
-            final signUpContractee = SignUpContractee();
-            signUpContractee.signUpContractee(
-              context,
-              _emailController.text,
-              _confirmPasswordController.text,
-              'contractee',
-              {
-                'user_type': 'contractee',
-                'address': _addressController.text,
-                'phone_number': _phoneController.text,
-                'full_name':
-                    '${_fNameController.text} ${_lNameController.text}',
-              },
-              () => validateFieldsContractee(
+            if (_isSigningUp) return; 
+            setState(() => _isSigningUp = true); 
+            try {
+              final signUpContractee = SignUpContractee();
+              signUpContractee.signUpContractee(
                 context,
-                _fNameController.text,
-                _lNameController.text,
                 _emailController.text,
-                _passwordController.text,
                 _confirmPasswordController.text,
-              ),
-            );
+                'contractee',
+                {
+                  'user_type': 'contractee',
+                  'address': _addressController.text,
+                  'phone_number': _phoneController.text,
+                  'full_name':
+                      '${_fNameController.text} ${_lNameController.text}',
+                },
+                () => validateFieldsContractee(
+                  context,
+                  _fNameController.text,
+                  _lNameController.text,
+                  _emailController.text,
+                  _passwordController.text,
+                  _confirmPasswordController.text,
+                ),
+              );
+            } finally {
+              if (mounted) setState(() => _isSigningUp = false); 
+            }
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.amber,
@@ -261,14 +268,23 @@ class _RegistrationPageState extends State<RegistrationPage> {
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          child: const Text(
-            "Sign Up",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          child: _isSigningUp
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : const Text(
+                  "Sign Up",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
         ),
         const SizedBox(height: 20),
         InkWell(

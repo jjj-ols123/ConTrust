@@ -122,35 +122,47 @@ class SuperAdminAuditService {
   }
 
   Future<void> logAuditEvent({
-    String? userId,
-    required String action,
-    String? details,
-    String? category,
-    Map<String, dynamic>? metadata,
-  }) async {
-    try {
-      final detailsJson = metadata != null ? jsonEncode(metadata) : details;
-
-      await _supabase.from('AuditLogs').insert({
-        'users_id': userId,
-        'action': action,
-        'details': detailsJson,
-        'category': category ?? _deriveCategoryFromAction(action),
-        'timestamp': DateTime.now().toUtc().toIso8601String(),
+  String? userId,
+  required String action,
+  String? details,
+  String? category,
+  Map<String, dynamic>? metadata,
+}) async {
+  try {
+    String? detailsJson;
+    if (metadata != null) {
+      final safeMetadata = metadata.map((key, value) {
+        if (value is DateTime) return MapEntry(key, value.toIso8601String());
+        if (value is! String && value is! num && value is! bool && value != null) {
+          return MapEntry(key, value.toString());
+        }
+        return MapEntry(key, value);
       });
-    } catch (e) {
-      SuperAdminErrorService().logError(
-        errorMessage: 'Failed to log audit event: ',
-        module: 'Audit Logs Service',
-        severity: 'Medium',
-        extraInfo: {
-          'operation': 'Log Audit Event',
-          'action': action,
-          'timestamp': DateTime.now().toIso8601String(),
-        },
-      );
+      detailsJson = jsonEncode(safeMetadata);
+    } else {
+      detailsJson = details;
     }
+
+    await _supabase.from('AuditLogs').insert({
+      'users_id': userId,
+      'action': action,
+      'details': detailsJson,
+      'category': category ?? _deriveCategoryFromAction(action),
+      'timestamp': DateTime.now().toUtc().toIso8601String(),
+    });
+  } catch (e) {
+    SuperAdminErrorService().logError(
+      errorMessage: 'Failed to log audit event: $e',
+      module: 'Audit Logs Service',
+      severity: 'Medium',
+      extraInfo: {
+        'operation': 'Log Audit Event',
+        'action': action,
+        'timestamp': DateTime.now().toIso8601String(),
+      },
+    );
   }
+}
 
   String _deriveCategoryFromAction(String action) {
     switch (action.toLowerCase()) {
