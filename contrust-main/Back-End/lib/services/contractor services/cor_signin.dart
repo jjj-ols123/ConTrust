@@ -69,7 +69,7 @@ class SignInContractor {
           .eq('users_id', user.id)
           .maybeSingle();
 
-      final verified = userRow?['verified'] as bool? ?? false;
+      final verified = (userRow?['verified'] is bool) ? (userRow!['verified'] as bool) : false;
 
       if (!verified) {
         await supabase.auth.signOut();
@@ -121,6 +121,9 @@ class SignInContractor {
       );
 
       ConTrustSnackBar.success(context, 'Successfully logged in');
+
+      if (!context.mounted) return;
+
       Navigator.pushNamedAndRemoveUntil(
           context, '/dashboard', (route) => false);
           
@@ -149,6 +152,8 @@ class SignInContractor {
         },
       );
       
+      if (!context.mounted) return;
+
       if (e.toString().contains('null check')) {
         ConTrustSnackBar.error(context, 'Authentication error. Please try again.');
       } else {

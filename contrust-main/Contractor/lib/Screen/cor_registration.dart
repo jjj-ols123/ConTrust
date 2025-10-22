@@ -550,9 +550,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: canSignUp && !_isSigningUp  // Disable during sign-up
+                      onPressed: canSignUp && !_isSigningUp 
                           ? () async {
-                              setState(() => _isSigningUp = true);  // Start loading
+                              setState(() => _isSigningUp = true);  
                               try {
                                 final signUpContractor = SignUpContractor();
                                 await signUpContractor.signUpContractor(
@@ -564,7 +564,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     'user_type': "contractor",
                                     'firmName': firmNameController.text,
                                     'contactNumber': contactNumberController.text,
-                                    'address': addressController.text, // added
+                                    'address': addressController.text, 
                                     'verificationFiles': _verificationFiles,
                                   },
                                   () => validateFieldsContractor(
@@ -577,7 +577,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   ),
                                 );
                               } finally {
-                                if (mounted) setState(() => _isSigningUp = false);  // Stop loading
+                                if (mounted) setState(() => _isSigningUp = false);  
                               }
                             }
                           : null,

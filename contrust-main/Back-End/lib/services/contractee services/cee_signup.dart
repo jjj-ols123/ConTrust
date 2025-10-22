@@ -59,7 +59,6 @@ class SignUpContractee {
           'address': data?['address'] ?? '',
           'created_at': DateTime.now().toIso8601String(),
           'project_history_count': project,
-          'verified': false,
         };
 
         final insertResponse = await supabase
