@@ -140,7 +140,7 @@ class SignUpContractor {
           final url = await UserService().uploadImage(
             fileBytes,
             'verification',
-            folderPath: 'contractor/$userId',
+            folderPath: userId,
             fileName: fileName,
           );
 

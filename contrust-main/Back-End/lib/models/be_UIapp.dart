@@ -365,7 +365,7 @@ class ProjectView extends StatelessWidget {
                 const SizedBox(height: 14),
                 Row(
                   children: [
-                    const Icon(Icons.attach_money_outlined,
+                    const Icon(Icons.money,
                         size: 18, color: Colors.grey),
                     const SizedBox(width: 6),
                     Text(

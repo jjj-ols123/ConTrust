@@ -1,5 +1,6 @@
 // ignore_for_file: unused_field, deprecated_member_use
 
+import 'dart:async';
 import 'package:backend/services/superadmin%20services/superadmin_service.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
@@ -16,51 +17,78 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
   Map<String, dynamic> _systemStats = {};
   Map<String, dynamic> _systemHealth = {};
   Map<String, dynamic> _dashboardData = {};
+  Map<String, dynamic> _performanceMetrics = {};
   List<Map<String, dynamic>> _systemAlerts = [];
   bool _isLoading = true;
   String? _error;
+  Timer? _pollingTimer;
 
   @override
   void initState() {
     super.initState();
     _loadDashboardData();
+    _startPolling();
   }
 
-  Future<void> _loadDashboardData() async {
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPolling() {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (mounted) {
+        _loadDashboardData(silent: true);
+      }
+    });
+  }
+
+  Future<void> _loadDashboardData({bool silent = false}) async {
     try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
+      if (!silent) {
+        setState(() {
+          _isLoading = true;
+          _error = null;
+        });
+      }
 
       final results = await Future.wait([
         SuperAdminServiceBackend.getSystemStatistics(),
         SuperAdminServiceBackend.getSystemHealthStatus(),
         SuperAdminServiceBackend.getDashboardData(),
         SuperAdminServiceBackend.getSystemAlerts(),
+        SuperAdminServiceBackend.getBackendPerformanceMetrics(),
       ]);
 
-      setState(() {
-        _systemStats = results[0] as Map<String, dynamic>; 
-        _systemHealth = results[1] as Map<String, dynamic>;
-        _dashboardData = results[2] as Map<String, dynamic>;
-        _systemAlerts = results[3] as List<Map<String, dynamic>>;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _systemStats = results[0] as Map<String, dynamic>; 
+          _systemHealth = results[1] as Map<String, dynamic>;
+          _dashboardData = results[2] as Map<String, dynamic>;
+          _systemAlerts = results[3] as List<Map<String, dynamic>>;
+          _performanceMetrics = results[4] as Map<String, dynamic>;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to load Super Admin Dashboard data: ',
-        module: 'Super Admin Dashboard',
-        severity: 'Medium',
-        extraInfo: {
-          'operation': 'Load Dashboard Data',
-          'timestamp': DateTime.now().toIso8601String(),
-        },
-      );
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      if (!silent) {
+        await SuperAdminErrorService().logError(
+          errorMessage: 'Failed to load Super Admin Dashboard data: ',
+          module: 'Super Admin Dashboard',
+          severity: 'Medium',
+          extraInfo: {
+            'operation': 'Load Dashboard Data',
+            'timestamp': DateTime.now().toIso8601String(),
+          },
+        );
+      }
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -109,6 +137,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
         _systemHealth,
         _systemAlerts,
         _dashboardData,
+        performanceData: _performanceMetrics,
       ),
     );
   }

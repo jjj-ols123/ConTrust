@@ -71,11 +71,21 @@ class BuildDashboard {
               style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.black),
             ),
           ),
-          if (check['response_time_ms'] != null)
-            Text(
-              '${check['response_time_ms']}ms',
-              style: TextStyle(color: statusColor, fontSize: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
+            child: Text(
+              status.toUpperCase(),
+              style: TextStyle(
+                color: statusColor,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -127,9 +137,21 @@ class BuildDashboard {
           Icon(Icons.warning_outlined, color: severityColor, size: 16),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              alert['error_message'] ?? 'Unknown alert',
-              style: const TextStyle(fontSize: 14, color: Colors.black),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  alert['message'] ?? alert['error_message'] ?? 'Unknown alert',
+                  style: const TextStyle(fontSize: 14, color: Colors.black),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (alert['module'] != null)
+                  Text(
+                    alert['module'],
+                    style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                  ),
+              ],
             ),
           ),
         ],
@@ -140,7 +162,7 @@ class BuildDashboard {
   static Widget buildMetricsGrid(BuildContext context, Map<String, dynamic> systemStats, Map<String, dynamic> systemHealth) {
     return GridView.count(
       crossAxisCount: 4,
-      crossAxisSpacing: 16,
+      crossAxisSpacing: 13,
       mainAxisSpacing: 16,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -204,12 +226,108 @@ class BuildDashboard {
     );
   }
 
+  static Widget buildPerformanceMetricsCard(Map<String, dynamic> performanceData) {
+    final metrics = performanceData['metrics'] as List<dynamic>? ?? [];
+    
+    if (metrics.isEmpty) return const SizedBox.shrink();
+
+    return Card(
+      elevation: 4,
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.speed_outlined, color: Colors.grey, size: 28),
+                const SizedBox(width: 8),
+                const Text(
+                  'Performance Metrics',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500, color: Colors.black),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ...metrics.map((metric) => buildPerformanceMetricItem(metric as Map<String, dynamic>)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget buildPerformanceMetricItem(Map<String, dynamic> metric) {
+    final status = metric['status'] ?? 'unknown';
+    final statusColor = status == 'good' ? Colors.green :
+                       status == 'warning' ? Colors.orange :
+                       status == 'error' ? Colors.red : Colors.grey;
+    final metricName = (metric['metric'] as String).replaceAll('_', ' ').toUpperCase();
+    
+    final hasData = (metric['average_ms'] ?? 0) > 0 || 
+                    (metric['requests_count'] ?? 0) > 0 ||
+                    (metric['total_errors'] ?? 0) > 0;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(
+            metric['metric'] == 'api_response_times' ? Icons.api_outlined :
+            metric['metric'] == 'database_query_times' ? Icons.storage_outlined :
+            metric['metric'] == 'error_rates' ? Icons.error_outline :
+            Icons.analytics_outlined,
+            color: statusColor,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              metricName,
+              style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.black),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              hasData ? status.toUpperCase() : 'NO DATA',
+              style: TextStyle(
+                color: hasData ? statusColor : Colors.grey.shade600,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _buildMetricChip(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 12, color: Colors.black),
+      ),
+    );
+  }
+
   static Widget buildDashboardLayout(
     BuildContext context,
     Map<String, dynamic> systemStats,
     Map<String, dynamic> systemHealth,
     List<Map<String, dynamic>> systemAlerts,
     Map<String, dynamic> dashboardData,
+    {Map<String, dynamic>? performanceData}
   ) {
     return Row(
       children: [
@@ -220,10 +338,21 @@ class BuildDashboard {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                buildMetricsGrid(context, systemStats, systemHealth),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(width: 8),
+                    Expanded(child: buildMetricsGrid(context, systemStats, systemHealth)),
+                    const SizedBox(width: 16),
+                  ],
+                ),
                 const SizedBox(height: 24),
                 buildSystemHealthCard(context, systemHealth),
                 const SizedBox(height: 24),
+                if (performanceData != null)
+                  buildPerformanceMetricsCard(performanceData),
+                if (performanceData != null)
+                  const SizedBox(height: 24),
                 buildAlertsCard(systemAlerts),
               ],
             ),

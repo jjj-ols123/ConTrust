@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
+import 'dart:async';
 import 'package:backend/services/superadmin%20services/superadmin_service.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
@@ -85,37 +86,26 @@ class BuildSystemMonitor {
               style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.black),
             ),
           ),
-          if (check['response_time_ms'] != null)
-            Text(
-              '${check['response_time_ms']}ms',
-              style: TextStyle(color: statusColor, fontSize: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
-          if (check['metrics'] != null)
-            _buildMetricsSummary(check['metrics']),
+            child: Text(
+              status.toUpperCase(),
+              style: TextStyle(
+                color: statusColor,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  static Widget _buildMetricsSummary(Map<String, dynamic> metrics) {
-    final entries = metrics.entries.take(2); // Show only first 2 metrics
-    return Row(
-      children: entries.map((entry) {
-        return Container(
-          margin: const EdgeInsets.only(left: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            '${entry.key}: ${entry.value}',
-            style: const TextStyle(fontSize: 10, color: Colors.black),
-          ),
-        );
-      }).toList(),
-    );
-  }
 
   static Widget buildPerformanceMetricsCard(BuildContext context, Map<String, dynamic> performanceData, VoidCallback? onRefresh) {
     return Card(
@@ -158,89 +148,51 @@ class BuildSystemMonitor {
     final statusColor = status == 'good' ? Colors.green :
                        status == 'warning' ? Colors.orange :
                        status == 'error' ? Colors.red : Colors.grey;
+    
+    final hasData = (metric['average_ms'] ?? 0) > 0 || 
+                    (metric['requests_count'] ?? 0) > 0 ||
+                    (metric['total_errors'] ?? 0) > 0;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(
-                metric['metric'] == 'api_response_times' ? Icons.api_outlined :
-                metric['metric'] == 'database_query_times' ? Icons.storage_outlined :
-                metric['metric'] == 'error_rates' ? Icons.error_outline :
-                metric['metric'] == 'throughput' ? Icons.trending_up_outlined :
-                Icons.analytics_outlined,
-                color: statusColor,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                (metric['metric'] as String).replaceAll('_', ' ').toUpperCase(),
-                style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.black),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  status.toUpperCase(),
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
+          Icon(
+            metric['metric'] == 'api_response_times' ? Icons.api_outlined :
+            metric['metric'] == 'database_query_times' ? Icons.storage_outlined :
+            metric['metric'] == 'error_rates' ? Icons.error_outline :
+            metric['metric'] == 'throughput' ? Icons.trending_up_outlined :
+            Icons.analytics_outlined,
+            color: statusColor,
+            size: 20,
           ),
-          const SizedBox(height: 8),
-          _buildMetricDetails(metric),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              (metric['metric'] as String).replaceAll('_', ' ').toUpperCase(),
+              style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.black),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              hasData ? status.toUpperCase() : 'NO DATA',
+              style: TextStyle(
+                color: hasData ? statusColor : Colors.grey.shade600,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  static Widget _buildMetricDetails(Map<String, dynamic> metric) {
-    final details = <String>[];
-
-    if (metric['average_ms'] != null) {
-      details.add('Avg: ${metric['average_ms']}ms');
-    }
-    if (metric['p95_ms'] != null) {
-      details.add('P95: ${metric['p95_ms']}ms');
-    }
-    if (metric['error_rate_percent'] != null) {
-      details.add('Error Rate: ${(metric['error_rate_percent'] as double).toStringAsFixed(1)}%');
-    }
-    if (metric['requests_per_hour'] != null) {
-      details.add('Requests/Hour: ${metric['requests_per_hour']}');
-    }
-    if (metric['slow_queries_count'] != null) {
-      details.add('Slow Queries: ${metric['slow_queries_count']}');
-    }
-
-    return Wrap(
-      spacing: 8,
-      children: details.map((detail) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade50,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Text(
-            detail,
-            style: const TextStyle(fontSize: 12, color: Colors.black),
-          ),
-        );
-      }).toList(),
-    );
-  }
 
   static Widget buildSystemAlertsCard(List<Map<String, dynamic>> alerts, VoidCallback? onRefresh) {
     return Card(
@@ -319,94 +271,6 @@ class BuildSystemMonitor {
     );
   }
 
-  static Widget buildActivityDashboard(Map<String, dynamic> healthData) {
-    final checks = healthData['checks'] as List? ?? [];
-
-    return Card(
-      elevation: 4,
-      margin: const EdgeInsets.all(16),
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.show_chart_outlined, color: Colors.grey, size: 24),
-                const SizedBox(width: 8),
-                Text(
-                  'Activity Dashboard',
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500, color: Colors.black),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            GridView.count(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              children: checks.where((check) => check['metrics'] != null).map((check) {
-                return buildActivityCard(check);
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  static Widget buildActivityCard(Map<String, dynamic> check) {
-    final component = check['component'] as String;
-    final metrics = check['metrics'] as Map<String, dynamic>;
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            component.replaceAll('_', ' ').toUpperCase(),
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 8),
-          ...metrics.entries.take(3).map((entry) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    entry.key.replaceAll('_', ' '),
-                    style: const TextStyle(fontSize: 10, color: Colors.black87),
-                  ),
-                  Text(
-                    entry.value.toString(),
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ],
-      ),
-    );
-  }
 
   static Widget buildPerfLogsTable() {
     return const PerfLogsTable();
@@ -442,19 +306,37 @@ class SystemMonitorTableState extends State<SystemMonitorTable> {
   List<Map<String, dynamic>> _systemAlerts = [];
   bool _isLoading = true;
   String? _error;
+  Timer? _pollingTimer;
 
   @override
   void initState() {
     super.initState();
     _loadSystemData();
+    _startPolling();
   }
 
-  Future<void> _loadSystemData() async {
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPolling() {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (mounted) {
+        _loadSystemData(silent: true);
+      }
+    });
+  }
+
+  Future<void> _loadSystemData({bool silent = false}) async {
     try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
+      if (!silent) {
+        setState(() {
+          _isLoading = true;
+          _error = null;
+        });
+      }
 
       final results = await Future.wait([
        SuperAdminServiceBackend.getSystemHealthStatus(),
@@ -462,26 +344,32 @@ class SystemMonitorTableState extends State<SystemMonitorTable> {
         SuperAdminServiceBackend.getSystemAlerts(),
       ]);
 
-      setState(() {
-        _systemHealth = results[0] as Map<String, dynamic>;
-        _performanceMetrics = results[1] as Map<String, dynamic>;
-        _systemAlerts = results[2] as List<Map<String, dynamic>>;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _systemHealth = results[0] as Map<String, dynamic>;
+          _performanceMetrics = results[1] as Map<String, dynamic>;
+          _systemAlerts = results[2] as List<Map<String, dynamic>>;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      await _errorService.logError(
-        errorMessage: 'Failed to load system monitor data: ',
-        module: 'Super Admin System Monitor',
-        severity: 'High',
-        extraInfo: {
-          'operation': 'Load System Data',
-          'timestamp': DateTime.now().toIso8601String(),
-        },
-      );
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      if (!silent) {
+        await _errorService.logError(
+          errorMessage: 'Failed to load system monitor data: ',
+          module: 'Super Admin System Monitor',
+          severity: 'High',
+          extraInfo: {
+            'operation': 'Load System Data',
+            'timestamp': DateTime.now().toIso8601String(),
+          },
+        );
+      }
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -595,8 +483,6 @@ class SystemMonitorTableState extends State<SystemMonitorTable> {
           BuildSystemMonitor.buildPerformanceMetricsCard(context, _performanceMetrics, _refreshPerformanceMetrics),
           const SizedBox(height: 16),
           BuildSystemMonitor.buildSystemAlertsCard(_systemAlerts, _refreshSystemAlerts),
-          const SizedBox(height: 16),
-          BuildSystemMonitor.buildActivityDashboard(_systemHealth),
         ],
       ),
     );
@@ -615,30 +501,53 @@ class PerfLogsTableState extends State<PerfLogsTable> {
   List<Map<String, dynamic>> _perfLogs = [];
   bool _isLoading = true;
   String? _error;
+  Timer? _pollingTimer;
 
   @override
   void initState() {
     super.initState();
     _loadPerfLogs();
+    _startPolling();
   }
 
-  Future<void> _loadPerfLogs() async {
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPolling() {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (mounted) {
+        _loadPerfLogs(silent: true);
+      }
+    });
+  }
+
+  Future<void> _loadPerfLogs({bool silent = false}) async {
     try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
+      if (!silent) {
+        setState(() {
+          _isLoading = true;
+          _error = null;
+        });
+      }
 
       final logs = await _perfLogsService.getAllPerfLogs();
-      setState(() {
-        _perfLogs = logs;
-        _isLoading = false;
-      });
+      
+      if (mounted) {
+        setState(() {
+          _perfLogs = logs;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 

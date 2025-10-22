@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:backend/services/superadmin services/project_service.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
@@ -7,68 +8,78 @@ import 'package:backend/services/superadmin services/errorlogs_service.dart';
 class BuildProjects {
 
   static Widget buildProjectStatisticsCard(BuildContext context, Map<String, int> stats, VoidCallback? onRefresh) {
+    final total = stats['total'] ?? 0;
+    
     return Card(
-      elevation: 4,
+      elevation: 6,
       margin: const EdgeInsets.all(16),
       color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.work_outlined, color: Colors.grey, size: 24),
-                const SizedBox(width: 8),
-                Text(
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.analytics_outlined, color: Colors.grey.shade700, size: 24),
+                ),
+                const SizedBox(width: 12),
+                const Text(
                   'Project Statistics',
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500, color: Colors.black),
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.black),
                 ),
                 const Spacer(),
+                _buildAutoRefreshBadge(),
+                const SizedBox(width: 8),
                 if (onRefresh != null)
                   IconButton(
                     onPressed: onRefresh,
-                    icon: const Icon(Icons.refresh_outlined, color: Colors.grey),
+                    icon: Icon(Icons.refresh_outlined, color: Colors.grey.shade600),
                     tooltip: 'Refresh Statistics',
                   ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             Row(
               children: [
                 Expanded(
                   child: _buildStatItem(
                     'Total Projects',
-                    stats['total']?.toString() ?? '0',
+                    total.toString(),
                     Icons.work_outlined,
-                    Colors.grey,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
                   child: _buildStatItem(
                     'Active',
                     stats['active']?.toString() ?? '0',
-                    Icons.play_circle_outlined,
-                    Colors.green,
+                    Icons.trending_up_outlined,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
                   child: _buildStatItem(
                     'Completed',
                     stats['completed']?.toString() ?? '0',
                     Icons.check_circle_outlined,
-                    Colors.blue,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
                   child: _buildStatItem(
                     'Pending',
                     stats['pending']?.toString() ?? '0',
                     Icons.pending_outlined,
-                    Colors.orange,
                   ),
                 ),
               ],
@@ -79,33 +90,71 @@ class BuildProjects {
     );
   }
 
-  static Widget _buildStatItem(String label, String value, IconData icon, Color color) {
+  static Widget _buildStatItem(String label, String value, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.2)),
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
       ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: Colors.grey.shade700, size: 22),
+          ),
+          const SizedBox(height: 12),
           Text(
             value,
             style: const TextStyle(
-              fontSize: 18,
+              fontSize: 28,
               fontWeight: FontWeight.bold,
               color: Colors.black,
+              height: 1,
             ),
           ),
+          const SizedBox(height: 6),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: Colors.black,
+              color: Colors.grey.shade700,
+              fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _buildAutoRefreshBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.green.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.green.shade200, width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.autorenew, size: 12, color: Colors.green.shade700),
+          const SizedBox(width: 4),
+          Text(
+            '10s',
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.green.shade700,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -252,109 +301,166 @@ class BuildProjects {
   }
 
   static Widget buildProjectCard(BuildContext context, Map<String, dynamic> project) {
-    final statusColor = _getStatusColor(project['status'] ?? 'unknown');
+    final status = project['status'] ?? 'unknown';
+    final contractor = project['contractor'] is List && (project['contractor'] as List).isNotEmpty
+        ? (project['contractor'] as List).first
+        : project['contractor'];
+    final contractee = project['contractee'] is List && (project['contractee'] as List).isNotEmpty
+        ? (project['contractee'] as List).first
+        : project['contractee'];
+
+    final contractorName = contractor != null ? contractor['firm_name'] ?? 'Unassigned' : 'Unassigned';
+    final contracteeName = contractee != null ? contractee['full_name'] ?? 'Unknown Client' : 'Unknown Client';
 
     return Card(
-      elevation: 3,
+      elevation: 4,
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    project['title'] ?? 'Untitled Project',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade300, width: 1),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    child: Icon(Icons.work_outline, color: Colors.grey.shade700, size: 20),
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    (project['status'] ?? 'unknown').toUpperCase(),
-                    style: TextStyle(
-                      color: statusColor,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          project['title'] ?? 'Untitled Project',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade400, width: 1),
+                          ),
+                          child: Text(
+                            status.toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.black87,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              project['description'] ?? 'No description available',
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.black87,
+                ],
               ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const Icon(Icons.business_outlined, size: 16, color: Colors.grey),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    project['contractor']?['name'] ?? 'Unknown Contractor',
-                    style: const TextStyle(fontSize: 12, color: Colors.black),
-                    overflow: TextOverflow.ellipsis,
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  project['description'] ?? 'No description available',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade700,
+                    height: 1.4,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                const Icon(Icons.person_outlined, size: 16, color: Colors.grey),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    project['contractee']?['name'] ?? 'Unknown Contractee',
-                    style: const TextStyle(fontSize: 12, color: Colors.black),
-                    overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 12),
+              _buildInfoRow(Icons.business_outlined, contractorName),
+              const SizedBox(height: 6),
+              _buildInfoRow(Icons.person_outlined, contracteeName),
+              const Spacer(),
+              const Divider(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.money, size: 16, color: Colors.grey.shade700),
+                      const SizedBox(width: 4),
+                      Text(
+                        '₱${project['min_budget']?.toString() ?? 'N/A'} - ₱${project['max_budget']?.toString() ?? 'N/A'}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade800,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Text(
-                  'Budget: ₱${project['budget']?.toString() ?? 'N/A'}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black,
+                  Row(
+                    children: [
+                      Icon(Icons.calendar_today_outlined, size: 14, color: Colors.grey.shade600),
+                      const SizedBox(width: 4),
+                      Text(
+                        _formatDate(project['created_at']),
+                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                      ),
+                    ],
                   ),
-                ),
-                const Spacer(),
-                Text(
-                  _formatDate(project['created_at']),
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  static Widget _buildInfoRow(IconData icon, String text) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Icon(icon, size: 14, color: Colors.grey.shade700),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.black87,
+              fontWeight: FontWeight.w500,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 
@@ -378,20 +484,6 @@ class BuildProjects {
     }
   }
 
-  static Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return Colors.green;
-      case 'completed':
-        return Colors.blue;
-      case 'pending':
-        return Colors.orange;
-      case 'cancelled':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
 }
 
 class ProjectsManagementTable extends StatefulWidget {
@@ -410,45 +502,70 @@ class ProjectsManagementTableState extends State<ProjectsManagementTable> {
   String _searchQuery = '';
   String selectedStatus = 'All';
   String? _error;
+  Timer? _pollingTimer;
 
   @override
   void initState() {
     super.initState();
     _loadProjectData();
+    _startPolling();
   }
 
-  Future<void> _loadProjectData() async {
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPolling() {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      if (mounted) {
+        _loadProjectData(silent: true);
+      }
+    });
+  }
+
+  Future<void> _loadProjectData({bool silent = false}) async {
     try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
+      if (!silent) {
+        setState(() {
+          _isLoading = true;
+          _error = null;
+        });
+      }
 
       final results = await Future.wait([
         _projectService.getAllProjects(),
         _projectService.getProjectStatistics(),
       ]);
 
-      setState(() {
-        _allProjects = results[0] as List<Map<String, dynamic>>;
-        _filteredProjects = List.from(_allProjects);
-        _statistics = results[1] as Map<String, int>;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _allProjects = results[0] as List<Map<String, dynamic>>;
+          _filteredProjects = List.from(_allProjects);
+          _statistics = results[1] as Map<String, int>;
+          _isLoading = false;
+          _applyFilters();
+        });
+      }
     } catch (e) {
-      await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to load project data: ',
-        module: 'Super Admin Projects',
-        severity: 'High',
-        extraInfo: {
-          'operation': 'Load Project Data',
-          'timestamp': DateTime.now().toIso8601String(),
-        },
-      );
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      if (!silent) {
+        await SuperAdminErrorService().logError(
+          errorMessage: 'Failed to load project data: ',
+          module: 'Super Admin Projects',
+          severity: 'High',
+          extraInfo: {
+            'operation': 'Load Project Data',
+            'timestamp': DateTime.now().toIso8601String(),
+          },
+        );
+      }
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 
