@@ -45,14 +45,15 @@ class SignUpContractee {
           'users_id': signUpResponse.user!.id,
           'email': email,
           'name': data?['full_name'] ?? 'User',
+          'address': data?['address'] ?? '',
           'role': 'contractee',
           'status': 'active',
           'created_at': DateTime.now().toIso8601String(),
           'profile_image_url': data?['profilePhoto'],
-          'phone_number': '',
+          'phone_number': data?['phone_number'] ?? '',
           'verified': false,
         }, onConflict: 'users_id');
-
+        
         final contracteeData = {
           'contractee_id': signUpResponse.user!.id,
           'full_name': data?['full_name'],

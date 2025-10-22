@@ -24,10 +24,11 @@ class SignUpContractor {
       return;
     }
 
-    final List<Uint8List> verificationImages = (data?['verificationImages'] as List<Uint8List>? ?? []);
-    if (verificationImages.isEmpty) {
+    final List<Map<String, dynamic>> verificationFiles = (data?['verificationFiles'] as List<Map<String, dynamic>>? ?? []);
+
+    if (verificationFiles.isEmpty) {
       if (context.mounted) {
-        ConTrustSnackBar.error(context, 'Please upload a verification ID before signing up.');
+        ConTrustSnackBar.error(context, 'Please upload verification documents before signing up.');
       }
       return;
     }
@@ -56,6 +57,7 @@ class SignUpContractor {
           'users_id': userId,
           'email': email,
           'name': data?['firmName'] ?? 'Contractor Firm',
+          'address': data?['address'] ?? '',
           'role': 'contractor',
           'status': 'active',
           'created_at': DateTime.now().toIso8601String(),
@@ -69,6 +71,7 @@ class SignUpContractor {
           'contractor_id': userId,
           'firm_name': data?['firmName'] ?? '',
           'contact_number': data?['contactNumber'],
+          'address': data?['address'] ?? '', 
           'created_at': DateTime.now().toUtc().toIso8601String(),
         };
 
@@ -104,12 +107,14 @@ class SignUpContractor {
           throw Exception("Error saving contractor data");
         }
 
-        for (int i = 0; i < verificationImages.length; i++) {
-          final imageBytes = verificationImages[i];
-          final fileName = 'doc_$i.jpg';
+        for (int i = 0; i < verificationFiles.length; i++) {
+          final fileData = verificationFiles[i];
+          final fileBytes = fileData['bytes'] as Uint8List;
+          final fileName = fileData['name'] as String;
+          final isImage = fileData['isImage'] as bool;
 
           final url = await UserService().uploadImage(
-            imageBytes,
+            fileBytes,
             'verification',
             folderPath: 'contractor/$userId',
             fileName: fileName,
@@ -119,6 +124,7 @@ class SignUpContractor {
             'contractor_id': userId,
             'doc_url': url,
             'uploaded_at': DateTime.now().toIso8601String(),
+            'file_type': isImage ? 'image' : 'document', 
           });
         }
       }

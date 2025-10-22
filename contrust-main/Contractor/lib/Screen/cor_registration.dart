@@ -1,9 +1,10 @@
 // ignore_for_file: file_names, deprecated_member_use, library_private_types_in_public_api, use_build_context_synchronously
 import 'package:backend/utils/be_validation.dart';
 import 'package:backend/services/contractor services/cor_signup.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -18,11 +19,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmPasswordController = TextEditingController();
+  final TextEditingController addressController = TextEditingController(); // added
 
-  final List<Uint8List> _verificationImages = [];
+  // Change to store file data (name, bytes, type)
+  final List<Map<String, dynamic>> _verificationFiles = [];  // [{ 'name': String, 'bytes': Uint8List, 'isImage': bool }]
+
   final bool _isUploadingVerification = false;
 
-  bool get canSignUp => _verificationImages.isNotEmpty && !_isUploadingVerification;
+  bool get canSignUp => _verificationFiles.isNotEmpty && !_isUploadingVerification;
 
   @override
   Widget build(BuildContext context) {
@@ -99,6 +103,112 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  void _showVerificationUploadDialog(BuildContext context, VoidCallback onUpdate) async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Upload Verification Documents'),
+        content: StatefulBuilder(
+          builder: (context, setState) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Please upload clear photos of your ID, business license, or other documents.'),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  final result = await FilePicker.platform.pickFiles(
+                    type: FileType.custom,
+                    allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'],  
+                    allowMultiple: false,
+                  );
+                  if (result != null && result.files.isNotEmpty) {
+                    final file = result.files.first;
+                    final bytes = file.bytes;
+                    if (bytes != null) {
+                      final isImage = ['jpg', 'jpeg', 'png'].contains(file.extension?.toLowerCase());
+                      final duplicate = _verificationFiles.any((f) => listEquals(f['bytes'], bytes));
+                      if (duplicate) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('This file is already selected')),
+                        );
+                        return;
+                      }
+                      setState(() => _verificationFiles.add({
+                        'name': file.name,
+                        'bytes': bytes,
+                        'isImage': isImage,
+                      }));
+                      onUpdate();  // trigger parent rebuild to enable sign up button
+                    }
+                  }
+                },
+                icon: const Icon(Icons.attach_file),
+                label: const Text('Pick File'),
+              ),
+              const SizedBox(height: 16),
+              if (_verificationFiles.isNotEmpty)
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _verificationFiles.asMap().entries.map((e) {
+                    final idx = e.key;
+                    final file = e.value;
+                    final isImage = file['isImage'] as bool;
+                    return Stack(
+                      alignment: Alignment.topRight,
+                      children: [
+                        Container(
+                          width: 70,
+                          height: 70,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: isImage
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.memory(file['bytes'], fit: BoxFit.cover),
+                                )
+                              : Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(Icons.insert_drive_file, size: 24, color: Colors.grey),
+                                    Text(
+                                      file['name'].length > 10 ? '${file['name'].substring(0, 10)}...' : file['name'],
+                                      style: const TextStyle(fontSize: 10, color: Colors.grey),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                        ),
+                        GestureDetector(
+                          onTap: () => setState(() => _verificationFiles.removeAt(idx)),
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.black54,
+                            ),
+                            padding: const EdgeInsets.all(4),
+                            child: const Icon(Icons.close, size: 14, color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildRegistrationForm(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
     bool isPhone = screenWidth < 600;
@@ -141,6 +251,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
           decoration: InputDecoration(
             labelText: 'Firm Name',
             prefixIcon: const Icon(Icons.business),
+            filled: true,
+            fillColor: Colors.grey.shade100,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+        const SizedBox(height: 18),
+        TextFormField(
+          controller: addressController,
+          decoration: InputDecoration(
+            labelText: 'Address',
+            prefixIcon: const Icon(Icons.location_on),
             filled: true,
             fillColor: Colors.grey.shade100,
             border: OutlineInputBorder(
@@ -310,7 +434,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: ElevatedButton(
                       onPressed: _isUploadingVerification
                           ? null
-                          : () => _showVerificationUploadDialog(context),
+                          : () => _showVerificationUploadDialog(context, () => setState(() {})),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.amber.shade600,
                         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -347,7 +471,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   'user_type': "contractor",
                                   'firmName': firmNameController.text,
                                   'contactNumber': contactNumberController.text,
-                                  'verificationImages': _verificationImages,
+                                  'address': addressController.text, 
+                                  'verificationFiles': _verificationFiles,  // fixed mismatch
                                 },
                                 () => validateFieldsContractor(
                                   context,
@@ -386,7 +511,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: ElevatedButton(
                       onPressed: _isUploadingVerification
                           ? null
-                          : () => _showVerificationUploadDialog(context),
+                          : () => _showVerificationUploadDialog(context, () => setState(() {})),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.amber.shade600,
                         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -422,7 +547,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   'user_type': "contractor",
                                   'firmName': firmNameController.text,
                                   'contactNumber': contactNumberController.text,
-                                  'verificationImages': _verificationImages,
+                                  'address': addressController.text, // added
+                                  'verificationFiles': _verificationFiles,
                                 },
                                 () => validateFieldsContractor(
                                   context,
@@ -482,47 +608,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  void _showVerificationUploadDialog(BuildContext context) async {
-    final picker = ImagePicker();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Upload Verification Documents'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Please upload clear photos of your ID or business license.'),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () async {
-                final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-                if (pickedFile != null) {
-                  final bytes = await pickedFile.readAsBytes();
-                  setState(() {
-                    _verificationImages.add(bytes);
-                  });
-                }
-              },
-              icon: const Icon(Icons.camera_alt),
-              label: const Text('Pick Image'),
-            ),
-            const SizedBox(height: 16),
-            if (_verificationImages.isNotEmpty)
-              Wrap(
-                spacing: 8,
-                children: _verificationImages
-                    .map((image) => Image.memory(image, width: 50, height: 50))
-                    .toList(),
-              ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
+  @override
+  void dispose() {
+    firmNameController.dispose();
+    contactNumberController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    addressController.dispose(); 
+    super.dispose();
   }
 }

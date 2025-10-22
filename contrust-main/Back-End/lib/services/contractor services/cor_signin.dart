@@ -62,6 +62,37 @@ class SignInContractor {
       }
 
       final supabase = Supabase.instance.client;
+      final userRow = await supabase
+          .from('Users')
+          .select('verified')
+          .eq('users_id', signInResponse.user!.id)
+          .maybeSingle();
+
+      final verified = (userRow is Map && userRow?['verified'] != null)
+          ? (userRow?['verified'] as bool)
+          : false;
+
+      if (!verified) {
+
+        await supabase.auth.signOut();
+        await _auditService.logAuditEvent(
+          userId: signInResponse.user!.id,
+          action: 'USER_LOGIN_FAILED',
+          details: 'Contractor login blocked - account not verified',
+          metadata: {
+            'user_type': 'contractor',
+            'email': email,
+            'failure_reason': 'account_not_verified',
+          },
+        );
+        ConTrustSnackBar.show(
+          context,
+          'Please wait for your account to be verified to login',
+          type: SnackBarType.info,
+        );
+        return;
+      }
+
       await supabase.from('Users').update({
         'last_login': DateTime.now().toIso8601String(),
       }).eq('users_id', signInResponse.user!.id);
