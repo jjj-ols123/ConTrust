@@ -86,7 +86,6 @@ class ContractStatus {
 
   Icon? getFieldIcon(String fieldKey) {
     switch (fieldKey) {
-      // Date fields
       case 'Date':
       case 'Contract.CreationDate':
       case 'Start Date':
@@ -95,19 +94,16 @@ class ContractStatus {
       case 'Project.CompletionDate':
         return const Icon(Icons.calendar_today);
       
-      // People fields
       case 'Contractee.FirstName':
       case 'Contractee.LastName':
       case 'Contractor.FirstName':
       case 'Contractor.LastName':
         return const Icon(Icons.person);
       
-      // Company/Organization fields
       case 'Contractor.Company':
       case 'Contractor.Firm':
         return const Icon(Icons.business);
       
-      // Address fields
       case 'Contractee.Address':
       case 'Contractor.Address':
       case 'Contractee.City':
@@ -118,14 +114,12 @@ class ContractStatus {
       case 'Contractor.Province':
         return const Icon(Icons.location_on);
       
-      // Contact fields
       case 'Contractee.Phone':
       case 'Contractor.Phone':
       case 'Contractee.Email':
       case 'Contractor.Email':
         return const Icon(Icons.contact_phone);
       
-      // Project fields
       case 'Project.Description':
       case 'Project.ContractorDef':
       case 'Project.Scope':
@@ -141,14 +135,12 @@ class ContractStatus {
       case 'Project.InsuranceRequirement':
         return const Icon(Icons.security);
       
-      // Duration/Time fields
       case 'Duration':
       case 'Project.Duration':
       case 'Project.LaborHours':
       case 'Project.NumofDays':
         return const Icon(Icons.schedule);
       
-      // Money/Payment fields
       case 'Project.ContractPrice':
       case 'Labor Costs':
       case 'Material Costs':
@@ -165,7 +157,6 @@ class ContractStatus {
       case 'Penalty.Amount':
         return const Icon(Icons.money);
       
-      // Percentage fields
       case 'Overhead Percentage':
       case 'Late Fee Percentage':
       case 'Payment.DownPaymentPercentage':
@@ -174,12 +165,10 @@ class ContractStatus {
       case 'Payment.FinalPaymentPercentage':
         return const Icon(Icons.percent);
       
-      // Payment method/interval fields
       case 'Payment.Method':
       case 'Payment Interval':
         return const Icon(Icons.payment);
       
-      // Item fields
       case 'Item.1.Name':
       case 'Item.2.Name':
       case 'Item.3.Name':
@@ -202,7 +191,7 @@ class ContractStatus {
       case 'Item.3.Subtotal':
       case 'Item.4.Subtotal':
       case 'Item.5.Subtotal':
-        return const Icon(Icons.attach_money);
+        return const Icon(Icons.money);
       case 'Item.1.Quantity':
       case 'Item.2.Quantity':
       case 'Item.3.Quantity':
@@ -210,31 +199,25 @@ class ContractStatus {
       case 'Item.5.Quantity':
         return const Icon(Icons.numbers);
       
-      // Materials/Equipment
       case 'Materials.List':
         return const Icon(Icons.inventory);
       
-      // Legal/Time periods
       case 'Notice Period':
       case 'Warranty Period':
       case 'Bond.TimeFrame':
       case 'Inspection.PeriodDays':
         return const Icon(Icons.timer);
       
-      // Bond fields
       case 'Payment.DueDays':
         return const Icon(Icons.event);
       
-      // Milestones
       case 'Payment.Milestone1':
       case 'Payment.Milestone2':
         return const Icon(Icons.flag);
       
-      // License/Legal
       case 'Contractor.License':
         return const Icon(Icons.card_membership);
       
-      // Tax
       case 'Tax.List':
         return const Icon(Icons.receipt_long);
       
