@@ -94,7 +94,7 @@ class SignInContractee {
       if (context.mounted) {
         ConTrustSnackBar.success(context, 'Successfully logged in');
         Navigator.pushNamedAndRemoveUntil(
-            context, '/dashboard', (route) => false);
+            context, '/home', (route) => false);
       }
           
     } catch (e) {
