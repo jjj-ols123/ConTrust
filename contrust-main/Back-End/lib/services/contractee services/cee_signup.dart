@@ -82,7 +82,7 @@ class SignUpContractee {
           );
 
           await _errorService.logError(
-            errorMessage: 'Failed to insert contractee data for user ID ${signUpResponse.user!.id} - insert response was empty',
+            errorMessage: 'Failed to insert contractee data for user ID ${signUpResponse.user?.id} - insert response was empty',
             module: 'Contractee Sign-up',
             severity: 'High',
             extraInfo: {
