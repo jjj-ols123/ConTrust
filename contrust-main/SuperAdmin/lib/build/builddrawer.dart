@@ -361,21 +361,6 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
               }
             },
           ),
-          _SidebarItem(
-            icon: Icons.monitor_outlined,
-            label: 'System Monitor',
-            active: widget.currentPage == SuperAdminPage.systemMonitor,
-            onTap: () {
-              if (widget.currentPage != SuperAdminPage.systemMonitor) {
-                navigateToPage(
-                  const SuperAdminShell(
-                    currentPage: SuperAdminPage.systemMonitor,
-                    child: SystemMonitorPage(),
-                  ),
-                );
-              }
-            },
-          )
         ],
       ),
     );
@@ -732,27 +717,6 @@ class DashboardDrawer extends StatelessWidget {
                               const SuperAdminShell(
                                 currentPage: SuperAdminPage.errorLogs,
                                 child: ErrorLogs(),
-                              ),
-                          transitionDuration: Duration.zero,
-                          reverseTransitionDuration: Duration.zero,
-                        ),
-                      );
-                    },
-                  ),
-                  DrawerIcon(
-                    icon: Icons.monitor,
-                    label: 'System Monitor',
-                    iconSize: iconSize,
-                    fontSize: fontSize,
-                    color: Colors.teal,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        PageRouteBuilder(
-                          pageBuilder: (context, animation, secondaryAnimation) =>
-                              const SuperAdminShell(
-                                currentPage: SuperAdminPage.systemMonitor,
-                                child: SystemMonitorPage(),
                               ),
                           transitionDuration: Duration.zero,
                           reverseTransitionDuration: Duration.zero,
