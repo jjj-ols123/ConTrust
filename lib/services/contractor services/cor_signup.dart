@@ -82,7 +82,6 @@ class SignUpContractor {
           'users_id': userId,
           'email': email,
           'name': data?['firmName'] ?? 'Contractor Firm',
-          'address': data?['address'] ?? '',
           'role': 'contractor',
           'status': 'active',
           'created_at': DateTime.now().toIso8601String(),
