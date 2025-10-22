@@ -99,7 +99,7 @@ class SignInContractor {
           'last_login': DateTime.now().toIso8601String(),
         }).eq('users_id', user.id);
       } catch (e) {
-
+        
         await _errorService.logError(
           errorMessage: 'Failed to update last_login for contractor: $e',
           module: 'Contractor Sign-in',
