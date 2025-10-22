@@ -16,14 +16,14 @@ class ContractorUserProfileScreen extends StatefulWidget {
 
 class _ContractorUserProfileScreenState
     extends State<ContractorUserProfileScreen> {
-  late String firmName;
-  late String bio;
-  late String contactNumber;
-  late String specialization;
-  late String address;
-  late double rating;
-  late List<String> pastProjects;
-  late String? profileImage;
+  String firmName = "Loading...";
+  String bio = "Loading...";
+  String contactNumber = "Loading...";
+  String specialization = "Loading...";
+  String address = "Loading...";
+  double rating = 0.0;
+  List<String> pastProjects = [];
+  String? profileImage;
   bool isLoading = true;
   bool isUploading = false;
   bool isUploadingProfile = false;
@@ -53,11 +53,16 @@ class _ContractorUserProfileScreenState
   List<Map<String, dynamic>> allRatings = [];
   Map<int, int> ratingDistribution = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
   int totalReviews = 0;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    loadContractorData();
+    loadContractorData().timeout(const Duration(seconds: 10)).catchError((e) {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    });
     _loadCompletedProjects();
     bioController = TextEditingController();
     contactController = TextEditingController();
@@ -82,36 +87,46 @@ class _ContractorUserProfileScreenState
 
   Future<void> loadContractorData() async {
     try {
-      setState(() => isLoading = true);
+      setState(() {
+        isLoading = true;
+        _error = null;
+      });
       
       final result = await CorProfileService().loadContractorData(widget.contractorId);
       final contractorData = result['contractorData'];
       
-      setState(() {
-        if (contractorData != null) {
-          firmName = contractorData['firm_name'] ?? "No firm name";
-          bio = contractorData['bio'] ?? "No bio available";
-          contactNumber = contractorData['contact_number'] ?? "No contact number";
-          specialization = contractorData['specialization'] ?? "No specialization";
-          address = contractorData['address'] ?? "No address provided";
-          rating = contractorData['rating']?.toDouble() ?? 0.0;
-          profileImage = contractorData['profile_photo'];
-          pastProjects = List<String>.from(
-            contractorData['past_projects'] ?? [],
-          );
-        }
-        
-        completedProjectsCount = result['completedProjectsCount'];
-        allRatings = result['allRatings'];
-        ratingDistribution = result['ratingDistribution'];
-        totalReviews = result['totalReviews'];
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          if (contractorData != null) {
+            firmName = contractorData['firm_name'] ?? "No firm name";
+            bio = contractorData['bio'] ?? "No bio available";
+            contactNumber = contractorData['contact_number'] ?? "No contact number";
+            specialization = contractorData['specialization'] ?? "No specialization";
+            address = contractorData['address'] ?? "No address provided";
+            rating = contractorData['rating']?.toDouble() ?? 0.0;
+            profileImage = contractorData['profile_photo'];
+            pastProjects = List<String>.from(
+              contractorData['past_projects'] ?? [],
+            );
+          }
+          
+          completedProjectsCount = result['completedProjectsCount'];
+          allRatings = result['allRatings'];
+          ratingDistribution = result['ratingDistribution'];
+          totalReviews = result['totalReviews'];
+          isLoading = false;
+        });
+      }
       
       _updateControllers();
       await _loadCompletedProjects();
     } catch (e) {
-      setState(() => isLoading = false);
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -147,9 +162,39 @@ class _ContractorUserProfileScreenState
 
   @override
   Widget build(BuildContext context) {
+    if (_error != null) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF8F9FA),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+              const SizedBox(height: 16),
+              Text(
+                'Error loading profile',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500, color: Colors.black),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _error!,
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: loadContractorData,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     if (isLoading) {
       return const Scaffold(
-        backgroundColor: Color(0xFFF8F9FA),
+        backgroundColor: const Color(0xFFF8F9FA),
         body: Center(child: CircularProgressIndicator(color: Colors.amber,)),
       );
     }
