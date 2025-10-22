@@ -2,6 +2,7 @@
 
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
+import 'package:contractee/pages/cee_home.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
@@ -111,8 +112,10 @@ class SignUpContractee {
       if (!context.mounted) return;
       ConTrustSnackBar.success(context, 'Account successfully created');
 
-      await Future.delayed(const Duration(seconds: 2));  
-      Navigator.pop(context);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => HomePage()),
+      );
 
     } on AuthException catch (e) {
       await _auditService.logAuditEvent(

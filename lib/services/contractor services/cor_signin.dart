@@ -2,6 +2,7 @@
 
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
+import 'package:contractor/Screen/cor_dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
@@ -125,8 +126,7 @@ class SignInContractor {
 
       if (context.mounted) {
         ConTrustSnackBar.success(context, 'Successfully logged in');
-        Navigator.pushNamedAndRemoveUntil(
-            context, '/dashboard', (route) => false);
+        Navigator.push(context, MaterialPageRoute(builder: (context) => DashboardScreen(contractorId: user.id)));
       }
           
     } catch (e) {
