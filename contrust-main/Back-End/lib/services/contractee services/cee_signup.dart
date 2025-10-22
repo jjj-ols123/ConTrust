@@ -42,7 +42,7 @@ class SignUpContractee {
 
       if (userType == 'contractee') {
         await supabase.from('Users').upsert({
-          'users_id': signUpResponse.user!.id,
+          'users_id': signUpResponse.user?.id,
           'email': email,
           'name': data?['full_name'] ?? 'User',
           'address': data?['address'] ?? '',
@@ -55,7 +55,7 @@ class SignUpContractee {
         }, onConflict: 'users_id');
         
         final contracteeData = {
-          'contractee_id': signUpResponse.user!.id,
+          'contractee_id': signUpResponse.user?.id,
           'full_name': data?['full_name'],
           'address': data?['address'] ?? '',
           'created_at': DateTime.now().toIso8601String(),
@@ -70,7 +70,7 @@ class SignUpContractee {
 
         if (insertResponse.isEmpty) {
           await _auditService.logAuditEvent(
-            userId: signUpResponse?.user!.id,
+            userId: signUpResponse?.user?.id,
             action: 'USER_REGISTRATION_FAILED',
             details: 'Contractee registration failed - data insertion error',
             metadata: {
@@ -87,7 +87,7 @@ class SignUpContractee {
             severity: 'High',
             extraInfo: {
               'operation': 'Insert Contractee Data',
-              'contractee_id': signUpResponse.user!.id,
+              'contractee_id': signUpResponse.user?.id,
               'email': email,
               'timestamp': DateTime.now().toIso8601String(),
             },
@@ -97,7 +97,7 @@ class SignUpContractee {
       }
 
       await _auditService.logAuditEvent(
-        userId: signUpResponse?.user!.id,
+        userId: signUpResponse?.user?.id,
         action: 'USER_REGISTRATION',
         details: 'Contractee account created successfully',
         metadata: {

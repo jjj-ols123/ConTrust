@@ -42,7 +42,7 @@ class SignInContractee {
 
       if (userType?.toLowerCase() != 'contractee') {
         await _auditService.logAuditEvent(
-          userId: signInResponse?.user!.id,
+          userId: signInResponse?.user?.id,
           action: 'USER_LOGIN_FAILED',
           details: 'Login attempt with wrong user type',
           metadata: {
@@ -60,10 +60,10 @@ class SignInContractee {
       final supabase = Supabase.instance.client;
       await supabase.from('Users').update({
         'last_login': DateTime.now().toIso8601String(),
-      }).eq('users_id', signInResponse.user!.id);
+      }).eq('users_id', signInResponse.user?.id);
 
       await _auditService.logAuditEvent(
-        userId: signInResponse?.user!.id,
+        userId: signInResponse?.user?.id,
         action: 'USER_LOGIN',
         details: 'Contractee logged in successfully',
         metadata: {
