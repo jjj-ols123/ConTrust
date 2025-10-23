@@ -3,6 +3,8 @@ import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:typed_data';
 
 class CeeProfileService { 
 
@@ -148,6 +150,74 @@ class CeeProfileService {
       return '${difference.inMinutes} ${difference.inMinutes == 1 ? 'minute' : 'minutes'} ago';
     } else {
       return 'Just now';
+    }
+  }
+
+  Future<String?> uploadProfilePhoto({
+    required String contracteeId,
+    required BuildContext context,
+  }) async {
+    try {
+      // Pick image file
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+      );
+
+      if (result == null || result.files.isEmpty) {
+        return null;
+      }
+
+      final file = result.files.first;
+      final Uint8List? fileBytes = file.bytes;
+      final String fileName = file.name;
+
+      if (fileBytes == null) {
+        if (context.mounted) {
+          ConTrustSnackBar.error(context, 'Failed to read file');
+        }
+        return null;
+      }
+
+      // Generate unique filename
+      final String uniqueFileName = '${contracteeId}_${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      
+      // Upload to Supabase Storage
+      await Supabase.instance.client.storage
+          .from('profilephotos')
+          .uploadBinary(
+            uniqueFileName,
+            fileBytes,
+            fileOptions: FileOptions(
+              contentType: file.extension != null ? 'image/${file.extension}' : 'image/jpeg',
+              upsert: true,
+            ),
+          );
+
+      // Get public URL with cache-busting
+      final String baseImageUrl = Supabase.instance.client.storage
+          .from('profilephotos')
+          .getPublicUrl(uniqueFileName);
+      
+      // Add timestamp to prevent caching
+      final String imageUrl = '$baseImageUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+
+      // Update database
+      await Supabase.instance.client
+          .from('Contractee')
+          .update({'profile_photo': baseImageUrl})
+          .eq('contractee_id', contracteeId);
+
+      if (context.mounted) {
+        ConTrustSnackBar.success(context, 'Profile photo updated successfully!');
+      }
+
+      return imageUrl;
+    } catch (e) {
+      if (context.mounted) {
+        ConTrustSnackBar.error(context, 'Error uploading photo: ${e.toString()}');
+      }
+      return null;
     }
   }
 }

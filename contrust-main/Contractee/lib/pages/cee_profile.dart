@@ -21,6 +21,7 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
   String? profileImage;
   bool isLoading = true;
   bool isUploading = false;
+  bool isUploadingPhoto = false;
   int completedProjectsCount = 0;
   int ongoingProjectsCount = 0;
 
@@ -74,7 +75,14 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
           bio = contracteeData['bio'] ?? "No bio available";
           contactNumber = contracteeData['contact_number'] ?? "No contact number";
           address = contracteeData['address'] ?? "No address provided";
-          profileImage = contracteeData['profile_photo'];
+          
+          // Add cache-busting parameter to profile image
+          final String? rawProfileImage = contracteeData['profile_photo'];
+          if (rawProfileImage != null && rawProfileImage.isNotEmpty) {
+            profileImage = '$rawProfileImage?t=${DateTime.now().millisecondsSinceEpoch}';
+          } else {
+            profileImage = null;
+          }
         }
         
         completedProjectsCount = result['completedProjectsCount'];
@@ -189,6 +197,7 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
                           });
                         },
                         mainContent: _buildMainContent(),
+                        onUploadPhoto: isUploadingPhoto ? null : _uploadProfilePhoto,
                       ),
                     );
                   } else {
@@ -206,6 +215,7 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
                         });
                       },
                       mainContent: _buildMainContent(),
+                      onUploadPhoto: isUploadingPhoto ? null : _uploadProfilePhoto,
                     );
                   }
                 },
@@ -336,5 +346,39 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
         });
       },
     );
+  }
+
+  Future<void> _uploadProfilePhoto() async {
+    if (isUploadingPhoto) return;
+    
+    setState(() => isUploadingPhoto = true);
+    
+    try {
+      // Clear the image cache for the old profile image
+      if (profileImage != null && profileImage!.isNotEmpty) {
+        final oldImageUrl = profileImage!.split('?').first; // Remove query params
+        imageCache.evict(NetworkImage(oldImageUrl));
+      }
+      
+      final newImageUrl = await CeeProfileService().uploadProfilePhoto(
+        contracteeId: widget.contracteeId,
+        context: context,
+      );
+      
+      if (newImageUrl != null && mounted) {
+        setState(() {
+          profileImage = newImageUrl;
+          isUploadingPhoto = false;
+        });
+        // Reload data to ensure persistence
+        await loadContracteeData();
+      } else {
+        setState(() => isUploadingPhoto = false);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => isUploadingPhoto = false);
+      }
+    }
   }
 }

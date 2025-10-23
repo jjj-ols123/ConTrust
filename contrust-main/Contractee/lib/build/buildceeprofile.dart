@@ -25,6 +25,7 @@ class CeeProfileBuildMethods {
     required String selectedTab,
     required Function(String) onTabChanged,
     required Widget mainContent,
+    required VoidCallback? onUploadPhoto,
   }) {
     return Column(
       children: [
@@ -46,34 +47,66 @@ class CeeProfileBuildMethods {
             ),
             child: Column(
               children: [
-                Container(
-                  width: 85,
-                  height: 85,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.amber.shade200, width: 3),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
+                Stack(
+                  children: [
+                    Container(
+                      width: 85,
+                      height: 85,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.amber.shade200, width: 3),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: CircleAvatar(
-                    radius: 42,
-                    backgroundColor: Colors.grey.shade100,
-                    backgroundImage: (profileImage != null && profileImage.isNotEmpty)
-                        ? NetworkImage(profileImage)
-                        : NetworkImage(profileUrl),
-                    child: (profileImage == null || profileImage.isEmpty)
-                        ? Icon(
-                            Icons.person,
-                            size: 32,
-                            color: Colors.grey.shade400,
-                          )
-                        : null,
-                  ),
+                      child: CircleAvatar(
+                        radius: 42,
+                        backgroundColor: Colors.grey.shade100,
+                        backgroundImage: (profileImage != null && profileImage.isNotEmpty)
+                            ? NetworkImage(profileImage)
+                            : NetworkImage(profileUrl),
+                        child: (profileImage == null || profileImage.isEmpty)
+                            ? Icon(
+                                Icons.person,
+                                size: 32,
+                                color: Colors.grey.shade400,
+                              )
+                            : null,
+                      ),
+                    ),
+                    if (onUploadPhoto != null)
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: InkWell(
+                          onTap: onUploadPhoto,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.shade700,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt,
+                              size: 14,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 14),
                 Text(
@@ -148,6 +181,7 @@ class CeeProfileBuildMethods {
     required String selectedTab,
     required Function(String) onTabChanged,
     required Widget mainContent,
+    required VoidCallback? onUploadPhoto,
   }) {
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -174,34 +208,66 @@ class CeeProfileBuildMethods {
                   ),
                   child: Column(
                     children: [
-                      Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.amber.shade200, width: 3),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
+                      Stack(
+                        children: [
+                          Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.amber.shade200, width: 3),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.08),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        child: CircleAvatar(
-                          radius: 60,
-                          backgroundColor: Colors.grey.shade100,
-                          backgroundImage: (profileImage != null && profileImage.isNotEmpty)
-                              ? NetworkImage(profileImage)
-                              : NetworkImage(profileUrl),
-                          child: (profileImage == null || profileImage.isEmpty)
-                              ? Icon(
-                                  Icons.person,
-                                  size: 42,
-                                  color: Colors.grey.shade400,
-                                )
-                              : null,
-                        ),
+                            child: CircleAvatar(
+                              radius: 60,
+                              backgroundColor: Colors.grey.shade100,
+                              backgroundImage: (profileImage != null && profileImage.isNotEmpty)
+                                  ? NetworkImage(profileImage)
+                                  : NetworkImage(profileUrl),
+                              child: (profileImage == null || profileImage.isEmpty)
+                                  ? Icon(
+                                      Icons.person,
+                                      size: 42,
+                                      color: Colors.grey.shade400,
+                                    )
+                                  : null,
+                            ),
+                          ),
+                          if (onUploadPhoto != null)
+                            Positioned(
+                              bottom: 2,
+                              right: 2,
+                              child: InkWell(
+                                onTap: onUploadPhoto,
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.amber.shade700,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white, width: 3),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.2),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.camera_alt,
+                                    size: 18,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       const SizedBox(height: 24),
                       Text(
