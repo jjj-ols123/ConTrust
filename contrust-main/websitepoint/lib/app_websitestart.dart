@@ -21,13 +21,10 @@ class WebsiteStartPage extends StatelessWidget {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Background Image
-          const Image(
+            const Image(
             image: AssetImage('assets/bgloginscreen.jpg'),
             fit: BoxFit.cover,
           ),
-
-          // Gradient Overlay for readability
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -40,21 +37,16 @@ class WebsiteStartPage extends StatelessWidget {
               ),
             ),
           ),
-
-          // Content
-          SingleChildScrollView(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: isDesktop ? 1100 : screenWidth * 0.9,
-                  minHeight: MediaQuery.of(context).size.height,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                    // Title
+          Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: isDesktop ? 1100 : screenWidth * 0.9,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
                     Text(
                       'Welcome to ConTrust',
                       style: TextStyle(
@@ -73,8 +65,6 @@ class WebsiteStartPage extends StatelessWidget {
                     ),
 
                     const SizedBox(height: 8),
-
-                    // Subtitle
                     Text(
                       'Choose how you want to continue',
                       style: TextStyle(
@@ -86,8 +76,6 @@ class WebsiteStartPage extends StatelessWidget {
                     ),
 
                     SizedBox(height: isDesktop ? 48 : 32),
-
-                    // Cards
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 400),
                       child: isDesktop
@@ -107,22 +95,17 @@ class WebsiteStartPage extends StatelessWidget {
                               ],
                             ),
                     ),
-
                     const SizedBox(height: 32),
-
                     if (!_isWeb)
                       const Text(
                         'Tip: This chooser is intended for web builds.',
                         style: TextStyle(color: Colors.white70),
                       ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
             ),
           ),
-
-          // Super Admin Button
           Positioned(
             bottom: 16,
             right: 16,
@@ -147,7 +130,6 @@ class WebsiteStartPage extends StatelessWidget {
       ),
     );
   }
-
   Widget _buildContracteeCard(BuildContext context) {
     return _RoleCard(
       color: Colors.amber[600]!,

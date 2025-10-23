@@ -218,7 +218,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                asset: ImageAsset('assets/images/googleicon.png', height: 28),
+                Image.asset('assets/images/googleicon.png', height: 28),
                 const SizedBox(width: 12),
                 const Text(
                   "Continue with Google",
