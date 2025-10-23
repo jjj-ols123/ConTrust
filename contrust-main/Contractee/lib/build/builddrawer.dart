@@ -9,13 +9,11 @@ import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractee/pages/cee_profile.dart';
 import 'package:contractee/pages/cee_home.dart';
 import 'package:contractee/pages/cee_ongoing.dart';
-import 'package:contractee/pages/cee_transaction.dart';
 import 'package:contractee/pages/cee_chathistory.dart';
 import 'package:flutter/material.dart';
 
 enum ContracteePage {
   home,
-  transactions,
   ongoing,
   profile,
   notifications,
@@ -40,8 +38,6 @@ class ContracteeShell extends StatelessWidget {
     switch (currentPage) {
       case ContracteePage.home:
         return 'Home';
-      case ContracteePage.transactions:
-        return 'Transaction History';
       case ContracteePage.ongoing:
         return 'Ongoing Projects';
       case ContracteePage.profile:
@@ -389,22 +385,6 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
                     currentPage: ContracteePage.messages,
                     contracteeId: id ?? '',
                     child: const ContracteeChatHistoryPage(),
-                  ),
-                );
-              }
-            },
-          ),
-          _SidebarItem(
-            icon: Icons.receipt_long_outlined,
-            label: 'Transactions',
-            active: widget.currentPage == ContracteePage.transactions,
-            onTap: () {
-              if (widget.currentPage != ContracteePage.transactions) {
-                navigateToPage(
-                  ContracteeShell(
-                    currentPage: ContracteePage.transactions,
-                    contracteeId: widget.contracteeId ?? '',
-                    child: const TransactionPage(),
                   ),
                 );
               }

@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 
 class CeeProfileBuildMethods {
-  static Widget buildMainContent(String selectedTab, Function buildProjectsContent, Function buildAboutContent, Function buildHistoryContent) {
+  static Widget buildMainContent(String selectedTab, Function buildProjectsContent, Function buildAboutContent, Function buildHistoryContent, Function buildTransactionsContent) {
     switch (selectedTab) {
       case 'Projects':
         return buildProjectsContent();
@@ -10,6 +10,8 @@ class CeeProfileBuildMethods {
         return buildAboutContent();
       case 'History':
         return buildHistoryContent();
+      case 'Transactions':
+        return buildTransactionsContent();
       default:
         return buildProjectsContent();
     }
@@ -30,9 +32,9 @@ class CeeProfileBuildMethods {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
@@ -50,21 +52,21 @@ class CeeProfileBuildMethods {
                 Stack(
                   children: [
                     Container(
-                      width: 85,
-                      height: 85,
+                      width: 65,
+                      height: 65,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.amber.shade200, width: 3),
+                        border: Border.all(color: Colors.amber.shade200, width: 2.5),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.08),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
                       child: CircleAvatar(
-                        radius: 42,
+                        radius: 32,
                         backgroundColor: Colors.grey.shade100,
                         backgroundImage: (profileImage != null && profileImage.isNotEmpty)
                             ? NetworkImage(profileImage)
@@ -72,7 +74,7 @@ class CeeProfileBuildMethods {
                         child: (profileImage == null || profileImage.isEmpty)
                             ? Icon(
                                 Icons.person,
-                                size: 32,
+                                size: 26,
                                 color: Colors.grey.shade400,
                               )
                             : null,
@@ -85,7 +87,7 @@ class CeeProfileBuildMethods {
                         child: InkWell(
                           onTap: onUploadPhoto,
                           child: Container(
-                            padding: const EdgeInsets.all(6),
+                            padding: const EdgeInsets.all(5),
                             decoration: BoxDecoration(
                               color: Colors.amber.shade700,
                               shape: BoxShape.circle,
@@ -93,14 +95,14 @@ class CeeProfileBuildMethods {
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withOpacity(0.2),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
                                 ),
                               ],
                             ),
                             child: const Icon(
                               Icons.camera_alt,
-                              size: 14,
+                              size: 12,
                               color: Colors.white,
                             ),
                           ),
@@ -108,48 +110,48 @@ class CeeProfileBuildMethods {
                       ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
                 Text(
                   '$firstName $lastName',
                   style: const TextStyle(
-                    fontSize: 19,
+                    fontSize: 17,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF2D3748),
                     letterSpacing: 0.2,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 5),
+                const SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.amber.shade100,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     'Homeowner',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 11,
                       color: Colors.amber.shade900,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.amber.shade100, width: 1.5),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       _buildStatItem(ongoingProjectsCount, 'Ongoing', Colors.amber.shade700, Icons.work_outline),
-                      Container(width: 1, height: 35, color: Colors.grey.shade200),
+                      Container(width: 1, height: 30, color: Colors.grey.shade200),
                       _buildStatItem(completedProjectsCount, 'Completed', Colors.grey.shade600, Icons.check_circle_outline),
-                      Container(width: 1, height: 35, color: Colors.grey.shade200),
+                      Container(width: 1, height: 30, color: Colors.grey.shade200),
                       _buildStatItem(ongoingProjectsCount + completedProjectsCount, 'Total', Colors.grey.shade700, Icons.folder_outlined),
                     ],
                   ),
@@ -162,7 +164,7 @@ class CeeProfileBuildMethods {
           padding: const EdgeInsets.symmetric(horizontal: 12.0),
           child: buildMobileNavigation(selectedTab, onTabChanged),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
           child: mainContent,
@@ -343,6 +345,8 @@ class CeeProfileBuildMethods {
                       buildNavigation('About', selectedTab == 'About', () => onTabChanged('About'), Icons.info_outline),
                       const SizedBox(height: 4),
                       buildNavigation('History', selectedTab == 'History', () => onTabChanged('History'), Icons.history),
+                      const SizedBox(height: 4),
+                      buildNavigation('Transactions', selectedTab == 'Transactions', () => onTabChanged('Transactions'), Icons.receipt_long_outlined),
                     ],
                   ),
                 ),
@@ -908,21 +912,21 @@ class CeeProfileBuildMethods {
   static Widget _buildStatItem(int count, String label, Color color, IconData icon) {
     return Column(
       children: [
-        Icon(icon, color: color, size: 16),
-        const SizedBox(height: 4),
+        Icon(icon, color: color, size: 14),
+        const SizedBox(height: 3),
         Text(
           '$count',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 16,
             fontWeight: FontWeight.bold,
             color: color,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 1),
         Text(
           label,
           style: TextStyle(
-            fontSize: 10,
+            fontSize: 9,
             color: Colors.grey.shade600,
             fontWeight: FontWeight.w500,
           ),
@@ -932,18 +936,18 @@ class CeeProfileBuildMethods {
   }
   
   static Widget buildMobileNavigation(String selectedTab, Function(String) onTabChanged) {
-    final tabs = ['Projects', 'About', 'History'];
+    final tabs = ['Projects', 'About', 'History', 'Transactions'];
     
     return Container(
-      padding: const EdgeInsets.all(3),
+      padding: const EdgeInsets.all(2.5),
       decoration: BoxDecoration(
         color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
@@ -953,16 +957,16 @@ class CeeProfileBuildMethods {
           return Expanded(
             child: InkWell(
               onTap: () => onTabChanged(tab),
-              borderRadius: BorderRadius.circular(11),
+              borderRadius: BorderRadius.circular(10),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 11),
+                padding: const EdgeInsets.symmetric(vertical: 9),
                 decoration: BoxDecoration(
                   color: isActive ? Colors.white : Colors.transparent,
-                  borderRadius: BorderRadius.circular(11),
+                  borderRadius: BorderRadius.circular(10),
                   boxShadow: isActive ? [
                     BoxShadow(
                       color: Colors.amber.withOpacity(0.12),
-                      blurRadius: 6,
+                      blurRadius: 4,
                       offset: const Offset(0, 1),
                     ),
                   ] : [],
@@ -971,7 +975,7 @@ class CeeProfileBuildMethods {
                   tab,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                     color: isActive ? Colors.amber.shade900 : Colors.grey.shade600,
                   ),
@@ -1110,6 +1114,219 @@ class CeeProfileBuildMethods {
             ),
         ],
       ),
+    );
+  }
+
+  static Widget buildTransactions({
+    required List<Map<String, dynamic>> transactions,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200, width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.receipt_long_outlined,
+                  color: Colors.amber.shade700,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Transaction History',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2D3748),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${transactions.length} transaction${transactions.length != 1 ? 's' : ''}',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        
+        if (transactions.isEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 32),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade200, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.receipt_long,
+                    size: 48,
+                    color: Colors.grey.shade400,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'No Transactions Yet',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Your transaction history will appear here',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: transactions.length,
+            itemBuilder: (context, index) {
+              final transaction = transactions[index];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200, width: 1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 28,
+                        backgroundColor: Colors.amber.shade700,
+                        child: const Icon(Icons.business, color: Colors.white),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              transaction['companyName'] ?? 'Unknown Company',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF2D3748),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(Icons.person_outline, size: 14, color: Colors.grey.shade500),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    'Contractor: ${transaction['contractorName'] ?? 'Unknown'}',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(Icons.description, size: 14, color: Colors.grey.shade500),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    transaction['projectDescription'] ?? 'No description provided.',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        '₱${transaction['price'] ?? '0'}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+      ],
     );
   }
 }

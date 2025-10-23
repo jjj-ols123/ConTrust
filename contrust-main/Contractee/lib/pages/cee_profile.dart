@@ -44,11 +44,13 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
 
   List<Map<String, dynamic>> projectHistory = [];
   List<Map<String, dynamic>> ongoingProjects = [];
+  List<Map<String, dynamic>> transactions = [];
 
   @override
   void initState() {
     super.initState();
     loadContracteeData();
+    _loadTransactions();
   }
 
   @override
@@ -121,8 +123,8 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 16,
+              horizontal: 16,
+              vertical: 10,
             ),
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -136,34 +138,34 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
               boxShadow: [
                 BoxShadow(
                   color: Colors.amber.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+                  blurRadius: 6,
+                  offset: const Offset(0, 1),
                 ),
               ],
             ),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.amber.withOpacity(0.2),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
                       ),
                     ],
                   ),
-                  child: Icon(Icons.person_outline, color: Colors.amber.shade700, size: 22),
+                  child: Icon(Icons.person_outline, color: Colors.amber.shade700, size: 18),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     'Profile',
                     style: TextStyle(
-                      fontSize: 22,
+                      fontSize: 19,
                       fontWeight: FontWeight.bold,
                       color: Colors.amber.shade900,
                       letterSpacing: 0.5,
@@ -233,6 +235,7 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
       () => _buildProjectsContent(),
       () => _buildAboutContent(),
       () => _buildHistoryContent(),
+      () => _buildTransactionsContent(),
     );
   }
 
@@ -280,6 +283,27 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
       projectHistory: projectHistory,
       getTimeAgo: _getTimeAgo,
     );
+  }
+
+  Widget _buildTransactionsContent() {
+    return CeeProfileBuildMethods.buildTransactions(
+      transactions: transactions,
+    );
+  }
+
+  void _loadTransactions() {
+    // TODO: Load transactions from database
+    // For now, using sample data from the original transaction page
+    setState(() {
+      transactions = [
+        {
+          'companyName': 'Pau Construction Firm',
+          'contractorName': 'Contractor Pogi',
+          'projectDescription': 'Gumawa ng garage',
+          'price': 3500,
+        },
+      ];
+    });
   }
 
   String _getTimeAgo(DateTime dateTime) {
