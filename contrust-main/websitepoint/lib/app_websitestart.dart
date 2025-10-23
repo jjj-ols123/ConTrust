@@ -42,16 +42,18 @@ class WebsiteStartPage extends StatelessWidget {
           ),
 
           // Content
-          Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: isDesktop ? 1100 : screenWidth * 0.9,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
+          SingleChildScrollView(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: isDesktop ? 1100 : screenWidth * 0.9,
+                  minHeight: MediaQuery.of(context).size.height,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
                     // Title
                     Text(
                       'Welcome to ConTrust',
@@ -113,7 +115,8 @@ class WebsiteStartPage extends StatelessWidget {
                         'Tip: This chooser is intended for web builds.',
                         style: TextStyle(color: Colors.white70),
                       ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
