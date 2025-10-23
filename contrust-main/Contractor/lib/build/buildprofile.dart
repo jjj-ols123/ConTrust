@@ -475,7 +475,7 @@ class ProfileBuildMethods {
                     topRight: Radius.circular(16),
                   ),
                   image: const DecorationImage(
-                    image: AssetImage('bgloginscreen.jpg'),
+                    image: AssetImage('assets/images/bgloginscreen.jpg'),
                     fit: BoxFit.fill,
                   ),
                   ),
@@ -1093,7 +1093,6 @@ class ProfileBuildMethods {
     final tabs = ['Portfolio', 'About', 'Reviews', 'Client History'];
     
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -1106,25 +1105,53 @@ class ProfileBuildMethods {
         ],
       ),
       child: Row(
-        children: tabs.map((tab) {
+        children: tabs.asMap().entries.map((entry) {
+          final index = entry.key;
+          final tab = entry.value;
           final isActive = selectedTab == tab;
+          final isFirst = index == 0;
+          final isLast = index == tabs.length - 1;
+          
           return Expanded(
-            child: InkWell(
-              onTap: () => onTabChanged(tab),
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  color: isActive ? Colors.amber.shade50 : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => onTabChanged(tab),
+                borderRadius: BorderRadius.only(
+                  topLeft: isFirst ? const Radius.circular(12) : Radius.zero,
+                  bottomLeft: isFirst ? const Radius.circular(12) : Radius.zero,
+                  topRight: isLast ? const Radius.circular(12) : Radius.zero,
+                  bottomRight: isLast ? const Radius.circular(12) : Radius.zero,
                 ),
-                child: Text(
-                  tab,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                    color: isActive ? Colors.amber.shade700 : Colors.grey.shade600,
+                child: Ink(
+                  decoration: BoxDecoration(
+                    color: isActive ? Colors.amber.shade50 : Colors.transparent,
+                    borderRadius: BorderRadius.only(
+                      topLeft: isFirst ? const Radius.circular(12) : Radius.zero,
+                      bottomLeft: isFirst ? const Radius.circular(12) : Radius.zero,
+                      topRight: isLast ? const Radius.circular(12) : Radius.zero,
+                      bottomRight: isLast ? const Radius.circular(12) : Radius.zero,
+                    ),
+                    border: isActive 
+                        ? Border.all(color: Colors.amber.shade300, width: 2)
+                        : null,
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+                    child: Center(
+                      child: Text(
+                        tab,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                          color: isActive ? Colors.amber.shade700 : Colors.grey.shade600,
+                          height: 1.2,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),

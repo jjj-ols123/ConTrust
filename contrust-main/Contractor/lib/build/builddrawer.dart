@@ -184,7 +184,44 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
         ConTrustSnackBar.error(context, 'No current ongoing project found!');
         return;
       }
-      final projectId = activeProjects.first['project_id'];
+
+      String? projectId;
+      if (activeProjects.length > 1) {
+        projectId = await showDialog<String>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Select Project'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: activeProjects.length,
+                itemBuilder: (context, index) {
+                  final project = activeProjects[index];
+                  return ListTile(
+                    title: Text(project['title'] ?? 'Untitled Project'),
+                    subtitle: Text('Status: ${project['status'] ?? 'N/A'}'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () {
+                      Navigator.of(dialogContext).pop(project['project_id']);
+                    },
+                  );
+                },
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cancel'),
+              ),
+            ],
+          ),
+        );
+        
+        if (projectId == null) return; // User cancelled
+      } else {
+        projectId = activeProjects.first['project_id'];
+      }
 
       if (widget.currentPage != ContractorPage.projectManagement) {
         navigateToPage(
@@ -515,10 +552,123 @@ class _BottomDashboardDrawerState extends State<BottomDashboardDrawer>
   }
 }
 
-class DashboardDrawer extends StatelessWidget {
+class DashboardDrawer extends StatefulWidget {
   final ScrollController? scrollController;
   final String? contractorId;
   const DashboardDrawer({super.key, this.scrollController, this.contractorId});
+
+  @override
+  State<DashboardDrawer> createState() => _DashboardDrawerState();
+}
+
+class _DashboardDrawerState extends State<DashboardDrawer> {
+  bool _loadingPM = false;
+  final SuperAdminAuditService _auditService = SuperAdminAuditService();
+  final SuperAdminErrorService _errorService = SuperAdminErrorService();
+
+  Future<void> goProjectManagement() async {
+    if (widget.contractorId == null) return;
+    setState(() => _loadingPM = true);
+
+    try {
+      final activeProjects = await FetchService().fetchContractorActiveProjects(
+        widget.contractorId!,
+      );
+
+      setState(() => _loadingPM = false);
+
+      if (activeProjects.isEmpty) {
+        ConTrustSnackBar.error(context, 'No current ongoing project found!');
+        return;
+      }
+
+      String? projectId;
+      if (activeProjects.length > 1) {
+        projectId = await showDialog<String>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Select Project'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: activeProjects.length,
+                itemBuilder: (context, index) {
+                  final project = activeProjects[index];
+                  return ListTile(
+                    title: Text(project['title'] ?? 'Untitled Project'),
+                    subtitle: Text('Status: ${project['status'] ?? 'N/A'}'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () {
+                      Navigator.of(dialogContext).pop(project['project_id']);
+                    },
+                  );
+                },
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cancel'),
+              ),
+            ],
+          ),
+        );
+        
+        if (projectId == null) return;
+      } else {
+        projectId = activeProjects.first['project_id'];
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ContractorShell(
+            currentPage: ContractorPage.projectManagement,
+            contractorId: widget.contractorId!,
+            child: CorOngoingProjectScreen(projectId: projectId ?? ''),
+          ),
+        ),
+      );
+    } catch (e) {
+      setState(() => _loadingPM = false);
+      return;
+    }
+  }
+
+  void logout() async {
+    try {
+      await UserService().signOut();
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const ToLoginScreen()),
+        (route) => false,
+      );
+
+      await _auditService.logAuditEvent(
+        userId: widget.contractorId,
+        action: 'CONTRACTOR_LOGOUT',
+        details: 'Contractor logout',
+        metadata: {
+          'user_type': 'contractor',
+        },
+        category: 'Auth',
+      );
+    } catch (e) {
+      if (!mounted) return;
+        await _errorService.logError(
+          errorMessage: 'Logout failed ',
+          module: 'Logout Button Drawer', 
+          severity: 'Medium', 
+          extraInfo: { 
+            'operation': 'Logout attempt',
+            'error_id': widget.contractorId,
+            'timestamp': DateTime.now().toIso8601String(),
+          },
+        );
+      ConTrustSnackBar.error(context, 'Error logging out. Please try again.');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -569,7 +719,7 @@ class DashboardDrawer extends StatelessWidget {
           children: [
             Expanded(
               child: GridView.count(
-                controller: scrollController,
+                controller: widget.scrollController,
                 shrinkWrap: true,
                 crossAxisCount: crossAxisCount,
                 mainAxisSpacing: spacing,
@@ -586,10 +736,13 @@ class DashboardDrawer extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder:
-                              (context) => ContractorChatHistoryPage(
-                                contractorId: contractorId,
-                              ),
+                          builder: (context) => ContractorShell(
+                            currentPage: ContractorPage.messages,
+                            contractorId: widget.contractorId!,
+                            child: ContractorChatHistoryPage(
+                              contractorId: widget.contractorId,
+                            ),
+                          ),
                         ),
                       );
                     },
@@ -604,9 +757,11 @@ class DashboardDrawer extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder:
-                              (context) =>
-                                  ContractType(contractorId: contractorId!),
+                          builder: (context) => ContractorShell(
+                            currentPage: ContractorPage.contracts,
+                            contractorId: widget.contractorId!,
+                            child: ContractType(contractorId: widget.contractorId!),
+                          ),
                         ),
                       );
                     },
@@ -621,9 +776,11 @@ class DashboardDrawer extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder:
-                              (context) =>
-                                  BiddingScreen(contractorId: contractorId!),
+                          builder: (context) => ContractorShell(
+                            currentPage: ContractorPage.bidding,
+                            contractorId: widget.contractorId!,
+                            child: BiddingScreen(contractorId: widget.contractorId!),
+                          ),
                         ),
                       );
                     },
@@ -638,13 +795,32 @@ class DashboardDrawer extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder:
-                              (context) => ContractorUserProfileScreen(
-                                contractorId: contractorId!,
-                              ),
+                          builder: (context) => ContractorShell(
+                            currentPage: ContractorPage.profile,
+                            contractorId: widget.contractorId!,
+                            child: ContractorUserProfileScreen(
+                              contractorId: widget.contractorId!,
+                            ),
+                          ),
                         ),
                       );
                     },
+                  ),
+                  DrawerIcon(
+                    icon: Icons.work_outline,
+                    label: _loadingPM ? 'Loading...' : 'Projects',
+                    iconSize: iconSize,
+                    fontSize: fontSize,
+                    color: Colors.amber.shade700,
+                    onTap: _loadingPM ? () {} : goProjectManagement,
+                  ),
+                  DrawerIcon(
+                    icon: Icons.logout,
+                    label: 'Logout',
+                    iconSize: iconSize,
+                    fontSize: fontSize,
+                    color: Colors.red.shade600,
+                    onTap: logout,
                   ),
                 ],
               ),

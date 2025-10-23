@@ -19,7 +19,6 @@ class UserService {
       
       return response;
     } catch (e) {
-      print('SignIn error in UserService: $e');
       rethrow; 
     }
   }
@@ -39,8 +38,6 @@ class UserService {
       await Future.delayed(const Duration(milliseconds: 100));
       retries++;
     }
-    
-    print('Warning: Auth state consistency check timed out');
   }
 
   Future<AuthResponse> signUp({
@@ -61,7 +58,6 @@ class UserService {
       
       return response;
     } catch (e) {
-      print('SignUp error in UserService: $e');
       rethrow;
     }
   }

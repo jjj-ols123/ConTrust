@@ -65,7 +65,10 @@ class _ContractorViewContractPageState extends State<ContractorViewContractPage>
         errorMessage = null;
       });
 
-      final data = await ViewContractService.loadContract(widget.contractId);
+      final data = await ViewContractService.loadContract(
+        widget.contractId,
+        contractorId: widget.contractorId,
+      );
       
       setState(() {
         contractData = data;

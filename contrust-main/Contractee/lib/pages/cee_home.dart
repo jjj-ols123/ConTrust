@@ -269,6 +269,7 @@ class _HomePageState extends State<HomePage> {
                     ),
               const SizedBox(height: 30),
               HomePageBuilder.buildStatsSection(
+                context: context,
                 projects: projects,
                 contractors: contractors,
               ),

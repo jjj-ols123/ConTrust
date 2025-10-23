@@ -208,7 +208,7 @@ class CostPlusPDF {
 
     widgets.add(
       pw.Bullet(
-        text: 'Total Estimated Project Cost: ₱${ContractStyle.getFieldValue(fieldValues, 'Estimated.Total')}',
+        text: 'Total Estimated Project Cost: PHP${ContractStyle.getFieldValue(fieldValues, 'Estimated.Total')}',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
@@ -220,7 +220,7 @@ class CostPlusPDF {
     );
     widgets.add(
       pw.Bullet(
-        text: 'Retention Fee: ₱${ContractStyle.getFieldValue(fieldValues, 'Retention.Fee')} (held until project completion)',
+        text: 'Retention Fee: PHP${ContractStyle.getFieldValue(fieldValues, 'Retention.Fee')} (held until project completion)',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
@@ -523,7 +523,7 @@ class CostPlusPDF {
     );
     widgets.add(
       pw.Text(
-        'The Contractor shall furnish to the Contractee, within ${ContractStyle.getFieldValue(fieldValues, 'Bond.TimeFrame')} days, performance and payment bonds executed by a surety company licensed to do business in the jurisdiction where the project is located. The performance bond shall be in an amount not less than ₱${ContractStyle.getFieldValue(fieldValues, 'Bond.PerformanceAmount')} and shall guarantee the faithful performance of all Work under this Agreement.',
+        'The Contractor shall furnish to the Contractee, within ${ContractStyle.getFieldValue(fieldValues, 'Bond.TimeFrame')} days, performance and payment bonds executed by a surety company licensed to do business in the jurisdiction where the project is located. The performance bond shall be in an amount not less than PHP${ContractStyle.getFieldValue(fieldValues, 'Bond.PerformanceAmount')} and shall guarantee the faithful performance of all Work under this Agreement.',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),
@@ -532,7 +532,7 @@ class CostPlusPDF {
 
     widgets.add(
       pw.Text(
-        'The payment bond shall be in an amount not less than ₱${ContractStyle.getFieldValue(fieldValues, 'Bond.PaymentAmount')} and shall guarantee the payment to all subcontractors, laborers, and material suppliers for labor and materials furnished in connection with this Contract. The Contractor shall maintain these bonds in full force and effect throughout the duration of the project.',
+        'The payment bond shall be in an amount not less than PHP${ContractStyle.getFieldValue(fieldValues, 'Bond.PaymentAmount')} and shall guarantee the payment to all subcontractors, laborers, and material suppliers for labor and materials furnished in connection with this Contract. The Contractor shall maintain these bonds in full force and effect throughout the duration of the project.',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),

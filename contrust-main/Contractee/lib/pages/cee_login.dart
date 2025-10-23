@@ -6,7 +6,6 @@ import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractee/pages/cee_registration.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/services/contractee services/cee_signin.dart';
-import 'package:flutter/services.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

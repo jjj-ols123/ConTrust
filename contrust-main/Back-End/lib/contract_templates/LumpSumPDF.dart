@@ -200,25 +200,25 @@ class LumpSumPDF {
 
     widgets.add(
       pw.Bullet(
-        text: 'Down Payment: ₱${ContractStyle.getFieldValue(fieldValues, 'Payment.DownPayment')} (${ContractStyle.getFieldValue(fieldValues, 'Payment.DownPaymentPercentage')}% of total contract price) - Due upon contract signing',
+        text: 'Down Payment: PHP${ContractStyle.getFieldValue(fieldValues, 'Payment.DownPayment')} (${ContractStyle.getFieldValue(fieldValues, 'Payment.DownPaymentPercentage')}% of total contract price) - Due upon contract signing',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Progress Payments: ₱${ContractStyle.getFieldValue(fieldValues, 'Payment.ProgressPayments')} - To be paid based on percentage of work completed',
+        text: 'Progress Payments: PHP${ContractStyle.getFieldValue(fieldValues, 'Payment.ProgressPayments')} - To be paid based on percentage of work completed',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Final Payment: ₱${ContractStyle.getFieldValue(fieldValues, 'Payment.FinalPayment')} - Due upon final completion and acceptance',
+        text: 'Final Payment: PHP${ContractStyle.getFieldValue(fieldValues, 'Payment.FinalPayment')} - Due upon final completion and acceptance',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
     widgets.add(
       pw.Bullet(
-        text: 'Retention: ${ContractStyle.getFieldValue(fieldValues, 'Payment.RetentionPercentage')}% (₱${ContractStyle.getFieldValue(fieldValues, 'Payment.RetentionAmount')}) - Released after ${ContractStyle.getFieldValue(fieldValues, 'Payment.RetentionPeriod')} days from completion',
+        text: 'Retention: ${ContractStyle.getFieldValue(fieldValues, 'Payment.RetentionPercentage')}% (PHP${ContractStyle.getFieldValue(fieldValues, 'Payment.RetentionAmount')}) - Released after ${ContractStyle.getFieldValue(fieldValues, 'Payment.RetentionPeriod')} days from completion',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
@@ -261,7 +261,7 @@ class LumpSumPDF {
               ),
               pw.Padding(
                 padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('Amount (₱)', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                child: pw.Text('Amount (PHP)', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
               ),
               pw.Padding(
                 padding: const pw.EdgeInsets.all(8),
@@ -709,7 +709,7 @@ class LumpSumPDF {
     );
     widgets.add(
       pw.Text(
-        'The Contractor shall furnish to the Contractee, within ${ContractStyle.getFieldValue(fieldValues, 'Bond.TimeFrame')} days, performance and payment bonds executed by a surety company licensed to do business in the jurisdiction where the project is located. The performance bond shall be in an amount not less than ₱${ContractStyle.getFieldValue(fieldValues, 'Bond.PerformanceAmount')} and shall guarantee the faithful performance of all Work under this Agreement.',
+        'The Contractor shall furnish to the Contractee, within ${ContractStyle.getFieldValue(fieldValues, 'Bond.TimeFrame')} days, performance and payment bonds executed by a surety company licensed to do business in the jurisdiction where the project is located. The performance bond shall be in an amount not less than PHP${ContractStyle.getFieldValue(fieldValues, 'Bond.PerformanceAmount')} and shall guarantee the faithful performance of all Work under this Agreement.',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),
@@ -718,7 +718,7 @@ class LumpSumPDF {
 
     widgets.add(
       pw.Text(
-        'The payment bond shall be in an amount not less than ₱${ContractStyle.getFieldValue(fieldValues, 'Bond.PaymentAmount')} and shall guarantee the payment to all subcontractors, laborers, and material suppliers for labor and materials furnished in connection with this Contract. The Contractor shall maintain these bonds in full force and effect throughout the duration of the project.',
+        'The payment bond shall be in an amount not less than PHP${ContractStyle.getFieldValue(fieldValues, 'Bond.PaymentAmount')} and shall guarantee the payment to all subcontractors, laborers, and material suppliers for labor and materials furnished in connection with this Contract. The Contractor shall maintain these bonds in full force and effect throughout the duration of the project.',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),
@@ -782,7 +782,7 @@ class LumpSumPDF {
     );
     widgets.add(
       pw.Text(
-        'If the Contractor fails to complete the Work by the agreed completion date, and such delay is not excusable under the terms of this Contract, the Contractor shall pay liquidated damages in the amount of PHP${ContractStyle.getFieldValue(fieldValues, 'Penalty.DailyAmount')} per calendar day for each day of delay. These liquidated damages represent a reasonable estimate of the damages that the Contractee will suffer as a result of delayed completion.',
+        'If the Contractor fails to complete the Work by the agreed completion date, and such delay is not excusable under the terms of this Contract, the Contractor shall pay liquidated damages in the amount of PHP[Penalty.DailyAmount] per calendar day for each day of delay. These liquidated damages represent a reasonable estimate of the damages that the Contractee will suffer as a result of delayed completion.',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),

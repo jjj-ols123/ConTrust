@@ -197,6 +197,7 @@ class BuildProjects {
                 const SizedBox(width: 12),
                 DropdownButton<String>(
                   value: state.selectedStatus,
+                  dropdownColor: Colors.white,
                   hint: const Text('Status', style: TextStyle(color: Colors.black)),
                   items: ['All', 'active', 'completed', 'pending', 'cancelled']
                       .map((status) => DropdownMenuItem(
@@ -287,7 +288,7 @@ class BuildProjects {
                     crossAxisCount: screenWidth > 1200 ? 3 : screenWidth > 800 ? 2 : 1,
                     crossAxisSpacing: 15,
                     mainAxisSpacing: 15,
-                    childAspectRatio: screenWidth > 1200 ? 1.2 : 1.4,
+                    childAspectRatio: screenWidth > 1200 ? 1.5 : 1.8,
                   ),
                   itemBuilder: (ctx, index) {
                     final project = projects[index];
@@ -311,6 +312,8 @@ class BuildProjects {
 
     final contractorName = contractor != null ? contractor['firm_name'] ?? 'Unassigned' : 'Unassigned';
     final contracteeName = contractee != null ? contractee['full_name'] ?? 'Unknown Client' : 'Unknown Client';
+    final location = project['location'] ?? 'No location';
+    final startDate = project['start_date'] != null ? _formatDate(project['start_date']) : 'Not set';
 
     return Card(
       elevation: 4,
@@ -324,7 +327,7 @@ class BuildProjects {
           border: Border.all(color: Colors.grey.shade300, width: 1),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -332,14 +335,14 @@ class BuildProjects {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color: Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(Icons.work_outline, color: Colors.grey.shade700, size: 20),
+                    child: Icon(Icons.work_outline, color: Colors.grey.shade700, size: 18),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -347,26 +350,26 @@ class BuildProjects {
                         Text(
                           project['title'] ?? 'Untitled Project',
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: 15,
                             fontWeight: FontWeight.bold,
                             color: Colors.black,
                           ),
-                          maxLines: 2,
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 3),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: Colors.grey.shade200,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(6),
                             border: Border.all(color: Colors.grey.shade400, width: 1),
                           ),
                           child: Text(
                             status.toUpperCase(),
                             style: const TextStyle(
                               color: Colors.black87,
-                              fontSize: 10,
+                              fontSize: 9,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 0.5,
                             ),
@@ -377,41 +380,45 @@ class BuildProjects {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   project['description'] ?? 'No description available',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     color: Colors.grey.shade700,
-                    height: 1.4,
+                    height: 1.3,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               _buildInfoRow(Icons.business_outlined, contractorName),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               _buildInfoRow(Icons.person_outlined, contracteeName),
+              const SizedBox(height: 4),
+              _buildInfoRow(Icons.location_on_outlined, location),
+              const SizedBox(height: 4),
+              _buildInfoRow(Icons.calendar_today_outlined, 'Start: $startDate'),
               const Spacer(),
-              const Divider(height: 16),
+              const Divider(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.money, size: 16, color: Colors.grey.shade700),
+                      Icon(Icons.money, size: 14, color: Colors.grey.shade700),
                       const SizedBox(width: 4),
                       Text(
                         '₱${project['min_budget']?.toString() ?? 'N/A'} - ₱${project['max_budget']?.toString() ?? 'N/A'}',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: Colors.grey.shade800,
                         ),
@@ -420,11 +427,11 @@ class BuildProjects {
                   ),
                   Row(
                     children: [
-                      Icon(Icons.calendar_today_outlined, size: 14, color: Colors.grey.shade600),
+                      Icon(Icons.access_time_outlined, size: 12, color: Colors.grey.shade600),
                       const SizedBox(width: 4),
                       Text(
                         _formatDate(project['created_at']),
-                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                        style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
                       ),
                     ],
                   ),
@@ -441,19 +448,19 @@ class BuildProjects {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(4),
+          padding: const EdgeInsets.all(3),
           decoration: BoxDecoration(
             color: Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(5),
           ),
-          child: Icon(icon, size: 14, color: Colors.grey.shade700),
+          child: Icon(icon, size: 12, color: Colors.grey.shade700),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 6),
         Expanded(
           child: Text(
             text,
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               color: Colors.black87,
               fontWeight: FontWeight.w500,
             ),

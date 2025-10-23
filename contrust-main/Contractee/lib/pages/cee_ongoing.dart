@@ -135,7 +135,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
     if (path == null) return null;
     try {
       final response = await supabase.storage
-          .from('project_photos')
+          .from('projectphotos')
           .createSignedUrl(path, 60 * 60 * 24); // 24 hours
       return response;
     } catch (e) {

@@ -484,13 +484,24 @@ class FetchService {
     }
   }
 
-  Future<Map<String, dynamic>?> fetchContractData(String contractId) async {
+  Future<Map<String, dynamic>?> fetchContractData(
+    String contractId, {
+    String? contractorId,
+    String? contracteeId,
+  }) async {
     try {
-      final contract = await _supabase
+      final query = _supabase
           .from('Contracts')
           .select()
-          .eq('contract_id', contractId)
-          .single();
+          .eq('contract_id', contractId);
+      
+      if (contractorId != null) {
+        query.eq('contractor_id', contractorId);
+      } else if (contracteeId != null) {
+        query.eq('contractee_id', contracteeId);
+      }
+      
+      final contract = await query.single();
       return contract;
     } catch (e) {
       await _errorService.logError(
@@ -500,6 +511,8 @@ class FetchService {
         extraInfo: {
           'operation': 'Fetch Contract Data',
           'contract_id': contractId,
+          'contractor_id': contractorId,
+          'contractee_id': contracteeId,
         },
       );
       return null;
@@ -665,9 +678,13 @@ class FetchService {
     }
   }
 
-  Future<Map<String, dynamic>?> fetchContractWithDetails(String contractId) async {
+  Future<Map<String, dynamic>?> fetchContractWithDetails(
+    String contractId, {
+    String? contractorId,
+    String? contracteeId,
+  }) async {
     try {
-      final response = await _supabase
+      final query = _supabase
           .from('Contracts')
           .select('''
             *,
@@ -676,8 +693,16 @@ class FetchService {
             contractee:Contractee(*),
             contract_type:ContractTypes(*)
           ''')
-          .eq('contract_id', contractId)
-          .single();
+          .eq('contract_id', contractId);
+      
+      // Validate ownership
+      if (contractorId != null) {
+        query.eq('contractor_id', contractorId);
+      } else if (contracteeId != null) {
+        query.eq('contractee_id', contracteeId);
+      }
+      
+      final response = await query.single();
 
       return response;
     } catch (e) {
@@ -688,6 +713,8 @@ class FetchService {
         extraInfo: {
           'operation': 'Fetch Contract with Details',
           'contract_id': contractId,
+          'contractor_id': contractorId,
+          'contractee_id': contracteeId,
         },
       );
       return null;
@@ -723,13 +750,35 @@ class FetchService {
   }
 
   Future<List<Map<String, dynamic>>> fetchContractsForProject(
-      String projectId) async {
+    String projectId, {
+    String? contractorId,
+    String? contracteeId,
+  }) async {
     try {
-      final response = await _supabase
+      final query = _supabase
           .from('Contracts')
           .select('''*, contractee:Contractee(*)''')
-          .eq('project_id', projectId)
-          .order('created_at', ascending: false);
+          .eq('project_id', projectId);
+      
+      // Validate project ownership
+      if (contractorId != null || contracteeId != null) {
+        // First verify the user owns this project
+        final projectQuery = _supabase
+            .from('Projects')
+            .select('contractor_id, contractee_id')
+            .eq('project_id', projectId);
+        
+        final project = await projectQuery.single();
+        
+        final isOwner = (contractorId != null && project['contractor_id'] == contractorId) ||
+                       (contracteeId != null && project['contractee_id'] == contracteeId);
+        
+        if (!isOwner) {
+          throw Exception('Unauthorized: User does not own this project');
+        }
+      }
+      
+      final response = await query.order('created_at', ascending: false);
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
@@ -740,6 +789,8 @@ class FetchService {
         extraInfo: {
           'operation': 'Fetch Contracts for Project',
           'project_id': projectId,
+          'contractor_id': contractorId,
+          'contractee_id': contracteeId,
         },
       );
       return [];

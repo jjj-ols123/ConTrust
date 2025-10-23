@@ -22,7 +22,8 @@ class ConTrustSnackBar {
 
     showDialog(
       context: context,
-      builder: (context) {
+      barrierDismissible: type != SnackBarType.loading,
+      builder: (dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           backgroundColor: Colors.white,
@@ -31,7 +32,6 @@ class ConTrustSnackBar {
           title: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Icon Circle
               Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
@@ -73,7 +73,7 @@ class ConTrustSnackBar {
                   foregroundColor: config.backgroundColor,
                 ),
                 onPressed: () {
-                  Navigator.pop(context);
+                  Navigator.pop(dialogContext);
                   action.onPressed.call();
                 },
                 child: Text(action.label),
@@ -86,7 +86,7 @@ class ConTrustSnackBar {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(dialogContext),
               child: const Text('OK'),
             ),
           ],
@@ -154,7 +154,7 @@ class ConTrustSnackBar {
     show(context, message, type: SnackBarType.loading, duration: duration);
   }
 
-  // --- Reusable success/error/info methods below ---
+
   static void dashboardRefresh(BuildContext context) {
     success(context, 'Dashboard refreshed successfully');
   }

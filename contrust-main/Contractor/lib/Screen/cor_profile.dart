@@ -194,13 +194,13 @@ class _ContractorUserProfileScreenState
 
     if (isLoading) {
       return const Scaffold(
-        backgroundColor: const Color(0xFFF8F9FA),
+        backgroundColor: Color(0xFFF8F9FA),
         body: Center(child: CircularProgressIndicator(color: Colors.amber,)),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: Color(0xFFF8F9FA),
       body: Column(
         children: [
           Container(

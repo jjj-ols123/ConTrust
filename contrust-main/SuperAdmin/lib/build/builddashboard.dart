@@ -307,20 +307,6 @@ class BuildDashboard {
     );
   }
 
-  static Widget _buildMetricChip(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 12, color: Colors.black),
-      ),
-    );
-  }
-
   static Widget buildDashboardLayout(
     BuildContext context,
     Map<String, dynamic> systemStats,

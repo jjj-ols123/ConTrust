@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously_user_service.dart';, use_build_context_synchronously, use_build_context_synchronously, use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously_user_service.dart';, use_build_context_synchronously, use_build_context_synchronously, use_build_context_synchronously, use_build_context_synchronously, use_build_context_synchronously, use_build_context_synchronously
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
@@ -169,6 +169,7 @@ class SignUpContractor {
       ConTrustSnackBar.success(context, 'Account successfully created');
 
       await Future.delayed(const Duration(seconds: 2));  
+      // ignore: use_build_context_synchronously
       Navigator.pop(context);
       
     } on AuthException catch (e) {

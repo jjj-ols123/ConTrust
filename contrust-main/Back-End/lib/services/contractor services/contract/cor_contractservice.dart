@@ -217,9 +217,9 @@ class ContractorContractService {
     }
   }
 
-  static Future<Map<String, dynamic>> getContractById(String contractId) async {
+  static Future<Map<String, dynamic>> getContractById(String contractId, {String? contractorId}) async {
     try {
-      return await ContractService.getContractById(contractId);
+      return await ContractService.getContractById(contractId, contractorId: contractorId);
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Failed to get contract by ID: ',
@@ -228,6 +228,7 @@ class ContractorContractService {
         extraInfo: {
           'operation': 'Get Contract by ID',
           'contract_id': contractId,
+          'contractor_id': contractorId,
         },
       );
       rethrow;
@@ -292,12 +293,16 @@ class ContractorContractService {
     required String contractId,
     String? customFileName,
     bool saveToDevice = false,
+    String? contractorId,
+    String? contracteeId,
   }) async {
     try {
       return await ContractService.downloadContractPdfWithProgress(
         contractId: contractId,
         customFileName: customFileName,
         saveToDevice: saveToDevice,
+        contractorId: contractorId,
+        contracteeId: contracteeId,
       );
     } catch (e) {
       await _errorService.logError(
@@ -307,6 +312,8 @@ class ContractorContractService {
         extraInfo: {
           'operation': 'Download Contract PDF',
           'contract_id': contractId,
+          'contractor_id': contractorId,
+          'contractee_id': contracteeId,
         },
       );
       rethrow;
@@ -316,11 +323,15 @@ class ContractorContractService {
   static Future<String> getContractPdfPreviewUrl({
     required String contractId,
     int expiryHours = 24,
+    String? contractorId,
+    String? contracteeId,
   }) async {
     try {
       return await ContractService.getContractPdfPreviewUrl(
         contractId: contractId,
         expiryHours: expiryHours,
+        contractorId: contractorId,
+        contracteeId: contracteeId,
       );
     } catch (e) {
       await _errorService.logError(
@@ -330,6 +341,8 @@ class ContractorContractService {
         extraInfo: {
           'operation': 'Get Contract PDF Preview URL',
           'contract_id': contractId,
+          'contractor_id': contractorId,
+          'contractee_id': contracteeId,
         },
       );
       rethrow;
@@ -337,9 +350,16 @@ class ContractorContractService {
   }
 
   static Future<Map<String, dynamic>> validateContractPdf(
-      String contractId) async {
+    String contractId, {
+    String? contractorId,
+    String? contracteeId,
+  }) async {
     try {
-      return await ContractService.validateContractPdf(contractId);
+      return await ContractService.validateContractPdf(
+        contractId,
+        contractorId: contractorId,
+        contracteeId: contracteeId,
+      );
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Failed to validate contract PDF: ',
@@ -348,6 +368,8 @@ class ContractorContractService {
         extraInfo: {
           'operation': 'Validate Contract PDF',
           'contract_id': contractId,
+          'contractor_id': contractorId,
+          'contractee_id': contracteeId,
         },
       );
       rethrow;

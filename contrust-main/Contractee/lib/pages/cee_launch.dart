@@ -28,7 +28,7 @@ class _LaunchPageState extends State<LaunchPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset(
-              'logo.png',
+              'assets/logo.png',
               width: 120,
               height: 120,
             ),

@@ -383,13 +383,18 @@ class ContractService {
 
   // For Both Users
 
-  static Future<Map<String, dynamic>> getContractById(String contractId) async {
+  static Future<Map<String, dynamic>> getContractById(String contractId, {String? contractorId}) async {
     try {
-      return await _supabase
+      final query = _supabase
           .from('Contracts')
           .select('*')
-          .eq('contract_id', contractId)
-          .single();
+          .eq('contract_id', contractId);
+      
+      if (contractorId != null) {
+        query.eq('contractor_id', contractorId);
+      }
+      
+      return await query.single();
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Failed to get contract by ID: ',
@@ -398,6 +403,7 @@ class ContractService {
         extraInfo: {
           'operation': 'Get Contract by ID',
           'contract_id': contractId,
+          'contractor_id': contractorId,
         },
       );
       rethrow;
@@ -703,13 +709,22 @@ class ContractService {
     required String contractId,
     String? customFileName,
     bool saveToDevice = false,
+    String? contractorId,
+    String? contracteeId,
   }) async {
     try {
-      final contract = await _supabase
+      final query = _supabase
           .from('Contracts')
-          .select('pdf_url, title, created_at, status')
-          .eq('contract_id', contractId)
-          .single();
+          .select('pdf_url, title, created_at, status, contractor_id, contractee_id')
+          .eq('contract_id', contractId);
+      
+      if (contractorId != null) {
+        query.eq('contractor_id', contractorId);
+      } else if (contracteeId != null) {
+        query.eq('contractee_id', contracteeId);
+      }
+      
+      final contract = await query.single();
 
       final pdfPath = contract['pdf_url'] as String?;
       if (pdfPath == null || pdfPath.isEmpty) {
@@ -781,6 +796,8 @@ class ContractService {
         extraInfo: {
           'operation': 'Download Contract PDF',
           'contract_id': contractId,
+          'contractor_id': contractorId,
+          'contractee_id': contracteeId,
         },
       );
       throw Exception('Download failed: ${e.toString()}');
@@ -790,13 +807,22 @@ class ContractService {
   static Future<String> getContractPdfPreviewUrl({
     required String contractId,
     int expiryHours = 24,
+    String? contractorId,
+    String? contracteeId,
   }) async {
     try {
-      final contract = await _supabase
+      final query = _supabase
           .from('Contracts')
-          .select('pdf_url, status')
-          .eq('contract_id', contractId)
-          .single();
+          .select('pdf_url, status, contractor_id, contractee_id')
+          .eq('contract_id', contractId);
+      
+      if (contractorId != null) {
+        query.eq('contractor_id', contractorId);
+      } else if (contracteeId != null) {
+        query.eq('contractee_id', contracteeId);
+      }
+      
+      final contract = await query.single();
 
       final pdfPath = contract['pdf_url'] as String?;
       if (pdfPath == null || pdfPath.isEmpty) {
@@ -821,6 +847,8 @@ class ContractService {
         extraInfo: {
           'operation': 'Get Contract PDF Preview URL',
           'contract_id': contractId,
+          'contractor_id': contractorId,
+          'contractee_id': contracteeId,
         },
       );
       throw Exception('Failed to generate preview URL: ${e.toString()}');
@@ -828,13 +856,24 @@ class ContractService {
   }
 
   static Future<Map<String, dynamic>> validateContractPdf(
-      String contractId) async {
+    String contractId, {
+    String? contractorId,
+    String? contracteeId,
+  }) async {
     try {
-      final contract = await _supabase
+      final query = _supabase
           .from('Contracts')
-          .select('pdf_url, title, created_at, updated_at')
-          .eq('contract_id', contractId)
-          .single();
+          .select('pdf_url, title, created_at, updated_at, contractor_id, contractee_id')
+          .eq('contract_id', contractId);
+      
+      // Validate ownership
+      if (contractorId != null) {
+        query.eq('contractor_id', contractorId);
+      } else if (contracteeId != null) {
+        query.eq('contractee_id', contracteeId);
+      }
+      
+      final contract = await query.single();
 
       final pdfPath = contract['pdf_url'] as String?;
       if (pdfPath == null || pdfPath.isEmpty) {
@@ -887,6 +926,8 @@ class ContractService {
         extraInfo: {
           'operation': 'Validate Contract PDF',
           'contract_id': contractId,
+          'contractor_id': contractorId,
+          'contractee_id': contracteeId,
         },
       );
       return {

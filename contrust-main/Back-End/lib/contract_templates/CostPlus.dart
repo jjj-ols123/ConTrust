@@ -91,9 +91,9 @@ class CostPlusContract extends StatelessWidget {
               '1.1. The Contractor shall be reimbursed for actual costs incurred for labor, materials, equipment, and other expenses related to the project, plus a fee for overhead and profit as detailed below:'),
 
           ContractStyle.bulletList([
-            'Labor Costs: Actual hourly rates as specified - ₱[Hourly labor rate] per hour',
-            'Material Costs: Actual cost of materials with receipts - ₱[Estimated material costs] (estimated)',
-            'Equipment Costs: Actual rental/usage costs - ₱[Estimated equipment costs] (estimated)',
+            'Labor Costs: Actual hourly rates as specified - PHP[Hourly labor rate] per hour',
+            'Material Costs: Actual cost of materials with receipts - PHP[Estimated material costs] (estimated)',
+            'Equipment Costs: Actual rental/usage costs - PHP[Estimated equipment costs] (estimated)',
             'Subcontractor Costs: Actual payments to qualified subcontractors',
             'Overhead and Profit Fee: [Overhead and profit percentage]% of total project costs',
           ]),
@@ -101,9 +101,9 @@ class CostPlusContract extends StatelessWidget {
           const SizedBox(height: 12),
           ContractStyle.sectionTitle('1.2 Payment Terms:'),
           ContractStyle.bulletList([
-            'Total Estimated Project Cost: ₱[Total estimated project cost]',
+            'Total Estimated Project Cost: PHP[Total estimated project cost]',
             'Payment Interval: [Payment interval] (weekly/bi-weekly/monthly)',
-            'Retention Fee: ₱[Retention fee] (held until project completion)',
+            'Retention Fee: PHP[Retention fee] (held until project completion)',
             'Late Payment Fee: [Late payment fee percentage]% per month on overdue amounts',
             'Payment Due: [Number of days after invoice due] days from invoice date',
           ]),
@@ -317,10 +317,10 @@ class CostPlusContract extends StatelessWidget {
           const SizedBox(height: 12),
       ContractStyle.sectionTitle('Performance and Payment Bonds'),
       ContractStyle.paragraph(
-        'The Contractor shall furnish to the Contractee, within [Number of days to submit bonds] days, performance and payment bonds executed by a surety company licensed to do business in the jurisdiction where the project is located. The performance bond shall be in an amount not less than ₱[Performance bond amount] and shall guarantee the faithful performance of all Work under this Agreement.'),
+        'The Contractor shall furnish to the Contractee, within [Number of days to submit bonds] days, performance and payment bonds executed by a surety company licensed to do business in the jurisdiction where the project is located. The performance bond shall be in an amount not less than PHP[Performance bond amount] and shall guarantee the faithful performance of all Work under this Agreement.'),
 
           ContractStyle.paragraph(
-        'The payment bond shall be in an amount not less than ₱[Payment bond amount] and shall guarantee the payment to all subcontractors, laborers, and material suppliers for labor and materials furnished in connection with this Contract. The Contractor shall maintain these bonds in full force and effect throughout the duration of the project.'),
+        'The payment bond shall be in an amount not less than PHP[Payment bond amount] and shall guarantee the payment to all subcontractors, laborers, and material suppliers for labor and materials furnished in connection with this Contract. The Contractor shall maintain these bonds in full force and effect throughout the duration of the project.'),
 
           const SizedBox(height: 20),
           ContractStyle.sectionTitle('6. Change Orders and Modifications'),

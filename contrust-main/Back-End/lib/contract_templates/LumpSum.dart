@@ -82,7 +82,7 @@ class LumpSumContract extends StatelessWidget {
           const SizedBox(height: 12),
 
       ContractStyle.paragraph(
-        'The Contractee agrees to pay the Contractor for the Work the total amount of ₱[Total contract price] (the "Contract Price"). Payment of this amount is subject to additions or deductions pursuant to Change Orders as provided for in Article 4 of this Agreement. Payment for the work will be by [Payment method], according to the following schedule:'),
+        'The Contractee agrees to pay the Contractor for the Work the total amount of PHP[Total contract price] (the "Contract Price"). Payment of this amount is subject to additions or deductions pursuant to Change Orders as provided for in Article 4 of this Agreement. Payment for the work will be by [Payment method], according to the following schedule:'),
           
           const SizedBox(height: 16),
           ContractStyle.sectionTitle('Payment Schedule:'),
@@ -152,7 +152,7 @@ class LumpSumContract extends StatelessWidget {
 
           const SizedBox(height: 12),
       ContractStyle.paragraph(
-        '5.4 The Parties will purchase and maintain the following insurance policy(ies) during the course of work on the Construction Project with duly licensed insurance companies in the amount of no less than ₱[Minimum insurance amount] and with reasonable deductibles not to exceed minimum deductible amount:'),
+        '5.4 The Parties will purchase and maintain the following insurance policy(ies) during the course of work on the Construction Project with duly licensed insurance companies in the amount of no less than PHP[Minimum insurance amount] and with reasonable deductibles not to exceed minimum deductible amount:'),
           ContractStyle.bulletList([
         '[Insurance requirements]'
           ]),

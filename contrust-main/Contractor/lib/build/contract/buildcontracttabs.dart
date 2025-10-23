@@ -16,39 +16,76 @@ class ContractTabsBuild {
           bottom: BorderSide(color: Colors.grey.shade200),
         ),
       ),
-      child: TabBar(
-        controller: tabController,
-        labelColor: Colors.amber.shade700,
-        unselectedLabelColor: Colors.grey.shade600,
-        indicatorColor: Colors.amber.shade700,
-        indicatorWeight: 3,
-        onTap: (index) {
-          if (index == 2 && canViewFinalPreview) {
-            onBeforeFinalPreview?.call();
-          }
-        },
-        tabs: [
-          const Tab(
-            icon: Icon(Icons.description),
-            text: "Template Preview",
-          ),
-          const Tab(
-            icon: Icon(Icons.edit),
-            text: "Fill Contract",
-          ),
-          Tab(
-            icon: Icon(
-              Icons.preview,
-              color: canViewFinalPreview ? Colors.amber.shade700 : Colors.grey.shade400,
-            ),
-            child: Text(
-              "Final Preview",
-              style: TextStyle(
-                color: canViewFinalPreview ? Colors.amber.shade700 : Colors.grey.shade400,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 600;
+          
+          return TabBar(
+            controller: tabController,
+            labelColor: Colors.amber.shade700,
+            unselectedLabelColor: Colors.grey.shade600,
+            indicatorColor: Colors.amber.shade700,
+            indicatorWeight: 3,
+            indicatorSize: TabBarIndicatorSize.tab,
+            isScrollable: false,
+            labelPadding: EdgeInsets.zero, 
+            padding: EdgeInsets.zero,
+            indicator: BoxDecoration(
+              color: Colors.amber.shade50, 
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.amber.shade700,
+                  width: 3,
+                ),
               ),
             ),
-          ),
-        ],
+            onTap: (index) {
+              if (index == 2 && canViewFinalPreview) {
+                onBeforeFinalPreview?.call();
+              }
+            },
+            tabs: [
+              Tab(
+                height: isMobile ? 60 : 70,
+                icon: Icon(Icons.description, size: isMobile ? 18 : 24),
+                child: Text(
+                  isMobile ? "Template" : "Template Preview",
+                  style: TextStyle(
+                    fontSize: isMobile ? 11 : 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Tab(
+                height: isMobile ? 60 : 70,
+                icon: Icon(Icons.edit, size: isMobile ? 18 : 24),
+                child: Text(
+                  isMobile ? "Fill" : "Fill Contract",
+                  style: TextStyle(
+                    fontSize: isMobile ? 11 : 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Tab(
+                height: isMobile ? 60 : 70,
+                icon: Icon(
+                  Icons.preview,
+                  size: isMobile ? 18 : 24,
+                  color: canViewFinalPreview ? null : Colors.grey.shade400,
+                ),
+                child: Text(
+                  isMobile ? "Preview" : "Final Preview",
+                  style: TextStyle(
+                    fontSize: isMobile ? 11 : 14,
+                    fontWeight: FontWeight.w500,
+                    color: canViewFinalPreview ? null : Colors.grey.shade400,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

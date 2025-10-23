@@ -532,20 +532,15 @@ class VerificationManagementTableState extends State<VerificationManagementTable
         });
       }
 
-      print('DEBUG UI: Starting to load contractors...');
       final contractors = await _verifyService.getUnverifiedContractors();
-      print('DEBUG UI: Loaded ${contractors.length} contractors');
-      print('DEBUG UI: Contractors data: $contractors');
 
       if (mounted) {
         setState(() {
           _contractors = contractors;
           _isLoading = false;
         });
-        print('DEBUG UI: State updated with ${_contractors.length} contractors');
       }
     } catch (e) {
-      print('ERROR UI: Failed to load contractors: $e');
       if (!silent) {
         await SuperAdminErrorService().logError(
           errorMessage: 'Failed to load unverified contractors: $e',

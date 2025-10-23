@@ -391,6 +391,7 @@ class ProjectView extends StatelessWidget {
                       (r) => r['information']?['status'] == 'accepted',
                       orElse: () => {},
                     );
+                    
                     if (accepted.isNotEmpty) {
                       return ListTile(
                         contentPadding: EdgeInsets.zero,
@@ -399,19 +400,24 @@ class ProjectView extends StatelessWidget {
                         title: Text('Accepted Contractor: '
                             '${accepted['information']?['firm_name'] ?? 'Unknown'}'),
                       );
-                    } else if (requests.isNotEmpty) {
+                    }
+                    
+                    final pendingRequests = requests.where(
+                      (r) => r['information']?['status'] == 'pending'
+                    ).toList();
+                    
+                    if (pendingRequests.isNotEmpty) {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text('Hiring Request Sent To:',
                               style: TextStyle(fontWeight: FontWeight.bold)),
-                          ...requests.map((r) => ListTile(
+                          ...pendingRequests.map((r) => ListTile(
                                 contentPadding: EdgeInsets.zero,
                                 leading: const Icon(Icons.business),
                                 title: Text(r['information']?['firm_name'] ??
                                     'Unknown'),
-                                subtitle: Text('Status: '
-                                    '${(r['information']?['status'] ?? 'pending').toString().capitalize()}'),
+                                subtitle: const Text('Status: Pending'),
                               )),
                         ],
                       );

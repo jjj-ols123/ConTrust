@@ -5,6 +5,7 @@ import 'package:backend/services/superadmin services/perflogs_service.dart';
 class SystemMonitorService {
   final SupabaseClient _supabase = Supabase.instance.client;
   final SuperAdminPerfLogsService _perfLogsService = SuperAdminPerfLogsService();
+  final SuperAdminErrorService _errorService = SuperAdminErrorService();
   
   Future<Map<String, dynamic>> getSystemHealth() async {
     final checks = await Future.wait([
@@ -51,7 +52,12 @@ class SystemMonitorService {
           'system_health',
         );
       } catch (e) {
-        print('Warning: Failed to log database health metric: $e');
+        _errorService.logError(
+          errorMessage: 'Failed to log database health metric: $e',
+          module: 'System Monitor',
+          severity: 'Medium',
+          extraInfo: {'operation': 'Log Database Health Metric'},
+        );
       }
       
       final status = responseTime < 100 ? 'healthy' : (responseTime < 500 ? 'warning' : 'error');
@@ -76,7 +82,12 @@ class SystemMonitorService {
           'system_health',
         );
       } catch (logError) {
-        print('Warning: Failed to log database error metric: $logError');
+        _errorService.logError(
+          errorMessage: 'Failed to log database error metric: $logError',
+          module: 'System Monitor',
+          severity: 'Medium',
+          extraInfo: {'operation': 'Log Database Error Metric'},
+        );
       }
       
       return {
@@ -102,7 +113,12 @@ class SystemMonitorService {
           'system_health',
         );
       } catch (e) {
-        print('Warning: Failed to log storage health metric: $e');
+        _errorService.logError(
+          errorMessage: 'Failed to log storage health metric: $e',
+          module: 'System Monitor',
+          severity: 'Medium',
+          extraInfo: {'operation': 'Log Storage Health Metric'},
+        );
       }
       
       return {
@@ -122,7 +138,12 @@ class SystemMonitorService {
           'system_health',
         );
       } catch (logError) {
-        print('Warning: Failed to log storage error metric: $logError');
+          _errorService.logError(
+          errorMessage: 'Failed to log storage error metric: $logError',
+          module: 'System Monitor',
+          severity: 'Medium',
+          extraInfo: {'operation': 'Log Storage Error Metric'},
+        );
       }
       
       return {

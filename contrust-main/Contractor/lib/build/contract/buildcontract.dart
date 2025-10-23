@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/utils/be_status.dart';
 import 'package:flutter/material.dart';
@@ -10,20 +12,51 @@ import 'package:backend/contract_templates/LumpSum.dart';
 
 class CreateContractBuild {
   static Widget buildHeader(BuildContext context, {required String title, required List<Widget> actions}) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+    
     return Container(
-      height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(color: Colors.amber.shade50, border: Border(bottom: BorderSide(color: Colors.grey.shade200))),
-      child: Row(
-        children: [
-          Icon(Icons.create, color: Colors.amber, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black), overflow: TextOverflow.ellipsis),
-          ),
-          ...actions,
-        ],
-      ),
+      child: isMobile
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.create, color: Colors.amber, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: actions,
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                Icon(Icons.create, color: Colors.amber, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                ...actions,
+              ],
+            ),
     );
   }
 
@@ -44,6 +77,7 @@ static Future<Map<String, dynamic>?> showSaveDialog(
   }) async {
     String? selectedProjectId = initialProjectId;
     titleController ??= TextEditingController();
+    final screenWidth = MediaQuery.of(context).size.width;
     
     return showDialog<Map<String, dynamic>>(
       context: context,
@@ -51,7 +85,7 @@ static Future<Map<String, dynamic>?> showSaveDialog(
         return AlertDialog(
           title: const Text('Save Contract'),
           content: SizedBox(
-            width: 400,
+            width: screenWidth > 600 ? 400 : screenWidth * 0.9,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -420,6 +454,9 @@ class CreateContractBuildMethods {
   }
 
   Widget buildTimeAndMaterialsItemCard(String title, List<dynamic> fields) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 700; 
+    
     Map<int, Map<String, dynamic>> itemGroups = {};
 
     for (var field in fields) {
@@ -446,85 +483,153 @@ class CreateContractBuildMethods {
           children: [
             Row(
               children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue.shade600,
+                Expanded(
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade600,
+                    ),
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(width: 8),
                 ElevatedButton.icon(
                   onPressed: () => _addNewItem(),
                   icon: const Icon(Icons.add, size: 16),
-                  label: const Text('Add Item'),
+                  label: Text(isMobile ? 'Add' : 'Add Item'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 12, vertical: 8),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
 
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(8),
-                  topRight: Radius.circular(8),
-                ),
-                border: Border.all(color: Colors.grey.shade400),
-              ),
-              child: Row(
-                children: [
-                  const Expanded(flex: 3, child: Text('Name', style: TextStyle(fontWeight: FontWeight.bold))),
-                  const Expanded(flex: 4, child: Text('Description', style: TextStyle(fontWeight: FontWeight.bold))),
-                  const Expanded(flex: 2, child: Text('Price (₱)', style: TextStyle(fontWeight: FontWeight.bold))),
-                  const Expanded(flex: 2, child: Text('Quantity', style: TextStyle(fontWeight: FontWeight.bold))),
-                  const Expanded(flex: 2, child: Text('Subtotal (₱)', style: TextStyle(fontWeight: FontWeight.bold))),
-                  const SizedBox(width: 40),
-                ],
-              ),
-            ),
-
-            ...itemGroups.entries.map((entry) {
-              final itemNumber = entry.key;
-              final itemFields = entry.value;              return Container(
+            // Desktop: Table layout
+            if (!isMobile) ...[
+              Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  border: Border(
-                    left: BorderSide(color: Colors.grey.shade400),
-                    right: BorderSide(color: Colors.grey.shade400),
-                    bottom: BorderSide(color: Colors.grey.shade400),
+                  color: Colors.grey.shade200,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(8),
+                    topRight: Radius.circular(8),
                   ),
+                  border: Border.all(color: Colors.grey.shade400),
                 ),
                 child: Row(
                   children: [
-                    Expanded(flex: 3, child: buildFormField(itemFields['Name'])),
-                    const SizedBox(width: 8),
-                    Expanded(flex: 4, child: buildFormField(itemFields['Description'])),
-                    const SizedBox(width: 8),
-                    Expanded(flex: 2, child: buildFormField(itemFields['Price'])),
-                    const SizedBox(width: 8),
-                    Expanded(flex: 2, child: buildFormField(itemFields['Quantity'])),
-                    const SizedBox(width: 8),
-                    Expanded(flex: 2, child: buildFormField(itemFields['Subtotal'])),
-                    const SizedBox(width: 8),
-                    if (itemGroups.length > 1)
-                      IconButton(
-                        onPressed: () => _removeItem(itemNumber),
-                        icon: const Icon(Icons.remove_circle, color: Colors.red),
-                        tooltip: 'Remove Item',
-                      )
-                    else
-                      const SizedBox(width: 40),
+                    const Expanded(flex: 3, child: Text('Name', style: TextStyle(fontWeight: FontWeight.bold))),
+                    const Expanded(flex: 4, child: Text('Description', style: TextStyle(fontWeight: FontWeight.bold))),
+                    const Expanded(flex: 2, child: Text('Price (₱)', style: TextStyle(fontWeight: FontWeight.bold))),
+                    const Expanded(flex: 2, child: Text('Quantity', style: TextStyle(fontWeight: FontWeight.bold))),
+                    const Expanded(flex: 2, child: Text('Subtotal (₱)', style: TextStyle(fontWeight: FontWeight.bold))),
+                    const SizedBox(width: 40),
                   ],
                 ),
-              );
-            }),
+              ),
+              ...itemGroups.entries.map((entry) {
+                final itemNumber = entry.key;
+                final itemFields = entry.value;
+                return Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      left: BorderSide(color: Colors.grey.shade400),
+                      right: BorderSide(color: Colors.grey.shade400),
+                      bottom: BorderSide(color: Colors.grey.shade400),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(flex: 3, child: buildFormField(itemFields['Name'])),
+                      const SizedBox(width: 8),
+                      Expanded(flex: 4, child: buildFormField(itemFields['Description'])),
+                      const SizedBox(width: 8),
+                      Expanded(flex: 2, child: buildFormField(itemFields['Price'])),
+                      const SizedBox(width: 8),
+                      Expanded(flex: 2, child: buildFormField(itemFields['Quantity'])),
+                      const SizedBox(width: 8),
+                      Expanded(flex: 2, child: buildFormField(itemFields['Subtotal'])),
+                      const SizedBox(width: 8),
+                      if (itemGroups.length > 1)
+                        IconButton(
+                          onPressed: () => _removeItem(itemNumber),
+                          icon: const Icon(Icons.remove_circle, color: Colors.red),
+                          tooltip: 'Remove Item',
+                        )
+                      else
+                        const SizedBox(width: 40),
+                    ],
+                  ),
+                );
+              }),
+            ],
+
+            // Mobile: Card-based layout
+            if (isMobile)
+              ...itemGroups.entries.map((entry) {
+                final itemNumber = entry.key;
+                final itemFields = entry.value;
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Item #$itemNumber',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue.shade700,
+                              fontSize: 14,
+                            ),
+                          ),
+                          if (itemGroups.length > 1)
+                            IconButton(
+                              onPressed: () => _removeItem(itemNumber),
+                              icon: const Icon(Icons.remove_circle, color: Colors.red, size: 20),
+                              tooltip: 'Remove Item',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      buildFormField(itemFields['Name']),
+                      const SizedBox(height: 12),
+                      buildFormField(itemFields['Description']),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(child: buildFormField(itemFields['Price'])),
+                          const SizedBox(width: 8),
+                          Expanded(child: buildFormField(itemFields['Quantity'])),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      buildFormField(itemFields['Subtotal']),
+                    ],
+                  ),
+                );
+              }),
           ],
         ),
       ),
@@ -735,6 +840,9 @@ class CreateContractBuildMethods {
   }
 
   Widget buildTwoColumnSectionCard(String title, List<dynamic> fields) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final useSingleColumn = screenWidth < 700; 
+    
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -749,31 +857,42 @@ class CreateContractBuildMethods {
               ),
             ),
             const SizedBox(height: 16),
-            IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: Column(
-                      children: buildLeftColumnFields(fields),
+            useSingleColumn
+                ? Column(
+                    // Mobile: Stack all fields vertically
+                    children: fields.map((field) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: buildFormField(field),
+                      );
+                    }).toList(),
+                  )
+                : IntrinsicHeight(
+                    // Desktop: Two columns side by side
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            children: buildLeftColumnFields(fields),
+                          ),
+                        ),
+                        Container(
+                          width: 2,
+                          margin: const EdgeInsets.symmetric(horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade400,
+                            borderRadius: BorderRadius.circular(1),
+                          ),
+                        ),
+                        Expanded(
+                          child: Column(
+                            children: buildRightColumnFields(fields),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  Container(
-                    width: 2,
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade400,
-                      borderRadius: BorderRadius.circular(1),
-                    ),
-                  ),
-                  Expanded(
-                    child: Column(
-                      children: buildRightColumnFields(fields),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
       ),

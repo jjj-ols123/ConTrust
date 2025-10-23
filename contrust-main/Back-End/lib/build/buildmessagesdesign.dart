@@ -513,48 +513,108 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
       bannerColor = Colors.orange[50]!;
     }
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 700;
+    final isTablet = screenWidth >= 700 && screenWidth < 1000;
+    
     return Card(
       color: bannerColor,
-      margin: const EdgeInsets.all(12),
+      margin: EdgeInsets.all(isMobile ? 8 : (isTablet ? 10 : 12)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(isMobile ? 12 : (isTablet ? 14 : 16)),
         child: Column(
           children: [
             Text(
               bannerText,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              style: TextStyle(
+                fontWeight: FontWeight.bold, 
+                fontSize: isMobile ? 13 : (isTablet ? 14 : 16),
+              ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  onPressed: onPressed,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: onPressed != null
-                        ? (_hasAgreed && !otherHasAgreed
-                            ? Colors.orange
-                            : Colors.blue)
-                        : Colors.grey,
-                    foregroundColor: Colors.white,
+            SizedBox(height: isMobile ? 8 : 10),
+            isMobile
+                ? Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: onPressed,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: onPressed != null
+                                ? (_hasAgreed && !otherHasAgreed
+                                    ? Colors.orange
+                                    : Colors.blue)
+                                : Colors.grey,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(buttonText, style: const TextStyle(fontSize: 13)),
+                        ),
+                      ),
+                      if (cancelButtonText != null && onCancelPressed != null) ...[
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: onCancelPressed,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            child: Text(cancelButtonText, style: const TextStyle(fontSize: 13)),
+                          ),
+                        ),
+                      ],
+                    ],
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: ElevatedButton(
+                          onPressed: onPressed,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: onPressed != null
+                                ? (_hasAgreed && !otherHasAgreed
+                                    ? Colors.orange
+                                    : Colors.blue)
+                                : Colors.grey,
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isTablet ? 16 : 20,
+                              vertical: isTablet ? 10 : 12,
+                            ),
+                          ),
+                          child: Text(
+                            buttonText, 
+                            style: TextStyle(fontSize: isTablet ? 13 : 14),
+                          ),
+                        ),
+                      ),
+                      if (cancelButtonText != null && onCancelPressed != null) ...[
+                        SizedBox(width: isTablet ? 8 : 12),
+                        Flexible(
+                          child: ElevatedButton(
+                            onPressed: onCancelPressed,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isTablet ? 16 : 20,
+                                vertical: isTablet ? 10 : 12,
+                              ),
+                            ),
+                            child: Text(
+                              cancelButtonText, 
+                              style: TextStyle(fontSize: isTablet ? 13 : 14),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                  child: Text(buttonText),
-                ),
-                if (cancelButtonText != null && onCancelPressed != null) ...[
-                  const SizedBox(width: 12),
-                  ElevatedButton(
-                    onPressed: onCancelPressed,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: Text(cancelButtonText),
-                  ),
-                ],
-                const SizedBox(width: 12),
-              ],
-            ),
           ],
         ),
       ),
@@ -585,28 +645,32 @@ class UIMessage {
     bool isMe,
     String currentUserId,
   ) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 700;
+    final isTablet = screenWidth >= 700 && screenWidth < 1000;
+    
     if (msg['message_type'] == 'contract') {
       return Container(
         margin: EdgeInsets.only(
-          top: 12,
-          bottom: 12,
-          left: isMe ? 60 : 12,
-          right: isMe ? 12 : 60,
+          top: isMobile ? 8 : (isTablet ? 10 : 12),
+          bottom: isMobile ? 8 : (isTablet ? 10 : 12),
+          left: isMe ? (isMobile ? 40 : (isTablet ? 50 : 60)) : (isMobile ? 8 : 12),
+          right: isMe ? (isMobile ? 8 : 12) : (isMobile ? 40 : (isTablet ? 50 : 60)),
         ),
-        padding: const EdgeInsets.all(18),
+        padding: EdgeInsets.all(isMobile ? 12 : (isTablet ? 15 : 18)),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [Colors.blue[100]!, Colors.blue[50]!],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          border: Border.all(color: Colors.blue[300]!, width: 2),
-          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.blue[300]!, width: isMobile ? 1.5 : 2),
+          borderRadius: BorderRadius.circular(isMobile ? 12 : 16),
           boxShadow: [
             BoxShadow(
               color: Colors.blue.withOpacity(0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
+              blurRadius: isMobile ? 6 : 8,
+              offset: Offset(0, isMobile ? 3 : 4),
             ),
           ],
         ),
@@ -615,41 +679,60 @@ class UIMessage {
           children: [
             Row(
               children: [
-                Icon(Icons.description, color: Colors.blue[700]),
-                const SizedBox(width: 8),
-                Text(
-                  'Contract Sent',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue[700],
-                    fontSize: 16,
+                Icon(
+                  Icons.description, 
+                  color: Colors.blue[700],
+                  size: isMobile ? 20 : (isTablet ? 22 : 24),
+                ),
+                SizedBox(width: isMobile ? 6 : 8),
+                Expanded(
+                  child: Text(
+                    'Contract Sent',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue[700],
+                      fontSize: isMobile ? 14 : (isTablet ? 15 : 16),
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const Spacer(),
-                if (msg['timestamp'] != null)
+                if (msg['timestamp'] != null && (!isMobile || screenWidth > 350))
                   Text(
                     _formatTime(msg['timestamp']),
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: isMobile ? 10 : 12, 
+                      color: Colors.grey,
+                    ),
                   ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(msg['message'] ?? '', style: const TextStyle(fontSize: 15)),
-            const SizedBox(height: 14),
+            SizedBox(height: isMobile ? 6 : 8),
+            Text(
+              msg['message'] ?? '', 
+              style: TextStyle(fontSize: isMobile ? 13 : (isTablet ? 14 : 15)),
+            ),
+            SizedBox(height: isMobile ? 10 : (isTablet ? 12 : 14)),
             Align(
-              alignment: Alignment.centerRight,
+              alignment: isMobile ? Alignment.center : Alignment.centerRight,
               child: ElevatedButton.icon(
                 onPressed: () {
                   _showEnhancedContractView(
                       context, msg['contract_id'], currentUserId, msg);
                 },
-                icon: const Icon(Icons.visibility),
-                label: const Text('View Contract'),
+                icon: Icon(Icons.visibility, size: isMobile ? 16 : 18),
+                label: Text(
+                  isMobile ? 'View' : 'View Contract',
+                  style: TextStyle(fontSize: isMobile ? 12 : 14),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue[700],
                   foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 12 : (isTablet ? 14 : 16),
+                    vertical: isMobile ? 8 : (isTablet ? 10 : 12),
+                  ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(isMobile ? 6 : 8)),
                 ),
               ),
             ),
@@ -658,31 +741,42 @@ class UIMessage {
       );
     }
 
-    return buildNormalMessageBubble(msg, isMe);
+    return buildNormalMessageBubble(msg, isMe, context: context);
   }
 
-  static Widget buildNormalMessageBubble(Map<String, dynamic> msg, bool isMe) {
+  static Widget buildNormalMessageBubble(Map<String, dynamic> msg, bool isMe, {BuildContext? context}) {
+    final screenWidth = context != null ? MediaQuery.of(context).size.width : 800;
+    final isMobile = screenWidth < 700;
+    final isTablet = screenWidth >= 700 && screenWidth < 1000;
+    
     return Row(
       mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        if (!isMe) ...[
+        if (!isMe && (!isMobile || screenWidth > 350)) ...[
           CircleAvatar(
-            radius: 18,
+            radius: isMobile ? 14 : (isTablet ? 16 : 18),
             backgroundColor: Colors.amber[100],
-            child: const Icon(Icons.person, color: Colors.amber),
+            child: Icon(
+              Icons.person, 
+              color: Colors.amber,
+              size: isMobile ? 16 : (isTablet ? 18 : 20),
+            ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: isMobile ? 6 : 8),
         ],
         Flexible(
           child: Container(
             margin: EdgeInsets.only(
-              top: 6,
-              bottom: 6,
-              left: isMe ? 40 : 0,
-              right: isMe ? 0 : 40,
+              top: isMobile ? 4 : 6,
+              bottom: isMobile ? 4 : 6,
+              left: isMe ? (isMobile ? 20 : (isTablet ? 30 : 40)) : 0,
+              right: isMe ? 0 : (isMobile ? 20 : (isTablet ? 30 : 40)),
             ),
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
+            padding: EdgeInsets.symmetric(
+              vertical: isMobile ? 10 : 12,
+              horizontal: isMobile ? 14 : (isTablet ? 16 : 18),
+            ),
             decoration: BoxDecoration(
               gradient: isMe
                   ? LinearGradient(
@@ -696,16 +790,16 @@ class UIMessage {
                       end: Alignment.bottomRight,
                     ),
               borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(16),
-                topRight: const Radius.circular(16),
-                bottomLeft: Radius.circular(isMe ? 16 : 4),
-                bottomRight: Radius.circular(isMe ? 4 : 16),
+                topLeft: Radius.circular(isMobile ? 12 : 16),
+                topRight: Radius.circular(isMobile ? 12 : 16),
+                bottomLeft: Radius.circular(isMe ? (isMobile ? 12 : 16) : (isMobile ? 2 : 4)),
+                bottomRight: Radius.circular(isMe ? (isMobile ? 2 : 4) : (isMobile ? 12 : 16)),
               ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.grey.withOpacity(0.10),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
+                  blurRadius: isMobile ? 4 : 6,
+                  offset: Offset(0, isMobile ? 1 : 2),
                 ),
               ],
             ),
@@ -716,28 +810,35 @@ class UIMessage {
                 Text(
                   msg['message'] ?? '',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: isMobile ? 14 : (isTablet ? 15 : 16),
                     color: isMe ? Colors.black : Colors.grey[900],
                   ),
                 ),
                 if (msg['timestamp'] != null)
                   Padding(
-                    padding: const EdgeInsets.only(top: 4),
+                    padding: EdgeInsets.only(top: isMobile ? 3 : 4),
                     child: Text(
                       _formatTime(msg['timestamp']),
-                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      style: TextStyle(
+                        fontSize: isMobile ? 10 : 11, 
+                        color: Colors.grey,
+                      ),
                     ),
                   ),
               ],
             ),
           ),
         ),
-        if (isMe) ...[
-          const SizedBox(width: 8),
+        if (isMe && (!isMobile || screenWidth > 350)) ...[
+          SizedBox(width: isMobile ? 6 : 8),
           CircleAvatar(
-            radius: 18,
+            radius: isMobile ? 14 : (isTablet ? 16 : 18),
             backgroundColor: Colors.amber[300],
-            child: const Icon(Icons.person, color: Colors.white),
+            child: Icon(
+              Icons.person, 
+              color: Colors.white,
+              size: isMobile ? 16 : (isTablet ? 18 : 20),
+            ),
           ),
         ],
       ],
@@ -1399,10 +1500,12 @@ class UIMessage {
       penStrokeWidth: 3,
       penColor: Colors.black,
     );
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(isMobile ? 12 : 16),
       decoration: BoxDecoration(
         color: enabled ? Colors.blue[50] : Colors.grey[50],
         border:
@@ -1415,14 +1518,14 @@ class UIMessage {
             'Digital Signature',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              fontSize: 16,
+              fontSize: isMobile ? 14 : 16,
               color: enabled ? Colors.black : Colors.grey[600],
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: isMobile ? 8 : 12),
           Container(
             width: double.infinity,
-            height: 150,
+            height: isMobile ? 120 : 150,
             decoration: BoxDecoration(
               color: enabled ? Colors.white : Colors.grey[100],
               border: Border.all(
@@ -1441,85 +1544,171 @@ class UIMessage {
           const SizedBox(height: 8),
           Text(
             enabled
-                ? 'Draw your signature above using your mouse, stylus, or finger, or upload an image'
+                ? (isMobile 
+                    ? 'Draw or upload your signature' 
+                    : 'Draw your signature above using your mouse, stylus, or finger, or upload an image')
                 : 'Signature pad is currently disabled',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: isMobile ? 11 : 12,
               color: Colors.grey[600],
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: enabled
-                      ? () {
-                          signatureController.clear();
-                        }
-                      : null,
-                  icon: const Icon(Icons.clear),
-                  label: const Text('Clear'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        enabled ? Colors.grey[600] : Colors.grey[400],
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
+          SizedBox(height: isMobile ? 8 : 12),
+          // Mobile: Stack buttons vertically
+          if (isMobile)
+            Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: enabled
+                        ? () {
+                            signatureController.clear();
+                          }
+                        : null,
+                    icon: const Icon(Icons.clear, size: 18),
+                    label: const Text('Clear Signature'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          enabled ? Colors.grey[600] : Colors.grey[400],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: enabled
-                      ? () async {
-                          final signatureBytes = await _pickSignatureImage(context);
-                          if (signatureBytes != null) {
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: enabled
+                        ? () async {
+                            final signatureBytes = await _pickSignatureImage(context);
+                            if (signatureBytes != null) {
+                              _showSignatureDialog(context, contractData,
+                                  currentUserId, signatureBytes, onRefresh);
+                            }
+                          }
+                        : null,
+                    icon: const Icon(Icons.upload, size: 18),
+                    label: const Text('Upload Image'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          enabled ? Colors.orange[600] : Colors.grey[400],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: enabled
+                        ? () async {
+                            final signature =
+                                await signatureController.toPngBytes();
+                            if (signature == null || signature.isEmpty) {
+                              ConTrustSnackBar.error(
+                                  context, 'Please provide a signature');
+                              return;
+                            }
                             _showSignatureDialog(context, contractData,
-                                currentUserId, signatureBytes, onRefresh);
+                                currentUserId, signature, onRefresh);
                           }
-                        }
-                      : null,
-                  icon: const Icon(Icons.upload),
-                  label: const Text('Upload'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        enabled ? Colors.orange[600] : Colors.grey[400],
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                        : null,
+                    icon: const Icon(Icons.check, size: 18),
+                    label: const Text('Sign Contract'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          enabled ? Colors.green[600] : Colors.grey[400],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: enabled
-                      ? () async {
-                          final signature =
-                              await signatureController.toPngBytes();
-                          if (signature == null || signature.isEmpty) {
-                            ConTrustSnackBar.error(
-                                context, 'Please provide a signature');
-                            return;
+              ],
+            ),
+          // Desktop: Buttons side by side
+          if (!isMobile)
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: enabled
+                        ? () {
+                            signatureController.clear();
                           }
-                          _showSignatureDialog(context, contractData,
-                              currentUserId, signature, onRefresh);
-                        }
-                      : null,
-                  icon: const Icon(Icons.check),
-                  label: const Text('Sign Contract'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        enabled ? Colors.green[600] : Colors.grey[400],
-                    foregroundColor: Colors.white,
+                        : null,
+                    icon: const Icon(Icons.clear),
+                    label: const Text('Clear'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          enabled ? Colors.grey[600] : Colors.grey[400],
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: enabled
+                        ? () async {
+                            final signatureBytes = await _pickSignatureImage(context);
+                            if (signatureBytes != null) {
+                              _showSignatureDialog(context, contractData,
+                                  currentUserId, signatureBytes, onRefresh);
+                            }
+                          }
+                        : null,
+                    icon: const Icon(Icons.upload),
+                    label: const Text('Upload'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          enabled ? Colors.orange[600] : Colors.grey[400],
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: enabled
+                        ? () async {
+                            final signature =
+                                await signatureController.toPngBytes();
+                            if (signature == null || signature.isEmpty) {
+                              ConTrustSnackBar.error(
+                                  context, 'Please provide a signature');
+                              return;
+                            }
+                            _showSignatureDialog(context, contractData,
+                                currentUserId, signature, onRefresh);
+                          }
+                        : null,
+                    icon: const Icon(Icons.check),
+                    label: const Text('Sign Contract'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          enabled ? Colors.green[600] : Colors.grey[400],
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );
@@ -1620,10 +1809,8 @@ class UIMessage {
                   },
                 );
 
-                // Close signature dialog first
                 Navigator.of(dialogContext).pop();
                 
-                // Then refresh the main dialog and show success
                 onRefresh();
                 ConTrustSnackBar.contractSigned(context);
                 

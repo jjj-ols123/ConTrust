@@ -2,6 +2,9 @@
 
 import 'package:backend/services/contractor services/cor_dashboardservice.dart';
 import 'package:backend/utils/be_status.dart';
+import 'package:backend/utils/be_snackbar.dart';
+import 'package:contractor/build/builddrawer.dart';
+import 'package:contractor/Screen/cor_ongoing.dart';
 import 'package:flutter/material.dart';
 
 class DashboardBuildMethods {
@@ -772,12 +775,55 @@ class DashboardBuildMethods {
       return card;
     } else {
       return InkWell(
-        onTap: () => dashboardservice.navigateToProject(
-          context: context,
-          project: project,
-          onNavigate: () {},
-        ),
+        onTap: () => _navigateToProjectPage(context, project),
         child: card,
+      );
+    }
+  }
+  
+  void _navigateToProjectPage(BuildContext context, Map<String, dynamic> project) async {
+    final projectStatus = project['status']?.toString().toLowerCase();
+    final projectId = project['project_id']?.toString();
+    
+    if (projectId == null) {
+      ConTrustSnackBar.error(context, 'Invalid project ID');
+      return;
+    }
+    
+    if (projectStatus != 'active') {
+      ConTrustSnackBar.warning(context, 
+        'Project is not active yet. Current status: ${status.getStatusLabel(projectStatus)}');
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('View Project Management'),
+        content: const Text('Do you want to go to Project Management Page?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ContractorShell(
+            currentPage: ContractorPage.projectManagement,
+            contractorId: project['contractor_id']?.toString() ?? '',
+            child: CorOngoingProjectScreen(projectId: projectId),
+          ),
+        ),
       );
     }
   }

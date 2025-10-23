@@ -409,7 +409,7 @@ class TorProfileBuildMethods {
                       topRight: Radius.circular(16),
                     ),
                     image: const DecorationImage(
-                      image: AssetImage('bgloginscreen.jpg'),
+                      image: AssetImage('assets/bgloginscreen.jpg'),
                       fit: BoxFit.fill,
                     ),
                   ),

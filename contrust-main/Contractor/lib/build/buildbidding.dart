@@ -362,7 +362,7 @@ class BiddingUIBuildMethods {
                                           stackTrace,
                                         ) {
                                           return Image.asset(
-                                            'images/defaultpic.png',
+                                            'assets/images/defaultpic.png',
                                             width: 40,
                                             height: 40,
                                             fit: BoxFit.cover,
@@ -370,7 +370,7 @@ class BiddingUIBuildMethods {
                                         },
                                       )
                                       : Image.asset(
-                                        'images/defaultpic.png',
+                                        'assets/images/defaultpic.png',
                                         width: 40,
                                         height: 40,
                                         fit: BoxFit.cover,
@@ -654,7 +654,7 @@ class BiddingUIBuildMethods {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        child: Image.asset('images/kitchen.jpg', fit: BoxFit.cover),
+                        child: Image.asset('assets/images/kitchen.jpg', fit: BoxFit.cover),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -714,7 +714,7 @@ class BiddingUIBuildMethods {
                                           stackTrace,
                                         ) {
                                           return Image.asset(
-                                            'defaultpic.png',
+                                            'assets/images/defaultpic.png',
                                             width: 40,
                                             height: 40,
                                             fit: BoxFit.cover,
@@ -722,7 +722,7 @@ class BiddingUIBuildMethods {
                                         },
                                       )
                                       : Image.asset(
-                                        'defaultpic.png',
+                                        'assets/images/defaultpic.png',
                                         width: 40,
                                         height: 40,
                                         fit: BoxFit.cover,
@@ -882,7 +882,7 @@ class BiddingUIBuildMethods {
             child: Stack(
               children: [
                 Image.asset(
-                  'images/kitchen.jpg',
+                  'assets/images/kitchen.jpg',
                   fit: BoxFit.cover,
                   width: double.infinity,
                   height: double.infinity,

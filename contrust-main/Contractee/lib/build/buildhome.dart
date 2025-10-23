@@ -11,7 +11,11 @@ class HomePageBuilder {
   static Widget buildStatsSection({
     required List<Map<String, dynamic>> projects,
     required List<Map<String, dynamic>> contractors,
+    required BuildContext context,
   }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+    
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -33,47 +37,74 @@ class HomePageBuilder {
             children: [
               Icon(Icons.analytics, color: Colors.amber[700], size: 24),
               const SizedBox(width: 8),
-              Text(
-                "Platform Statistics",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
+              Expanded(
+                child: Text(
+                  "Platform Statistics",
+                  style: TextStyle(
+                    fontSize: isMobile ? 18 : 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  "Active Projects",
-                  "${projects.where((p) => p['status'] == 'active').length}",
-                  Icons.work,
-                  Colors.black,
-                ),
+          isMobile
+            ? Column(
+                children: [
+                  _buildStatCard(
+                    "Active Projects",
+                    "${projects.where((p) => p['status'] == 'active').length}",
+                    Icons.work,
+                    Colors.black,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildStatCard(
+                    "Pending Projects",
+                    "${projects.where((p) => p['status'] == 'pending').length}",
+                    Icons.pending,
+                    Colors.black,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildStatCard(
+                    "Completed",
+                    "${projects.where((p) => p['status'] == 'ended').length}",
+                    Icons.check_circle,
+                    Colors.black,
+                  ),
+                ],
+              )
+            : Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      "Active Projects",
+                      "${projects.where((p) => p['status'] == 'active').length}",
+                      Icons.work,
+                      Colors.black,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      "Pending Projects",
+                      "${projects.where((p) => p['status'] == 'pending').length}",
+                      Icons.pending,
+                      Colors.black,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      "Completed",
+                      "${projects.where((p) => p['status'] == 'ended').length}",
+                      Icons.check_circle,
+                      Colors.black,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  "Pending Projects",
-                  "${projects.where((p) => p['status'] == 'pending').length}",
-                  Icons.pending,
-                  Colors.black,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  "Completed",
-                  "${projects.where((p) => p['status'] == 'ended').length}",
-                  Icons.check_circle,
-                  Colors.black,
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -187,6 +218,8 @@ class HomePageBuilder {
     VoidCallback? onPostProject,
   }) {
     final projectsToShow = getProjectsToShow(projects);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -205,30 +238,65 @@ class HomePageBuilder {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.work_outline, color: Colors.amber[700], size: 24),
-              const SizedBox(width: 8),
-              Text(
-                "Your Projects",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
+          isMobile
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.work_outline, color: Colors.amber[700], size: 24),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "Your Projects",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: onPostProject,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Post Your Project'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber[700],
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            : Row(
+                children: [
+                  Icon(Icons.work_outline, color: Colors.amber[700], size: 24),
+                  const SizedBox(width: 8),
+                  Text(
+                    "Your Projects",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const Spacer(),
+                  ElevatedButton.icon(
+                    onPressed: onPostProject,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Post Your Project'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber[700],
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
               ),
-              const Spacer(),
-              ElevatedButton.icon(
-                onPressed: onPostProject,
-                icon: const Icon(Icons.add),
-                label: const Text('Post Your Project'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber[700],
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ],
-          ),
           const SizedBox(height: 16),
           ...projectsToShow.map((project) => _buildProjectCard(context, project, supabase)),
         ],
@@ -315,76 +383,26 @@ class HomePageBuilder {
       margin: const EdgeInsets.symmetric(horizontal: 24),
       padding: const EdgeInsets.all(40),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.amber.shade50, Colors.white, Colors.amber.shade100],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.amber.shade100.withOpacity(0.6),
-            blurRadius: 15,
-            offset: const Offset(0, 6),
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: Colors.amber.shade200, width: 1.5),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.search_off_rounded,
-            size: 80,
-            color: Colors.amber[800],
-          ),
-          const SizedBox(height: 20),
           Text(
-            "No Contractors Found",
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade800,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            searchController.text.isEmpty
-                ? "There are currently no available contractors.\nPlease check again later."
-                : "We couldn’t find any contractors matching\n‘${searchController.text}’.",
+            "No contractors yet",
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 16,
               color: Colors.grey.shade700,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 24),
-          AnimatedOpacity(
-            opacity: searchController.text.isNotEmpty ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 400),
-            child: Visibility(
-              visible: searchController.text.isNotEmpty,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  searchController.clear();
-                },
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: const Text(
-                  "Clear Search",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber[700],
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 4,
-                ),
-              ),
             ),
           ),
         ],

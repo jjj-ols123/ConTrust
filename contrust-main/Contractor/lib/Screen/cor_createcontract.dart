@@ -103,7 +103,10 @@ class _CreateContractPageState extends State<CreateContractPage>
     try {
       final contractId = widget.existingContract!['contract_id'] as String?;
       if (contractId != null) {
-        final fieldValues = await service.fetchContractFieldValues(contractId);
+        final fieldValues = await service.fetchContractFieldValues(
+          contractId,
+          contractorId: widget.contractorId,
+        );
         if (fieldValues != null) {
   
           widget.existingContract!['field_values'] = fieldValues;
@@ -326,6 +329,10 @@ class _CreateContractPageState extends State<CreateContractPage>
       final contractData = await showSaveDialog();
 
       if (contractData != null) {
+        Navigator.pop(context, true);
+        
+        ConTrustSnackBar.loading(context, 'Contract saving...');
+        
         if (widget.existingContract != null) {
           await service.updateContract(
             contractId: widget.existingContract!['contract_id'] as String,
@@ -336,7 +343,10 @@ class _CreateContractPageState extends State<CreateContractPage>
             fieldValues: fieldValues,
             contractType: selectedContractType ?? widget.contractType ?? '',
           );
-          ConTrustSnackBar.success(context, 'Contract updated successfully!');
+          if (mounted) {
+            Navigator.pop(context); 
+            ConTrustSnackBar.success(context, 'Contract updated successfully!');
+          }
         } else {
           await service.saveContract(
             contractorId: widget.contractorId,
@@ -346,12 +356,18 @@ class _CreateContractPageState extends State<CreateContractPage>
             fieldValues: fieldValues,
             contractType: selectedContractType ?? widget.contractType ?? '',
           );
-          ConTrustSnackBar.success(context, 'Contract saved successfully!');
+          if (mounted) {
+            Navigator.pop(context); // Dismiss loading dialog
+            ConTrustSnackBar.success(context, 'Contract saved successfully!');
+          }
         }
-        Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
+        // Dismiss loading dialog if it's still showing
+        try {
+          Navigator.pop(context);
+        } catch (_) {}
         ConTrustSnackBar.error(context, 'Failed to save contract');
       }
     } finally {

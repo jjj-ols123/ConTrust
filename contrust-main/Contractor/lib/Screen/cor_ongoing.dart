@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
+import 'package:backend/services/both%20services/be_fetchservice.dart';
 import 'package:backend/services/contractor services/cor_ongoingservices.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/Screen/cor_product.dart';
@@ -32,6 +33,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   List<Map<String, dynamic>> _localTasks = [];
   double _localProgress = 0.0;
   bool isLoading = true;
+  String? contractorId;
 
   @override
   void initState() {
@@ -39,11 +41,95 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     loadData();
   }
 
+  Future<void> switchProject() async {
+    try {
+
+      if (projectData == null) return;
+      contractorId ??= projectData!['projectDetails']?['contractor_id'];
+      if (contractorId == null) return;
+
+      final activeProjects = await FetchService().fetchContractorActiveProjects(contractorId!);
+
+      if (activeProjects.isEmpty) {
+        ConTrustSnackBar.error(context, 'No active projects found!');
+        return;
+      }
+
+      if (activeProjects.length == 1) {
+        ConTrustSnackBar.warning(context, 'You only have one active project.');
+        return;
+      }
+
+      final selectedProjectId = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Switch Project'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: activeProjects.length,
+              itemBuilder: (context, index) {
+                final project = activeProjects[index];
+                final isCurrentProject = project['project_id'] == widget.projectId;
+                return ListTile(
+                  selected: isCurrentProject,
+                  title: Text(project['title'] ?? 'Untitled Project'),
+                  subtitle: Text(isCurrentProject 
+                    ? 'Current Project • ${project['status'] ?? 'N/A'}' 
+                    : 'Status: ${project['status'] ?? 'N/A'}'),
+                  leading: isCurrentProject 
+                    ? const Icon(Icons.check_circle, color: Colors.green)
+                    : const Icon(Icons.folder, color: Colors.grey),
+                  trailing: isCurrentProject 
+                    ? null 
+                    : const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: isCurrentProject 
+                    ? null 
+                    : () {
+                        Navigator.of(dialogContext).pop(project['project_id']);
+                      },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      );
+
+      if (selectedProjectId != null && selectedProjectId != widget.projectId) {
+        // Navigate to the new project
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ContractorShell(
+              currentPage: ContractorPage.projectManagement,
+              contractorId: contractorId!,
+              child: CorOngoingProjectScreen(projectId: selectedProjectId),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      ConTrustSnackBar.error(context, 'Failed to switch project');
+    }
+  }
+
   void loadData() async {
   try {
     setState(() => isLoading = true);
 
-    final data = await ongoingService.loadProjectData(widget.projectId);
+    contractorId ??= Supabase.instance.client.auth.currentUser?.id;
+
+    final data = await ongoingService.loadProjectData(
+      widget.projectId,
+      contractorId: contractorId,
+    );
 
     final contractId = data['projectDetails']['contract_id'];
     if (contractId != null) {
@@ -430,6 +516,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
         onViewPhoto: onViewPhoto,
         onRefresh: loadData,
         onEditCompletion: _isCustomContract() ? _editCompletion : null,
+        onSwitchProject: switchProject,
       ),
     );
   }

@@ -231,7 +231,7 @@ class SuperAdminErrorService {
       'extra_info': safeExtraInfo != null ? jsonEncode(safeExtraInfo) : null,
     });
   } catch (e) {
-    print('Failed to log error: $e');
+    return;
   }
 }
 

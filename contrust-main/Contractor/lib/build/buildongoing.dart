@@ -15,19 +15,15 @@ class OngoingBuildMethods {
     required double progress,
     VoidCallback? onRefresh,
     VoidCallback? onEditCompletion,
+    VoidCallback? onSwitchProject,
   }) {
-    // Resolve estimated completion:
-    // 1) accept a parseable estimatedCompletion string
-    // 2) ignore common placeholders like 'placeholder', 'tbd', 'n/a'
-    // 3) fallback to startDate + duration when possible
+
     DateTime? completionDate;
     final raw = estimatedCompletion?.trim().toLowerCase();
     if (raw != null && raw.isNotEmpty && raw != 'placeholder' && raw != 'tbd' && raw != 'n/a') {
       try {
-        // try direct parse first
         completionDate = DateTime.parse(estimatedCompletion!);
       } catch (_) {
-        // try common fallback formats (date part only)
         try {
           final parts = estimatedCompletion!.split(' ');
           completionDate = DateTime.parse(parts.first);
@@ -99,6 +95,12 @@ class OngoingBuildMethods {
                     onPressed: onEditCompletion,
                     icon: const Icon(Icons.edit, color: Colors.blue),
                     tooltip: 'Edit Completion Date',
+                  ),
+                if (onSwitchProject != null)
+                  IconButton(
+                    onPressed: onSwitchProject,
+                    icon: const Icon(Icons.swap_horiz, color: Colors.orange),
+                    tooltip: 'Switch Project',
                   ),
                 if (onRefresh != null)
                   IconButton(
@@ -1117,6 +1119,7 @@ class OngoingBuildMethods {
     Function(Map<String, dynamic>)? onViewPhoto,
     VoidCallback? onRefresh,
     VoidCallback? onEditCompletion,
+    VoidCallback? onSwitchProject,
   }) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -1133,6 +1136,7 @@ class OngoingBuildMethods {
             progress: progress,
             onRefresh: onRefresh,
             onEditCompletion: onEditCompletion,
+            onSwitchProject: onSwitchProject,
           ),
           const SizedBox(height: 20),
           Expanded(
