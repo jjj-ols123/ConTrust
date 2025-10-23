@@ -112,28 +112,53 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
       body: Column(
         children: [
           Container(
-            height: 60,
             padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 8,
+              horizontal: 20,
+              vertical: 16,
             ),
             decoration: BoxDecoration(
-              color: Colors.amber.shade50,
-              border: Border(
-                bottom: BorderSide(color: Colors.grey.shade200),
+              gradient: LinearGradient(
+                colors: [Colors.amber.shade100, Colors.amber.shade50],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
+              border: Border(
+                bottom: BorderSide(color: Colors.amber.shade200, width: 1.5),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.amber.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
               children: [
-                Icon(Icons.person_outline, color: Colors.amber, size: 20),
-                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.amber.withOpacity(0.2),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Icon(Icons.person_outline, color: Colors.amber.shade700, size: 22),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Profile',
-                    style: const TextStyle(
-                      fontSize: 20,
+                    style: TextStyle(
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: Colors.amber.shade900,
+                      letterSpacing: 0.5,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),

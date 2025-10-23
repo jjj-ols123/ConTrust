@@ -26,18 +26,19 @@ class CeeProfileBuildMethods {
     required Function(String) onTabChanged,
     required Widget mainContent,
   }) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+          child: Container(
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade200, width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withOpacity(0.04),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
@@ -46,24 +47,21 @@ class CeeProfileBuildMethods {
             child: Column(
               children: [
                 Container(
-                  width: 100,
-                  height: 100,
+                  width: 85,
+                  height: 85,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.grey.shade200,
-                      width: 3,
-                    ),
+                    border: Border.all(color: Colors.amber.shade200, width: 3),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 20,
-                        offset: const Offset(0, 5),
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
                       ),
                     ],
                   ),
                   child: CircleAvatar(
-                    radius: 50,
+                    radius: 42,
                     backgroundColor: Colors.grey.shade100,
                     backgroundImage: (profileImage != null && profileImage.isNotEmpty)
                         ? NetworkImage(profileImage)
@@ -71,104 +69,72 @@ class CeeProfileBuildMethods {
                     child: (profileImage == null || profileImage.isEmpty)
                         ? Icon(
                             Icons.person,
-                            size: 35,
+                            size: 32,
                             color: Colors.grey.shade400,
                           )
                         : null,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 Text(
                   '$firstName $lastName',
                   style: const TextStyle(
-                    fontSize: 20,
+                    fontSize: 19,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF2D3748),
+                    letterSpacing: 0.2,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  'Homeowner',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500,
+                const SizedBox(height: 5),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade100,
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  textAlign: TextAlign.center,
+                  child: Text(
+                    'Homeowner',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.amber.shade900,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Column(
-                      children: [
-                        Text(
-                          '$ongoingProjectsCount',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF2D3748),
-                          ),
-                        ),
-                        Text(
-                          'Ongoing',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      children: [
-                        Text(
-                          '$completedProjectsCount',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF2D3748),
-                          ),
-                        ),
-                        Text(
-                          'Completed',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      children: [
-                        Text(
-                          '${ongoingProjectsCount + completedProjectsCount}',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF2D3748),
-                          ),
-                        ),
-                        Text(
-                          'Total',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                const SizedBox(height: 14),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.amber.shade100, width: 1.5),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildStatItem(ongoingProjectsCount, 'Ongoing', Colors.amber.shade700, Icons.work_outline),
+                      Container(width: 1, height: 35, color: Colors.grey.shade200),
+                      _buildStatItem(completedProjectsCount, 'Completed', Colors.grey.shade600, Icons.check_circle_outline),
+                      Container(width: 1, height: 35, color: Colors.grey.shade200),
+                      _buildStatItem(ongoingProjectsCount + completedProjectsCount, 'Total', Colors.grey.shade700, Icons.folder_outlined),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          buildMobileNavigation(selectedTab, onTabChanged),
-          const SizedBox(height: 16),
-          mainContent,
-        ],
-      ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+          child: buildMobileNavigation(selectedTab, onTabChanged),
+        ),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          child: mainContent,
+        ),
+      ],
     );
   }
 
@@ -197,9 +163,10 @@ class CeeProfileBuildMethods {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.shade200, width: 1),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withOpacity(0.04),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
@@ -212,15 +179,12 @@ class CeeProfileBuildMethods {
                         height: 120,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.grey.shade200,
-                            width: 3,
-                          ),
+                          border: Border.all(color: Colors.amber.shade200, width: 3),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 20,
-                              offset: const Offset(0, 5),
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
@@ -233,116 +197,86 @@ class CeeProfileBuildMethods {
                           child: (profileImage == null || profileImage.isEmpty)
                               ? Icon(
                                   Icons.person,
-                                  size: 40,
+                                  size: 42,
                                   color: Colors.grey.shade400,
                                 )
                               : null,
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
                       Text(
                         '$firstName $lastName',
                         style: const TextStyle(
-                          fontSize: 24,
+                          fontSize: 26,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF2D3748),
+                          letterSpacing: 0.3,
                         ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        'Homeowner',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade100,
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                        textAlign: TextAlign.center,
+                        child: Text(
+                          'Homeowner',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.amber.shade900,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Column(
-                            children: [
-                              Text(
-                                '$ongoingProjectsCount',
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF2D3748),
-                                ),
-                              ),
-                              Text(
-                                'Ongoing',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Column(
-                            children: [
-                              Text(
-                                '$completedProjectsCount',
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF2D3748),
-                                ),
-                              ),
-                              Text(
-                                'Completed',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Column(
-                            children: [
-                              Text(
-                                '${ongoingProjectsCount + completedProjectsCount}',
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF2D3748),
-                                ),
-                              ),
-                              Text(
-                                'Total',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                      const SizedBox(height: 24),
+                      Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.amber.shade100, width: 2),
+                        ),
+                        child: Column(
+                          children: [
+                            _buildStatItem(ongoingProjectsCount, 'Ongoing', Colors.amber.shade700, Icons.work_outline),
+                            const SizedBox(height: 16),
+                            Divider(height: 1, color: Colors.grey.shade200),
+                            const SizedBox(height: 16),
+                            _buildStatItem(completedProjectsCount, 'Completed', Colors.grey.shade600, Icons.check_circle_outline),
+                            const SizedBox(height: 16),
+                            Divider(height: 1, color: Colors.grey.shade200),
+                            const SizedBox(height: 16),
+                            _buildStatItem(ongoingProjectsCount + completedProjectsCount, 'Total', Colors.grey.shade700, Icons.folder_outlined),
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
                 Container(
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.shade200, width: 1),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
                     ],
                   ),
                   child: Column(
                     children: [
-                      buildNavigation('Projects', selectedTab == 'Projects', () => onTabChanged('Projects')),
-                      buildNavigation('About', selectedTab == 'About', () => onTabChanged('About')),
-                      buildNavigation('History', selectedTab == 'History', () => onTabChanged('History')),
+                      buildNavigation('Projects', selectedTab == 'Projects', () => onTabChanged('Projects'), Icons.work_outline),
+                      const SizedBox(height: 4),
+                      buildNavigation('About', selectedTab == 'About', () => onTabChanged('About'), Icons.info_outline),
+                      const SizedBox(height: 4),
+                      buildNavigation('History', selectedTab == 'History', () => onTabChanged('History'), Icons.history),
                     ],
                   ),
                 ),
@@ -368,57 +302,52 @@ class CeeProfileBuildMethods {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          height: 200,
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
           decoration: BoxDecoration(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(16),
-              topRight: Radius.circular(16),
-            ),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.blue.shade400,
-                Colors.blue.shade700,
-              ],
-            ),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200, width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-          child: Stack(
+          child: Row(
             children: [
-              Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
-                  ),
-                  image: const DecorationImage(
-                    image: AssetImage('assets/images/profile_bg.jpg'),
-                    fit: BoxFit.cover,
-                  ),
-                  ),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.work_outline,
+                  color: Colors.amber.shade700,
+                  size: 24,
                 ),
               ),
-              Positioned(
-                bottom: 24,
-                left: 24,
+              const SizedBox(width: 16),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'MY PROJECTS',
+                      'Ongoing Projects',
                       style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 32,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        letterSpacing: 2,
+                        color: Color(0xFF2D3748),
                       ),
                     ),
+                    const SizedBox(height: 4),
                     Text(
-                      'Managing ${ongoingProjects.length} ongoing project${ongoingProjects.length != 1 ? 's' : ''}',
+                      '${ongoingProjects.length} active project${ongoingProjects.length != 1 ? 's' : ''}',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
                       ),
                     ),
                   ],
@@ -427,48 +356,57 @@ class CeeProfileBuildMethods {
             ],
           ),
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 20),
         
         if (ongoingProjects.isEmpty)
           Container(
-            height: 300,
+            padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 32),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.grey.shade200,
-                style: BorderStyle.solid,
-              ),
+              border: Border.all(color: Colors.grey.shade200, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.assignment_outlined,
-                    size: 64,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.work_outline,
+                    size: 48,
                     color: Colors.grey.shade400,
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No Ongoing Projects',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade600,
-                    ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'No Ongoing Projects',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade700,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Start a new project to see it here',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade500,
-                    ),
-                    textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Start a new project to see it here',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade500,
                   ),
-                ],
-              ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
           )
         else
@@ -532,9 +470,10 @@ class CeeProfileBuildMethods {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -547,17 +486,25 @@ class CeeProfileBuildMethods {
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.info_outline,
-                  color: Colors.black,
-                  size: 28,
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.info_outline,
+                    color: Colors.amber.shade700,
+                    size: 24,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 const Text(
                   'About',
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
+                    color: Color(0xFF2D3748),
                   ),
                 ),
                 const Spacer(),
@@ -569,7 +516,7 @@ class CeeProfileBuildMethods {
               'First Name',
               firstName,
               Icons.person,
-              Colors.black,
+              Colors.amber.shade700,
               isEditingFirstName,
               firstNameController,
               toggleEditFirstName,
@@ -581,7 +528,7 @@ class CeeProfileBuildMethods {
               'Last Name',
               lastName,
               Icons.person_outline,
-              Colors.black,
+              Colors.amber.shade700,
               isEditingLastName,
               lastNameController,
               toggleEditLastName,
@@ -593,7 +540,7 @@ class CeeProfileBuildMethods {
               'Bio',
               bio,
               Icons.description,
-              Colors.black,
+              Colors.amber.shade700,
               isEditingBio,
               bioController,
               toggleEditBio,
@@ -605,7 +552,7 @@ class CeeProfileBuildMethods {
               'Contact Information',
               contactNumber,
               Icons.phone,
-              Colors.black,
+              Colors.amber.shade700,
               isEditingContact,
               contactController,
               toggleEditContact,
@@ -617,7 +564,7 @@ class CeeProfileBuildMethods {
               'Address',
               address,
               Icons.location_on,
-              Colors.black,
+              Colors.amber.shade700,
               isEditingAddress,
               addressController,
               toggleEditAddress,
@@ -637,9 +584,10 @@ class CeeProfileBuildMethods {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -652,17 +600,25 @@ class CeeProfileBuildMethods {
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.history,
-                  color: Colors.blue.shade700,
-                  size: 28,
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.history,
+                    color: Colors.amber.shade700,
+                    size: 24,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 const Text(
                   'Project History',
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
+                    color: Color(0xFF2D3748),
                   ),
                 ),
               ],
@@ -733,117 +689,149 @@ class CeeProfileBuildMethods {
   }
 
   static Widget buildProjectCard(String projectName, String contractorName, String status, Color statusColor, String timeAgo, IconData statusIcon) {
+    // Use amber for ongoing, grey for completed
+    final isOngoing = status == 'Ongoing';
+    final displayColor = isOngoing ? Colors.amber.shade700 : Colors.grey.shade600;
+    final bgColor = isOngoing ? Colors.amber.shade50 : Colors.grey.shade50;
+    
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(25),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                statusIcon,
+                color: displayColor,
+                size: 24,
+              ),
             ),
-            child: Icon(
-              statusIcon,
-              color: statusColor,
-              size: 24,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    projectName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      color: Color(0xFF2D3748),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.person_outline, size: 13, color: Colors.grey.shade500),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          contractorName,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  projectName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: displayColor.withOpacity(0.3), width: 1),
+                  ),
+                  child: Text(
+                    status,
+                    style: TextStyle(
+                      color: displayColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  contractorName,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
-                  ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Icon(Icons.access_time, size: 11, color: Colors.grey.shade400),
+                    const SizedBox(width: 3),
+                    Text(
+                      timeAgo,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                timeAgo,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey.shade500,
-                ),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  static Widget buildNavigation(String title, bool isActive, VoidCallback onTap) {
+  static Widget buildNavigation(String title, bool isActive, VoidCallback onTap, IconData icon) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: isActive ? Colors.blue.shade50 : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          color: isActive ? Colors.amber.shade50 : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isActive ? Colors.amber.shade700 : Colors.grey.shade500,
+            ),
+            const SizedBox(width: 10),
             Text(
               title,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                color: isActive ? Colors.blue.shade700 : Colors.grey.shade600,
+                color: isActive ? Colors.amber.shade900 : Colors.grey.shade600,
               ),
             ),
             const Spacer(),
             if (isActive)
               Icon(
-                Icons.chevron_right,
-                size: 16,
-                color: Colors.blue.shade700,
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: Colors.amber.shade700,
               ),
           ],
         ),
@@ -851,18 +839,44 @@ class CeeProfileBuildMethods {
     );
   }
   
+  static Widget _buildStatItem(int count, String label, Color color, IconData icon) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 16),
+        const SizedBox(height: 4),
+        Text(
+          '$count',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            color: Colors.grey.shade600,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+  
   static Widget buildMobileNavigation(String selectedTab, Function(String) onTabChanged) {
     final tabs = ['Projects', 'About', 'History'];
     
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+            blurRadius: 6,
             offset: const Offset(0, 2),
           ),
         ],
@@ -873,20 +887,27 @@ class CeeProfileBuildMethods {
           return Expanded(
             child: InkWell(
               onTap: () => onTabChanged(tab),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(11),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.symmetric(vertical: 11),
                 decoration: BoxDecoration(
-                  color: isActive ? Colors.blue.shade50 : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
+                  color: isActive ? Colors.white : Colors.transparent,
+                  borderRadius: BorderRadius.circular(11),
+                  boxShadow: isActive ? [
+                    BoxShadow(
+                      color: Colors.amber.withOpacity(0.12),
+                      blurRadius: 6,
+                      offset: const Offset(0, 1),
+                    ),
+                  ] : [],
                 ),
                 child: Text(
                   tab,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                    color: isActive ? Colors.blue.shade700 : Colors.grey.shade600,
+                    fontSize: 13,
+                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                    color: isActive ? Colors.amber.shade900 : Colors.grey.shade600,
                   ),
                 ),
               ),
