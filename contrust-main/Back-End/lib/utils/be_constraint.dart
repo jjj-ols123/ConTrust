@@ -39,7 +39,7 @@ Future<Map<String, dynamic>?> hasExistingProjectWithContractor(String contractee
 Future<Map<String, dynamic>?> hasOngoingProject(String contracteeId) async {
   final ongoingProject = await Supabase.instance.client
         .from('Projects')
-        .select('project_id')
+        .select('project_id, contractor_id, title, status')
         .eq('contractee_id', contracteeId)
         .not('contractor_id', 'is', null)
         .inFilter('status', ['awaiting_contract', 'active', 'awaiting_agreement', 'awaiting_signature'])

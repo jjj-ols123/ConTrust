@@ -6,6 +6,7 @@ import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_project_service.dart';
 import 'package:backend/services/contractee services/cee_checkuser.dart';
 import 'package:backend/utils/be_snackbar.dart';
+import 'package:backend/utils/be_constraint.dart';
 import 'package:contractee/models/cee_modal.dart';
 import 'package:contractee/build/builddrawer.dart';
 import 'package:contractee/build/buildhome.dart';
@@ -95,6 +96,21 @@ class _HomePageState extends State<HomePage> {
 
   void _loadAcceptBidding(String projectId, String bidId) async {
     try {
+      // Check if contractee already has an ongoing project with another contractor
+      final contracteeId = supabase.auth.currentUser?.id;
+      if (contracteeId != null) {
+        final ongoingProject = await hasOngoingProject(contracteeId);
+        if (ongoingProject != null && ongoingProject['project_id'] != projectId) {
+          if (mounted) {
+            ConTrustSnackBar.error(
+              context,
+              'You already have an ongoing project. Complete it before accepting another bid.',
+            );
+          }
+          return;
+        }
+      }
+
       await BiddingService().acceptProjectBid(projectId, bidId);
       if (mounted) {
         ConTrustSnackBar.success(context, 'The bid has been accepted successfully!');

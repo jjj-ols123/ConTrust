@@ -806,6 +806,21 @@ class HireModal {
     required String contracteeId,
     required String contractorId,
   }) async {
+    // Check if contractee already has an ongoing project with another contractor
+    final ongoingProject = await hasOngoingProject(contracteeId);
+    if (ongoingProject != null) {
+      final ongoingContractorId = ongoingProject['contractor_id'] as String?;
+      if (ongoingContractorId != null && ongoingContractorId != contractorId) {
+        if (context.mounted) {
+          ConTrustSnackBar.error(
+            context,
+            'You already have an ongoing project with another contractor. Complete it before hiring a new contractor.',
+          );
+        }
+        return;
+      }
+    }
+
     TextEditingController titleController = TextEditingController();
     TextEditingController typeController = TextEditingController();
     TextEditingController descriptionController = TextEditingController();
