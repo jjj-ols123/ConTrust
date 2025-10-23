@@ -36,17 +36,6 @@ class CorBiddingService {
         throw Exception('This project is no longer accepting bids.');
       }
 
-      final existingAccepted = await _supabase
-          .from('Bids')
-          .select('bid_id')
-          .eq('contractor_id', contractorId)
-          .eq('status', 'accepted')
-          .maybeSingle();
-
-      if (existingAccepted != null) {
-        throw Exception('You cannot bid on new projects while having an accepted bid.');
-      }
-
       await _supabase.from('Bids').upsert({
         'contractor_id': contractorId,
         'project_id': projectId,

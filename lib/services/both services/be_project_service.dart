@@ -2,6 +2,7 @@
 
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_notification_service.dart';
+import 'package:backend/services/both services/be_message_service.dart';
 import 'package:backend/services/superadmin services/auditlogs_service.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
@@ -405,6 +406,27 @@ class ProjectService {
 
       await cancelOtherHireRequests(projectId, contracteeId, notificationId);
 
+      try {
+        final messageService = MessageService();
+        await messageService.getOrCreateChatRoom(
+          contractorId: contractorId,
+          contracteeId: contracteeId,
+          projectId: projectId,
+        );
+      } catch (e) {
+        await _errorService.logError(
+          errorMessage: 'Failed to create chat room after accepting hiring: ',
+          module: 'Project Service',
+          severity: 'Medium',
+          extraInfo: {
+            'operation': 'Accept Hiring - Create Chat Room',
+            'project_id': projectId,
+            'contractor_id': contractorId,
+            'contractee_id': contracteeId,
+          },
+        );
+      }
+
       final contractorData =
           await FetchService().fetchContractorData(contractorId);
       final contractorName = contractorData?['firm_name'] ?? 'A contractor';
@@ -416,7 +438,7 @@ class ProjectService {
         senderId: contractorId,
         senderType: 'contractor',
         type: 'Hiring Response',
-        message: 'Your hiring request has been accepted!',
+        message: 'Congratulations! Your hiring request has been accepted by $contractorName. \nPlease proceed to Messages to discuss further details.',
         information: {
           'contractor_id': contractorId,
           'contractor_name': contractorName,

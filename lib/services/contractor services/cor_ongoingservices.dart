@@ -18,7 +18,23 @@ class CorOngoingService {
 
   static const String kCustomContractTypeId = 'd9d78420-7765-44d5-966c-6f0e0297c07d';
 
-  Future<List<Map<String, dynamic>>> getContractsForProject(String projectId) async {
+  Future<List<Map<String, dynamic>>> getContractsForProject(
+    String projectId, {
+    String? contractorId,
+  }) async {
+
+    if (contractorId != null) {
+      final project = await _supabase
+          .from('Projects')
+          .select('contractor_id')
+          .eq('project_id', projectId)
+          .single();
+      
+      if (project['contractor_id'] != contractorId) {
+        throw Exception('Unauthorized: You do not own this project');
+      }
+    }
+    
     final res = await Supabase.instance.client
         .from('Contracts')
         .select('contract_id, contract_type_id, pdf_url, signed_pdf_url, contractor_signature_url, contractee_signature_url, field_values, created_at')
@@ -46,21 +62,42 @@ class CorOngoingService {
 }
 
 
-  Future<bool> hasCustomContractForProject(String projectId) async {
-    final contracts = await getContractsForProject(projectId);
+  Future<bool> hasCustomContractForProject(
+    String projectId, {
+    String? contractorId,
+  }) async {
+    final contracts = await getContractsForProject(
+      projectId,
+      contractorId: contractorId,
+    );
     return contracts.any((c) =>
         (c['contract_type_id']?.toString() ?? '') == kCustomContractTypeId);
   }
 
-  Future<Map<String, dynamic>> loadProjectData(String projectId) async {
+  Future<Map<String, dynamic>> loadProjectData(
+    String projectId, {
+    String? contractorId,
+  }) async {
     try {
       final projectDetails = await _fetchService.fetchProjectDetails(projectId);
+      
+      // Validate contractor ownership
+      if (contractorId != null) {
+        final projectContractorId = projectDetails?['contractor_id'] as String?;
+        if (projectContractorId != contractorId) {
+          throw Exception('Unauthorized: You do not own this project');
+        }
+      }
+      
       final reports = await _fetchService.fetchProjectReports(projectId);
       final photos = await _fetchService.fetchProjectPhotos(projectId);
       final costs = await _fetchService.fetchProjectCosts(projectId);
       final tasks = await _fetchService.fetchProjectTasks(projectId);
       
-      final contracts = await getContractsForProject(projectId);
+      final contracts = await getContractsForProject(
+        projectId,
+        contractorId: contractorId,
+      );
 
       final progress = (projectDetails?['progress'] as num?)?.toDouble() ?? 0.0;
       

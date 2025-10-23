@@ -1,11 +1,8 @@
 import 'package:backend/services/superadmin%20services/errorlogs_service.dart';
-import 'package:backend/services/superadmin%20services/perflogs_service.dart';
 import 'package:backend/services/superadmin%20services/monitor_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SuperAdminServiceBackend {
-  static final SuperAdminPerfLogsService _perfLogsService =
-      SuperAdminPerfLogsService();
   static final SystemMonitorService _monitorService = SystemMonitorService();
   static final SupabaseClient _supabase = Supabase.instance.client;
 

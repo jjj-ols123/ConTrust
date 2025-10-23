@@ -8,15 +8,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
-import 'dart:io';
 
 class ViewContractService {
 
   static final SuperAdminErrorService _errorService = SuperAdminErrorService();
 
-  static Future<Map<String, dynamic>> loadContract(String contractId) async {
+  static Future<Map<String, dynamic>> loadContract(String contractId, {String? contractorId}) async {
     try {
-      return await ContractService.getContractById(contractId);
+      return await ContractService.getContractById(contractId, contractorId: contractorId);
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Failed to load contract: ',
@@ -25,6 +24,7 @@ class ViewContractService {
         extraInfo: {
           'operation': 'Load Contract',
           'contract_id': contractId,
+          'contractor_id': contractorId,
         },
       );
       throw Exception('Error loading contract:');
@@ -308,10 +308,17 @@ class ViewContractService {
 
       if (kIsWeb) {
         ConTrustSnackBar.success(context, 'Contract download started');
-      } else if (result is File) {
-        ConTrustSnackBar.success(context, 'Contract downloaded to: ${result.path}');
       } else {
-        ConTrustSnackBar.success(context, 'Contract downloaded successfully');
+        try {
+          final filePath = result?.path ?? '';
+          if (filePath.isNotEmpty) {
+            ConTrustSnackBar.success(context, 'Contract downloaded to: $filePath');
+          } else {
+            ConTrustSnackBar.success(context, 'Contract downloaded successfully');
+          }
+        } catch (_) {
+          ConTrustSnackBar.success(context, 'Contract downloaded successfully');
+        }
       }
     } catch (e) {
       await _errorService.logError(

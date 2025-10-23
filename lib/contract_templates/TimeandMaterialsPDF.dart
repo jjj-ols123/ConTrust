@@ -335,7 +335,7 @@ class TimeAndMaterialsPDF {
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(8),
-                        child: pw.Text('₱$itemPrice', style: const pw.TextStyle(fontSize: 10)),
+                        child: pw.Text('PHP$itemPrice', style: const pw.TextStyle(fontSize: 10)),
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(8),
@@ -343,7 +343,7 @@ class TimeAndMaterialsPDF {
                       ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.all(8),
-                        child: pw.Text('₱$itemSubtotal', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                        child: pw.Text('PHP$itemSubtotal', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
                       ),
                     ],
                   ),
@@ -369,7 +369,7 @@ class TimeAndMaterialsPDF {
                     ),
                     pw.Padding(
                       padding: const pw.EdgeInsets.all(8),
-                      child: pw.Text('PHP____________', style: const pw.TextStyle(fontSize: 10)),
+                      child: pw.Text('PHP[Item 1 price]', style: const pw.TextStyle(fontSize: 10)),
                     ),
                   ],
                 ),

@@ -609,9 +609,15 @@ class CreateContractService {
     }
   }
 
-  Future<Map<String, dynamic>?> fetchContractFieldValues(String contractId) async {
+  Future<Map<String, dynamic>?> fetchContractFieldValues(
+    String contractId, {
+    String? contractorId,
+  }) async {
     try {
-      final contractData = await FetchService().fetchContractData(contractId);
+      final contractData = await FetchService().fetchContractData(
+        contractId,
+        contractorId: contractorId,
+      );
       if (contractData != null && contractData['field_values'] != null) {
         return contractData['field_values'] as Map<String, dynamic>;
       }
@@ -624,6 +630,7 @@ class CreateContractService {
         extraInfo: {
           'operation': 'Fetch Contract Field Values',
           'contract_id': contractId,
+          'contractor_id': contractorId,
         },
       );
       rethrow;

@@ -194,7 +194,7 @@ class TimeMaterialsContract extends StatelessWidget {
           ContractStyle.sectionTitle('5. Timeliness'),
           const SizedBox(height: 12),
       ContractStyle.paragraph(
-        'This Contract shall begin on the day specified and shall continue until the Project is completed or upon the set due date. Any delays incurred by the Contractor that are found to be unreasonable shall be determined a breach of this Contract. The Company shall impose a fine of up to ₱[Maximum penalty amount] for such a delay.'),
+        'This Contract shall begin on the day specified and shall continue until the Project is completed or upon the set due date. Any delays incurred by the Contractor that are found to be unreasonable shall be determined a breach of this Contract. The Company shall impose a fine of up to PHP[Maximum penalty amount] for such a delay.'),
 
           const SizedBox(height: 16),
           ContractStyle.sectionTitle('6. Representation and Warranties'),
@@ -279,8 +279,8 @@ class TimeMaterialsContract extends StatelessWidget {
                           flex: 2, 
                           child: Text(
                             ContractStyle.textResolver != null 
-                                ? ContractStyle.textResolver!('₱[Item 1 price]') 
-                                : '₱[Item 1 price]'
+                                ? ContractStyle.textResolver!('PHP[Item 1 price]') 
+                                : 'PHP[Item 1 price]'
                           )
                         ),
                         Expanded(
@@ -295,8 +295,8 @@ class TimeMaterialsContract extends StatelessWidget {
                           flex: 2, 
                           child: Text(
                             ContractStyle.textResolver != null 
-                                ? ContractStyle.textResolver!('₱[Item 1 subtotal]') 
-                                : '₱[Item 1 subtotal]', 
+                                ? ContractStyle.textResolver!('PHP[Item 1 subtotal]') 
+                                : 'PHP[Item 1 subtotal]', 
                             style: const TextStyle(fontWeight: FontWeight.w500)
                           )
                         ),
@@ -344,8 +344,8 @@ class TimeMaterialsContract extends StatelessWidget {
                           flex: 2, 
                           child: Text(
                             ContractStyle.textResolver != null 
-                                ? ContractStyle.textResolver!('₱[Item 2 price]') 
-                                : '₱[Item 2 price]'
+                                ? ContractStyle.textResolver!('PHP[Item 2 price]') 
+                                : 'PHP[Item 2 price]'
                           )
                         ),
                         Expanded(
@@ -360,8 +360,8 @@ class TimeMaterialsContract extends StatelessWidget {
                           flex: 2, 
                           child: Text(
                             ContractStyle.textResolver != null 
-                                ? ContractStyle.textResolver!('₱[Item 2 subtotal]') 
-                                : '₱[Item 2 subtotal]', 
+                                ? ContractStyle.textResolver!('PHP[Item 2 subtotal]') 
+                                : 'PHP[Item 2 subtotal]', 
                             style: const TextStyle(fontWeight: FontWeight.w500)
                           )
                         ),
@@ -409,8 +409,8 @@ class TimeMaterialsContract extends StatelessWidget {
                           flex: 2, 
                           child: Text(
                             ContractStyle.textResolver != null 
-                                ? ContractStyle.textResolver!('₱[Item 3 price]') 
-                                : '₱[Item 3 price]'
+                                ? ContractStyle.textResolver!('PHP[Item 3 price]') 
+                                : 'PHP[Item 3 price]'
                           )
                         ),
                         Expanded(
@@ -425,8 +425,8 @@ class TimeMaterialsContract extends StatelessWidget {
                           flex: 2, 
                           child: Text(
                             ContractStyle.textResolver != null 
-                                ? ContractStyle.textResolver!('₱[Item 3 subtotal]') 
-                                : '₱[Item 3 subtotal]', 
+                                ? ContractStyle.textResolver!('PHP[Item 3 subtotal]') 
+                                : 'PHP[Item 3 subtotal]', 
                             style: const TextStyle(fontWeight: FontWeight.w500)
                           )
                         ),
@@ -474,8 +474,8 @@ class TimeMaterialsContract extends StatelessWidget {
                           flex: 2, 
                           child: Text(
                             ContractStyle.textResolver != null 
-                                ? ContractStyle.textResolver!('₱[Item 4 price]') 
-                                : '₱[Item 4 price]'
+                                ? ContractStyle.textResolver!('PHP[Item 4 price]') 
+                                : 'PHP[Item 4 price]'
                           )
                         ),
                         Expanded(
@@ -490,8 +490,8 @@ class TimeMaterialsContract extends StatelessWidget {
                           flex: 2, 
                           child: Text(
                             ContractStyle.textResolver != null 
-                                ? ContractStyle.textResolver!('₱[Item 4 subtotal]') 
-                                : '₱[Item 4 subtotal]', 
+                                ? ContractStyle.textResolver!('PHP[Item 4 subtotal]') 
+                                : 'PHP[Item 4 subtotal]', 
                             style: const TextStyle(fontWeight: FontWeight.w500)
                           )
                         ),
@@ -539,8 +539,8 @@ class TimeMaterialsContract extends StatelessWidget {
                           flex: 2, 
                           child: Text(
                             ContractStyle.textResolver != null 
-                                ? ContractStyle.textResolver!('₱[Item 5 price]') 
-                                : '₱[Item 5 price]'
+                                ? ContractStyle.textResolver!('PHP[Item 5 price]') 
+                                : 'PHP[Item 5 price]'
                           )
                         ),
                         Expanded(
@@ -555,8 +555,8 @@ class TimeMaterialsContract extends StatelessWidget {
                           flex: 2, 
                           child: Text(
                             ContractStyle.textResolver != null 
-                                ? ContractStyle.textResolver!('₱[Item 5 subtotal]') 
-                                : '₱[Item 5 subtotal]', 
+                                ? ContractStyle.textResolver!('PHP[Item 5 subtotal]') 
+                                : 'PHP[Item 5 subtotal]', 
                             style: const TextStyle(fontWeight: FontWeight.w500)
                           )
                         ),
@@ -579,8 +579,8 @@ class TimeMaterialsContract extends StatelessWidget {
                           flex: 2,
                           child: Text(
                             ContractStyle.textResolver != null
-                                ? '₱${ContractStyle.textResolver!('[Subtotal amount]')}'
-                                : '₱[Subtotal amount]',
+                                ? 'PHP${ContractStyle.textResolver!('[Subtotal amount]')}'
+                                : 'PHP[Subtotal amount]',
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
@@ -601,8 +601,8 @@ class TimeMaterialsContract extends StatelessWidget {
                           flex: 2,
                           child: Text(
                             ContractStyle.textResolver != null
-                                ? '-₱${ContractStyle.textResolver!('[Discount amount]')}'
-                                : '-₱[Discount amount]',
+                                ? '-PHP${ContractStyle.textResolver!('[Discount amount]')}'
+                                : '-PHP[Discount amount]',
                             style: const TextStyle(color: Colors.red),
                           ),
                         ),
@@ -623,8 +623,8 @@ class TimeMaterialsContract extends StatelessWidget {
                           flex: 2,
                           child: Text(
                             ContractStyle.textResolver != null
-                                ? '₱${ContractStyle.textResolver!('[Tax amount]')}'
-                                : '₱[Tax amount]',
+                                ? 'PHP${ContractStyle.textResolver!('[Tax amount]')}'
+                                : 'PHP[Tax amount]',
                           ),
                         ),
                       ],
@@ -649,8 +649,8 @@ class TimeMaterialsContract extends StatelessWidget {
                           flex: 2,
                           child: Text(
                             ContractStyle.textResolver != null
-                                ? '₱${ContractStyle.textResolver!('[Total amount]')}'
-                                : '₱[Total amount]',
+                                ? 'PHP${ContractStyle.textResolver!('[Total amount]')}'
+                                : 'PHP[Total amount]',
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                           ),
                         ),
