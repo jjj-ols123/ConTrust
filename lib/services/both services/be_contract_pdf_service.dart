@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter
 
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:uuid/uuid.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -13,7 +14,7 @@ import '../../contract_templates/CostPlusPDF.dart';
 import 'package:backend/services/superadmin services/auditlogs_service.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 
-import 'dart:html' as html;
+import 'dart:html' as html if (dart.library.io) 'dart:io';
 
 class ContractPdfService {
   static final SupabaseClient _supabase = Supabase.instance.client;
