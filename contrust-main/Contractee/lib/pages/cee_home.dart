@@ -271,11 +271,32 @@ class _HomePageState extends State<HomePage> {
                               },
                               onDeleteProject: (projectId) async {
                                 try {
+                                  // Show loading state
+                                  setState(() {
+                                    isLoading = true;
+                                  });
+
+                                  // Delete the project
                                   await ProjectService().deleteProject(projectId);
-                                  ConTrustSnackBar.success(context, 'The project has been deleted successfully.');
-                                  _loadData();
+
+                                  // Immediately remove from local state
+                                  setState(() {
+                                    projects.removeWhere((p) => p['project_id'] == projectId);
+                                  });
+
+                                  // Reload data to sync with database
+                                  await _loadData();
+
+                                  if (mounted) {
+                                    ConTrustSnackBar.success(context, 'The project has been deleted successfully.');
+                                  }
                                 } catch (e) {
-                                  ConTrustSnackBar.error(context, 'Failed to delete project. Please try again.');
+                                  setState(() {
+                                    isLoading = false;
+                                  });
+                                  if (mounted) {
+                                    ConTrustSnackBar.error(context, 'Failed to delete project. Please try again.');
+                                  }
                                 }
                               },
                             );
