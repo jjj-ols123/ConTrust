@@ -3,6 +3,7 @@
 import 'package:backend/utils/be_validation.dart';
 import 'package:backend/services/contractee services/cee_signup.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:contractee/pages/cee_login.dart';
 
 class RegistrationPage extends StatefulWidget {
@@ -188,6 +189,10 @@ class _RegistrationPageState extends State<RegistrationPage> {
         TextField(
           controller: _phoneController,
           keyboardType: TextInputType.phone,
+          maxLength: 11,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+          ],
           decoration: _inputStyle('Phone Number', Icons.phone_android_outlined),
         ),
         const SizedBox(height: 15),

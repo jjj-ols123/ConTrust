@@ -1,0 +1,114 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "contrust-main",
+            "cwd": "contrust-main",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "Back-End",
+            "cwd": "contrust-main\\Back-End",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "Back-End (profile mode)",
+            "cwd": "contrust-main\\Back-End",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "Back-End (release mode)",
+            "cwd": "contrust-main\\Back-End",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        },
+        {
+            "name": "Contractee",
+            "cwd": "contrust-main\\Contractee",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "Contractee (profile mode)",
+            "cwd": "contrust-main\\Contractee",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "Contractee (release mode)",
+            "cwd": "contrust-main\\Contractee",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        },
+        {
+            "name": "Contractor",
+            "cwd": "contrust-main\\Contractor",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "Contractor (profile mode)",
+            "cwd": "contrust-main\\Contractor",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "Contractor (release mode)",
+            "cwd": "contrust-main\\Contractor",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        },
+        {
+            "name": "SuperAdmin",
+            "cwd": "contrust-main\\SuperAdmin",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "SuperAdmin (profile mode)",
+            "cwd": "contrust-main\\SuperAdmin",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "SuperAdmin (release mode)",
+            "cwd": "contrust-main\\SuperAdmin",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        },
+        {
+            "name": "websitepoint",
+            "cwd": "contrust-main\\websitepoint",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "websitepoint (profile mode)",
+            "cwd": "contrust-main\\websitepoint",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "websitepoint (release mode)",
+            "cwd": "contrust-main\\websitepoint",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        }
+    ]
+}

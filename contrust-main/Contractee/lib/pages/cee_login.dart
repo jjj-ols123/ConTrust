@@ -2,6 +2,7 @@
 
 import 'package:backend/utils/be_pagetransition.dart';
 import 'package:backend/utils/be_validation.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractee/pages/cee_registration.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/services/contractee services/cee_signin.dart';
@@ -118,12 +119,9 @@ class _LoginPageState extends State<LoginPage> {
         ElevatedButton(
           onPressed: () async {
             if (!_isAgreed) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'You must agree to the Privacy Policy and Terms of Service.',
-                  ),
-                ),
+              ConTrustSnackBar.error(
+                context,
+                'You must agree to the Privacy Policy and Terms of Service.',
               );
               return;
             }
@@ -324,9 +322,7 @@ class _LoginPageState extends State<LoginPage> {
                             "7. Data Retention\n\n"
                             "Your data is stored as long as needed for project management or as required by law. Once deleted, identifiers are permanently removed.\n\n"
                             "8. Privacy Policy Updates\n\n"
-                            "This policy may be updated from time to time. Updates will be posted on the ConTrust platform.\n\n"
-                            "9. Contact Information\n\n"
-                            "For any data concerns, contact us at support@contrust.ph or visit San Jose del Monte, Bulacan.\n",
+                            "This policy may be updated from time to time. Updates will be posted on the ConTrust platform.\n\n",
                             style: TextStyle(
                               fontSize: 14.5,
                               height: 1.6,

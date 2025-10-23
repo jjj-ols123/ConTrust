@@ -1,5 +1,6 @@
 // ignore_for_file: file_names, use_build_context_synchronously, deprecated_member_use, library_private_types_in_public_api
 import 'package:backend/utils/be_validation.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/Screen/cor_registration.dart';
 import 'package:backend/services/contractor services/cor_signin.dart';
 import 'package:flutter/material.dart';
@@ -153,11 +154,9 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
         ElevatedButton(
           onPressed: () async {
             if (!_isAgreed) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                      'You must agree to the Privacy Policy and Terms of Service.'),
-                ),
+              ConTrustSnackBar.error(
+                context,
+                'You must agree to the Privacy Policy and Terms of Service.',
               );
               return;
             }

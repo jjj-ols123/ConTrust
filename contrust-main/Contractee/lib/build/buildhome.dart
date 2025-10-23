@@ -310,69 +310,89 @@ class HomePageBuilder {
   }
 
   static Widget buildNoContractorsPlaceholder(TextEditingController searchController) {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.all(40),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.amber.shade50, Colors.amber.shade100],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.amber.shade200),
+  return Center(
+    child: Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.all(40),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.amber.shade50, Colors.white, Colors.amber.shade100],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.search_off,
-              size: 60,
-              color: Colors.amber[700],
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.amber.shade100.withOpacity(0.6),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        border: Border.all(color: Colors.amber.shade200, width: 1.5),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.search_off_rounded,
+            size: 80,
+            color: Colors.amber[800],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            "No Contractors Found",
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade800,
+              letterSpacing: 0.5,
             ),
-            const SizedBox(height: 16),
-            Text(
-              "No Contractors Found",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.amber[800],
-              ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            searchController.text.isEmpty
+                ? "There are currently no available contractors.\nPlease check again later."
+                : "We couldn’t find any contractors matching\n‘${searchController.text}’.",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 15,
+              color: Colors.grey.shade700,
+              height: 1.5,
             ),
-            const SizedBox(height: 8),
-            Text(
-              searchController.text.isEmpty
-                  ? "No contractors are available at the moment."
-                  : "No contractors match your search '${searchController.text}'",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[700],
-              ),
-            ),
-            if (searchController.text.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
+          ),
+          const SizedBox(height: 24),
+          AnimatedOpacity(
+            opacity: searchController.text.isNotEmpty ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 400),
+            child: Visibility(
+              visible: searchController.text.isNotEmpty,
+              child: ElevatedButton.icon(
                 onPressed: () {
                   searchController.clear();
                 },
-                icon: const Icon(Icons.clear, size: 16),
-                label: const Text("Clear Search"),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text(
+                  "Clear Search",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.amber[700],
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  elevation: 4,
                 ),
               ),
-            ],
-          ],
-        ),
+            ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   static Widget buildContractorsSection({
     required BuildContext context,
