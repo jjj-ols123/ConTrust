@@ -45,6 +45,8 @@ class CorProfileService {
         } else {
           rating['client_name'] = 'Anonymous Client';
         }
+
+        
         reviewsWithNames.add(rating);
       }
 

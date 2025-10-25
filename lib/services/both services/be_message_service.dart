@@ -60,4 +60,48 @@ class MessageService {
     }
     return null;
   }
+
+  Future<Map<String, dynamic>?> fetchContracteeData(String contracteeId) async {
+    try {
+      final response = await _supabase
+          .from('Contractee')
+          .select('full_name, profile_photo')
+          .eq('contractee_id', contracteeId)
+          .single();
+      return Map<String, dynamic>.from(response);
+    } catch (e) {
+      await SuperAdminErrorService().logError(
+        errorMessage: 'Failed to fetch contractee data: $e',
+        module: 'Message Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Contractee Data',
+          'contractee_id': contracteeId,
+        },
+      );
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> fetchContractorData(String contractorId) async {
+    try {
+      final response = await _supabase
+          .from('Contractor')
+          .select('firm_name, profile_photo')
+          .eq('contractor_id', contractorId)
+          .single();
+      return Map<String, dynamic>.from(response);
+    } catch (e) {
+      await SuperAdminErrorService().logError(
+        errorMessage: 'Failed to fetch contractor data: $e',
+        module: 'Message Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Contractor Data',
+          'contractor_id': contractorId,
+        },
+      );
+      return null;
+    }
+  }
 }

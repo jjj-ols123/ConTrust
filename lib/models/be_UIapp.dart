@@ -121,7 +121,8 @@ class ProjectView extends StatelessWidget {
   final DateTime createdAt;
   final Function() onTap;
   final Function(String) handleFinalizeBidding;
-  final Function(String)? onDeleteProject;
+  final Function(String)? onUpdateProject;
+  final Function(String)? onCancelProject;
 
   const ProjectView({
     Key? key,
@@ -132,7 +133,8 @@ class ProjectView extends StatelessWidget {
     required this.createdAt,
     required this.onTap,
     required this.handleFinalizeBidding,
-    this.onDeleteProject,
+    this.onUpdateProject,
+    this.onCancelProject,
   }) : super(key: key);
 
   @override
@@ -195,7 +197,7 @@ class ProjectView extends StatelessWidget {
                       ),
                     ),
                   ],
-                  if (onDeleteProject != null) ...[
+                  if (onUpdateProject != null || onCancelProject != null) ...[
                     const SizedBox(width: 8),
                     PopupMenuButton<String>(
                       icon: const Icon(Icons.more_vert, color: Colors.grey),
@@ -203,8 +205,10 @@ class ProjectView extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       onSelected: (value) async {
-                        if (value == 'delete') {
-                          final bool? shouldDelete = await showDialog<bool>(
+                        if (value == 'update' && onUpdateProject != null) {
+                          onUpdateProject!(projectId);
+                        } else if (value == 'cancel' && onCancelProject != null) {
+                          final bool? shouldCancel = await showDialog<bool>(
                             context: context,
                             builder: (BuildContext context) {
                               return AlertDialog(
@@ -212,49 +216,66 @@ class ProjectView extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 title: const Text(
-                                  'Delete Project',
+                                  'Cancel Project',
                                   style: TextStyle(fontWeight: FontWeight.bold),
                                 ),
-                                content: const Text(
-                                  'Are you sure you want to delete this project? This action cannot be undone.',
+                                content: Text(
+                                  project['contractor_id'] != null 
+                                    ? 'Are you sure you want to cancel this project? This will notify the assigned contractor and terminate any ongoing work. This action cannot be undone.'
+                                    : 'Are you sure you want to cancel this project? This action cannot be undone.',
                                 ),
                                 actions: [
                                   TextButton(
                                     onPressed: () =>
                                         Navigator.of(context).pop(false),
-                                    child: const Text('Cancel'),
+                                    child: const Text('No'),
                                   ),
                                   TextButton(
                                     onPressed: () =>
                                         Navigator.of(context).pop(true),
                                     style: TextButton.styleFrom(
-                                      foregroundColor: Colors.red,
+                                      foregroundColor: Colors.orange,
                                     ),
-                                    child: const Text('Delete'),
+                                    child: const Text('Yes, Cancel'),
                                   ),
                                 ],
                               );
                             },
                           );
-                          if (shouldDelete == true) {
-                            onDeleteProject!(projectId);
+                          if (shouldCancel == true) {
+                            onCancelProject!(projectId);
                           }
                         }
                       },
                       itemBuilder: (BuildContext context) => [
-                        const PopupMenuItem<String>(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(Icons.delete, color: Colors.red),
-                              SizedBox(width: 8),
-                              Text(
-                                'Delete Project',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ],
+                        if (onUpdateProject != null)
+                          const PopupMenuItem<String>(
+                            value: 'update',
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit, color: Colors.blue),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Update Project',
+                                  style: TextStyle(color: Colors.blue),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
+                        if (onCancelProject != null)
+                          const PopupMenuItem<String>(
+                            value: 'cancel',
+                            child: Row(
+                              children: [
+                                Icon(Icons.cancel, color: Colors.orange),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Cancel Project',
+                                  style: TextStyle(color: Colors.orange),
+                                ),
+                              ],
+                            ),
+                          ),
                       ],
                     ),
                   ],

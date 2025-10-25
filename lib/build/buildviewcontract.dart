@@ -15,51 +15,124 @@ class ViewContractBuild {
     String downloadButtonText = 'Download',
     String signButtonText = 'Sign Contract',
   }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+
     return Container(
-      height: 60,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 12 : 16,
+        vertical: isMobile ? 12 : 8,
+      ),
       decoration: BoxDecoration(
         color: Colors.amber.shade50,
         border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
       ),
-      child: Row(
-        children: [
-          Icon(Icons.description, color: Colors.amber, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              title ?? 'Contract Details',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-              overflow: TextOverflow.ellipsis,
+      child: isMobile
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.description, color: Colors.amber, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        title ?? 'Contract Details',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: onDownload,
+                        icon: const Icon(Icons.download, size: 16),
+                        label: Text(
+                          downloadButtonText,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue[600],
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                    if (onSign != null) ...[
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: onSign,
+                          icon: Icon(
+                            signButtonText.contains('Hide')
+                                ? Icons.visibility_off
+                                : Icons.edit,
+                            size: 16,
+                          ),
+                          label: Text(
+                            signButtonText,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.amber[600],
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                Icon(Icons.description, color: Colors.amber, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title ?? 'Contract Details',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: onDownload,
+                  icon: const Icon(Icons.download),
+                  label: Text(downloadButtonText),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue[600],
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+                if (onSign != null) ...[
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: onSign,
+                    icon: Icon(signButtonText.contains('Hide')
+                        ? Icons.visibility_off
+                        : Icons.edit),
+                    label: Text(signButtonText),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber[600],
+                      foregroundColor: Colors.black,
+                    ),
+                  ),
+                ],
+              ],
             ),
-          ),
-          ElevatedButton.icon(
-            onPressed: onDownload,
-            icon: const Icon(Icons.download),
-            label: Text(downloadButtonText),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue[600],
-              foregroundColor: Colors.white,
-            ),
-          ),
-          if (onSign != null) ...[
-            const SizedBox(width: 8),
-            ElevatedButton.icon(
-              onPressed: onSign,
-              icon: Icon(signButtonText.contains('Hide') ? Icons.visibility_off : Icons.edit),
-              label: Text(signButtonText),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amber[600],
-                foregroundColor: Colors.black,
-              ),
-            ),
-          ],
-        ],
-      ),
     );
   }
 

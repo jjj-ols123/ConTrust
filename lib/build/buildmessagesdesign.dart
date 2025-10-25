@@ -891,7 +891,8 @@ class UIMessage {
 
                 return Dialog(
                     child: Container(
-                  width: MediaQuery.of(context).size.width * 0.9,
+                  width: MediaQuery.of(context).size.width * 1.2,
+                  constraints: const BoxConstraints(maxWidth: 900),
                   height: MediaQuery.of(context).size.height * 0.9,
                   padding: const EdgeInsets.all(24),
                   child: Column(
@@ -973,52 +974,106 @@ class UIMessage {
                               Card(
                                 child: Padding(
                                   padding: const EdgeInsets.all(16),
-                                  child: Row(
-                                    children: [
-                                      ElevatedButton.icon(
-                                        onPressed: () async {
-                                          await _downloadContract(contractData,
-                                              context, messageData);
-                                        },
-                                        icon: const Icon(Icons.download),
-                                        label: Text(_hasSignedPdf(contractData)
-                                            ? 'Download Signed Contract'
-                                            : 'Download Contract'),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.blue[600],
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                        ),
-                                      ),
-                                      if (isContractee) ...[
-                                        const SizedBox(width: 16),
-                                        Expanded(
-                                          child: Container(
-                                            padding: const EdgeInsets.all(12),
-                                            decoration: BoxDecoration(
-                                              color: Colors.grey[100],
-                                              border: Border.all(
-                                                  color: Colors.grey[300]!),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              _getSignatureMessage(contractData,
-                                                  currentUserId, displayStatus),
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(
-                                                color: Colors.grey[600],
-                                                fontStyle: FontStyle.italic,
-                                                fontSize: 14,
+                                  child: Builder(
+                                    builder: (context) {
+                                      final screenWidth = MediaQuery.of(context).size.width;
+                                      final isMobile = screenWidth < 600;
+                                      
+                                      if (isMobile) {
+                                        return Column(
+                                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                                          children: [
+                                            ElevatedButton.icon(
+                                              onPressed: () async {
+                                                await _downloadContract(contractData,
+                                                    context, messageData);
+                                              },
+                                              icon: const Icon(Icons.download, size: 16),
+                                              label: Text(
+                                                _hasSignedPdf(contractData)
+                                                    ? 'Download Signed Contract'
+                                                    : 'Download Contract',
+                                                style: const TextStyle(fontSize: 12),
+                                              ),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.blue[600],
+                                                foregroundColor: Colors.white,
+                                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                        ),
-                                      ],
-                                    ],
+                                            if (isContractee) ...[
+                                              const SizedBox(height: 12),
+                                              Container(
+                                                padding: const EdgeInsets.all(12),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.grey[100],
+                                                  border: Border.all(color: Colors.grey[300]!),
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: Text(
+                                                  _getSignatureMessage(contractData,
+                                                      currentUserId, displayStatus),
+                                                  textAlign: TextAlign.center,
+                                                  style: TextStyle(
+                                                    color: Colors.grey[600],
+                                                    fontStyle: FontStyle.italic,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        );
+                                      } else {
+                                        return Row(
+                                          children: [
+                                            ElevatedButton.icon(
+                                              onPressed: () async {
+                                                await _downloadContract(contractData,
+                                                    context, messageData);
+                                              },
+                                              icon: const Icon(Icons.download),
+                                              label: Text(_hasSignedPdf(contractData)
+                                                  ? 'Download Signed Contract'
+                                                  : 'Download Contract'),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.blue[600],
+                                                foregroundColor: Colors.white,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                              ),
+                                            ),
+                                            if (isContractee) ...[
+                                              const SizedBox(width: 16),
+                                              Expanded(
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(12),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.grey[100],
+                                                    border: Border.all(color: Colors.grey[300]!),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  child: Text(
+                                                    _getSignatureMessage(contractData,
+                                                        currentUserId, displayStatus),
+                                                    textAlign: TextAlign.center,
+                                                    style: TextStyle(
+                                                      color: Colors.grey[600],
+                                                      fontStyle: FontStyle.italic,
+                                                      fontSize: 14,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        );
+                                      }
+                                    },
                                   ),
                                 ),
                               ),
@@ -1227,6 +1282,8 @@ class UIMessage {
                       role,
                       style: const TextStyle(
                           fontWeight: FontWeight.bold, fontSize: 12),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                     Text(
                       isSigned ? 'Signed' : 'Pending',
@@ -1234,6 +1291,8 @@ class UIMessage {
                         fontSize: 10,
                         color: isSigned ? Colors.green[600] : Colors.grey[600],
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                   ],
                 ),

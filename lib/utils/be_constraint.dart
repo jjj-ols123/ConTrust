@@ -42,6 +42,7 @@ Future<Map<String, dynamic>?> hasOngoingProject(String contracteeId) async {
         .select('project_id, contractor_id, title, status')
         .eq('contractee_id', contracteeId)
         .not('contractor_id', 'is', null)
+        .neq('status', 'cancelled')
         .inFilter('status', ['awaiting_contract', 'active', 'awaiting_agreement', 'awaiting_signature'])
         .limit(1)
         .maybeSingle();
