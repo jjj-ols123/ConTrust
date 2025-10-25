@@ -105,6 +105,7 @@ class FetchService {
             'project_id, type, title, description, duration, min_budget, max_budget, created_at, status',
           )
           .eq('contractee_id', userId)
+          .neq('status', 'cancelled')
           .order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
@@ -658,7 +659,7 @@ class FetchService {
             contractor_signed_at,
             contractee_signed_at,
             project:Projects(type, description, title),
-            contractor:Contractor(firm_name, profile_photo)  // Simplified
+            contractor:Contractor(firm_name, profile_photo)  
           ''')
           .eq('contractee_id', contracteeId)
           .order('created_at', ascending: false);
@@ -689,13 +690,12 @@ class FetchService {
           .select('''
             *,
             project:Projects(*),
-            contractor:Contractor(*),  // Simplified
+            contractor:Contractor(*),  
             contractee:Contractee(*),
             contract_type:ContractTypes(*)
           ''')
           .eq('contract_id', contractId);
-      
-      // Validate ownership
+        
       if (contractorId != null) {
         query.eq('contractor_id', contractorId);
       } else if (contracteeId != null) {
@@ -760,9 +760,7 @@ class FetchService {
           .select('''*, contractee:Contractee(*)''')
           .eq('project_id', projectId);
       
-      // Validate project ownership
       if (contractorId != null || contracteeId != null) {
-        // First verify the user owns this project
         final projectQuery = _supabase
             .from('Projects')
             .select('contractor_id, contractee_id')

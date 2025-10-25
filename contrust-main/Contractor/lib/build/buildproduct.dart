@@ -866,7 +866,73 @@ class ProductBuildMethods {
                               bottomRight: Radius.circular(20),
                             ),
                           ),
-                          child: Row(
+                          child: Builder(
+                            builder: (context) {
+                              final screenWidth = MediaQuery.of(context).size.width;
+                              final isMobile = screenWidth < 600;
+                              
+                              if (isMobile) {
+                                return Column(
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.info_outline,
+                                          color: Colors.grey.shade600,
+                                          size: 16,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            '${materials.length} materials in this project',
+                                            style: TextStyle(
+                                              color: Colors.grey.shade600,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    if (materials.isNotEmpty)
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: ElevatedButton(
+                                          onPressed: () async {
+                                            if (contractorId != null) {
+                                              await CorProductService().addAllCostsToProject(
+                                                projectId,
+                                                projectMaterials,
+                                                contractorId,
+                                                context,
+                                              );
+                                            } else {
+                                              ConTrustSnackBar.error(
+                                                context,
+                                                'Contractor ID not available',
+                                              );
+                                            }
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.amber,
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(vertical: 12),
+                                          ),
+                                          child: const Text('Add to Active Project costs'),
+                                        ),
+                                      ),
+                                    const SizedBox(height: 8),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('Close'),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              } else {
+                                return Row(
                             children: [
                               Icon(
                                 Icons.info_outline,
@@ -911,6 +977,9 @@ class ProductBuildMethods {
                                 child: const Text('Close'),
                               ),
                             ],
+                                );
+                              }
+                            },
                           ),
                         ),
                       ],
@@ -1394,12 +1463,59 @@ class _MaterialInputDialogState extends State<MaterialInputDialog> {
                   bottomRight: Radius.circular(20),
                 ),
               ),
-              child: Row(
+              child: Builder(
+                builder: (context) {
+                  final screenWidth = MediaQuery.of(context).size.width;
+                  final isMobile = screenWidth < 600;
+                  
+                  if (isMobile) {
+                    return Column(
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _isSaving ? null : saveMaterial,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.amber.shade600,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 2,
+                            ),
+                            child: _isSaving
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : Text(
+                                    isEdit ? 'Save Changes' : 'Add to Inventory',
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: TextButton(
+                            onPressed: _isSaving ? null : () => Navigator.pop(context),
+                            child: const Text('Cancel'),
+                          ),
+                        ),
+                      ],
+                    );
+                  } else {
+                    return Row(
                 children: [
                   Expanded(
                     child: TextButton(
-                      onPressed:
-                          _isSaving ? null : () => Navigator.pop(context),
+                            onPressed: _isSaving ? null : () => Navigator.pop(context),
                       child: const Text('Cancel'),
                     ),
                   ),
@@ -1417,8 +1533,7 @@ class _MaterialInputDialogState extends State<MaterialInputDialog> {
                         ),
                         elevation: 2,
                       ),
-                      child:
-                          _isSaving
+                            child: _isSaving
                               ? const SizedBox(
                                 width: 20,
                                 height: 20,
@@ -1435,6 +1550,9 @@ class _MaterialInputDialogState extends State<MaterialInputDialog> {
                     ),
                   ),
                 ],
+                    );
+                  }
+                },
               ),
             ),
           ],

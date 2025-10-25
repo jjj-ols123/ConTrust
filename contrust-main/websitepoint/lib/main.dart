@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:websitepoint/app_websitestart.dart'; 
+import 'package:websitepoint/app_websitestart.dart';
+import 'package:contractee/pages/cee_welcome.dart';
+import 'package:contractor/Screen/cor_login.dart';
+import 'package:superadmin/pages/login.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  usePathUrlStrategy();
   
   await Supabase.initialize(
   url: const String.fromEnvironment(
@@ -24,9 +30,20 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: WebsiteStartPage(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const WebsiteStartPage(),
+        '/contractee': (context) => const WelcomePage(),
+        '/contractor': (context) => LoginScreen(),
+        '/superadmin': (context) => const SuperAdminLoginScreen(),
+      },
+      onGenerateRoute: (settings) {
+        return MaterialPageRoute(
+          builder: (context) => const WebsiteStartPage(),
+        );
+      },
     );
   }
 }

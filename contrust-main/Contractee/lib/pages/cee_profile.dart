@@ -292,8 +292,6 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
   }
 
   void _loadTransactions() {
-    // TODO: Load transactions from database
-    // For now, using sample data from the original transaction page
     setState(() {
       transactions = [
         {

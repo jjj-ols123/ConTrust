@@ -347,43 +347,6 @@ class MessageUIBuildMethods {
             )
           : Column(
               children: [
-                Container(  
-                  height: headerHeight,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isDesktop ? 16 : (isTablet ? 12 : 8),
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: accentColor.withOpacity(0),
-                    border: Border(
-                      bottom: BorderSide(color: Colors.grey.shade200, width: 1),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: iconSize / 2,
-                        backgroundImage: NetworkImage(
-                          userProfile ??
-                              'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
-                        ),
-                      ),
-                      SizedBox(width: isDesktop ? 8 : 4),
-                      if (!isMobile || screenWidth > 350)
-                        Expanded(
-                          child: Text(
-                            userName ?? 'User',
-                            style: TextStyle(
-                              fontSize: titleFontSize,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
                 if (userRole == 'contractor')
                   FutureBuilder<String?>(
                     future: projectStatus,

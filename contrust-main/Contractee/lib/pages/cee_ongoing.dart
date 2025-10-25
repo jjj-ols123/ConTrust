@@ -120,7 +120,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
     } catch (e) {
       setState(() => isLoading = false);
       if (mounted) {
-        ConTrustSnackBar.error(context, 'Error loading project data. Please try again.');
+        ConTrustSnackBar.error(context, 'Error loading project data. Please try again. $e');
       }
     }
   }

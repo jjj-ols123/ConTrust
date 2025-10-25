@@ -1,5 +1,7 @@
 import 'package:backend/services/superadmin%20services/perflogs_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/utils/supabase_config.dart';
 import 'pages/dashboard.dart';
@@ -8,6 +10,10 @@ import 'build/builddrawer.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  if (kIsWeb) {
+    usePathUrlStrategy();
+  }
 
   await Supabase.initialize(
     url: SupabaseConfig.url,

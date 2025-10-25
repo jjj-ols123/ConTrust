@@ -22,45 +22,96 @@ class CeeOngoingBuildMethods {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Icon(Icons.construction, color: Colors.amber, size: 28),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
+            Builder(
+              builder: (context) {
+                final screenWidth = MediaQuery.of(context).size.width;
+                final isMobile = screenWidth < 600;
+                
+                if (isMobile) {
+                  return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        projectTitle,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
+                      Row(
+                        children: [
+                          const Icon(Icons.construction, color: Colors.amber, size: 28),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  projectTitle,
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                Text(
+                                  'Contractor: $clientName',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        'Contractor: $clientName',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w500,
-                        ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (onRefresh != null)
+                            IconButton(
+                              onPressed: onRefresh,
+                              icon: const Icon(Icons.refresh, color: Colors.blue, size: 20),
+                              tooltip: 'Refresh',
+                            ),
+                        ],
                       ),
                     ],
-                  ),
-                ),
-                Row(
-                  children: [
-                    if (onChat != null && canChat)
-                    if (onRefresh != null)
-                      IconButton(
-                        onPressed: onRefresh,
-                        icon: const Icon(Icons.refresh, color: Colors.blue),
-                        tooltip: 'Refresh',
+                  );
+                } else {
+                  return Row(
+                    children: [
+                      const Icon(Icons.construction, color: Colors.amber, size: 28),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              projectTitle,
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            Text(
+                              'Contractor: $clientName',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                  ],
-                ),
-              ],
+                      if (onRefresh != null)
+                        IconButton(
+                          onPressed: onRefresh,
+                          icon: const Icon(Icons.refresh, color: Colors.blue),
+                          tooltip: 'Refresh',
+                        ),
+                    ],
+                  );
+                }
+              },
             ),
             const SizedBox(height: 16),
             Row(
@@ -168,22 +219,6 @@ class CeeOngoingBuildMethods {
                     ),
                   ),
                 ),
-                if (isViewOnly)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text(
-                      'View Only',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
               ],
             ),
             const SizedBox(height: 16),
@@ -244,49 +279,67 @@ class CeeOngoingBuildMethods {
       );
     }
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-      ),
-      itemCount: photos.length,
-      itemBuilder: (context, index) {
-        final photo = photos[index];
-        return FutureBuilder<String?>(
-          future: createSignedUrl(photo['photo_url']),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Center(child: CircularProgressIndicator()),
-              );
-            }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+        final crossAxisCount = isMobile ? 2 : 3;
 
-            return GestureDetector(
-              onTap: onViewPhoto != null ? () => onViewPhoto(photo) : null,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  image: snapshot.hasData && snapshot.data != null
-                      ? DecorationImage(
-                          image: NetworkImage(snapshot.data!),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
-                  color: Colors.grey[200],
-                ),
-                child: snapshot.hasData && snapshot.data != null
-                    ? null
-                    : const Center(
-                        child: Icon(Icons.image, color: Colors.grey),
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: isMobile ? 6 : 8,
+            mainAxisSpacing: isMobile ? 6 : 8,
+            childAspectRatio: isMobile ? 1.0 : 1.0,
+          ),
+          itemCount: photos.length,
+          itemBuilder: (context, index) {
+            final photo = photos[index];
+            return FutureBuilder<String?>(
+              future: createSignedUrl(photo['photo_url']),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(isMobile ? 6 : 8),
+                    ),
+                    child: Center(
+                      child: SizedBox(
+                        width: isMobile ? 20 : 24,
+                        height: isMobile ? 20 : 24,
+                        child: const CircularProgressIndicator(strokeWidth: 2),
                       ),
-              ),
+                    ),
+                  );
+                }
+
+                return GestureDetector(
+                  onTap: onViewPhoto != null ? () => onViewPhoto(photo) : null,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(isMobile ? 6 : 8),
+                      image: snapshot.hasData && snapshot.data != null
+                          ? DecorationImage(
+                              image: NetworkImage(snapshot.data!),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                      color: Colors.grey[200],
+                    ),
+                    child: snapshot.hasData && snapshot.data != null
+                        ? null
+                        : Center(
+                            child: Icon(
+                              Icons.image,
+                              color: Colors.grey,
+                              size: isMobile ? 24 : 32,
+                            ),
+                          ),
+                  ),
+                );
+              },
             );
           },
         );
@@ -552,16 +605,21 @@ class CeeOngoingBuildMethods {
     Function(Map<String, dynamic>)? onViewPhoto,
     Function(Map<String, dynamic>)? onViewMaterial,
   }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+    
+    Widget content;
     switch (selectedTab) {
       case 'Tasks':
-        return buildSectionCard(
+        content = buildSectionCard(
           title: 'Tasks & Progress',
           icon: Icons.checklist,
           iconColor: Colors.blue,
           child: buildTasksList(tasks: tasks),
         );
+        break;
       case 'Reports':
-        return buildSectionCard(
+        content = buildSectionCard(
           title: 'Progress Reports',
           icon: Icons.description,
           iconColor: Colors.orange,
@@ -570,8 +628,9 @@ class CeeOngoingBuildMethods {
             onViewReport: onViewReport,
           ),
         );
+        break;
       case 'Photos':
-        return buildSectionCard(
+        content = buildSectionCard(
           title: 'Project Photos',
           icon: Icons.photo_library,
           iconColor: Colors.green,
@@ -581,8 +640,9 @@ class CeeOngoingBuildMethods {
             onViewPhoto: onViewPhoto,
           ),
         );
+        break;
       case 'Materials':
-        return buildSectionCard(
+        content = buildSectionCard(
           title: 'Materials & Costs',
           icon: Icons.construction,
           iconColor: Colors.purple,
@@ -591,13 +651,22 @@ class CeeOngoingBuildMethods {
             onViewMaterial: onViewMaterial,
           ),
         );
+        break;
       default:
-        return buildSectionCard(
+        content = buildSectionCard(
           title: 'Tasks & Progress',
           icon: Icons.checklist,
           iconColor: Colors.blue,
           child: buildTasksList(tasks: tasks),
         );
+    }
+    
+    if (isMobile) {
+      return SingleChildScrollView(
+        child: content,
+      );
+    } else {
+      return content;
     }
   }
 
@@ -736,21 +805,6 @@ class CeeOngoingBuildMethods {
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    'View Only',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.grey,
-                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -1220,7 +1274,6 @@ class CeeOngoingBuildMethods {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Material Name
                       Text(
                         'Material Name',
                         style: TextStyle(
@@ -1240,7 +1293,6 @@ class CeeOngoingBuildMethods {
                       ),
                       const SizedBox(height: 16),
 
-                      // Brand
                       if (brand.isNotEmpty) ...[
                         Text(
                           'Brand',
@@ -1261,7 +1313,6 @@ class CeeOngoingBuildMethods {
                         const SizedBox(height: 16),
                       ],
 
-                      // Quantity and Unit Price
                       Row(
                         children: [
                           Expanded(
@@ -1314,7 +1365,6 @@ class CeeOngoingBuildMethods {
                       ),
                       const SizedBox(height: 16),
 
-                      // Total Cost
                       Text(
                         'Total Cost',
                         style: TextStyle(
@@ -1334,7 +1384,6 @@ class CeeOngoingBuildMethods {
                       ),
                       const SizedBox(height: 16),
 
-                      // Notes
                       if (notes.isNotEmpty) ...[
                         Text(
                           'Notes',

@@ -63,7 +63,72 @@ class OngoingBuildMethods {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            Builder(
+              builder: (context) {
+                final screenWidth = MediaQuery.of(context).size.width;
+                final isMobile = screenWidth < 600;
+                
+                if (isMobile) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.construction, color: Colors.orange, size: 28),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  projectTitle,
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                Text(
+                                  'Client: $clientName',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (isCustomContract && onEditCompletion != null)
+                            IconButton(
+                              onPressed: onEditCompletion,
+                              icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
+                              tooltip: 'Edit Completion Date',
+                            ),
+                          if (onSwitchProject != null)
+                            IconButton(
+                              onPressed: onSwitchProject,
+                              icon: const Icon(Icons.swap_horiz, color: Colors.orange, size: 20),
+                              tooltip: 'Switch Project',
+                            ),
+                          if (onRefresh != null)
+                            IconButton(
+                              onPressed: onRefresh,
+                              icon: const Icon(Icons.refresh, color: Colors.blue, size: 20),
+                              tooltip: 'Refresh',
+                            ),
+                        ],
+                      ),
+                    ],
+                  );
+                } else {
+                  return Row(
               children: [
                 const Icon(Icons.construction, color: Colors.orange, size: 28),
                 const SizedBox(width: 12),
@@ -109,6 +174,9 @@ class OngoingBuildMethods {
                     tooltip: 'Refresh',
                   ),
               ],
+                  );
+                }
+              },
             ),
             const SizedBox(height: 16),
             Row(
@@ -260,7 +328,25 @@ class OngoingBuildMethods {
                     ),
                   ),
                   if (onAdd != null)
-                    ElevatedButton.icon(
+                    Builder(
+                      builder: (context) {
+                        final screenWidth = MediaQuery.of(context).size.width;
+                        final isMobile = screenWidth < 600;
+                        if (isMobile) {
+                          return IconButton(
+                            onPressed: onAdd,
+                            icon: const Icon(Icons.add, size: 20),
+                            style: IconButton.styleFrom(
+                              backgroundColor: Colors.amber,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            tooltip: addButtonText ?? 'Add',
+                          );
+                        } else {
+                          return ElevatedButton.icon(
                       onPressed: onAdd,
                       icon: const Icon(Icons.add, size: 18),
                       label: Text(addButtonText ?? 'Add'),
@@ -271,6 +357,9 @@ class OngoingBuildMethods {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
+                          );
+                        }
+                      },
                     ),
                 ],
               ),
@@ -353,13 +442,19 @@ class OngoingBuildMethods {
       );
     }
 
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+        final crossAxisCount = isMobile ? 2 : 3;
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: isMobile ? 6 : 8,
+            mainAxisSpacing: isMobile ? 6 : 8,
+            childAspectRatio: isMobile ? 1.0 : 1.0,
       ),
       itemCount: photos.length,
       itemBuilder: (context, index) {
@@ -371,9 +466,15 @@ class OngoingBuildMethods {
               return Container(
                 decoration: BoxDecoration(
                   color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Center(child: CircularProgressIndicator()),
+                      borderRadius: BorderRadius.circular(isMobile ? 6 : 8),
+                    ),
+                    child: Center(
+                      child: SizedBox(
+                        width: isMobile ? 20 : 24,
+                        height: isMobile ? 20 : 24,
+                        child: const CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
               );
             }
 
@@ -383,44 +484,48 @@ class OngoingBuildMethods {
                   onTap: onViewPhoto != null ? () => onViewPhoto(photo) : null,
                   child: Container(
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      image:
-                          snapshot.hasData && snapshot.data != null
+                          borderRadius: BorderRadius.circular(isMobile ? 6 : 8),
+                          image: snapshot.hasData && snapshot.data != null
                               ? DecorationImage(
                                 image: NetworkImage(snapshot.data!),
-                                fit: BoxFit.fill,
+                                fit: BoxFit.cover,
                               )
                               : null,
                       color: Colors.grey[200],
                     ),
-                    child:
-                        snapshot.hasData && snapshot.data != null
+                        child: snapshot.hasData && snapshot.data != null
                             ? null
-                            : const Center(
-                              child: Icon(Icons.image, color: Colors.grey),
+                            : Center(
+                              child: Icon(
+                                Icons.image, 
+                                color: Colors.grey,
+                                size: isMobile ? 24 : 32,
+                              ),
                             ),
                   ),
                 ),
                 Positioned(
-                  top: 4,
-                  right: 4,
+                      top: isMobile ? 2 : 4,
+                      right: isMobile ? 2 : 4,
                   child: GestureDetector(
                     onTap: () => onDeletePhoto(photo['photo_id']),
                     child: Container(
-                      padding: const EdgeInsets.all(4),
+                          padding: EdgeInsets.all(isMobile ? 3 : 4),
                       decoration: const BoxDecoration(
                         color: Colors.red,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                          child: Icon(
                         Icons.delete,
                         color: Colors.white,
-                        size: 16,
+                            size: isMobile ? 12 : 16,
                       ),
                     ),
                   ),
                 ),
               ],
+                );
+              },
             );
           },
         );
@@ -455,6 +560,7 @@ class OngoingBuildMethods {
           (cost) => buildCostItem(
             cost: cost,
             onDelete: onDeleteCost,
+            onTap: onViewMaterial != null ? () => onViewMaterial(cost) : null,
           ),
         ),
         const Divider(),
@@ -489,7 +595,56 @@ class OngoingBuildMethods {
   }) {
     return Card(
       margin: EdgeInsets.zero,
-      child: ListTile(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 600;
+          
+          if (isMobile) {
+            return InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const CircleAvatar(
+                          backgroundColor: Colors.orange,
+                          radius: 20,
+                          child: Icon(Icons.description, color: Colors.white, size: 18),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            report['content'] ?? '',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, size: 20),
+                          onPressed: () => onDelete(report['report_id']),
+                          color: Colors.red[600],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Posted: ${DateTime.parse(report['created_at']).toLocal().toString().split('.')[0]}',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          } else {
+            return ListTile(
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: const CircleAvatar(
@@ -509,6 +664,9 @@ class OngoingBuildMethods {
           icon: const Icon(Icons.delete_outline),
           onPressed: () => onDelete(report['report_id']),
         ),
+            );
+          }
+        },
       ),
     );
   }
@@ -520,12 +678,63 @@ class OngoingBuildMethods {
   }) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      child: CheckboxListTile(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 600;
+          
+          if (isMobile) {
+            return Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  Checkbox(
+                    value: task['done'] == true,
+                    onChanged: (val) {
+                      final taskId = task['task_id'];
+                      onUpdateStatus(taskId.toString(), val ?? false);
+                    },
+                    activeColor: Colors.green,
+                    checkColor: Colors.white,
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          task['task'] ?? '',
+                          style: TextStyle(
+                            decoration: task['done'] == true ? TextDecoration.lineThrough : null,
+                            color: task['done'] == true ? Colors.grey[600] : Colors.black87,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          task['created_at'] != null
+                              ? 'Created: ${DateTime.parse(task['created_at']).toLocal().toString().split('.')[0]}'
+                              : 'Created: Unknown',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, size: 20),
+                    onPressed: () => onDelete(task['task_id']),
+                    color: Colors.red[600],
+                  ),
+                ],
+              ),
+            );
+          } else {
+            return CheckboxListTile(
         title: Text(
           task['task'] ?? '',
           style: TextStyle(
-            decoration:
-                task['done'] == true ? TextDecoration.lineThrough : null,
+                  decoration: task['done'] == true ? TextDecoration.lineThrough : null,
             color: task['done'] == true ? Colors.grey[600] : Colors.black87,
           ),
           maxLines: 1,
@@ -550,6 +759,9 @@ class OngoingBuildMethods {
           icon: const Icon(Icons.delete_outline),
           onPressed: () => onDelete(task['task_id']),
         ),
+            );
+          }
+        },
       ),
     );
   }
@@ -557,6 +769,7 @@ class OngoingBuildMethods {
   static Widget buildCostItem({
     required Map<String, dynamic> cost,
     required Function(String) onDelete,
+    VoidCallback? onTap,
   }) {
     final quantity = (cost['quantity'] as num? ?? 0).toDouble();
     final unitPrice = (cost['unit_price'] as num? ?? 0).toDouble();
@@ -564,7 +777,80 @@ class OngoingBuildMethods {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 600;
+          
+          if (isMobile) {
+            return InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const CircleAvatar(
+                          backgroundColor: Colors.green,
+                          radius: 20,
+                          child: Icon(Icons.construction, color: Colors.white, size: 18),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            cost['material_name'] ?? '',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '₱${totalItemCost.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (cost['brand'] != null) 
+                      Text('Brand: ${cost['brand']}', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+                    Text(
+                      'Qty: ${quantity.toStringAsFixed(1)} ${cost['unit'] ?? 'pcs'}',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    ),
+                    Text(
+                      'Unit Price: ₱${unitPrice.toStringAsFixed(2)}',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    ),
+                    if (cost['notes'] != null)
+                      Text(
+                        'Note: ${cost['notes']}',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600], fontStyle: FontStyle.italic),
+                      ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, size: 20),
+                          onPressed: () => onDelete(cost['material_id']),
+                          color: Colors.red[600],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          } else {
+            return ListTile(
+              onTap: onTap,
         leading: const CircleAvatar(
           backgroundColor: Colors.green,
           child: Icon(Icons.construction, color: Colors.white),
@@ -598,8 +884,16 @@ class OngoingBuildMethods {
               ),
             ),
             const SizedBox(width: 10),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () => onDelete(cost['material_id']),
+                    color: Colors.red[600],
+                  ),
           ],
         ),
+            );
+          }
+        },
       ),
     );
   }
@@ -975,6 +1269,7 @@ class OngoingBuildMethods {
     required Widget tabContent,
     VoidCallback? onRefresh,
     VoidCallback? onEditCompletion, 
+    VoidCallback? onSwitchProject,
   }) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -990,6 +1285,8 @@ class OngoingBuildMethods {
             isCustomContract: isCustomContract, 
             progress: progress,
             onRefresh: onRefresh,
+            onEditCompletion: onEditCompletion,
+            onSwitchProject: onSwitchProject,
           ),
           const SizedBox(height: 16),
           buildMobileTabNavigation(selectedTab, onTabChanged),
@@ -1020,9 +1317,13 @@ class OngoingBuildMethods {
     Function(Map<String, dynamic>)? onViewReport,
     Function(Map<String, dynamic>)? onViewPhoto,
   }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+    
+    Widget content;
     switch (selectedTab) {
       case 'Tasks':
-        return buildSectionCard(
+        content = buildSectionCard(
           title: 'Tasks & Progress',
           icon: Icons.checklist,
           iconColor: Colors.black,
@@ -1034,8 +1335,9 @@ class OngoingBuildMethods {
             onDeleteTask: onDeleteTask,
           ),
         );
+        break;
       case 'Reports':
-        return buildSectionCard(
+        content = buildSectionCard(
           title: 'Progress Reports',
           icon: Icons.description,
           iconColor: Colors.black,
@@ -1047,8 +1349,9 @@ class OngoingBuildMethods {
             onViewReport: onViewReport,
           ),
         );
+        break;
       case 'Photos':
-        return buildSectionCard(
+        content = buildSectionCard(
           title: 'Project Photos',
           icon: Icons.photo_library,
           iconColor: Colors.black,
@@ -1061,8 +1364,9 @@ class OngoingBuildMethods {
             onViewPhoto: onViewPhoto,
           ),
         );
+        break;
       case 'Materials':
-        return buildSectionCard(
+        content = buildSectionCard(
           title: 'Materials & Costs',
           icon: Icons.construction,
           iconColor: Colors.black,
@@ -1071,12 +1375,12 @@ class OngoingBuildMethods {
           child: buildCostsList(
             costs: costs,
             onDeleteCost: onDeleteCost,
-            onViewMaterial:
-                (material) => showMaterialDetailsDialog(context, material),
+            onViewMaterial: (material) => showMaterialDetailsDialog(context, material),
           ),
         );
+        break;
       default:
-        return buildSectionCard(
+        content = buildSectionCard(
           title: 'Tasks & Progress',
           icon: Icons.checklist,
           iconColor: Colors.blue,
@@ -1088,6 +1392,14 @@ class OngoingBuildMethods {
             onDeleteTask: onDeleteTask,
           ),
         );
+    }
+    
+    if (isMobile) {
+      return SingleChildScrollView(
+        child: content,
+      );
+    } else {
+      return content;
     }
   }
 
@@ -1149,7 +1461,7 @@ class OngoingBuildMethods {
                         child: buildGridSectionCard(
                           title: 'Tasks & Progress',
                           icon: Icons.checklist,
-                          iconColor: Colors.blue,
+                          iconColor: Colors.grey,
                           onAdd: onAddTask,
                           addButtonText: 'Add Task',
                           child: buildDesktopTasksList(
@@ -1164,7 +1476,7 @@ class OngoingBuildMethods {
                         child: buildGridSectionCard(
                           title: 'Project Photos',
                           icon: Icons.photo_library,
-                          iconColor: Colors.green,
+                          iconColor: Colors.grey,
                           onAdd: onAddPhoto,
                           addButtonText: 'Add Photo',
                           child: buildDesktopPhotosList(
@@ -1186,7 +1498,7 @@ class OngoingBuildMethods {
                         child: buildGridSectionCard(
                           title: 'Progress Reports',
                           icon: Icons.description,
-                          iconColor: Colors.orange,
+                          iconColor: Colors.grey,
                           onAdd: onAddReport,
                           addButtonText: 'Add Report',
                           child: buildDesktopReportsList(
@@ -1201,7 +1513,7 @@ class OngoingBuildMethods {
                         child: buildGridSectionCard(
                           title: 'Materials & Costs',
                           icon: Icons.construction,
-                          iconColor: Colors.purple,
+                          iconColor: Colors.grey,
                           onAdd: onGoToMaterials,
                           addButtonText: 'Manage Materials',
                           child: buildDesktopCostsList(
@@ -1263,7 +1575,27 @@ class OngoingBuildMethods {
                   ),
                 ),
                 if (onAdd != null)
-                  SizedBox(
+                  Builder(
+                    builder: (context) {
+                      final screenWidth = MediaQuery.of(context).size.width;
+                      final isMobile = screenWidth < 600;
+                      if (isMobile) {
+                        return IconButton(
+                          onPressed: onAdd,
+                          icon: const Icon(Icons.add, size: 16),
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.amber,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.zero,
+                            minimumSize: const Size(32, 32),
+                          ),
+                          tooltip: addButtonText ?? 'Add',
+                        );
+                      } else {
+                        return SizedBox(
                     height: 32,
                     child: ElevatedButton.icon(
                       onPressed: onAdd,
@@ -1281,6 +1613,9 @@ class OngoingBuildMethods {
                         ),
                       ),
                     ),
+                        );
+                      }
+                    },
                   ),
               ],
             ),

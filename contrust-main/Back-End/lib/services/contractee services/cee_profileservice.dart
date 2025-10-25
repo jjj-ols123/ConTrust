@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
@@ -158,7 +158,6 @@ class CeeProfileService {
     required BuildContext context,
   }) async {
     try {
-      // Pick image file
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.image,
         allowMultiple: false,
@@ -179,10 +178,8 @@ class CeeProfileService {
         return null;
       }
 
-      // Generate unique filename
       final String uniqueFileName = '${contracteeId}_${DateTime.now().millisecondsSinceEpoch}_$fileName';
       
-      // Upload to Supabase Storage
       await Supabase.instance.client.storage
           .from('profilephotos')
           .uploadBinary(
@@ -194,15 +191,12 @@ class CeeProfileService {
             ),
           );
 
-      // Get public URL with cache-busting
       final String baseImageUrl = Supabase.instance.client.storage
           .from('profilephotos')
           .getPublicUrl(uniqueFileName);
       
-      // Add timestamp to prevent caching
       final String imageUrl = '$baseImageUrl?t=${DateTime.now().millisecondsSinceEpoch}';
 
-      // Update database
       await Supabase.instance.client
           .from('Contractee')
           .update({'profile_photo': baseImageUrl})

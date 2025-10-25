@@ -4,6 +4,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:backend/services/both%20services/be_notification_service.dart';
 import 'package:backend/services/both%20services/be_user_service.dart';
+import 'package:backend/services/both%20services/be_fetchservice.dart';
+import 'package:backend/services/superadmin%20services/errorlogs_service.dart';
 import 'package:contractee/pages/cee_notification.dart';
 import 'package:contractor/Screen/cor_notification.dart';
 import 'package:flutter/material.dart';
@@ -131,9 +133,28 @@ class NotificationUIBuildMethods {
         ? Map<String, dynamic>.from(jsonDecode(rawInfo))
         : Map<String, dynamic>.from(rawInfo ?? {});
 
-    final senderName = info['contractor_name'] ?? info['full_name'] ?? 'System';
-    final senderPhoto = info['contractor_photo'] ?? info['profile_photo'] ?? '';
-    final projectType = info['project_type'] ?? '';
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _fetchNotificationUserInfo(notification, info),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+            ),
+            child: const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          );
+        }
+
+        final userInfo = snapshot.data ?? {};
+        final senderName = userInfo['senderName'] ?? 'System';
+        final senderPhoto = userInfo['senderPhoto'] ?? '';
+        final projectType = userInfo['projectType'] ?? '';
     final notificationMessage = info['message'] ?? notification['message'] ?? '';
 
     return Container(
@@ -221,7 +242,84 @@ class NotificationUIBuildMethods {
           ),
         ],
       ),
+        );
+      },
     );
+  }
+
+  Future<Map<String, dynamic>> _fetchNotificationUserInfo(Map<String, dynamic> notification, Map<String, dynamic> info) async {
+    final errorService = SuperAdminErrorService();
+    try {
+      final senderId = info['sender_id'] ?? info['contractor_id'] ?? info['contractee_id'];
+      final projectId = info['project_id'];
+      
+      Map<String, dynamic> userInfo = {
+        'senderName': 'System',
+        'senderPhoto': '',
+        'projectType': '',
+      };
+
+      // Fetch sender information
+      if (senderId != null) {
+        try {
+          // Try to fetch as contractor first
+          final contractorData = await FetchService().fetchContractorData(senderId);
+          if (contractorData != null) {
+            userInfo['senderName'] = contractorData['firm_name'] ?? 'Unknown Contractor';
+            userInfo['senderPhoto'] = contractorData['profile_photo'] ?? '';
+          } else {
+            // If not found as contractor, try as contractee
+            final contracteeData = await FetchService().fetchContracteeData(senderId);
+            if (contracteeData != null) {
+              userInfo['senderName'] = contracteeData['full_name'] ?? 'Unknown Contractee';
+              userInfo['senderPhoto'] = contracteeData['profile_photo'] ?? '';
+            }
+          }
+        } catch (e) {
+          errorService.logError(
+            errorMessage: 'Error fetching sender data: $e',
+            module: 'Notification UI Build Methods',
+            severity: 'Medium',
+            extraInfo: {
+              'operation': 'Fetch Sender Data',
+              'sender_id': senderId,
+              'receiver_id': receiverId,
+            },
+          );
+        }
+      }
+      if (projectId != null) {
+        try {
+          final projectData = await FetchService().fetchProjectDetails(projectId);
+          userInfo['projectType'] = projectData?['type'] ?? projectData?['title'] ?? '';
+        } catch (e) {
+          errorService.logError(
+            errorMessage: 'Error fetching project data: $e',
+            module: 'Notification UI Build Methods',
+            severity: 'Medium',
+            extraInfo: {
+              'operation': 'Fetch Project Data',
+              'project_id': projectId,
+              'receiver_id': receiverId,
+            },
+          );
+          rethrow;
+        }
+      }
+
+      return userInfo;
+    } catch (e) {
+      errorService.logError(
+        errorMessage: 'Error in _fetchNotificationUserInfo: $e',
+        module: 'Notification UI Build Methods',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Fetch Notification User Info',
+          'receiver_id': receiverId,
+        },
+      );
+      rethrow;
+    }
   }
 
   Widget _buildHiringRequestActions(Map<String, dynamic> notification, Map<String, dynamic> info) {
@@ -521,6 +619,78 @@ class _NotificationButtonState extends State<NotificationButton> {
 }
 
 class NotificationOverlay {
+  static Future<Map<String, dynamic>> _fetchNotificationUserInfo(Map<String, dynamic> notification, Map<String, dynamic> info) async {
+    try {
+      final senderId = info['sender_id'] ?? info['contractor_id'] ?? info['contractee_id'];
+      final projectId = info['project_id'];
+      
+      Map<String, dynamic> userInfo = {
+        'senderName': 'System',
+        'senderPhoto': '',
+        'projectType': '',
+      };
+
+      if (senderId != null) {
+        try {
+          final contractorData = await FetchService().fetchContractorData(senderId);
+          if (contractorData != null) {
+            userInfo['senderName'] = contractorData['firm_name'] ?? 'Unknown Contractor';
+            userInfo['senderPhoto'] = contractorData['profile_photo'] ?? '';
+          } else {
+            final contracteeData = await FetchService().fetchContracteeData(senderId);
+            if (contracteeData != null) {
+              userInfo['senderName'] = contracteeData['full_name'] ?? 'Unknown Contractee';
+              userInfo['senderPhoto'] = contracteeData['profile_photo'] ?? '';
+            }
+          }
+        } catch (e) {
+          SuperAdminErrorService().logError(
+            errorMessage: 'Error fetching sender data: $e',
+            module: 'Notification UI Build Methods',
+            severity: 'Medium',
+            extraInfo: {
+              'operation': 'Fetch Sender Data',
+              'sender_id': senderId,
+            },
+          );
+        }
+      }
+
+      if (projectId != null) {
+        try {
+          final projectData = await FetchService().fetchProjectDetails(projectId);
+          userInfo['projectType'] = projectData?['type'] ?? projectData?['title'] ?? '';
+        } catch (e) {
+          SuperAdminErrorService().logError(
+            errorMessage: 'Error fetching project data: $e',
+            module: 'Notification UI Build Methods',
+            severity: 'Medium',
+            extraInfo: {
+              'operation': 'Fetch Project Data',
+              'project_id': projectId,
+            },
+          );
+        }
+      }
+
+      return userInfo;
+    } catch (e) {
+      SuperAdminErrorService().logError(
+        errorMessage: 'Error in _fetchNotificationUserInfo: $e',
+        module: 'Notification UI Build Methods',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Fetch Notification User Info',
+        },
+      );
+      return {
+        'senderName': 'System',
+        'senderPhoto': '',
+        'projectType': '',
+      };
+    }
+  }
+
   static void show(BuildContext context, String userType) {
     showGeneralDialog(
       context: context,
@@ -622,9 +792,28 @@ class NotificationOverlay {
                                         ? Map<String, dynamic>.from(jsonDecode(rawInfo))
                                         : Map<String, dynamic>.from(rawInfo ?? {});
 
-                                    final senderName = info['contractor_name'] ?? info['full_name'] ?? 'System';
-                                    final senderPhoto = info['contractor_photo'] ?? info['profile_photo'] ?? '';
-                                    final projectType = info['project_type'] ?? '';
+                                    return FutureBuilder<Map<String, dynamic>>(
+                                      future: NotificationOverlay._fetchNotificationUserInfo(notification, info),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.connectionState == ConnectionState.waiting) {
+                                          return Container(
+                                            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius: BorderRadius.circular(8),
+                                              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 2, offset: Offset(0, 1))],
+                                            ),
+                                            child: const Padding(
+                                              padding: EdgeInsets.all(12),
+                                              child: Center(child: CircularProgressIndicator()),
+                                            ),
+                                          );
+                                        }
+
+                                        final userInfo = snapshot.data ?? {};
+                                        final senderName = userInfo['senderName'] ?? 'System';
+                                        final senderPhoto = userInfo['senderPhoto'] ?? '';
+                                        final projectType = userInfo['projectType'] ?? '';
                                     final notificationMessage = info['message'] ?? notification['message'] ?? '';
 
                                     return Container(
@@ -692,6 +881,8 @@ class NotificationOverlay {
                                           ],
                                         ),
                                       ),
+                                        );
+                                      },
                                     );
                                   },
                                 );
@@ -855,9 +1046,26 @@ class _GroupedNotificationCardState extends State<_GroupedNotificationCard> {
         ? Map<String, dynamic>.from(jsonDecode(rawInfo))
         : Map<String, dynamic>.from(rawInfo ?? {});
 
-    final senderName = info['contractor_name'] ?? info['full_name'] ?? 'System';
-    final senderPhoto = info['contractor_photo'] ?? info['profile_photo'] ?? '';
-    final projectTitle = info['project_title'] ?? '';
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _fetchNotificationUserInfo(notification, info),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: const Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final userInfo = snapshot.data ?? {};
+        final senderName = userInfo['senderName'] ?? 'System';
+        final senderPhoto = userInfo['senderPhoto'] ?? '';
+        final projectTitle = userInfo['projectType'] ?? '';
     final notificationMessage = info['message'] ?? notification['message'] ?? '';
 
     return Container(
@@ -951,6 +1159,84 @@ class _GroupedNotificationCardState extends State<_GroupedNotificationCard> {
           ],
         ],
       ),
+        );
+      },
     );
+  }
+
+  Future<Map<String, dynamic>> _fetchNotificationUserInfo(Map<String, dynamic> notification, Map<String, dynamic> info) async {
+    final errorService = SuperAdminErrorService();
+    try {
+      final senderId = info['sender_id'] ?? info['contractor_id'] ?? info['contractee_id'];
+      final projectId = info['project_id'];
+      
+      Map<String, dynamic> userInfo = {
+        'senderName': 'System',
+        'senderPhoto': '',
+        'projectType': '',
+      };
+
+      // Fetch sender information
+      if (senderId != null) {
+        try {
+          // Try to fetch as contractor first
+          final contractorData = await FetchService().fetchContractorData(senderId);
+          if (contractorData != null) {
+            userInfo['senderName'] = contractorData['firm_name'] ?? 'Unknown Contractor';
+            userInfo['senderPhoto'] = contractorData['profile_photo'] ?? '';
+          } else {
+            // If not found as contractor, try as contractee
+            final contracteeData = await FetchService().fetchContracteeData(senderId);
+            if (contracteeData != null) {
+              userInfo['senderName'] = contracteeData['full_name'] ?? 'Unknown Contractee';
+              userInfo['senderPhoto'] = contracteeData['profile_photo'] ?? '';
+            }
+          }
+        } catch (e) {
+          SuperAdminErrorService().logError(
+            errorMessage: 'Error fetching sender data: $e',
+            module: 'Notification Overlay',
+            severity: 'Medium',
+            extraInfo: {
+              'operation': 'Fetch Sender Data',
+              'sender_id': senderId,
+            },
+          );
+        }
+      }
+
+      if (projectId != null) {
+        try {
+          final projectData = await FetchService().fetchProjectDetails(projectId);
+          userInfo['projectType'] = projectData?['type'] ?? projectData?['title'] ?? '';
+        } catch (e) {
+          errorService.logError(
+            errorMessage: 'Error fetching project data: $e',
+            module: 'Notification Overlay',
+            severity: 'Medium',
+            extraInfo: {
+              'operation': 'Fetch Project Data',
+              'project_id': projectId,
+            },
+          );
+        }
+      }
+
+      return userInfo;
+    } catch (e) {
+      errorService.logError(
+        errorMessage: 'Error in _fetchNotificationUserInfo: $e',
+        module: 'Notification Overlay',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Fetch Notification User Info',
+        },
+      );
+      return {
+        'senderName': 'System',
+        'senderPhoto': '',
+        'projectType': '',
+      };
+    }
   }
 }

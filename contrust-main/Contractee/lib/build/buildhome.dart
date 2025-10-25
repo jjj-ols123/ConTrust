@@ -17,7 +17,7 @@ class HomePageBuilder {
     final isMobile = screenWidth < 600;
     
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isMobile ? 12 : 20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -35,13 +35,13 @@ class HomePageBuilder {
         children: [
           Row(
             children: [
-              Icon(Icons.analytics, color: Colors.amber[700], size: 24),
-              const SizedBox(width: 8),
+              Icon(Icons.analytics, color: Colors.amber[700], size: isMobile ? 20 : 24),
+              SizedBox(width: isMobile ? 6 : 8),
               Expanded(
                 child: Text(
                   "Platform Statistics",
                   style: TextStyle(
-                    fontSize: isMobile ? 18 : 20,
+                    fontSize: isMobile ? 16 : 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
@@ -49,7 +49,7 @@ class HomePageBuilder {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: isMobile ? 12 : 16),
           isMobile
             ? Column(
                 children: [
@@ -58,20 +58,23 @@ class HomePageBuilder {
                     "${projects.where((p) => p['status'] == 'active').length}",
                     Icons.work,
                     Colors.black,
+                    isMobile,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   _buildStatCard(
                     "Pending Projects",
                     "${projects.where((p) => p['status'] == 'pending').length}",
                     Icons.pending,
                     Colors.black,
+                    isMobile,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   _buildStatCard(
                     "Completed",
                     "${projects.where((p) => p['status'] == 'ended').length}",
                     Icons.check_circle,
                     Colors.black,
+                    isMobile,
                   ),
                 ],
               )
@@ -83,6 +86,7 @@ class HomePageBuilder {
                       "${projects.where((p) => p['status'] == 'active').length}",
                       Icons.work,
                       Colors.black,
+                      isMobile,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -92,6 +96,7 @@ class HomePageBuilder {
                       "${projects.where((p) => p['status'] == 'pending').length}",
                       Icons.pending,
                       Colors.black,
+                      isMobile,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -101,6 +106,7 @@ class HomePageBuilder {
                       "${projects.where((p) => p['status'] == 'ended').length}",
                       Icons.check_circle,
                       Colors.black,
+                      isMobile,
                     ),
                   ),
                 ],
@@ -110,36 +116,65 @@ class HomePageBuilder {
     );
   }
 
-  static Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  static Widget _buildStatCard(String title, String value, IconData icon, Color color, bool isMobile) {
     return Container(
-      padding: const EdgeInsets.all(13),
+      width: isMobile ? double.infinity : null,
+      padding: EdgeInsets.all(isMobile ? 12 : 13),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+      child: isMobile
+        ? Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, color: color, size: 22),
+                  const SizedBox(width: 10),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[700],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
+          )
+        : Column(
+            children: [
+              Icon(icon, color: color, size: 24),
+              const SizedBox(height: 8),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
     );
   }
 
@@ -222,7 +257,7 @@ class HomePageBuilder {
     final isMobile = screenWidth < 600;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isMobile ? 12 : 20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -238,66 +273,21 @@ class HomePageBuilder {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          isMobile
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.work_outline, color: Colors.amber[700], size: 24),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          "Your Projects",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: onPostProject,
-                      icon: const Icon(Icons.add),
-                      label: const Text('Post Your Project'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.amber[700],
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              )
-            : Row(
-                children: [
-                  Icon(Icons.work_outline, color: Colors.amber[700], size: 24),
-                  const SizedBox(width: 8),
-                  Text(
-                    "Your Projects",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                  const Spacer(),
-                  ElevatedButton.icon(
-                    onPressed: onPostProject,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Post Your Project'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.amber[700],
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ],
+          Row(
+            children: [
+              Icon(Icons.work_outline, color: Colors.amber[700], size: isMobile ? 20 : 24),
+              SizedBox(width: isMobile ? 6 : 8),
+              Text(
+                "Your Projects",
+                style: TextStyle(
+                  fontSize: isMobile ? 16 : 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
               ),
-          const SizedBox(height: 16),
+            ],
+          ),
+          SizedBox(height: isMobile ? 12 : 16),
           ...projectsToShow.map((project) => _buildProjectCard(context, project, supabase)),
         ],
       ),

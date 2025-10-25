@@ -87,6 +87,7 @@
         "flutter_quill",
         "flutter_quill_delta_from_html",
         "flutter_quill_extensions",
+        "flutter_web_plugins",
         "image_picker",
         "path_provider",
         "pdf",
@@ -125,6 +126,7 @@
         "contractor",
         "cupertino_icons",
         "flutter",
+        "flutter_web_plugins",
         "supabase_flutter",
         "superadmin"
       ],
@@ -162,6 +164,13 @@
       "name": "cupertino_icons",
       "version": "1.0.8",
       "dependencies": []
+    },
+    {
+      "name": "flutter_web_plugins",
+      "version": "0.0.0",
+      "dependencies": [
+        "flutter"
+      ]
     },
     {
       "name": "supabase_flutter",
@@ -643,13 +652,6 @@
     {
       "name": "flutter_plugin_android_lifecycle",
       "version": "2.0.31",
-      "dependencies": [
-        "flutter"
-      ]
-    },
-    {
-      "name": "flutter_web_plugins",
-      "version": "0.0.0",
       "dependencies": [
         "flutter"
       ]

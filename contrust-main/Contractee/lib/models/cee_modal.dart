@@ -30,6 +30,8 @@ class ProjectModal {
     required TextEditingController locationController,
     required TextEditingController descriptionController,
     required TextEditingController bidTimeController,
+    bool isUpdate = false,
+    String? projectId,
   }) async {
     final startDateController = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -94,11 +96,11 @@ class ProjectModal {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 const SizedBox(height: 8),
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 8.0),
                                   child: Center(
                                     child: Text(
-                                      "Post a request for Construction",
+                                      isUpdate ? "Update Project" : "Post a request for Construction",
                                       style: TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
@@ -309,23 +311,38 @@ class ProjectModal {
                                       descriptionController.text.trim(),
                                       bidTimeController.text.trim(),
                                     )) {
-                                      await ProjectService().postProject(
-                                        contracteeId: contracteeId,
-                                        title: titleController.text.trim(),
-                                        type: constructionTypeController.text
-                                            .trim(),
-                                        description:
-                                            descriptionController.text.trim(),
-                                        location:
-                                            locationController.text.trim(),
-                                        minBudget:
-                                            minBudgetController.text.trim(),
-                                        maxBudget:
-                                            maxBudgetController.text.trim(),
-                                        duration: bidTimeController.text.trim(),
-                                        startDate: startdate_format,
-                                        context: context,
-                                      );
+                                      if (isUpdate && projectId != null) {
+                                        // Update existing project
+                                        await ProjectService().updateProject(
+                                          projectId: projectId,
+                                          title: titleController.text.trim(),
+                                          type: constructionTypeController.text.trim(),
+                                          description: descriptionController.text.trim(),
+                                          location: locationController.text.trim(),
+                                          minBudget: double.tryParse(minBudgetController.text.trim()),
+                                          maxBudget: double.tryParse(maxBudgetController.text.trim()),
+                                          duration: int.tryParse(bidTimeController.text.trim()) ?? 7,
+                                        );
+                                      } else {
+                                        // Create new project
+                                        await ProjectService().postProject(
+                                          contracteeId: contracteeId,
+                                          title: titleController.text.trim(),
+                                          type: constructionTypeController.text
+                                              .trim(),
+                                          description:
+                                              descriptionController.text.trim(),
+                                          location:
+                                              locationController.text.trim(),
+                                          minBudget:
+                                              minBudgetController.text.trim(),
+                                          maxBudget:
+                                              maxBudgetController.text.trim(),
+                                          duration: bidTimeController.text.trim(),
+                                          startDate: startdate_format,
+                                          context: context,
+                                        );
+                                      }
                                       Navigator.pop(context);
                                     }
                                   } catch (e) {
@@ -340,7 +357,7 @@ class ProjectModal {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
-                                child: const Text("Submit Request"),
+                                child: Text(isUpdate ? "Update Project" : "Submit Request"),
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -806,7 +823,6 @@ class HireModal {
     required String contracteeId,
     required String contractorId,
   }) async {
-    // Check if contractee already has an ongoing project with another contractor
     final ongoingProject = await hasOngoingProject(contracteeId);
     if (ongoingProject != null) {
       final ongoingContractorId = ongoingProject['contractor_id'] as String?;
@@ -814,7 +830,7 @@ class HireModal {
         if (context.mounted) {
           ConTrustSnackBar.error(
             context,
-            'You already have an ongoing project with another contractor. Complete it before hiring a new contractor.',
+            'You already have an active project with another contractor. Complete it before hiring a new contractor.',
           );
         }
         return;

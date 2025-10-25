@@ -305,10 +305,13 @@ class ContractTypeBuild {
     List<Map<String, dynamic>> projects = [];
     bool isLoading = false;
 
-    // Load projects
     final fetchService = FetchService();
     projects = await fetchService.fetchContractorProjectInfo(contractorId);
-    projects = projects.where((p) => p['status'] == 'awaiting_contract').toList();
+    projects = projects.where((p) => 
+      p['status'] == 'awaiting_contract' && 
+      p['status'] != 'cancelled' && 
+      p['status'] != 'cancellation_requested_by_contractee'
+    ).toList();
 
     await showDialog(
       context: context,

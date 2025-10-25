@@ -66,7 +66,6 @@ class _BiddingScreenState extends State<BiddingScreen> {
   Widget build(BuildContext context) {
     if (!mounted) return const SizedBox.shrink();
     
-    final screenWidth = MediaQuery.of(context).size.width;
     final builder = BiddingUIBuildMethods(
       context: context,
       isLoading: isLoading,
@@ -87,18 +86,6 @@ class _BiddingScreenState extends State<BiddingScreen> {
       },
     );
     return Scaffold(
-       appBar: screenWidth > 1200 ? null : AppBar(
-        backgroundColor: Colors.yellow[700],
-        title: const Text(
-          "",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        centerTitle: true,
-        elevation: 0,
-      ),
       body: builder.buildBiddingUI(),
     );
   }

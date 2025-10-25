@@ -12,8 +12,9 @@ import 'package:contractor/Screen/cor_contracttype.dart';
 import 'package:contractor/Screen/cor_dashboard.dart';
 import 'package:contractor/Screen/cor_ongoing.dart';
 import 'package:contractor/Screen/cor_profile.dart';
-import 'package:contractor/Screen/cor_startup.dart'; // Add this import
+import 'package:contractor/Screen/cor_startup.dart'; 
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum ContractorPage {
   dashboard,
@@ -71,9 +72,26 @@ class ContractorShell extends StatelessWidget {
         centerTitle: true,
         elevation: 4,
         automaticallyImplyLeading: false,
+        leading: !isDesktop
+            ? IconButton(
+                icon: const Icon(Icons.home, color: Colors.white),
+                onPressed: () {
+                  if (currentPage != ContractorPage.dashboard) {
+                    Navigator.pushNamedAndRemoveUntil(
+                      context, 
+                      '/dashboard', 
+                      (route) => false,
+                    );
+                  }
+                },
+              )
+            : null,
         actions: const [NotificationButton()],
       ),
-      body: Row(
+      body: Column(
+        children: [
+          Expanded(
+            child: Row(
         children: [
           if (isDesktop)
             Container(
@@ -144,6 +162,14 @@ class ContractorShell extends StatelessWidget {
               padding: contentPadding ?? EdgeInsets.zero,
               child: child,
             ),
+                ),
+              ],
+            ),
+          ),
+          if (!isDesktop)
+            ModernBottomNavigationBar(
+              contractorId: contractorId,
+              currentPage: currentPage,
           ),
         ],
       ),
@@ -218,7 +244,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
           ),
         );
         
-        if (projectId == null) return; // User cancelled
+        if (projectId == null) return; 
       } else {
         projectId = activeProjects.first['project_id'];
       }
@@ -429,125 +455,297 @@ class _SidebarItem extends StatelessWidget {
   }
 }
 
-class BottomDashboardDrawer extends StatefulWidget {
+class ModernBottomNavigationBar extends StatefulWidget {
   final String? contractorId;
-  const BottomDashboardDrawer({super.key, this.contractorId});
+  final ContractorPage currentPage;
+  const ModernBottomNavigationBar({
+    super.key, 
+    this.contractorId,
+    required this.currentPage,
+  });
 
   @override
-  State<BottomDashboardDrawer> createState() => _BottomDashboardDrawerState();
+  State<ModernBottomNavigationBar> createState() => _ModernBottomNavigationBarState();
 }
 
-class _BottomDashboardDrawerState extends State<BottomDashboardDrawer>
-    with TickerProviderStateMixin {
-  final DraggableScrollableController _controller =
-      DraggableScrollableController();
-  late AnimationController _iconController;
-  late Animation<double> _iconRotation;
+class _ModernBottomNavigationBarState extends State<ModernBottomNavigationBar> {
+  bool hasActiveProject = false;
 
   @override
   void initState() {
     super.initState();
-    _iconController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _iconRotation = Tween<double>(begin: 0.0, end: 0.5).animate(
-      CurvedAnimation(parent: _iconController, curve: Curves.easeInOut),
-    );
+    _checkActiveProjects();
   }
 
-  @override
-  void dispose() {
-    _iconController.dispose();
-    super.dispose();
+  Future<void> _checkActiveProjects() async {
+    try {
+      final response = await Supabase.instance.client
+          .from('Projects')
+          .select('project_id')
+          .eq('contractor_id', widget.contractorId ?? '')
+          .eq('status', 'active')
+          .limit(1);
+      
+      setState(() {
+        hasActiveProject = response.isNotEmpty;
+      });
+    } catch (e) {
+      setState(() {
+        hasActiveProject = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth > 1200;
-    final double initialSize = 0.10;
-    final double expandedSize = isDesktop ? 0.39 : 0.48;
-    final double toggleThreshold = screenHeight > 600 ? 0.2 : 0.25;
-
-    return Stack(
-      children: [
-        DraggableScrollableSheet(
-          controller: _controller,
-          initialChildSize: initialSize,
-          minChildSize: initialSize,
-          maxChildSize: expandedSize,
-          builder: (context, scrollController) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: double.infinity,
-                  height: 93.5,
-                  color: Colors.transparent,
-                  child: Center(
-                    child: InkWell(
-                      onTap: () {
-                        if (_controller.size < toggleThreshold) {
-                          _controller.animateTo(
-                            expandedSize,
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeOut,
-                          );
-                          _iconController.forward();
-                        } else {
-                          _controller.animateTo(
-                            initialSize,
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeOut,
-                          );
-                          _iconController.reverse();
-                        }
-                      },
-                      child: Container(
-                        width: screenWidth > 600 ? 110 : screenWidth * 0.18,
-                        height: 22,
-                        margin: const EdgeInsets.only(bottom: 5),
-                        decoration: BoxDecoration(
-                          color: Colors.amber[600],
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                        child: AnimatedBuilder(
-                          animation: _iconRotation,
-                          builder: (context, child) {
-                            return Transform.rotate(
-                              angle: _iconRotation.value * 3.14159,
-                              child: Icon(
-                                Icons.keyboard_arrow_up,
-                                color: Colors.white,
-                                size: screenWidth > 600 ? 22 : 16,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
+    return Container(
+      height: 90,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
+        ],
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: _ModernNavItem(
+                  icon: Icons.message_outlined,
+                  activeIcon: Icons.message,
+                  label: 'Messages',
+                  isActive: widget.currentPage == ContractorPage.messages,
+                  onTap: () => _navigateToPage(ContractorPage.messages),
                 ),
-                Expanded(
-                  child: Material(
-                    elevation: 16,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(24),
-                    ),
-                    color: Colors.white,
-                    child: DashboardDrawer(
-                      scrollController: scrollController,
-                      contractorId: widget.contractorId,
-                    ),
-                  ),
+              ),
+              Expanded(
+                child: _ModernNavItem(
+                  icon: Icons.assignment_outlined,
+                  activeIcon: Icons.assignment,
+                  label: 'Contracts',
+                  isActive: widget.currentPage == ContractorPage.contracts,
+                  onTap: () => _navigateToPage(ContractorPage.contracts),
                 ),
-              ],
-            );
-          },
+              ),
+              Expanded(
+                child: _ProjectNavButton(
+                  contractorId: widget.contractorId ?? '',
+                  currentPage: widget.currentPage,
+                  hasActiveProject: hasActiveProject,
+                ),
+              ),
+              Expanded(
+                child: _ModernNavItem(
+                  icon: Icons.gavel_outlined,
+                  activeIcon: Icons.gavel,
+                  label: 'Bidding',
+                  isActive: widget.currentPage == ContractorPage.bidding,
+                  onTap: () => _navigateToPage(ContractorPage.bidding),
+                ),
+              ),
+              Expanded(
+                child: _ModernNavItem(
+                  icon: Icons.person_outline,
+                  activeIcon: Icons.person,
+                  label: 'Profile',
+                  isActive: widget.currentPage == ContractorPage.profile,
+                  onTap: () => _navigateToPage(ContractorPage.profile),
+                ),
+              ),
+            ],
+          ),
         ),
-      ],
+      ),
+    );
+  }
+
+  void _navigateToPage(ContractorPage page) {
+    if (widget.currentPage == page) return;
+    
+    switch (page) {
+      case ContractorPage.messages:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ContractorShell(
+              currentPage: ContractorPage.messages,
+              contractorId: widget.contractorId ?? '',
+              child: ContractorChatHistoryPage(),
+            ),
+          ),
+        );
+        break;
+      case ContractorPage.contracts:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ContractorShell(
+              currentPage: ContractorPage.contracts,
+              contractorId: widget.contractorId ?? '',
+              child: ContractType(contractorId: widget.contractorId ?? ''),
+            ),
+          ),
+        );
+        break;
+      case ContractorPage.bidding:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ContractorShell(
+              currentPage: ContractorPage.bidding,
+              contractorId: widget.contractorId ?? '',
+              child: BiddingScreen(contractorId: widget.contractorId ?? ''),
+            ),
+          ),
+        );
+        break;
+      case ContractorPage.profile:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ContractorShell(
+              currentPage: ContractorPage.profile,
+              contractorId: widget.contractorId ?? '',
+              child: ContractorUserProfileScreen(contractorId: widget.contractorId ?? ''),
+            ),
+          ),
+        );
+        break;
+      default:
+        break;
+    }
+  }
+}
+
+class _ModernNavItem extends StatelessWidget {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _ModernNavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    this.isActive = false,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                isActive ? activeIcon : icon,
+                color: isActive ? Colors.amber.shade700 : Colors.grey.shade600,
+                size: 22,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                color: isActive ? Colors.amber.shade700 : Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProjectNavButton extends StatelessWidget {
+  final String contractorId;
+  final ContractorPage currentPage;
+  final bool hasActiveProject;
+
+  const _ProjectNavButton({
+    required this.contractorId,
+    required this.currentPage,
+    required this.hasActiveProject,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    
+    return GestureDetector(
+      onTap: hasActiveProject ? () async {
+        try {
+          final response = await Supabase.instance.client
+              .from('Projects')
+              .select('project_id')
+              .eq('contractor_id', contractorId)
+              .eq('status', 'active')
+              .limit(1)
+              .maybeSingle();
+
+          if (response != null && response['project_id'] != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ContractorShell(
+                  currentPage: ContractorPage.projectManagement,
+                  contractorId: contractorId,
+                  child: CorOngoingProjectScreen(projectId: response['project_id']),
+                ),
+              ),
+            );
+          } else {
+            ConTrustSnackBar.error(context, 'No active project found');
+          }
+        } catch (e) {
+          ConTrustSnackBar.error(context, 'Failed to load project data');
+        }
+      } : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: hasActiveProject 
+                    ? Colors.amber.shade400 
+                    : Colors.grey.shade400,
+            borderRadius: BorderRadius.circular(25),
+            boxShadow: [
+              BoxShadow(
+                color: hasActiveProject 
+                    ? Colors.amber.withOpacity(0.3)
+                    : Colors.grey.withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Icon(
+            Icons.work_outline,
+            color: Colors.white,
+            size: 28,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -707,8 +905,7 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
       childAspectRatio = screenHeight < 800 ? 1.3 : 1.1;
     }
 
-    return SizedBox(
-      height: double.infinity,
+    return Flexible(
       child: Padding(
         padding: EdgeInsets.symmetric(
           vertical: screenHeight < 800 ? 8 : 15,

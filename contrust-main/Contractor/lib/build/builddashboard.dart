@@ -133,7 +133,7 @@ class DashboardBuildMethods {
                 Text(
                   'Current Contractee',
                   style: TextStyle(
-                    fontSize: screenWidth * 0.01,
+                    fontSize: isTablet ? 18 : 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -234,6 +234,8 @@ class DashboardBuildMethods {
   Widget buildMobileProjectsAndTasks() {
     return Column(
       children: [
+        buildCurrentContracteeContainer(),
+        const SizedBox(height: 20),
         buildRecentProjects(),
         const SizedBox(height: 20),
         buildProjectTasks(),
@@ -364,7 +366,7 @@ class DashboardBuildMethods {
       spacing = 16;
     } else {
       crossAxisCount = 2;
-      childAspectRatio = 1.3;
+      childAspectRatio = 1.1;
       spacing = 12;
     }
 
@@ -380,28 +382,28 @@ class DashboardBuildMethods {
           'Active Projects',
           activeProjects.toString(),
           Icons.work,
-          Colors.transparent,
+          Colors.black,
           'Currently working on',
         ),
         buildStatCard(
           'Completed',
           completedProjects.toString(),
           Icons.check_circle,
-          Colors.transparent,
+          Colors.black,
           'Successfully finished',
         ),
         buildStatCard(
           'Total Earnings',
           '₱${totalEarnings.toStringAsFixed(0)}',
           Icons.money,
-          Colors.transparent,
+          Colors.black,
           'From all projects',
         ),
         buildStatCard(
           'Number of Clients',
           totalClients.toString(),
           Icons.people,
-          Colors.transparent,
+          Colors.black,
           'Satisfied customers',
         ),
       ],
@@ -652,11 +654,11 @@ class DashboardBuildMethods {
               if (localTasks.length > (isDesktop ? 2 : 3))
                 Center(
                   child: Text(
-                    '+${localTasks.length - (isDesktop ? 2 : 3)} more tasks...',
+                    'More tasks available...',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 11,
                       color: Colors.grey.shade600,
-                      fontStyle: FontStyle.italic,
                     ),
                   ),
                 ),

@@ -40,6 +40,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
   String selectedTab = 'Portfolio';
   List<Map<String, dynamic>> allRatings = [];
   int totalReviews = 0;
+  bool hasActiveProject = false;
 
   static const String profileUrl =
       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
@@ -49,6 +50,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
     super.initState();
     _loadContractorData();
     _checkAgreementWithContractor();
+    _checkOngoingProjects();
   }
 
   Future<void> _loadContractorData() async {
@@ -136,6 +138,14 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
         setState(() => isHiring = false);
       }
     }
+  }
+
+  Future<void> _checkOngoingProjects() async {
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final ongoingProject = await hasOngoingProject(currentUserId);
+    setState(() {
+      hasActiveProject = ongoingProject != null;
+    });
   }
 
   Future<void> _checkRatingEligibility() async {
@@ -288,7 +298,10 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
 
     return Scaffold(
       body: RefreshIndicator(
-        onRefresh: _loadContractorData,
+        onRefresh: () async {
+          await _loadContractorData();
+          await _checkOngoingProjects();
+        },
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           child: LayoutBuilder(
@@ -423,21 +436,26 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                     ),
                   ),
                 )
-              : ElevatedButton(
-                  onPressed: isHiring ? null : _notifyContractor,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green[700],
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+              : Tooltip(
+                  message: hasActiveProject 
+                      ? "You have an active project. Complete it before hiring another contractor."
+                      : "Send a hiring request to this contractor",
+                  child: ElevatedButton(
+                    onPressed: (isHiring || hasActiveProject) ? null : _notifyContractor,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: hasActiveProject ? Colors.grey[400] : Colors.green[700],
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
-                  ),
-                  child: const Text(
-                    "HIRE THIS CONTRACTOR",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                    child: Text(
+                      hasActiveProject ? "CANNOT HIRE - ACTIVE PROJECT" : "HIRE THIS CONTRACTOR",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),

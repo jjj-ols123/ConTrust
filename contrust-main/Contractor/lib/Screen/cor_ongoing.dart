@@ -103,7 +103,6 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
       );
 
       if (selectedProjectId != null && selectedProjectId != widget.projectId) {
-        // Navigate to the new project
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -149,7 +148,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     setState(() => isLoading = false);
     if (mounted) {
       ConTrustSnackBar.error(
-          context, 'Error loading project data. Please try again.');
+          context, 'Error loading project data. Please try again. $e');
     }
   }
 }
@@ -347,7 +346,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
 
   void _editCompletion() {
     final currentCompletion = projectData?['projectDetails']
-        ?['estimated_completion']; // may be null
+        ?['estimated_completion']; 
     DateTime? completionDate;
     if (currentCompletion != null) {
       try {
@@ -436,7 +435,8 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
         onTabChanged: onTabChanged,
         onRefresh: loadData,
         onEditCompletion:
-            _isCustomContract() ? _editCompletion : null, 
+            _isCustomContract() ? _editCompletion : null,
+        onSwitchProject: switchProject,
         tabContent: OngoingBuildMethods.buildTabContent(
           context: context,
           selectedTab: selectedTab,

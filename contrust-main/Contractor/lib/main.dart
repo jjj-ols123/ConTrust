@@ -3,13 +3,19 @@
 import 'package:contractor/Screen/cor_dashboard.dart';
 import 'package:contractor/Screen/cor_login.dart';
 import 'package:contractor/Screen/cor_authredirect.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  if (kIsWeb) {
+    usePathUrlStrategy();
+  }
 
 await Supabase.initialize(
   url: const String.fromEnvironment(

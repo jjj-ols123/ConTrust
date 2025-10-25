@@ -402,8 +402,8 @@ class _ContractorUserProfileScreenState
     return ProfileBuildMethods.buildRatingBar(label, percentage, color);
   }
 
-  Widget _buildReviewCard(String clientName, String review, double rating, String projectName, String timeAgo) {
-    return ProfileBuildMethods.buildReviews(clientName, review, rating, projectName, timeAgo);
+  Widget _buildReviewCard(String clientName, String review, double rating, String timeAgo) {
+    return ProfileBuildMethods.buildReviews(clientName, review, rating, timeAgo);
   }
 
   void _toggleEdit(String fieldType) {

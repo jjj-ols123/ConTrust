@@ -118,21 +118,6 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
-      appBar:
-          screenWidth > 1200
-              ? null
-              : AppBar(
-                backgroundColor: Colors.yellow[700],
-                title: const Text(
-                  "",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                centerTitle: true,
-                elevation: 0,
-              ),
       body: Column(
         children: [
           Container(

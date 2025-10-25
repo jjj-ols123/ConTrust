@@ -111,7 +111,7 @@ class CorOngoingService {
         'progress': progress,
       };
     } catch (e) {
-      throw Exception('Error loading project data:');
+      throw Exception('Error loading project data: $e');
     }
   }
 
@@ -332,20 +332,6 @@ class CorOngoingService {
         },
       );
 
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(done ? '✓ Completed' : '○ Pending'),
-            backgroundColor: done ? Colors.green : Colors.orange,
-            duration: const Duration(milliseconds: 600),
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        );
-      }
     } catch (e) {
       await _errorService.logError(
         userId: _supabase.auth.currentUser?.id,
@@ -358,7 +344,7 @@ class CorOngoingService {
       if (context.mounted) {
         ConTrustSnackBar.error(
           context,
-          'Error updating task status: ',
+          'Error updating task status: $e',
         );
       }
       rethrow;

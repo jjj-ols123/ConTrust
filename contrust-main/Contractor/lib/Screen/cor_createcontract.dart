@@ -216,7 +216,7 @@ class _CreateContractPageState extends State<CreateContractPage>
       }
     } catch (e) {
       if (mounted) {
-        ConTrustSnackBar.error(context, 'Error loading project data. Please try again.');
+        ConTrustSnackBar.error(context, 'Error loading project data. Please try again. $e');
       }
     } finally {
       setState(() {
@@ -357,17 +357,18 @@ class _CreateContractPageState extends State<CreateContractPage>
             contractType: selectedContractType ?? widget.contractType ?? '',
           );
           if (mounted) {
-            Navigator.pop(context); // Dismiss loading dialog
+            Navigator.pop(context);
             ConTrustSnackBar.success(context, 'Contract saved successfully!');
           }
         }
       }
     } catch (e) {
-      if (mounted) {
-        // Dismiss loading dialog if it's still showing
+      if (mounted) {  
         try {
           Navigator.pop(context);
-        } catch (_) {}
+        } catch (_) {
+          return;
+        }
         ConTrustSnackBar.error(context, 'Failed to save contract');
       }
     } finally {

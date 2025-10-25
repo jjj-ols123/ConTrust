@@ -3,7 +3,9 @@ import 'package:contractee/pages/cee_authredirect.dart';
 import 'package:contractee/pages/cee_home.dart';
 import 'package:contractee/pages/cee_welcome.dart';
 import 'package:contractee/pages/cee_login.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -18,6 +20,10 @@ class AppScrollBehavior extends MaterialScrollBehavior {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  if (kIsWeb) {
+    usePathUrlStrategy();
+  }
 
  await Supabase.initialize(
   url: const String.fromEnvironment(
@@ -63,26 +69,29 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    Widget initialPage;
+    String initialRoute;
 
     if (widget.isFirstOpen) {
-      initialPage = const WelcomePage();
+      initialRoute = '/welcome';
     } else if (_session != null) {
-      initialPage = const HomePage();
+      initialRoute = '/home';
     } else {
-      initialPage = const LoginPage();
+      initialRoute = '/login';
     }
 
     return MaterialApp(
       scrollBehavior: AppScrollBehavior(),
       debugShowCheckedModeBanner: false,
-      home: initialPage,
+      initialRoute: initialRoute,
       routes: {
         '/welcome': (context) => const WelcomePage(),
         '/login': (context) => const LoginPage(),
         '/home': (context) => const HomePage(),
         '/auth/callback': (context) => const AuthRedirectPage(),
       },
+      onUnknownRoute: (settings) => MaterialPageRoute(
+        builder: (_) => widget.isFirstOpen ? const WelcomePage() : const LoginPage(),
+      ),
     );
   }
 }

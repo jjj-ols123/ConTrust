@@ -114,6 +114,16 @@ static Future<Map<String, dynamic>?> showSaveDialog(
                     if (snapshot.hasError || !snapshot.hasData) {
                       return const Text('Error loading projects');
                     }
+                    final validProjects = snapshot.data!.where((p) => 
+                      p['status'] == 'awaiting_contract' && 
+                      p['status'] != 'cancelled' && 
+                      p['status'] != 'cancellation_requested_by_contractee'
+                    ).toList();
+                    
+                    if (validProjects.isEmpty) {
+                      return const Text('No available projects for contract creation');
+                    }
+                    
                     return DropdownButtonFormField<String>(
                       decoration: const InputDecoration(
                         labelText: 'Select Project',
@@ -127,7 +137,7 @@ static Future<Map<String, dynamic>?> showSaveDialog(
                           borderSide: BorderSide(color: Colors.black, width: 2),
                         ),
                       ),
-                      items: snapshot.data!.map((project) => DropdownMenuItem<String>(
+                      items: validProjects.map((project) => DropdownMenuItem<String>(
                         value: project['project_id'],
                         child: Text(project['title'] ?? 'No Title'),
                       )).toList(),

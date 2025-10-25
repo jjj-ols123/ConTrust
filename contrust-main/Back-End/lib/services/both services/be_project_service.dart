@@ -161,6 +161,365 @@ class ProjectService {
     }
   }
 
+  Future<void> updateProject({
+    required String projectId,
+    required String title,
+    required String type,
+    required String description,
+    required String location,
+    required double? minBudget,
+    required double? maxBudget,
+    required int duration,
+  }) async {
+    try {
+      await _supabase.from('Projects').update({
+        'title': title,
+        'type': type,
+        'description': description,
+        'location': location,
+        'min_budget': minBudget,
+        'max_budget': maxBudget,
+        'duration': duration,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('project_id', projectId);
+
+      await _auditService.logAuditEvent(
+        action: 'PROJECT_UPDATED',
+        details: 'Project details updated',
+        metadata: {
+          'project_id': projectId,
+        },
+      );
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to update project: $e',
+        module: 'Project Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Update Project',
+          'project_id': projectId,
+        },
+      );
+      throw Exception('Failed to update project: $e');
+    }
+  }
+
+  Future<void> cancelProject(String projectId) async {
+    try {
+      final projectData = await _supabase
+          .from('Projects')
+          .select('contractor_id, contractee_id, title, status')
+          .eq('project_id', projectId)
+          .single();
+
+      final contractorId = projectData['contractor_id'] as String?;
+      final contracteeId = projectData['contractee_id'] as String?;
+      final projectTitle = projectData['title'] as String? ?? 'Untitled Project';
+      final originalStatus = projectData['status'] as String?; 
+
+      if (contractorId != null) {
+        await _supabase.from('Projects').update({
+          'status': 'cancellation_requested_by_contractee',
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('project_id', projectId);
+
+        await _supabase.from('Notifications').insert({
+          'receiver_id': contractorId,
+          'sender_id': contracteeId,
+          'headline': 'Project Cancellation Request',
+          'message': 'The contractee has requested to cancel the project "$projectTitle". Your approval is required.',
+          'information': {
+            'project_id': projectId,
+            'project_title': projectTitle,
+            'cancellation_requested_by': 'contractee',
+            'requested_at': DateTime.now().toIso8601String(),
+            'requires_contractor_approval': true,
+            'original_status': originalStatus,
+          },
+          'created_at': DateTime.now().toIso8601String(),
+        });
+
+        await _auditService.logAuditEvent(
+          action: 'PROJECT_CANCELLATION_REQUESTED',
+          details: 'Contractee requested project cancellation - awaiting contractor approval',
+          metadata: {
+            'project_id': projectId,
+            'contractor_id': contractorId,
+            'contractee_id': contracteeId,
+            'requested_by': 'contractee',
+            'original_status': originalStatus,
+          },
+        );
+      } else {
+        await _supabase.from('Projects').update({
+          'status': 'cancelled',
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('project_id', projectId);
+
+        await _auditService.logAuditEvent(
+          action: 'PROJECT_CANCELLED',
+          details: 'Project cancelled by contractee (no contractor assigned)',
+          metadata: {
+            'project_id': projectId,
+            'contractee_id': contracteeId,
+            'had_contractor': false,
+          },
+        );
+      }
+
+      final hiringRequests = await _supabase
+          .from('Notifications')
+          .select('notification_id, information')
+          .eq('headline', 'Hiring Request')
+          .filter('information->>project_id', 'eq', projectId);
+      
+      for (final notif in hiringRequests) {
+        final info = notif['information'] as Map<String, dynamic>? ?? {};
+        await _supabase.from('Notifications').update({
+          'information': {
+            ...info,
+            'status': contractorId != null ? 'cancellation_requested' : 'cancelled',
+            'cancelled_reason': contractorId != null 
+                ? 'Project cancellation requested by contractee'
+                : 'Project has been cancelled by the contractee',
+            'cancelled_at': DateTime.now().toIso8601String(),
+            'cancel_message': contractorId != null 
+                ? 'Project cancellation requested by contractee'
+                : 'Project has been cancelled by the contractee.'
+          },
+        }).eq('notification_id', notif['notification_id']);
+      }
+
+      final hiringResponses = await _supabase
+          .from('Notifications')
+          .select('notification_id, information')
+          .eq('headline', 'Hiring Response')
+          .filter('information->>project_id', 'eq', projectId);
+      
+      for (final notif in hiringResponses) {
+        final info = notif['information'] as Map<String, dynamic>? ?? {};
+        await _supabase.from('Notifications').update({
+          'information': {
+            ...info,
+            'status': contractorId != null ? 'cancellation_requested' : 'cancelled',
+            'cancelled_reason': contractorId != null 
+                ? 'Project cancellation requested by contractee'
+                : 'Project has been cancelled by the contractee',
+            'cancelled_at': DateTime.now().toIso8601String(),
+            'cancel_message': contractorId != null 
+                ? 'Project cancellation requested by contractee'
+                : 'Project has been cancelled by the contractee.'
+          },
+        }).eq('notification_id', notif['notification_id']);
+      }
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to cancel project: $e',
+        module: 'Project Service',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Cancel Project',
+          'project_id': projectId,
+        },
+      );
+      throw Exception('Failed to cancel project: $e');
+    }
+  }
+
+  Future<void> agreeCancelAgreement(String projectId, String userId) async {
+    try {
+      final projectData = await _supabase
+          .from('Projects')
+          .select('contractor_id, contractee_id, title, status')
+          .eq('project_id', projectId)
+          .single();
+
+      final contractorId = projectData['contractor_id'] as String?;
+      final contracteeId = projectData['contractee_id'] as String?;
+      final projectTitle = projectData['title'] as String? ?? 'Untitled Project';
+      final currentStatus = projectData['status'] as String?;
+
+      if (contractorId == null) {
+        throw Exception('No contractor assigned to this project');
+      }
+
+      if (currentStatus != 'cancellation_requested_by_contractee') {
+        throw Exception('No cancellation request pending for this project');
+      }
+
+      final isContractor = userId == contractorId;
+      final isContractee = userId == contracteeId;
+
+      if (!isContractor && !isContractee) {
+        throw Exception('User is not authorized to cancel this project');
+      }
+
+      await _supabase.from('Projects').update({
+        'status': 'cancelled',
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('project_id', projectId);
+
+      await _supabase.from('Contracts').update({
+        'status': 'cancelled',
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('project_id', projectId);
+
+      await _supabase.from('Notifications').insert([
+        {
+          'receiver_id': contractorId,
+          'sender_id': contracteeId,
+          'headline': 'Project Cancelled',
+          'message': 'The project "$projectTitle" has been cancelled by mutual agreement.',
+          'information': {
+            'project_id': projectId,
+            'project_title': projectTitle,
+            'cancelled_by': 'mutual_agreement',
+            'cancelled_at': DateTime.now().toIso8601String(),
+          },
+          'created_at': DateTime.now().toIso8601String(),
+        },
+        {
+          'receiver_id': contracteeId,
+          'sender_id': contractorId,
+          'headline': 'Project Cancelled',
+          'message': 'The project "$projectTitle" has been cancelled by mutual agreement.',
+          'information': {
+            'project_id': projectId,
+            'project_title': projectTitle,
+            'cancelled_by': 'mutual_agreement',
+            'cancelled_at': DateTime.now().toIso8601String(),
+          },
+          'created_at': DateTime.now().toIso8601String(),
+        },
+      ]);
+
+      await _auditService.logAuditEvent(
+        action: 'PROJECT_CANCELLED_MUTUAL_AGREEMENT',
+        details: 'Project cancelled by mutual agreement between contractor and contractee',
+        metadata: {
+          'project_id': projectId,
+          'contractor_id': contractorId,
+          'contractee_id': contracteeId,
+          'agreed_by': isContractor ? 'contractor' : 'contractee',
+        },
+      );
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to agree to cancellation: $e',
+        module: 'Project Service',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Agree Cancel Agreement',
+          'project_id': projectId,
+          'user_id': userId,
+        },
+      );
+      throw Exception('Failed to agree to cancellation: $e');
+    }
+  }
+
+  Future<void> declineCancelAgreement(String projectId, String userId) async {
+    try {
+      final projectData = await _supabase
+          .from('Projects')
+          .select('contractor_id, contractee_id, title, status')
+          .eq('project_id', projectId)
+          .single();
+
+      final contractorId = projectData['contractor_id'] as String?;
+      final contracteeId = projectData['contractee_id'] as String?;
+      final projectTitle = projectData['title'] as String? ?? 'Untitled Project';
+      final currentStatus = projectData['status'] as String?;
+
+      if (contractorId == null) {
+        throw Exception('No contractor assigned to this project');
+      }
+
+      if (currentStatus != 'cancellation_requested_by_contractee') {
+        throw Exception('No cancellation request pending for this project');
+      }
+
+      final isContractor = userId == contractorId;
+      final isContractee = userId == contracteeId;
+
+      if (!isContractor && !isContractee) {
+        throw Exception('User is not authorized to decline cancellation for this project');
+      }
+
+      String originalStatus = 'active'; 
+      try {
+        final cancellationNotification = await _supabase
+            .from('Notifications')
+            .select('information')
+            .eq('headline', 'Project Cancellation Request')
+            .filter('information->>project_id', 'eq', projectId)
+            .order('created_at', ascending: false)
+            .limit(1)
+            .maybeSingle();
+
+        if (cancellationNotification != null) {
+          final info = cancellationNotification['information'] as Map<String, dynamic>?;
+          originalStatus = info?['original_status'] as String? ?? 'active';
+        }
+      } catch (e) {
+        await _errorService.logError(
+          errorMessage: 'Failed to retrieve original status: $e',
+          module: 'Project Service',
+          severity: 'Low',
+          extraInfo: {
+            'operation': 'Decline Cancel Agreement - Retrieve Original Status',
+            'project_id': projectId,
+          },
+        );
+      }
+
+      await _supabase.from('Projects').update({
+        'status': originalStatus,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('project_id', projectId);
+
+      final otherPartyId = isContractor ? contracteeId : contractorId;
+      final decliningPartyRole = isContractor ? 'contractor' : 'contractee';
+
+      await _supabase.from('Notifications').insert({
+        'receiver_id': otherPartyId,
+        'sender_id': userId,
+        'headline': 'Cancellation Declined',
+        'message': 'The $decliningPartyRole has declined to cancel the project "$projectTitle". The project will continue.',
+        'information': {
+          'project_id': projectId,
+          'project_title': projectTitle,
+          'declined_by': decliningPartyRole,
+          'declined_at': DateTime.now().toIso8601String(),
+        },
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      await _auditService.logAuditEvent(
+        action: 'PROJECT_CANCELLATION_DECLINED',
+        details: '$decliningPartyRole declined to cancel project',
+        metadata: {
+          'project_id': projectId,
+          'contractor_id': contractorId,
+          'contractee_id': contracteeId,
+          'declined_by': decliningPartyRole,
+        },
+      );
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to decline cancellation: $e',
+        module: 'Project Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Decline Cancel Agreement',
+          'project_id': projectId,
+          'user_id': userId,
+        },
+      );
+      throw Exception('Failed to decline cancellation: $e');
+    }
+  }
+
   Future<void> notifyContractor({
     required String contractorId,
     required String contracteeId,
@@ -593,168 +952,6 @@ class ProjectService {
     }
   }
 
-  Future<Map<String, dynamic>?> agreeCancelAgreement(
-      String projectId, String agreeingUserId) async {
-    try {
-      final project = await _supabase
-          .from('Projects')
-          .select('contractor_id, contractee_id')
-          .eq('project_id', projectId)
-          .single();
-
-      final contractorId = project['contractor_id'];
-      final contracteeId = project['contractee_id'];
-
-      String receiverId, receiverType, senderId, senderType;
-      if (agreeingUserId == contractorId) {
-        senderId = contractorId;
-        senderType = 'contractor';
-        receiverId = contracteeId;
-        receiverType = 'contractee';
-      } else {
-        senderId = contracteeId;
-        senderType = 'contractee';
-        receiverId = contractorId;
-        receiverType = 'contractor';
-      }
-
-      await _supabase.from('Projects').update({
-        'status': 'cancelled',
-        'contractor_id': null,
-      }).eq('project_id', projectId);
-
-      final senderData = senderType == 'contractor'
-          ? await FetchService().fetchContractorData(senderId)
-          : await FetchService().fetchContracteeData(senderId);
-      final senderName = senderType == 'contractor'
-          ? (senderData != null
-              ? senderData['firm_name'] ?? 'A contractor'
-              : 'A contractor')
-          : (senderData != null
-              ? senderData['full_name'] ?? 'A contractee'
-              : 'A contractee');
-      final senderPhoto = senderData?['profile_photo'] ?? '';
-
-      await NotificationService().createNotification(
-        receiverId: receiverId,
-        receiverType: receiverType,
-        senderId: senderId,
-        senderType: senderType,
-        type: 'Project Cancellation Response',
-        message: 'The $senderType has agreed to cancel the project.',
-        information: {
-          'project_id': projectId,
-          'action': 'cancel_agreed',
-          'status': 'cancelled',
-          'timestamp': DateTime.now().toIso8601String(),
-          'sender_name': senderName,
-          'sender_photo': senderPhoto,
-        },
-      );
-
-      await _auditService.logAuditEvent(
-        userId: agreeingUserId,
-        action: 'AGREEMENT_CANCEL_AGREED',
-        details: 'User agreed to cancel project agreement',
-        category: 'Project',
-        metadata: {
-          'project_id': projectId,
-          'agreeing_user_id': agreeingUserId,
-        },
-      );
-
-      return project;
-    } catch (e) {
-      await _errorService.logError(
-        errorMessage: 'Failed to agree to cancel agreement: ',
-        module: 'Project Service',
-        severity: 'High',
-        extraInfo: {
-          'operation': 'Agree Cancel Agreement',
-          'users_id': agreeingUserId,
-          'project_id': projectId,
-        },
-      );
-      throw Exception('Failed to agree to cancellation');
-    }
-  }
-
-  Future<Map<String, dynamic>?> declineCancelAgreement(
-    String projectId,
-    String decliningUserId,
-  ) async {
-    try {
-      final project = await _supabase
-          .from('Projects')
-          .select('contractor_id, contractee_id')
-          .eq('project_id', projectId)
-          .single();
-
-      final userType = decliningUserId == project['contractor_id']
-          ? 'contractor'
-          : 'contractee';
-      final notifInfo = await FetchService().userTypeDecide(
-        contractId: projectId,
-        userType: userType,
-        action: 'declined the cancellation request',
-      );
-
-      await _supabase
-          .from('Projects')
-          .update({'status': 'awaiting_contract'}).eq('project_id', projectId);
-
-      final senderData = userType == 'contractor'
-          ? await FetchService().fetchContractorData(decliningUserId)
-          : await FetchService().fetchContracteeData(decliningUserId);
-      final senderName = userType == 'contractor'
-          ? (senderData != null ? senderData['firm_name'] : 'A contractor')
-          : senderData?['full_name'] ?? 'A contractee';
-      final senderPhoto = senderData?['profile_photo'] ?? '';
-
-      await NotificationService().createNotification(
-        receiverId: notifInfo['receiverId'] ?? '',
-        receiverType: notifInfo['receiverType'] ?? '',
-        senderId: notifInfo['senderId'] ?? '',
-        senderType: notifInfo['senderType'] ?? '',
-        type: 'Project Cancellation Response',
-        message: notifInfo['message'] ?? '',
-        information: {
-          'project_id': projectId,
-          'action': 'cancel_declined',
-          'status': 'active',
-          'timestamp': DateTime.now().toIso8601String(),
-          'sender_name': senderName,
-          'sender_photo': senderPhoto,
-        },
-      );
-
-      await _auditService.logAuditEvent(
-        userId: decliningUserId,
-        action: 'AGREEMENT_CANCEL_DECLINED',
-        details: 'User declined to cancel project agreement',
-        category: 'Project',
-        metadata: {
-          'project_id': projectId,
-          'declining_user_id': decliningUserId,
-        },
-      );
-
-      return project;
-    } catch (e) {
-      await _errorService.logError(
-        errorMessage: 'Failed to decline cancel agreement: ',
-        module: 'Project Service',
-        severity: 'High',
-        extraInfo: {
-          'operation': 'Decline Cancel Agreement',
-          'users_id': decliningUserId,
-          'project_id': projectId,
-        },
-      );
-      throw Exception('Failed to decline cancellation');
-    }
-  }
-
   Future<void> addTaskToProject({
     required String projectId,
     required String task,
@@ -933,7 +1130,7 @@ class ProjectService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to update task status: ',
+        errorMessage: 'Failed to update task status: $e',
         module: 'Project Service',
         severity: 'Low',
         extraInfo: {

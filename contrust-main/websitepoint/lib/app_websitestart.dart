@@ -1,11 +1,8 @@
 // ignore_for_file: deprecated_member_use
 
-import 'package:contractee/pages/cee_welcome.dart';
-import 'package:contractor/Screen/cor_login.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:superadmin/pages/login.dart';
 
 class WebsiteStartPage extends StatelessWidget {
   const WebsiteStartPage({super.key});
@@ -114,9 +111,7 @@ class WebsiteStartPage extends StatelessWidget {
             right: 16,
             child: TextButton.icon(
               onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SuperAdminLoginScreen()),
-                );
+                Navigator.of(context).pushNamed('/superadmin');
               },
               icon: const Icon(Icons.admin_panel_settings, color: Colors.white70),
               label: const Text(
@@ -143,9 +138,7 @@ class WebsiteStartPage extends StatelessWidget {
       buttonText: 'Continue as Contractee',
       onPressed: () {
         try {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const WelcomePage()),
-          );
+          Navigator.of(context).pushReplacementNamed('/contractee');
         } catch (e) {
           ConTrustSnackBar.error(context, 'Error navigating to Contractee: $e');
         }
@@ -163,9 +156,7 @@ class WebsiteStartPage extends StatelessWidget {
       buttonText: 'Continue as Contractor',
       onPressed: () {
         try {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => LoginScreen()),
-          );
+          Navigator.of(context).pushNamed('/contractor');
         } catch (e) {
           ConTrustSnackBar.error(context, 'Error navigating to Contractor: $e');
         }
