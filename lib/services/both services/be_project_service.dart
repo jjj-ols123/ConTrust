@@ -172,7 +172,14 @@ class ProjectService {
     required int duration,
   }) async {
     try {
-      await _supabase.from('Projects').update({
+      final projectData = await _supabase
+          .from('Projects')
+          .select('status')
+          .eq('project_id', projectId)
+          .single();
+
+      final currentStatus = projectData['status'] as String?;
+      final updateData = {
         'title': title,
         'type': type,
         'description': description,
@@ -181,13 +188,31 @@ class ProjectService {
         'max_budget': maxBudget,
         'duration': duration,
         'updated_at': DateTime.now().toIso8601String(),
-      }).eq('project_id', projectId);
+      };
+
+      if (currentStatus == 'stopped') {
+        updateData['status'] = 'pending';
+        updateData['created_at'] = DateTime.now().toIso8601String();
+        
+        await _supabase
+            .from('Bids')
+            .update({'status': 'rejected'})
+            .eq('project_id', projectId)
+            .eq('status', 'stopped');
+      }
+
+      await _supabase.from('Projects').update(updateData).eq('project_id', projectId);
 
       await _auditService.logAuditEvent(
         action: 'PROJECT_UPDATED',
-        details: 'Project details updated',
+        details: currentStatus == 'stopped' 
+            ? 'Project updated and reposted for bidding - old bids rejected'
+            : 'Project details updated',
         metadata: {
           'project_id': projectId,
+          'previous_status': currentStatus,
+          'new_status': currentStatus == 'stopped' ? 'pending' : currentStatus,
+          'old_bids_rejected': currentStatus == 'stopped',
         },
       );
     } catch (e) {
