@@ -358,4 +358,8 @@ class CorBiddingService {
       return false;
     }
   }
+
+  Future<void> finalizeBidding(String projectId) async {
+    return await _biddingService.finalizeBidding(projectId);
+  }
 }

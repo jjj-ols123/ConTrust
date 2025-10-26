@@ -420,7 +420,8 @@ class BidsModal {
     required String projectId,
     required Future<void> Function(String projectId, String bidId) acceptBidding,
     String? initialAcceptedBidId,
-    VoidCallback? onRefresh, 
+    VoidCallback? onRefresh,
+    String? projectStatus,
   }) async {
     String? acceptedBidId = initialAcceptedBidId;
     Future<List<Map<String, dynamic>>> bidsFuture =
@@ -485,11 +486,41 @@ class BidsModal {
                               final anyAccepted = bids.any((bid) => bid['status'] == 'accepted');
                               return SizedBox(
                                 height: 500,
-                                child: ListView.separated(
-                                  itemCount: bids.length,
-                                  separatorBuilder: (context, index) =>
-                                      const Divider(height: 1, color: Colors.grey),
-                                  itemBuilder: (context, index) {
+                                child: Column(
+                                  children: [
+                                    if (projectStatus == 'stopped')
+                                      Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.all(12),
+                                        margin: const EdgeInsets.only(bottom: 8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.orange.shade50,
+                                          border: Border.all(color: Colors.orange.shade300),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                'Bidding period has expired. Update the project to restart bidding or cancel it.',
+                                                style: TextStyle(
+                                                  color: Colors.orange.shade900,
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    Expanded(
+                                      child: ListView.separated(
+                                        itemCount: bids.length,
+                                        separatorBuilder: (context, index) =>
+                                            const Divider(height: 1, color: Colors.grey),
+                                        itemBuilder: (context, index) {
                                     final bid = bids[index];
                                     final contractor = bid['contractor'] ?? {};
                                     final dynamic profilePhotoRaw =
@@ -675,92 +706,93 @@ class BidsModal {
                                                       ),
                                                     ),
                                                   ),
-                                                  Row(
-                                                    children: [
-                                                      TextButton(
-                                                        onPressed: () async {
-                                                          await BiddingService()
-                                                              .rejectBid(bid[
-                                                                  'bid_id']);
-                                                          if (context.mounted) {
-                                                            setState(() {
-                                                              bidsFuture =
-                                                                  BiddingService()
-                                                                      .getBidsForProject(
-                                                                          projectId);
-                                                            });
-                                                            Navigator.pop(context);
-                                                          }
-                                                        },
-                                                        style: TextButton
-                                                            .styleFrom(
-                                                          backgroundColor:
-                                                              Colors
-                                                                  .red.shade50,
-                                                          foregroundColor:
-                                                              Colors.red.shade700,
-                                                          side: BorderSide(
-                                                              color: Colors
-                                                                  .red.shade300,
-                                                              width: 1),
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                                  horizontal:
-                                                                      16,
-                                                                  vertical: 8),
-                                                          shape:
-                                                              RoundedRectangleBorder(
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        6),
+                                                  if (projectStatus != 'stopped')
+                                                    Row(
+                                                      children: [
+                                                        TextButton(
+                                                          onPressed: () async {
+                                                            await BiddingService()
+                                                                .rejectBid(bid[
+                                                                    'bid_id']);
+                                                            if (context.mounted) {
+                                                              setState(() {
+                                                                bidsFuture =
+                                                                    BiddingService()
+                                                                        .getBidsForProject(
+                                                                            projectId);
+                                                              });
+                                                              Navigator.pop(context);
+                                                            }
+                                                          },
+                                                          style: TextButton
+                                                              .styleFrom(
+                                                            backgroundColor:
+                                                                Colors
+                                                                    .red.shade50,
+                                                            foregroundColor:
+                                                                Colors.red.shade700,
+                                                            side: BorderSide(
+                                                                color: Colors
+                                                                    .red.shade300,
+                                                                width: 1),
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .symmetric(
+                                                                    horizontal:
+                                                                        16,
+                                                                    vertical: 8),
+                                                            shape:
+                                                                RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          6),
+                                                            ),
+                                                            textStyle:
+                                                                const TextStyle(
+                                                              fontWeight:
+                                                                  FontWeight.w600,
+                                                              fontSize: 14,
+                                                            ),
                                                           ),
-                                                          textStyle:
-                                                              const TextStyle(
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                            fontSize: 14,
-                                                          ),
+                                                          child: const Text(
+                                                              'Reject'),
                                                         ),
-                                                        child: const Text(
-                                                            'Reject'),
-                                                      ),
-                                                      const SizedBox(width: 8),
-                                                      ElevatedButton(
-                                                        onPressed: () async {
-                                                          await acceptBidding(
-                                                              projectId,
-                                                              bid['bid_id']);
-                                                          if (context.mounted) {
-                                                            setState(() {
-                                                              acceptedBidId =
-                                                                  bid['bid_id'];
-                                                              bidsFuture =
-                                                                  BiddingService()
-                                                                      .getBidsForProject(
-                                                                          projectId);
-                                                            });
-                                                     
-                                                            Navigator.pop(context);
-                                                            onRefresh?.call();
-                                                            ConTrustSnackBar.show(context, 'You accepted $firmName\'s bid', type: SnackBarType.success);
-                                                          }
-                                                        },
-                                                        style: ElevatedButton
-                                                            .styleFrom(
-                                                          backgroundColor:
-                                                              Colors.green
-                                                                  .shade600,
-                                                          side: BorderSide(
-                                                              color: Colors
-                                                                  .green
-                                                                  .shade600,
-                                                              width: 1),
-                                                          foregroundColor:
-                                                              Colors.white,
-                                                          padding:
-                                                              const EdgeInsets
+                                                        const SizedBox(width: 8),
+                                                        ElevatedButton(
+                                                          onPressed: () async {
+                                                            await acceptBidding(
+                                                                projectId,
+                                                                bid['bid_id']);
+                                                            if (context.mounted) {
+                                                              setState(() {
+                                                                acceptedBidId =
+                                                                    bid['bid_id'];
+                                                                bidsFuture =
+                                                                    BiddingService()
+                                                                        .getBidsForProject(
+                                                                            projectId);
+                                                              });
+                                                       
+                                                              Navigator.pop(context);
+                                                              onRefresh?.call();
+                                                              ConTrustSnackBar.show(context, 'You accepted $firmName\'s bid', type: SnackBarType.success);
+                                                            }
+                                                          },
+                                                          style: ElevatedButton
+                                                              .styleFrom(
+                                                            backgroundColor:
+                                                                Colors.green
+                                                                    .shade600,
+                                                            side: BorderSide(
+                                                                color: Colors
+                                                                    .green
+                                                                    .shade600,
+                                                                width: 1),
+                                                            foregroundColor:
+                                                                Colors.white,
+                                                            padding:
+                                                                const EdgeInsets
                                                                   .symmetric(
                                                                   horizontal:
                                                                       16,
@@ -791,9 +823,12 @@ class BidsModal {
                                         ),
                                       )
                                       );
-                                    },
-                                  ),
-                                );
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
                             }),
                       ),
                       Positioned(

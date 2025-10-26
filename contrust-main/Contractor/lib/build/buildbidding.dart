@@ -967,6 +967,7 @@ class BiddingUIBuildMethods {
                           finalizedProjects.add(
                             project['project_id'].toString(),
                           );
+                          _service.finalizeBidding(project['project_id'].toString());
                         }
                         if (remaining.isNegative) {
                           return const Text(

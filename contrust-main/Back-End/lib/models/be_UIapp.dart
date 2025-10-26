@@ -327,7 +327,7 @@ class ProjectView extends StatelessWidget {
                   ),
                 ],
               ),
-              if (!isHiringRequest) ...[
+              if (!isHiringRequest && project['status'] == 'pending') ...[
                 const SizedBox(height: 16),
                 Row(
                   children: [

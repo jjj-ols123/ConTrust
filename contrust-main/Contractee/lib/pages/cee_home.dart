@@ -357,17 +357,18 @@ class _HomePageState extends State<HomePage> {
                                         });
                                       },
                                       initialAcceptedBidId: acceptedBidId,
-                                      onRefresh: _loadData,  
+                                      onRefresh: _loadData,
+                                      projectStatus: project['status'],
                                     );
                                   },
                                 );
                               },
-                              handleFinalizeBidding: (bidId) {
-                                return BiddingService().acceptProjectBid(projectId, bidId);
+                              handleFinalizeBidding: (projectId) {
+                                return BiddingService().finalizeBidding(projectId);
                               },
                               onUpdateProject: (projectId) async {
                                 try {
-                                  if (project['status'] != 'pending') {
+                                  if (project['status'] != 'pending' && project['status'] != 'stopped') {
                                     if (mounted) {
                                       ConTrustSnackBar.warning(context, 'You cannot update an active project.');
                                     }

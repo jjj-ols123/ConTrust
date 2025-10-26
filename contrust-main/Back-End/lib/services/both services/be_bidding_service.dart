@@ -64,6 +64,15 @@ class BiddingService {
 
       if (projectResponse.isEmpty) return;
 
+      final projectStatus = projectResponse['status'] as String?;
+      if (projectStatus == 'stopped') {
+        throw Exception('Cannot accept bids for a project with expired bidding period. Please update the project to restart bidding.');
+      }
+
+      if (projectStatus != 'pending') {
+        throw Exception('This project is no longer accepting bids.');
+      }
+
       await _supabase.from('Projects').update({
         'status': 'awaiting_contract',
         'bid_id': bidId,
@@ -179,6 +188,17 @@ class BiddingService {
 
   Future<void> rejectBid(String bidId) async {
     try {
+      final bidResponse = await _supabase
+          .from('Bids')
+          .select('status, project_id')
+          .eq('bid_id', bidId)
+          .single();
+
+      final bidStatus = bidResponse['status'] as String?;
+      if (bidStatus == 'stopped') {
+        throw Exception('Cannot reject bids for a project with expired bidding period.');
+      }
+
       await _supabase
           .from('Bids')
           .update({'status': 'rejected'})
@@ -232,6 +252,51 @@ class BiddingService {
         },
       );
       return [];
+    }
+  }
+
+  Future<void> finalizeBidding(String projectId) async {
+    try {
+      final projectResponse = await _supabase
+          .from('Projects')
+          .select('status, contractee_id')
+          .eq('project_id', projectId)
+          .maybeSingle();
+
+      if (projectResponse == null || projectResponse['status'] != 'pending') {
+        return;
+      }
+
+      await _supabase.from('Projects').update({
+        'status': 'stopped',
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('project_id', projectId);
+
+      await _supabase
+          .from('Bids')
+          .update({'status': 'stopped'})
+          .eq('project_id', projectId)
+          .eq('status', 'pending');
+
+      await _auditService.logAuditEvent(
+        action: 'BIDDING_FINALIZED',
+        details: 'Bidding period expired for project',
+        category: 'Project',
+        metadata: {
+          'project_id': projectId,
+          'reason': 'Duration expired',
+        },
+      );
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to finalize bidding: ',
+        module: 'Bidding Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Finalize Bidding',
+          'project_id': projectId,
+        },
+      );
     }
   }
 }

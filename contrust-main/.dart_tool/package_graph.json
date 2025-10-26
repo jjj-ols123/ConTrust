@@ -59,6 +59,7 @@
         "flutter_quill",
         "flutter_quill_delta_from_html",
         "flutter_quill_extensions",
+        "flutter_web_plugins",
         "path_provider",
         "pdf",
         "printing",
@@ -110,6 +111,7 @@
         "backend",
         "cupertino_icons",
         "flutter",
+        "flutter_web_plugins",
         "supabase_flutter"
       ],
       "devDependencies": [
