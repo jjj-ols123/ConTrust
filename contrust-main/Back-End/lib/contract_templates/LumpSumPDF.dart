@@ -191,7 +191,7 @@ class LumpSumPDF {
 
     widgets.add(
       pw.Bullet(
-        text: 'Down Payment: PHP${ContractStyle.getFieldValue(fieldValues, 'Payment.DownPayment')} (${ContractStyle.getFieldValue(fieldValues, 'Payment.DownPaymentPercentage')}% of total contract price) - Due upon contract signing',
+        text: 'Down Payment: ${ContractStyle.getFieldValue(fieldValues, 'Payment.DownPaymentPercentage')}% of total contract price - Due upon contract signing',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
@@ -203,7 +203,7 @@ class LumpSumPDF {
     );
     widgets.add(
       pw.Bullet(
-        text: 'Retention: ${ContractStyle.getFieldValue(fieldValues, 'Payment.RetentionPercentage')}% (PHP${ContractStyle.getFieldValue(fieldValues, 'Payment.RetentionAmount')}) - Released after ${ContractStyle.getFieldValue(fieldValues, 'Payment.RetentionPeriod')} days from completion',
+        text: 'Retention: ${ContractStyle.getFieldValue(fieldValues, 'Payment.RetentionPercentage')}% - Released after ${ContractStyle.getFieldValue(fieldValues, 'Payment.RetentionPeriod')} days from completion',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
