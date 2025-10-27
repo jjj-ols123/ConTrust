@@ -279,7 +279,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    color: Colors.amber,
                   ),
                 )
               : const Text(

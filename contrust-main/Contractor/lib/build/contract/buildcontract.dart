@@ -77,99 +77,159 @@ static Future<Map<String, dynamic>?> showSaveDialog(
   }) async {
     String? selectedProjectId = initialProjectId;
     titleController ??= TextEditingController();
-    final screenWidth = MediaQuery.of(context).size.width;
     
     return showDialog<Map<String, dynamic>>(
       context: context,
       builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('Save Contract'),
-          content: SizedBox(
-            width: screenWidth > 600 ? 400 : screenWidth * 0.9,
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 500),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.white, Colors.grey.shade50],
+              ),
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextFormField(
-                  controller: titleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Contract Title',
-                    border: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.black, width: 1),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.black, width: 1),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.black, width: 2),
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade700,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                FutureBuilder<List<Map<String, dynamic>>>(
-                  future: FetchService().fetchContractorProjectInfo(contractorId),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const CircularProgressIndicator();
-                    }
-                    if (snapshot.hasError || !snapshot.hasData) {
-                      return const Text('Error loading projects');
-                    }
-                    final validProjects = snapshot.data!.where((p) => 
-                      p['status'] == 'awaiting_contract' && 
-                      p['status'] != 'cancelled' && 
-                      p['status'] != 'cancellation_requested_by_contractee'
-                    ).toList();
-                    
-                    if (validProjects.isEmpty) {
-                      return const Text('No available projects for contract creation');
-                    }
-                    
-                    return DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'Select Project',
-                        border: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.black, width: 1),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.black, width: 1),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.black, width: 2),
+                        child: const Icon(
+                          Icons.save,
+                          color: Colors.white,
+                          size: 20,
                         ),
                       ),
-                      items: validProjects.map((project) => DropdownMenuItem<String>(
-                        value: project['project_id'],
-                        child: Text(project['title'] ?? 'No Title'),
-                      )).toList(),
-                      onChanged: (value) {
-                        selectedProjectId = value;
-                        onProjectChanged?.call(value);
-                      },
-                    );
-                  },
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Save Contract',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(),
+                        icon: const Icon(Icons.close, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TextFormField(
+                          controller: titleController,
+                          decoration: const InputDecoration(
+                            labelText: 'Contract Title',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        FutureBuilder<List<Map<String, dynamic>>>(
+                          future: FetchService().fetchContractorProjectInfo(contractorId),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: CircularProgressIndicator(color: Colors.amber),
+                                ),
+                              );
+                            }
+                            if (snapshot.hasError || !snapshot.hasData) {
+                              return const Text('Error loading projects');
+                            }
+                            final validProjects = snapshot.data!.where((p) {
+                              final status = p['status'] as String?;
+                              return status == 'awaiting_contract' || status == 'awaiting_agreement';
+                            }).toList();
+                            
+                            if (validProjects.isEmpty) {
+                              return const Text('No available projects for contract creation');
+                            }
+                            
+                            return DropdownButtonFormField<String>(
+                              decoration: const InputDecoration(
+                                labelText: 'Select Project',
+                                border: OutlineInputBorder(),
+                              ),
+                              items: validProjects.map((project) => DropdownMenuItem<String>(
+                                value: project['project_id'],
+                                child: Text(project['title'] ?? 'No Title'),
+                              )).toList(),
+                              onChanged: (value) {
+                                selectedProjectId = value;
+                                onProjectChanged?.call(value);
+                              },
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextButton(
+                                onPressed: () => Navigator.of(dialogContext).pop(),
+                                child: const Text('Cancel'),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  if (titleController?.text.trim().isEmpty == true || selectedProjectId == null) {
+                                    ConTrustSnackBar.error(context, 'Please fill all fields');
+                                    return;
+                                  }
+                                  Navigator.of(dialogContext).pop({
+                                    'title': titleController?.text.trim() ?? '',
+                                    'projectId': selectedProjectId,
+                                  });
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green[600],
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                ),
+                                child: const Text('Save'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (titleController?.text.trim().isEmpty == true || selectedProjectId == null) {
-                  ConTrustSnackBar.error(context, 'Please fill all fields');
-                  return;
-                }
-                Navigator.of(dialogContext).pop({
-                  'title': titleController?.text.trim() ?? '',
-                  'projectId': selectedProjectId,
-                });
-              },
-              child: const Text('Save'),
-            ),
-          ],
         );
       },
     );

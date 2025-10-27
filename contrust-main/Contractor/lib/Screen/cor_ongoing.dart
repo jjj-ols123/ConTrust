@@ -62,43 +62,106 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
 
       final selectedProjectId = await showDialog<String>(
         context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Switch Project'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: activeProjects.length,
-              itemBuilder: (context, index) {
-                final project = activeProjects[index];
-                final isCurrentProject = project['project_id'] == widget.projectId;
-                return ListTile(
-                  selected: isCurrentProject,
-                  title: Text(project['title'] ?? 'Untitled Project'),
-                  subtitle: Text(isCurrentProject 
-                    ? 'Current Project • ${project['status'] ?? 'N/A'}' 
-                    : 'Status: ${project['status'] ?? 'N/A'}'),
-                  leading: isCurrentProject 
-                    ? const Icon(Icons.check_circle, color: Colors.green)
-                    : const Icon(Icons.folder, color: Colors.grey),
-                  trailing: isCurrentProject 
-                    ? null 
-                    : const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: isCurrentProject 
-                    ? null 
-                    : () {
-                        Navigator.of(dialogContext).pop(project['project_id']);
+        builder: (dialogContext) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 500),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.white, Colors.grey.shade50],
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade700,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.swap_horiz,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Switch Project',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(),
+                        icon: const Icon(Icons.close, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+                Flexible(
+                  child: Container(
+                    constraints: const BoxConstraints(maxHeight: 400),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.all(16),
+                      itemCount: activeProjects.length,
+                      itemBuilder: (context, index) {
+                        final project = activeProjects[index];
+                        final isCurrentProject = project['project_id'] == widget.projectId;
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          color: isCurrentProject ? Colors.amber.shade50 : null,
+                          child: ListTile(
+                            selected: isCurrentProject,
+                            title: Text(
+                              project['title'] ?? 'Untitled Project',
+                              style: TextStyle(
+                                fontWeight: isCurrentProject ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                            subtitle: Text(isCurrentProject 
+                              ? 'Current Project • ${project['status'] ?? 'N/A'}' 
+                              : 'Status: ${project['status'] ?? 'N/A'}'),
+                            leading: isCurrentProject 
+                              ? const Icon(Icons.check_circle, color: Colors.green)
+                              : Icon(Icons.folder, color: Colors.amber.shade700),
+                            trailing: isCurrentProject 
+                              ? null 
+                              : Icon(Icons.arrow_forward_ios, size: 16, color: Colors.amber.shade700),
+                            onTap: isCurrentProject 
+                              ? null 
+                              : () {
+                                  Navigator.of(dialogContext).pop(project['project_id']);
+                                },
+                          ),
+                        );
                       },
-                );
-              },
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-          ],
         ),
       );
 
@@ -350,7 +413,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     DateTime? completionDate;
     if (currentCompletion != null) {
       try {
-        completionDate = DateTime.parse(currentCompletion);
+        completionDate = DateTime.parse(currentCompletion).toLocal();
       } catch (_) {
         completionDate = null;
       }

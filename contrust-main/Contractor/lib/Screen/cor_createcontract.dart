@@ -468,7 +468,7 @@ class _CreateContractPageState extends State<CreateContractPage>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
+              color: Colors.amber,
             ),
             const SizedBox(height: 24),
             Text(
@@ -561,7 +561,7 @@ class _CreateContractPageState extends State<CreateContractPage>
                         height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: Colors.amber,
                         ),
                       )
                     : const Icon(Icons.save),

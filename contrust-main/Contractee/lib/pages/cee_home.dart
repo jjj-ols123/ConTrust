@@ -281,7 +281,7 @@ class _HomePageState extends State<HomePage> {
                   ),
               SizedBox(height: isMobile ? 12 : 15),
               isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Center(child: CircularProgressIndicator(color: Colors.amber))
                   : ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
@@ -318,7 +318,7 @@ class _HomePageState extends State<HomePage> {
                               projectId: projectId,
                               highestBid: highestBid,
                               duration: project['duration'] ?? 0,
-                              createdAt: DateTime.parse(project['created_at'].toString()),
+                              createdAt: DateTime.parse(project['created_at'].toString()).toLocal(),
                               onTap: () {
                                 CheckUserLogin.isLoggedIn(
                                   context: context,

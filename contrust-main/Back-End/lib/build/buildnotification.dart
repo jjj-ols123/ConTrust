@@ -70,7 +70,7 @@ class NotificationUIBuildMethods {
           );
         }
         if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator(color: Colors.amber));
         }
         if (snapshot.data!.isEmpty) {
           return const Center(child: Text("No notifications yet"));
@@ -146,7 +146,7 @@ class NotificationUIBuildMethods {
             ),
             child: const Padding(
               padding: EdgeInsets.all(16),
-              child: Center(child: CircularProgressIndicator()),
+              child: Center(child: CircularProgressIndicator(color: Colors.amber)),
             ),
           );
         }
@@ -756,7 +756,7 @@ class NotificationOverlay {
                               : UserService().getContractorId(),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState == ConnectionState.waiting) {
-                              return const Center(child: CircularProgressIndicator());
+                              return const Center(child: CircularProgressIndicator(color: Colors.amber));
                             }
 
                             if (snapshot.hasError || !snapshot.hasData) {
@@ -777,7 +777,7 @@ class NotificationOverlay {
                                   );
                                 }
                                 if (!streamSnapshot.hasData) {
-                                  return const Center(child: CircularProgressIndicator());
+                                  return const Center(child: CircularProgressIndicator(color: Colors.amber));
                                 }
                                 if (streamSnapshot.data!.isEmpty) {
                                   return const Center(child: Text("No notifications yet"));
@@ -805,7 +805,7 @@ class NotificationOverlay {
                                             ),
                                             child: const Padding(
                                               padding: EdgeInsets.all(12),
-                                              child: Center(child: CircularProgressIndicator()),
+                                              child: Center(child: CircularProgressIndicator(color: Colors.amber)),
                                             ),
                                           );
                                         }
@@ -1058,7 +1058,7 @@ class _GroupedNotificationCardState extends State<_GroupedNotificationCard> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.grey.shade200),
             ),
-            child: const Center(child: CircularProgressIndicator()),
+            child: const Center(child: CircularProgressIndicator(color: Colors.amber)),
           );
         }
 

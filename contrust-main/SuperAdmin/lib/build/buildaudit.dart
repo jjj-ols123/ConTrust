@@ -344,7 +344,7 @@ class AuditLogsTableState extends State<AuditLogsTable> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
+            CircularProgressIndicator(color: Colors.amber),
             SizedBox(height: 16),
             Text('Loading audit logs...', style: TextStyle(color: Colors.black)),
           ],
@@ -465,7 +465,7 @@ class AuditLogsTableState extends State<AuditLogsTable> {
   String formatTimestamp(String? timestamp) {
   if (timestamp == null) return 'N/A';
   try {
-    final dateTime = DateTime.parse(timestamp);
+    final dateTime = DateTime.parse(timestamp).toLocal();
     return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} '
            '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   } catch (e) {

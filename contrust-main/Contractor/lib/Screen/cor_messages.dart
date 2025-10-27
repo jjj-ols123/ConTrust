@@ -370,8 +370,8 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
   String _formatContractTime(dynamic timestamp) {
     try {
       final date = timestamp is String
-          ? DateTime.parse(timestamp)
-          : timestamp as DateTime;
+          ? DateTime.parse(timestamp).toLocal()
+          : (timestamp as DateTime).toLocal();
       final now = DateTime.now();
       final difference = now.difference(date);
 
@@ -571,8 +571,8 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
                 width: 40,
                 height: 40,
                 child: CircularProgressIndicator(
+                  color: Colors.amber,
                   strokeWidth: 3,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
                 ),
               ),
               const SizedBox(height: 16),

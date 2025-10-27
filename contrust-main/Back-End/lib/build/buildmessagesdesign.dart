@@ -370,46 +370,11 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
       );
     }
 
-    if (contractSent && widget.userRole == 'contractee') {
-      bannerText = "Contract sent. Waiting for your approval.";
-      buttonText = "Review Contract";
-      onPressed = () async {
-        try {
-          final messages = await supabase
-              .from('Messages')
-              .select()
-              .eq('chatroom_id', widget.chatRoomId)
-              .eq('message_type', 'contract')
-              .order('timestamp', ascending: false)
-              .limit(1);
-
-          if (messages.isNotEmpty && mounted) {
-            final contractMessage = messages.first;
-            await UIMessage._showEnhancedContractView(
-                context, contractMessage['contract_id'], null, contractMessage);
-          }
-        } catch (e) {
-          await _errorService.logError(
-            errorMessage: 'Failed to review contract: $e',
-            module: 'Contract Agreement Banner',
-            severity: 'Medium',
-            extraInfo: {
-              'operation': 'Review Contract',
-              'chat_room_id': widget.chatRoomId,
-              'user_role': widget.userRole,
-            },
-          );
-          if (mounted) {
-            ConTrustSnackBar.error(context, 'Failed to load contract');
-          }
-        }
-      };
-      bannerColor = Colors.blue[50]!;
-    } else if (contractSent && widget.userRole == 'contractor') {
-      bannerText = "Contract sent. Waiting for contractee approval.";
-      buttonText = "Pending Approval";
+    if (projectStatus == 'awaiting_signature') {
+      bannerText = "Contract approved! Waiting for both parties to sign.";
+      buttonText = "Awaiting Signatures";
       onPressed = null;
-      bannerColor = Colors.orange[50]!;
+      bannerColor = Colors.purple[50]!;
     } else if (projectStatus == 'awaiting_agreement') {
       if (widget.userRole == 'contractor') {
         bannerText = "Contract sent. Waiting for contractee approval.";
@@ -418,39 +383,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
         bannerColor = Colors.orange[50]!;
       } else {
         bannerText = "Contract sent. Please review and approve.";
-        buttonText = "Review Contract";
-        onPressed = () async {
-          try {
-            final messages = await supabase
-                .from('Messages')
-                .select()
-                .eq('chatroom_id', widget.chatRoomId)
-                .eq('message_type', 'contract')
-                .order('timestamp', ascending: false)
-                .limit(1);
-
-            if (messages.isNotEmpty && mounted) {
-              final contractMessage = messages.first;
-              await UIMessage._showEnhancedContractView(
-                  context, contractMessage['contract_id'], null, contractMessage);
-            }
-          } catch (e) {
-            await _errorService.logError(
-              errorMessage: 'Failed to review contract: $e',
-              module: 'Contract Agreement Banner',
-              severity: 'Medium',
-              extraInfo: {
-                'operation': 'Review Contract',
-                'chat_room_id': widget.chatRoomId,
-                'user_role': widget.userRole,
-              },
-            );
-            if (mounted) {
-              ConTrustSnackBar.error(context, 'Failed to load contract');
-            }
-          }
-        };
-        bannerColor = Colors.blue[50]!;
+        bannerColor = Colors.orange;
       }
     } else if (projectStatus == 'awaiting_contract') {
       if (widget.userRole == 'contractor') {
@@ -486,22 +419,90 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
               if (activeProjects.length > 1) {
                 projectId = await showDialog<String>(
                       context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: const Text('Select Active Project'),
-                        content: SizedBox(
-                          width: double.maxFinite,
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: activeProjects.length,
-                            itemBuilder: (context, index) {
-                              final p = activeProjects[index];
-                              return ListTile(
-                                title: Text(p['title'] ?? 'Untitled Project'),
-                                subtitle: Text(p['location'] ?? 'No location'),
-                                onTap: () => Navigator.of(ctx)
-                                    .pop(p['project_id'] as String),
-                              );
-                            },
+                      builder: (ctx) => Dialog(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        child: Container(
+                          constraints: const BoxConstraints(maxWidth: 500),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Colors.white, Colors.grey.shade50],
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.shade700,
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(20),
+                                    topRight: Radius.circular(20),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Icon(
+                                        Icons.apartment,
+                                        color: Colors.white,
+                                        size: 18,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    const Expanded(
+                                      child: Text(
+                                        'Select Active Project',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      onPressed: () => Navigator.of(ctx).pop(''),
+                                      icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Flexible(
+                                child: SingleChildScrollView(
+                                  padding: const EdgeInsets.all(16),
+                                  child: ListView.builder(
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    itemCount: activeProjects.length,
+                                    itemBuilder: (context, index) {
+                                      final p = activeProjects[index];
+                                      return Card(
+                                        margin: const EdgeInsets.only(bottom: 8),
+                                        child: ListTile(
+                                          title: Text(
+                                            p['title'] ?? 'Untitled Project',
+                                            style: const TextStyle(fontWeight: FontWeight.w600),
+                                          ),
+                                          subtitle: Text(p['location'] ?? 'No location'),
+                                          trailing: Icon(Icons.chevron_right, color: Colors.amber.shade700),
+                                          onTap: () => Navigator.of(ctx).pop(p['project_id'] as String),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -977,8 +978,8 @@ class UIMessage {
   static String _formatTime(dynamic timestamp) {
     try {
       final date = timestamp is String
-          ? DateTime.parse(timestamp)
-          : timestamp as DateTime;
+          ? DateTime.parse(timestamp).toLocal()
+          : (timestamp as DateTime).toLocal();
       final hour = date.hour.toString().padLeft(2, '0');
       final min = date.minute.toString().padLeft(2, '0');
       return '$hour:$min';
@@ -1019,48 +1020,76 @@ class UIMessage {
                 }
 
                 return Dialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                     child: Container(
                   width: MediaQuery.of(context).size.width * 1.2,
                   constraints: const BoxConstraints(maxWidth: 900),
                   height: MediaQuery.of(context).size.height * 0.9,
-                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Colors.white, Colors.grey.shade50],
+                    ),
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Icon(Icons.description,
-                              color: Colors.blue[700], size: 24),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  contractData['title'] ?? 'Contract',
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  'Status: ${_formatStatus(displayStatus)}',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: _getStatusColor(displayStatus),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade700,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(20),
+                            topRight: Radius.circular(20),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.description,
+                                color: Colors.white,
+                                size: 20,
+                              ),
                             ),
-                          ),
-                          IconButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            icon: const Icon(Icons.close),
-                          ),
-                        ],
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    contractData['title'] ?? 'Contract',
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Status: ${_formatStatus(displayStatus)}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.white70,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: const Icon(Icons.close, color: Colors.white),
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 16),
                       Expanded(
                         child: SingleChildScrollView(
                           child: Column(
@@ -1211,7 +1240,7 @@ class UIMessage {
                                         height: 400,
                                         child: Center(
                                           child: CircularProgressIndicator(
-                                              color: Colors.blue),
+                                              color: Colors.amber),
                                         ),
                                       ),
                                     );
@@ -1451,7 +1480,7 @@ class UIMessage {
                             child: SizedBox(
                               width: 16,
                               height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(color: Colors.amber, strokeWidth: 2),
                             ),
                           );
                         }
@@ -1561,26 +1590,6 @@ class UIMessage {
         return 'Active';
       default:
         return status;
-    }
-  }
-
-  static Color _getStatusColor(String? status) {
-    if (status == null) return Colors.grey;
-    switch (status.toLowerCase()) {
-      case 'draft':
-        return Colors.grey;
-      case 'sent':
-        return Colors.orange;
-      case 'approved':
-        return Colors.green;
-      case 'rejected':
-        return Colors.red;
-      case 'awaiting_signature':
-        return Colors.blue;
-      case 'active':
-        return Colors.green[700]!;
-      default:
-        return Colors.grey;
     }
   }
 
@@ -1898,16 +1907,30 @@ class UIMessage {
     try {
       final input = html.FileUploadInputElement()..accept = 'image/*';
       input.click();
-      final file = input.files?.first;
-      if (file == null) return null;
+
+      await input.onChange.first;
+      
+      if (input.files == null || input.files!.isEmpty) {
+        return null; 
+      }
+      
+      final file = input.files!.first;
 
       final reader = html.FileReader();
       reader.readAsArrayBuffer(file);
       await reader.onLoad.first;
-      return Uint8List.view(reader.result as ByteBuffer);
+      
+      final result = reader.result;
+      if (result is Uint8List) {
+        return result;
+      } else if (result is ByteBuffer) {
+        return Uint8List.view(result);
+      } else {
+        throw Exception('Unexpected file reader result type: ${result.runtimeType}');
+      }
     } catch (e) {
       ConTrustSnackBar.error(
-          context, 'Failed to pick signature image');
+          context, 'Failed to pick signature image $e');
       
       _errorService.logError(
         errorMessage: 'Failed to pick signature image: $e',
@@ -1940,81 +1963,175 @@ class UIMessage {
     return;
   }
 
+  bool isUploading = false;
+  
   showDialog(
     context: context,
     barrierDismissible: false,
     builder: (dialogContext) => StatefulBuilder(
-      builder: (context, setState) => AlertDialog(
-        title: const Text('Confirm Signature'),
-        content: Builder(
-          builder: (context) {
-            return const Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(height: 16),
-                Text(
-                    'You are signing this contract. This action cannot be undone.'),
-              ],
-            );
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              setState(() {});
-
-              try {
-                final userType = isContractee ? 'contractee' : 'contractor';
-
-                await SignatureCompletionHandler
-                    .signContractWithPdfGeneration(
-                  contractId: contractId,
-                  userId: currentUserId,
-                  signatureBytes: signatureBytes,
-                  userType: userType,
-                );
-
-                await _auditService.logAuditEvent(
-                  userId: currentUserId,
-                  action: 'CONTRACT_SIGNED',
-                  details: '$userType signed the contract',
-                  category: 'Contract',
-                  metadata: {
-                    'contract_id': contractId,
-                    'user_type': userType,
-                  },
-                );
-
-                Navigator.of(dialogContext).pop();
-                
-                onRefresh();
-                ConTrustSnackBar.contractSigned(context);
-                
-              } catch (e) {
-                await _errorService.logError(
-                  errorMessage: 'Failed to sign contract: $e',
-                  module: 'UI Message',
-                  severity: 'High',
-                  extraInfo: {
-                    'operation': 'Sign Contract',
-                    'contract_id': contractId,
-                    'user_type': isContractee ? 'contractee' : 'contractor',
-                  },
-                );
-                ConTrustSnackBar.error(context, '$e');
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green[600],
-              foregroundColor: Colors.white,
+      builder: (context, setState) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 500),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.white, Colors.grey.shade50],
             ),
-            child: const Text('Confirm & Sign'),
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade700,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Icon(
+                        Icons.draw,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
+                        'Confirm Signature',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: isUploading ? null : () => Navigator.of(dialogContext).pop(),
+                      icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'You are signing this contract. This action cannot be undone.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 14),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: isUploading ? null : () => Navigator.of(dialogContext).pop(),
+                            child: const Text('Cancel'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: isUploading ? null : () async {
+                              setState(() {
+                                isUploading = true;
+                              });
+
+                              try {
+                                final userType = isContractee ? 'contractee' : 'contractor';
+
+                                await SignatureCompletionHandler
+                                    .signContractWithPdfGeneration(
+                                  contractId: contractId,
+                                  userId: currentUserId,
+                                  signatureBytes: signatureBytes,
+                                  userType: userType,
+                                );
+
+                                await _auditService.logAuditEvent(
+                                  userId: currentUserId,
+                                  action: 'CONTRACT_SIGNED',
+                                  details: '$userType signed the contract',
+                                  category: 'Contract',
+                                  metadata: {
+                                    'contract_id': contractId,
+                                    'user_type': userType,
+                                  },
+                                );
+
+                                Navigator.of(dialogContext).pop();
+                                
+                                onRefresh();
+                                ConTrustSnackBar.contractSigned(context);
+                                
+                              } catch (e) {
+                                await _errorService.logError(
+                                  errorMessage: 'Failed to sign contract: $e',
+                                  module: 'UI Message',
+                                  severity: 'High',
+                                  extraInfo: {
+                                    'operation': 'Sign Contract',
+                                    'contract_id': contractId,
+                                    'user_type': isContractee ? 'contractee' : 'contractor',
+                                  },
+                                );
+                                ConTrustSnackBar.error(context, '$e');
+                                
+                                setState(() {
+                                  isUploading = false;
+                                });
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isUploading ? Colors.grey : Colors.green[600],
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            child: isUploading 
+                              ? Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text('Uploading...'),
+                                  ],
+                                )
+                              : const Text('Confirm & Sign'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     ),
   );

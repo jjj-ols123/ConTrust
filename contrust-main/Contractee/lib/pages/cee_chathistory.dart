@@ -112,7 +112,7 @@ class _ContracteeChatHistoryPageState
     if (contracteeId == null) {
       return const Scaffold(
         backgroundColor: Colors.transparent,
-        body: Center(child: CircularProgressIndicator(color: Colors.blue)),
+        body: Center(child: CircularProgressIndicator(color: Colors.amber)),
       );
     }
 
@@ -151,7 +151,7 @@ class _ContracteeChatHistoryPageState
                 .order('last_message_time', ascending: false),
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(child: CircularProgressIndicator(color: Colors.amber));
               }
               final chatRooms = snapshot.data!;
               if (chatRooms.isEmpty) {

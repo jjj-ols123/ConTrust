@@ -264,7 +264,7 @@ class BuildProjects {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        CircularProgressIndicator(),
+                        CircularProgressIndicator(color: Colors.amber),
                         SizedBox(height: 16),
                         Text('Loading projects...', style: TextStyle(color: Colors.black)),
                       ],
@@ -474,7 +474,7 @@ class BuildProjects {
   static String _formatDate(String? dateString) {
     if (dateString == null) return 'N/A';
     try {
-      final dateTime = DateTime.parse(dateString);
+      final dateTime = DateTime.parse(dateString).toLocal();
       return '${dateTime.month}/${dateTime.day}/${dateTime.year}';
     } catch (e) {
       SuperAdminErrorService().logError(
@@ -669,7 +669,7 @@ class ProjectsManagementTableState extends State<ProjectsManagementTable> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
+            CircularProgressIndicator(color: Colors.amber),
             SizedBox(height: 16),
             Text('Loading projects...', style: TextStyle(color: Colors.black)),
           ],

@@ -947,7 +947,7 @@ class BiddingUIBuildMethods {
                     ),
                     StreamBuilder<Duration>(
                       stream: _service.getBiddingCountdownStream(
-                        DateTime.parse(project['created_at']),
+                        DateTime.parse(project['created_at']).toLocal(),
                         project['duration'],
                       ),
                       builder: (ctx, snap) {

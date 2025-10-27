@@ -290,7 +290,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                           itemCount: payments.length,
                           itemBuilder: (context, index) {
                             final payment = payments[payments.length - 1 - index];
-                            final date = DateTime.parse(payment['date']);
+                            final date = DateTime.parse(payment['date']).toLocal();
                             return Card(
                               margin: const EdgeInsets.only(bottom: 12),
                               child: ListTile(
@@ -420,89 +420,141 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
     return showDialog<double>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(Icons.payments, color: Colors.amber.shade700),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                dialogTitle,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 500),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.white, Colors.grey.shade50],
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
                   color: Colors.amber.shade700,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.payments,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        dialogTitle,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close, color: Colors.white),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              dialogMessage,
-              style: const TextStyle(fontSize: 14, color: Colors.black87),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: controller,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                labelText: 'Amount',
-                prefixText: '₱',
-                hintText: '0.00',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      dialogMessage,
+                      style: const TextStyle(fontSize: 14, color: Colors.black87),
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: controller,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: 'Amount',
+                        prefixText: '₱',
+                        hintText: '0.00',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                        helperText: 'Minimum: ₱100.00',
+                        helperStyle: TextStyle(color: Colors.grey.shade600),
+                      ),
+                      autofocus: true,
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Cancel'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              final text = controller.text.trim();
+                              if (text.isEmpty) {
+                                ConTrustSnackBar.warning(context, 'Please enter an amount');
+                                return;
+                              }
+                              
+                              final amount = double.tryParse(text);
+                              if (amount == null) {
+                                ConTrustSnackBar.error(context, 'Invalid amount format');
+                                return;
+                              }
+                              
+                              if (amount < 100) {
+                                ConTrustSnackBar.warning(context, 'Minimum payment amount is ₱100.00');
+                                return;
+                              }
+                              
+                              Navigator.pop(context, amount);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green[600],
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text('Continue'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                filled: true,
-                fillColor: Colors.grey.shade50,
-                helperText: 'Minimum: ₱100.00',
-                helperStyle: TextStyle(color: Colors.grey.shade600),
               ),
-              autofocus: true,
-            ),
-          ],
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final text = controller.text.trim();
-              if (text.isEmpty) {
-                ConTrustSnackBar.warning(context, 'Please enter an amount');
-                return;
-              }
-              
-              final amount = double.tryParse(text);
-              if (amount == null) {
-                ConTrustSnackBar.error(context, 'Invalid amount format');
-                return;
-              }
-              
-              if (amount < 100) {
-                ConTrustSnackBar.warning(context, 'Minimum payment amount is ₱100.00');
-                return;
-              }
-              
-              Navigator.pop(context, amount);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.amber.shade700,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text('Continue'),
-          ),
-        ],
       ),
     );
   }
@@ -576,7 +628,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
         future: _getTabData(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator(color: Colors.amber));
           }
 
           final data = snapshot.data ?? [[], [], []];
@@ -618,7 +670,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
       future: _getTabData(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator(color: Colors.amber));
         }
 
         final data = snapshot.data ?? [[], [], []];

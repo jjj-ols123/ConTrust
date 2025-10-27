@@ -1,6 +1,7 @@
 // ignore_for_file: file_names, deprecated_member_use, library_private_types_in_public_api, use_build_context_synchronously
 import 'package:backend/utils/be_validation.dart';
 import 'package:backend/services/contractor services/cor_signup.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -107,105 +108,178 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void _showVerificationUploadDialog(BuildContext context, VoidCallback onUpdate) async {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Upload Verification Documents'),
-        content: StatefulBuilder(
-          builder: (context, setState) => Column(
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 500),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.white, Colors.grey.shade50],
+            ),
+          ),
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Please upload clear photos of your ID, business license, or other documents.'),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: () async {
-                  final result = await FilePicker.platform.pickFiles(
-                    type: FileType.custom,
-                    allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'],  
-                    allowMultiple: false,
-                  );
-                  if (result != null && result.files.isNotEmpty) {
-                    final file = result.files.first;
-                    final bytes = file.bytes;
-                    if (bytes != null) {
-                      final isImage = ['jpg', 'jpeg', 'png'].contains(file.extension?.toLowerCase());
-                      final duplicate = _verificationFiles.any((f) => listEquals(f['bytes'], bytes));
-                      if (duplicate) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('This file is already selected')),
-                        );
-                        return;
-                      }
-                      setState(() => _verificationFiles.add({
-                        'name': file.name,
-                        'bytes': bytes,
-                        'isImage': isImage,
-                      }));
-                      onUpdate();  // trigger parent rebuild to enable sign up button
-                    }
-                  }
-                },
-                icon: const Icon(Icons.attach_file),
-                label: const Text('Pick File'),
-              ),
-              const SizedBox(height: 16),
-              if (_verificationFiles.isNotEmpty)
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _verificationFiles.asMap().entries.map((e) {
-                    final idx = e.key;
-                    final file = e.value;
-                    final isImage = file['isImage'] as bool;
-                    return Stack(
-                      alignment: Alignment.topRight,
-                      children: [
-                        Container(
-                          width: 70,
-                          height: 70,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: isImage
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Image.memory(file['bytes'], fit: BoxFit.cover),
-                                )
-                              : Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(Icons.insert_drive_file, size: 24, color: Colors.grey),
-                                    Text(
-                                      file['name'].length > 10 ? '${file['name'].substring(0, 10)}...' : file['name'],
-                                      style: const TextStyle(fontSize: 10, color: Colors.grey),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ],
-                                ),
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade700,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.upload_file,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Upload Verification Documents',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
-                        GestureDetector(
-                          onTap: () => setState(() => _verificationFiles.removeAt(idx)),
-                          child: Container(
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.black54,
-                            ),
-                            padding: const EdgeInsets.all(4),
-                            child: const Icon(Icons.close, size: 14, color: Colors.white),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: StatefulBuilder(
+                    builder: (context, setState) => Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text(
+                          'Please upload clear photos of your ID, business license, or other documents.',
+                          style: TextStyle(fontSize: 14),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            final result = await FilePicker.platform.pickFiles(
+                              type: FileType.custom,
+                              allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'],  
+                              allowMultiple: false,
+                            );
+                            if (result != null && result.files.isNotEmpty) {
+                              final file = result.files.first;
+                              final bytes = file.bytes;
+                              if (bytes != null) {
+                                final isImage = ['jpg', 'jpeg', 'png'].contains(file.extension?.toLowerCase());
+                                final duplicate = _verificationFiles.any((f) => listEquals(f['bytes'], bytes));
+                                if (duplicate) {
+                                  ConTrustSnackBar.warning(context, 'This file is already selected');
+                                  return;
+                                }
+                                setState(() => _verificationFiles.add({
+                                  'name': file.name,
+                                  'bytes': bytes,
+                                  'isImage': isImage,
+                                }));
+                                onUpdate();  // trigger parent rebuild to enable sign up button
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.attach_file),
+                          label: const Text('Pick File'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.amber.shade100,
+                            foregroundColor: Colors.amber.shade900,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
+                        ),
+                        const SizedBox(height: 16),
+                        if (_verificationFiles.isNotEmpty)
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _verificationFiles.asMap().entries.map((e) {
+                              final idx = e.key;
+                              final file = e.value;
+                              final isImage = file['isImage'] as bool;
+                              return Stack(
+                                alignment: Alignment.topRight,
+                                children: [
+                                  Container(
+                                    width: 70,
+                                    height: 70,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: Colors.grey),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: isImage
+                                        ? ClipRRect(
+                                            borderRadius: BorderRadius.circular(8),
+                                            child: Image.memory(file['bytes'], fit: BoxFit.cover),
+                                          )
+                                        : Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              const Icon(Icons.insert_drive_file, size: 24, color: Colors.grey),
+                                              Text(
+                                                file['name'].length > 10 ? '${file['name'].substring(0, 10)}...' : file['name'],
+                                                style: const TextStyle(fontSize: 10, color: Colors.grey),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ],
+                                          ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () => setState(() => _verificationFiles.removeAt(idx)),
+                                    child: Container(
+                                      decoration: const BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.black54,
+                                      ),
+                                      padding: const EdgeInsets.all(4),
+                                      child: const Icon(Icons.close, size: 14, color: Colors.white),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }).toList(),
+                          ),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.amber.shade700,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          child: const Text('Close'),
                         ),
                       ],
-                    );
-                  }).toList(),
+                    ),
+                  ),
                 ),
+              ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
       ),
     );
   }
@@ -504,8 +578,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
+                                color: Colors.amber,
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
                           : const Text(
@@ -594,8 +668,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
+                                color: Colors.amber,
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
                           : const Text(

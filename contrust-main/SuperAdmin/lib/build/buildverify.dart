@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:backend/services/superadmin services/verify_service.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
+import 'package:backend/utils/be_snackbar.dart';
 
 class BuildVerifyMethods {
   static Widget buildVerifyStatisticsCard(BuildContext context, int totalUnverified, VoidCallback? onRefresh) {
@@ -71,7 +72,7 @@ class BuildVerifyMethods {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
+            CircularProgressIndicator(color: Colors.amber),
             SizedBox(height: 16),
             Text('Loading contractors...', style: TextStyle(color: Colors.black)),
           ],
@@ -159,7 +160,7 @@ class BuildVerifyMethods {
   static String _formatDate(String? dateString) {
     if (dateString == null) return 'N/A';
     try {
-      final dateTime = DateTime.parse(dateString);
+      final dateTime = DateTime.parse(dateString).toLocal();
       return '${dateTime.month}/${dateTime.day}/${dateTime.year}';
     } catch (e) {
       return dateString;
@@ -174,7 +175,7 @@ class BuildVerifyMethods {
       future: VerifyService().getVerificationDocs(contractorId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator(color: Colors.amber));
         }
         if (snapshot.hasError) {
           return Center(
@@ -276,7 +277,7 @@ class BuildVerifyMethods {
                                 fit: BoxFit.cover,
                                 loadingBuilder: (context, child, loadingProgress) {
                                   if (loadingProgress == null) return child;
-                                  return const Center(child: CircularProgressIndicator());
+                                  return const Center(child: CircularProgressIndicator(color: Colors.amber));
                                 },
                                 errorBuilder: (context, error, stackTrace) {
                                   return Container(
@@ -358,22 +359,12 @@ class BuildVerifyMethods {
                       try {
                         await VerifyService().verifyContractor(contractorId, true);
                         if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Contractor approved successfully!'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
+                          ConTrustSnackBar.success(context, 'Contractor approved successfully!');
                           Navigator.pop(context);
                         }
                       } catch (e) {
                         if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Error approving contractor: $e'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
+                          ConTrustSnackBar.error(context, 'Error approving contractor: $e');
                         }
                       }
                     },
@@ -415,22 +406,12 @@ class BuildVerifyMethods {
                         try {
                           await VerifyService().verifyContractor(contractorId, false);
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Contractor rejected'),
-                                backgroundColor: Colors.orange,
-                              ),
-                            );
+                            ConTrustSnackBar.warning(context, 'Contractor rejected');
                             Navigator.pop(context);
                           }
                         } catch (e) {
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Error rejecting contractor: $e'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
+                            ConTrustSnackBar.error(context, 'Error rejecting contractor: $e');
                           }
                         }
                       }

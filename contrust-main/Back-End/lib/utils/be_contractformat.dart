@@ -17,7 +17,7 @@ class ContractStyle {
   String formatTimestamp(String? timestamp) {
     if (timestamp == null) return 'N/A';
     try {
-      final dateTime = DateTime.parse(timestamp);
+      final dateTime = DateTime.parse(timestamp).toLocal();
       return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} '
              '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     } catch (e) {
@@ -28,7 +28,7 @@ class ContractStyle {
    static String formatDate(String? dateString) {
     if (dateString == null) return 'N/A';
     try {
-      final dateTime = DateTime.parse(dateString);
+      final dateTime = DateTime.parse(dateString).toLocal();
       return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';
     } catch (e) {
       return dateString;
@@ -197,5 +197,4 @@ class ContractStyle {
     }
     return sum;
   }
-
 }

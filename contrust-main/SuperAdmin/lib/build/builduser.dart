@@ -283,7 +283,7 @@ class UserTableState extends State<UserTable> with SingleTickerProviderStateMixi
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
+            CircularProgressIndicator(color: Colors.amber),
             SizedBox(height: 16),
             Text('Loading users...', style: TextStyle(color: Colors.black)),
           ],

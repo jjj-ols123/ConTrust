@@ -829,19 +829,101 @@ class ProductBuildMethods {
                                           onDelete: () async {
                                             final confirmed = await showDialog<bool>(
                                               context: context,
-                                              builder: (context) => AlertDialog(
-                                                title: const Text('Delete Material'),
-                                                content: const Text('Are you sure you want to delete this material?'),
-                                                actions: [
-                                                  TextButton(
-                                                    onPressed: () => Navigator.pop(context, false),
-                                                    child: const Text('Cancel'),
+                                              builder: (context) => Dialog(
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                                child: Container(
+                                                  constraints: const BoxConstraints(maxWidth: 400),
+                                                  decoration: BoxDecoration(
+                                                    borderRadius: BorderRadius.circular(20),
+                                                    gradient: LinearGradient(
+                                                      begin: Alignment.topLeft,
+                                                      end: Alignment.bottomRight,
+                                                      colors: [Colors.white, Colors.grey.shade50],
+                                                    ),
                                                   ),
-                                                  TextButton(
-                                                    onPressed: () => Navigator.pop(context, true),
-                                                    child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                                  child: Column(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Container(
+                                                        padding: const EdgeInsets.all(24),
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.red.shade700,
+                                                          borderRadius: const BorderRadius.only(
+                                                            topLeft: Radius.circular(20),
+                                                            topRight: Radius.circular(20),
+                                                          ),
+                                                        ),
+                                                        child: Row(
+                                                          children: [
+                                                            Container(
+                                                              padding: const EdgeInsets.all(8),
+                                                              decoration: BoxDecoration(
+                                                                color: Colors.white.withOpacity(0.2),
+                                                                borderRadius: BorderRadius.circular(8),
+                                                              ),
+                                                              child: const Icon(
+                                                                Icons.delete,
+                                                                color: Colors.white,
+                                                                size: 20,
+                                                              ),
+                                                            ),
+                                                            const SizedBox(width: 12),
+                                                            const Expanded(
+                                                              child: Text(
+                                                                'Delete Material',
+                                                                style: TextStyle(
+                                                                  color: Colors.white,
+                                                                  fontSize: 18,
+                                                                  fontWeight: FontWeight.bold,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                            IconButton(
+                                                              onPressed: () => Navigator.pop(context, false),
+                                                              icon: const Icon(Icons.close, color: Colors.white),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      Padding(
+                                                        padding: const EdgeInsets.all(24),
+                                                        child: Column(
+                                                          mainAxisSize: MainAxisSize.min,
+                                                          children: [
+                                                            const Text(
+                                                              'Are you sure you want to delete this material?',
+                                                              style: TextStyle(fontSize: 14),
+                                                              textAlign: TextAlign.center,
+                                                            ),
+                                                            const SizedBox(height: 24),
+                                                            Row(
+                                                              children: [
+                                                                Expanded(
+                                                                  child: TextButton(
+                                                                    onPressed: () => Navigator.pop(context, false),
+                                                                    child: const Text('Cancel'),
+                                                                  ),
+                                                                ),
+                                                                const SizedBox(width: 12),
+                                                                Expanded(
+                                                                  child: ElevatedButton(
+                                                                    onPressed: () => Navigator.pop(context, true),
+                                                                    style: ElevatedButton.styleFrom(
+                                                                      backgroundColor: Colors.red[600],
+                                                                      foregroundColor: Colors.white,
+                                                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                                                    ),
+                                                                    child: const Text('Delete'),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
-                                                ],
+                                                ),
                                               ),
                                             );
 
@@ -1490,9 +1572,7 @@ class _MaterialInputDialogState extends State<MaterialInputDialog> {
                                     height: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white,
-                                      ),
+                                      color: Colors.amber,
                                     ),
                                   )
                                 : Text(

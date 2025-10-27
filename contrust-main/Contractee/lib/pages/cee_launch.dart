@@ -44,7 +44,7 @@ class _LaunchPageState extends State<LaunchPage> {
             ),
             const SizedBox(height: 20),
             const CircularProgressIndicator(
-              color: Colors.black,
+              color: Colors.amber,
               strokeWidth: 2,
             ),
           ],

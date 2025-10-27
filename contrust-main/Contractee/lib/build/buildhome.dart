@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'package:backend/models/be_UIapp.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -305,13 +306,7 @@ class HomePageBuilder {
         onTap: isPlaceholder ? null : () {
           final projectStatus = project['status']?.toString().toLowerCase();
           if (projectStatus != 'active') {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Project is not active yet. Current status: ${projectStatus ?? 'Unknown'}'),
-                backgroundColor: Colors.orange,
-                duration: const Duration(seconds: 3),
-              ),
-            );
+            ConTrustSnackBar.warning(context, 'Project is not active yet. Current status: ${projectStatus ?? 'Unknown'}');
             return;
           }
         },
@@ -476,7 +471,7 @@ class HomePageBuilder {
           SizedBox(
             height: 280,
             child: isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(child: CircularProgressIndicator(color: Colors.amber))
                 : filteredContractors.isEmpty
                     ? buildNoContractorsPlaceholder(searchController)
                     : ListView.builder(

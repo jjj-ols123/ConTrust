@@ -2,6 +2,7 @@
 import 'package:backend/build/buildmessagesdesign.dart';
 import 'package:backend/build/buildmessage.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -145,7 +146,7 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
                 height: 40,
                 child: CircularProgressIndicator(
                   strokeWidth: 3,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.amber[700]!),
+                  color: Colors.amber,
                 ),
               ),
               const SizedBox(height: 16),
@@ -226,7 +227,7 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
                 future: _projectStatus,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Center(child: CircularProgressIndicator(color: Colors.amber));
                   } else if (snapshot.hasError) {
                     return Center(child: Text('Error loading status'));
                   } else {
@@ -237,9 +238,7 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
                         chatRoomId: widget.chatRoomId,
                         userRole: 'contractee', 
                         onActiveProjectPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Navigate to Ongoing Projects')),
-                          );
+                          ConTrustSnackBar.info(context, 'Navigate to Ongoing Projects');
                         },
                       );
                     }

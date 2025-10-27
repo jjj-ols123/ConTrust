@@ -32,7 +32,7 @@ class _ContracteeNotificationPageState
   Widget build(BuildContext context) {
     if (contracteeId == null) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(child: CircularProgressIndicator(color: Colors.amber)),
       );
     }
 

@@ -31,7 +31,7 @@ class _ContractorNotificationPageState
   @override
   Widget build(BuildContext context) {
     if (contractorId == null) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator(color: Colors.amber));
     }
 
     final notificationUIBuilder = NotificationUIBuildMethods(

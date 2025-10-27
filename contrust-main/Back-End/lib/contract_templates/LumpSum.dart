@@ -176,6 +176,31 @@ class LumpSumContract extends StatelessWidget {
             ),
           ),
 
+          const SizedBox(height: 20),
+          const Text(
+            '1.2 Payment Schedule:',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+
+          ContractStyle.bulletList([
+            ContractStyle.textResolver != null 
+                ? 'Down Payment: ${ContractStyle.textResolver!('[Payment.DownPaymentPercentage]')}% of total contract price - Due upon contract signing'
+                : 'Down Payment: [Payment.DownPaymentPercentage]% of total contract price - Due upon contract signing',
+            ContractStyle.textResolver != null 
+                ? 'Final Payment: PHP${ContractStyle.textResolver!('[Payment.FinalPayment]')} - Due upon final completion and acceptance'
+                : 'Final Payment: PHP[Payment.FinalPayment] - Due upon final completion and acceptance',
+            ContractStyle.textResolver != null 
+                ? 'Retention: ${ContractStyle.textResolver!('[Payment.RetentionPercentage]')}% - Released after ${ContractStyle.textResolver!('[Payment.RetentionPeriod]')} days from completion'
+                : 'Retention: [Payment.RetentionPercentage]% - Released after [Payment.RetentionPeriod] days from completion',
+            ContractStyle.textResolver != null 
+                ? 'Payment Terms: Net ${ContractStyle.textResolver!('[Payment.DueDays]')} days from invoice date'
+                : 'Payment Terms: Net [Payment.DueDays] days from invoice date',
+            ContractStyle.textResolver != null 
+                ? 'Late Payment Fee: ${ContractStyle.textResolver!('[Payment.LateFeePercentage]')}% per month on overdue amounts'
+                : 'Late Payment Fee: [Payment.LateFeePercentage]% per month on overdue amounts',
+          ]),
+
           const SizedBox(height: 24),
           ContractStyle.sectionTitle('2. Obligations and Responsibilities'),
           const SizedBox(height: 12),

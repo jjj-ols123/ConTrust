@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:backend/utils/be_contractformat.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 
@@ -340,7 +341,7 @@ class ErrorLogsTableState extends State<ErrorLogsTable> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
+            CircularProgressIndicator(color: Colors.amber),
             SizedBox(height: 16),
             Text('Loading error logs...', style: TextStyle(color: Colors.black)),
           ],
@@ -459,9 +460,7 @@ class ErrorLogsTableState extends State<ErrorLogsTable> {
                                                     });
                                                     await _refreshErrorStatistics();
                                                   } catch (e) {
-                                                    ScaffoldMessenger.of(context).showSnackBar(
-                                                      SnackBar(content: Text('Failed to update resolved status: ')),
-                                                    );
+                                                    ConTrustSnackBar.error(context, 'Failed to update resolved status');
                                                   }
                                                 },
                                                 activeColor: Colors.green,
