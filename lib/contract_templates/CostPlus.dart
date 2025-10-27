@@ -166,43 +166,17 @@ class CostPlusContract extends StatelessWidget {
             'Overhead and Profit Fee: [Overhead.Percentage]% of total project costs',
           ]),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           ContractStyle.sectionTitle('1.2 Payment Terms:'),
           const SizedBox(height: 8),
 
-          Text(
-            ContractStyle.textResolver != null 
-                ? 'Total Estimated: PHP ${ContractStyle.textResolver!('[Estimated.Total]')}' 
-                : 'Total Estimated: PHP [Estimated.Total]',
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)
-          ),
-          const SizedBox(height: 12),
-          const Text('Payment Terms:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text(
-            ContractStyle.textResolver != null 
-                ? '• Payment Interval: ${ContractStyle.textResolver!('[Payment.Interval]')}' 
-                : '• Payment Interval: [Payment.Interval]',
-            style: const TextStyle(fontSize: 11)
-          ),
-          Text(
-            ContractStyle.textResolver != null 
-                ? '• Retention Fee: PHP ${ContractStyle.textResolver!('[Retention.Fee]')}' 
-                : '• Retention Fee: PHP [Retention.Fee]',
-            style: const TextStyle(fontSize: 11)
-          ),
-          Text(
-            ContractStyle.textResolver != null 
-                ? '• Late Payment Fee: ${ContractStyle.textResolver!('[Late.Fee.Percentage]')}% per month' 
-                : '• Late Payment Fee: [Late.Fee.Percentage]% per month',
-            style: const TextStyle(fontSize: 11)
-          ),
-          Text(
-            ContractStyle.textResolver != null 
-                ? '• Payment Due: ${ContractStyle.textResolver!('[Payment.DueDays]')} days from invoice' 
-                : '• Payment Due: [Payment.DueDays] days from invoice',
-            style: const TextStyle(fontSize: 11)
-          ),
+          ContractStyle.bulletList([
+            'Total Estimated Project Cost: PHP [Estimated.Total]',
+            'Payment Interval: [Payment.Interval] (weekly/bi-weekly/monthly)',
+            'Retention Fee: PHP [Retention.Fee] (held until project completion)',
+            'Late Payment Fee: [Late.Fee.Percentage]% per month on overdue amounts',
+            'Payment Due: [Payment.DueDays] days from invoice date',
+          ]),
 
           const SizedBox(height: 20),
           ContractStyle.sectionTitle('2. Obligations and Responsibilities'),
@@ -288,7 +262,7 @@ class CostPlusContract extends StatelessWidget {
           const SizedBox(height: 12),
           ContractStyle.sectionTitle('No Damages to the Contractor for Delay:'),
           ContractStyle.paragraph(
-              'The Contractor acknowledges and agrees that, except for the extension of time for completing the Work as provided herein, the Contractor shall not be entitled to any additional compensation, damages, or claims for any delays or interruptions in the progress of the Work.'),
+              'The Contractor acknowledges and agrees that, except for the extension of time for completing the Work as provided herein, the Contractor shall not be entitled to any additional compensation, damages, or claims for any delays or interruptions in the progress of the Work, regardless of the cause of such delays. The Contractor further waives any right to recover consequential damages, lost profits, or any other indirect damages arising from any delay.'),
 
           const SizedBox(height: 20),
           ContractStyle.sectionTitle('5. Insurance and Bonds'),
@@ -296,12 +270,16 @@ class CostPlusContract extends StatelessWidget {
 
           ContractStyle.sectionTitle('Contractor\'s Insurance:'),
           ContractStyle.paragraph(
-              'The Contractor shall, at its own expense, procure and maintain insurance coverage during the term of this Agreement, in accordance with industry standards and with limits of liability as specified herein.'),
+              'The Contractor shall, at its own expense, procure and maintain insurance coverage during the term of this Agreement, in accordance with industry standards and with limits of liability as specified herein, and shall provide evidence of such insurance to the Contractee prior to commencing any work under this Contract. Such insurance shall include, but not be limited to:'),
 
           const SizedBox(height: 12),
           ContractStyle.sectionTitle('Performance and Payment Bonds'),
           ContractStyle.paragraph(
-            'The Contractor shall furnish to the Contractee, within [Bond.TimeFrame] days, performance and payment bonds executed by a surety company licensed to do business in the jurisdiction where the project is located. The performance bond shall be in an amount not less than PHP [Bond.PerformanceAmount] and the payment bond shall be in an amount not less than PHP [Bond.PaymentAmount].'),
+            'The Contractor shall furnish to the Contractee, within [Bond.TimeFrame] days, performance and payment bonds executed by a surety company licensed to do business in the jurisdiction where the project is located. The performance bond shall be in an amount not less than PHP [Bond.PerformanceAmount] and shall guarantee the faithful performance of all Work under this Agreement.'),
+
+          const SizedBox(height: 12),
+          ContractStyle.paragraph(
+            'The payment bond shall be in an amount not less than PHP [Bond.PaymentAmount] and shall guarantee the payment to all subcontractors, laborers, and material suppliers for labor and materials furnished in connection with this Contract. The Contractor shall maintain these bonds in full force and effect throughout the duration of the project.'),
 
           const SizedBox(height: 20),
           ContractStyle.sectionTitle('6. Change Orders and Modifications'),

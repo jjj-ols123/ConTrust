@@ -329,26 +329,43 @@ class LumpSumContract extends StatelessWidget {
               '6.2. Change Order Pricing: Labor rates for change orders shall be PHP [Change.LaborRate] per hour. Materials shall be charged at cost plus [Change.MaterialMarkup]% markup. Equipment charges shall be at cost plus [Change.EquipmentMarkup]% markup.'),
 
           const SizedBox(height: 20),
-          ContractStyle.sectionTitle('7. Termination and Warranties'),
+          ContractStyle.sectionTitle('7. Delays and Extensions of Time'),
           const SizedBox(height: 12),
 
+          ContractStyle.sectionTitle('Procedures for Time Extensions:'),
           ContractStyle.paragraph(
-              '7.1. Either party may terminate this contract with [Notice.Period] days written notice. Upon termination, Contractor shall be compensated for all work completed and accepted by the Contractee up to the termination date.'),
+              'In the event that the Contractor is delayed in the progress of the Work for reasons beyond the Contractor\'s control, including but not limited to acts of God, strikes, material shortages, changes in the Work ordered by the Contractee, or other excusable delays, the Contractor shall promptly notify the Contractee in writing of the cause of the delay. The Contractee shall have the right to grant or deny time extensions, at the Contractee\'s sole discretion, for any delays that are found to be excusable.'),
 
           const SizedBox(height: 12),
+          ContractStyle.sectionTitle('Liquidated Damages:'),
           ContractStyle.paragraph(
-              '7.2. Contractor provides a [Warranty.Period] months warranty on workmanship and materials from the date of project completion. This warranty covers defects in materials and workmanship under normal use and conditions.'),
-
-          const SizedBox(height: 12),
-          ContractStyle.paragraph(
-              '7.3. Any disputes arising from this contract shall be resolved through mediation first, and if unsuccessful, through arbitration under Philippine law. All legal proceedings shall be conducted in the courts of [Contractor.Province], Republic of the Philippines.'),
+              'If the Contractor fails to complete the Work by the agreed completion date, and such delay is not excusable under the terms of this Contract, the Contractor shall pay liquidated damages in the amount of PHP[Penalty.DailyAmount] per calendar day for each day of delay. These liquidated damages represent a reasonable estimate of the damages that the Contractee will suffer as a result of delayed completion.'),
 
           const SizedBox(height: 20),
-          ContractStyle.sectionTitle('8. Governing Law'),
+          ContractStyle.sectionTitle('8. Termination and Disputes'),
           const SizedBox(height: 12),
 
           ContractStyle.paragraph(
-              'This Contract shall be governed by and construed in accordance with the laws of the Republic of the Philippines, without regard to its conflict of law principles.'),
+              '8.1. Either party may terminate this contract with [Notice.Period] days written notice. Upon termination, Contractor shall be compensated for all work completed and accepted by the Contractee up to the termination date, less any amounts previously paid.'),
+
+          const SizedBox(height: 12),
+          ContractStyle.paragraph(
+              '8.2. Contractor provides a [Warranty.Period] months warranty on workmanship and materials from the date of project completion. This warranty covers defects in materials and workmanship under normal use and conditions.'),
+
+          const SizedBox(height: 12),
+          ContractStyle.paragraph(
+              '8.3. Any disputes arising from this contract shall be resolved through mediation first, and if unsuccessful, through arbitration under Philippine law. All legal proceedings shall be conducted in the courts of [Contractor.Province], Republic of the Philippines.'),
+
+          const SizedBox(height: 20),
+          ContractStyle.sectionTitle('9. Governing Law'),
+          const SizedBox(height: 12),
+
+          ContractStyle.paragraph(
+              'This Contract shall be governed by and construed in accordance with the laws of the Republic of the Philippines, without regard to its conflict of law principles. Any legal action or proceeding arising under or in connection with this Contract shall be brought exclusively in the state or federal courts located within the Republic of the Philippines, and the parties hereby consent to the personal jurisdiction and venue of these courts.'),
+
+          const SizedBox(height: 12),
+          ContractStyle.paragraph(
+              'The prevailing party in any such legal action or proceeding shall be entitled to recover its reasonable attorneys\' fees and costs incurred in connection with such action or proceeding.'),
 
           const SizedBox(height: 30),
           const Center(
