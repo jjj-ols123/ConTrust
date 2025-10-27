@@ -583,6 +583,7 @@ class BiddingUIBuildMethods {
               bidController.clear();
               messageController.clear();
               onProjectSelected(null);
+              onRefresh();
             },
             child: const Text(
               'Submit Bid',

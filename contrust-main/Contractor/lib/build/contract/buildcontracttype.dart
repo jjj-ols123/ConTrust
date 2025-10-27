@@ -105,7 +105,7 @@ class ContractTypeBuild {
     required VoidCallback onRefreshContracts,
   }) {
     final templateName = template['template_name'] ?? '';
-    final isUploadOption = templateName.toLowerCase().contains('upload') || templateName.toLowerCase().contains('custom');  // More flexible check
+    final isUploadOption = templateName.toLowerCase().contains('upload') || templateName.toLowerCase().contains('custom'); 
 
     return Material(
       color: Colors.transparent,
@@ -119,11 +119,14 @@ class ContractTypeBuild {
               onRefreshContracts: onRefreshContracts,
             );
           } else {
-            await ContractTypeService.navigateToCreateContract(
+            final result = await ContractTypeService.navigateToCreateContract(
               context: context,
               template: template,
               contractorId: contractorId,
             );
+            if (result == true) {
+              onRefreshContracts();
+            }
           }
         },
         child: Container(
@@ -299,23 +302,21 @@ class ContractTypeBuild {
     required String contractorId,
     required VoidCallback onRefreshContracts,
   }) async {
-    XFile? selectedFile;
-    String title = '';
-    String? selectedProjectId;
-    List<Map<String, dynamic>> projects = [];
-    bool isLoading = false;
-
     final fetchService = FetchService();
-    projects = await fetchService.fetchContractorProjectInfo(contractorId);
-    projects = projects.where((p) => 
-      p['status'] == 'awaiting_contract' && 
-      p['status'] != 'cancelled' && 
-      p['status'] != 'cancellation_requested_by_contractee'
-    ).toList();
+    final projects = await fetchService.fetchContractorProjectInfo(contractorId);
+    final filteredProjects = projects.where((p) {
+      final status = p['status'] as String?;
+      return status == 'awaiting_contract' || status == 'awaiting_agreement';
+    }).toList();
 
     await showDialog(
       context: context,
       builder: (dialogContext) {
+        XFile? selectedFile;
+        String title = '';
+        String? selectedProjectId;
+        bool isLoading = false;
+
         return StatefulBuilder(
           builder: (context, setState) {
             Future<void> pickFile() async {
@@ -406,11 +407,15 @@ class ContractTypeBuild {
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(labelText: 'Select Project'),
                       value: selectedProjectId,
-                      items: projects.map<DropdownMenuItem<String>>((p) => DropdownMenuItem<String>(
+                      items: filteredProjects.map<DropdownMenuItem<String>>((p) => DropdownMenuItem<String>(
                         value: p['project_id'] as String,
                         child: Text(p['title'] ?? 'Project'),
                       )).toList(),
-                      onChanged: (value) => setState(() => selectedProjectId = value),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedProjectId = value;
+                        });
+                      },
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(

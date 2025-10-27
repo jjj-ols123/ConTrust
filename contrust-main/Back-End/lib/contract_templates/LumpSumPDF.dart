@@ -179,15 +179,6 @@ class LumpSumPDF {
         ),
       ),
     );
-    widgets.add(pw.SizedBox(height: 8));
-
-    widgets.add(
-      pw.Text(
-        '(In words: ${ContractStyle.getFieldValue(fieldValues, 'Payment.TotalInWords')} Pesos)',
-        style: const pw.TextStyle(fontSize: 11),
-        textAlign: pw.TextAlign.center,
-      ),
-    );
     widgets.add(pw.SizedBox(height: 16));
 
     widgets.add(
@@ -201,12 +192,6 @@ class LumpSumPDF {
     widgets.add(
       pw.Bullet(
         text: 'Down Payment: PHP${ContractStyle.getFieldValue(fieldValues, 'Payment.DownPayment')} (${ContractStyle.getFieldValue(fieldValues, 'Payment.DownPaymentPercentage')}% of total contract price) - Due upon contract signing',
-        style: const pw.TextStyle(fontSize: 10),
-      ),
-    );
-    widgets.add(
-      pw.Bullet(
-        text: 'Progress Payments: PHP${ContractStyle.getFieldValue(fieldValues, 'Payment.ProgressPayments')} - To be paid based on percentage of work completed',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
@@ -232,144 +217,6 @@ class LumpSumPDF {
       pw.Bullet(
         text: 'Late Payment Fee: ${ContractStyle.getFieldValue(fieldValues, 'Payment.LateFeePercentage')}% per month on overdue amounts',
         style: const pw.TextStyle(fontSize: 10),
-      ),
-    );
-    widgets.add(pw.SizedBox(height: 20));
-
-    widgets.add(
-      pw.Text(
-        'Detailed Payment Schedule:',
-        style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
-      ),
-    );
-    widgets.add(pw.SizedBox(height: 8));
-
-    widgets.add(
-      pw.Table(
-        border: pw.TableBorder.all(color: PdfColors.grey400),
-        children: [
-          pw.TableRow(
-            decoration: const pw.BoxDecoration(color: PdfColors.grey200),
-            children: [
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('Payment Milestone', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('Percentage', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('Amount (PHP)', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('Due Date', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
-              ),
-            ],
-          ),
-          pw.TableRow(
-            children: [
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('Contract Signing', style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('${ContractStyle.getFieldValue(fieldValues, 'Payment.DownPaymentPercentage')}%', style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text(ContractStyle.getFieldValue(fieldValues, 'Payment.DownPayment'), style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('Upon signing', style: const pw.TextStyle(fontSize: 9)),
-              ),
-            ],
-          ),
-          pw.TableRow(
-            children: [
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('Foundation Complete', style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('25%', style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text(_calculatePercentage(fieldValues, 25), style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('As completed', style: const pw.TextStyle(fontSize: 9)),
-              ),
-            ],
-          ),
-          pw.TableRow(
-            children: [
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('Framing/Roofing', style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('25%', style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text(_calculatePercentage(fieldValues, 25), style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('As completed', style: const pw.TextStyle(fontSize: 9)),
-              ),
-            ],
-          ),
-          pw.TableRow(
-            children: [
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('Rough-in Complete', style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('20%', style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text(_calculatePercentage(fieldValues, 20), style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('As completed', style: const pw.TextStyle(fontSize: 9)),
-              ),
-            ],
-          ),
-          pw.TableRow(
-            children: [
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('Final Completion', style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('Balance', style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text(ContractStyle.getFieldValue(fieldValues, 'Payment.FinalPayment'), style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('Upon completion', style: const pw.TextStyle(fontSize: 9)),
-              ),
-            ],
-          ),
-        ],
       ),
     );
     widgets.add(pw.SizedBox(height: 20));
@@ -548,7 +395,7 @@ class LumpSumPDF {
     );
     widgets.add(
       pw.Bullet(
-        text: 'Working Days: Monday through ${ContractStyle.getFieldValue(fieldValues, 'Project.WorkingDays')}',
+        text: 'Working Days: ${ContractStyle.getFieldValue(fieldValues, 'Project.WorkingDays')}',
         style: const pw.TextStyle(fontSize: 10),
       ),
     );
@@ -567,113 +414,65 @@ class LumpSumPDF {
       ),
     );
     widgets.add(pw.SizedBox(height: 8));
+    List<pw.TableRow> milestoneRows = [
+      pw.TableRow(
+        decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+        children: [
+          pw.Padding(
+            padding: const pw.EdgeInsets.all(8),
+            child: pw.Text('#', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+          ),
+          pw.Padding(
+            padding: const pw.EdgeInsets.all(8),
+            child: pw.Text('Description', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+          ),
+          pw.Padding(
+            padding: const pw.EdgeInsets.all(8),
+            child: pw.Text('Duration', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+          ),
+          pw.Padding(
+            padding: const pw.EdgeInsets.all(8),
+            child: pw.Text('Target Date', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+          ),
+        ],
+      ),
+    ];
+
+    for (int i = 1; i <= 10; i++) {
+      String description = ContractStyle.getFieldValue(fieldValues, 'Milestone.$i.Description');
+      String duration = ContractStyle.getFieldValue(fieldValues, 'Milestone.$i.Duration');
+      String date = ContractStyle.getFieldValue(fieldValues, 'Milestone.$i.Date');
+      
+      if (description != '____________' || duration != '____________') {
+        milestoneRows.add(
+          pw.TableRow(
+            children: [
+              pw.Padding(
+                padding: const pw.EdgeInsets.all(8),
+                child: pw.Text('$i', style: const pw.TextStyle(fontSize: 9)),
+              ),
+              pw.Padding(
+                padding: const pw.EdgeInsets.all(8),
+                child: pw.Text(description, style: const pw.TextStyle(fontSize: 9)),
+              ),
+              pw.Padding(
+                padding: const pw.EdgeInsets.all(8),
+                child: pw.Text(duration != '____________' ? '$duration days' : '____________', style: const pw.TextStyle(fontSize: 9)),
+              ),
+              pw.Padding(
+                padding: const pw.EdgeInsets.all(8),
+                child: pw.Text(date, style: const pw.TextStyle(fontSize: 9)),
+              ),
+            ],
+          ),
+        );
+      }
+    }
 
     widgets.add(
       pw.Table(
         border: pw.TableBorder.all(color: PdfColors.grey400),
-        children: [
-          pw.TableRow(
-            decoration: const pw.BoxDecoration(color: PdfColors.grey200),
-            children: [
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('Phase', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('Description', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('Duration', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('Target Date', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
-              ),
-            ],
-          ),
-          pw.TableRow(
-            children: [
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('1', style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('Site Preparation & Foundation', style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('${ContractStyle.getFieldValue(fieldValues, 'Milestone.Phase1Duration')} days', style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text(ContractStyle.getFieldValue(fieldValues, 'Milestone.Phase1Date'), style: const pw.TextStyle(fontSize: 9)),
-              ),
-            ],
-          ),
-          pw.TableRow(
-            children: [
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('2', style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('Framing & Roofing', style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('${ContractStyle.getFieldValue(fieldValues, 'Milestone.Phase2Duration')} days', style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text(ContractStyle.getFieldValue(fieldValues, 'Milestone.Phase2Date'), style: const pw.TextStyle(fontSize: 9)),
-              ),
-            ],
-          ),
-          pw.TableRow(
-            children: [
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('3', style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('Mechanical & Electrical', style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('${ContractStyle.getFieldValue(fieldValues, 'Milestone.Phase3Duration')} days', style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text(ContractStyle.getFieldValue(fieldValues, 'Milestone.Phase3Date'), style: const pw.TextStyle(fontSize: 9)),
-              ),
-            ],
-          ),
-          pw.TableRow(
-            children: [
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('4', style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('Finishing & Final Inspection', style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text('${ContractStyle.getFieldValue(fieldValues, 'Milestone.Phase4Duration')} days', style: const pw.TextStyle(fontSize: 9)),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(8),
-                child: pw.Text(ContractStyle.getFieldValue(fieldValues, 'Milestone.Phase4Date'), style: const pw.TextStyle(fontSize: 9)),
-              ),
-            ],
-          ),
-        ],
+        children: milestoneRows,
       ),
     );
     widgets.add(pw.SizedBox(height: 20));
@@ -963,16 +762,5 @@ class LumpSumPDF {
     widgets.add(pw.SizedBox(height: 30));
 
     return widgets;
-  }
-
-  static String _calculatePercentage(Map<String, String> fieldValues, int percentage) {
-    try {
-      String totalStr = ContractStyle.getFieldValue(fieldValues, 'Payment.Total');
-      double total = double.parse(totalStr.replaceAll(',', ''));
-      double result = (total * percentage) / 100;
-      return result.toStringAsFixed(2);
-    } catch (e) {
-      return '0.00';
-    }
   }
 }

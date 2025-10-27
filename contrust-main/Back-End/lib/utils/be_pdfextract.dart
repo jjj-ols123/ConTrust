@@ -3,22 +3,56 @@ class PdfExtractUtils {
     final name = (templateName).toLowerCase();
     if (name.contains('lump') && name.contains('sum')) {
       return '''This Lump Sum Construction Contract is entered into on [Contract.CreationDate] between [Contractee.FirstName] [Contractee.LastName] (Contractee) and [Contractor.Company] (Contractor).
-                Project: [Project.Description]
+                
+                CONTRACTEE: [Contractee.FirstName] [Contractee.LastName]
+                Address: [Contractee.Address]
+                Phone: [Contractee.Phone]
+                Email: [Contractee.Email]
+                
+                CONTRACTOR: [Contractor.Company]
+                Name: [Contractor.FirstName] [Contractor.LastName]
+                Address: [Contractor.Address]
+                Phone: [Contractor.Phone]
+                Email: [Contractor.Email]
+                Province: [Contractor.Province]
+                
+                PROJECT:
+                Description: [Project.Description]
                 Site Address: [Project.Address]
                 Start Date: [Project.StartDate]
                 Completion Date: [Project.CompletionDate]
                 Duration (days): [Project.Duration]
+                Working Days: [Project.WorkingDays]
+                Working Hours: [Project.WorkingHours]
 
-                Contract Price (₱): [Project.ContractPrice]
-                Payment Method: [Payment.Method]
-                Down Payment (%): [Payment.DownPaymentPercentage]
-                Progress Payment 1 (%): [Payment.ProgressPayment1Percentage] at [Payment.Milestone1]
-                Progress Payment 2 (%): [Payment.ProgressPayment2Percentage] at [Payment.Milestone2]
-                Final Payment (%): [Payment.FinalPaymentPercentage]
-
-                Minimum Insurance Amount (₱): [Insurance.MinimumAmount]
-                Inspection Period (days): [Inspection.PeriodDays]
-                Jurisdiction: [Contractor.Province]
+                PAYMENT:
+                Total Contract Price (₱): [Payment.Total]
+                Down Payment (₱): [Payment.DownPayment]
+                Final Payment (₱): [Payment.FinalPayment]
+                Retention (%): [Payment.RetentionPercentage]
+                Retention Amount (₱): [Payment.RetentionAmount]
+                Retention Period (days): [Payment.RetentionPeriod]
+                Payment Due Days: [Payment.DueDays]
+                Late Fee (%): [Payment.LateFeePercentage]
+                
+                MILESTONES:
+                Milestone 1: [Milestone.1.Description] — [Milestone.1.Duration] days — Target: [Milestone.1.Date]
+                Milestone 2: [Milestone.2.Description] — [Milestone.2.Duration] days — Target: [Milestone.2.Date]
+                Milestone 3: [Milestone.3.Description] — [Milestone.3.Duration] days — Target: [Milestone.3.Date]
+                Milestone 4: [Milestone.4.Description] — [Milestone.4.Duration] days — Target: [Milestone.4.Date]
+                
+                BONDS:
+                Bond Timeframe (days): [Bond.TimeFrame]
+                Performance Bond (₱): [Bond.PerformanceAmount]
+                Payment Bond (₱): [Bond.PaymentAmount]
+                
+                CHANGE ORDERS:
+                Labor Rate (₱/hr): [Change.LaborRate]
+                Material Markup (%): [Change.MaterialMarkup]
+                Equipment Markup (%): [Change.EquipmentMarkup]
+                
+                Notice Period (days): [Notice.Period]
+                Warranty Period (months): [Warranty.Period]
                 ''';
     } else if ((name.contains('cost') && name.contains('plus')) ||
         name.contains('cost-plus')) {

@@ -38,20 +38,28 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
   bool _canSend = false;
   String? _contracteeName;
   String? _contracteeProfile;
+  bool _isLoading = true;
 
   late Future<String?> _projectStatus;
 
   @override
   void initState() {
     super.initState();
-    setState(() {
-      _projectStatus = FetchService().fetchProjectStatus(widget.chatRoomId);
-    });
-    _loadContracteeData();
+    _initializeData();
     _messageController.addListener(() {
       setState(() {
         _canSend = _messageController.text.trim().isNotEmpty;
       });
+    });
+  }
+  
+  Future<void> _initializeData() async {
+    setState(() {
+      _projectStatus = FetchService().fetchProjectStatus(widget.chatRoomId);
+    });
+    await _loadContracteeData();
+    setState(() {
+      _isLoading = false;
     });
   }
 
@@ -531,6 +539,57 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: Colors.grey[100],
+        appBar: AppBar(
+          backgroundColor: Colors.amber,
+          foregroundColor: Colors.white,
+          title: Row(
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: Colors.white,
+                child: Icon(Icons.person, color: Colors.amber, size: 20),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Loading...',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 40,
+                height: 40,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Loading conversation...',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
     final messageUIBuilder = MessageUIBuildMethods(
       context: context,
       supabase: supabase,

@@ -48,10 +48,10 @@ class CreateContractService {
     }
   }
 
-  List<ContractField> getContractTypeSpecificFields(String contractType, {int itemCount = 3}) {
+  List<ContractField> getContractTypeSpecificFields(String contractType, {int itemCount = 3, int milestoneCount = 4}) {
     try {
       final normalizedType = contractType.toLowerCase();
-      return getTemplateSpecificFields(normalizedType, itemCount: itemCount);
+      return getTemplateSpecificFields(normalizedType, itemCount: itemCount, milestoneCount: milestoneCount);
     } catch (e) {
       _errorService.logError(
         errorMessage: 'Failed to get contract type specific fields:',
@@ -66,10 +66,10 @@ class CreateContractService {
     }
   }
 
-  List<ContractField> getTemplateSpecificFields(String contractType, {int itemCount = 3}) {
+  List<ContractField> getTemplateSpecificFields(String contractType, {int itemCount = 3, int milestoneCount = 4}) {
     try {
       if (contractType.contains('lump sum')) {
-        return getLumpSumFields();
+        return getLumpSumFieldsWithMilestones(milestoneCount);
       } else if (contractType.contains('cost-plus') || contractType.contains('cost plus')) {
         return getCostPlusFields();
       } else if (contractType.contains('time and materials')) {
@@ -91,8 +91,12 @@ class CreateContractService {
   }
 
   List<ContractField> getLumpSumFields() {
+    return getLumpSumFieldsWithMilestones(4);
+  }
+
+  List<ContractField> getLumpSumFieldsWithMilestones(int milestoneCount) {
     try {
-      return [
+      List<ContractField> fields = [
         ContractField(key: 'Contract.CreationDate', label: 'Contract Creation Date', isRequired: true),
 
         ContractField(key: 'Contractee.FirstName', label: 'Contractee First Name', isRequired: true),
@@ -102,7 +106,8 @@ class CreateContractService {
         ContractField(key: 'Contractee.Email', label: 'Contractee Email', isRequired: true),
         
         ContractField(key: 'Contractor.Company', label: 'Contractor Company', isRequired: true),
-        ContractField(key: 'Contractor.License', label: 'Contractor License Number', isRequired: true),
+        ContractField(key: 'Contractor.FirstName', label: 'Contractor First Name', isRequired: true),
+        ContractField(key: 'Contractor.LastName', label: 'Contractor Last Name', isRequired: true),
         ContractField(key: 'Contractor.Address', label: 'Contractor Street Address', isRequired: true, maxLines: 2),
         ContractField(key: 'Contractor.Phone', label: 'Contractor Phone', isRequired: true),
         ContractField(key: 'Contractor.Email', label: 'Contractor Email', isRequired: true),
@@ -110,28 +115,42 @@ class CreateContractService {
         
         ContractField(key: 'Project.Description', label: 'Project Description', isRequired: true, maxLines: 3),
         ContractField(key: 'Project.Address', label: 'Project Site Address', isRequired: true, maxLines: 2),
-        ContractField(key: 'Project.LegalDescription', label: 'Legal Description of Property', maxLines: 2),
-        ContractField(key: 'Project.PropertyDescription', label: 'Property Description', maxLines: 2),
-        ContractField(key: 'Project.ScopeOfWork', label: 'Project Scope of Work', isRequired: true, maxLines: 3),
-        ContractField(key: 'Project.Specification', label: 'Project Specification', maxLines: 2),
-        ContractField(key: 'Project.NumofDays', label: 'Number of Days to Commence', isRequired: true, inputType: TextInputType.number),
         ContractField(key: 'Project.StartDate', label: 'Project Start Date', isRequired: true),
         ContractField(key: 'Project.CompletionDate', label: 'Project Completion Date', isRequired: true),
         ContractField(key: 'Project.Duration', label: 'Project Duration (days)', isRequired: true, inputType: TextInputType.number),
-        ContractField(key: 'Project.InsuranceRequirement', label: 'Insurance Requirements', maxLines: 2),
+        ContractField(key: 'Project.WorkingDays', label: 'Working Days (e.g., Monday through Friday)', isRequired: true),
+        ContractField(key: 'Project.WorkingHours', label: 'Working Hours (e.g., 8:00 AM - 5:00 PM)', isRequired: true),
         
-        ContractField(key: 'Project.ContractPrice', label: 'Total Contract Price (₱)', isRequired: true, inputType: TextInputType.number),
-        ContractField(key: 'Payment.Method', label: 'Payment Method', isRequired: true),
-        ContractField(key: 'Payment.DownPaymentPercentage', label: 'Down Payment Percentage (%)', isRequired: true, inputType: TextInputType.number),
-        ContractField(key: 'Payment.ProgressPayment1Percentage', label: 'Progress Payment 1 Percentage (%)', inputType: TextInputType.number),
-        ContractField(key: 'Payment.Milestone1', label: 'Milestone 1 Description', maxLines: 2),
-        ContractField(key: 'Payment.ProgressPayment2Percentage', label: 'Progress Payment 2 Percentage (%)', inputType: TextInputType.number),
-        ContractField(key: 'Payment.Milestone2', label: 'Milestone 2 Description', maxLines: 2),
-        ContractField(key: 'Payment.FinalPaymentPercentage', label: 'Final Payment Percentage (%)', isRequired: true, inputType: TextInputType.number),
-        
-        ContractField(key: 'Insurance.MinimumAmount', label: 'Minimum Insurance Amount (₱)', inputType: TextInputType.number),
-        ContractField(key: 'Inspection.PeriodDays', label: 'Inspection Period (days)', inputType: TextInputType.number),
+        ContractField(key: 'Payment.Total', label: 'Total Contract Price (₱)', isRequired: true, inputType: TextInputType.number),
+        ContractField(key: 'Payment.DownPaymentPercentage', label: 'Down Payment Percentage (%)', inputType: TextInputType.number),
+        ContractField(key: 'Payment.RetentionPercentage', label: 'Retention Percentage (%)', inputType: TextInputType.number),
+        ContractField(key: 'Payment.RetentionPeriod', label: 'Retention Period (days)', inputType: TextInputType.number),
+        ContractField(key: 'Payment.DueDays', label: 'Payment Due Days from Invoice', inputType: TextInputType.number),
+        ContractField(key: 'Payment.LateFeePercentage', label: 'Late Payment Fee Percentage (%)', inputType: TextInputType.number),
       ];
+
+      for (int i = 1; i <= milestoneCount; i++) {
+        fields.addAll([
+          ContractField(key: 'Milestone.$i.Description', label: 'Milestone Description', isRequired: i <= 3, maxLines: 2),
+          ContractField(key: 'Milestone.$i.Duration', label: 'Milestone Duration (days)', isRequired: i <= 3, inputType: TextInputType.number),
+          ContractField(key: 'Milestone.$i.Date', label: 'Milestone Target Date', isRequired: i <= 3),
+        ]);
+      }
+
+      fields.addAll([
+        ContractField(key: 'Bond.TimeFrame', label: 'Bond Submission Timeframe (days)', inputType: TextInputType.number),
+        ContractField(key: 'Bond.PerformanceAmount', label: 'Performance Bond Amount (₱)', inputType: TextInputType.number),
+        ContractField(key: 'Bond.PaymentAmount', label: 'Payment Bond Amount (₱)', inputType: TextInputType.number),
+        
+        ContractField(key: 'Change.LaborRate', label: 'Change Order Labor Rate (₱/hr)', inputType: TextInputType.number),
+        ContractField(key: 'Change.MaterialMarkup', label: 'Change Order Material Markup (%)', inputType: TextInputType.number),
+        ContractField(key: 'Change.EquipmentMarkup', label: 'Change Order Equipment Markup (%)', inputType: TextInputType.number),
+        
+        ContractField(key: 'Notice.Period', label: 'Termination Notice Period (days)', inputType: TextInputType.number),
+        ContractField(key: 'Warranty.Period', label: 'Warranty Period (months)', inputType: TextInputType.number),
+      ]);
+
+      return fields;
     } catch (e) {
       _errorService.logError(
         errorMessage: 'Failed to get lump sum fields: ',
@@ -150,20 +169,19 @@ class CreateContractService {
       return [
         ContractField(key: 'Contract.CreationDate', label: 'Contract Creation Date', isRequired: true),
         
-        ContractField(key: 'Contractor.Firm', label: 'Contractor Firm/Company Name', isRequired: true),
+        ContractField(key: 'Contractor.Company', label: 'Contractor Company Name', isRequired: true),
         ContractField(key: 'Contractor.FirstName', label: 'Contractor First Name', isRequired: true),
         ContractField(key: 'Contractor.LastName', label: 'Contractor Last Name', isRequired: true),
         ContractField(key: 'Contractor.Address', label: 'Contractor Address', isRequired: true, maxLines: 2),
-        ContractField(key: 'Contractor.City', label: 'Contractor City', isRequired: true),
-        ContractField(key: 'Contractor.PostalCode', label: 'Contractor Postal Code', isRequired: true),
-        ContractField(key: 'Contractor.Company', label: 'Contractor Company (for signature)', isRequired: true),
+        ContractField(key: 'Contractor.Phone', label: 'Contractor Phone', isRequired: true),
+        ContractField(key: 'Contractor.Email', label: 'Contractor Email', isRequired: true),
         ContractField(key: 'Contractor.Province', label: 'Contractor Province', isRequired: true),
 
         ContractField(key: 'Contractee.FirstName', label: 'Contractee First Name', isRequired: true),
         ContractField(key: 'Contractee.LastName', label: 'Contractee Last Name', isRequired: true),
         ContractField(key: 'Contractee.Address', label: 'Contractee Address', isRequired: true, maxLines: 2),
-        ContractField(key: 'Contractee.City', label: 'Contractee City', isRequired: true),
-        ContractField(key: 'Contractee.PostalCode', label: 'Contractee Postal Code', isRequired: true),
+        ContractField(key: 'Contractee.Phone', label: 'Contractee Phone', isRequired: true),
+        ContractField(key: 'Contractee.Email', label: 'Contractee Email', isRequired: true),
         
         ContractField(key: 'Project.Description', label: 'Project Description', isRequired: true, maxLines: 3),
         ContractField(key: 'Project.Address', label: 'Project Address/Location', isRequired: true, maxLines: 2),
@@ -171,23 +189,23 @@ class CreateContractService {
         ContractField(key: 'Project.CompletionDate', label: 'Project Completion Date (Estimate)', isRequired: true),
         ContractField(key: 'Project.Duration', label: 'Project Duration (days)', isRequired: true, inputType: TextInputType.number),
         
-        ContractField(key: 'Labor Costs', label: 'Labor Costs per Hour (₱)', isRequired: true, inputType: TextInputType.number),
-        ContractField(key: 'Material Costs', label: 'Estimated Material Costs (₱)', inputType: TextInputType.number),
-        ContractField(key: 'Equipment Costs', label: 'Estimated Equipment Costs (₱)', inputType: TextInputType.number),
-        ContractField(key: 'Overhead Percentage', label: 'Overhead and Profit Percentage (%)', isRequired: true, inputType: TextInputType.number),
-        ContractField(key: 'Estimated Total', label: 'Total Estimated Project Cost (₱)', isRequired: true, inputType: TextInputType.number),
+        ContractField(key: 'Labor.Costs', label: 'Labor Costs per Hour (₱)', isRequired: true, inputType: TextInputType.number),
+        ContractField(key: 'Material.Costs', label: 'Estimated Material Costs (₱)', inputType: TextInputType.number),
+        ContractField(key: 'Equipment.Costs', label: 'Estimated Equipment Costs (₱)', inputType: TextInputType.number),
+        ContractField(key: 'Overhead.Percentage', label: 'Overhead and Profit Percentage (%)', isRequired: true, inputType: TextInputType.number),
+        ContractField(key: 'Estimated.Total', label: 'Total Estimated Project Cost (₱)', isRequired: true, inputType: TextInputType.number),
         
-        ContractField(key: 'Payment Interval', label: 'Payment Interval (weekly/bi-weekly/monthly)', isRequired: true),
-        ContractField(key: 'Retention Fee', label: 'Retention Fee (₱)', inputType: TextInputType.number),
-        ContractField(key: 'Late Fee Percentage', label: 'Late Payment Fee Percentage (%)', inputType: TextInputType.number),
+        ContractField(key: 'Payment.Interval', label: 'Payment Interval (weekly/bi-weekly/monthly)', isRequired: true),
+        ContractField(key: 'Retention.Fee', label: 'Retention Fee (₱)', inputType: TextInputType.number),
+        ContractField(key: 'Late.Fee.Percentage', label: 'Late Payment Fee Percentage (%)', inputType: TextInputType.number),
         ContractField(key: 'Payment.DueDays', label: 'Payment Due Days from Invoice', inputType: TextInputType.number),
         
         ContractField(key: 'Bond.TimeFrame', label: 'Bond Submission Timeframe (days)', inputType: TextInputType.number),
         ContractField(key: 'Bond.PaymentAmount', label: 'Payment Bond Amount (₱)', inputType: TextInputType.number),
-        ContractField(key: 'Bond.Performance', label: 'Performance Bond Amount (₱)', inputType: TextInputType.number),
+        ContractField(key: 'Bond.PerformanceAmount', label: 'Performance Bond Amount (₱)', inputType: TextInputType.number),
 
-        ContractField(key: 'Notice Period', label: 'Termination Notice Period (days)', inputType: TextInputType.number),
-        ContractField(key: 'Warranty Period', label: 'Warranty Period (months)', inputType: TextInputType.number),
+        ContractField(key: 'Notice.Period', label: 'Termination Notice Period (days)', inputType: TextInputType.number),
+        ContractField(key: 'Warranty.Period', label: 'Warranty Period (months)', inputType: TextInputType.number),
       ];
     } catch (e) {
       _errorService.logError(
@@ -330,16 +348,27 @@ class CreateContractService {
         controllers['Project.CompletionDate']?.text = endDate;
       }
 
+      if (projectData['start_date'] != null && projectData['end_date'] != null) {
+        try {
+          final startDate = DateTime.parse(projectData['start_date'].toString());
+          final endDate = DateTime.parse(projectData['end_date'].toString());
+          final duration = endDate.difference(startDate).inDays;
+          if (duration > 0) {
+            controllers['Project.Duration']?.text = duration.toString();
+          }
+        } catch (_) {}
+      }
+
       final contractType = selectedContractType?.toLowerCase();
       final maxBudget = projectData['max_budget']?.toString() ?? '';
       
       if (contractType?.contains('lump sum') == true) {
-        if ((controllers['Project.ContractPrice']?.text ?? '').isEmpty && maxBudget.isNotEmpty) {
-          controllers['Project.ContractPrice']?.text = maxBudget;
+        if ((controllers['Payment.Total']?.text ?? '').isEmpty && maxBudget.isNotEmpty) {
+          controllers['Payment.Total']?.text = maxBudget;
         }
       } else if (contractType?.contains('cost-plus') == true || contractType?.contains('cost plus') == true) {
-        if ((controllers['Estimated Total']?.text ?? '').isEmpty && maxBudget.isNotEmpty) {
-          controllers['Estimated Total']?.text = maxBudget;
+        if ((controllers['Estimated.Total']?.text ?? '').isEmpty && maxBudget.isNotEmpty) {
+          controllers['Estimated.Total']?.text = maxBudget;
         }
       } else if (contractType?.contains('time and materials') == true) {
         if ((controllers['Payment.Total']?.text ?? '').isEmpty && maxBudget.isNotEmpty) {
@@ -440,6 +469,34 @@ class CreateContractService {
         },
       );
       return 3;
+    }
+  }
+
+  int getMaxMilestoneCountFromControllers(Map<String, TextEditingController> controllers) {
+    try {
+      int maxMilestones = 4; 
+      
+      for (String key in controllers.keys) {
+        if (key.startsWith('Milestone.') && key.endsWith('.Description')) {
+          final milestoneNumberStr = key.split('.')[1];
+          final milestoneNumber = int.tryParse(milestoneNumberStr) ?? 0;
+          if (milestoneNumber > maxMilestones) {
+            maxMilestones = milestoneNumber;
+          }
+        }
+      }
+      
+      return maxMilestones;
+    } catch (e) {
+      _errorService.logError(
+        errorMessage: 'Failed to get max milestone count from controllers: ',
+        module: 'Create Contract Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Get Max Milestone Count from Controllers',
+        },
+      );
+      return 4;
     }
   }
 

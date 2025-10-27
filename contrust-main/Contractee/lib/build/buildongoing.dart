@@ -13,6 +13,10 @@ class CeeOngoingBuildMethods {
     VoidCallback? onRefresh,
     VoidCallback? onChat,
     bool canChat = false,
+    VoidCallback? onPayment,
+    bool isPaid = false,
+    VoidCallback? onViewPaymentHistory,
+    String? paymentButtonText,
   }) {
     return Card(
       elevation: 3,
@@ -64,6 +68,53 @@ class CeeOngoingBuildMethods {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
+                          if (onPayment != null && !isPaid)
+                            ElevatedButton.icon(
+                              onPressed: onPayment,
+                              icon: const Icon(Icons.payment, size: 16),
+                              label: Text(paymentButtonText ?? 'Pay Now', style: const TextStyle(fontSize: 12)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          if (isPaid) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.green.shade50,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.green),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const [
+                                  Icon(Icons.check_circle, color: Colors.green, size: 16),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Paid',
+                                    style: TextStyle(
+                                      color: Colors.green,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (onViewPaymentHistory != null) const SizedBox(width: 8),
+                            if (onViewPaymentHistory != null)
+                              IconButton(
+                                onPressed: onViewPaymentHistory,
+                                icon: const Icon(Icons.history, color: Colors.blue, size: 20),
+                                tooltip: 'View Payment History',
+                              ),
+                          ],
+                          if (onRefresh != null) const SizedBox(width: 8),
                           if (onRefresh != null)
                             IconButton(
                               onPressed: onRefresh,
@@ -102,6 +153,53 @@ class CeeOngoingBuildMethods {
                           ],
                         ),
                       ),
+                      if (onPayment != null && !isPaid)
+                        ElevatedButton.icon(
+                          onPressed: onPayment,
+                          icon: const Icon(Icons.payment, size: 20),
+                          label: Text(paymentButtonText ?? 'Proceed to Payment'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      if (isPaid) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.green, width: 2),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(Icons.check_circle, color: Colors.green, size: 20),
+                              SizedBox(width: 8),
+                              Text(
+                                'Paid',
+                                style: TextStyle(
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (onViewPaymentHistory != null) const SizedBox(width: 12),
+                        if (onViewPaymentHistory != null)
+                          IconButton(
+                            onPressed: onViewPaymentHistory,
+                            icon: const Icon(Icons.history, color: Colors.blue),
+                            tooltip: 'View Payment History',
+                          ),
+                      ],
+                      if (onPayment != null || isPaid) const SizedBox(width: 12),
                       if (onRefresh != null)
                         IconButton(
                           onPressed: onRefresh,
@@ -568,6 +666,10 @@ class CeeOngoingBuildMethods {
     VoidCallback? onRefresh,
     VoidCallback? onChat,
     bool canChat = false,
+    VoidCallback? onPayment,
+    bool isPaid = false,
+    VoidCallback? onViewPaymentHistory,
+    String? paymentButtonText,
   }) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -583,6 +685,10 @@ class CeeOngoingBuildMethods {
             onRefresh: onRefresh,
             onChat: onChat,
             canChat: canChat,
+            onPayment: onPayment,
+            isPaid: isPaid,
+            onViewPaymentHistory: onViewPaymentHistory,
+            paymentButtonText: paymentButtonText,
           ),
           const SizedBox(height: 16),
           buildMobileTabNavigation(selectedTab, onTabChanged),
@@ -689,6 +795,10 @@ class CeeOngoingBuildMethods {
     VoidCallback? onRefresh,
     VoidCallback? onChat,
     bool canChat = false,
+    VoidCallback? onPayment,
+    bool isPaid = false,
+    VoidCallback? onViewPaymentHistory,
+    String? paymentButtonText,
   }) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -704,6 +814,10 @@ class CeeOngoingBuildMethods {
             onRefresh: onRefresh,
             onChat: onChat,
             canChat: canChat,
+            onPayment: onPayment,
+            isPaid: isPaid,
+            onViewPaymentHistory: onViewPaymentHistory,
+            paymentButtonText: paymentButtonText,
           ),
           const SizedBox(height: 20),
           Expanded(

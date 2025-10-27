@@ -1,6 +1,8 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/services/both services/be_payment_service.dart';
+import 'package:backend/models/be_payment_modal.dart';
 import 'package:backend/utils/be_constraint.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractee/build/buildongoing.dart';
@@ -26,6 +28,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
   String selectedTab = 'Tasks'; 
 
   final _fetchService = FetchService();
+  final _paymentService = PaymentService();
   final supabase = Supabase.instance.client;
   String? _chatRoomId;
   bool _canChat = false;
@@ -35,6 +38,8 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
   List<Map<String, dynamic>> _localTasks = [];
   double _localProgress = 0.0;
   bool isLoading = true;
+  bool _isPaid = false;
+  Map<String, dynamic>? _paymentSummary;
 
   @override
   void initState() {
@@ -110,11 +115,15 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
       
       final data = await _fetchService.fetchProjectDetails(widget.projectId);
       final tasks = await _fetchService.fetchProjectTasks(widget.projectId);
+      final isPaid = await _paymentService.isProjectPaid(widget.projectId);
+      final paymentSummary = await _paymentService.getPaymentSummary(widget.projectId);
       
       setState(() {
         projectData = data;
         _localTasks = tasks;
         _localProgress = (data?['progress'] as num?)?.toDouble() ?? 0.0;
+        _isPaid = isPaid;
+        _paymentSummary = paymentSummary;
         isLoading = false;
       });
     } catch (e) {
@@ -136,7 +145,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
     try {
       final response = await supabase.storage
           .from('projectphotos')
-          .createSignedUrl(path, 60 * 60 * 24); // 24 hours
+          .createSignedUrl(path, 60 * 60 * 24);
       return response;
     } catch (e) {
       return null;
@@ -155,6 +164,180 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
     CeeOngoingBuildMethods.showMaterialDetailsDialog(context, material);
   }
 
+  Future<void> _showPaymentHistory() async {
+    try {
+      final payments = await _paymentService.getPaymentHistory(widget.projectId);
+      
+      if (!mounted) return;
+      
+      showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.9,
+            constraints: const BoxConstraints(maxWidth: 600),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: Colors.white,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade700,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.history, color: Colors.white, size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Payment History',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+                if (_paymentSummary != null)
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      border: Border(bottom: BorderSide(color: Colors.grey.shade300)),    
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Total Paid:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                            Text(
+                              '₱${(_paymentSummary!['total_paid'] as num).toStringAsFixed(2)}',
+                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+                            ),
+                          ],
+                        ),
+                        if (_paymentSummary!['total_amount'] != null) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Contract Amount:', style: TextStyle(fontSize: 14)),
+                              Text(
+                                '₱${(_paymentSummary!['total_amount'] as num).toStringAsFixed(2)}',
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Remaining:', style: TextStyle(fontSize: 14)),
+                              Text(
+                                '₱${(_paymentSummary!['remaining'] as num).toStringAsFixed(2)}',
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.orange),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          LinearProgressIndicator(
+                            value: double.parse(_paymentSummary!['percentage_paid'] ?? '0') / 100,
+                            backgroundColor: Colors.grey.shade300,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.amber.shade700),
+                            minHeight: 8,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${_paymentSummary!['percentage_paid']}% Paid',
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                Flexible(
+                  child: payments.isEmpty
+                      ? const Padding(
+                          padding: EdgeInsets.all(40),
+                          child: Text('No payments yet', style: TextStyle(color: Colors.grey)),
+                        )
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          padding: const EdgeInsets.all(20),
+                          itemCount: payments.length,
+                          itemBuilder: (context, index) {
+                            final payment = payments[payments.length - 1 - index];
+                            final date = DateTime.parse(payment['date']);
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: Colors.green.shade100,
+                                  child: Icon(Icons.check_circle, color: Colors.green.shade700),
+                                ),
+                                title: Text(
+                                  '₱${(payment['amount'] as num).toStringAsFixed(2)}',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                                ),
+                                subtitle: Text(
+                                  '${date.day}/${date.month}/${date.year} at ${date.hour}:${date.minute.toString().padLeft(2, '0')}',
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                                trailing: Text(
+                                  'Payment #${payments.length - index}',
+                                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber.shade700,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Close'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      ConTrustSnackBar.error(context, 'Error loading payment history: $e');
+    }
+  }
+
   void _navigateToChat() {
     if (_chatRoomId == null || !_canChat) return;
     
@@ -164,19 +347,165 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
            final contractorName = _contractorData?['firm_name'] ?? 'Contractor';
            final contractorPhoto = _contractorData?['profile_photo'] ?? '';
 
-                                     Navigator.push(
-                                       context,
-                                       MaterialPageRoute(
-                                         builder: (context) => MessagePageContractee(
-                                           chatRoomId: _chatRoomId!,
-                                           contracteeId: contracteeId,
-                                           contractorId: contractorId,
-                                           contractorName: contractorName,
-                                           contractorProfile: contractorPhoto,
-                                         ),
-                                       ),
-                                     );
-                                   }
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => MessagePageContractee(
+                                          chatRoomId: _chatRoomId!,
+                                          contracteeId: contracteeId,
+                                          contractorId: contractorId,
+                                          contractorName: contractorName,
+                                          contractorProfile: contractorPhoto,
+                                        ),
+                                      ),
+                                    );
+                                  }
+
+  Future<void> _handlePayment() async {
+    try {
+      final project = projectData!;
+      final projectTitle = project['title'] ?? 'Untitled Project';
+      
+      final paymentInfo = await _paymentService.getPaymentInfo(widget.projectId);
+      
+      final contractType = paymentInfo['contract_type'] as String?;
+      final requiresCustomAmount = paymentInfo['requires_custom_amount'] == true;
+      
+      double? customAmount;
+      double amount;
+      
+      if (requiresCustomAmount) {
+
+        customAmount = await _showAmountInputDialog(contractType);
+        if (customAmount == null) return;
+        amount = customAmount;
+      } else {
+  
+        amount = (paymentInfo['amount'] as num).toDouble();
+      }
+
+  
+      await PaymentModal.show(
+        context: context,
+        projectId: widget.projectId,
+        projectTitle: projectTitle,
+        amount: amount,
+        customAmount: customAmount, 
+        onPaymentSuccess: () {
+          loadData();
+        },
+      );
+    } catch (e) {
+      ConTrustSnackBar.error(context, 'Error processing payment: $e');
+    }
+  }
+
+  Future<double?> _showAmountInputDialog(String? contractType) async {
+    final controller = TextEditingController();
+    String dialogTitle = 'Enter Payment Amount';
+    String dialogMessage = 'Please specify the payment amount for this project.';
+    
+  
+    if (contractType == 'time_and_materials') {
+      dialogTitle = 'Time & Materials Payment';
+      dialogMessage = 'Enter the payment amount based on hours worked and materials used.';
+    } else if (contractType == 'cost_plus') {
+      dialogTitle = 'Cost Plus Payment';
+      dialogMessage = 'Enter the payment amount based on actual costs plus overhead.';
+    } else if (contractType == 'custom') {
+      dialogTitle = 'Custom Contract Payment';
+      dialogMessage = 'Enter the payment amount as agreed in the custom contract.';
+    }
+    
+    return showDialog<double>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.payments, color: Colors.amber.shade700),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                dialogTitle,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.amber.shade700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              dialogMessage,
+              style: const TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: controller,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                labelText: 'Amount',
+                prefixText: '₱',
+                hintText: '0.00',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+                helperText: 'Minimum: ₱100.00',
+                helperStyle: TextStyle(color: Colors.grey.shade600),
+              ),
+              autofocus: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final text = controller.text.trim();
+              if (text.isEmpty) {
+                ConTrustSnackBar.warning(context, 'Please enter an amount');
+                return;
+              }
+              
+              final amount = double.tryParse(text);
+              if (amount == null) {
+                ConTrustSnackBar.error(context, 'Invalid amount format');
+                return;
+              }
+              
+              if (amount < 100) {
+                ConTrustSnackBar.warning(context, 'Minimum payment amount is ₱100.00');
+                return;
+              }
+              
+              Navigator.pop(context, amount);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber.shade700,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -202,13 +531,14 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
 
   Widget _buildMobileContent() {
     final project = projectData!;
-           final projectTitle = project['title'] ?? 'Project';
+    final projectTitle = project['title'] ?? 'Project';
     final contractorName = _contractorData?['firm_name'] ?? 'Contractor';
-           final address = project['location'] ?? '';
-           final startDate = project['start_date'] ?? '';
-           final estimatedCompletion = project['estimated_completion'] ?? '';
+    final address = project['location'] ?? '';
+    final startDate = project['start_date'] ?? '';
+    final estimatedCompletion = project['estimated_completion'] ?? '';
+    final projectStatus = project['status'] ?? '';
 
-          return RefreshIndicator(
+    return RefreshIndicator(
       onRefresh: () async => loadData(),
       child: CeeOngoingBuildMethods.buildMobileLayout(
         projectTitle: projectTitle,
@@ -222,10 +552,14 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
         onRefresh: loadData,
         onChat: _canChat && _chatRoomId != null ? _navigateToChat : null,
         canChat: _canChat,
+        onPayment: projectStatus == 'active' ? _handlePayment : null,
+        isPaid: _isPaid,
+        onViewPaymentHistory: _isPaid ? _showPaymentHistory : null,
+        paymentButtonText: _paymentSummary?['payment_status'] == 'partial' ? 'Make Payment' : null,
         tabContent: _buildTabContent(),
-                                  ),
-                                );
-                              }
+      ),
+    );
+  }
 
   Widget _buildDesktopContent() {
     final project = projectData!;
@@ -234,6 +568,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
     final address = project['location'] ?? '';
     final startDate = project['start_date'] ?? '';
     final estimatedCompletion = project['estimated_completion'] ?? '';
+    final projectStatus = project['status'] ?? '';
 
     return RefreshIndicator(
       onRefresh: () async => loadData(),
@@ -268,11 +603,15 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
             onRefresh: loadData,
             onChat: _canChat && _chatRoomId != null ? _navigateToChat : null,
             canChat: _canChat,
+            onPayment: projectStatus == 'active' ? _handlePayment : null,
+            isPaid: _isPaid,
+            onViewPaymentHistory: _isPaid ? _showPaymentHistory : null,
+            paymentButtonText: _paymentSummary?['payment_status'] == 'partial' ? 'Make Payment' : null,
           );
         },
       ),
     );
-                              }
+  }
 
   Widget _buildTabContent() {
     return FutureBuilder<List<List<Map<String, dynamic>>>>(

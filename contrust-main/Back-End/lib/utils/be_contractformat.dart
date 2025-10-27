@@ -4,6 +4,7 @@ class ContractStyle {
   static String Function(String)? textResolver;
 
   static bool Function(int)? itemRowVisibilityChecker;
+  static bool Function(int)? milestoneRowVisibilityChecker;
 
   static void setTextResolver(String Function(String) resolver) {
     textResolver = resolver;
@@ -47,6 +48,20 @@ class ContractStyle {
   static bool shouldShowItemRow(int rowNumber) {
     return itemRowVisibilityChecker != null
         ? itemRowVisibilityChecker!(rowNumber)
+        : true;
+  }
+
+  static void setMilestoneRowVisibilityChecker(bool Function(int) checker) {
+    milestoneRowVisibilityChecker = checker;
+  }
+
+  static void clearMilestoneRowVisibilityChecker() {
+    milestoneRowVisibilityChecker = null;
+  }
+
+  static bool shouldShowMilestoneRow(int rowNumber) {
+    return milestoneRowVisibilityChecker != null
+        ? milestoneRowVisibilityChecker!(rowNumber)
         : true;
   }
 

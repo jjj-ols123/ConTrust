@@ -8,9 +8,9 @@ Future<bool> functionConstraint(String contractorId, String contracteeId) async 
       .select('project_id')
       .eq('contractor_id', contractorId)
       .eq('contractee_id', contracteeId)
-      .inFilter('status', ['awaiting_contract', 'active', 'awaiting_agreement', 'awaiting_signature'])
-      .maybeSingle();
-  return response != null;
+      .inFilter('status', ['awaiting_contract', 'active', 'awaiting_agreement', 'awaiting_signature', 'cancellation_requested_by_contractee', 'cancelled', 'completed']);
+
+  return response.isNotEmpty;
 } 
 
 Future<bool> hasAlreadyBid(String contractorId, String projectId) async {

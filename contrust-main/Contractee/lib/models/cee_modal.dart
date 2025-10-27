@@ -32,6 +32,7 @@ class ProjectModal {
     required TextEditingController bidTimeController,
     bool isUpdate = false,
     String? projectId,
+    VoidCallback? onRefresh,
   }) async {
     final startDateController = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -312,7 +313,6 @@ class ProjectModal {
                                       bidTimeController.text.trim(),
                                     )) {
                                       if (isUpdate && projectId != null) {
-                                        // Update existing project
                                         await ProjectService().updateProject(
                                           projectId: projectId,
                                           title: titleController.text.trim(),
@@ -324,7 +324,6 @@ class ProjectModal {
                                           duration: int.tryParse(bidTimeController.text.trim()) ?? 7,
                                         );
                                       } else {
-                                        // Create new project
                                         await ProjectService().postProject(
                                           contracteeId: contracteeId,
                                           title: titleController.text.trim(),
@@ -343,10 +342,20 @@ class ProjectModal {
                                           context: context,
                                         );
                                       }
-                                      Navigator.pop(context);
+                                      
+                                      if (context.mounted) {
+                                        Navigator.pop(context);
+                                      }
+                                      
+                                      if (onRefresh != null) {
+                                        await Future.delayed(const Duration(milliseconds: 100));
+                                        onRefresh();
+                                      }
                                     }
                                   } catch (e) {
-                                    ConTrustSnackBar.error(context, 'Error:');
+                                    if (context.mounted) {
+                                      ConTrustSnackBar.error(context, 'Error submitting project. Please try again.');
+                                    }
                                   }
                                 },
                                 style: ElevatedButton.styleFrom(
@@ -776,7 +785,6 @@ class BidsModal {
                                                        
                                                               Navigator.pop(context);
                                                               onRefresh?.call();
-                                                              ConTrustSnackBar.show(context, 'You accepted $firmName\'s bid', type: SnackBarType.success);
                                                             }
                                                           },
                                                           style: ElevatedButton

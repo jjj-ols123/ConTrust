@@ -515,7 +515,7 @@ class _ModernBottomNavigationBarState extends State<ModernBottomNavigationBar> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
-            children: [
+      children: [
               Expanded(
                 child: _ModernNavItem(
                   icon: Icons.message_outlined,
@@ -643,18 +643,18 @@ class _ModernNavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+                      child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
+                        decoration: BoxDecoration(
                 color: Colors.grey.shade200,
                 borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
+                        ),
+                              child: Icon(
                 isActive ? activeIcon : icon,
                 color: isActive ? Colors.amber.shade700 : Colors.grey.shade600,
                 size: 22,
@@ -741,11 +741,11 @@ class _ProjectNavButton extends StatelessWidget {
           ),
           child: Icon(
             Icons.work_outline,
-            color: Colors.white,
+                    color: Colors.white,
             size: 28,
-          ),
-        ),
-      ),
+                    ),
+                  ),
+                ),
     );
   }
 }

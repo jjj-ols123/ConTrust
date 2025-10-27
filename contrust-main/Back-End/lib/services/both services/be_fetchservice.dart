@@ -60,7 +60,7 @@ class FetchService {
       return Map<String, dynamic>.from(response);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch contractor data: ',
+        errorMessage: 'Failed to fetch contractor data: ${e.toString()}',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -82,7 +82,7 @@ class FetchService {
       return Map<String, dynamic>.from(response);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch contractee data: ',
+        errorMessage: 'Failed to fetch contractee data: $e',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -141,7 +141,7 @@ class FetchService {
 
       final projectResponse = await _supabase
           .from('Projects')
-          .select('status, contractor_agree, contractee_agree')
+          .select('status')
           .eq('project_id', projectId)
           .maybeSingle();
 
@@ -150,14 +150,6 @@ class FetchService {
       }
 
       final status = projectResponse['status'];
-      final contractorAgreed = projectResponse['contractor_agree'] ?? false;
-      final contracteeAgreed = projectResponse['contractee_agree'] ?? false;
-
-      if (status == 'awaiting_contract' &&
-          contractorAgreed &&
-          contracteeAgreed) {
-        return 'active';
-      }
 
       return status;
     } catch (e) {

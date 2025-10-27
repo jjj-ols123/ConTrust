@@ -166,9 +166,8 @@ class _HomePageState extends State<HomePage> {
             locationController: locationController,
             descriptionController: descriptionController,
             bidTimeController: bidTimeController,
+            onRefresh: _loadData,
           );
-
-          _loadData();
         }
       },
     );
@@ -220,16 +219,7 @@ class _HomePageState extends State<HomePage> {
                         children: [
                           Icon(Icons.work_outline, color: Colors.amber[700], size: 20),
                           const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              "Your Projects",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ),
+
                           TextButton(
                             onPressed: _loadData,
                             child: Text(
@@ -262,20 +252,6 @@ class _HomePageState extends State<HomePage> {
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Icon(Icons.work_outline, color: Colors.amber[700], size: 24),
-                          const SizedBox(width: 8),
-                          Text(
-                            "Your Projects",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ],
-                      ),
                       Row(
                         children: [
                           TextButton(
@@ -404,9 +380,8 @@ class _HomePageState extends State<HomePage> {
                                       bidTimeController: bidTimeController,
                                       isUpdate: true,
                                       projectId: projectId,
+                                      onRefresh: _loadData,
                                     );
-
-                                    await _loadData();
                                     
                                     titleController.dispose();
                                     constructionTypeController.dispose();
