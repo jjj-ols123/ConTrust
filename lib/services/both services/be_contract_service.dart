@@ -374,7 +374,7 @@ class ContractService {
   static String formatDate(String? dateString) {
     if (dateString == null) return 'N/A';
     try {
-      final date = DateTime.parse(dateString);
+      final date = DateTime.parse(dateString).toLocal();
       return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
     } catch (e) {
       return 'Invalid date';

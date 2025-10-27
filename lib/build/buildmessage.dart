@@ -821,23 +821,7 @@ class MessageUIBuildMethods {
     return Column(
       children: [
         Expanded(
-          flex: 1,
-          child: FutureBuilder<Map<String, dynamic>?>(
-            future: loadUserData(otherUserId!),
-            builder: (context, contractorSnapshot) {
-              if (!contractorSnapshot.hasData ||
-                  contractorSnapshot.data == null) {
-                return Container();
-              }
-
-              final contractor = contractorSnapshot.data!;
-
-              return buildContractorInfoSection(contractor);
-            },
-          ),
-        ),
-        Expanded(
-          flex: 1,
+          flex: 2,
           child: FutureBuilder<Map<String, dynamic>?>(
             future: FetchService()
                 .fetchProjectDetailsByChatRoom(chatRoomId!),
@@ -1150,8 +1134,8 @@ class MessageUIBuildMethods {
   String _formatContractTime(dynamic timestamp) {
     try {
       final date = timestamp is String
-          ? DateTime.parse(timestamp)
-          : timestamp as DateTime;
+          ? DateTime.parse(timestamp).toLocal()
+          : (timestamp as DateTime).toLocal();
       final now = DateTime.now();
       final difference = now.difference(date);
 
@@ -1262,97 +1246,6 @@ class MessageUIBuildMethods {
               style: TextStyle(
                 color: Colors.grey[700],
                 fontSize: subtitleFontSize,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildContractorInfoSection(Map<String, dynamic> contractor) {
-    return Padding(
-      padding: EdgeInsets.all(isDesktop ? 16.0 : (isTablet ? 12.0 : 8.0)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Contractor Information',
-            style: TextStyle(
-              fontSize: titleFontSize,
-              fontWeight: FontWeight.bold,
-              color: accentColor.withOpacity(0.8),
-            ),
-          ),
-          SizedBox(height: isDesktop ? 16 : (isTablet ? 12 : 8)),
-          Expanded(
-            child: Container(
-              padding: EdgeInsets.all(isDesktop ? 16 : (isTablet ? 12 : 8)),
-              decoration: BoxDecoration(
-                color: accentColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(isDesktop ? 12 : (isTablet ? 10 : 8)),
-                border: Border.all(color: accentColor.withOpacity(0.3)),
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: isDesktop ? 30 : (isTablet ? 25 : 20),
-                          backgroundImage: NetworkImage(
-                            contractor['profile_photo']?.toString() ??
-                                'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
-                          ),
-                        ),
-                        SizedBox(width: isDesktop ? 12 : (isTablet ? 10 : 8)),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                contractor['firm_name']?.toString() ?? 'Contractor',
-                                style: TextStyle(
-                                  fontSize: subtitleFontSize + 2,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              if (contractor['specialization'] != null)
-                                Text(
-                                  contractor['specialization'].toString(),
-                                  style: TextStyle(
-                                    color: accentColor.withOpacity(0.8),
-                                    fontSize: subtitleFontSize,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: isDesktop ? 16 : (isTablet ? 12 : 8)),
-                    if (contractor['experience'] != null)
-                      Text(
-                        'Experience: ${contractor['experience'].toString()} years',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: subtitleFontSize,
-                        ),
-                      ),
-                    SizedBox(height: isDesktop ? 8 : 4),
-                    if (contractor['description'] != null)
-                      Text(
-                        contractor['description'].toString(),
-                        style: TextStyle(
-                          color: Colors.grey[700],
-                          fontSize: subtitleFontSize,
-                        ),
-                      ),
-                  ],
-                ),
               ),
             ),
           ),
