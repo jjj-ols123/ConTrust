@@ -158,7 +158,11 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
                       ),
                     ],
                   ),
-                  child: Icon(Icons.person_outline, color: Colors.amber.shade700, size: 18),
+                  child: Icon(
+                    Icons.person_outline,
+                     color: Colors.amber.shade700, 
+                     size: 18
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(

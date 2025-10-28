@@ -3,6 +3,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/utils/be_snackbar.dart';
+import 'about_page.dart';
+import 'services_page.dart';
 
 class WebsiteStartPage extends StatelessWidget {
   const WebsiteStartPage({super.key});
@@ -306,8 +308,22 @@ class WebsiteStartPage extends StatelessWidget {
             alignment: WrapAlignment.center,
             spacing: 20,
             children: [
-              _FooterLink(text: 'About', onTap: () {}),
-              _FooterLink(text: 'Services', onTap: () {}),
+              _FooterLink(
+                text: 'About',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const AboutPage()),
+                  );
+                },
+              ),
+              _FooterLink(
+                text: 'Services',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const ServicesPage()),
+                  );
+                },
+              ),
               _FooterLink(text: 'Contact', onTap: () {}),
               _FooterLink(text: 'Privacy', onTap: () {}),
             ],
