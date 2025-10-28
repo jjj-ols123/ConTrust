@@ -15,70 +15,191 @@ class WelcomePage extends StatefulWidget {
   State<WelcomePage> createState() => _WelcomePageState();
 }
 
-class _WelcomePageState extends State<WelcomePage> {
+class _WelcomePageState extends State<WelcomePage> with TickerProviderStateMixin {
   final PageController _pageController = PageController();
+  int _currentPage = 0;
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeInOut,
+    );
+    _fadeController.forward();
+
+    _pageController.addListener(() {
+      setState(() {
+        _currentPage = _pageController.page?.round() ?? 0;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    _fadeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _skipToHome() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isFirstOpen', false);
+    if (mounted) {
+      transitionBuilder(context, const HomePage(), replace: true);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      body: Stack(
-        children: [
-          ScrollConfiguration(
-            behavior: ScrollConfiguration.of(context).copyWith(
-              dragDevices: {
-                PointerDeviceKind.touch,
-                PointerDeviceKind.mouse,
-              },
-            ),
-            child: PageView(
-              controller: _pageController,
-              children: [
-                buildPage(
-                  title: "Welcome",
-                    description:
-                        "Contrust is a platform for creating contracts between contractors and contractees.",
-                  icon: Icons.construction_rounded,
-                  iconColor: Colors.orange[800]!,
-                ),
-                buildPage(
-                  title: "Connect",
-                  description:
-                       "Easily find and connect with reliable contractors.",
-                  icon: Icons.handshake_rounded,
-                  iconColor: Colors.orange[800]!,
-                ),
-                buildPage(
-                  title: "Design",
-                  description:
-                      "Use AI to pick a color of your choice to your wall.",
-                  icon: Icons.format_paint_rounded,
-                  iconColor: Colors.orange[800]!,
-                  context: context,
-                ),
-              ],
-            ),
-          ),
-          Positioned(
-            bottom: 60,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: SmoothPageIndicator(
-                controller: _pageController,
-                count: 3,
-                effect: ExpandingDotsEffect(
-                  dotHeight: 10,
-                  dotWidth: 10,
-                  expansionFactor: 4,
-                  spacing: 8,
-                  activeDotColor: const Color(0xFF2E2E2E),
-                  dotColor: Colors.grey.shade400,
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFFFFA726).withOpacity(0.05),
+                    Colors.white,
+                    const Color(0xFFFFA726).withOpacity(0.03),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
               ),
             ),
-          ),
-        ],
+            Column(
+              children: [
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isSmallScreen ? 16 : 24,
+                    vertical: isSmallScreen ? 16 : 20,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.03),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Logo
+                      Container(
+                        width: isSmallScreen ? 4 : 6,
+                        height: isSmallScreen ? 28 : 32,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFA726),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                      SizedBox(width: isSmallScreen ? 8 : 12),
+                      Text(
+                        'ConTrust',
+                        style: TextStyle(
+                          fontSize: isSmallScreen ? 24 : 28,
+                          fontWeight: FontWeight.w900,
+                          color: const Color(0xFF1a1a1a),
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: ScrollConfiguration(
+                      behavior: ScrollConfiguration.of(context).copyWith(
+                        dragDevices: {
+                          PointerDeviceKind.touch,
+                          PointerDeviceKind.mouse,
+                        },
+                      ),
+                      child: PageView(
+                        controller: _pageController,
+                        children: [
+                          buildPage(
+                            title: "Welcome to ConTrust",
+                            description:
+                                "Your trusted platform for creating and managing construction contracts between contractors and contractees.",
+                            icon: Icons.verified_user_rounded,
+                            gradient: [
+                              Colors.white,
+                              const Color(0xFFFFA726).withOpacity(0.1),
+                            ],
+                            isSmallScreen: isSmallScreen,
+                          ),
+                          buildPage(
+                            title: "Connect & Collaborate",
+                            description:
+                                "Easily find and connect with reliable, verified contractors in your area. Build lasting professional relationships.",
+                            icon: Icons.handshake_rounded,
+                            gradient: [
+                              Colors.white,
+                              const Color(0xFFFFA726).withOpacity(0.1),
+                            ],
+                            isSmallScreen: isSmallScreen,
+                          ),
+                          buildPage(
+                            title: "Smart Design Tools",
+                            description:
+                                "Use AI-powered tools to visualize and choose colors for your walls. Make informed design decisions.",
+                            icon: Icons.palette_rounded,
+                            gradient: [
+                              Colors.white,
+                              const Color(0xFFFFA726).withOpacity(0.1),
+                            ],
+                            context: context,
+                            isSmallScreen: isSmallScreen,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.all(isSmallScreen ? 24 : 32),
+                  child: Column(
+                    children: [
+                      SmoothPageIndicator(
+                        controller: _pageController,
+                        count: 3,
+                        effect: ExpandingDotsEffect(
+                          dotHeight: 8,
+                          dotWidth: 8,
+                          expansionFactor: 4,
+                          spacing: 6,
+                          activeDotColor: const Color(0xFFFFA726),
+                          dotColor: Colors.grey.shade300,
+                        ),
+                      ),
+                      if (_currentPage == 2) ...[
+                        const SizedBox(height: 32),
+                        _buildGetStartedButton(isSmallScreen),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -87,83 +208,191 @@ class _WelcomePageState extends State<WelcomePage> {
     required String title,
     required String description,
     required IconData icon,
-    required Color iconColor,
+    required List<Color> gradient,
+    required bool isSmallScreen,
     BuildContext? context,
   }) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            Colors.grey.shade200,
-            Colors.yellow.shade700.withOpacity(0.9),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          colors: gradient,
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 60),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 150,
-              color: iconColor,
-            ),
-            const SizedBox(height: 40),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 46,
-                fontWeight: FontWeight.w900,
-                color: Color(0xFF1A1A1A),
-                letterSpacing: 1.2,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            Text(
-              description,
-              style: const TextStyle(
-                fontSize: 18,
-                color: Colors.black87,
-                height: 1.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 50),
-            if (context != null && title == 'Design')
-              ElevatedButton(
-                onPressed: () async {
-                  final prefs = await SharedPreferences.getInstance();
-                  await prefs.setBool('isFirstOpen', false);
-                  transitionBuilder(context, const HomePage(), replace: true);
+      child: Center(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(
+            horizontal: isSmallScreen ? 24 : 48,
+            vertical: isSmallScreen ? 20 : 40,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: const Duration(milliseconds: 800),
+                curve: Curves.easeOut,
+                builder: (context, value, child) {
+                  return Opacity(
+                    opacity: value,
+                    child: Transform.translate(
+                      offset: Offset(0, 30 * (1 - value)),
+                      child: child,
+                    ),
+                  );
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2E2E2E),
-                  elevation: 5,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 40,
-                    vertical: 16,
+                child: Container(
+                  padding: EdgeInsets.all(isSmallScreen ? 36 : 52),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFFA726).withOpacity(0.15),
+                        blurRadius: 40,
+                        offset: const Offset(0, 10),
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 20,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: const Text(
-                  "Let's Go!",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.yellow,
-                    letterSpacing: 1,
+                  child: Container(
+                    padding: EdgeInsets.all(isSmallScreen ? 24 : 32),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFA726).withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      icon,
+                      size: isSmallScreen ? 72 : 100,
+                      color: const Color(0xFFFFA726),
+                    ),
                   ),
                 ),
               ),
+              SizedBox(height: isSmallScreen ? 48 : 64),
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: const Duration(milliseconds: 1000),
+                curve: Curves.easeOut,
+                builder: (context, value, child) {
+                  return Opacity(
+                    opacity: value,
+                    child: Transform.translate(
+                      offset: Offset(0, 20 * (1 - value)),
+                      child: child,
+                    ),
+                  );
+                },
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 36 : 52,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF1a1a1a),
+                    letterSpacing: -0.5,
+                    height: 1.1,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              SizedBox(height: isSmallScreen ? 20 : 28),
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: const Duration(milliseconds: 1200),
+                curve: Curves.easeOut,
+                builder: (context, value, child) {
+                  return Opacity(
+                    opacity: value,
+                    child: child,
+                  );
+                },
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxWidth: isSmallScreen ? 450 : 650,
+                  ),
+                  child: Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: isSmallScreen ? 17 : 20,
+                      color: Colors.black.withOpacity(0.7),
+                      height: 1.7,
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: 0.2,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGetStartedButton(bool isSmallScreen) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 800),
+      curve: Curves.easeOut,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 30 * (1 - value)),
+            child: child,
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFFA726).withOpacity(0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
           ],
+        ),
+        child: ElevatedButton(
+          onPressed: _skipToHome,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFFFA726),
+            foregroundColor: Colors.white,
+            elevation: 0,
+            padding: EdgeInsets.symmetric(
+              horizontal: isSmallScreen ? 48 : 64,
+              vertical: isSmallScreen ? 18 : 22,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Get Started",
+                style: TextStyle(
+                  fontSize: isSmallScreen ? 17 : 19,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.3,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Icon(Icons.arrow_forward, size: 22),
+            ],
+          ),
         ),
       ),
     );
   }
 }
+
+
