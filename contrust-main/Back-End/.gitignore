@@ -47,4 +47,4 @@ app.*.map.json
 /android/app/release
 
 # Configuration files with sensitive data
-lib/utils/supabase_config.dart
+# lib/utils/supabase_config.dart - Now using environment variables, safe to commit

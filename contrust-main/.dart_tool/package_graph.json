@@ -36,11 +36,9 @@
         "signature",
         "smooth_page_indicator",
         "supabase_flutter",
-        "superadmin",
         "syncfusion_flutter_pdfviewer",
         "url_launcher",
-        "uuid",
-        "websitepoint"
+        "uuid"
       ],
       "devDependencies": [
         "flutter_lints",
