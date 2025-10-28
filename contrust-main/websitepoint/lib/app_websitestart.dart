@@ -15,39 +15,48 @@ class WebsiteStartPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final bool isDesktop = screenWidth >= 900;
+    final bool isTablet = screenWidth >= 600 && screenWidth < 900;
+    final bool isMobile = screenWidth < 600;
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            child: Column(
-              children: [
-                _buildNavigationBar(context, isDesktop),
-                _buildHeroSection(context, isDesktop, screenWidth),              
-                _buildMainContent(context, isDesktop, screenWidth),               
-                _buildFooter(context, isDesktop),
-              ],
+      body: SafeArea(
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildNavigationBar(context, isDesktop, isTablet, isMobile),
+                  _buildHeroSection(context, isDesktop, isTablet, isMobile),              
+                  _buildMainContent(context, isDesktop, isTablet, isMobile),               
+                  _buildFooter(context, isDesktop, isTablet, isMobile),
+                ],
+              ),
+            ),     
+            Positioned(
+              top: isMobile ? 8 : 16,
+              right: isMobile ? 8 : 16,
+              child: _AdminButton(
+                onPressed: () {
+                  Navigator.of(context).pushNamed('/superadmin');
+                },
+                isMobile: isMobile,
+              ),
             ),
-          ),     
-          Positioned(
-            top: 16,
-            right: 16,
-            child: _AdminButton(
-              onPressed: () {
-                Navigator.of(context).pushNamed('/superadmin');
-              },
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildNavigationBar(BuildContext context, bool isDesktop) {
+  Widget _buildNavigationBar(BuildContext context, bool isDesktop, bool isTablet, bool isMobile) {
+    final double horizontalPadding = isDesktop ? 60 : (isTablet ? 40 : 16);
+    final double logoHeight = isDesktop ? 40 : (isMobile ? 28 : 32);
+    final double fontSize = isDesktop ? 32 : (isMobile ? 20 : 26);
+    
     return Container(
-      height: 80,
-      padding: EdgeInsets.symmetric(horizontal: isDesktop ? 60 : 20),
+      height: isMobile ? 64 : 80,
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -62,20 +71,21 @@ class WebsiteStartPage extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 6,
-                height: isDesktop ? 40 : 32,
+                width: isMobile ? 4 : 6,
+                height: logoHeight,
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFA726),
                   borderRadius: BorderRadius.circular(3),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: isMobile ? 8 : 12),
               Text(
                 'ConTrust',
                 style: TextStyle(
-                  fontSize: isDesktop ? 32 : 24,
+                  fontSize: fontSize,
                   fontWeight: FontWeight.w900,
                   color: const Color(0xFF1a1a1a),
                   letterSpacing: -0.5,
@@ -88,9 +98,14 @@ class WebsiteStartPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeroSection(BuildContext context, bool isDesktop, double screenWidth) {
+  Widget _buildHeroSection(BuildContext context, bool isDesktop, bool isTablet, bool isMobile) {
+    final double heroHeight = isDesktop ? 600 : (isTablet ? 500 : 400);
+    final double horizontalPadding = isDesktop ? 80 : (isTablet ? 40 : 20);
+    final double titleFontSize = isDesktop ? 64 : (isTablet ? 48 : 32);
+    final double subtitleFontSize = isDesktop ? 20 : (isTablet ? 18 : 14);
+    
     return SizedBox(
-      height: isDesktop ? 600 : 500,
+      height: heroHeight,
       width: double.infinity,
       child: Stack(
         fit: StackFit.expand,
@@ -113,7 +128,7 @@ class WebsiteStartPage extends StatelessWidget {
           ),
           Center(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: isDesktop ? 80 : 30),
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -134,10 +149,10 @@ class WebsiteStartPage extends StatelessWidget {
                         Text(
                           'Building Trust,',
                           style: TextStyle(
-                            fontSize: isDesktop ? 64 : 40,
+                            fontSize: titleFontSize,
                             fontWeight: FontWeight.w900,
                             color: Colors.white,
-                            letterSpacing: -1,
+                            letterSpacing: isMobile ? -0.5 : -1,
                             height: 1.1,
                           ),
                           textAlign: TextAlign.center,
@@ -145,10 +160,10 @@ class WebsiteStartPage extends StatelessWidget {
                         Text(
                           'Delivering Excellence',
                           style: TextStyle(
-                            fontSize: isDesktop ? 64 : 40,
+                            fontSize: titleFontSize,
                             fontWeight: FontWeight.w900,
                             color: Colors.white,
-                            letterSpacing: -1,
+                            letterSpacing: isMobile ? -0.5 : -1,
                             height: 1.1,
                           ),
                           textAlign: TextAlign.center,
@@ -156,9 +171,9 @@ class WebsiteStartPage extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(height: isMobile ? 20 : 32),
                   const _PulsingDivider(),
-                  const SizedBox(height: 15),
+                  SizedBox(height: isMobile ? 12 : 15),
                   TweenAnimationBuilder<double>(
                     tween: Tween(begin: 0.0, end: 1.0),
                     duration: const Duration(milliseconds: 1000),
@@ -168,15 +183,18 @@ class WebsiteStartPage extends StatelessWidget {
                         child: child,
                       );
                     },
-                    child: Text(
-                      'Your trusted platform for construction contract management',
-                      style: TextStyle(
-                        fontSize: isDesktop ? 20 : 16,
-                        color: Colors.white.withOpacity(0.9),
-                        fontWeight: FontWeight.w400,
-                        letterSpacing: 0.5,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 0),
+                      child: Text(
+                        'Your trusted platform for construction contract management',
+                        style: TextStyle(
+                          fontSize: subtitleFontSize,
+                          color: Colors.white.withOpacity(0.9),
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: 0.5,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
                     ),
                   ),
                 ],
@@ -188,78 +206,99 @@ class WebsiteStartPage extends StatelessWidget {
     );
   }
 
-  Widget _buildMainContent(BuildContext context, bool isDesktop, double screenWidth) {
+  Widget _buildMainContent(BuildContext context, bool isDesktop, bool isTablet, bool isMobile) {
+    final double horizontalPadding = isDesktop ? 80 : (isTablet ? 40 : 20);
+    final double verticalPadding = isDesktop ? 100 : (isTablet ? 70 : 50);
+    final double titleFontSize = isDesktop ? 60 : (isTablet ? 48 : 32);
+    final double subtitleFontSize = isDesktop ? 18 : (isTablet ? 17 : 15);
+    
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: isDesktop ? 80 : 30,
-        vertical: isDesktop ? 100 : 60,
+        horizontal: horizontalPadding,
+        vertical: verticalPadding,
       ),
-      child: Column(
-        children: [
-          Text(
-            'What do you want to build?',
-            style: TextStyle(
-              fontSize: isDesktop ? 60 : 40,
-              fontWeight: FontWeight.w900,
-              color: const Color(0xFF1a1a1a),
-              letterSpacing: -0.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Choose your role to get started',
-            style: TextStyle(
-              fontSize: isDesktop ? 18 : 16,
-              color: Colors.black54,
-              fontWeight: FontWeight.w400,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: isDesktop ? 60 : 40),
-
-          ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: isDesktop ? 1200 : screenWidth),
-            child: isDesktop
-                ? Row(
-                    children: [
-                      Expanded(child: _buildContracteeCard(context)),
-                      const SizedBox(width: 40),
-                      Expanded(child: _buildContractorCard(context)),
-                    ],
-                  )
-                : Column(
-                    children: [
-                      _buildContracteeCard(context),
-                      const SizedBox(height: 30),
-                      _buildContractorCard(context),
-                    ],
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 0),
+                child: Text(
+                  'What do you want to build?',
+                  style: TextStyle(
+                    fontSize: titleFontSize,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF1a1a1a),
+                    letterSpacing: -0.5,
+                    height: 1.1,
                   ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              SizedBox(height: isMobile ? 12 : 16),
+              Text(
+                'Choose your role to get started',
+                style: TextStyle(
+                  fontSize: subtitleFontSize,
+                  color: Colors.black54,
+                  fontWeight: FontWeight.w400,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: isDesktop ? 60 : (isTablet ? 50 : 30)),
+
+              isDesktop
+                  ? Row(
+                      children: [
+                        Expanded(child: _buildContracteeCard(context)),
+                        const SizedBox(width: 40),
+                        Expanded(child: _buildContractorCard(context)),
+                      ],
+                    )
+                  : Column(
+                      children: [
+                        _buildContracteeCard(context),
+                        const SizedBox(height: 30),
+                        _buildContractorCard(context),
+                      ],
+                    ),
+              if (!_isWeb) ...[
+                SizedBox(height: isMobile ? 30 : 40),
+                Container(
+                  padding: EdgeInsets.all(isMobile ? 12 : 16),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Tip: This chooser is intended for web builds.',
+                    style: TextStyle(
+                      color: Colors.black54,
+                      fontSize: isMobile ? 13 : 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ],
           ),
-          if (!_isWeb) ...[
-            const SizedBox(height: 40),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text(
-                'Tip: This chooser is intended for web builds.',
-                style: TextStyle(color: Colors.black54),
-              ),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildFooter(BuildContext context, bool isDesktop) {
+  Widget _buildFooter(BuildContext context, bool isDesktop, bool isTablet, bool isMobile) {
+    final double horizontalPadding = isDesktop ? 80 : (isTablet ? 40 : 20);
+    final double verticalPadding = isMobile ? 30 : 40;
+    final double logoFontSize = isMobile ? 20 : 24;
+    final double logoHeight = isMobile ? 20 : 24;
+    final double logoWidth = isMobile ? 3 : 4;
+    
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: isDesktop ? 80 : 30,
-        vertical: 40,
+        horizontal: horizontalPadding,
+        vertical: verticalPadding,
       ),
       decoration: BoxDecoration(
         color: const Color(0xFF1a1a1a),
@@ -276,37 +315,41 @@ class WebsiteStartPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 4,
-                height: 24,
+                width: logoWidth,
+                height: logoHeight,
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFA726),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(width: 10),
-              const Text(
+              SizedBox(width: isMobile ? 8 : 10),
+              Text(
                 'ConTrust',
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: logoFontSize,
                   fontWeight: FontWeight.w900,
                   color: Colors.white,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            'Building trust in construction, one contract at a time.',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withOpacity(0.7),
+          SizedBox(height: isMobile ? 12 : 16),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 0),
+            child: Text(
+              'Building trust in construction, one contract at a time.',
+              style: TextStyle(
+                fontSize: isMobile ? 13 : 14,
+                color: Colors.white.withOpacity(0.7),
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: isMobile ? 16 : 24),
           Wrap(
             alignment: WrapAlignment.center,
-            spacing: 20,
+            spacing: isMobile ? 16 : 20,
+            runSpacing: isMobile ? 12 : 0,
             children: [
               _FooterLink(
                 text: 'About',
@@ -328,16 +371,19 @@ class WebsiteStartPage extends StatelessWidget {
               _FooterLink(text: 'Privacy', onTap: () {}),
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: isMobile ? 16 : 24),
           Divider(color: Colors.white.withOpacity(0.1)),
-          const SizedBox(height: 20),
-          Text(
-            '© 2025 ConTrust. All rights reserved.',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withOpacity(0.5),
+          SizedBox(height: isMobile ? 16 : 20),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 0),
+            child: Text(
+              '© 2025 ConTrust. All rights reserved.',
+              style: TextStyle(
+                fontSize: isMobile ? 12 : 14,
+                color: Colors.white.withOpacity(0.5),
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -472,8 +518,9 @@ class _FooterLinkState extends State<_FooterLink> {
 
 class _AdminButton extends StatefulWidget {
   final VoidCallback onPressed;
+  final bool isMobile;
 
-  const _AdminButton({required this.onPressed});
+  const _AdminButton({required this.onPressed, this.isMobile = false});
 
   @override
   State<_AdminButton> createState() => _AdminButtonState();
@@ -492,7 +539,10 @@ class _AdminButtonState extends State<_AdminButton> {
         onTap: widget.onPressed,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: EdgeInsets.symmetric(
+            horizontal: widget.isMobile ? 12 : 16,
+            vertical: widget.isMobile ? 6 : 8,
+          ),
           decoration: BoxDecoration(
             color: _isHovered
                 ? const Color(0xFFFFA726).withOpacity(0.1)
@@ -513,16 +563,16 @@ class _AdminButtonState extends State<_AdminButton> {
                 color: _isHovered
                     ? const Color(0xFFFFA726)
                     : Colors.black54,
-                size: 18,
+                size: widget.isMobile ? 16 : 18,
               ),
-              const SizedBox(width: 6),
+              SizedBox(width: widget.isMobile ? 4 : 6),
               Text(
                 'Admin',
                 style: TextStyle(
                   color: _isHovered
                       ? const Color(0xFFFFA726)
                       : Colors.black54,
-                  fontSize: 14,
+                  fontSize: widget.isMobile ? 12 : 14,
                   fontWeight: _isHovered ? FontWeight.w600 : FontWeight.w500,
                 ),
               ),
