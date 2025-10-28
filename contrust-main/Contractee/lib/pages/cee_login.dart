@@ -191,6 +191,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         const SizedBox(height: 25),
         Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Checkbox(
               value: _isAgreed,
@@ -200,9 +201,9 @@ class _LoginPageState extends State<LoginPage> {
                 });
               },
             ),
-            Expanded(
+            Flexible(
               child: Wrap(
-                alignment: WrapAlignment.start,
+                alignment: WrapAlignment.center,
                 children: [
                   const Text(
                     "I agree to the ",
@@ -251,132 +252,199 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
   void _showPolicyTabs(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (ctx) => DefaultTabController(
-      length: 2,
-      child: AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-        contentPadding: const EdgeInsets.all(16),
-        title: Row(
-          children: [
-            Icon(Icons.policy, color: Colors.teal.shade600),
-            const SizedBox(width: 12),
-            Text(
-              "Privacy Policy & Terms of Service",
-              style: TextStyle(
-                color: Colors.teal.shade600,
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        content: SizedBox(
-          height: 600, 
-          width: 450,  
-          child: Column(
-            children: [
-              const TabBar(
-                labelColor: Colors.teal,
-                unselectedLabelColor: Colors.grey,
-                labelStyle: TextStyle(
-                  fontSize: 18, 
-                  fontWeight: FontWeight.bold,
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+    final isTablet = screenSize.width >= 600 && screenSize.width < 900;
+    final dialogWidth = isSmallScreen
+        ? screenSize.width * 0.9
+        : (isTablet ? screenSize.width * 0.75 : 700.0);
+    final dialogHeight = isSmallScreen
+        ? screenSize.height * 0.8
+        : (isTablet ? screenSize.height * 0.75 : 650.0);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => DefaultTabController(
+        length: 2,
+        child: Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            width: dialogWidth,
+            height: dialogHeight,
+            padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFA726).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.policy_rounded,
+                        color: Color(0xFFFFA726),
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        "Privacy Policy & Terms",
+                        style: TextStyle(
+                          fontSize: isSmallScreen ? 20 : 24,
+                          fontWeight: FontWeight.w900,
+                          color: const Color(0xFF1a1a1a),
+                          letterSpacing: -0.5,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      icon: const Icon(Icons.close),
+                      color: Colors.black54,
+                      tooltip: 'Close',
+                    ),
+                  ],
                 ),
-                tabs: [
-                  Tab(text: "Privacy Policy"),
-                  Tab(text: "Terms of Service"),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(16),
+                SizedBox(height: isSmallScreen ? 16 : 20),
+                TabBar(
+                  labelColor: const Color(0xFFFFA726),
+                  unselectedLabelColor: Colors.black54,
+                  indicatorColor: const Color(0xFFFFA726),
+                  indicatorWeight: 3,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  labelStyle: TextStyle(
+                    fontSize: isSmallScreen ? 15 : 17,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
                   ),
-                    child: const TabBarView(
-                      physics: BouncingScrollPhysics(),
+                  unselectedLabelStyle: TextStyle(
+                    fontSize: isSmallScreen ? 15 : 17,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  tabs: const [
+                    Tab(text: "Privacy Policy"),
+                    Tab(text: "Terms of Service"),
+                  ],
+                ),
+                const Divider(height: 1, thickness: 1),
+                SizedBox(height: isSmallScreen ? 16 : 20),
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(
+                        color: Colors.grey.shade200,
+                        width: 1,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: TabBarView(
+                      physics: const BouncingScrollPhysics(),
                       children: [
-                        SingleChildScrollView(
-                          padding: EdgeInsets.all(18),
-                          child: Text(
-                            "ConTrust – Privacy Policy for Contractees (Clients)\n\n"
-                            "1. Information We Collect\n\n"
-                            "We collect personal and project-related data including name, contact details, uploaded IDs, project posts, chat messages, and payment information.\n\n"
-                            "2. Purpose of Data Collection\n\n"
-                            "We use this data to verify identity, manage projects, enable communication with contractors, and ensure secure contract transactions.\n\n"
-                            "3. Data Storage and Protection\n\n"
-                            "All data is securely stored in Firebase Cloud Database using encryption and access control to prevent unauthorized use.\n\n"
-                            "4. Data Sharing and Use\n\n"
-                            "ConTrust does not sell or trade user data. Information is shared only with verified contractors or when legally required.\n\n"
-                            "5. User Rights\n\n"
-                            "Contractees may access, modify, or delete their personal information and request account removal at any time.\n\n"
-                            "6. Cookies and Analytics\n\n"
-                            "ConTrust uses cookies for improving platform functionality but does not collect sensitive data through them.\n\n"
-                            "7. Data Retention\n\n"
-                            "Your data is stored as long as needed for project management or as required by law. Once deleted, identifiers are permanently removed.\n\n"
-                            "8. Privacy Policy Updates\n\n"
-                            "This policy may be updated from time to time. Updates will be posted on the ConTrust platform.\n\n",
-                            style: TextStyle(
-                              fontSize: 14.5,
-                              height: 1.6,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                        SingleChildScrollView(
-                          padding: EdgeInsets.all(18),
-                          child: Text(
-                            "ConTrust – Terms and Conditions for Contractees (Clients)\n\n"
-                            "1. Acceptance of Terms\n\n"
-                            "By registering and using the ConTrust platform as a Contractee (Client), you agree to comply with and be bound by these Terms and Conditions.\n\n"
-                            "2. User Eligibility and Verification\n\n"
-                            "Contractees must be 18 years old and above and legally capable of entering into contracts.\n\n"
-                            "3. Use of the Platform\n\n"
-                            "Contractees may use ConTrust for searching, hiring verified contractors, managing contracts, and tracking project progress.\n\n"
-                            "4. Responsibilities of Contractees\n\n"
-                            "Provide accurate project details, respect payment schedules, and maintain professional communication.\n\n"
-                            "5. Contracts and Transactions\n\n"
-                            "Contracts are binding between parties. ConTrust acts only as a digital intermediary.\n\n"
-                            "6. Dispute Resolution\n\n"
-                            "Disputes must first be resolved via chat; ConTrust may mediate but is not liable for outcomes.\n\n"
-                            "7. Limitation of Liability\n\n"
-                            "ConTrust is not liable for project delays, data loss, or misuse beyond its control.\n\n"
-                            "8. Governing Law\n\n"
-                            "Governed by the laws of the Republic of the Philippines under San Jose del Monte, Bulacan.\n",
-                            style: TextStyle(
-                              fontSize: 14.5,
-                              height: 1.6,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
+                        _buildPolicyContent(isSmallScreen),
+                        _buildTermsContent(isSmallScreen),
                       ],
+                    ),
+                  ),
+                ),
+                SizedBox(height: isSmallScreen ? 16 : 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFA726),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: EdgeInsets.symmetric(
+                        vertical: isSmallScreen ? 14 : 16,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      'I Understand',
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 15 : 16,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.3,
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          actionsPadding: const EdgeInsets.only(right: 16, bottom: 12),
-          actions: [
-            TextButton.icon(
-              onPressed: () => Navigator.of(ctx).pop(),
-              icon: const Icon(Icons.close, color: Colors.teal),
-              label: const Text(
-                "Close",
-                style: TextStyle(
-                  color: Colors.teal,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPolicyContent(bool isSmallScreen) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
+      child: Text(
+        "ConTrust – Privacy Policy for Contractees (Clients)\n\n"
+        "1. Information We Collect\n\n"
+        "We collect personal and project-related data including name, contact details, uploaded IDs, project posts, chat messages, and payment information.\n\n"
+        "2. Purpose of Data Collection\n\n"
+        "We use this data to verify identity, manage projects, enable communication with contractors, and ensure secure contract transactions.\n\n"
+        "3. Data Storage and Protection\n\n"
+        "All data is securely stored in Firebase Cloud Database using encryption and access control to prevent unauthorized use.\n\n"
+        "4. Data Sharing and Use\n\n"
+        "ConTrust does not sell or trade user data. Information is shared only with verified contractors or when legally required.\n\n"
+        "5. User Rights\n\n"
+        "Contractees may access, modify, or delete their personal information and request account removal at any time.\n\n"
+        "6. Cookies and Analytics\n\n"
+        "ConTrust uses cookies for improving platform functionality but does not collect sensitive data through them.\n\n"
+        "7. Data Retention\n\n"
+        "Your data is stored as long as needed for project management or as required by law. Once deleted, identifiers are permanently removed.\n\n"
+        "8. Privacy Policy Updates\n\n"
+        "This policy may be updated from time to time. Updates will be posted on the ConTrust platform.\n\n",
+        style: TextStyle(
+          fontSize: isSmallScreen ? 13 : 15,
+          height: 1.7,
+          color: Colors.black.withOpacity(0.8),
+          fontWeight: FontWeight.w400,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTermsContent(bool isSmallScreen) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
+      child: Text(
+        "ConTrust – Terms and Conditions for Contractees (Clients)\n\n"
+        "1. Acceptance of Terms\n\n"
+        "By registering and using the ConTrust platform as a Contractee (Client), you agree to comply with and be bound by these Terms and Conditions.\n\n"
+        "2. User Eligibility and Verification\n\n"
+        "Contractees must be 18 years old and above and legally capable of entering into contracts.\n\n"
+        "3. Use of the Platform\n\n"
+        "Contractees may use ConTrust for searching, hiring verified contractors, managing contracts, and tracking project progress.\n\n"
+        "4. Responsibilities of Contractees\n\n"
+        "Provide accurate project details, respect payment schedules, and maintain professional communication.\n\n"
+        "5. Contracts and Transactions\n\n"
+        "Contracts are binding between parties. ConTrust acts only as a digital intermediary.\n\n"
+        "6. Dispute Resolution\n\n"
+        "Disputes must first be resolved via chat; ConTrust may mediate but is not liable for outcomes.\n\n"
+        "7. Limitation of Liability\n\n"
+        "ConTrust is not liable for project delays, data loss, or misuse beyond its control.\n\n"
+        "8. Governing Law\n\n"
+        "Governed by the laws of the Republic of the Philippines under San Jose del Monte, Bulacan.\n",
+        style: TextStyle(
+          fontSize: isSmallScreen ? 13 : 15,
+          height: 1.7,
+          color: Colors.black.withOpacity(0.8),
+          fontWeight: FontWeight.w400,
         ),
       ),
     );
