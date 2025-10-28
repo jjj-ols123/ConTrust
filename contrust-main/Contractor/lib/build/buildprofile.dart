@@ -971,7 +971,7 @@ class ProfileBuildMethods {
                   final reviewRating = (review['rating'] as num?)?.toDouble() ?? 0.0;
                   final clientName = review['client_name'] as String? ?? 'Anonymous Client';
                   final createdAt = review['created_at'] != null
-                      ? DateTime.parse(review['created_at'])
+                      ? DateTime.parse(review['created_at']).toLocal()
                       : DateTime.now();
                   final timeAgo = getTimeAgo(createdAt);
                   

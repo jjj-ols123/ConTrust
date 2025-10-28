@@ -438,7 +438,7 @@ class SystemMonitorTableState extends State<SystemMonitorTable> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
+            CircularProgressIndicator(color: Colors.amber),
             SizedBox(height: 16),
             Text('Loading system monitor...', style: TextStyle(color: Colors.black)),
           ],
@@ -554,7 +554,7 @@ class PerfLogsTableState extends State<PerfLogsTable> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator(color: Colors.amber));
     }
 
     if (_error != null) {
@@ -687,7 +687,7 @@ class PerfLogsTableState extends State<PerfLogsTable> {
                           )),
                           DataCell(Text(
                             log['recorded_at'] != null
-                                ? DateTime.parse(log['recorded_at']).toString()
+                                ? DateTime.parse(log['recorded_at']).toLocal().toString()
                                 : '',
                             style: const TextStyle(color: Colors.black),
                           )),

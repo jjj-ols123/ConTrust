@@ -77,99 +77,159 @@ static Future<Map<String, dynamic>?> showSaveDialog(
   }) async {
     String? selectedProjectId = initialProjectId;
     titleController ??= TextEditingController();
-    final screenWidth = MediaQuery.of(context).size.width;
     
     return showDialog<Map<String, dynamic>>(
       context: context,
       builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('Save Contract'),
-          content: SizedBox(
-            width: screenWidth > 600 ? 400 : screenWidth * 0.9,
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 500),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.white, Colors.grey.shade50],
+              ),
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextFormField(
-                  controller: titleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Contract Title',
-                    border: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.black, width: 1),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.black, width: 1),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.black, width: 2),
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade700,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                FutureBuilder<List<Map<String, dynamic>>>(
-                  future: FetchService().fetchContractorProjectInfo(contractorId),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const CircularProgressIndicator();
-                    }
-                    if (snapshot.hasError || !snapshot.hasData) {
-                      return const Text('Error loading projects');
-                    }
-                    final validProjects = snapshot.data!.where((p) => 
-                      p['status'] == 'awaiting_contract' && 
-                      p['status'] != 'cancelled' && 
-                      p['status'] != 'cancellation_requested_by_contractee'
-                    ).toList();
-                    
-                    if (validProjects.isEmpty) {
-                      return const Text('No available projects for contract creation');
-                    }
-                    
-                    return DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'Select Project',
-                        border: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.black, width: 1),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.black, width: 1),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.black, width: 2),
+                        child: const Icon(
+                          Icons.save,
+                          color: Colors.white,
+                          size: 20,
                         ),
                       ),
-                      items: validProjects.map((project) => DropdownMenuItem<String>(
-                        value: project['project_id'],
-                        child: Text(project['title'] ?? 'No Title'),
-                      )).toList(),
-                      onChanged: (value) {
-                        selectedProjectId = value;
-                        onProjectChanged?.call(value);
-                      },
-                    );
-                  },
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Save Contract',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(),
+                        icon: const Icon(Icons.close, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TextFormField(
+                          controller: titleController,
+                          decoration: const InputDecoration(
+                            labelText: 'Contract Title',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        FutureBuilder<List<Map<String, dynamic>>>(
+                          future: FetchService().fetchContractorProjectInfo(contractorId),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: CircularProgressIndicator(color: Colors.amber),
+                                ),
+                              );
+                            }
+                            if (snapshot.hasError || !snapshot.hasData) {
+                              return const Text('Error loading projects');
+                            }
+                            final validProjects = snapshot.data!.where((p) {
+                              final status = p['status'] as String?;
+                              return status == 'awaiting_contract' || status == 'awaiting_agreement';
+                            }).toList();
+                            
+                            if (validProjects.isEmpty) {
+                              return const Text('No available projects for contract creation');
+                            }
+                            
+                            return DropdownButtonFormField<String>(
+                              decoration: const InputDecoration(
+                                labelText: 'Select Project',
+                                border: OutlineInputBorder(),
+                              ),
+                              items: validProjects.map((project) => DropdownMenuItem<String>(
+                                value: project['project_id'],
+                                child: Text(project['title'] ?? 'No Title'),
+                              )).toList(),
+                              onChanged: (value) {
+                                selectedProjectId = value;
+                                onProjectChanged?.call(value);
+                              },
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextButton(
+                                onPressed: () => Navigator.of(dialogContext).pop(),
+                                child: const Text('Cancel'),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  if (titleController?.text.trim().isEmpty == true || selectedProjectId == null) {
+                                    ConTrustSnackBar.error(context, 'Please fill all fields');
+                                    return;
+                                  }
+                                  Navigator.of(dialogContext).pop({
+                                    'title': titleController?.text.trim() ?? '',
+                                    'projectId': selectedProjectId,
+                                  });
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green[600],
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                ),
+                                child: const Text('Save'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (titleController?.text.trim().isEmpty == true || selectedProjectId == null) {
-                  ConTrustSnackBar.error(context, 'Please fill all fields');
-                  return;
-                }
-                Navigator.of(dialogContext).pop({
-                  'title': titleController?.text.trim() ?? '',
-                  'projectId': selectedProjectId,
-                });
-              },
-              child: const Text('Save'),
-            ),
-          ],
         );
       },
     );
@@ -192,6 +252,7 @@ class CreateContractBuildMethods {
     this.selectedTemplate,
     this.onContractTypeChanged,
     this.onItemCountChanged,
+    this.onMilestoneCountChanged,
     this.onCalculationTriggered,
   });
 
@@ -207,6 +268,7 @@ class CreateContractBuildMethods {
   final Map<String, dynamic>? selectedTemplate;
   final void Function(Map<String, dynamic>?)? onContractTypeChanged;
   final void Function(int)? onItemCountChanged;
+  final void Function(int)? onMilestoneCountChanged;
   final VoidCallback? onCalculationTriggered;
 
   Widget buildForm() {
@@ -298,12 +360,10 @@ class CreateContractBuildMethods {
 
     List<Widget> widgets = [];
 
-    final dateFields = contractFields.where((f) =>
-      (f as dynamic).key == 'Date' ||
-      (f as dynamic).key == 'Contract.CreationDate' ||
-      (f as dynamic).key.contains('Date') ||
-      (f as dynamic).key.contains('Duration')
-    ).toList();    final contracteeFields = contractFields.where((f) => 
+    final dateFields = contractFields.where((f) {
+      final key = (f as dynamic).key as String;
+      return key == 'Contract.CreationDate';
+    }).toList();    final contracteeFields = contractFields.where((f) => 
       (f as dynamic).key.contains('Contractee.')
     ).toList();
     
@@ -311,25 +371,31 @@ class CreateContractBuildMethods {
       (f as dynamic).key.contains('Contractor.')
     ).toList();
     
-    final projectFields = contractFields.where((f) => 
-      (f as dynamic).key.contains('Project.') ||
-      (f as dynamic).key.contains('Materials.')
-    ).toList();
+    final projectFields = contractFields.where((f) {
+      final key = (f as dynamic).key as String;
+      return key.contains('Project.') ||
+        key.contains('Materials.');
+    }).toList();
     
     final itemFields = contractFields.where((f) => 
       (f as dynamic).key.contains('Item.')
     ).toList();
     
+    final milestoneFields = contractFields.where((f) => 
+      (f as dynamic).key.contains('Milestone.') &&
+      (f as dynamic).key.split('.').length == 3
+    ).toList();
+    
     final paymentFields = contractFields.where((f) =>
       (f as dynamic).key.contains('Payment.') ||
-      (f as dynamic).key.contains('Labor Costs') ||
-      (f as dynamic).key.contains('Material Costs') ||
-      (f as dynamic).key.contains('Equipment Costs') ||
-      (f as dynamic).key.contains('Overhead Percentage') ||
-      (f as dynamic).key.contains('Estimated Total') ||
-      (f as dynamic).key.contains('Payment Interval') ||
-      (f as dynamic).key.contains('Retention Fee') ||
-      (f as dynamic).key.contains('Late Fee Percentage')
+      (f as dynamic).key.contains('Labor.Costs') ||
+      (f as dynamic).key.contains('Material.Costs') ||
+      (f as dynamic).key.contains('Equipment.Costs') ||
+      (f as dynamic).key.contains('Overhead.Percentage') ||
+      (f as dynamic).key.contains('Estimated.Total') ||
+      (f as dynamic).key.contains('Payment.Interval') ||
+      (f as dynamic).key.contains('Retention.Fee') ||
+      (f as dynamic).key.contains('Late.Fee.Percentage')
     ).toList();
 
     final milestonePaymentFields = contractFields.where((f) =>
@@ -352,9 +418,13 @@ class CreateContractBuildMethods {
       (f as dynamic).key.contains('Inspection.')
     ).toList();
     
+    final changeOrderFields = contractFields.where((f) => 
+      (f as dynamic).key.contains('Change.')
+    ).toList();
+    
     final legalFields = contractFields.where((f) => 
-      (f as dynamic).key.contains('Notice Period') ||
-      (f as dynamic).key.contains('Warranty Period') ||
+      (f as dynamic).key.contains('Notice.') ||
+      (f as dynamic).key.contains('Warranty.') ||
       (f as dynamic).key.contains('Penalty.') ||
       (f as dynamic).key.contains('Tax.')
     ).toList();
@@ -391,6 +461,11 @@ class CreateContractBuildMethods {
       widgets.add(const SizedBox(height: 16));
     }
     
+    if (milestoneFields.isNotEmpty) {
+      widgets.add(buildMilestoneCard('Project Milestones', milestoneFields));
+      widgets.add(const SizedBox(height: 16));
+    }
+    
     if (milestonePaymentFields.isNotEmpty) {
       widgets.add(buildMilestonePaymentCard('Payment Schedule & Milestones', milestonePaymentFields));
       widgets.add(const SizedBox(height: 16));
@@ -411,6 +486,11 @@ class CreateContractBuildMethods {
       widgets.add(const SizedBox(height: 16));
     }
     
+    if (changeOrderFields.isNotEmpty) {
+      widgets.add(buildTwoColumnSectionCard('Change Orders', changeOrderFields));
+      widgets.add(const SizedBox(height: 16));
+    }
+    
     if (legalFields.isNotEmpty) {
       widgets.add(buildTwoColumnSectionCard('Legal & Other Information', legalFields));
     }
@@ -426,36 +506,9 @@ class CreateContractBuildMethods {
           Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.blue.shade600)),
           const SizedBox(height: 16),
           ...fields.map((field) {
-            final f = field as dynamic;
-            final key = f.key as String;
-            final label = f.label as String;
-            final placeholder = (f.placeholder as String?) ?? '';
-            final inputType = (f.inputType as TextInputType?) ?? TextInputType.text;
-            final isRequired = (f.isRequired as bool?) ?? false;
-            final maxLines = (f.maxLines as int?) ?? 1;
             return Padding(
               padding: const EdgeInsets.only(bottom: 16),
-              child: TextFormField(
-                controller: controllers[key],
-                scrollPadding: const EdgeInsets.only(bottom: 80),
-                decoration: InputDecoration(
-                  labelText: isRequired ? '$label *' : label,
-                  hintText: placeholder.isEmpty ? 'Enter ${label.toLowerCase()}' : placeholder,
-                  border: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.black, width: 1),
-                  ),
-                  enabledBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.black, width: 1),
-                  ),
-                  focusedBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.black, width: 2),
-                  ),
-                  prefixIcon: ContractStatus().getFieldIcon(key),
-                ),
-                keyboardType: inputType,
-                maxLines: maxLines,
-                validator: isRequired ? (value) { if (value == null || value.trim().isEmpty) return '$label is required'; return null; } : null,
-              ),
+              child: buildFormField(field),
             );
           }),
         ]),
@@ -517,7 +570,6 @@ class CreateContractBuildMethods {
             ),
             const SizedBox(height: 16),
 
-            // Desktop: Table layout
             if (!isMobile) ...[
               Container(
                 padding: const EdgeInsets.all(12),
@@ -578,7 +630,6 @@ class CreateContractBuildMethods {
               }),
             ],
 
-            // Mobile: Card-based layout
             if (isMobile)
               ...itemGroups.entries.map((entry) {
                 final itemNumber = entry.key;
@@ -683,6 +734,208 @@ class CreateContractBuildMethods {
         }
       }
     }    return maxItemNumber;
+  }
+
+  void _addNewMilestone() {
+    int currentMilestoneCount = _getCurrentMilestoneCount();
+
+    if (onMilestoneCountChanged != null) {
+      onMilestoneCountChanged!(currentMilestoneCount + 1);
+    }
+  }
+
+  void _removeMilestone(int milestoneNumber) {
+    int currentMilestoneCount = _getCurrentMilestoneCount();
+
+    if (currentMilestoneCount > 1) {
+      if (onMilestoneCountChanged != null) {
+        onMilestoneCountChanged!(currentMilestoneCount - 1);
+      }
+    } else {
+      ConTrustSnackBar.error(context, 'Cannot remove the last milestone. At least one milestone is required.');
+    }
+  }
+
+  int _getCurrentMilestoneCount() {
+    int maxMilestoneNumber = 0;
+
+    for (var field in contractFields) {
+      final f = field as dynamic;
+      final key = f.key as String;
+
+      if (key.startsWith('Milestone.') && key.endsWith('.Description')) {
+        final parts = key.split('.');
+        if (parts.length >= 3) {
+          final milestoneNumber = int.tryParse(parts[1]) ?? 0;
+          if (milestoneNumber > maxMilestoneNumber) {
+            maxMilestoneNumber = milestoneNumber;
+          }
+        }
+      }
+    }    
+    return maxMilestoneNumber;
+  }
+
+  Widget buildMilestoneCard(String title, List<dynamic> fields) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 700; 
+    
+    Map<int, Map<String, dynamic>> milestoneGroups = {};
+
+    for (var field in fields) {
+      final f = field as dynamic;
+      final key = f.key as String;
+
+      final parts = key.split('.');
+      if (parts.length >= 3 && parts[0] == 'Milestone') {
+        final milestoneNumber = int.tryParse(parts[1]);
+        final fieldType = parts[2];
+
+        if (milestoneNumber != null) {
+          milestoneGroups[milestoneNumber] ??= {};
+          milestoneGroups[milestoneNumber]![fieldType] = f;
+        }
+      }
+    }
+    
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: () => _addNewMilestone(),
+                  icon: const Icon(Icons.add, size: 16),
+                  label: Text(isMobile ? 'Add' : 'Add Milestone'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 12, vertical: 8),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            if (!isMobile) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(8),
+                    topRight: Radius.circular(8),
+                  ),
+                  border: Border.all(color: Colors.grey.shade400),
+                ),
+                child: Row(
+                  children: [
+                    const Expanded(flex: 2, child: Text('Description', style: TextStyle(fontWeight: FontWeight.bold))),
+                    const SizedBox(width: 16),
+                    const Expanded(child: Text('Duration (days)', style: TextStyle(fontWeight: FontWeight.bold))),
+                    const SizedBox(width: 16),
+                    const Expanded(child: Text('Target Date', style: TextStyle(fontWeight: FontWeight.bold))),
+                    const SizedBox(width: 48),
+                  ],
+                ),
+              ),
+              ...milestoneGroups.entries.map((entry) {
+                final milestoneNumber = entry.key;
+                final milestoneFields = entry.value;
+                
+                return Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      left: BorderSide(color: Colors.grey.shade400),
+                      right: BorderSide(color: Colors.grey.shade400),
+                      bottom: BorderSide(color: Colors.grey.shade400),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(flex: 2, child: buildFormField(milestoneFields['Description'])),
+                      const SizedBox(width: 16),
+                      Expanded(child: buildFormField(milestoneFields['Duration'])),
+                      const SizedBox(width: 16),
+                      Expanded(child: buildFormField(milestoneFields['Date'])),
+                      const SizedBox(width: 8),
+                      if (milestoneGroups.length > 1)
+                        IconButton(
+                          onPressed: () => _removeMilestone(milestoneNumber),
+                          icon: const Icon(Icons.remove_circle, color: Colors.red),
+                          tooltip: 'Remove Milestone',
+                        )
+                      else
+                        const SizedBox(width: 40),
+                    ],
+                  ),
+                );
+              }),
+            ],
+
+            if (isMobile)
+              ...milestoneGroups.entries.map((entry) {
+                final milestoneNumber = entry.key;
+                final milestoneFields = entry.value;
+                
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  elevation: 2,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Milestone $milestoneNumber',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            if (milestoneGroups.length > 1)
+                              IconButton(
+                                onPressed: () => _removeMilestone(milestoneNumber),
+                                icon: const Icon(Icons.remove_circle, color: Colors.red, size: 20),
+                                tooltip: 'Remove Milestone',
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        buildFormField(milestoneFields['Description']),
+                        const SizedBox(height: 12),
+                        buildFormField(milestoneFields['Duration']),
+                        const SizedBox(height: 12),
+                        buildFormField(milestoneFields['Date']),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget buildMilestonePaymentCard(String title, List<dynamic> fields) {
@@ -869,7 +1122,6 @@ class CreateContractBuildMethods {
             const SizedBox(height: 16),
             useSingleColumn
                 ? Column(
-                    // Mobile: Stack all fields vertically
                     children: fields.map((field) {
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 16),
@@ -878,7 +1130,6 @@ class CreateContractBuildMethods {
                     }).toList(),
                   )
                 : IntrinsicHeight(
-                    // Desktop: Two columns side by side
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -953,9 +1204,75 @@ class CreateContractBuildMethods {
     final maxLines = (f.maxLines as int?) ?? 1;
     final isEnabled = (f.isEnabled as bool?) ?? true;
     
+    final isDateField = key.contains('Date') && !key.contains('Duration');
+    
+    final isProjectDurationField = key == 'Project.Duration';
+    final effectivelyEnabled = isProjectDurationField ? false : isEnabled;
+    
+    if (isDateField && effectivelyEnabled) {
+      return GestureDetector(
+        onTap: () async {
+          final DateTime? pickedDate = await showDatePicker(
+            context: context,
+            initialDate: DateTime.now(),
+            firstDate: DateTime(2000),
+            lastDate: DateTime(2100),
+            builder: (context, child) {
+              return Theme(
+                data: Theme.of(context).copyWith(
+                  colorScheme: ColorScheme.light(
+                    primary: Colors.blue.shade600,
+                    onPrimary: Colors.white,
+                    onSurface: Colors.black,
+                  ),
+                ),
+                child: child!,
+              );
+            },
+          );
+          if (pickedDate != null) {
+            final formattedDate = "${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}";
+            controllers[key]?.text = formattedDate;
+            
+            if (key.contains('StartDate') || key.contains('CompletionDate')) {
+              _calculateDuration();
+            }
+          }
+        },
+        child: AbsorbPointer(
+          child: TextFormField(
+            controller: controllers[key],
+            decoration: InputDecoration(
+              labelText: isRequired ? '$label *' : label,
+              hintText: placeholder.isEmpty ? 'Enter ${label.toLowerCase()}' : placeholder,
+              border: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.black, width: 1),
+              ),
+              enabledBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.black, width: 1),
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.black, width: 2),
+              ),
+              prefixIcon: const Icon(Icons.calendar_today),
+              fillColor: Colors.white,
+            ),
+            validator: isRequired 
+              ? (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return '$label is required';
+                  }
+                  return null;
+                }
+              : null,
+          ),
+        ),
+      );
+    }
+    
     return TextFormField(
       controller: controllers[key],
-      enabled: isEnabled,
+      enabled: effectivelyEnabled,
       scrollPadding: const EdgeInsets.only(bottom: 80),
       decoration: InputDecoration(
         labelText: isRequired ? '$label *' : label,
@@ -973,8 +1290,8 @@ class CreateContractBuildMethods {
           borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
         ),
         prefixIcon: ContractStatus().getFieldIcon(key),
-        fillColor: isEnabled ? null : Colors.grey.shade100,
-        filled: !isEnabled,
+        fillColor: effectivelyEnabled ? null : Colors.grey.shade100,
+        filled: !effectivelyEnabled,
       ),
       keyboardType: inputType,
       maxLines: maxLines,
@@ -986,17 +1303,36 @@ class CreateContractBuildMethods {
             return null;
           }
         : null,
-      onChanged: isEnabled ? (value) {
+      onChanged: (value) {
         if (key.contains('.Price') || key.contains('.Quantity') || key.contains('Payment.Discount') || key.contains('Payment.Tax')) {
           _triggerCalculation();
         }
-      } : null,
+      },
     );
   }
 
   void _triggerCalculation() {
     if (onCalculationTriggered != null) {
       onCalculationTriggered!();
+    }
+  }
+
+  void _calculateDuration() {
+    try {
+      final startDateStr = controllers['Project.StartDate']?.text ?? '';
+      final completionDateStr = controllers['Project.CompletionDate']?.text ?? '';
+      
+      if (startDateStr.isNotEmpty && completionDateStr.isNotEmpty) {
+        final startDate = DateTime.parse(startDateStr);
+        final completionDate = DateTime.parse(completionDateStr);
+        final duration = completionDate.difference(startDate).inDays;
+        
+        if (duration >= 0) {
+          controllers['Project.Duration']?.text = duration.toString();
+        }
+      }
+    } catch (e) {
+      //Error
     }
   }
 
@@ -1013,9 +1349,67 @@ class CreateContractBuildMethods {
              (controllers.containsKey(priceKey) && controllers[priceKey]!.text.trim().isNotEmpty);
     }
     ContractStyle.setItemRowVisibilityChecker((int rowNum) => shouldShowItemRow(rowNum));
+    
+    bool shouldShowMilestoneRow(int rowNumber) {
+      final descKey = 'Milestone.$rowNumber.Description';
+      final durationKey = 'Milestone.$rowNumber.Duration';
+      final dateKey = 'Milestone.$rowNumber.Date';
+
+      return (controllers.containsKey(descKey) && controllers[descKey]!.text.trim().isNotEmpty) ||
+             (controllers.containsKey(durationKey) && controllers[durationKey]!.text.trim().isNotEmpty) ||
+             (controllers.containsKey(dateKey) && controllers[dateKey]!.text.trim().isNotEmpty);
+    }
+    ContractStyle.setMilestoneRowVisibilityChecker((int rowNum) => shouldShowMilestoneRow(rowNum));
 
     String resolvePlaceholders(String input) {
-      final Map<String, String> tokenToKey = {
+      final Map<String, String> tokenToKey = {  
+        'Contract.CreationDate': 'Contract.CreationDate',
+        'Contractor.Company': 'Contractor.Company',
+        'Contractor.FirstName': 'Contractor.FirstName',
+        'Contractor.LastName': 'Contractor.LastName',
+        'Contractor.Address': 'Contractor.Address',
+        'Contractor.Phone': 'Contractor.Phone',
+        'Contractor.Email': 'Contractor.Email',
+        'Contractor.Province': 'Contractor.Province',
+        'Contractee.FirstName': 'Contractee.FirstName',
+        'Contractee.LastName': 'Contractee.LastName',
+        'Contractee.Address': 'Contractee.Address',
+        'Contractee.Phone': 'Contractee.Phone',
+        'Contractee.Email': 'Contractee.Email',
+        'Project.Description': 'Project.Description',
+        'Project.Address': 'Project.Address',
+        'Project.StartDate': 'Project.StartDate',
+        'Project.CompletionDate': 'Project.CompletionDate',
+        'Project.Duration': 'Project.Duration',
+        'Project.WorkingDays': 'Project.WorkingDays',
+        'Project.WorkingHours': 'Project.WorkingHours',
+        'Payment.Total': 'Payment.Total',
+        'Payment.DownPaymentPercentage': 'Payment.DownPaymentPercentage',
+        'Payment.DownPayment': 'Payment.DownPayment',
+        'Payment.ProgressPayments': 'Payment.ProgressPayments',
+        'Payment.FinalPayment': 'Payment.FinalPayment',
+        'Payment.RetentionPercentage': 'Payment.RetentionPercentage',
+        'Payment.RetentionAmount': 'Payment.RetentionAmount',
+        'Payment.RetentionPeriod': 'Payment.RetentionPeriod',
+        'Payment.DueDays': 'Payment.DueDays',
+        'Payment.LateFeePercentage': 'Payment.LateFeePercentage',
+        'Bond.TimeFrame': 'Bond.TimeFrame',
+        'Bond.PerformanceAmount': 'Bond.PerformanceAmount',
+        'Bond.PaymentAmount': 'Bond.PaymentAmount',
+        'Change.LaborRate': 'Change.LaborRate',
+        'Change.MaterialMarkup': 'Change.MaterialMarkup',
+        'Change.EquipmentMarkup': 'Change.EquipmentMarkup',
+        'Notice.Period': 'Notice.Period',
+        'Warranty.Period': 'Warranty.Period',
+        'Labor.Costs': 'Labor.Costs',
+        'Material.Costs': 'Material.Costs',
+        'Equipment.Costs': 'Equipment.Costs',
+        'Overhead.Percentage': 'Overhead.Percentage',
+        'Estimated.Total': 'Estimated.Total',
+        'Payment.Interval': 'Payment.Interval',
+        'Retention.Fee': 'Retention.Fee',
+        'Late.Fee.Percentage': 'Late.Fee.Percentage',
+        
         'First name of the contractee': 'Contractee.FirstName',
         'Last name of the contractee': 'Contractee.LastName',
         'Contractee street address': 'Contractee.Address',
@@ -1065,13 +1459,9 @@ class CreateContractBuildMethods {
         'Time': 'Project.LaborHours',
         'Materials': 'Materials.List',
         'Subtotal amount': 'Payment.Subtotal',
-        'Payment.Subtotal': 'Payment.Subtotal',
         'Discount amount': 'Payment.DiscountAmount',
-        'Payment.Discount': 'Payment.Discount',
         'Tax amount': 'Payment.TaxAmount',
-        'Payment.Tax': 'Payment.Tax',
         'Total amount': 'Payment.Total',
-        'Payment.Total': 'Payment.Total',
         'Item 1 name': 'Item.1.Name',
         'Item 1 description': 'Item.1.Description',
         'Item 1 price': 'Item.1.Price',
@@ -1097,7 +1487,6 @@ class CreateContractBuildMethods {
         'Item 5 price': 'Item.5.Price',
         'Item 5 quantity': 'Item.5.Quantity',
         'Item 5 subtotal': 'Item.5.Subtotal',
-        'Down payment percentage': 'Payment.DownPaymentPercentage',
         'Progress payment 1 percentage': 'Payment.ProgressPayment1Percentage',
         'Progress payment 2 percentage': 'Payment.ProgressPayment2Percentage',
         'Final payment percentage': 'Payment.FinalPaymentPercentage',
@@ -1149,6 +1538,19 @@ class CreateContractBuildMethods {
         if (controllers.containsKey(token)) {
           final v = controllers[token]!.text.trim();
           if (v.isNotEmpty) return v;
+        }
+        
+        if (token.startsWith('Milestone.') && token.split('.').length == 3) {
+          final parts = token.split('.');
+          final milestoneNum = int.tryParse(parts[1]);
+          final field = parts[2];
+          if (milestoneNum != null) {
+            final key = 'Milestone.$milestoneNum.$field';
+            if (controllers.containsKey(key)) {
+              final v = controllers[key]!.text.trim();
+              if (v.isNotEmpty) return v;
+            }
+          }
         }
         
         if (token.toLowerCase().contains('item') && 
@@ -1296,17 +1698,17 @@ class CreateContractBuildMethods {
     Widget contractWidget;
     final normalizedType = contractType.toLowerCase();
     if (normalizedType.contains('lump sum')) {
-
       ContractStyle.setTextResolver(resolvePlaceholders);
       ContractStyle.setItemRowVisibilityChecker((int rowNum) => shouldShowItemRow(rowNum));
+      ContractStyle.setMilestoneRowVisibilityChecker((int rowNum) => shouldShowMilestoneRow(rowNum));
       contractWidget = const LumpSumContract();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ContractStyle.clearTextResolver();
         ContractStyle.clearItemRowVisibilityChecker();
+        ContractStyle.clearMilestoneRowVisibilityChecker();
       });
     } else if (normalizedType.contains('cost-plus') || normalizedType.contains('cost plus')) {
       ContractStyle.setTextResolver(resolvePlaceholders);
-
       ContractStyle.setItemRowVisibilityChecker((int rowNum) => shouldShowItemRow(rowNum));
       contractWidget = const CostPlusContract();
       WidgetsBinding.instance.addPostFrameCallback((_) {

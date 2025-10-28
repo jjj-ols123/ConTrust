@@ -38,12 +38,24 @@ class _ContractTypeState extends State<ContractType> {
         const SizedBox(height: 24),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Text(
-            'Your Contracts',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Your Contracts',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              TextButton.icon(
+                onPressed: refreshContracts,
+                label: Text(
+                  'Refresh',
+                  style: TextStyle(color: Colors.amber[700], fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 8),

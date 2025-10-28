@@ -57,7 +57,7 @@ class ContractPdfSignatureService {
             contracteeSignature: contracteeSignature,
           );
           break;
-        case 'cost plus contract':
+        case 'cost-plus contract':
           pdfWidgets = CostPlusPDF.buildCostPlusPdf(
             fieldValues,
             contractorSignature: contractorSignature,
@@ -227,7 +227,7 @@ class ContractPdfSignatureService {
       return filePath;
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to create signed contract PDF: ',
+        errorMessage: 'Failed to create signed contract PDF: $e',
         module: 'Contract PDF Signature Service',
         severity: 'High',
         extraInfo: {
@@ -235,7 +235,7 @@ class ContractPdfSignatureService {
           'contract_id': contractId,
         },
       );
-      throw Exception('Failed to create signed contract PDF: ');
+      throw Exception('Failed to create signed contract PDF: $e');
     }
   }
 

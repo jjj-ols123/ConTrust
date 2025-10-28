@@ -290,6 +290,42 @@ class _CreateContractPageState extends State<CreateContractPage>
     }
   }
 
+  void updateMilestoneCount(int newMilestoneCount) {
+    if (selectedTemplate == null) return;
+
+    try {
+      final templateName = selectedTemplate!['template_name'] ?? '';
+      
+      final oldValues = <String, String>{};
+      for (var field in contractFields) {
+        oldValues[field.key] = controllers[field.key]?.text ?? '';
+      }
+
+      final newFields = service.getContractTypeSpecificFields(templateName, milestoneCount: newMilestoneCount);
+
+      for (var controller in controllers.values) {
+        controller.dispose();
+      }
+      controllers.clear();
+
+      contractFields = newFields;
+      for (var field in contractFields) {
+        final controller = TextEditingController();
+        if (oldValues.containsKey(field.key)) {
+          controller.text = oldValues[field.key] ?? '';
+        }
+        controller.addListener(() {
+          if (mounted) setState(() {});
+        });
+        controllers[field.key] = controller;
+      }
+
+      if (mounted) setState(() {});
+    } catch (e) {
+      ConTrustSnackBar.error(context, 'Error updating milestone count');
+    }
+  }
+
   void triggerTimeAndMaterialsCalculation() {
     if (selectedTemplate != null && 
         selectedTemplate!['template_name']?.toLowerCase().contains('time and materials') == true) {
@@ -432,7 +468,7 @@ class _CreateContractPageState extends State<CreateContractPage>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
+              color: Colors.amber,
             ),
             const SizedBox(height: 24),
             Text(
@@ -490,6 +526,9 @@ class _CreateContractPageState extends State<CreateContractPage>
       onItemCountChanged: (int newItemCount) {
         updateItemCount(newItemCount);
       },
+      onMilestoneCountChanged: (int newMilestoneCount) {
+        updateMilestoneCount(newMilestoneCount);
+      },
       onCalculationTriggered: () {
         triggerTimeAndMaterialsCalculation();
       },
@@ -522,7 +561,7 @@ class _CreateContractPageState extends State<CreateContractPage>
                         height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: Colors.amber,
                         ),
                       )
                     : const Icon(Icons.save),

@@ -34,7 +34,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         currentPage: ContractorPage.dashboard,
         contractorId: widget.contractorId,
         child: widget.contractorId.isEmpty
-            ? const Center(child: CircularProgressIndicator())  
+            ? const Center(child: CircularProgressIndicator(color: Colors.amber))  
             : DashboardUI(contractorId: widget.contractorId),
       ),
     );

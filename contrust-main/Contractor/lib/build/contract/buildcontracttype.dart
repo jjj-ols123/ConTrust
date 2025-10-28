@@ -4,6 +4,7 @@ import 'package:backend/services/both%20services/be_contract_pdf_service.dart';
 import 'package:backend/services/both%20services/be_fetchservice.dart';
 import 'package:backend/services/contractor%20services/contract/cor_contractservice.dart';
 import 'package:backend/services/contractor%20services/contract/cor_contracttypeservice.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
@@ -105,7 +106,7 @@ class ContractTypeBuild {
     required VoidCallback onRefreshContracts,
   }) {
     final templateName = template['template_name'] ?? '';
-    final isUploadOption = templateName.toLowerCase().contains('upload') || templateName.toLowerCase().contains('custom');  // More flexible check
+    final isUploadOption = templateName.toLowerCase().contains('upload') || templateName.toLowerCase().contains('custom'); 
 
     return Material(
       color: Colors.transparent,
@@ -119,11 +120,14 @@ class ContractTypeBuild {
               onRefreshContracts: onRefreshContracts,
             );
           } else {
-            await ContractTypeService.navigateToCreateContract(
+            final result = await ContractTypeService.navigateToCreateContract(
               context: context,
               template: template,
               contractorId: contractorId,
             );
+            if (result == true) {
+              onRefreshContracts();
+            }
           }
         },
         child: Container(
@@ -299,23 +303,21 @@ class ContractTypeBuild {
     required String contractorId,
     required VoidCallback onRefreshContracts,
   }) async {
-    XFile? selectedFile;
-    String title = '';
-    String? selectedProjectId;
-    List<Map<String, dynamic>> projects = [];
-    bool isLoading = false;
-
     final fetchService = FetchService();
-    projects = await fetchService.fetchContractorProjectInfo(contractorId);
-    projects = projects.where((p) => 
-      p['status'] == 'awaiting_contract' && 
-      p['status'] != 'cancelled' && 
-      p['status'] != 'cancellation_requested_by_contractee'
-    ).toList();
+    final projects = await fetchService.fetchContractorProjectInfo(contractorId);
+    final filteredProjects = projects.where((p) {
+      final status = p['status'] as String?;
+      return status == 'awaiting_contract' || status == 'awaiting_agreement';
+    }).toList();
 
     await showDialog(
       context: context,
       builder: (dialogContext) {
+        XFile? selectedFile;
+        String title = '';
+        String? selectedProjectId;
+        bool isLoading = false;
+
         return StatefulBuilder(
           builder: (context, setState) {
             Future<void> pickFile() async {
@@ -330,22 +332,16 @@ class ContractTypeBuild {
                     selectedFile = file;
                   });
                 } else {
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    const SnackBar(content: Text('No PDF file selected. Please try again.')),
-                  );
+                  ConTrustSnackBar.warning(dialogContext, 'No PDF file selected. Please try again.');
                 }
               } catch (e) {
-                ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  SnackBar(content: Text('Failed to pick file: ')),
-                );
+                ConTrustSnackBar.error(dialogContext, 'Failed to pick file');
               }
             }
 
             Future<void> saveCustomContract() async {
               if (selectedFile == null || title.isEmpty || selectedProjectId == null) {
-                ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  const SnackBar(content: Text('Please fill all fields and select a file.')),
-                );
+                ConTrustSnackBar.warning(dialogContext, 'Please fill all fields and select a file.');
                 return;
               }
 
@@ -378,58 +374,153 @@ class ContractTypeBuild {
                 );
 
 
-                ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  const SnackBar(content: Text('Contract uploaded successfully!')),
-                );
+                ConTrustSnackBar.success(dialogContext, 'Contract uploaded successfully!');
                 Navigator.of(dialogContext).pop();
                 onRefreshContracts();
               } catch (e) {
-                ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  SnackBar(content: Text('Upload failed: ')),
-                );
+                ConTrustSnackBar.error(dialogContext, 'Upload failed');
               } finally {
                 setState(() => isLoading = false);
               }
             }
 
-            return AlertDialog(
-              title: const Text('Upload Custom Contract'),
-              content: SingleChildScrollView(
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 500),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Colors.white, Colors.grey.shade50],
+                  ),
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    TextField(
-                      decoration: const InputDecoration(labelText: 'Contract Title'),
-                      onChanged: (value) => title = value,
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade700,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(20),
+                          topRight: Radius.circular(20),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.upload_file,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Text(
+                              'Upload Custom Contract',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.of(dialogContext).pop(),
+                            icon: const Icon(Icons.close, color: Colors.white),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(labelText: 'Select Project'),
-                      value: selectedProjectId,
-                      items: projects.map<DropdownMenuItem<String>>((p) => DropdownMenuItem<String>(
-                        value: p['project_id'] as String,
-                        child: Text(p['title'] ?? 'Project'),
-                      )).toList(),
-                      onChanged: (value) => setState(() => selectedProjectId = value),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: pickFile,
-                      child: Text(selectedFile == null ? 'Select PDF File' : 'File Selected: ${selectedFile!.name}'),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            TextField(
+                              decoration: const InputDecoration(
+                                labelText: 'Contract Title',
+                                border: OutlineInputBorder(),
+                              ),
+                              onChanged: (value) => title = value,
+                            ),
+                            const SizedBox(height: 16),
+                            DropdownButtonFormField<String>(
+                              decoration: const InputDecoration(
+                                labelText: 'Select Project',
+                                border: OutlineInputBorder(),
+                              ),
+                              value: selectedProjectId,
+                              items: filteredProjects.map<DropdownMenuItem<String>>((p) => DropdownMenuItem<String>(
+                                value: p['project_id'] as String,
+                                child: Text(p['title'] ?? 'Project'),
+                              )).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedProjectId = value;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton.icon(
+                              onPressed: pickFile,
+                              icon: const Icon(Icons.attach_file),
+                              label: Text(selectedFile == null ? 'Select PDF File' : 'File: ${selectedFile!.name}'),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.all(16),
+                                backgroundColor: Colors.amber.shade100,
+                                foregroundColor: Colors.amber.shade900,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextButton(
+                                    onPressed: () => Navigator.of(dialogContext).pop(),
+                                    child: const Text('Cancel'),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: isLoading ? null : saveCustomContract,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green[600],
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                    ),
+                                    child: isLoading 
+                                      ? const SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Text('Upload'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: isLoading ? null : saveCustomContract,
-                  child: isLoading ? const CircularProgressIndicator() : const Text('Upload'),
-                ),
-              ],
             );
           },
         );
@@ -444,7 +535,8 @@ class ContractTypeBuild {
 
     try {
       DateTime dateTime = DateTime.parse(dateTimeString.toString());
-      return DateFormat('MMM dd, yyyy • hh:mm a').format(dateTime);
+      DateTime localDateTime = dateTime.toLocal();
+      return DateFormat('MMM dd, yyyy • hh:mm a').format(localDateTime);
     } catch (e) {
       return dateTimeString.toString();
     }

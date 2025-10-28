@@ -37,7 +37,16 @@ Future<void> main() async {
 );
 
   SharedPreferences prefs = await SharedPreferences.getInstance();
+  
+  final supabase = Supabase.instance.client;
+  final hasSession = supabase.auth.currentSession != null;
+  
   bool isFirstOpen = prefs.getBool('isFirstOpen') ?? true;
+  
+  if (hasSession && isFirstOpen) {
+    await prefs.setBool('isFirstOpen', false);
+    isFirstOpen = false;
+  }
 
   runApp(MyApp(isFirstOpen: isFirstOpen));
 }
@@ -70,11 +79,10 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     String initialRoute;
-
-    if (widget.isFirstOpen) {
-      initialRoute = '/welcome';
-    } else if (_session != null) {
+    if (_session != null) {
       initialRoute = '/home';
+    } else if (widget.isFirstOpen) {
+      initialRoute = '/welcome';
     } else {
       initialRoute = '/login';
     }
@@ -90,7 +98,9 @@ class _MyAppState extends State<MyApp> {
         '/auth/callback': (context) => const AuthRedirectPage(),
       },
       onUnknownRoute: (settings) => MaterialPageRoute(
-        builder: (_) => widget.isFirstOpen ? const WelcomePage() : const LoginPage(),
+        builder: (_) => _session != null 
+            ? const HomePage() 
+            : (widget.isFirstOpen ? const WelcomePage() : const LoginPage()),
       ),
     );
   }

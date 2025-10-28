@@ -583,6 +583,7 @@ class BiddingUIBuildMethods {
               bidController.clear();
               messageController.clear();
               onProjectSelected(null);
+              onRefresh();
             },
             child: const Text(
               'Submit Bid',
@@ -946,7 +947,7 @@ class BiddingUIBuildMethods {
                     ),
                     StreamBuilder<Duration>(
                       stream: _service.getBiddingCountdownStream(
-                        DateTime.parse(project['created_at']),
+                        DateTime.parse(project['created_at']).toLocal(),
                         project['duration'],
                       ),
                       builder: (ctx, snap) {

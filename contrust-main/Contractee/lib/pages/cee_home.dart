@@ -166,9 +166,8 @@ class _HomePageState extends State<HomePage> {
             locationController: locationController,
             descriptionController: descriptionController,
             bidTimeController: bidTimeController,
+            onRefresh: _loadData,
           );
-
-          _loadData();
         }
       },
     );
@@ -220,16 +219,7 @@ class _HomePageState extends State<HomePage> {
                         children: [
                           Icon(Icons.work_outline, color: Colors.amber[700], size: 20),
                           const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              "Your Projects",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ),
+
                           TextButton(
                             onPressed: _loadData,
                             child: Text(
@@ -264,20 +254,6 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.work_outline, color: Colors.amber[700], size: 24),
-                          const SizedBox(width: 8),
-                          Text(
-                            "Your Projects",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
                           TextButton(
                             onPressed: _loadData,
                             child: Text(
@@ -305,7 +281,7 @@ class _HomePageState extends State<HomePage> {
                   ),
               SizedBox(height: isMobile ? 12 : 15),
               isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Center(child: CircularProgressIndicator(color: Colors.amber))
                   : ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
@@ -342,7 +318,7 @@ class _HomePageState extends State<HomePage> {
                               projectId: projectId,
                               highestBid: highestBid,
                               duration: project['duration'] ?? 0,
-                              createdAt: DateTime.parse(project['created_at'].toString()),
+                              createdAt: DateTime.parse(project['created_at'].toString()).toLocal(),
                               onTap: () {
                                 CheckUserLogin.isLoggedIn(
                                   context: context,
@@ -404,9 +380,8 @@ class _HomePageState extends State<HomePage> {
                                       bidTimeController: bidTimeController,
                                       isUpdate: true,
                                       projectId: projectId,
+                                      onRefresh: _loadData,
                                     );
-
-                                    await _loadData();
                                     
                                     titleController.dispose();
                                     constructionTypeController.dispose();

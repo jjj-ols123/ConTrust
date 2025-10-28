@@ -9,6 +9,7 @@ import 'package:backend/services/both%20services/be_project_service.dart';
 import 'package:backend/utils/be_constraint.dart';
 import 'package:backend/utils/be_status.dart';
 import 'package:contractor/Screen/cor_ongoing.dart';
+import 'package:contractor/Screen/cor_contracttype.dart';
 import 'package:contractee/pages/cee_ongoing.dart';
 import 'package:contractor/build/builddrawer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -65,6 +66,27 @@ class MessageUIBuildMethods {
   double get subtitleFontSize => isDesktop ? 14 : (isTablet ? 13 : 12);
   double get avatarRadius => isDesktop ? 28 : (isTablet ? 24 : 20);
   
+  Future<List<Map<String, dynamic>>> _sortChatRoomsByStatus(List<Map<String, dynamic>> chatRooms) async {
+    final List<Map<String, dynamic>> activeChatRooms = [];
+    final List<Map<String, dynamic>> archivedChatRooms = [];
+    
+    for (final chat in chatRooms) {
+      try {
+        final project = await FetchService().fetchProjectDetailsByChatRoom(chat['chatroom_id']);
+        final status = project?['status'] ?? '';
+        
+        if (status == 'cancelled' || status == 'completed') {
+          archivedChatRooms.add(chat);
+        } else {
+          activeChatRooms.add(chat);
+        }
+      } catch (e) {
+        activeChatRooms.add(chat);
+      }
+    }
+    
+    return [...activeChatRooms, ...archivedChatRooms];
+  }
 
   Widget buildChatHistoryUI() {
     return Container(
@@ -156,17 +178,30 @@ class MessageUIBuildMethods {
                 }
 
                 final chatRooms = snapshot.data!;
+                
+                return FutureBuilder<List<Map<String, dynamic>>>(
+                  future: _sortChatRoomsByStatus(chatRooms),
+                  builder: (context, sortedSnapshot) {
+                    if (!sortedSnapshot.hasData) {
+                      return Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                        ),
+                      );
+                    }
+                    
+                    final sortedChatRooms = sortedSnapshot.data!;
 
-                return ListView.separated(
-                  padding: EdgeInsets.symmetric(vertical: isDesktop ? 0 : 4),
-                  itemCount: chatRooms.length,
+                    return ListView.separated(
+                      padding: EdgeInsets.symmetric(vertical: isDesktop ? 0 : 4),
+                      itemCount: sortedChatRooms.length,
                   separatorBuilder: (_, __) => Divider(
                     height: 0,
                     indent: avatarRadius + (isDesktop ? 16 : 8),
                     endIndent: isDesktop ? 16 : 8,
                   ),
-                  itemBuilder: (context, index) {
-                    final chat = chatRooms[index];
+                      itemBuilder: (context, index) {
+                        final chat = sortedChatRooms[index];
                     final otherUserId = userRole == 'contractor'
                         ? chat['contractee_id']
                         : chat['contractor_id'];
@@ -204,114 +239,171 @@ class MessageUIBuildMethods {
                                 ? DateTime.tryParse(chat['last_message_time'])
                                 : null;
 
-                            return Container(
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? accentColor.withOpacity(0.05)
-                                    : (canChat
-                                        ? Colors.transparent
-                                        : Colors.grey.shade50),
-                                border: isSelected
-                                    ? Border(
-                                        right: BorderSide(
-                                          color: accentColor,
-                                          width: 3,
-                                        ),
-                                      )
-                                    : null,
-                              ),
-                              child: ListTile(
-                                dense: isMobile,
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: isDesktop ? 16 : (isTablet ? 12 : 8),
-                                  vertical: isDesktop ? 8 : (isTablet ? 6 : 4),
-                                ),
-                                leading: Stack(
-                                  children: [
-                                    CircleAvatar(
-                                      radius: avatarRadius,
-                                      backgroundImage: NetworkImage(
-                                        userProfile ??
-                                            'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
-                                      ),
-                                    ),
-                                    if (!canChat)
-                                      Positioned(
-                                        right: 0,
-                                        bottom: 0,
-                                        child: buildConstraintIcon(),
-                                      ),
-                                  ],
-                                ),
-                                title: Text(
-                                  userName,
-                                  style: TextStyle(
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.w600,
-                                    color: canChat ? Colors.black : Colors.grey,
-                                    fontSize: subtitleFontSize + 1,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                subtitle: isMobile && screenWidth < 400 ? null : Text(
-                                  lastMessage,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: canChat
-                                        ? Colors.grey.shade600
-                                        : Colors.grey.shade400,
-                                    fontSize: subtitleFontSize - 1,
-                                  ),
-                                ),
-                                trailing: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (lastTime != null && (!isMobile || screenWidth > 350))
-                                      Text(
-                                        "${lastTime.hour.toString().padLeft(2, '0')}:${lastTime.minute.toString().padLeft(2, '0')}",
-                                        style: TextStyle(
-                                          fontSize: subtitleFontSize - 2,
-                                          color: canChat
-                                              ? Colors.grey
-                                              : Colors.grey.shade400,
-                                        ),
-                                      ),
-                                    if (!canChat) SizedBox(height: isMobile ? 2 : 4),
-                                    if (!canChat)
-                                      Icon(
-                                        Icons.lock,
-                                        size: isDesktop ? 16 : 14,
-                                        color: Colors.grey.shade400,
-                                      ),
-                                  ],
-                                ),
-                                enabled: canChat,
-                                onTap: () {
-                                  if (canChat) {
-                                    onSelectChat(
-                                      chat['chatroom_id'],
-                                      otherUserId,
-                                      userName,
-                                      userProfile,
-                                    );
-                                  }
-                                },
-                              ),
+                            return FutureBuilder<Map<String, dynamic>?>(
+                              future: FetchService().fetchProjectDetailsByChatRoom(chat['chatroom_id']),
+                              builder: (context, projectSnapshot) {
+                                final project = projectSnapshot.data;
+                                final projectTitle = project?['title'] ?? '';
+                                final projectStatus = project?['status'] ?? '';
+                                
+                                return buildChatListItem(
+                                  chat: chat,
+                                  userName: userName,
+                                  userProfile: userProfile,
+                                  projectTitle: projectTitle,
+                                  projectStatus: projectStatus,
+                                  lastMessage: lastMessage,
+                                  lastTime: lastTime,
+                                  isSelected: isSelected,
+                                  canChat: canChat,
+                                  otherUserId: otherUserId,
+                                );
+                              },
                             );
                           },
                         );
-                      },
-                    );
+                        },
+                      );
+                    },
+                  );
                   },
                 );
               },
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget buildChatListItem({
+    required Map<String, dynamic> chat,
+    required String userName,
+    required String? userProfile,
+    required String projectTitle,
+    required String projectStatus,
+    required String lastMessage,
+    required DateTime? lastTime,
+    required bool isSelected,
+    required bool canChat,
+    required String otherUserId,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isSelected
+            ? accentColor.withOpacity(0.05)
+            : (canChat
+                ? Colors.transparent
+                : Colors.grey.shade50),
+        border: isSelected
+            ? Border(
+                right: BorderSide(
+                  color: accentColor,
+                  width: 3,
+                ),
+              )
+            : null,
+      ),
+      child: ListTile(
+        dense: isMobile,
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: isDesktop ? 16 : (isTablet ? 12 : 8),
+          vertical: isDesktop ? 8 : (isTablet ? 6 : 4),
+        ),
+        leading: Stack(
+          children: [
+            CircleAvatar(
+              radius: avatarRadius,
+              backgroundImage: NetworkImage(
+                userProfile ??
+                    'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
+              ),
+            ),
+            if (!canChat)
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: buildConstraintIcon(),
+              ),
+          ],
+        ),
+        title: Text(
+          userName,
+          style: TextStyle(
+            fontWeight: isSelected
+                ? FontWeight.bold
+                : FontWeight.w600,
+            color: canChat ? Colors.black : Colors.grey,
+            fontSize: subtitleFontSize + 1,
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: isMobile && screenWidth < 400 
+            ? null 
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (projectTitle.isNotEmpty) ...[
+                    Text(
+                      projectTitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: canChat ? Colors.blue.shade700 : Colors.grey.shade400,
+                        fontSize: subtitleFontSize - 2,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                  ],
+                  Text(
+                    lastMessage,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: canChat
+                          ? Colors.grey.shade600
+                          : Colors.grey.shade400,
+                      fontSize: subtitleFontSize - 1,
+                    ),
+                  ),
+                ],
+              ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (lastTime != null && (!isMobile || screenWidth > 350))
+              Text(
+                "${lastTime.hour.toString().padLeft(2, '0')}:${lastTime.minute.toString().padLeft(2, '0')}",
+                style: TextStyle(
+                  fontSize: subtitleFontSize - 2,
+                  color: canChat
+                      ? Colors.grey
+                      : Colors.grey.shade400,
+                ),
+              ),
+            if (!canChat) SizedBox(height: isMobile ? 2 : 4),
+            if (!canChat)
+              Icon(
+                Icons.lock,
+                size: isDesktop ? 16 : 14,
+                color: Colors.grey.shade400,
+              ),
+          ],
+        ),
+        enabled: canChat,
+        onTap: () {
+          if (canChat) {
+            onSelectChat(
+              chat['chatroom_id'],
+              otherUserId,
+              userName,
+              userProfile,
+            );
+          }
+        },
       ),
     );
   }
@@ -351,31 +443,51 @@ class MessageUIBuildMethods {
                   FutureBuilder<String?>(
                     future: projectStatus,
                     builder: (context, snapshot) {
-                      if (snapshot.hasData && (snapshot.data == 'awaiting_contract' || snapshot.data == 'active')) {
+                      if (snapshot.hasData && (snapshot.data == 'awaiting_contract' || 
+                          snapshot.data == 'active' || 
+                          snapshot.data == 'cancellation_requested_by_contractee' ||
+                          snapshot.data == 'awaiting_agreement' ||
+                          snapshot.data == 'awaiting_signature' ||
+                          snapshot.data == 'cancelled' ||
+                          snapshot.data == 'completed')) {
                         return ContractAgreementBanner(
+                          key: ValueKey(chatRoomId),
                           chatRoomId: chatRoomId!,
                           userRole: userRole,
                           onActiveProjectPressed: () async {
                             if (userId == null) return;
                             try {
-                              final activeProjects = await FetchService().fetchContractorActiveProjects(userId!);
-                              if (activeProjects.isEmpty) {
-                                ConTrustSnackBar.error(context, 'No active projects found.');
-                                return;
-                              }
-                              final projectId = activeProjects.first['project_id'];
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => ContractorShell(
-                                    currentPage: ContractorPage.projectManagement,
-                                    contractorId: userId!,
-                                    child: CorOngoingProjectScreen(projectId: projectId ?? ''),
+                              if (snapshot.data == 'awaiting_contract') {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ContractorShell(
+                                      currentPage: ContractorPage.contracts,
+                                      contractorId: userId!,
+                                      child: ContractType(contractorId: userId!),
+                                    ),
                                   ),
-                                ),
-                              );
+                                );
+                              } else {
+                                final activeProjects = await FetchService().fetchContractorActiveProjects(userId!);
+                                if (activeProjects.isEmpty) {
+                                  ConTrustSnackBar.error(context, 'No active projects found.');
+                                  return;
+                                }
+                                final projectId = activeProjects.first['project_id'];
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ContractorShell(
+                                      currentPage: ContractorPage.projectManagement,
+                                      contractorId: userId!,
+                                      child: CorOngoingProjectScreen(projectId: projectId ?? ''),
+                                    ),
+                                  ),
+                                );
+                              }
                             } catch (e) {
-                              ConTrustSnackBar.error(context, 'Error navigating to project management: ');
+                              ConTrustSnackBar.error(context, 'Error navigating: $e');
                             }
                           },
                         );
@@ -387,8 +499,15 @@ class MessageUIBuildMethods {
                   FutureBuilder<String?>(
                     future: projectStatus,
                     builder: (context, snapshot) {
-                      if (snapshot.hasData && (snapshot.data == 'awaiting_contract' || snapshot.data == 'active')) {
+                      if (snapshot.hasData && (snapshot.data == 'awaiting_contract' || 
+                          snapshot.data == 'active' || 
+                          snapshot.data == 'cancellation_requested_by_contractee' ||
+                          snapshot.data == 'awaiting_agreement' ||
+                          snapshot.data == 'awaiting_signature' ||
+                          snapshot.data == 'cancelled' ||
+                          snapshot.data == 'completed')) {
                         return ContractAgreementBanner(
+                          key: ValueKey(chatRoomId),
                           chatRoomId: chatRoomId!,
                           userRole: userRole,
                           onActiveProjectPressed: () async {
@@ -419,6 +538,33 @@ class MessageUIBuildMethods {
                         .eq('chatroom_id', chatRoomId!)
                         .order('timestamp', ascending: true),
                     builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: isDesktop ? 40 : (isTablet ? 35 : 30),
+                                height: isDesktop ? 40 : (isTablet ? 35 : 30),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 3,
+                                  valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                                ),
+                              ),
+                              SizedBox(height: isDesktop ? 16 : 12),
+                              Text(
+                                'Loading messages...',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: subtitleFontSize,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                      
                       if (!snapshot.hasData) {
                         return Container();
                       }
@@ -427,7 +573,38 @@ class MessageUIBuildMethods {
                         (_) => onScrollToBottom(),
                       );
                       if (messages.isEmpty) {
-                        return Container();
+                        return Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(isDesktop ? 32.0 : (isTablet ? 24.0 : 16.0)),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.chat_bubble_outline,
+                                  size: isDesktop ? 64 : (isTablet ? 48 : 40),
+                                  color: Colors.grey[300],
+                                ),
+                                SizedBox(height: isDesktop ? 16 : 12),
+                                Text(
+                                  'No messages yet',
+                                  style: TextStyle(
+                                    fontSize: isDesktop ? 18 : (isTablet ? 16 : 14),
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey[500],
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Start the conversation!',
+                                  style: TextStyle(
+                                    fontSize: subtitleFontSize,
+                                    color: Colors.grey[400],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
                       }
                       return ListView.builder(
                         controller: scrollController,
@@ -450,53 +627,89 @@ class MessageUIBuildMethods {
                     },
                   ),
                 ),
-                Container(
-                  color: Colors.white,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isDesktop ? 8 : (isTablet ? 6 : 4),
-                    vertical: isDesktop ? 8 : (isTablet ? 6 : 4),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius: BorderRadius.circular(isDesktop ? 24 : (isTablet ? 20 : 16)),
-                          ),
-                          child: TextField(
-                            controller: messageController,
-                            minLines: 1,
-                            maxLines: isMobile ? 3 : 4,
-                            style: TextStyle(fontSize: subtitleFontSize),
-                            decoration: InputDecoration(
-                              hintText: "Type your message...",
-                              hintStyle: TextStyle(fontSize: subtitleFontSize),
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: isDesktop ? 16 : (isTablet ? 12 : 8),
-                                vertical: isDesktop ? 12 : (isTablet ? 10 : 8),
+                FutureBuilder<String?>(
+                  future: projectStatus,
+                  builder: (context, statusSnapshot) {
+                    final status = statusSnapshot.data;
+                    final isArchived = status == 'cancelled' || status == 'completed';
+                    
+                    if (isArchived) {
+                      return Container(
+                        color: Colors.grey[100],
+                        padding: EdgeInsets.all(isDesktop ? 12 : (isTablet ? 10 : 8)),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              status == 'cancelled' ? Icons.archive_outlined : Icons.check_circle_outline,
+                              color: Colors.grey[600],
+                              size: isDesktop ? 20 : 16,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              status == 'cancelled' 
+                                  ? 'Project cancelled - Messaging disabled'
+                                  : 'Project completed - Messaging disabled',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: subtitleFontSize,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                            onSubmitted: (_) => onSendMessage(),
-                          ),
+                          ],
                         ),
+                      );
+                    }
+                    
+                    return Container(
+                      color: Colors.white,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isDesktop ? 8 : (isTablet ? 6 : 4),
+                        vertical: isDesktop ? 8 : (isTablet ? 6 : 4),
                       ),
-                      SizedBox(width: isDesktop ? 6 : 4),
-                      CircleAvatar(
-                        backgroundColor: accentColor,
-                        radius: isDesktop ? 24 : (isTablet ? 20 : 16),
-                        child: IconButton(
-                          icon: Icon(
-                            Icons.send, 
-                            color: Colors.white,
-                            size: isDesktop ? 20 : (isTablet ? 18 : 16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                borderRadius: BorderRadius.circular(isDesktop ? 24 : (isTablet ? 20 : 16)),
+                              ),
+                              child: TextField(
+                                controller: messageController,
+                                minLines: 1,
+                                maxLines: isMobile ? 3 : 4,
+                                style: TextStyle(fontSize: subtitleFontSize),
+                                decoration: InputDecoration(
+                                  hintText: "Type your message...",
+                                  hintStyle: TextStyle(fontSize: subtitleFontSize),
+                                  border: InputBorder.none,
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: isDesktop ? 16 : (isTablet ? 12 : 8),
+                                    vertical: isDesktop ? 12 : (isTablet ? 10 : 8),
+                                  ),
+                                ),
+                                onSubmitted: (_) => onSendMessage(),
+                              ),
+                            ),
                           ),
-                          onPressed: onSendMessage,
-                        ),
+                          SizedBox(width: isDesktop ? 6 : 4),
+                          CircleAvatar(
+                            backgroundColor: accentColor,
+                            radius: isDesktop ? 24 : (isTablet ? 20 : 16),
+                            child: IconButton(
+                              icon: Icon(
+                                Icons.send, 
+                                color: Colors.white,
+                                size: isDesktop ? 20 : (isTablet ? 18 : 16),
+                              ),
+                              onPressed: onSendMessage,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -608,23 +821,7 @@ class MessageUIBuildMethods {
     return Column(
       children: [
         Expanded(
-          flex: 1,
-          child: FutureBuilder<Map<String, dynamic>?>(
-            future: loadUserData(otherUserId!),
-            builder: (context, contractorSnapshot) {
-              if (!contractorSnapshot.hasData ||
-                  contractorSnapshot.data == null) {
-                return Container();
-              }
-
-              final contractor = contractorSnapshot.data!;
-
-              return buildContractorInfoSection(contractor);
-            },
-          ),
-        ),
-        Expanded(
-          flex: 1,
+          flex: 2,
           child: FutureBuilder<Map<String, dynamic>?>(
             future: FetchService()
                 .fetchProjectDetailsByChatRoom(chatRoomId!),
@@ -937,8 +1134,8 @@ class MessageUIBuildMethods {
   String _formatContractTime(dynamic timestamp) {
     try {
       final date = timestamp is String
-          ? DateTime.parse(timestamp)
-          : timestamp as DateTime;
+          ? DateTime.parse(timestamp).toLocal()
+          : (timestamp as DateTime).toLocal();
       final now = DateTime.now();
       final difference = now.difference(date);
 
@@ -1049,97 +1246,6 @@ class MessageUIBuildMethods {
               style: TextStyle(
                 color: Colors.grey[700],
                 fontSize: subtitleFontSize,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildContractorInfoSection(Map<String, dynamic> contractor) {
-    return Padding(
-      padding: EdgeInsets.all(isDesktop ? 16.0 : (isTablet ? 12.0 : 8.0)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Contractor Information',
-            style: TextStyle(
-              fontSize: titleFontSize,
-              fontWeight: FontWeight.bold,
-              color: accentColor.withOpacity(0.8),
-            ),
-          ),
-          SizedBox(height: isDesktop ? 16 : (isTablet ? 12 : 8)),
-          Expanded(
-            child: Container(
-              padding: EdgeInsets.all(isDesktop ? 16 : (isTablet ? 12 : 8)),
-              decoration: BoxDecoration(
-                color: accentColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(isDesktop ? 12 : (isTablet ? 10 : 8)),
-                border: Border.all(color: accentColor.withOpacity(0.3)),
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: isDesktop ? 30 : (isTablet ? 25 : 20),
-                          backgroundImage: NetworkImage(
-                            contractor['profile_photo']?.toString() ??
-                                'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
-                          ),
-                        ),
-                        SizedBox(width: isDesktop ? 12 : (isTablet ? 10 : 8)),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                contractor['firm_name']?.toString() ?? 'Contractor',
-                                style: TextStyle(
-                                  fontSize: subtitleFontSize + 2,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              if (contractor['specialization'] != null)
-                                Text(
-                                  contractor['specialization'].toString(),
-                                  style: TextStyle(
-                                    color: accentColor.withOpacity(0.8),
-                                    fontSize: subtitleFontSize,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: isDesktop ? 16 : (isTablet ? 12 : 8)),
-                    if (contractor['experience'] != null)
-                      Text(
-                        'Experience: ${contractor['experience'].toString()} years',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: subtitleFontSize,
-                        ),
-                      ),
-                    SizedBox(height: isDesktop ? 8 : 4),
-                    if (contractor['description'] != null)
-                      Text(
-                        contractor['description'].toString(),
-                        style: TextStyle(
-                          color: Colors.grey[700],
-                          fontSize: subtitleFontSize,
-                        ),
-                      ),
-                  ],
-                ),
               ),
             ),
           ),

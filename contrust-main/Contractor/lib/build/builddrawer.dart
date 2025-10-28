@@ -215,32 +215,89 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
       if (activeProjects.length > 1) {
         projectId = await showDialog<String>(
           context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: const Text('Select Project'),
-            content: SizedBox(
-              width: double.maxFinite,
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: activeProjects.length,
-                itemBuilder: (context, index) {
-                  final project = activeProjects[index];
-                  return ListTile(
-                    title: Text(project['title'] ?? 'Untitled Project'),
-                    subtitle: Text('Status: ${project['status'] ?? 'N/A'}'),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      Navigator.of(dialogContext).pop(project['project_id']);
-                    },
-                  );
-                },
+          builder: (dialogContext) => Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 500),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.white, Colors.grey.shade50],
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade700,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.folder,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Select Project',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(dialogContext).pop(),
+                          icon: const Icon(Icons.close, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    child: Container(
+                      constraints: const BoxConstraints(maxHeight: 400),
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        padding: const EdgeInsets.all(16),
+                        itemCount: activeProjects.length,
+                        itemBuilder: (context, index) {
+                          final project = activeProjects[index];
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            child: ListTile(
+                              title: Text(project['title'] ?? 'Untitled Project'),
+                              subtitle: Text('Status: ${project['status'] ?? 'N/A'}'),
+                              trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.amber.shade700),
+                              onTap: () {
+                                Navigator.of(dialogContext).pop(project['project_id']);
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('Cancel'),
-              ),
-            ],
           ),
         );
         
@@ -515,7 +572,7 @@ class _ModernBottomNavigationBarState extends State<ModernBottomNavigationBar> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
-            children: [
+      children: [
               Expanded(
                 child: _ModernNavItem(
                   icon: Icons.message_outlined,
@@ -643,18 +700,18 @@ class _ModernNavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+                      child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
+                        decoration: BoxDecoration(
                 color: Colors.grey.shade200,
                 borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
+                        ),
+                              child: Icon(
                 isActive ? activeIcon : icon,
                 color: isActive ? Colors.amber.shade700 : Colors.grey.shade600,
                 size: 22,
@@ -741,11 +798,11 @@ class _ProjectNavButton extends StatelessWidget {
           ),
           child: Icon(
             Icons.work_outline,
-            color: Colors.white,
+                    color: Colors.white,
             size: 28,
-          ),
-        ),
-      ),
+                    ),
+                  ),
+                ),
     );
   }
 }
@@ -784,32 +841,89 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
       if (activeProjects.length > 1) {
         projectId = await showDialog<String>(
           context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: const Text('Select Project'),
-            content: SizedBox(
-              width: double.maxFinite,
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: activeProjects.length,
-                itemBuilder: (context, index) {
-                  final project = activeProjects[index];
-                  return ListTile(
-                    title: Text(project['title'] ?? 'Untitled Project'),
-                    subtitle: Text('Status: ${project['status'] ?? 'N/A'}'),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      Navigator.of(dialogContext).pop(project['project_id']);
-                    },
-                  );
-                },
+          builder: (dialogContext) => Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 500),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.white, Colors.grey.shade50],
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade700,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.folder,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Select Project',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(dialogContext).pop(),
+                          icon: const Icon(Icons.close, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    child: Container(
+                      constraints: const BoxConstraints(maxHeight: 400),
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        padding: const EdgeInsets.all(16),
+                        itemCount: activeProjects.length,
+                        itemBuilder: (context, index) {
+                          final project = activeProjects[index];
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            child: ListTile(
+                              title: Text(project['title'] ?? 'Untitled Project'),
+                              subtitle: Text('Status: ${project['status'] ?? 'N/A'}'),
+                              trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.amber.shade700),
+                              onTap: () {
+                                Navigator.of(dialogContext).pop(project['project_id']);
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('Cancel'),
-              ),
-            ],
           ),
         );
         

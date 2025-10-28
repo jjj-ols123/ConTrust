@@ -489,7 +489,7 @@ class CeeProfileBuildMethods {
               final projectName = project['project_name'] ?? 'Unnamed Project';
               final contractorName = project['contractor_name'] ?? 'No Contractor';
               final startDate = project['start_date'] != null
-                  ? DateTime.parse(project['start_date'])
+                  ? DateTime.parse(project['start_date']).toLocal()
                   : DateTime.now();
               final timeAgo = getTimeAgo(startDate);
               
@@ -738,7 +738,7 @@ class CeeProfileBuildMethods {
                   final projectName = project['project_name'] ?? 'Unnamed Project';
                   final contractorName = project['contractor_name'] ?? 'No Contractor';
                   final completionDate = project['completion_date'] != null
-                      ? DateTime.parse(project['completion_date'])
+                      ? DateTime.parse(project['completion_date']).toLocal()
                       : DateTime.now();
                   final timeAgo = getTimeAgo(completionDate);
                   

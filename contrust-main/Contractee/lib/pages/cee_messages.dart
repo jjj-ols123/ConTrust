@@ -2,6 +2,7 @@
 import 'package:backend/build/buildmessagesdesign.dart';
 import 'package:backend/build/buildmessage.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -34,19 +35,28 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
 
   bool _canSend = false;
+  bool _isLoading = true;
 
   late Future<String?> _projectStatus;
 
   @override
   void initState() {
     super.initState();
-    setState(() {
-      _projectStatus = FetchService().fetchProjectStatus(widget.chatRoomId);
-    });
+    _initializeData();
     _messageController.addListener(() {
       setState(() {
         _canSend = _messageController.text.trim().isNotEmpty;
       });
+    });
+  }
+  
+  Future<void> _initializeData() async {
+    setState(() {
+      _projectStatus = FetchService().fetchProjectStatus(widget.chatRoomId);
+    });
+    await _projectStatus;
+    setState(() {
+      _isLoading = false;
     });
   }
 
@@ -96,6 +106,63 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+    
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: Colors.grey[100],
+        appBar: screenWidth > 1200 ? null : AppBar(
+          elevation: 1,
+          backgroundColor: Colors.amber[700],
+          foregroundColor: Colors.white,
+          iconTheme: const IconThemeData(color: Colors.white),
+          titleSpacing: 0,
+          title: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: Colors.white,
+                radius: 22,
+                child: Icon(Icons.person, color: Colors.amber[700], size: 24),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Loading...',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 40,
+                height: 40,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  color: Colors.amber,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Loading conversation...',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     
     final messageUIBuilder = MessageUIBuildMethods(
       context: context,
@@ -160,7 +227,7 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
                 future: _projectStatus,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Center(child: CircularProgressIndicator(color: Colors.amber));
                   } else if (snapshot.hasError) {
                     return Center(child: Text('Error loading status'));
                   } else {
@@ -171,9 +238,7 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
                         chatRoomId: widget.chatRoomId,
                         userRole: 'contractee', 
                         onActiveProjectPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Navigate to Ongoing Projects')),
-                          );
+                          ConTrustSnackBar.info(context, 'Navigate to Ongoing Projects');
                         },
                       );
                     }

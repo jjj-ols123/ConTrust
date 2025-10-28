@@ -9,9 +9,19 @@ String getStatusLabel(String? status) {
       case 'pending':
         return 'Pending';
       case 'awaiting_contract':
-        return 'Awaiting for Contract';
+        return 'Contract Pending';
       case 'awaiting_agreement':
         return 'Awaiting Agreement';
+      case 'awaiting_signature':
+        return 'Awaiting Signature';
+      case 'cancellation_requested_by_contractee':
+        return 'Cancellation Requested';
+      case 'cancelled':
+        return 'Cancelled';
+      case 'completed':
+        return 'Completed';
+      case 'stopped':
+        return 'Stopped';
       case 'closed':
         return 'Closed';
       case 'ended':
@@ -31,6 +41,16 @@ String getStatusLabel(String? status) {
         return Colors.blue;
       case 'awaiting_agreement':
         return Colors.purple;
+      case 'awaiting_signature':
+        return Colors.deepPurple;
+      case 'cancellation_requested_by_contractee':
+        return Colors.amber;
+      case 'cancelled':
+        return Colors.red;
+      case 'completed':
+        return Colors.teal;
+      case 'stopped':
+        return Colors.grey;
       case 'closed':
         return Colors.redAccent;
       case 'ended':

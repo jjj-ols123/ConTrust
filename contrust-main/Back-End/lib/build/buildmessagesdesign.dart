@@ -41,11 +41,10 @@ class ContractAgreementBanner extends StatefulWidget {
 class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
   final supabase = Supabase.instance.client;
   bool dialogShown = false;
-  bool _hasAgreed = false;
-  bool otherHasAgreed = false;
-  bool contractStarted = false;
   bool contractSent = false;
   String? projectStatus;
+  bool _isLoading = true;
+  bool _isProcessing = false; 
 
   late final StreamSubscription _projectSubscription;
   late final StreamSubscription _messagesSubscription;
@@ -62,7 +61,12 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
   void checkProject() async {
     try {
       final projectId = await ProjectService().getProjectId(widget.chatRoomId);
-      if (projectId == null) return;
+      if (projectId == null) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+        return;
+      }
 
       _projectSubscription = supabase
           .from('Projects')
@@ -71,18 +75,11 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
           .listen((event) {
             if (event.isNotEmpty) {
               final project = event.first;
-              final initiated = project['contract_started'] == true;
-              final contractorAgreed = project['contractor_agree'] == true;
-              final contracteeAgreed = project['contractee_agree'] == true;
               final status = project['status'] as String?;
 
               setState(() {
-                contractStarted = initiated;
                 projectStatus = status;
-                final isContractor = widget.userRole == 'contractor';
-                _hasAgreed = isContractor ? contractorAgreed : contracteeAgreed;
-                otherHasAgreed =
-                    isContractor ? contracteeAgreed : contractorAgreed;
+                _isLoading = false;
               });
             }
           });
@@ -127,91 +124,19 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
     }
   }
 
-  Future<void> handleProceed() async {
-    try {
-      final projectId = await ProjectService().getProjectId(widget.chatRoomId);
-      if (projectId == null) return;
-
-      await supabase
-          .from('Projects')
-          .update({'contract_started': true}).eq('project_id', projectId);
-
-      await _auditService.logAuditEvent(
-        action: 'CONTRACT_INITIATED',
-        details: 'Contract agreement initiated for project',
-        category: 'Project',
-        metadata: {
-          'project_id': projectId,
-          'chat_room_id': widget.chatRoomId,
-          'user_role': widget.userRole,
-        },
-      );
-
-      ConTrustSnackBar.waitingForOther(context);
-
-      await Future.delayed(const Duration(milliseconds: 400));
-
-      if (mounted) setState(() {});
-    } catch (e) {
-      await _errorService.logError(
-        errorMessage: 'Failed to proceed with contract: $e',
-        module: 'Contract Agreement Banner',
-        severity: 'High',
-        extraInfo: {
-          'operation': 'Handle Proceed',
-          'chat_room_id': widget.chatRoomId,
-          'user_role': widget.userRole,
-        },
-      );
-      rethrow;
-    }
-  }
-
-  Future<void> handleAgree(String projectId) async {
-    try {
-      final column = widget.userRole == 'contractor'
-          ? 'contractor_agree'
-          : 'contractee_agree';
-
-      await supabase
-          .from('Projects')
-          .update({column: true}).eq('project_id', projectId);
-
-      await _auditService.logAuditEvent(
-        userId: supabase.auth.currentUser?.id,
-        action: 'CONTRACT_AGREED',
-        details: '${widget.userRole} agreed to contract',
-        category: 'Project',
-        metadata: {
-          'project_id': projectId,
-          'chat_room_id': widget.chatRoomId,
-          'user_role': widget.userRole,
-        },
-      );
-
-      if (mounted) {
-        ConTrustSnackBar.agreementConfirmed(context);
-      }
-    } catch (e) {
-      await _errorService.logError(
-        errorMessage: 'Failed to agree to contract: $e',
-        module: 'Contract Agreement Banner',
-        severity: 'High',
-        extraInfo: {
-          'operation': 'Handle Agree',
-          'project_id': projectId,
-          'chat_room_id': widget.chatRoomId,
-          'user_role': widget.userRole,
-        },
-      );
-      rethrow;
-    }
-  }
-
-  Future<void> _handleAgreeCancellation(String projectId) async {
+  Future<void> _handleAgreeCancellation(String projectId) async{
+    if (_isProcessing) return;
+    
+    setState(() => _isProcessing = true);
     try {
       await ProjectService()
           .agreeCancelAgreement(projectId, supabase.auth.currentUser!.id);
+
+      if (mounted) {
+        setState(() {
+          projectStatus = 'cancelled';
+        });
+      }
 
       await _auditService.logAuditEvent(
         userId: supabase.auth.currentUser?.id,
@@ -232,6 +157,13 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
           type: SnackBarType.success,
         );
       }
+      
+      await Future.delayed(const Duration(milliseconds: 800));
+      if (mounted) {
+        setState(() {});
+        await Future.delayed(const Duration(milliseconds: 400));
+        if (mounted) setState(() {});
+      }
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Failed to agree to cancellation: $e',
@@ -251,13 +183,26 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
           type: SnackBarType.error,
         );
       }
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
     }
   }
 
   Future<void> _handleDeclineCancellation(String projectId) async {
+    if (_isProcessing) return;
+    
+    setState(() => _isProcessing = true);
     try {
       await ProjectService()
           .declineCancelAgreement(projectId, supabase.auth.currentUser!.id);
+
+      if (mounted) {
+        setState(() {
+          projectStatus = 'active';
+        });
+      }
 
       await _auditService.logAuditEvent(
         userId: supabase.auth.currentUser?.id,
@@ -278,6 +223,13 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
           type: SnackBarType.info,
         );
       }
+      
+      await Future.delayed(const Duration(milliseconds: 800));
+      if (mounted) {
+        setState(() {});
+        await Future.delayed(const Duration(milliseconds: 400));
+        if (mounted) setState(() {});
+      }
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Failed to decline cancellation: $e',
@@ -297,6 +249,10 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
           type: SnackBarType.error,
         );
       }
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
     }
   }
 
@@ -309,92 +265,139 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
 
   @override
   Widget build(BuildContext context) {
-    String bannerText;
-    String buttonText;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 700;
+    final isTablet = screenWidth >= 700 && screenWidth < 1000;
+
+    if (_isLoading) {
+      return Card(
+        color: Colors.grey[50],
+        margin: EdgeInsets.all(isMobile ? 8 : (isTablet ? 10 : 12)),
+        child: Padding(
+          padding: EdgeInsets.all(isMobile ? 12 : (isTablet ? 14 : 16)),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: isMobile ? 16 : 20,
+                height: isMobile ? 16 : 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.grey[400]!),
+                ),
+              ),
+              SizedBox(width: isMobile ? 8 : 12),
+              Text(
+                'Loading project status...',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: isMobile ? 13 : (isTablet ? 14 : 16),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    String bannerText = '';
+    String buttonText = '';
     VoidCallback? onPressed;
-    Color bannerColor;
+    Color bannerColor = Colors.grey[50]!;
 
-    if (contractSent && widget.userRole == 'contractee') {
-      bannerText = "Contract sent. Waiting for your approval.";
-      buttonText = "Review Contract";
-      onPressed = () async {
-        try {
-          final messages = await supabase
-              .from('Messages')
-              .select()
-              .eq('chatroom_id', widget.chatRoomId)
-              .eq('message_type', 'contract')
-              .order('timestamp', ascending: false)
-              .limit(1);
-
-          if (messages.isNotEmpty && mounted) {
-            final contractMessage = messages.first;
-            await UIMessage._showEnhancedContractView(
-                context, contractMessage['contract_id'], null, contractMessage);
-          }
-        } catch (e) {
-          await _errorService.logError(
-            errorMessage: 'Failed to review contract: $e',
-            module: 'Contract Agreement Banner',
-            severity: 'Medium',
-            extraInfo: {
-              'operation': 'Review Contract',
-              'chat_room_id': widget.chatRoomId,
-              'user_role': widget.userRole,
-            },
-          );
-          if (mounted) {
-            ConTrustSnackBar.error(context, 'Failed to load contract');
-          }
-        }
-      };
-      bannerColor = Colors.blue[50]!;
-    } else if (!contractStarted) {
-      bannerText = "This project is awaiting for creating contract agreement.";
-      buttonText = "Proceed with Contract";
-      onPressed = handleProceed;
-      bannerColor = Colors.blue[50]!;
-    } else if (_hasAgreed && !otherHasAgreed) {
-      bannerText = "Waiting for the other party to agree.";
-      buttonText = "Waiting...";
-      onPressed = null;
-      bannerColor = Colors.orange[50]!;
-    } else if (!_hasAgreed && otherHasAgreed) {
-      bannerText = "The other party has agreed. Do you agree to proceed?";
-      buttonText = "Agree";
-      onPressed = () async {
-        final projectId =
-            await ProjectService().getProjectId(widget.chatRoomId);
-        if (projectId != null) {
-          await handleAgree(projectId);
-        }
-      };
-      bannerColor = Colors.green[50]!;
-    } else if (_hasAgreed && otherHasAgreed && projectStatus != 'active') {
-      if (widget.userRole == 'contractor') {
-        bannerText = "Please proceed to contract creation.";
-        buttonText = "Preparing...";
-        onPressed = null;
-        bannerColor = Colors.white;
+    if (projectStatus == 'cancelled' || projectStatus == 'completed') {
+      if (projectStatus == 'cancelled') {
+        bannerText = "This project was cancelled. Preserved for archive.";
+        buttonText = "Archived";
+        bannerColor = Colors.grey[200]!;
       } else {
-        bannerText = "Please wait for the contractor to send a contract.";
-        buttonText = "Waiting for contract...";
-        onPressed = null;
-        bannerColor = Colors.blue[50]!;
+        bannerText = "This project has been completed. Preserved for archive.";
+        buttonText = "Completed";
+        bannerColor = Colors.green[100]!;
       }
-    } else if (contractStarted && !_hasAgreed && !otherHasAgreed) {
-      bannerText = "Contract agreement initiated. Do you agree to proceed?";
-      buttonText = "Agree";
-      onPressed = () async {
-        final projectId =
-            await ProjectService().getProjectId(widget.chatRoomId);
-        if (projectId != null) {
-          await handleAgree(projectId);
-        }
-      };
-      bannerColor = Colors.green[50]!;
-    } else {
-      if (projectStatus == 'active') {
+      onPressed = null;
+      
+      return Card(
+        color: bannerColor,
+        margin: EdgeInsets.all(isMobile ? 8 : (isTablet ? 10 : 12)),
+        child: Padding(
+          padding: EdgeInsets.all(isMobile ? 12 : (isTablet ? 14 : 16)),
+          child: Row(
+            children: [
+              Icon(
+                projectStatus == 'cancelled' 
+                    ? Icons.archive_outlined 
+                    : Icons.check_circle_outline,
+                color: projectStatus == 'cancelled' 
+                    ? Colors.grey[700] 
+                    : Colors.green[700],
+                size: isMobile ? 20 : 24,
+              ),
+              SizedBox(width: isMobile ? 8 : 12),
+              Expanded(
+                child: Text(
+                  bannerText,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: isMobile ? 13 : (isTablet ? 14 : 16),
+                    color: Colors.grey[800],
+                  ),
+                  textAlign: TextAlign.left,
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 10 : 12,
+                  vertical: isMobile ? 6 : 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  buttonText,
+                  style: TextStyle(
+                    color: Colors.grey[800],
+                    fontWeight: FontWeight.bold,
+                    fontSize: isMobile ? 12 : 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (projectStatus == 'awaiting_signature') {
+      bannerText = "Contract approved! Waiting for both parties to sign.";
+      buttonText = "Awaiting Signatures";
+      onPressed = null;
+      bannerColor = Colors.purple[50]!;
+    } else if (projectStatus == 'awaiting_agreement') {
+      if (widget.userRole == 'contractor') {
+        bannerText = "Contract sent. Waiting for contractee approval.";
+        buttonText = "Pending Approval";
+        onPressed = null;
+        bannerColor = Colors.orange[50]!;
+      } else {
+        bannerText = "Contract sent. Please review and approve.";
+        bannerColor = Colors.orange;
+      }
+    } else if (projectStatus == 'awaiting_contract') {
+      if (widget.userRole == 'contractor') {
+        bannerText = "Please create and send a contract to the contractee.";
+        buttonText = "Create Contract";
+        onPressed = widget.onActiveProjectPressed;
+        bannerColor = Colors.blue[50]!;
+      } else {
+        bannerText = "Waiting for contractor to send the contract.";
+        buttonText = "Waiting...";
+        onPressed = null;
+        bannerColor = Colors.orange[50]!;
+      }
+    } else if (projectStatus == 'active') {
         bannerText = "Project is now active! Proceed to Project Management.";
         buttonText = "Go to Project Management";
         if (widget.userRole == 'contractee') {
@@ -416,22 +419,90 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
               if (activeProjects.length > 1) {
                 projectId = await showDialog<String>(
                       context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: const Text('Select Active Project'),
-                        content: SizedBox(
-                          width: double.maxFinite,
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: activeProjects.length,
-                            itemBuilder: (context, index) {
-                              final p = activeProjects[index];
-                              return ListTile(
-                                title: Text(p['title'] ?? 'Untitled Project'),
-                                subtitle: Text(p['location'] ?? 'No location'),
-                                onTap: () => Navigator.of(ctx)
-                                    .pop(p['project_id'] as String),
-                              );
-                            },
+                      builder: (ctx) => Dialog(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        child: Container(
+                          constraints: const BoxConstraints(maxWidth: 500),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Colors.white, Colors.grey.shade50],
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.shade700,
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(20),
+                                    topRight: Radius.circular(20),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Icon(
+                                        Icons.apartment,
+                                        color: Colors.white,
+                                        size: 18,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    const Expanded(
+                                      child: Text(
+                                        'Select Active Project',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      onPressed: () => Navigator.of(ctx).pop(''),
+                                      icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Flexible(
+                                child: SingleChildScrollView(
+                                  padding: const EdgeInsets.all(16),
+                                  child: ListView.builder(
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    itemCount: activeProjects.length,
+                                    itemBuilder: (context, index) {
+                                      final p = activeProjects[index];
+                                      return Card(
+                                        margin: const EdgeInsets.only(bottom: 8),
+                                        child: ListTile(
+                                          title: Text(
+                                            p['title'] ?? 'Untitled Project',
+                                            style: const TextStyle(fontWeight: FontWeight.w600),
+                                          ),
+                                          subtitle: Text(p['location'] ?? 'No location'),
+                                          trailing: Icon(Icons.chevron_right, color: Colors.amber.shade700),
+                                          onTap: () => Navigator.of(ctx).pop(p['project_id'] as String),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -473,13 +544,6 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
           onPressed = widget.onActiveProjectPressed;
         }
         bannerColor = Colors.green[50]!;
-      } else {
-        bannerText =
-            "This project is awaiting for creating contract agreement.";
-        buttonText = "Proceed with Contract";
-        onPressed = handleProceed;
-        bannerColor = Colors.blue[50]!;
-      }
     }
 
     VoidCallback? onCancelPressed;
@@ -512,10 +576,6 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
       onPressed = null;
       bannerColor = Colors.orange[50]!;
     }
-
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 700;
-    final isTablet = screenWidth >= 700 && screenWidth < 1000;
     
     return Card(
       color: bannerColor,
@@ -539,17 +599,32 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: onPressed,
+                          onPressed: _isProcessing ? null : onPressed,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: onPressed != null
-                                ? (_hasAgreed && !otherHasAgreed
-                                    ? Colors.orange
-                                    : Colors.blue)
+                            backgroundColor: onPressed != null && !_isProcessing
+                                ? Colors.blue
                                 : Colors.grey,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
-                          child: Text(buttonText, style: const TextStyle(fontSize: 13)),
+                          child: _isProcessing
+                              ? Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text('Processing...', style: const TextStyle(fontSize: 13)),
+                                  ],
+                                )
+                              : Text(buttonText, style: const TextStyle(fontSize: 13)),
                         ),
                       ),
                       if (cancelButtonText != null && onCancelPressed != null) ...[
@@ -557,13 +632,30 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: onCancelPressed,
+                            onPressed: _isProcessing ? null : onCancelPressed,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
+                              backgroundColor: _isProcessing ? Colors.grey : Colors.red,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 12),
                             ),
-                            child: Text(cancelButtonText, style: const TextStyle(fontSize: 13)),
+                            child: _isProcessing
+                                ? Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text('Processing...', style: const TextStyle(fontSize: 13)),
+                                    ],
+                                  )
+                                : Text(cancelButtonText, style: const TextStyle(fontSize: 13)),
                           ),
                         ),
                       ],
@@ -574,12 +666,10 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
                     children: [
                       Flexible(
                         child: ElevatedButton(
-                          onPressed: onPressed,
+                          onPressed: _isProcessing ? null : onPressed,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: onPressed != null
-                                ? (_hasAgreed && !otherHasAgreed
-                                    ? Colors.orange
-                                    : Colors.blue)
+                            backgroundColor: onPressed != null && !_isProcessing
+                                ? Colors.blue
                                 : Colors.grey,
                             foregroundColor: Colors.white,
                             padding: EdgeInsets.symmetric(
@@ -587,7 +677,27 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
                               vertical: isTablet ? 10 : 12,
                             ),
                           ),
-                          child: Text(
+                          child: _isProcessing
+                              ? Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    SizedBox(
+                                      width: isTablet ? 14 : 16,
+                                      height: isTablet ? 14 : 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    ),
+                                    SizedBox(width: isTablet ? 6 : 8),
+                                    Text(
+                                      'Processing...', 
+                                      style: TextStyle(fontSize: isTablet ? 13 : 14),
+                                    ),
+                                  ],
+                                )
+                              : Text(
                             buttonText, 
                             style: TextStyle(fontSize: isTablet ? 13 : 14),
                           ),
@@ -597,16 +707,36 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
                         SizedBox(width: isTablet ? 8 : 12),
                         Flexible(
                           child: ElevatedButton(
-                            onPressed: onCancelPressed,
+                            onPressed: _isProcessing ? null : onCancelPressed,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
+                              backgroundColor: _isProcessing ? Colors.grey : Colors.red,
                               foregroundColor: Colors.white,
                               padding: EdgeInsets.symmetric(
                                 horizontal: isTablet ? 16 : 20,
                                 vertical: isTablet ? 10 : 12,
                               ),
                             ),
-                            child: Text(
+                            child: _isProcessing
+                                ? Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      SizedBox(
+                                        width: isTablet ? 14 : 16,
+                                        height: isTablet ? 14 : 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        ),
+                                      ),
+                                      SizedBox(width: isTablet ? 6 : 8),
+                                      Text(
+                                        'Processing...', 
+                                        style: TextStyle(fontSize: isTablet ? 13 : 14),
+                                      ),
+                                    ],
+                                  )
+                                : Text(
                               cancelButtonText, 
                               style: TextStyle(fontSize: isTablet ? 13 : 14),
                             ),
@@ -848,8 +978,8 @@ class UIMessage {
   static String _formatTime(dynamic timestamp) {
     try {
       final date = timestamp is String
-          ? DateTime.parse(timestamp)
-          : timestamp as DateTime;
+          ? DateTime.parse(timestamp).toLocal()
+          : (timestamp as DateTime).toLocal();
       final hour = date.hour.toString().padLeft(2, '0');
       final min = date.minute.toString().padLeft(2, '0');
       return '$hour:$min';
@@ -890,48 +1020,76 @@ class UIMessage {
                 }
 
                 return Dialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                     child: Container(
                   width: MediaQuery.of(context).size.width * 1.2,
                   constraints: const BoxConstraints(maxWidth: 900),
                   height: MediaQuery.of(context).size.height * 0.9,
-                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Colors.white, Colors.grey.shade50],
+                    ),
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Icon(Icons.description,
-                              color: Colors.blue[700], size: 24),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  contractData['title'] ?? 'Contract',
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  'Status: ${_formatStatus(displayStatus)}',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: _getStatusColor(displayStatus),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade700,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(20),
+                            topRight: Radius.circular(20),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.description,
+                                color: Colors.white,
+                                size: 20,
+                              ),
                             ),
-                          ),
-                          IconButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            icon: const Icon(Icons.close),
-                          ),
-                        ],
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    contractData['title'] ?? 'Contract',
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Status: ${_formatStatus(displayStatus)}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.white70,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: const Icon(Icons.close, color: Colors.white),
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 16),
                       Expanded(
                         child: SingleChildScrollView(
                           child: Column(
@@ -946,19 +1104,13 @@ class UIMessage {
                                     child: _ContractApprovalButtons(
                                       contractId: contractId,
                                       onApproved: () async {
-                                        setState(() async {
-                                          contractData = await ContractService
-                                              .getContractById(contractId);
-                                        });
+                                        onRefresh();
                                         Navigator.of(context).pop();
                                         ConTrustSnackBar.contractApproved(
                                             context);
                                       },
                                       onRejected: () async {
-                                        setState(() async {
-                                          contractData = await ContractService
-                                              .getContractById(contractId);
-                                        });
+                                        onRefresh();
                                         Navigator.of(context).pop();
                                         ConTrustSnackBar.contractRejected(
                                             context);
@@ -1029,48 +1181,48 @@ class UIMessage {
                                         );
                                       } else {
                                         return Row(
-                                          children: [
-                                            ElevatedButton.icon(
-                                              onPressed: () async {
-                                                await _downloadContract(contractData,
-                                                    context, messageData);
-                                              },
-                                              icon: const Icon(Icons.download),
-                                              label: Text(_hasSignedPdf(contractData)
-                                                  ? 'Download Signed Contract'
-                                                  : 'Download Contract'),
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.blue[600],
-                                                foregroundColor: Colors.white,
-                                                shape: RoundedRectangleBorder(
+                                    children: [
+                                      ElevatedButton.icon(
+                                        onPressed: () async {
+                                          await _downloadContract(contractData,
+                                              context, messageData);
+                                        },
+                                        icon: const Icon(Icons.download),
+                                        label: Text(_hasSignedPdf(contractData)
+                                            ? 'Download Signed Contract'
+                                            : 'Download Contract'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.blue[600],
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
                                                   borderRadius: BorderRadius.circular(8),
-                                                ),
-                                              ),
-                                            ),
-                                            if (isContractee) ...[
-                                              const SizedBox(width: 16),
-                                              Expanded(
-                                                child: Container(
-                                                  padding: const EdgeInsets.all(12),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.grey[100],
+                                          ),
+                                        ),
+                                      ),
+                                      if (isContractee) ...[
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: Container(
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey[100],
                                                     border: Border.all(color: Colors.grey[300]!),
                                                     borderRadius: BorderRadius.circular(8),
-                                                  ),
-                                                  child: Text(
-                                                    _getSignatureMessage(contractData,
-                                                        currentUserId, displayStatus),
-                                                    textAlign: TextAlign.center,
-                                                    style: TextStyle(
-                                                      color: Colors.grey[600],
-                                                      fontStyle: FontStyle.italic,
-                                                      fontSize: 14,
-                                                    ),
-                                                  ),
-                                                ),
+                                            ),
+                                            child: Text(
+                                              _getSignatureMessage(contractData,
+                                                  currentUserId, displayStatus),
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                color: Colors.grey[600],
+                                                fontStyle: FontStyle.italic,
+                                                fontSize: 14,
                                               ),
-                                            ],
-                                          ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                         );
                                       }
                                     },
@@ -1088,7 +1240,7 @@ class UIMessage {
                                         height: 400,
                                         child: Center(
                                           child: CircularProgressIndicator(
-                                              color: Colors.blue),
+                                              color: Colors.amber),
                                         ),
                                       ),
                                     );
@@ -1328,7 +1480,7 @@ class UIMessage {
                             child: SizedBox(
                               width: 16,
                               height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(color: Colors.amber, strokeWidth: 2),
                             ),
                           );
                         }
@@ -1438,26 +1590,6 @@ class UIMessage {
         return 'Active';
       default:
         return status;
-    }
-  }
-
-  static Color _getStatusColor(String? status) {
-    if (status == null) return Colors.grey;
-    switch (status.toLowerCase()) {
-      case 'draft':
-        return Colors.grey;
-      case 'sent':
-        return Colors.orange;
-      case 'approved':
-        return Colors.green;
-      case 'rejected':
-        return Colors.red;
-      case 'awaiting_signature':
-        return Colors.blue;
-      case 'active':
-        return Colors.green[700]!;
-      default:
-        return Colors.grey;
     }
   }
 
@@ -1614,7 +1746,6 @@ class UIMessage {
             textAlign: TextAlign.center,
           ),
           SizedBox(height: isMobile ? 8 : 12),
-          // Mobile: Stack buttons vertically
           if (isMobile)
             Column(
               children: [
@@ -1694,7 +1825,6 @@ class UIMessage {
                 ),
               ],
             ),
-          // Desktop: Buttons side by side
           if (!isMobile)
             Row(
               children: [
@@ -1777,16 +1907,30 @@ class UIMessage {
     try {
       final input = html.FileUploadInputElement()..accept = 'image/*';
       input.click();
-      final file = input.files?.first;
-      if (file == null) return null;
+
+      await input.onChange.first;
+      
+      if (input.files == null || input.files!.isEmpty) {
+        return null; 
+      }
+      
+      final file = input.files!.first;
 
       final reader = html.FileReader();
       reader.readAsArrayBuffer(file);
       await reader.onLoad.first;
-      return Uint8List.view(reader.result as ByteBuffer);
+      
+      final result = reader.result;
+      if (result is Uint8List) {
+        return result;
+      } else if (result is ByteBuffer) {
+        return Uint8List.view(result);
+      } else {
+        throw Exception('Unexpected file reader result type: ${result.runtimeType}');
+      }
     } catch (e) {
       ConTrustSnackBar.error(
-          context, 'Failed to pick signature image');
+          context, 'Failed to pick signature image $e');
       
       _errorService.logError(
         errorMessage: 'Failed to pick signature image: $e',
@@ -1819,81 +1963,175 @@ class UIMessage {
     return;
   }
 
+  bool isUploading = false;
+  
   showDialog(
     context: context,
     barrierDismissible: false,
     builder: (dialogContext) => StatefulBuilder(
-      builder: (context, setState) => AlertDialog(
-        title: const Text('Confirm Signature'),
-        content: Builder(
-          builder: (context) {
-            return const Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(height: 16),
-                Text(
-                    'You are signing this contract. This action cannot be undone.'),
-              ],
-            );
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              setState(() {});
-
-              try {
-                final userType = isContractee ? 'contractee' : 'contractor';
-
-                await SignatureCompletionHandler
-                    .signContractWithPdfGeneration(
-                  contractId: contractId,
-                  userId: currentUserId,
-                  signatureBytes: signatureBytes,
-                  userType: userType,
-                );
-
-                await _auditService.logAuditEvent(
-                  userId: currentUserId,
-                  action: 'CONTRACT_SIGNED',
-                  details: '$userType signed the contract',
-                  category: 'Contract',
-                  metadata: {
-                    'contract_id': contractId,
-                    'user_type': userType,
-                  },
-                );
-
-                Navigator.of(dialogContext).pop();
-                
-                onRefresh();
-                ConTrustSnackBar.contractSigned(context);
-                
-              } catch (e) {
-                await _errorService.logError(
-                  errorMessage: 'Failed to sign contract: $e',
-                  module: 'UI Message',
-                  severity: 'High',
-                  extraInfo: {
-                    'operation': 'Sign Contract',
-                    'contract_id': contractId,
-                    'user_type': isContractee ? 'contractee' : 'contractor',
-                  },
-                );
-                ConTrustSnackBar.error(context, '$e');
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green[600],
-              foregroundColor: Colors.white,
+      builder: (context, setState) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 500),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.white, Colors.grey.shade50],
             ),
-            child: const Text('Confirm & Sign'),
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade700,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Icon(
+                        Icons.draw,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
+                        'Confirm Signature',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: isUploading ? null : () => Navigator.of(dialogContext).pop(),
+                      icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'You are signing this contract. This action cannot be undone.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 14),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: isUploading ? null : () => Navigator.of(dialogContext).pop(),
+                            child: const Text('Cancel'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: isUploading ? null : () async {
+                              setState(() {
+                                isUploading = true;
+                              });
+
+                              try {
+                                final userType = isContractee ? 'contractee' : 'contractor';
+
+                                await SignatureCompletionHandler
+                                    .signContractWithPdfGeneration(
+                                  contractId: contractId,
+                                  userId: currentUserId,
+                                  signatureBytes: signatureBytes,
+                                  userType: userType,
+                                );
+
+                                await _auditService.logAuditEvent(
+                                  userId: currentUserId,
+                                  action: 'CONTRACT_SIGNED',
+                                  details: '$userType signed the contract',
+                                  category: 'Contract',
+                                  metadata: {
+                                    'contract_id': contractId,
+                                    'user_type': userType,
+                                  },
+                                );
+
+                                Navigator.of(dialogContext).pop();
+                                
+                                onRefresh();
+                                ConTrustSnackBar.contractSigned(context);
+                                
+                              } catch (e) {
+                                await _errorService.logError(
+                                  errorMessage: 'Failed to sign contract: $e',
+                                  module: 'UI Message',
+                                  severity: 'High',
+                                  extraInfo: {
+                                    'operation': 'Sign Contract',
+                                    'contract_id': contractId,
+                                    'user_type': isContractee ? 'contractee' : 'contractor',
+                                  },
+                                );
+                                ConTrustSnackBar.error(context, '$e');
+                                
+                                setState(() {
+                                  isUploading = false;
+                                });
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isUploading ? Colors.grey : Colors.green[600],
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            child: isUploading 
+                              ? Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text('Uploading...'),
+                                  ],
+                                )
+                              : const Text('Confirm & Sign'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     ),
   );

@@ -32,6 +32,7 @@ class ProjectModal {
     required TextEditingController bidTimeController,
     bool isUpdate = false,
     String? projectId,
+    VoidCallback? onRefresh,
   }) async {
     final startDateController = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -81,10 +82,52 @@ class ProjectModal {
                       ),
                     ],
                   ),
-                  child: Stack(
+                  child: Column(
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 40.0),
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade700,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(20),
+                            topRight: Radius.circular(20),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Icon(
+                                isUpdate ? Icons.edit : Icons.add_business,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                isUpdate ? "Update Project" : "Post Construction Request",
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
                         child: SingleChildScrollView(
                           padding: EdgeInsets.only(
                             bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -95,20 +138,7 @@ class ProjectModal {
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                const SizedBox(height: 8),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                                  child: Center(
-                                    child: Text(
-                                      isUpdate ? "Update Project" : "Post a request for Construction",
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 16),
                                 _buildLabeledField(
                                   label: 'Project Title',
                                   child: TextFormField(
@@ -312,7 +342,6 @@ class ProjectModal {
                                       bidTimeController.text.trim(),
                                     )) {
                                       if (isUpdate && projectId != null) {
-                                        // Update existing project
                                         await ProjectService().updateProject(
                                           projectId: projectId,
                                           title: titleController.text.trim(),
@@ -324,7 +353,6 @@ class ProjectModal {
                                           duration: int.tryParse(bidTimeController.text.trim()) ?? 7,
                                         );
                                       } else {
-                                        // Create new project
                                         await ProjectService().postProject(
                                           contracteeId: contracteeId,
                                           title: titleController.text.trim(),
@@ -343,10 +371,20 @@ class ProjectModal {
                                           context: context,
                                         );
                                       }
-                                      Navigator.pop(context);
+                                      
+                                      if (context.mounted) {
+                                        Navigator.pop(context);
+                                      }
+                                      
+                                      if (onRefresh != null) {
+                                        await Future.delayed(const Duration(milliseconds: 100));
+                                        onRefresh();
+                                      }
                                     }
                                   } catch (e) {
-                                    ConTrustSnackBar.error(context, 'Error:');
+                                    if (context.mounted) {
+                                      ConTrustSnackBar.error(context, 'Error submitting project. Please try again.');
+                                    }
                                   }
                                 },
                                 style: ElevatedButton.styleFrom(
@@ -366,22 +404,13 @@ class ProjectModal {
                       ),
                     ),
                   ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: IconButton(
-                      icon: const Icon(Icons.close, size: 28),
-                      onPressed: () => Navigator.of(context).pop(),
-                      tooltip: 'Close',
-                    ),
-                  ),
                 ],
-                  )
-                )
+              ),
+                ),
               );
             },
           ),
-        )
+      ),
         );
       },
     );
@@ -451,10 +480,52 @@ class BidsModal {
               ),
               child: StatefulBuilder(
                 builder: (context, setState) {
-                  return Stack(
+                  return Column(
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 40.0),
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade700,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(20),
+                            topRight: Radius.circular(20),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Icon(
+                                Icons.gavel,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            const Expanded(
+                              child: Text(
+                                'Project Bids',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
                         child: FutureBuilder<List<Map<String, dynamic>>>(
                             future: bidsFuture,
                             builder: (context, snapshot) {
@@ -463,7 +534,7 @@ class BidsModal {
                                 return const SizedBox(
                                   height: 400,
                                   child: Center(
-                                      child: CircularProgressIndicator()),
+                                      child: CircularProgressIndicator(color: Colors.amber,)),
                                 );
                               }
                               if (snapshot.hasError) {
@@ -684,15 +755,92 @@ class BidsModal {
                                                     onPressed: () {
                                                       showDialog(
                                                         context: context,
-                                                        builder: (context) => AlertDialog(
-                                                          title: const Text('Bid Description'),
-                                                          content: Text(message),
-                                                          actions: [
-                                                            TextButton(
+                                                        builder: (context) => Dialog(
+                                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                                          child: Container(
+                                                            constraints: const BoxConstraints(maxWidth: 500),
+                                                            decoration: BoxDecoration(
+                                                              borderRadius: BorderRadius.circular(20),
+                                                              gradient: LinearGradient(
+                                                                begin: Alignment.topLeft,
+                                                                end: Alignment.bottomRight,
+                                                                colors: [Colors.white, Colors.grey.shade50],
+                                                              ),
+                                                            ),
+                                                            child: Column(
+                                                              mainAxisSize: MainAxisSize.min,
+                                                              children: [
+                                                                Container(
+                                                                  padding: const EdgeInsets.all(20),
+                                                                  decoration: BoxDecoration(
+                                                                    color: Colors.amber.shade700,
+                                                                    borderRadius: const BorderRadius.only(
+                                                                      topLeft: Radius.circular(20),
+                                                                      topRight: Radius.circular(20),
+                                                                    ),
+                                                                  ),
+                                                                  child: Row(
+                                                                    children: [
+                                                                      Container(
+                                                                        padding: const EdgeInsets.all(6),
+                                                                        decoration: BoxDecoration(
+                                                                          color: Colors.white.withOpacity(0.2),
+                                                                          borderRadius: BorderRadius.circular(6),
+                                                                        ),
+                                                                        child: const Icon(
+                                                                          Icons.description,
+                                                                          color: Colors.white,
+                                                                          size: 18,
+                                                                        ),
+                                                                      ),
+                                                                      const SizedBox(width: 10),
+                                                                      const Expanded(
+                                                                        child: Text(
+                                                                          'Bid Description',
+                                                                          style: TextStyle(
+                                                                            color: Colors.white,
+                                                                            fontSize: 16,
+                                                                            fontWeight: FontWeight.bold,
+                                                                          ),
+                                                                        ),
+                                                                      ),
+                                                                      IconButton(
                                                               onPressed: () => Navigator.pop(context),
+                                                                        icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                                                                        padding: EdgeInsets.zero,
+                                                                        constraints: const BoxConstraints(),
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                                Padding(
+                                                                  padding: const EdgeInsets.all(24),
+                                                                  child: Column(
+                                                                    mainAxisSize: MainAxisSize.min,
+                                                                    children: [
+                                                                      Text(
+                                                                        message,
+                                                                        style: const TextStyle(fontSize: 14),
+                                                                      ),
+                                                                      const SizedBox(height: 24),
+                                                                      SizedBox(
+                                                                        width: double.infinity,
+                                                                        child: ElevatedButton(
+                                                                          onPressed: () => Navigator.pop(context),
+                                                                          style: ElevatedButton.styleFrom(
+                                                                            backgroundColor: Colors.amber.shade700,
+                                                                            foregroundColor: Colors.white,
+                                                                            padding: const EdgeInsets.symmetric(vertical: 16),
+                                                                          ),
                                                               child: const Text('Close'),
+                                                                        ),
                                                             ),
                                                           ],
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
                                                         ),
                                                       );
                                                     },
@@ -776,7 +924,6 @@ class BidsModal {
                                                        
                                                               Navigator.pop(context);
                                                               onRefresh?.call();
-                                                              ConTrustSnackBar.show(context, 'You accepted $firmName\'s bid', type: SnackBarType.success);
                                                             }
                                                           },
                                                           style: ElevatedButton
@@ -830,15 +977,6 @@ class BidsModal {
                                 ),
                               );
                             }),
-                      ),
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: IconButton(
-                          icon: const Icon(Icons.close, size: 28),
-                          onPressed: () => Navigator.of(context).pop(),
-                          tooltip: 'Close',
-                        ),
                       ),
                     ],
                   );
@@ -910,10 +1048,52 @@ class HireModal {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Stack(
+              child: Column(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 40.0),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade700,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Row(
+                          children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Icon(
+                            Icons.person_add,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                                child: Text(
+                                  "Hire Contractor",
+                                  style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
                     child: SingleChildScrollView(
                       padding: EdgeInsets.only(
                         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -924,20 +1104,7 @@ class HireModal {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const SizedBox(height: 8),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 8.0),
-                              child: Center(
-                                child: Text(
-                                  "Hire Contractor",
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 16),
                             if (existingProjectWithContractor != null ||
                                 (existingProjectWithContractor == null &&
                                     pendingProject != null)) ...[
@@ -1093,15 +1260,6 @@ class HireModal {
                       ),
                     ),
                   ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: IconButton(
-                      icon: const Icon(Icons.close, size: 28),
-                      onPressed: () => Navigator.of(context).pop(),
-                      tooltip: 'Close',
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -1153,23 +1311,107 @@ class __DialogLifecycleWatcherState extends State<_DialogLifecycleWatcher> {
       _dialogShown = true;
       showDialog(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Contract Agreement'),
-          content: const Text('Do you agree to proceed with the contract?'),
-          actions: [
-            TextButton(
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 500),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.white, Colors.grey.shade50],
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade700,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          Icons.handshake,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Contract Agreement',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Do you agree to proceed with the contract?',
+                        style: TextStyle(fontSize: 14),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
               onPressed: () {
                 Navigator.pop(context);
               },
-              child: const Text('Agree'),
+                              child: const Text('Not now'),
             ),
-            TextButton(
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
               },
-              child: const Text('Not now'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green[600],
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                              ),
+                              child: const Text('Agree'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       );
     }

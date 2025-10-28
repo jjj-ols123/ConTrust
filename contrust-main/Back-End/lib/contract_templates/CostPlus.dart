@@ -26,40 +26,104 @@ class CostPlusContract extends StatelessWidget {
           ),
           const SizedBox(height: 30),
 
-      ContractStyle.paragraph(
-        'This Cost-Plus Construction Contract ("Contract") is entered into on [Date of contract creation] by and between [Contractor firm or company name] ("Your Construction Company\'s Name"), hereinafter referred to as the "Contractor," and [First name of the contractee] [Last name of the contractee], hereinafter referred to as the "Contractee."'),
+          ContractStyle.paragraph(
+            'This Cost-Plus Construction Contract ("Contract") is entered into on [Contract.CreationDate] by and between [Contractor.Company] ("Your Construction Company\'s Name"), hereinafter referred to as the "Contractor," and [Contractee.FirstName] [Contractee.LastName], hereinafter referred to as the "Contractee."'),
 
           const SizedBox(height: 24),
           ContractStyle.sectionTitle('The Parties'),
           const SizedBox(height: 16),
 
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ContractStyle.sectionTitle('Contractee'),
-                    const SizedBox(height: 8),
-                    ContractStyle.paragraph('Name: [First name of the contractee] [Last name of the contractee]'),
-                    ContractStyle.paragraph('Address: [Contractee street address] [Contractee city] [Contractee postal code]'),
-                  ],
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade400),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      border: Border(right: BorderSide(color: Colors.grey.shade400)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Contractor', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        const SizedBox(height: 12),
+                        Text(
+                          ContractStyle.textResolver != null 
+                              ? 'Company: ${ContractStyle.textResolver!('[Contractor.Company]')}' 
+                              : 'Company: [Contractor.Company]',
+                          style: const TextStyle(fontSize: 12)
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          ContractStyle.textResolver != null 
+                              ? 'Address: ${ContractStyle.textResolver!('[Contractor.Address]')}' 
+                              : 'Address: [Contractor.Address]',
+                          style: const TextStyle(fontSize: 12)
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          ContractStyle.textResolver != null 
+                              ? 'Phone: ${ContractStyle.textResolver!('[Contractor.Phone]')}' 
+                              : 'Phone: [Contractor.Phone]',
+                          style: const TextStyle(fontSize: 12)
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          ContractStyle.textResolver != null 
+                              ? 'Email: ${ContractStyle.textResolver!('[Contractor.Email]')}' 
+                              : 'Email: [Contractor.Email]',
+                          style: const TextStyle(fontSize: 12)
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 40),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ContractStyle.sectionTitle('Contractor'),
-                    const SizedBox(height: 8),
-                    ContractStyle.paragraph('Name: [First name of the contractor] [Last name of the contractor]'),
-                    ContractStyle.paragraph('Address: [Contractor street address] [Contractor city] [Contractor postal code]'),
-                  ],
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Contractee', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        const SizedBox(height: 12),
+                        Text(
+                          ContractStyle.textResolver != null 
+                              ? 'Name: ${ContractStyle.textResolver!('[Contractee.FirstName]')} ${ContractStyle.textResolver!('[Contractee.LastName]')}' 
+                              : 'Name: [Contractee.FirstName] [Contractee.LastName]',
+                          style: const TextStyle(fontSize: 12)
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          ContractStyle.textResolver != null 
+                              ? 'Address: ${ContractStyle.textResolver!('[Contractee.Address]')}' 
+                              : 'Address: [Contractee.Address]',
+                          style: const TextStyle(fontSize: 12)
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          ContractStyle.textResolver != null 
+                              ? 'Phone: ${ContractStyle.textResolver!('[Contractee.Phone]')}' 
+                              : 'Phone: [Contractee.Phone]',
+                          style: const TextStyle(fontSize: 12)
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          ContractStyle.textResolver != null 
+                              ? 'Email: ${ContractStyle.textResolver!('[Contractee.Email]')}' 
+                              : 'Email: [Contractee.Email]',
+                          style: const TextStyle(fontSize: 12)
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
 
           const SizedBox(height: 24),
@@ -68,18 +132,21 @@ class CostPlusContract extends StatelessWidget {
 
           ContractStyle.paragraph(
               'WHEREAS, the Contractee intends to undertake a construction project (the "Project") described as follows:'),
+          const SizedBox(height: 8),
           
           ContractStyle.bulletList([
-            'Brief Description of the Project: [Project description]',
-            'Location: [Project address]',
-            'Start Date: [Start date of the project]',
-            'Completion Date: [Estimated completion date] (Estimate)',
-            'Duration: [Project duration] days',
+            'Brief Description of the Project: [Project.Description]',
+            'Location: [Project.Address]',
+            'Start Date: [Project.StartDate]',
+            'Completion Date: [Project.CompletionDate] (Estimate)',
+            'Duration: [Project.Duration] days',
           ]),
 
+          const SizedBox(height: 12),
           ContractStyle.paragraph(
               'WHEREAS, Contractor is willing to provide construction services for the Project, as further described herein;'),
 
+          const SizedBox(height: 12),
           ContractStyle.paragraph(
               'NOW, THEREFORE, in consideration of the premises and mutual covenants contained herein, and for other good and valuable consideration, the parties hereto agree as follows:'),
 
@@ -89,23 +156,26 @@ class CostPlusContract extends StatelessWidget {
 
           ContractStyle.paragraph(
               '1.1. The Contractor shall be reimbursed for actual costs incurred for labor, materials, equipment, and other expenses related to the project, plus a fee for overhead and profit as detailed below:'),
+          const SizedBox(height: 8),
 
           ContractStyle.bulletList([
-            'Labor Costs: Actual hourly rates as specified - PHP[Hourly labor rate] per hour',
-            'Material Costs: Actual cost of materials with receipts - PHP[Estimated material costs] (estimated)',
-            'Equipment Costs: Actual rental/usage costs - PHP[Estimated equipment costs] (estimated)',
+            'Labor Costs: Actual hourly rates as specified - PHP [Labor.Costs] per hour',
+            'Material Costs: Actual cost of materials with receipts - PHP [Material.Costs] (estimated)',
+            'Equipment Costs: Actual rental/usage costs - PHP [Equipment.Costs] (estimated)',
             'Subcontractor Costs: Actual payments to qualified subcontractors',
-            'Overhead and Profit Fee: [Overhead and profit percentage]% of total project costs',
+            'Overhead and Profit Fee: [Overhead.Percentage]% of total project costs',
           ]),
 
           const SizedBox(height: 12),
           ContractStyle.sectionTitle('1.2 Payment Terms:'),
+          const SizedBox(height: 8),
+
           ContractStyle.bulletList([
-            'Total Estimated Project Cost: PHP[Total estimated project cost]',
-            'Payment Interval: [Payment interval] (weekly/bi-weekly/monthly)',
-            'Retention Fee: PHP[Retention fee] (held until project completion)',
-            'Late Payment Fee: [Late payment fee percentage]% per month on overdue amounts',
-            'Payment Due: [Number of days after invoice due] days from invoice date',
+            'Total Estimated Project Cost: PHP [Estimated.Total]',
+            'Payment Interval: [Payment.Interval] (weekly/bi-weekly/monthly)',
+            'Retention Fee: PHP [Retention.Fee] (held until project completion)',
+            'Late Payment Fee: [Late.Fee.Percentage]% per month on overdue amounts',
+            'Payment Due: [Payment.DueDays] days from invoice date',
           ]),
 
           const SizedBox(height: 20),
@@ -115,155 +185,44 @@ class CostPlusContract extends StatelessWidget {
           ContractStyle.sectionTitle('Contractee\'s Responsibilities'),
           const SizedBox(height: 12),
 
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 2,
-                child: ContractStyle.sectionTitle('Payment to Contractor'),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                flex: 5,
-                child: ContractStyle.paragraph(
-                    'The Contractee shall be responsible for making payments to the Contractor for the cost of the work, as well as the agreed-upon fee. The cost of the work shall include all allowable costs as defined in this Contract.'),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 2,
-                child: ContractStyle.sectionTitle('Site Access and Utilities'),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                flex: 5,
-                child: ContractStyle.paragraph(
-                    'The Contractee shall ensure that the Contractor has unobstructed access to the construction site and shall provide all necessary utilities required for the construction, including but not limited to water, electricity, and sanitation facilities.'),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 2,
-                child: ContractStyle.sectionTitle('Permits and Approvals'),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                flex: 5,
-                child: ContractStyle.paragraph(
-                    'The Contractee shall be responsible for obtaining all necessary permits, licenses, and approvals required for the construction project. This includes, but is not limited to, building permits, zoning variances, and environmental clearances.'),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 2,
-                child: ContractStyle.sectionTitle('Builder\'s Risk Insurance'),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                flex: 5,
-                child: ContractStyle.paragraph(
-                    'The Contractee shall obtain and maintain the builder\'s risk insurance for the construction project. This insurance shall cover any loss or damage to the work, including materials and equipment, caused by perils such as fire, theft, vandalism, and natural disasters.'),
-              ),
-            ],
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade400),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              children: [
+                _buildResponsibilityRow('Payment to Contractor', 'Make payments according to schedule', isFirst: true),
+                _buildResponsibilityRow('Site Access and Utilities', 'Provide access and utilities as needed'),
+                _buildResponsibilityRow('Permits and Approvals', 'Assist in obtaining necessary permits'),
+                _buildResponsibilityRow('Builder\'s Risk Insurance', 'Maintain appropriate insurance coverage', isLast: true),
+              ],
+            ),
           ),
 
           const SizedBox(height: 20),
           ContractStyle.sectionTitle('3. Contractor\'s Responsibilities'),
           const SizedBox(height: 12),
 
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 2,
-                child: ContractStyle.sectionTitle('Performance of Work'),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                flex: 5,
-                child: ContractStyle.paragraph(
-                    'The Contractor shall diligently and competently perform all work in strict accordance with the contract documents, including but not limited to the plans, specifications, and any subsequent modifications or change orders. The Contractor shall ensure the quality of workmanship and materials meets or exceeds industry standards.'),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 2,
-                child: ContractStyle.sectionTitle('Procurement of Materials and Employment of Workers'),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                flex: 5,
-                child: ContractStyle.paragraph(
-                    'The Contractor is responsible for the procurement of all necessary materials, equipment, and labor required to complete the construction project. This shall include but is not limited to, the selection, purchase, delivery, and storage of all materials and the hiring, supervision, and payment of all laborers, subcontractors, and suppliers.'),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 2,
-                child: ContractStyle.sectionTitle('Subcontractor Payments'),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                flex: 5,
-                child: ContractStyle.paragraph(
-                    'The Contractor shall promptly and, in accordance with the terms of their agreements, make all payments to subcontractors and suppliers associated with the project. The Contractor shall bear full responsibility for the management and payment of all subcontractors and suppliers.'),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 2,
-                child: ContractStyle.sectionTitle('Compliance with Laws and Standards'),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                flex: 5,
-                child: ContractStyle.paragraph(
-                    'The Contractor shall, at all times, comply with all applicable federal, state, and local laws, regulations, ordinances, codes, rules, and standards pertaining to the construction work. This includes but is not limited to safety standards, building codes, environmental regulations, and permits required for the project.'),
-              ),
-            ],
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade400),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              children: [
+                _buildResponsibilityRow('Performance of Work', 'Execute work according to plans and specifications', isFirst: true),
+                _buildResponsibilityRow('Procurement of Materials', 'Source materials and hire qualified workers'),
+                _buildResponsibilityRow('Subcontractor Payments', 'Ensure timely payment to subcontractors'),
+                _buildResponsibilityRow('Compliance with Laws', 'Comply with all applicable laws and building codes', isLast: true),
+              ],
+            ),
           ),
 
           const SizedBox(height: 20),
           ContractStyle.sectionTitle('3.1. Cost of Work and Payments'),
           const SizedBox(height: 12),
 
-          const SizedBox(height: 16),
           ContractStyle.sectionTitle('Cost Plus Fee'),
           const SizedBox(height: 12),
 
@@ -274,6 +233,7 @@ class CostPlusContract extends StatelessWidget {
           ContractStyle.paragraph(
               'The Contractor\'s fee shall be calculated based solely on the following:'),
 
+          const SizedBox(height: 8),
           ContractStyle.bulletList([
             '(a) The Contractor\'s costs for materials, labor, equipment, and other direct project expenses as directly related to the cost of work.',
             '(b) No markup shall be allowed on subcontracts for the execution of the cost of work.',
@@ -295,10 +255,9 @@ class CostPlusContract extends StatelessWidget {
           ContractStyle.sectionTitle('4. Delays and Extensions of Time'),
           const SizedBox(height: 12),
 
-          const SizedBox(height: 12),
           ContractStyle.sectionTitle('Procedures for Time Extensions:'),
           ContractStyle.paragraph(
-              'In the event that the Contractor is delayed in the progress of the Work for reasons beyond the Contractor\'s control, including but not limited to acts of God, strikes, material shortages, changes in the Work ordered by the Contractee, or other excusable delays, the Contractor shall promptly notify the Contractee in writing of the cause of the delay. The Contractee shall have the right to grant or deny time extensions, at the Contractee\'s sole discretion, for any delays that are found to be excusable.'),
+              'In the event that the Contractor is delayed in the progress of the Work for reasons beyond the Contractor\'s control, including but not limited to acts of God, strikes, material shortages, changes in the Work ordered by the Contractee, or other excusable delays, the Contractor shall promptly notify the Contractee in writing of the cause of the delay.'),
 
           const SizedBox(height: 12),
           ContractStyle.sectionTitle('No Damages to the Contractor for Delay:'),
@@ -309,18 +268,18 @@ class CostPlusContract extends StatelessWidget {
           ContractStyle.sectionTitle('5. Insurance and Bonds'),
           const SizedBox(height: 12),
 
-          const SizedBox(height: 12),
           ContractStyle.sectionTitle('Contractor\'s Insurance:'),
           ContractStyle.paragraph(
               'The Contractor shall, at its own expense, procure and maintain insurance coverage during the term of this Agreement, in accordance with industry standards and with limits of liability as specified herein, and shall provide evidence of such insurance to the Contractee prior to commencing any work under this Contract. Such insurance shall include, but not be limited to:'),
 
           const SizedBox(height: 12),
-      ContractStyle.sectionTitle('Performance and Payment Bonds'),
-      ContractStyle.paragraph(
-        'The Contractor shall furnish to the Contractee, within [Number of days to submit bonds] days, performance and payment bonds executed by a surety company licensed to do business in the jurisdiction where the project is located. The performance bond shall be in an amount not less than PHP[Performance bond amount] and shall guarantee the faithful performance of all Work under this Agreement.'),
-
+          ContractStyle.sectionTitle('Performance and Payment Bonds'),
           ContractStyle.paragraph(
-        'The payment bond shall be in an amount not less than PHP[Payment bond amount] and shall guarantee the payment to all subcontractors, laborers, and material suppliers for labor and materials furnished in connection with this Contract. The Contractor shall maintain these bonds in full force and effect throughout the duration of the project.'),
+            'The Contractor shall furnish to the Contractee, within [Bond.TimeFrame] days, performance and payment bonds executed by a surety company licensed to do business in the jurisdiction where the project is located. The performance bond shall be in an amount not less than PHP [Bond.PerformanceAmount] and shall guarantee the faithful performance of all Work under this Agreement.'),
+
+          const SizedBox(height: 12),
+          ContractStyle.paragraph(
+            'The payment bond shall be in an amount not less than PHP [Bond.PaymentAmount] and shall guarantee the payment to all subcontractors, laborers, and material suppliers for labor and materials furnished in connection with this Contract. The Contractor shall maintain these bonds in full force and effect throughout the duration of the project.'),
 
           const SizedBox(height: 20),
           ContractStyle.sectionTitle('6. Change Orders and Modifications'),
@@ -333,16 +292,16 @@ class CostPlusContract extends StatelessWidget {
           ContractStyle.sectionTitle('7. Termination and Disputes'),
           const SizedBox(height: 12),
 
-      ContractStyle.paragraph(
-        '7.1. Either party may terminate this contract with [Termination notice period in days] days written notice. Upon termination, Contractor shall be compensated for all work completed and costs incurred up to the termination date.'),
+          ContractStyle.paragraph(
+            '7.1. Either party may terminate this contract with [Notice.Period] days written notice. Upon termination, Contractor shall be compensated for all work completed and costs incurred up to the termination date.'),
 
           const SizedBox(height: 12),
-      ContractStyle.paragraph(
-        '7.2. Contractor provides a [Warranty period in months] months warranty on workmanship and materials from the date of project completion. This warranty covers defects in materials and workmanship under normal use and conditions.'),
+          ContractStyle.paragraph(
+            '7.2. Contractor provides a [Warranty.Period] months warranty on workmanship and materials from the date of project completion. This warranty covers defects in materials and workmanship under normal use and conditions.'),
 
           const SizedBox(height: 12),
-      ContractStyle.paragraph(
-        '7.3. Any disputes arising from this contract shall be resolved through mediation first, and if unsuccessful, through arbitration under Philippine law. All legal proceedings shall be conducted in the courts of [Contractor province], Republic of the Philippines.'),
+          ContractStyle.paragraph(
+            '7.3. Any disputes arising from this contract shall be resolved through mediation first, and if unsuccessful, through arbitration under Philippine law. All legal proceedings shall be conducted in the courts of [Contractor.Province], Republic of the Philippines.'),
 
           const SizedBox(height: 20),
           ContractStyle.sectionTitle('8. Governing Law'),
@@ -395,7 +354,13 @@ class CostPlusContract extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    ContractStyle.paragraph('[First name of the contractee] [Last name of the contractee]'),
+                    Text(
+                      ContractStyle.textResolver != null 
+                          ? '${ContractStyle.textResolver!('[Contractee.FirstName]')} ${ContractStyle.textResolver!('[Contractee.LastName]')}' 
+                          : '[Contractee.FirstName] [Contractee.LastName]',
+                      style: const TextStyle(fontSize: 12)
+                    ),
+                    Text('Contractee', style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
                   ],
                 ),
               ),
@@ -425,13 +390,48 @@ class CostPlusContract extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    ContractStyle.paragraph('[First name of the contractor] [Last name of the contractor]'),
+                    Text(
+                      ContractStyle.textResolver != null 
+                          ? '${ContractStyle.textResolver!('[Contractor.FirstName]')} ${ContractStyle.textResolver!('[Contractor.LastName]')}' 
+                          : '[Contractor.FirstName] [Contractor.LastName]',
+                      style: const TextStyle(fontSize: 12)
+                    ),
+                    Text('Contractor', style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
                   ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 30),
+        ],
+      ),
+    );
+  }
+
+  static Widget _buildResponsibilityRow(String title, String description, {bool isFirst = false, bool isLast = false}) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+          top: isFirst ? BorderSide.none : BorderSide(color: Colors.grey.shade400),
+        ),
+        borderRadius: isLast ? const BorderRadius.only(
+          bottomLeft: Radius.circular(8),
+          bottomRight: Radius.circular(8),
+        ) : null,
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            flex: 3,
+            child: Text(description, style: const TextStyle(fontSize: 11)),
+          ),
         ],
       ),
     );

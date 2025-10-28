@@ -187,7 +187,6 @@ class ProjectService {
         'min_budget': minBudget,
         'max_budget': maxBudget,
         'duration': duration,
-        'updated_at': DateTime.now().toIso8601String(),
       };
 
       if (currentStatus == 'stopped') {
@@ -245,22 +244,24 @@ class ProjectService {
       if (contractorId != null) {
         await _supabase.from('Projects').update({
           'status': 'cancellation_requested_by_contractee',
-          'updated_at': DateTime.now().toIso8601String(),
         }).eq('project_id', projectId);
 
         await _supabase.from('Notifications').insert({
           'receiver_id': contractorId,
           'sender_id': contracteeId,
+          'receiver_type': 'contractor',
+          'sender_type': 'contractee',
           'headline': 'Project Cancellation Request',
-          'message': 'The contractee has requested to cancel the project "$projectTitle". Your approval is required.',
           'information': {
             'project_id': projectId,
             'project_title': projectTitle,
+            'message': 'The contractee has requested to cancel the project "$projectTitle". Your approval is required.',
             'cancellation_requested_by': 'contractee',
             'requested_at': DateTime.now().toIso8601String(),
             'requires_contractor_approval': true,
             'original_status': originalStatus,
           },
+          'is_read': false,
           'created_at': DateTime.now().toIso8601String(),
         });
 
@@ -278,7 +279,6 @@ class ProjectService {
       } else {
         await _supabase.from('Projects').update({
           'status': 'cancelled',
-          'updated_at': DateTime.now().toIso8601String(),
         }).eq('project_id', projectId);
 
         await _auditService.logAuditEvent(
@@ -381,39 +381,43 @@ class ProjectService {
 
       await _supabase.from('Projects').update({
         'status': 'cancelled',
-        'updated_at': DateTime.now().toIso8601String(),
       }).eq('project_id', projectId);
 
       await _supabase.from('Contracts').update({
         'status': 'cancelled',
-        'updated_at': DateTime.now().toIso8601String(),
       }).eq('project_id', projectId);
 
       await _supabase.from('Notifications').insert([
         {
           'receiver_id': contractorId,
           'sender_id': contracteeId,
+          'receiver_type': 'contractor',
+          'sender_type': 'contractee',
           'headline': 'Project Cancelled',
-          'message': 'The project "$projectTitle" has been cancelled by mutual agreement.',
           'information': {
             'project_id': projectId,
             'project_title': projectTitle,
+            'message': 'The project "$projectTitle" has been cancelled by mutual agreement.',
             'cancelled_by': 'mutual_agreement',
             'cancelled_at': DateTime.now().toIso8601String(),
           },
+          'is_read': false,
           'created_at': DateTime.now().toIso8601String(),
         },
         {
           'receiver_id': contracteeId,
           'sender_id': contractorId,
+          'receiver_type': 'contractee',
+          'sender_type': 'contractor',
           'headline': 'Project Cancelled',
-          'message': 'The project "$projectTitle" has been cancelled by mutual agreement.',
           'information': {
             'project_id': projectId,
             'project_title': projectTitle,
+            'message': 'The project "$projectTitle" has been cancelled by mutual agreement.',
             'cancelled_by': 'mutual_agreement',
             'cancelled_at': DateTime.now().toIso8601String(),
           },
+          'is_read': false,
           'created_at': DateTime.now().toIso8601String(),
         },
       ]);
@@ -500,23 +504,27 @@ class ProjectService {
 
       await _supabase.from('Projects').update({
         'status': originalStatus,
-        'updated_at': DateTime.now().toIso8601String(),
       }).eq('project_id', projectId);
 
       final otherPartyId = isContractor ? contracteeId : contractorId;
       final decliningPartyRole = isContractor ? 'contractor' : 'contractee';
+      final receiverType = isContractor ? 'contractee' : 'contractor';
+      final senderType = isContractor ? 'contractor' : 'contractee';
 
       await _supabase.from('Notifications').insert({
         'receiver_id': otherPartyId,
         'sender_id': userId,
+        'receiver_type': receiverType,
+        'sender_type': senderType,
         'headline': 'Cancellation Declined',
-        'message': 'The $decliningPartyRole has declined to cancel the project "$projectTitle". The project will continue.',
         'information': {
           'project_id': projectId,
           'project_title': projectTitle,
+          'message': 'The $decliningPartyRole has declined to cancel the project "$projectTitle". The project will continue.',
           'declined_by': decliningPartyRole,
           'declined_at': DateTime.now().toIso8601String(),
         },
+        'is_read': false,
         'created_at': DateTime.now().toIso8601String(),
       });
 

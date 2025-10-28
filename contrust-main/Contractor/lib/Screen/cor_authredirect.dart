@@ -27,7 +27,7 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
   Widget build(BuildContext context) {
     return const Scaffold(
       body: Center(
-        child: CircularProgressIndicator(), 
+        child: CircularProgressIndicator(color: Colors.amber), 
       ),
     );
   }

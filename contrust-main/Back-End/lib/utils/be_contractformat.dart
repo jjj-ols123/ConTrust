@@ -4,6 +4,7 @@ class ContractStyle {
   static String Function(String)? textResolver;
 
   static bool Function(int)? itemRowVisibilityChecker;
+  static bool Function(int)? milestoneRowVisibilityChecker;
 
   static void setTextResolver(String Function(String) resolver) {
     textResolver = resolver;
@@ -16,7 +17,7 @@ class ContractStyle {
   String formatTimestamp(String? timestamp) {
     if (timestamp == null) return 'N/A';
     try {
-      final dateTime = DateTime.parse(timestamp);
+      final dateTime = DateTime.parse(timestamp).toLocal();
       return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} '
              '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     } catch (e) {
@@ -27,7 +28,7 @@ class ContractStyle {
    static String formatDate(String? dateString) {
     if (dateString == null) return 'N/A';
     try {
-      final dateTime = DateTime.parse(dateString);
+      final dateTime = DateTime.parse(dateString).toLocal();
       return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';
     } catch (e) {
       return dateString;
@@ -47,6 +48,20 @@ class ContractStyle {
   static bool shouldShowItemRow(int rowNumber) {
     return itemRowVisibilityChecker != null
         ? itemRowVisibilityChecker!(rowNumber)
+        : true;
+  }
+
+  static void setMilestoneRowVisibilityChecker(bool Function(int) checker) {
+    milestoneRowVisibilityChecker = checker;
+  }
+
+  static void clearMilestoneRowVisibilityChecker() {
+    milestoneRowVisibilityChecker = null;
+  }
+
+  static bool shouldShowMilestoneRow(int rowNumber) {
+    return milestoneRowVisibilityChecker != null
+        ? milestoneRowVisibilityChecker!(rowNumber)
         : true;
   }
 
@@ -182,5 +197,4 @@ class ContractStyle {
     }
     return sum;
   }
-
 }

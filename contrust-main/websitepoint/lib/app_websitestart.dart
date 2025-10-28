@@ -87,7 +87,7 @@ class WebsiteStartPage extends StatelessWidget {
   }
 
   Widget _buildHeroSection(BuildContext context, bool isDesktop, double screenWidth) {
-    return Container(
+    return SizedBox(
       height: isDesktop ? 600 : 500,
       width: double.infinity,
       child: Stack(
