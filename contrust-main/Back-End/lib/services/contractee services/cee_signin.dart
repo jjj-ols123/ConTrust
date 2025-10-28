@@ -2,7 +2,9 @@
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractee/pages/cee_home.dart';
+import 'package:contractee/pages/cee_otp_verification.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:backend/services/superadmin services/auditlogs_service.dart';
@@ -157,18 +159,33 @@ class SignInContractee {
       
       final supabase = Supabase.instance.client;
 
-      await supabase.from('Users').upsert({
-        'users_id': user.id,
-        'email': email,
-        'name': data?['full_name'] ?? 'Contractee',
-        'role': 'contractee',
-        'status': 'active',
-        'created_at': DateTime.now().toIso8601String(),
-        'last_login': DateTime.now().toIso8601String(),
-        'profile_image_url': data?['profilePhoto'],
-        'phone_number': data?['phone_number'] ?? '',
-        'verified': false,
-      }, onConflict: 'users_id');
+      await Future.delayed(const Duration(milliseconds: 1000));
+
+      bool insertSuccess = false;
+      for (int attempt = 0; attempt < 5 && !insertSuccess; attempt++) {
+        try {
+          await supabase.from('Users').upsert({
+            'users_id': user.id,
+            'email': email,
+            'name': data?['full_name'] ?? 'Contractee',
+            'role': 'contractee',
+            'status': 'active',
+            'created_at': DateTime.now().toIso8601String(),
+            'last_login': DateTime.now().toIso8601String(),
+            'profile_image_url': data?['profilePhoto'],
+            'phone_number': data?['phone_number'] ?? '',
+            'verified': false,
+          }, onConflict: 'users_id');
+          insertSuccess = true;
+        } catch (e) {
+          if (attempt == 4) {
+            // Last attempt failed
+            throw Exception('Failed to create user record: $e');
+          }
+          // Wait before retrying
+          await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
+        }
+      }
 
       final insertResponse = await supabase.from('Contractee').insert({
         'contractee_id': user.id,
@@ -184,7 +201,7 @@ class SignInContractee {
       await _auditService.logAuditEvent(
         userId: user.id,
         action: 'USER_REGISTRATION',
-        details: 'Contractee account created successfully',
+        details: 'Contractee account created successfully - pending phone verification',
         metadata: {
           'user_type': userType,
           'email': email,
@@ -194,9 +211,20 @@ class SignInContractee {
       );
 
       if (!context.mounted) return;
-      ConTrustSnackBar.success(context, 'Account successfully created');
-      await Future.delayed(const Duration(seconds: 2));
-      Navigator.push(context, MaterialPageRoute(builder: (context) => HomePage()));
+      ConTrustSnackBar.success(context, 'Account created! Please verify your phone number');
+      
+      // Navigate to OTP verification instead of HomePage
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OTPVerificationPage(
+            phoneNumber: data?['phone_number'] ?? '',
+            userId: user.id,
+            email: email,
+            fullName: data?['full_name'] ?? 'User',
+          ),
+        ),
+      );
 
     } on AuthException catch (e) {
       await _auditService.logAuditEvent(
@@ -260,18 +288,11 @@ class SignInGoogleContractee {
       final supabase = Supabase.instance.client;
       await supabase.auth.signInWithOAuth(
         OAuthProvider.google,
+        redirectTo: kIsWeb ? null : 'io.supabase.contrust://login-callback/',
       );
-
-      supabase.auth.onAuthStateChange.listen((data) {
-        final event = data.event;
-        final user = data.session?.user;
-
-        if (event == AuthChangeEvent.signedIn && user != null) {
-          handleSignIn(context, user);
-        } else if (event == AuthChangeEvent.signedOut) {
-          ConTrustSnackBar.warning(context, 'Signed in cancelled');
-        }
-      });
+      
+      // OAuth callback will be handled by AuthRedirectPage
+      // No need for onAuthStateChange listener here
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Google sign-in failed for contractee: $e',

@@ -274,4 +274,41 @@ class UserService {
     }
     return null;
   }
+
+  // Phone OTP Methods
+  Future<void> sendPhoneOTP({required String phoneNumber}) async {
+    try {
+      await _supabase.auth.signInWithOtp(
+        phone: phoneNumber,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<AuthResponse> verifyPhoneOTP({
+    required String phoneNumber,
+    required String otpCode,
+  }) async {
+    try {
+      final response = await _supabase.auth.verifyOTP(
+        phone: phoneNumber,
+        token: otpCode,
+        type: OtpType.sms,
+      );
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> updateUserVerifiedStatus(String userId, bool verified) async {
+    try {
+      await _supabase.from('Users').update({
+        'verified': verified,
+      }).eq('users_id', userId);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

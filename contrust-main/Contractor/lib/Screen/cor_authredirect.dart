@@ -11,16 +11,68 @@ class AuthRedirectPage extends StatefulWidget {
 }
 
 class _AuthRedirectPageState extends State<AuthRedirectPage> {
+  bool _hasRedirected = false;
+
   @override
   void initState() {
     super.initState();
-    Supabase.instance.client.auth.onAuthStateChange.listen((event) {
-      if (event.event == AuthChangeEvent.signedIn) {
-        Navigator.pushNamedAndRemoveUntil(context, '/dashboard', (route) => false);
-      } else if (event.event == AuthChangeEvent.signedOut) {
-        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    _handleAuthRedirect();
+  }
+
+  Future<void> _handleAuthRedirect() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final session = supabase.auth.currentSession;
+      
+      if (session == null) {
+        await Future.delayed(const Duration(seconds: 2));
+        final newSession = supabase.auth.currentSession;
+        if (newSession == null) {
+          if (mounted && !_hasRedirected) {
+            _hasRedirected = true;
+            Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+          }
+          return;
+        }
       }
-    });
+      
+      final user = session?.user ?? supabase.auth.currentSession?.user;
+      if (user == null) {
+        if (mounted && !_hasRedirected) {
+          _hasRedirected = true;
+          Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+        }
+        return;
+      }
+
+      final contracteeData = await supabase
+          .from('Contractee')
+          .select()
+          .eq('contractee_id', user.id)
+          .maybeSingle();
+
+      final contractorData = await supabase
+          .from('Contractor')
+          .select()
+          .eq('contractor_id', user.id)
+          .maybeSingle();
+
+      if (mounted && !_hasRedirected) {
+        _hasRedirected = true;
+        if (contractorData != null) {
+          Navigator.pushNamedAndRemoveUntil(context, '/dashboard', (route) => false);
+        } else if (contracteeData != null) {
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        } else {
+          Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+        }
+      }
+    } catch (e) {
+      if (mounted && !_hasRedirected) {
+        _hasRedirected = true;
+        Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+      }
+    }
   }
 
   @override

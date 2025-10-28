@@ -2,6 +2,7 @@
 import 'package:backend/services/contractee services/cee_profileservice.dart';
 import 'package:contractee/build/buildceeprofile.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CeeProfilePage extends StatefulWidget {
   final String contracteeId;
@@ -13,9 +14,9 @@ class CeeProfilePage extends StatefulWidget {
 }
 
 class _CeeProfilePageState extends State<CeeProfilePage> {
-  String firstName = '';
-  String lastName = '';
-  String bio = '';
+  final supabase = Supabase.instance.client;
+  
+  String fullName = '';
   String contactNumber = '';
   String address = '';
   String? profileImage;
@@ -28,18 +29,14 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
   static const String profileUrl =
       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
 
-  String selectedTab = 'Projects'; 
+  String selectedTab = 'About'; 
 
-  bool isEditingBio = false;
+  bool isEditingFullName = false;
   bool isEditingContact = false;
-  bool isEditingFirstName = false;
-  bool isEditingLastName = false;
   bool isEditingAddress = false;
   
-  final TextEditingController bioController = TextEditingController();
+  final TextEditingController fullNameController = TextEditingController();
   final TextEditingController contactController = TextEditingController();
-  final TextEditingController firstNameController = TextEditingController();
-  final TextEditingController lastNameController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
 
   List<Map<String, dynamic>> projectHistory = [];
@@ -55,10 +52,8 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
 
   @override
   void dispose() {
-    bioController.dispose();
+    fullNameController.dispose();
     contactController.dispose();
-    firstNameController.dispose();
-    lastNameController.dispose();
     addressController.dispose();
     super.dispose();
   }
@@ -72,10 +67,8 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
       
       setState(() {
         if (contracteeData != null) {
-          firstName = contracteeData['first_name'] ?? "No first name";
-          lastName = contracteeData['last_name'] ?? "No last name";
-          bio = contracteeData['bio'] ?? "No bio available";
-          contactNumber = contracteeData['contact_number'] ?? "No contact number";
+          fullName = contracteeData['full_name'] ?? "No name";
+          contactNumber = contracteeData['phone_number'] ?? "No contact number";
           address = contracteeData['address'] ?? "No address provided";
           
           // Add cache-busting parameter to profile image
@@ -101,134 +94,61 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
   }
 
   void _updateControllers() {
-    bioController.text = bio;
+    fullNameController.text = fullName;
     contactController.text = contactNumber;
-    firstNameController.text = firstName;
-    lastNameController.text = lastName;
     addressController.text = address;
   }
 
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFF8F9FA),
-        body: Center(child: CircularProgressIndicator(color: Colors.amber,)),
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.amber),
       );
     }
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      body: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 10,
-            ),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.amber.shade100, Colors.amber.shade50],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              border: Border(
-                bottom: BorderSide(color: Colors.amber.shade200, width: 1.5),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.amber.withOpacity(0.1),
-                  blurRadius: 6,
-                  offset: const Offset(0, 1),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.amber.withOpacity(0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.person_outline,
-                     color: Colors.amber.shade700, 
-                     size: 18
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Profile',
-                    style: TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.amber.shade900,
-                      letterSpacing: 0.5,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: loadContracteeData,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isMobile = constraints.maxWidth < 768;
-                  
-                  if (isMobile) {
-                    return SingleChildScrollView(
-                      child: CeeProfileBuildMethods.buildMobileLayout(
-                        firstName: firstName,
-                        lastName: lastName,
-                        profileImage: profileImage,
-                        profileUrl: profileUrl,
-                        completedProjectsCount: completedProjectsCount,
-                        ongoingProjectsCount: ongoingProjectsCount,
-                        selectedTab: selectedTab,
-                        onTabChanged: (String tab) {
-                          setState(() {
-                            selectedTab = tab;
-                          });
-                        },
-                        mainContent: _buildMainContent(),
-                        onUploadPhoto: isUploadingPhoto ? null : _uploadProfilePhoto,
-                      ),
-                    );
-                  } else {
-                    return CeeProfileBuildMethods.buildDesktopLayout(
-                      firstName: firstName,
-                      lastName: lastName,
-                      profileImage: profileImage,
-                      profileUrl: profileUrl,
-                      completedProjectsCount: completedProjectsCount,
-                      ongoingProjectsCount: ongoingProjectsCount,
-                      selectedTab: selectedTab,
-                      onTabChanged: (String tab) {
-                        setState(() {
-                          selectedTab = tab;
-                        });
-                      },
-                      mainContent: _buildMainContent(),
-                      onUploadPhoto: isUploadingPhoto ? null : _uploadProfilePhoto,
-                    );
-                  }
+    return RefreshIndicator(
+      onRefresh: loadContracteeData,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 768;
+          
+          if (isMobile) {
+            return SingleChildScrollView(
+              child: CeeProfileBuildMethods.buildMobileLayout(
+                fullName: fullName,
+                profileImage: profileImage,
+                profileUrl: profileUrl,
+                completedProjectsCount: completedProjectsCount,
+                ongoingProjectsCount: ongoingProjectsCount,
+                selectedTab: selectedTab,
+                onTabChanged: (String tab) {
+                  setState(() {
+                    selectedTab = tab;
+                  });
                 },
+                mainContent: _buildMainContent(),
+                onUploadPhoto: isUploadingPhoto ? null : _uploadProfilePhoto,
               ),
-            ),
-          ),
-        ],
+            );
+          } else {
+            return CeeProfileBuildMethods.buildDesktopLayout(
+              fullName: fullName,
+              profileImage: profileImage,
+              profileUrl: profileUrl,
+              completedProjectsCount: completedProjectsCount,
+              ongoingProjectsCount: ongoingProjectsCount,
+              selectedTab: selectedTab,
+              onTabChanged: (String tab) {
+                setState(() {
+                  selectedTab = tab;
+                });
+              },
+              mainContent: _buildMainContent(),
+              onUploadPhoto: isUploadingPhoto ? null : _uploadProfilePhoto,
+            );
+          }
+        },
       ),
     );
   }
@@ -253,29 +173,19 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
   Widget _buildAboutContent() {
     return CeeProfileBuildMethods.buildAbout(
       context: context,
-      firstName: firstName,
-      lastName: lastName,
-      bio: bio,
+      fullName: fullName,
       contactNumber: contactNumber,
       address: address,
-      isEditingFirstName: isEditingFirstName,
-      isEditingLastName: isEditingLastName,
-      isEditingBio: isEditingBio,
+      isEditingFullName: isEditingFullName,
       isEditingContact: isEditingContact,
       isEditingAddress: isEditingAddress,
-      firstNameController: firstNameController,
-      lastNameController: lastNameController,
-      bioController: bioController,
+      fullNameController: fullNameController,
       contactController: contactController,
       addressController: addressController,
-      toggleEditFirstName: () => _toggleEdit('firstName'),
-      toggleEditLastName: () => _toggleEdit('lastName'),
-      toggleEditBio: () => _toggleEdit('bio'),
+      toggleEditFullName: () => _toggleEdit('fullName'),
       toggleEditContact: () => _toggleEdit('contact'),
       toggleEditAddress: () => _toggleEdit('address'),
-      saveFirstName: () => _saveField('firstName', firstNameController.text),
-      saveLastName: () => _saveField('lastName', lastNameController.text),
-      saveBio: () => _saveField('bio', bioController.text),
+      saveFullName: () => _saveField('fullName', fullNameController.text),
       saveContact: () => _saveField('contact', contactController.text),
       saveAddress: () => _saveField('address', addressController.text),
       contracteeId: widget.contracteeId,
@@ -295,17 +205,74 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
     );
   }
 
-  void _loadTransactions() {
-    setState(() {
-      transactions = [
-        {
-          'companyName': 'Pau Construction Firm',
-          'contractorName': 'Contractor Pogi',
-          'projectDescription': 'Gumawa ng garage',
-          'price': 3500,
-        },
-      ];
-    });
+  Future<void> _loadTransactions() async {
+    try {
+      final projectsResponse = await supabase
+          .from('Projects')
+          .select('''
+            project_id,
+            title,
+            projectdata,
+            contractor_id,
+            Contractor!inner(firm_name)
+          ''')
+          .eq('contractee_id', widget.contracteeId)
+          .order('created_at', ascending: false);
+
+      List<Map<String, dynamic>> allTransactions = [];
+
+      for (var project in projectsResponse) {
+        final projectdata = project['projectdata'] as Map<String, dynamic>? ?? {};
+        final payments = projectdata['payments'] as List<dynamic>? ?? [];
+        
+        for (var payment in payments) {
+          allTransactions.add({
+            'amount': (payment['amount'] as num?)?.toDouble() ?? 0.0,
+            'payment_type': _getPaymentType(payment['contract_type'] ?? '', payment['payment_structure'] ?? ''),
+            'project_title': project['title'] ?? 'Unknown Project',
+            'contractor_name': project['Contractor']?['firm_name'] ?? 'Unknown Contractor',
+            'payment_date': payment['date'] ?? DateTime.now().toIso8601String(),
+            'reference': payment['reference'] ?? payment['payment_id'] ?? '',
+          });
+        }
+      }
+
+      allTransactions.sort((a, b) {
+        final dateA = DateTime.parse(a['payment_date']);
+        final dateB = DateTime.parse(b['payment_date']);
+        return dateB.compareTo(dateA);
+      });
+
+      if (mounted) {
+        setState(() {
+          transactions = allTransactions;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          transactions = [];
+        });
+      }
+    }
+  }
+
+  String _getPaymentType(String contractType, String paymentStructure) {
+    if (contractType == 'lump_sum') {
+      return 'Full Payment';
+    } else if (contractType == 'percentage_based') {
+      return 'Milestone Payment';
+    } else if (contractType == 'custom') {
+      if (paymentStructure.toLowerCase().contains('down')) {
+        return 'Down Payment';
+      } else if (paymentStructure.toLowerCase().contains('final')) {
+        return 'Final Payment';
+      } else if (paymentStructure.toLowerCase().contains('milestone')) {
+        return 'Milestone Payment';
+      }
+      return 'Contract Payment';
+    }
+    return 'Payment';
   }
 
   String _getTimeAgo(DateTime dateTime) {
@@ -315,21 +282,13 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
   void _toggleEdit(String fieldType) {
     setState(() {
       switch (fieldType) {
-        case 'bio':
-          isEditingBio = !isEditingBio;
-          if (!isEditingBio) bioController.text = bio; 
+        case 'fullName':
+          isEditingFullName = !isEditingFullName;
+          if (!isEditingFullName) fullNameController.text = fullName;
           break;
         case 'contact':
           isEditingContact = !isEditingContact;
           if (!isEditingContact) contactController.text = contactNumber;
-          break;
-        case 'firstName':
-          isEditingFirstName = !isEditingFirstName;
-          if (!isEditingFirstName) firstNameController.text = firstName;
-          break;
-        case 'lastName':
-          isEditingLastName = !isEditingLastName;
-          if (!isEditingLastName) lastNameController.text = lastName;
           break;
         case 'address':
           isEditingAddress = !isEditingAddress;
@@ -348,21 +307,13 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
       onSuccess: () {
         setState(() {
           switch (fieldType) {
-            case 'bio':
-              bio = newValue;
-              isEditingBio = false;
+            case 'fullName':
+              fullName = newValue;
+              isEditingFullName = false;
               break;
             case 'contact':
               contactNumber = newValue;
               isEditingContact = false;
-              break;
-            case 'firstName':
-              firstName = newValue;
-              isEditingFirstName = false;
-              break;
-            case 'lastName':
-              lastName = newValue;
-              isEditingLastName = false;
               break;
             case 'address':
               address = newValue;

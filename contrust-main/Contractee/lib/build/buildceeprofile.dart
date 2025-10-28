@@ -2,6 +2,22 @@
 import 'package:flutter/material.dart';
 
 class CeeProfileBuildMethods {
+  static Widget buildSimpleProfile({
+    required BuildContext context,
+    required String fullName,
+    required String? profileImage,
+    required String profileUrl,
+    required String email,
+    required String contactNumber,
+    required String address,
+    required int completedProjectsCount,
+    required int ongoingProjectsCount,
+    required VoidCallback? onUploadPhoto,
+    required VoidCallback? onEditProfile,
+  }) {
+    return const SizedBox.shrink();
+  }
+
   static Widget buildMainContent(String selectedTab, Function buildProjectsContent, Function buildAboutContent, Function buildHistoryContent, Function buildTransactionsContent) {
     switch (selectedTab) {
       case 'Projects':
@@ -18,8 +34,7 @@ class CeeProfileBuildMethods {
   }
 
   static Widget buildMobileLayout({
-    required String firstName,
-    required String lastName,
+    required String fullName,
     required String? profileImage,
     required String profileUrl,
     required int completedProjectsCount,
@@ -29,19 +44,18 @@ class CeeProfileBuildMethods {
     required Widget mainContent,
     required VoidCallback? onUploadPhoto,
   }) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
-          child: Container(
-            padding: const EdgeInsets.all(12),
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200, width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withOpacity(0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
@@ -49,133 +63,95 @@ class CeeProfileBuildMethods {
             ),
             child: Column(
               children: [
-                Stack(
-                  children: [
-                    Container(
-                      width: 65,
-                      height: 65,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.amber.shade200, width: 2.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                GestureDetector(
+                  onTap: () {},
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.grey.shade200,
+                            width: 3,
                           ),
-                        ],
-                      ),
-                      child: CircleAvatar(
-                        radius: 32,
-                        backgroundColor: Colors.grey.shade100,
-                        backgroundImage: (profileImage != null && profileImage.isNotEmpty)
-                            ? NetworkImage(profileImage)
-                            : NetworkImage(profileUrl),
-                        child: (profileImage == null || profileImage.isEmpty)
-                            ? Icon(
-                                Icons.person,
-                                size: 26,
-                                color: Colors.grey.shade400,
-                              )
-                            : null,
-                      ),
-                    ),
-                    if (onUploadPhoto != null)
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: InkWell(
-                          onTap: onUploadPhoto,
-                          child: Container(
-                            padding: const EdgeInsets.all(5),
-                            decoration: BoxDecoration(
-                              color: Colors.amber.shade700,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.2),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 1),
-                                ),
-                              ],
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 20,
+                              offset: const Offset(0, 5),
                             ),
-                            child: const Icon(
-                              Icons.camera_alt,
-                              size: 12,
-                              color: Colors.white,
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          radius: 50,
+                          backgroundColor: Colors.grey.shade100,
+                          backgroundImage: (profileImage != null && profileImage.isNotEmpty)
+                              ? NetworkImage(profileImage)
+                              : NetworkImage(profileUrl),
+                          child: (profileImage == null || profileImage.isEmpty)
+                              ? Icon(
+                                  Icons.person,
+                                  size: 35,
+                                  color: Colors.grey.shade400,
+                                )
+                              : null,
+                        ),
+                      ),
+                      if (onUploadPhoto != null)
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: InkWell(
+                            onTap: onUploadPhoto,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.08),
+                                    blurRadius: 6,
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                Icons.camera_alt,
+                                size: 18,
+                                color: Colors.amber.shade800,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  '$firstName $lastName',
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2D3748),
-                    letterSpacing: 0.2,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'Homeowner',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.amber.shade900,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.amber.shade100, width: 1.5),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildStatItem(ongoingProjectsCount, 'Ongoing', Colors.amber.shade700, Icons.work_outline),
-                      Container(width: 1, height: 30, color: Colors.grey.shade200),
-                      _buildStatItem(completedProjectsCount, 'Completed', Colors.grey.shade600, Icons.check_circle_outline),
-                      Container(width: 1, height: 30, color: Colors.grey.shade200),
-                      _buildStatItem(ongoingProjectsCount + completedProjectsCount, 'Total', Colors.grey.shade700, Icons.folder_outlined),
                     ],
                   ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  fullName,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2D3748),
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12.0),
-          child: buildMobileNavigation(selectedTab, onTabChanged),
-        ),
-        const SizedBox(height: 10),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-          child: mainContent,
-        ),
-      ],
+          const SizedBox(height: 16),
+          buildMobileNavigation(selectedTab, onTabChanged),
+          const SizedBox(height: 16),
+          mainContent,
+        ],
+      ),
     );
   }
 
   static Widget buildDesktopLayout({
-    required String firstName,
-    required String lastName,
+    required String fullName,
     required String? profileImage,
     required String profileUrl,
     required int completedProjectsCount,
@@ -199,10 +175,9 @@ class CeeProfileBuildMethods {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade200, width: 1),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
+                        color: Colors.black.withOpacity(0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
@@ -210,143 +185,102 @@ class CeeProfileBuildMethods {
                   ),
                   child: Column(
                     children: [
-                      Stack(
-                        children: [
-                          Container(
-                            width: 120,
-                            height: 120,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.amber.shade200, width: 3),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.08),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
+                      GestureDetector(
+                        onTap: () {},
+                        child: Stack(
+                          children: [
+                            Container(
+                              width: 120,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.grey.shade200,
+                                  width: 3,
                                 ),
-                              ],
-                            ),
-                            child: CircleAvatar(
-                              radius: 60,
-                              backgroundColor: Colors.grey.shade100,
-                              backgroundImage: (profileImage != null && profileImage.isNotEmpty)
-                                  ? NetworkImage(profileImage)
-                                  : NetworkImage(profileUrl),
-                              child: (profileImage == null || profileImage.isEmpty)
-                                  ? Icon(
-                                      Icons.person,
-                                      size: 42,
-                                      color: Colors.grey.shade400,
-                                    )
-                                  : null,
-                            ),
-                          ),
-                          if (onUploadPhoto != null)
-                            Positioned(
-                              bottom: 2,
-                              right: 2,
-                              child: InkWell(
-                                onTap: onUploadPhoto,
-                                child: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.amber.shade700,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white, width: 3),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.2),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 5),
                                   ),
-                                  child: const Icon(
-                                    Icons.camera_alt,
-                                    size: 18,
-                                    color: Colors.white,
+                                ],
+                              ),
+                              child: CircleAvatar(
+                                radius: 60,
+                                backgroundColor: Colors.grey.shade100,
+                                backgroundImage: (profileImage != null && profileImage.isNotEmpty)
+                                    ? NetworkImage(profileImage)
+                                    : NetworkImage(profileUrl),
+                                child: (profileImage == null || profileImage.isEmpty)
+                                    ? Icon(
+                                        Icons.person,
+                                        size: 40,
+                                        color: Colors.grey.shade400,
+                                      )
+                                    : null,
+                              ),
+                            ),
+                            if (onUploadPhoto != null)
+                              Positioned(
+                                right: 0,
+                                bottom: 0,
+                                child: InkWell(
+                                  onTap: onUploadPhoto,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.08),
+                                          blurRadius: 6,
+                                        ),
+                                      ],
+                                    ),
+                                    child: Icon(
+                                      Icons.camera_alt,
+                                      size: 18,
+                                      color: Colors.amber.shade800,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        '$firstName $lastName',
-                        style: const TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF2D3748),
-                          letterSpacing: 0.3,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.shade100,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          'Homeowner',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.amber.shade900,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Container(
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.amber.shade100, width: 2),
-                        ),
-                        child: Column(
-                          children: [
-                            _buildStatItem(ongoingProjectsCount, 'Ongoing', Colors.amber.shade700, Icons.work_outline),
-                            const SizedBox(height: 16),
-                            Divider(height: 1, color: Colors.grey.shade200),
-                            const SizedBox(height: 16),
-                            _buildStatItem(completedProjectsCount, 'Completed', Colors.grey.shade600, Icons.check_circle_outline),
-                            const SizedBox(height: 16),
-                            Divider(height: 1, color: Colors.grey.shade200),
-                            const SizedBox(height: 16),
-                            _buildStatItem(ongoingProjectsCount + completedProjectsCount, 'Total', Colors.grey.shade700, Icons.folder_outlined),
                           ],
                         ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        fullName,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2D3748),
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
                 Container(
-                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade200, width: 1),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 8,
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
                     ],
                   ),
                   child: Column(
                     children: [
-                      buildNavigation('Projects', selectedTab == 'Projects', () => onTabChanged('Projects'), Icons.work_outline),
-                      const SizedBox(height: 4),
-                      buildNavigation('About', selectedTab == 'About', () => onTabChanged('About'), Icons.info_outline),
-                      const SizedBox(height: 4),
-                      buildNavigation('History', selectedTab == 'History', () => onTabChanged('History'), Icons.history),
-                      const SizedBox(height: 4),
-                      buildNavigation('Transactions', selectedTab == 'Transactions', () => onTabChanged('Transactions'), Icons.receipt_long_outlined),
+                      buildNavigation('About', selectedTab == 'About', () => onTabChanged('About')),
+                      buildNavigation('History', selectedTab == 'History', () => onTabChanged('History')),
+                      buildNavigation('Transactions', selectedTab == 'Transactions', () => onTabChanged('Transactions')),
                     ],
                   ),
                 ),
@@ -368,170 +302,24 @@ class CeeProfileBuildMethods {
     required List<Map<String, dynamic>> ongoingProjects,
     required Function getTimeAgo,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade200, width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.amber.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.work_outline,
-                  color: Colors.amber.shade700,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Ongoing Projects',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2D3748),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${ongoingProjects.length} active project${ongoingProjects.length != 1 ? 's' : ''}',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-        
-        if (ongoingProjects.isEmpty)
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 32),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200, width: 1),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.work_outline,
-                    size: 48,
-                    color: Colors.grey.shade400,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'No Ongoing Projects',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Start a new project to see it here',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade500,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          )
-        else
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: ongoingProjects.length,
-            itemBuilder: (context, index) {
-              final project = ongoingProjects[index];
-              final projectName = project['project_name'] ?? 'Unnamed Project';
-              final contractorName = project['contractor_name'] ?? 'No Contractor';
-              final startDate = project['start_date'] != null
-                  ? DateTime.parse(project['start_date']).toLocal()
-                  : DateTime.now();
-              final timeAgo = getTimeAgo(startDate);
-              
-              return buildProjectCard(
-                projectName,
-                contractorName,
-                'Ongoing',
-                Colors.blue,
-                timeAgo,
-                Icons.construction,
-              );
-            },
-          ),
-      ],
-    );
+    return const SizedBox.shrink();
   }
 
   static Widget buildAbout({
     required BuildContext context,
-    required String firstName,
-    required String lastName,
-    required String bio,
+    required String fullName,
     required String contactNumber,
     required String address,
-    required bool isEditingFirstName,
-    required bool isEditingLastName,
-    required bool isEditingBio,
+    required bool isEditingFullName,
     required bool isEditingContact,
     required bool isEditingAddress,
-    required TextEditingController firstNameController,
-    required TextEditingController lastNameController,
-    required TextEditingController bioController,
+    required TextEditingController fullNameController,
     required TextEditingController contactController,
     required TextEditingController addressController,
-    required VoidCallback toggleEditFirstName,
-    required VoidCallback toggleEditLastName,
-    required VoidCallback toggleEditBio,
+    required VoidCallback toggleEditFullName,
     required VoidCallback toggleEditContact,
     required VoidCallback toggleEditAddress,
-    required VoidCallback saveFirstName,
-    required VoidCallback saveLastName,
-    required VoidCallback saveBio,
+    required VoidCallback saveFullName,
     required VoidCallback saveContact,
     required VoidCallback saveAddress,
     required String contracteeId,
@@ -540,10 +328,9 @@ class CeeProfileBuildMethods {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -556,25 +343,17 @@ class CeeProfileBuildMethods {
           children: [
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.info_outline,
-                    color: Colors.amber.shade700,
-                    size: 24,
-                  ),
+                Icon(
+                  Icons.info_outline,
+                  color: Colors.amber.shade700,
+                  size: 28,
                 ),
                 const SizedBox(width: 16),
                 const Text(
                   'About',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF2D3748),
                   ),
                 ),
                 const Spacer(),
@@ -583,38 +362,13 @@ class CeeProfileBuildMethods {
             const SizedBox(height: 32),
             
             buildContracteeInfo(
-              'First Name',
-              firstName,
+              'Full Name',
+              fullName,
               Icons.person,
-              Colors.black,
-              isEditingFirstName,
-              firstNameController,
-              toggleEditFirstName,
-              saveFirstName,
-            ),
-            const SizedBox(height: 24),
-            
-            buildContracteeInfo(
-              'Last Name',
-              lastName,
-              Icons.person_outline,
-              Colors.black,
-              isEditingLastName,
-              lastNameController,
-              toggleEditLastName,
-              saveLastName,
-            ),
-            const SizedBox(height: 24),
-            
-            buildContracteeInfo(
-              'Bio',
-              bio,
-              Icons.description,
-              Colors.black,
-              isEditingBio,
-              bioController,
-              toggleEditBio,
-              saveBio,
+              isEditingFullName,
+              fullNameController,
+              toggleEditFullName,
+              saveFullName,
             ),
             const SizedBox(height: 24),
             
@@ -622,7 +376,6 @@ class CeeProfileBuildMethods {
               'Contact Information',
               contactNumber,
               Icons.phone,
-              Colors.black,
               isEditingContact,
               contactController,
               toggleEditContact,
@@ -634,7 +387,6 @@ class CeeProfileBuildMethods {
               'Address',
               address,
               Icons.location_on,
-              Colors.black,
               isEditingAddress,
               addressController,
               toggleEditAddress,
@@ -654,10 +406,9 @@ class CeeProfileBuildMethods {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -670,23 +421,12 @@ class CeeProfileBuildMethods {
           children: [
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.history,
-                    color: Colors.amber.shade700,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
+                Icon(Icons.history, color: Colors.amber.shade700, size: 24),
+                const SizedBox(width: 12),
                 const Text(
                   'Project History',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF2D3748),
                   ),
@@ -697,35 +437,23 @@ class CeeProfileBuildMethods {
             
             if (projectHistory.isEmpty)
               Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 20),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.history_outlined,
-                        size: 64,
-                        color: Colors.grey.shade400,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.history_outlined,
+                      size: 64,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No completed projects found.',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey.shade600,
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No Project History',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Complete projects to see them in your history',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade500,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               )
             else
@@ -739,16 +467,94 @@ class CeeProfileBuildMethods {
                   final contractorName = project['contractor_name'] ?? 'No Contractor';
                   final completionDate = project['completion_date'] != null
                       ? DateTime.parse(project['completion_date']).toLocal()
-                      : DateTime.now();
-                  final timeAgo = getTimeAgo(completionDate);
+                      : null;
+                  final timeAgo = completionDate != null ? getTimeAgo(completionDate) : 'Unknown';
                   
-                  return buildProjectCard(
-                    projectName,
-                    contractorName,
-                    'Completed',
-                    Colors.green,
-                    timeAgo,
-                    Icons.check_circle,
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: Colors.amber.shade100,
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: Icon(
+                            Icons.business,
+                            color: Colors.amber.shade700,
+                            size: 30,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                contractorName,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF2D3748),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                projectName,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.amber.shade700,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                project['description'] ?? 'No description available',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade600,
+                                  height: 1.4,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Completed $timeAgo',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade100,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'Completed',
+                            style: TextStyle(
+                              color: Colors.green.shade700,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   );
                 },
               ),
@@ -758,149 +564,208 @@ class CeeProfileBuildMethods {
     );
   }
 
-  static Widget buildProjectCard(String projectName, String contractorName, String status, Color statusColor, String timeAgo, IconData statusIcon) {
-    // Use amber for ongoing, grey for completed
-    final isOngoing = status == 'Ongoing';
-    final displayColor = isOngoing ? Colors.amber.shade700 : Colors.grey.shade600;
-    final bgColor = isOngoing ? Colors.amber.shade50 : Colors.grey.shade50;
-    
+  static Widget buildTransactions({
+    required List<Map<String, dynamic>> transactions,
+  }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 8,
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
             offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                statusIcon,
-                color: displayColor,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    projectName,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                      color: Color(0xFF2D3748),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(Icons.person_outline, size: 13, color: Colors.grey.shade500),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          contractorName,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+            Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: bgColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: displayColor.withOpacity(0.3), width: 1),
-                  ),
-                  child: Text(
-                    status,
-                    style: TextStyle(
-                      color: displayColor,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
+                Icon(Icons.receipt_long, color: Colors.amber.shade700, size: 24),
+                const SizedBox(width: 12),
+                const Text(
+                  'Payment History',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2D3748),
                   ),
                 ),
-                const SizedBox(height: 6),
-                Row(
+              ],
+            ),
+            const SizedBox(height: 32),
+            
+            if (transactions.isEmpty)
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.access_time, size: 11, color: Colors.grey.shade400),
-                    const SizedBox(width: 3),
+                    Icon(
+                      Icons.receipt_long_outlined,
+                      size: 64,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 16),
                     Text(
-                      timeAgo,
+                      'No payment records found.',
                       style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey.shade500,
+                        fontSize: 16,
+                        color: Colors.grey.shade600,
                       ),
                     ),
                   ],
                 ),
-              ],
-            ),
+              )
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: transactions.length,
+                itemBuilder: (context, index) {
+                  final transaction = transactions[index];
+                  final amount = transaction['amount'] ?? 0;
+                  final paymentType = transaction['payment_type'] ?? 'Payment';
+                  final projectTitle = transaction['project_title'] ?? 'Unknown Project';
+                  final contractorName = transaction['contractor_name'] ?? 'Unknown Contractor';
+                  final paymentDate = transaction['payment_date'] != null
+                      ? DateTime.parse(transaction['payment_date']).toLocal()
+                      : DateTime.now();
+                  final formattedDate = '${paymentDate.month}/${paymentDate.day}/${paymentDate.year}';
+                  
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade100,
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: Icon(
+                            Icons.payments,
+                            color: Colors.green.shade700,
+                            size: 30,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                paymentType,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF2D3748),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                projectTitle,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.amber.shade700,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'To: $contractorName',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                formattedDate,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              '₱${amount.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade50,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                'Paid',
+                                style: TextStyle(
+                                  color: Colors.blue.shade700,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
           ],
         ),
       ),
     );
   }
 
-  static Widget buildNavigation(String title, bool isActive, VoidCallback onTap, IconData icon) {
+  static Widget buildNavigation(String title, bool isActive, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
           color: isActive ? Colors.amber.shade50 : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              size: 18,
-              color: isActive ? Colors.amber.shade700 : Colors.grey.shade500,
-            ),
-            const SizedBox(width: 10),
             Text(
               title,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                color: isActive ? Colors.amber.shade900 : Colors.grey.shade600,
+                color: isActive ? Colors.amber.shade700 : Colors.grey.shade600,
               ),
             ),
             const Spacer(),
             if (isActive)
               Icon(
-                Icons.chevron_right_rounded,
-                size: 18,
+                Icons.chevron_right,
+                size: 16,
                 color: Colors.amber.shade700,
               ),
           ],
@@ -909,75 +774,69 @@ class CeeProfileBuildMethods {
     );
   }
   
-  static Widget _buildStatItem(int count, String label, Color color, IconData icon) {
-    return Column(
-      children: [
-        Icon(icon, color: color, size: 14),
-        const SizedBox(height: 3),
-        Text(
-          '$count',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        const SizedBox(height: 1),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 9,
-            color: Colors.grey.shade600,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-  
   static Widget buildMobileNavigation(String selectedTab, Function(String) onTabChanged) {
-    final tabs = ['Projects', 'About', 'History', 'Transactions'];
+    final tabs = ['About', 'History', 'Transactions'];
     
     return Container(
-      padding: const EdgeInsets.all(2.5),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Row(
-        children: tabs.map((tab) {
+        children: tabs.asMap().entries.map((entry) {
+          final index = entry.key;
+          final tab = entry.value;
           final isActive = selectedTab == tab;
+          final isFirst = index == 0;
+          final isLast = index == tabs.length - 1;
+          
           return Expanded(
-            child: InkWell(
-              onTap: () => onTabChanged(tab),
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 9),
-                decoration: BoxDecoration(
-                  color: isActive ? Colors.white : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: isActive ? [
-                    BoxShadow(
-                      color: Colors.amber.withOpacity(0.12),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
-                    ),
-                  ] : [],
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => onTabChanged(tab),
+                borderRadius: BorderRadius.only(
+                  topLeft: isFirst ? const Radius.circular(12) : Radius.zero,
+                  bottomLeft: isFirst ? const Radius.circular(12) : Radius.zero,
+                  topRight: isLast ? const Radius.circular(12) : Radius.zero,
+                  bottomRight: isLast ? const Radius.circular(12) : Radius.zero,
                 ),
-                child: Text(
-                  tab,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                    color: isActive ? Colors.amber.shade900 : Colors.grey.shade600,
+                child: Ink(
+                  decoration: BoxDecoration(
+                    color: isActive ? Colors.amber.shade50 : Colors.transparent,
+                    borderRadius: BorderRadius.only(
+                      topLeft: isFirst ? const Radius.circular(12) : Radius.zero,
+                      bottomLeft: isFirst ? const Radius.circular(12) : Radius.zero,
+                      topRight: isLast ? const Radius.circular(12) : Radius.zero,
+                      bottomRight: isLast ? const Radius.circular(12) : Radius.zero,
+                    ),
+                    border: isActive 
+                        ? Border.all(color: Colors.amber.shade300, width: 2)
+                        : null,
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+                    child: Center(
+                      child: Text(
+                        tab,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                          color: isActive ? Colors.amber.shade700 : Colors.grey.shade600,
+                          height: 1.2,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -992,7 +851,6 @@ class CeeProfileBuildMethods {
     String title,
     String content,
     IconData icon,
-    Color color,
     bool isEditing,
     TextEditingController controller,
     VoidCallback onEdit,
@@ -1001,23 +859,23 @@ class CeeProfileBuildMethods {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: Colors.black, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: color, size: 20),
+              Icon(icon, color: Colors.grey.shade800, size: 20),
               const SizedBox(width: 8),
               Text(
                 title,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: color,
+                  color: Colors.black87,
                 ),
               ),
               const Spacer(),
@@ -1030,13 +888,13 @@ class CeeProfileBuildMethods {
                       child: Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: Colors.grey.withOpacity(0.1),
+                          color: Colors.transparent,
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.close,
                           size: 16,
-                          color: Colors.grey,
+                          color: Colors.grey.shade600,
                         ),
                       ),
                     ),
@@ -1047,13 +905,13 @@ class CeeProfileBuildMethods {
                       child: Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: color.withOpacity(0.1),
+                          color: Colors.transparent,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Icon(
                           Icons.check,
                           size: 16,
-                          color: color,
+                          color: Colors.grey.shade600,
                         ),
                       ),
                     ),
@@ -1066,13 +924,13 @@ class CeeProfileBuildMethods {
                   child: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
+                      color: Colors.transparent,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Icon(
                       Icons.edit,
                       size: 16,
-                      color: color,
+                      color: Colors.grey.shade600,
                     ),
                   ),
                 ),
@@ -1086,11 +944,11 @@ class CeeProfileBuildMethods {
               decoration: InputDecoration(
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: color),
+                  borderSide: BorderSide(color: Colors.grey.shade500),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: color, width: 2),
+                  borderSide: BorderSide(color: Colors.grey.shade700, width: 2),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 12,
@@ -1105,228 +963,15 @@ class CeeProfileBuildMethods {
             )
           else
             Text(
-              content,
-              style: const TextStyle(
+              content.isNotEmpty ? content : '',
+              style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF2D3748),
+                color: content.isNotEmpty ? const Color(0xFF2D3748) : Colors.grey.shade400,
                 height: 1.5,
               ),
             ),
         ],
       ),
-    );
-  }
-
-  static Widget buildTransactions({
-    required List<Map<String, dynamic>> transactions,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade200, width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.amber.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.receipt_long_outlined,
-                  color: Colors.amber.shade700,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Transaction History',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2D3748),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${transactions.length} transaction${transactions.length != 1 ? 's' : ''}',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-        
-        if (transactions.isEmpty)
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 32),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200, width: 1),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.receipt_long,
-                    size: 48,
-                    color: Colors.grey.shade400,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'No Transactions Yet',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Your transaction history will appear here',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade500,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          )
-        else
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: transactions.length,
-            itemBuilder: (context, index) {
-              final transaction = transactions[index];
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200, width: 1),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CircleAvatar(
-                        radius: 28,
-                        backgroundColor: Colors.amber.shade700,
-                        child: const Icon(Icons.business, color: Colors.white),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              transaction['companyName'] ?? 'Unknown Company',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF2D3748),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Icon(Icons.person_outline, size: 14, color: Colors.grey.shade500),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    'Contractor: ${transaction['contractorName'] ?? 'Unknown'}',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Icon(Icons.description, size: 14, color: Colors.grey.shade500),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    transaction['projectDescription'] ?? 'No description provided.',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        '₱${transaction['price'] ?? '0'}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-      ],
     );
   }
 }

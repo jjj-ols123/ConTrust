@@ -401,13 +401,11 @@ class CreateContractBuildMethods {
     final milestonePaymentFields = contractFields.where((f) =>
       (f as dynamic).key.contains('Payment.ProgressPayment') ||
       (f as dynamic).key.contains('Payment.Milestone') ||
-      (f as dynamic).key.contains('Payment.DownPaymentPercentage') ||
       (f as dynamic).key.contains('Payment.FinalPaymentPercentage')
     ).toList();
     final regularPaymentFields = paymentFields.where((f) =>
       !(f as dynamic).key.contains('Payment.ProgressPayment') &&
       !(f as dynamic).key.contains('Payment.Milestone') &&
-      !(f as dynamic).key.contains('Payment.DownPaymentPercentage') &&
       !(f as dynamic).key.contains('Payment.FinalPaymentPercentage')
     ).toList();    final bondFields = contractFields.where((f) => 
       (f as dynamic).key.contains('Bond.')

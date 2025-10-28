@@ -4,6 +4,7 @@ import 'package:backend/services/contractor services/cor_dashboardservice.dart';
 import 'package:backend/utils/be_status.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/build/builddrawer.dart';
+import 'package:contractor/build/builddashboardtabs.dart';
 import 'package:contractor/Screen/cor_ongoing.dart';
 import 'package:flutter/material.dart';
 
@@ -41,14 +42,34 @@ class DashboardBuildMethods {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          flex: 3,
+        Flexible(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               buildWelcomeCard(),
               const SizedBox(height: 20),
+              buildTabbedProjectView(),
+            ],
+          ),
+        ),
+        const SizedBox(width: 20),
+        SizedBox(
+          width: screenWidth * 0.25,
+          child: Column(
+            children: [
               Row(
                 children: [
+                  Expanded(
+                    child: buildStatCard(
+                      'Active Projects',
+                      activeProjects.toString(),
+                      Icons.work,
+                      Colors.black,
+                      'Currently working on',
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: buildStatCard(
                       'Completed',
@@ -58,7 +79,11 @@ class DashboardBuildMethods {
                       'Successfully finished',
                     ),
                   ),
-                  const SizedBox(width: 16),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
                   Expanded(
                     child: buildStatCard(
                       'Total Earnings',
@@ -68,7 +93,7 @@ class DashboardBuildMethods {
                       'From all projects',
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: buildStatCard(
                       'Number of Clients',
@@ -80,19 +105,6 @@ class DashboardBuildMethods {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
-              buildRecentProjects(),
-            ],
-          ),
-        ),
-        const SizedBox(width: 20),
-        Expanded(
-          flex: 1,
-          child: Column(
-            children: [
-              buildCurrentContracteeContainer(),
-              const SizedBox(height: 20),
-              buildProjectTasks(),
             ],
           ),
         ),
@@ -100,7 +112,64 @@ class DashboardBuildMethods {
     );
   }
 
-  Widget buildCurrentContracteeContainer() {
+  Widget buildTabbedProjectView() {
+    return DashboardProjectTabs(
+      activeProjects: _getProjectsToShow(),
+      buildProjectSection: (selectedProject) => buildSingleProjectView(selectedProject),
+      buildContracteeSection: (selectedProject) => buildCurrentContracteeContainer(selectedProject),
+      buildTasksSection: (selectedProject) => buildProjectTasks(selectedProject),
+    );
+  }
+
+  Widget buildSingleProjectView(Map<String, dynamic> project) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(isTablet ? 28 : 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.work_outline,
+                  color: Colors.amber.shade700,
+                  size: isTablet ? 28 : 24,
+                ),
+                SizedBox(width: isTablet ? 16 : 12),
+                Text(
+                  'Active Project',
+                  style: TextStyle(
+                    fontSize: isTablet ? 24 : 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: isTablet ? 20 : 16),
+            projectView(context, project),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget buildCurrentContracteeContainer([Map<String, dynamic>? project]) {
+    final contracteeData = project ?? _getContracteeToShow();
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
 
@@ -140,7 +209,7 @@ class DashboardBuildMethods {
               ],
             ),
             SizedBox(height: isTablet ? 16 : 12),
-            buildContracteeInfo(_getContracteeToShow()),
+            buildContracteeInfo(contracteeData),
           ],
         ),
       ),
@@ -232,15 +301,7 @@ class DashboardBuildMethods {
   }
 
   Widget buildMobileProjectsAndTasks() {
-    return Column(
-      children: [
-        buildCurrentContracteeContainer(),
-        const SizedBox(height: 20),
-        buildRecentProjects(),
-        const SizedBox(height: 20),
-        buildProjectTasks(),
-      ],
-    );
+    return buildTabbedProjectView();
   }
 
   Widget buildWelcomeCard() {
@@ -542,7 +603,12 @@ class DashboardBuildMethods {
     );
   }
 
-  Widget buildProjectTasks() {
+  Widget buildProjectTasks([Map<String, dynamic>? project]) {
+    final projectData = project ?? (recentActivities.isNotEmpty ? recentActivities.first : null);
+    final projectTasks = projectData != null 
+        ? localTasks.where((task) => task['project_id'] == projectData['project_id']).toList()
+        : localTasks;
+    
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -579,7 +645,7 @@ class DashboardBuildMethods {
               ],
             ),
             SizedBox(height: isTablet ? 16 : 12),
-            if (localTasks.isEmpty)
+            if (projectTasks.isEmpty)
               Center(
                 child: Container(
                   padding: EdgeInsets.symmetric(

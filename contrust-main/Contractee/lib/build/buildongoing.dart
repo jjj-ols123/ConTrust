@@ -9,6 +9,7 @@ class CeeOngoingBuildMethods {
     required String address,
     required String startDate,
     required String estimatedCompletion,
+    required int? duration,
     required double progress,
     VoidCallback? onRefresh,
     VoidCallback? onChat,
@@ -18,6 +19,42 @@ class CeeOngoingBuildMethods {
     VoidCallback? onViewPaymentHistory,
     String? paymentButtonText,
   }) {
+    DateTime? completionDate;
+    final raw = estimatedCompletion.trim().toLowerCase();
+    if (raw.isNotEmpty && raw != 'placeholder' && raw != 'tbd' && raw != 'n/a') {
+      try {
+        completionDate = DateTime.parse(estimatedCompletion);
+      } catch (_) {
+        try {
+          final parts = estimatedCompletion.split(' ');
+          completionDate = DateTime.parse(parts.first);
+        } catch (_) {
+          completionDate = null;
+        }
+      }
+    }
+
+    if (completionDate == null && startDate.isNotEmpty && duration != null) {
+      try {
+        final start = DateTime.parse(startDate);
+        completionDate = start.add(Duration(days: duration));
+      } catch (_) {
+        completionDate = null;
+      }
+    }
+
+    String countdownText = 'Duration: Not set';
+    if (completionDate != null) {
+      final now = DateTime.now();
+      final daysLeft = completionDate.difference(now).inDays;
+      if (daysLeft > 0) {
+        countdownText = 'Duration: $daysLeft days left';
+      } else if (daysLeft == 0) {
+        countdownText = 'Duration: Due today';
+      } else {
+        countdownText = 'Duration: Overdue by ${daysLeft.abs()} days';
+      }
+    }
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -37,7 +74,7 @@ class CeeOngoingBuildMethods {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.construction, color: Colors.amber, size: 28),
+                          const Icon(Icons.construction, color: Colors.orange, size: 28),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -128,7 +165,7 @@ class CeeOngoingBuildMethods {
                 } else {
                   return Row(
                     children: [
-                      const Icon(Icons.construction, color: Colors.amber, size: 28),
+                      const Icon(Icons.construction, color: Colors.orange, size: 28),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -241,8 +278,27 @@ class CeeOngoingBuildMethods {
                 const Icon(Icons.schedule, color: Colors.green, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  'Est. Completion: ',
+                  'Est. Completion: $estimatedCompletion',
                   style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(
+                  Icons.timer,
+                  color: Colors.red,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  countdownText,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
                 ),
               ],
             ),
@@ -261,14 +317,14 @@ class CeeOngoingBuildMethods {
                         color: Colors.black87,
                       ),
                     ),
-                    Text(
-                      '${(progress * 100).toStringAsFixed(1)}%',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.amber,
+                      Text(
+                        '${(progress * 100).toStringAsFixed(1)}%',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange,
+                        ),
                       ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -276,7 +332,7 @@ class CeeOngoingBuildMethods {
                   value: progress,
                   backgroundColor: Colors.grey[300],
                   valueColor: const AlwaysStoppedAnimation<Color>(
-                    Colors.amber,
+                    Colors.orange,
                   ),
                   minHeight: 8,
                 ),
@@ -659,6 +715,7 @@ class CeeOngoingBuildMethods {
     required String address,
     required String startDate,
     required String estimatedCompletion,
+    required int? duration,
     required double progress,
     required String selectedTab,
     required Function(String) onTabChanged,
@@ -681,6 +738,7 @@ class CeeOngoingBuildMethods {
             address: address,
             startDate: startDate,
             estimatedCompletion: estimatedCompletion,
+            duration: duration,
             progress: progress,
             onRefresh: onRefresh,
             onChat: onChat,
@@ -720,7 +778,7 @@ class CeeOngoingBuildMethods {
         content = buildSectionCard(
           title: 'Tasks & Progress',
           icon: Icons.checklist,
-          iconColor: Colors.blue,
+          iconColor: Colors.black,
           child: buildTasksList(tasks: tasks),
         );
         break;
@@ -728,7 +786,7 @@ class CeeOngoingBuildMethods {
         content = buildSectionCard(
           title: 'Progress Reports',
           icon: Icons.description,
-          iconColor: Colors.orange,
+          iconColor: Colors.black,
           child: buildReportsList(
             reports: reports,
             onViewReport: onViewReport,
@@ -739,7 +797,7 @@ class CeeOngoingBuildMethods {
         content = buildSectionCard(
           title: 'Project Photos',
           icon: Icons.photo_library,
-          iconColor: Colors.green,
+          iconColor: Colors.black,
           child: buildPhotosList(
             photos: photos,
             createSignedUrl: createSignedUrl,
@@ -751,7 +809,7 @@ class CeeOngoingBuildMethods {
         content = buildSectionCard(
           title: 'Materials & Costs',
           icon: Icons.construction,
-          iconColor: Colors.purple,
+          iconColor: Colors.black,
           child: buildCostsList(
             costs: costs,
             onViewMaterial: onViewMaterial,
@@ -762,7 +820,7 @@ class CeeOngoingBuildMethods {
         content = buildSectionCard(
           title: 'Tasks & Progress',
           icon: Icons.checklist,
-          iconColor: Colors.blue,
+          iconColor: Colors.black,
           child: buildTasksList(tasks: tasks),
         );
     }
@@ -783,6 +841,7 @@ class CeeOngoingBuildMethods {
     required String address,
     required String startDate,
     required String estimatedCompletion,
+    required int? duration,
     required double progress,
     required List<Map<String, dynamic>> tasks,
     required List<Map<String, dynamic>> reports,
@@ -810,6 +869,7 @@ class CeeOngoingBuildMethods {
             address: address,
             startDate: startDate,
             estimatedCompletion: estimatedCompletion,
+            duration: duration,
             progress: progress,
             onRefresh: onRefresh,
             onChat: onChat,
@@ -830,7 +890,7 @@ class CeeOngoingBuildMethods {
                         child: buildGridSectionCard(
                           title: 'Tasks & Progress',
                           icon: Icons.checklist,
-                          iconColor: Colors.blue,
+                          iconColor: Colors.grey,
                           child: buildDesktopTasksList(tasks: tasks),
                         ),
                       ),
@@ -839,7 +899,7 @@ class CeeOngoingBuildMethods {
                         child: buildGridSectionCard(
                           title: 'Project Photos',
                           icon: Icons.photo_library,
-                          iconColor: Colors.green,
+                          iconColor: Colors.grey,
                           child: buildDesktopPhotosList(
                             photos: photos,
                             createSignedUrl: createSignedUrl,
@@ -858,7 +918,7 @@ class CeeOngoingBuildMethods {
                         child: buildGridSectionCard(
                           title: 'Progress Reports',
                           icon: Icons.description,
-                          iconColor: Colors.orange,
+                          iconColor: Colors.grey,
                           child: buildDesktopReportsList(
                             reports: reports,
                             onViewReport: onViewReport,
@@ -870,7 +930,7 @@ class CeeOngoingBuildMethods {
                         child: buildGridSectionCard(
                           title: 'Materials & Costs',
                           icon: Icons.construction,
-                          iconColor: Colors.purple,
+                          iconColor: Colors.grey,
                           child: buildDesktopCostsList(
                             costs: costs,
                             onViewMaterial: onViewMaterial,

@@ -91,7 +91,7 @@ class LoginScreen extends StatelessWidget {
                             height: 48,
                             child: ElevatedButton(
                               onPressed: () {
-                                transitionBuilder(context, ToLoginScreen());
+                                transitionBuilder(context, const ToLoginScreen());
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.amber.shade700,
@@ -119,7 +119,7 @@ class LoginScreen extends StatelessWidget {
                             height: 48,
                             child: OutlinedButton(
                               onPressed: () {
-                                transitionBuilder(context, RegisterScreen());
+                                transitionBuilder(context, const RegisterScreen());
                               },
                               style: OutlinedButton.styleFrom(
                                 side: BorderSide(

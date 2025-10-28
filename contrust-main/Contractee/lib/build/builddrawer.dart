@@ -11,6 +11,7 @@ import 'package:contractee/pages/cee_home.dart';
 import 'package:contractee/pages/cee_ongoing.dart';
 import 'package:contractee/pages/cee_chathistory.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum ContracteePage {
   home,
@@ -219,8 +220,22 @@ class SideDashboardDrawer extends StatefulWidget {
 
 class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
   bool _loadingOngoing = false;
+  bool _hasActiveSession = false;
   final SuperAdminAuditService _auditService = SuperAdminAuditService(); 
   final SuperAdminErrorService _errorService = SuperAdminErrorService();
+
+  @override
+  void initState() {
+    super.initState();
+    _checkSession();
+  }
+
+  void _checkSession() {
+    final session = Supabase.instance.client.auth.currentSession;
+    setState(() {
+      _hasActiveSession = session != null;
+    });
+  }
 
   Future<void> goToOngoing() async {
     if (widget.contracteeId == null) return;
@@ -320,7 +335,32 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
     );
   }
 
-  void logout() async {
+  Future<void> logout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Confirm Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
     try {
       await UserService().signOut();
       if (mounted) {
@@ -416,8 +456,8 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
           _SidebarItem(
             icon: Icons.logout_outlined,
             label: 'Logout',
-            active: true, 
-            onTap: logout,
+            active: _hasActiveSession, 
+            onTap: _hasActiveSession ? logout : null,
           ),
         ],
       ),

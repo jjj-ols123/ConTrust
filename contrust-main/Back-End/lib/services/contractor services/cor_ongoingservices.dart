@@ -550,15 +550,29 @@ class CorOngoingService {
   }) async {
     try {
       final projectDetails = await _fetchService.fetchProjectDetails(projectId);
-      final startDate = DateTime.parse(projectDetails?['start_date']);
-      final duration = estimatedCompletion.difference(startDate).inDays;
+      
+      int? duration;
+      final startDateString = projectDetails?['start_date'];
+      if (startDateString != null && startDateString.toString().isNotEmpty) {
+        try {
+          final startDate = DateTime.parse(startDateString);
+          duration = estimatedCompletion.difference(startDate).inDays;
+        } catch (e) {
+          duration = null;
+        }
+      }
+
+      final updateData = <String, dynamic>{
+        'estimated_completion': estimatedCompletion.toIso8601String(),
+      };
+      
+      if (duration != null) {
+        updateData['duration'] = duration;
+      }
 
       await _supabase
           .from('Projects')
-          .update({
-            'estimated_completion': estimatedCompletion.toIso8601String(),
-            'duration': duration,
-          })
+          .update(updateData)
           .eq('project_id', projectId);
 
       if (context.mounted) {
@@ -566,8 +580,16 @@ class CorOngoingService {
       }
       onSuccess();
     } catch (e) {
+      await _errorService.logError(
+        userId: _supabase.auth.currentUser?.id,
+        errorMessage: 'Failed to update estimated completion: $e',
+        module: 'CorOngoingService',
+        severity: 'Medium',
+        extraInfo: {'project_id': projectId},
+      );
+      
       if (context.mounted) {
-        ConTrustSnackBar.error(context, 'Error updating estimated completion: ');
+        ConTrustSnackBar.error(context, 'Error updating estimated completion: $e');
       }
     }
   }

@@ -85,17 +85,11 @@ class CeeProfileService {
     try {
       String columnName;
       switch (fieldType) {
-        case 'bio':
-          columnName = 'bio';
+        case 'fullName':
+          columnName = 'full_name';
           break;
         case 'contact':
-          columnName = 'contact_number';
-          break;
-        case 'firstName':
-          columnName = 'first_name';
-          break;
-        case 'lastName':
-          columnName = 'last_name';
+          columnName = 'phone_number';
           break;
         case 'address':
           columnName = 'address';
