@@ -3,7 +3,11 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:websitepoint/app_websitestart.dart';
 import 'package:contractee/pages/cee_welcome.dart';
+import 'package:contractee/pages/cee_home.dart';
+import 'package:contractee/pages/cee_authredirect.dart' as cee;
 import 'package:contractor/Screen/cor_login.dart';
+import 'package:contractor/Screen/cor_dashboard.dart';
+import 'package:contractor/Screen/cor_authredirect.dart' as cor;
 import 'package:superadmin/pages/login.dart';
 
 void main() async {
@@ -38,8 +42,37 @@ class MyApp extends StatelessWidget {
         '/contractee': (context) => const WelcomePage(),
         '/contractor': (context) => LoginScreen(),
         '/superadmin': (context) => const SuperAdminLoginScreen(),
+        // Contractee rou
+        '/home': (context) => const HomePage(),
+        // Contractor 
+        '/dashboard': (context) {
+          final session = Supabase.instance.client.auth.currentSession;
+          if (session != null) {
+            return DashboardScreen(contractorId: session.user.id);
+          }
+          return LoginScreen();
+        },
       },
       onGenerateRoute: (settings) {
+        if (settings.name == '/auth/callback') {
+          final session = Supabase.instance.client.auth.currentSession;
+          if (session != null) {
+            return MaterialPageRoute(
+              builder: (context) {
+                final userType = session.user.userMetadata?['user_type'];
+                if (userType == 'contractor') {
+                  return const cor.AuthRedirectPage(); 
+                } else {
+                  return const cee.AuthRedirectPage(); 
+                }
+              },
+            );
+          }
+          return MaterialPageRoute(
+            builder: (context) => const cee.AuthRedirectPage(),
+          );
+        }
+        
         return MaterialPageRoute(
           builder: (context) => const WebsiteStartPage(),
         );
