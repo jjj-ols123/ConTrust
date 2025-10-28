@@ -560,6 +560,9 @@ class ProjectService {
     required String type,
     required String description,
     required String location,
+    String? minBudget,
+    String? maxBudget,
+    DateTime? startDate,
   }) async {
     try {
       final existingHireRequest = await FetchService()
@@ -582,17 +585,25 @@ class ProjectService {
       if (existingProject != null) {
         projectId = existingProject['project_id'];
       } else {
+        final projectData = {
+          'contractee_id': contracteeId,
+          'title': title,
+          'type': type,
+          'description': description,
+          'location': location,
+          'status': 'pending',
+          'duration': 0,
+          'min_budget': minBudget != null ? double.tryParse(minBudget) : null,
+          'max_budget': maxBudget != null ? double.tryParse(maxBudget) : null,
+        };
+        
+        if (startDate != null) {
+          projectData['start_date'] = startDate.toIso8601String();
+        }
+        
         final projectResponse = await _supabase
             .from('Projects')
-            .insert({
-              'contractee_id': contracteeId,
-              'title': title,
-              'type': type,
-              'description': description,
-              'location': location,
-              'status': 'pending',
-              'duration': 0,
-            })
+            .insert(projectData)
             .select()
             .single();
         projectId = projectResponse['project_id'];
@@ -626,6 +637,8 @@ class ProjectService {
           'project_type': type,
           'project_location': location,
           'project_description': description,
+          'min_budget': minBudget,
+          'max_budget': maxBudget,
           'action': 'hire_request',
           'status': 'pending',
           'timestamp': DateTime.now().toIso8601String(),

@@ -248,21 +248,47 @@ class ContractPdfSignatureService {
       final contracteeSigned = contractData['contractee_signature_url'] != null &&
           (contractData['contractee_signature_url'] as String).isNotEmpty;
 
+      final hasSignedPdf = contractData['signed_pdf_url'] != null && 
+           (contractData['signed_pdf_url'] as String).isNotEmpty;
+
+      await _auditService.logAuditEvent(
+        action: 'CHECK_SIGNED_PDF_GENERATION',
+        details: 'Checking if signed PDF should be generated - Contractor signed: $contractorSigned, Contractee signed: $contracteeSigned, Has signed PDF: $hasSignedPdf',
+        category: 'Contract',
+        metadata: {
+          'contract_id': contractId,
+          'contractor_signed': contractorSigned,
+          'contractee_signed': contracteeSigned,
+          'has_signed_pdf': hasSignedPdf,
+          'contractor_signature_url': contractData['contractor_signature_url'],
+          'contractee_signature_url': contractData['contractee_signature_url'],
+        },
+      );
+
       if (contractorSigned && 
           contracteeSigned && 
-          (contractData['signed_pdf_url'] == null || 
-           (contractData['signed_pdf_url'] as String).isEmpty)) {
+          !hasSignedPdf) {
         
+        await _auditService.logAuditEvent(
+          action: 'INITIATING_SIGNED_PDF_CREATION',
+          details: 'Both parties have signed, creating signed PDF',
+          category: 'Contract',
+          metadata: {
+            'contract_id': contractId,
+          },
+        );
+
         await createSignedContractPdf(contractId: contractId);
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to check and generate signed PDF: ',
+        errorMessage: 'Failed to check and generate signed PDF: $e',
         module: 'Contract PDF Signature Service',
-        severity: 'Medium',
+        severity: 'High',
         extraInfo: {
           'operation': 'Check and Generate Signed PDF',
           'contract_id': contractId,
+          'error': e.toString(),
         },
       );
       rethrow;

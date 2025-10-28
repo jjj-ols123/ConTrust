@@ -306,12 +306,12 @@ class NotificationService {
         infoMap['count'] = bids.length;
         infoMap['project_id'] = projectId;
         infoMap['project_title'] = projectTitle;
+       infoMap['message'] = 'Your project "$projectTitle" has received ${bids.length} bids today';
 
         await _supabase
             .from('Notifications')
             .update({
               'information': infoMap,
-              'message': 'Your project "$projectTitle" has received ${bids.length} bids today'
             })
             .eq('notification_id', existing['notification_id']);
       } else {

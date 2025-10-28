@@ -29,6 +29,7 @@ Future<Map<String, dynamic>?> hasExistingProjectWithContractor(String contractee
       .select('project_id, title, type, description, location, status, contractor_id')
       .eq('contractee_id', contracteeId)
       .eq('contractor_id', contractorId)
+      .inFilter('status', ['awaiting_contract', 'active', 'awaiting_agreement', 'awaiting_signature', 'cancellation_requested_by_contractee'])
       .order('created_at', ascending: false)
       .limit(1)
       .maybeSingle();

@@ -249,7 +249,7 @@ class ContractTypeService {
         );
       }
 
-      menuItems.addAll([
+      menuItems.add(
         const PopupMenuItem(
           value: 'edit',
           child: Row(
@@ -260,17 +260,7 @@ class ContractTypeService {
             ],
           ),
         ),
-        const PopupMenuItem(
-          value: 'delete',
-          child: Row(
-            children: [
-              Icon(Icons.delete, size: 20),
-              SizedBox(width: 8),
-              Text('Delete Contract'),
-            ],
-          ),
-        ),
-      ]);
+      );
 
       showMenu<String>(
         context: context,
@@ -319,16 +309,6 @@ class ContractTypeService {
             contractorId: contractorId,
           );
           if (editResult == true) {
-            onRefreshContracts();
-          }
-          break;
-        case 'delete':
-          final shouldDelete = await showDeleteConfirmationDialog(context);
-          if (shouldDelete) {
-            await deleteContract(
-              context: context,
-              contractId: contract['contract_id'] as String,
-            );
             onRefreshContracts();
           }
           break;

@@ -3,6 +3,7 @@
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:backend/services/superadmin services/auditlogs_service.dart';
@@ -177,7 +178,11 @@ class SignInGoogleContractor {
       final supabase = Supabase.instance.client;
       await supabase.auth.signInWithOAuth(
         OAuthProvider.google,
+        redirectTo: kIsWeb ? null : 'io.supabase.contrust://login-callback/',
       );
+      
+      // OAuth callback will be handled by AuthRedirectPage
+      // No need for onAuthStateChange listener here
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Google sign-in failed for contractor: $e',
@@ -306,18 +311,31 @@ class SignInGoogleContractor {
         ),
       );
 
-      await supabase.from('Users').upsert({
-        'users_id': user.id,
-        'email': user.email,
-        'name': user.userMetadata?['full_name'] ?? 'Contractor Firm',
-        'role': 'contractor',
-        'status': 'active',
-        'created_at': DateTime.now().toIso8601String(),
-        'last_login': DateTime.now().toIso8601String(),
-        'profile_image_url': user.userMetadata?['avatar_url'],
-        'phone_number': '',
-        'verified': false,
-      }, onConflict: 'users_id');
+      await Future.delayed(const Duration(milliseconds: 1000));
+      
+      bool insertSuccess = false;
+      for (int attempt = 0; attempt < 5 && !insertSuccess; attempt++) {
+        try {
+          await supabase.from('Users').upsert({
+            'users_id': user.id,
+            'email': user.email,
+            'name': user.userMetadata?['full_name'] ?? 'Contractor Firm',
+            'role': 'contractor',
+            'status': 'active',
+            'created_at': DateTime.now().toIso8601String(),
+            'last_login': DateTime.now().toIso8601String(),
+            'profile_image_url': user.userMetadata?['avatar_url'],
+            'phone_number': '',
+            'verified': false,
+          }, onConflict: 'users_id');
+          insertSuccess = true;
+        } catch (e) {
+          if (attempt == 4) {
+            throw Exception('Failed to create user record: $e');
+          }
+          await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
+        }
+      }
 
       await supabase.from('Contractor').insert({
         'contractor_id': user.id,

@@ -47,6 +47,8 @@ class SignatureCompletionHandler {
         userType: userType,
       );
       
+      await Future.delayed(const Duration(milliseconds: 500));
+      
       await onSignatureSaved(contractId);
     } catch (e) {
       rethrow;
