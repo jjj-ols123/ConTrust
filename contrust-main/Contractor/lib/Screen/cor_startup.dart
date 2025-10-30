@@ -330,7 +330,6 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
                 Row(
                   children: [
                     Container(
@@ -367,7 +366,6 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
                   ],
                 ),
                 SizedBox(height: isSmallScreen ? 16 : 20),
-                // Tab Bar
                 TabBar(
                   labelColor: const Color(0xFFFFA726),
                   unselectedLabelColor: Colors.black54,
