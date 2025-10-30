@@ -4,6 +4,13 @@
 import 'package:contractor/Screen/cor_dashboard.dart';
 import 'package:contractor/Screen/cor_startup.dart';
 import 'package:contractor/Screen/cor_authredirect.dart';
+import 'package:contractor/Screen/cor_bidding.dart';
+import 'package:contractor/Screen/cor_chathistory.dart';
+import 'package:contractor/Screen/cor_contracttype.dart';
+import 'package:contractor/Screen/cor_profile.dart';
+import 'package:contractor/Screen/cor_ongoing.dart';
+import 'package:contractor/Screen/cor_product.dart';
+import 'package:contractor/build/builddrawer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -15,6 +22,7 @@ final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
 String? _lastPushedRoute;
 bool _isRegistering = false;
+bool _preventAuthNavigation = false;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,19 +51,19 @@ void setupAuthListener() {
   final supabase = Supabase.instance.client;
 
   Future<void> handleSession(Session? session) async {
-    String target = '/login';
+    String target = '/';
 
     if (session == null) {
       _isRegistering = false;
-      target = '/login';
+      target = '/';
     } else {
-      if (_isRegistering) {
+      if (_isRegistering || _preventAuthNavigation) {
         return;
       }
 
       final user = session.user;
       if (user == null) {
-        target = '/login';
+        target = '/';
       } else {
         try {
           final resp = await supabase
@@ -70,10 +78,10 @@ void setupAuthListener() {
           if (verified && role == 'contractor') {
             target = '/dashboard';
           } else {
-            target = '/login';
+            target = '/';
           }
         } catch (_) {
-          target = '/login';
+          target = '/';
         }
       }
     }
@@ -98,6 +106,10 @@ void setRegistrationState(bool isRegistering) {
   _isRegistering = isRegistering;
 }
 
+void setPreventAuthNavigation(bool prevent) {
+  _preventAuthNavigation = prevent;
+}
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -115,9 +127,9 @@ class MyApp extends StatelessWidget {
       supportedLocales: const [
         Locale('en', 'US'),
       ],
-      initialRoute: '/login',
+      initialRoute: '/',
       routes: {
-        '/login': (context) => const ToLoginScreen(),
+        '/': (context) => const ToLoginScreen(),
         '/dashboard': (context) {
           final session = Supabase.instance.client.auth.currentSession;
           if (session != null) {
@@ -126,6 +138,78 @@ class MyApp extends StatelessWidget {
           return const ToLoginScreen();
         },
         '/auth/callback': (context) => const AuthRedirectPage(),
+        '/messages': (context) {
+          final session = Supabase.instance.client.auth.currentSession;
+          if (session != null) {
+            return ContractorShell(
+              currentPage: ContractorPage.messages,
+              contractorId: session.user.id,
+              child: ContractorChatHistoryPage(),
+            );
+          }
+          return const ToLoginScreen();
+        },
+        '/contracts': (context) {
+          final session = Supabase.instance.client.auth.currentSession;
+          if (session != null) {
+            return ContractorShell(
+              currentPage: ContractorPage.contracts,
+              contractorId: session.user.id,
+              child: ContractType(contractorId: session.user.id),
+            );
+          }
+          return const ToLoginScreen();
+        },
+        '/bidding': (context) {
+          final session = Supabase.instance.client.auth.currentSession;
+          if (session != null) {
+            return ContractorShell(
+              currentPage: ContractorPage.bidding,
+              contractorId: session.user.id,
+              child: BiddingScreen(contractorId: session.user.id),
+            );
+          }
+          return const ToLoginScreen();
+        },
+        '/profile': (context) {
+          final session = Supabase.instance.client.auth.currentSession;
+          if (session != null) {
+            return ContractorShell(
+              currentPage: ContractorPage.profile,
+              contractorId: session.user.id,
+              child: ContractorUserProfileScreen(contractorId: session.user.id),
+            );
+          }
+          return const ToLoginScreen();
+        },
+        '/project-management': (context) {
+          final session = Supabase.instance.client.auth.currentSession;
+          final projectId = ModalRoute.of(context)?.settings.arguments as String?;
+          if (session != null && projectId != null) {
+            return ContractorShell(
+              currentPage: ContractorPage.projectManagement,
+              contractorId: session.user.id,
+              child: CorOngoingProjectScreen(projectId: projectId),
+            );
+          }
+          return const ToLoginScreen();
+        },
+        '/materials': (context) {
+          final session = Supabase.instance.client.auth.currentSession;
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          final projectId = args?['projectId'] as String?;
+          if (session != null && projectId != null) {
+            return ContractorShell(
+              currentPage: ContractorPage.materials,
+              contractorId: session.user.id,
+              child: ProductPanelScreen(
+                contractorId: session.user.id,
+                projectId: projectId,
+              ),
+            );
+          }
+          return const ToLoginScreen();
+        },
       },
     );
   }

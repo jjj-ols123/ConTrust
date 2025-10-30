@@ -9,7 +9,6 @@ import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/Screen/cor_bidding.dart';
 import 'package:contractor/Screen/cor_chathistory.dart';
 import 'package:contractor/Screen/cor_contracttype.dart';
-import 'package:contractor/Screen/cor_dashboard.dart';
 import 'package:contractor/Screen/cor_ongoing.dart';
 import 'package:contractor/Screen/cor_profile.dart';
 import 'package:contractor/Screen/cor_startup.dart'; 
@@ -321,13 +320,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
       }
 
       if (widget.currentPage != ContractorPage.projectManagement) {
-        navigateToPage(
-          ContractorShell(
-            currentPage: ContractorPage.projectManagement,
-            contractorId: widget.contractorId ?? '',
-            child: CorOngoingProjectScreen(projectId: projectId ?? ''),
-          ),
-        );
+        Navigator.pushNamed(context, '/project-management', arguments: projectId);
       }
     } catch (e) {
       setState(() => _loadingPM = false);
@@ -335,15 +328,8 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
     }
   }
 
-  void navigateToPage(Widget page) {
-    Navigator.push(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => page,
-        transitionDuration: Duration.zero,
-        reverseTransitionDuration: Duration.zero,
-      ),
-    );
+  void navigateToPage(String routeName) {
+    Navigator.pushNamed(context, routeName);
   }
 
   Future<void> logout() async {
@@ -406,7 +392,6 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
 
   @override
   Widget build(BuildContext context) {
-    final id = widget.contractorId;
     return Container(
       color: Colors.white,
       child: ListView(
@@ -418,7 +403,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             active: widget.currentPage == ContractorPage.dashboard,
             onTap: () {
               if (widget.currentPage != ContractorPage.dashboard) {
-                navigateToPage(DashboardScreen(contractorId: id ?? ''));
+                navigateToPage('/dashboard');
               }
             },
           ),
@@ -428,13 +413,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             active: widget.currentPage == ContractorPage.messages,
             onTap: () {
               if (widget.currentPage != ContractorPage.messages) {
-                navigateToPage(
-                  ContractorShell(
-                    currentPage: ContractorPage.messages,
-                    contractorId: id ?? '',
-                    child: ContractorChatHistoryPage(),
-                  ),
-                );
+                navigateToPage('/messages');
               }
             },
           ),
@@ -444,13 +423,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             active: widget.currentPage == ContractorPage.contracts,
             onTap: () {
               if (widget.currentPage != ContractorPage.contracts) {
-                navigateToPage(
-                  ContractorShell(
-                    currentPage: ContractorPage.contracts,
-                    contractorId: id ?? '',
-                    child: ContractType(contractorId: id ?? ''),
-                  ),
-                );
+                navigateToPage('/contracts');
               }
             },
           ),
@@ -460,13 +433,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             active: widget.currentPage == ContractorPage.bidding,
             onTap: () {
               if (widget.currentPage != ContractorPage.bidding) {
-                navigateToPage(
-                  ContractorShell(
-                    currentPage: ContractorPage.bidding,
-                    contractorId: id ?? '',
-                    child: BiddingScreen(contractorId: id ?? ''),
-                  ),
-                );
+                navigateToPage('/bidding');
               }
             },
           ),
@@ -476,13 +443,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             active: widget.currentPage == ContractorPage.profile,
             onTap: () {
               if (widget.currentPage != ContractorPage.profile) {
-                navigateToPage(
-                  ContractorShell(
-                    currentPage: ContractorPage.profile,
-                    contractorId: id ?? '',
-                    child: ContractorUserProfileScreen(contractorId: id ?? ''),
-                  ),
-                );
+                navigateToPage('/profile');
               }
             },
           ),
@@ -667,52 +628,16 @@ class _ModernBottomNavigationBarState extends State<ModernBottomNavigationBar> {
     
     switch (page) {
       case ContractorPage.messages:
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ContractorShell(
-              currentPage: ContractorPage.messages,
-              contractorId: widget.contractorId ?? '',
-              child: ContractorChatHistoryPage(),
-            ),
-          ),
-        );
+        Navigator.pushNamed(context, '/messages');
         break;
       case ContractorPage.contracts:
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ContractorShell(
-              currentPage: ContractorPage.contracts,
-              contractorId: widget.contractorId ?? '',
-              child: ContractType(contractorId: widget.contractorId ?? ''),
-            ),
-          ),
-        );
+        Navigator.pushNamed(context, '/contracts');
         break;
       case ContractorPage.bidding:
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ContractorShell(
-              currentPage: ContractorPage.bidding,
-              contractorId: widget.contractorId ?? '',
-              child: BiddingScreen(contractorId: widget.contractorId ?? ''),
-            ),
-          ),
-        );
+        Navigator.pushNamed(context, '/bidding');
         break;
       case ContractorPage.profile:
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ContractorShell(
-              currentPage: ContractorPage.profile,
-              contractorId: widget.contractorId ?? '',
-              child: ContractorUserProfileScreen(contractorId: widget.contractorId ?? ''),
-            ),
-          ),
-        );
+        Navigator.pushNamed(context, '/profile');
         break;
       default:
         break;

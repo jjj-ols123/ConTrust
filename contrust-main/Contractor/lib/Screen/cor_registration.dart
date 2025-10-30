@@ -125,25 +125,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (success) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).clearSnackBars();
+
+        app.setPreventAuthNavigation(true);
+        
         ConTrustSnackBar.success(
           context,
           'Account created! Please wait for verification.',
-        );
+          action: SnackBarAction(
+            label: 'OK',
+            textColor: Colors.white,
+            onPressed: () async {
+              try {
+                await Supabase.instance.client.auth.signOut();
+                await Future.delayed(const Duration(milliseconds: 500));
+              } catch (e) {
+                // Ignore sign out errors
+              }
 
-        try {
-          await Supabase.instance.client.auth.signOut();
-          await Future.delayed(const Duration(milliseconds: 500));
-        } catch (e) {
-          // Ignore sign out errors
-        }
+              app.setRegistrationState(false);
+              app.setPreventAuthNavigation(false);
 
-        app.setRegistrationState(false);
+              if (!mounted) return;
 
-        if (!mounted) return;
-
-        Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
-          '/login',
-          (route) => false,
+              Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+                '/',
+                (route) => false,
+              );
+            },
+          ),
         );
       }
     } finally {
@@ -252,7 +261,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   } else {
                     Navigator.pushReplacementNamed(
                       context,
-                      '/login',
+                      '/',
                     );
                   }
                 },
@@ -954,7 +963,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
             } else {
-              Navigator.pushReplacementNamed(context, '/login');
+              Navigator.pushReplacementNamed(context, '/');
             }
           },
           child: Text.rich(

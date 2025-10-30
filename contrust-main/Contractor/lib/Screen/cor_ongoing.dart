@@ -3,7 +3,6 @@
 import 'package:backend/services/both%20services/be_fetchservice.dart';
 import 'package:backend/services/contractor services/cor_ongoingservices.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractor/Screen/cor_product.dart';
 import 'package:contractor/build/builddrawer.dart';
 import 'package:contractor/build/buildongoing.dart';
 import 'package:flutter/material.dart';
@@ -354,18 +353,10 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   Future<void> goToMaterials() async {
     final contractorId = Supabase.instance.client.auth.currentUser?.id;
     if (contractorId != null) {
-      final result = await Navigator.push(
+      final result = await Navigator.pushNamed(
         context,
-        MaterialPageRoute(
-          builder: (context) => ContractorShell(
-            currentPage: ContractorPage.materials,
-            contractorId: contractorId,
-            child: ProductPanelScreen(
-              contractorId: contractorId,
-              projectId: widget.projectId,
-            ),
-          ),
-        ),
+        '/materials',
+        arguments: {'projectId': widget.projectId},
       );
 
       if (result == true || result == null) {

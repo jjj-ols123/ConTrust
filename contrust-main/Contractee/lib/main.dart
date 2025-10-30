@@ -5,6 +5,11 @@ import 'package:contractee/pages/cee_authredirect.dart';
 import 'package:contractee/pages/cee_home.dart';
 import 'package:contractee/pages/cee_welcome.dart';
 import 'package:contractee/pages/cee_login.dart';
+import 'package:contractee/pages/cee_ongoing.dart';
+import 'package:contractee/pages/cee_profile.dart';
+import 'package:contractee/pages/cee_chathistory.dart';
+import 'package:contractee/pages/cee_notification.dart';
+import 'package:contractee/build/builddrawer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
@@ -15,6 +20,7 @@ final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
 String? _lastPushedRoute;
 bool _isRegistering = false;
+bool _preventAuthNavigation = false;
 
 class AppScrollBehavior extends MaterialScrollBehavior {
   @override
@@ -61,7 +67,7 @@ void setupAuthListener(bool isFirstOpen) {
       _isRegistering = false;
       target = '/login';
     } else {
-      if (_isRegistering) {
+      if (_isRegistering || _preventAuthNavigation) {
         return;
       }
 
@@ -110,6 +116,10 @@ void setRegistrationState(bool isRegistering) {
   _isRegistering = isRegistering;
 }
 
+void setPreventAuthNavigation(bool prevent) {
+  _preventAuthNavigation = prevent;
+}
+
 class MyApp extends StatelessWidget {
   final bool isFirstOpen;
   const MyApp({super.key, required this.isFirstOpen});
@@ -126,6 +136,51 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginPage(),
         '/home': (context) => const HomePage(),
         '/auth/callback': (context) => const AuthRedirectPage(),
+        '/ongoing': (context) {
+          final session = Supabase.instance.client.auth.currentSession;
+          final projectId = ModalRoute.of(context)?.settings.arguments as String?;
+          if (session != null && projectId != null) {
+            return ContracteeShell(
+              currentPage: ContracteePage.ongoing,
+              contracteeId: session.user.id,
+              child: CeeOngoingProjectScreen(projectId: projectId),
+            );
+          }
+          return const LoginPage();
+        },
+        '/profile': (context) {
+          final session = Supabase.instance.client.auth.currentSession;
+          if (session != null) {
+            return ContracteeShell(
+              currentPage: ContracteePage.profile,
+              contracteeId: session.user.id,
+              child: CeeProfilePage(contracteeId: session.user.id),
+            );
+          }
+          return const LoginPage();
+        },
+        '/messages': (context) {
+          final session = Supabase.instance.client.auth.currentSession;
+          if (session != null) {
+            return ContracteeShell(
+              currentPage: ContracteePage.messages,
+              contracteeId: session.user.id,
+              child: const ContracteeChatHistoryPage(),
+            );
+          }
+          return const LoginPage();
+        },
+        '/notifications': (context) {
+          final session = Supabase.instance.client.auth.currentSession;
+          if (session != null) {
+            return ContracteeShell(
+              currentPage: ContracteePage.notifications,
+              contracteeId: session.user.id,
+              child: const ContracteeNotificationPage(),
+            );
+          }
+          return const LoginPage();
+        },
       },
       onUnknownRoute: (settings) => MaterialPageRoute(
         builder: (_) => isFirstOpen ? const WelcomePage() : const LoginPage(),

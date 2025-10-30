@@ -27,7 +27,7 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
       Navigator.pushNamedAndRemoveUntil(context, next, (route) => false);
     } catch (e) {
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/login');
+      Navigator.pushReplacementNamed(context, '/');
     }
   }
 
