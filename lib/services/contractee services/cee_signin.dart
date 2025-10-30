@@ -1,7 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractee/pages/cee_home.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -94,7 +93,6 @@ class SignInContractee {
 
       if (context.mounted) {
         ConTrustSnackBar.success(context, 'Successfully logged in');
-        Navigator.push(context, MaterialPageRoute(builder: (context) => HomePage()));
       }
 
     } catch (e) {
@@ -150,7 +148,6 @@ class SignInContractee {
       if (signUpResponse.user == null) {
         if (!context.mounted) return;
         ConTrustSnackBar.success(context, 'Account created! Please check your email to confirm and complete registration.');
-        Navigator.push(context, MaterialPageRoute(builder: (context) => HomePage()));
         return;
       }
 
@@ -178,10 +175,8 @@ class SignInContractee {
           insertSuccess = true;
         } catch (e) {
           if (attempt == 4) {
-            // Last attempt failed
             throw Exception('Failed to create user record: $e');
           }
-          // Wait before retrying
           await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
         }
       }
@@ -277,9 +272,6 @@ class SignInGoogleContractee {
         OAuthProvider.google,
         redirectTo: kIsWeb ? null : 'io.supabase.contrust://login-callback/',
       );
-      
-      // OAuth callback will be handled by AuthRedirectPage
-      // No need for onAuthStateChange listener here
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Google sign-in failed for contractee: $e',
@@ -340,8 +332,7 @@ class SignInGoogleContractee {
         );
 
         if (context.mounted) {
-          Navigator.pushNamedAndRemoveUntil(
-              context, '/home', (route) => false);
+          // Navigation handled by auth listener in main.dart
         }
       }
     } catch (e) {
@@ -409,8 +400,6 @@ class SignInGoogleContractee {
 
       ConTrustSnackBar.success(
           context, 'Welcome! Your contractee account has been created.');
-
-      Navigator.push(context, MaterialPageRoute(builder: (context) => HomePage()));
 
     } catch (e) {
       await _auditService.logAuditEvent(
