@@ -43,11 +43,11 @@ void setupAuthListener() {
   final supabase = Supabase.instance.client;
 
   Future<void> handleSession(Session? session) async {
-    String target = '/contractor/login';
+    String target = '/login';
 
     if (session == null) {
       _isRegistering = false;
-      target = '/contractor/login';
+      target = '/login';
     } else {
       if (_isRegistering) {
         return;
@@ -55,7 +55,7 @@ void setupAuthListener() {
 
       final user = session.user;
       if (user == null) {
-        target = '/contractor/login';
+        target = '/login';
       } else {
         try {
           final resp = await supabase
@@ -68,12 +68,12 @@ void setupAuthListener() {
           final role = resp != null ? resp['role'] : null;
 
           if (verified && role == 'contractor') {
-            target = '/contractor/dashboard';
+            target = '/dashboard';
           } else {
-            target = '/contractor/login';
+            target = '/login';
           }
         } catch (_) {
-          target = '/contractor/login';
+          target = '/login';
         }
       }
     }
@@ -115,17 +115,17 @@ class MyApp extends StatelessWidget {
       supportedLocales: const [
         Locale('en', 'US'),
       ],
-      initialRoute: '/contractor/login',
+      initialRoute: '/login',
       routes: {
-        '/contractor/login': (context) => const ToLoginScreen(),
-        '/contractor/dashboard': (context) {
+        '/login': (context) => const ToLoginScreen(),
+        '/dashboard': (context) {
           final session = Supabase.instance.client.auth.currentSession;
           if (session != null) {
             return DashboardScreen(contractorId: session.user.id);
           }
           return const ToLoginScreen();
         },
-        '/contractor/auth/callback': (context) => const AuthRedirectPage(),
+        '/auth/callback': (context) => const AuthRedirectPage(),
       },
     );
   }

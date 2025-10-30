@@ -51,6 +51,62 @@ class _RegistrationPageState extends State<RegistrationPage> {
     return RegExp(r'^[^@]+@gmail\.com$').hasMatch(email);
   }
 
+  Future<void> _handleSignUp() async {
+    bool hasUppercase = _passwordController.text.contains(RegExp(r'[A-Z]'));
+    bool hasLowercase = _passwordController.text.contains(RegExp(r'[a-z]'));
+    bool hasNumber = _passwordController.text.contains(RegExp(r'[0-9]'));
+    bool hasSpecialChar = _passwordController.text.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+
+    if (!isValidEmail(_emailController.text)) {
+      ConTrustSnackBar.error(context, 'Please enter a valid Gmail address (e.g., example@gmail.com).');
+      return;
+    }
+    if (_passwordController.text.length < 6) {
+      ConTrustSnackBar.error(context, 'Password must be at least 6 characters long.');
+      return;
+    }
+    if (_passwordController.text.length > 20) {
+      ConTrustSnackBar.error(context, 'Password must be no more than 15 characters long.');
+      return;
+    }
+    if (!hasUppercase || !hasLowercase || !hasNumber || !hasSpecialChar) {
+      ConTrustSnackBar.error(context, 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.');
+      return;
+    }
+    if (_passwordController.text != _confirmPasswordController.text) {
+      ConTrustSnackBar.error(context, 'Passwords do not match.');
+      return;
+    }
+
+    setState(() => _isSigningUp = true);
+    try {
+      final signUpContractee = SignUpContractee();
+      signUpContractee.signUpContractee(
+        context,
+        _emailController.text,
+        _passwordController.text,
+        "contractee",
+        {
+          'user_type': "contractee",
+          'full_name': _fullName,
+          'phone_number': _formatPhone(_phoneController.text),
+          'address': _addressController.text,
+          'profilePhoto': _profilePhoto,
+        },
+        () => validateFieldsContractee(
+          context,
+          _fullName,
+          _phoneController.text,
+          _emailController.text,
+          _passwordController.text,
+          _confirmPasswordController.text,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSigningUp = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -322,56 +378,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
         ),
         const SizedBox(height: 25),
         ElevatedButton(
-          onPressed: _isSigningUp ? null : () async {
-            if (!isValidEmail(_emailController.text)) {
-              ConTrustSnackBar.error(context, 'Please enter a valid Gmail address (e.g., example@gmail.com).');
-              return;
-            }
-            if (_passwordController.text.length < 6) {
-              ConTrustSnackBar.error(context, 'Password must be at least 6 characters long.');
-              return;
-            }
-            if (_passwordController.text.length > 20) {
-              ConTrustSnackBar.error(context, 'Password must be no more than 15 characters long.');
-              return;
-            }
-            if (!hasUppercase || !hasLowercase || !hasNumber || !hasSpecialChar) {
-              ConTrustSnackBar.error(context, 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.');
-              return;
-            }
-            if (_passwordController.text != _confirmPasswordController.text) {
-              ConTrustSnackBar.error(context, 'Passwords do not match.');
-              return;
-            }
-
-            setState(() => _isSigningUp = true);
-            try {
-              final signUpContractee = SignUpContractee();
-              signUpContractee.signUpContractee(
-                context,
-                _emailController.text,
-                _passwordController.text,
-                "contractee",
-                {
-                  'user_type': "contractee",
-                  'full_name': _fullName,
-                  'phone_number': _formatPhone(_phoneController.text),
-                  'address': _addressController.text,
-                  'profilePhoto': _profilePhoto,
-                },
-                () => validateFieldsContractee(
-                  context,
-                  _fullName,
-                  _phoneController.text,
-                  _emailController.text,
-                  _passwordController.text,
-                  _confirmPasswordController.text,
-                ),
-              );
-            } finally {
-              if (mounted) setState(() => _isSigningUp = false);
-            }
-          },
+          onPressed: _isSigningUp ? null : _handleSignUp,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.amber,
             padding: const EdgeInsets.symmetric(vertical: 16),

@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter
 
+import 'dart:html' as html;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/utils/be_snackbar.dart';
@@ -410,7 +411,7 @@ class _WebsiteStartPageState extends State<WebsiteStartPage> {
       buttonText: 'Get Started',
       onPressed: () {
         try {
-          Navigator.of(context).pushReplacementNamed('/contractee');
+          html.window.location.href = 'https://www.contractee.contrust-sjdm.com';
         } catch (e) {
           ConTrustSnackBar.error(context, 'Error navigating to Contractee: $e');
         }
@@ -428,7 +429,7 @@ class _WebsiteStartPageState extends State<WebsiteStartPage> {
       buttonText: 'Get Started',
       onPressed: () {
         try {
-          Navigator.of(context).pushReplacementNamed('/contractor');
+          html.window.location.href = 'https://www.contractor.contrust-sjdm.com';
         } catch (e) {
           ConTrustSnackBar.error(context, 'Error navigating to Contractor: $e');
         }

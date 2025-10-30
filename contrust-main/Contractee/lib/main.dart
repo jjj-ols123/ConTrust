@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_null_comparison
+
 import 'dart:ui';
 import 'package:contractee/pages/cee_authredirect.dart';
 import 'package:contractee/pages/cee_home.dart';
@@ -8,6 +10,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
+
+String? _lastPushedRoute;
+bool _isRegistering = false;
 
 class AppScrollBehavior extends MaterialScrollBehavior {
   @override
@@ -20,77 +27,100 @@ class AppScrollBehavior extends MaterialScrollBehavior {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   if (kIsWeb) {
     usePathUrlStrategy();
   }
 
- await Supabase.initialize(
-  url: const String.fromEnvironment(
-    'SUPABASE_URL',
-    defaultValue: 'https://bgihfdqruamnjionhkeq.supabase.co',
-  ),
-  anonKey: const String.fromEnvironment(
-    'SUPABASE_ANON_KEY',
-    defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJnaWhmZHFydWFtbmppb25oa2VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4NzIyODksImV4cCI6MjA1NjQ0ODI4OX0.-GRaolUVu1hW6NUaEAwJuYJo8C2X5_1wZ-qB4a-9Txs',
-  ),
-);
+  await Supabase.initialize(
+    url: const String.fromEnvironment(
+      'SUPABASE_URL',
+      defaultValue: 'https://bgihfdqruamnjionhkeq.supabase.co',
+    ),
+    anonKey: const String.fromEnvironment(
+      'SUPABASE_ANON_KEY',
+      defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJnaWhmZHFydWFtbmppb25oa2VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4NzIyODksImV4cCI6MjA1NjQ0ODI4OX0.-GRaolUVu1hW6NUaEAwJuYJo8C2X5_1wZ-qB4a-9Txs',
+    ),
+  );
 
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  
-  final supabase = Supabase.instance.client;
-  final hasSession = supabase.auth.currentSession != null;
-  
   bool isFirstOpen = prefs.getBool('isFirstOpen') ?? true;
-  
-  if (hasSession && isFirstOpen) {
-    await prefs.setBool('isFirstOpen', false);
-    isFirstOpen = false;
-  }
+
+  setupAuthListener(isFirstOpen);
 
   runApp(MyApp(isFirstOpen: isFirstOpen));
 }
 
-class MyApp extends StatefulWidget {
+void setupAuthListener(bool isFirstOpen) {
+  final supabase = Supabase.instance.client;
+
+  Future<void> handleSession(Session? session) async {
+    String target = '/login';
+
+    if (session == null) {
+      _isRegistering = false;
+      target = '/login';
+    } else {
+      if (_isRegistering) {
+        return;
+      }
+
+      final user = session.user;
+      if (user == null) {
+        target = '/login';
+      } else {
+        try {
+          final resp = await supabase
+              .from('Users')
+              .select('verified, role')
+              .eq('users_id', user.id)
+              .maybeSingle();
+
+          final verified = resp != null && (resp['verified'] == true);
+          final role = resp != null ? resp['role'] : null;
+
+          if (verified && role == 'contractee') {
+            target = '/home';
+          } else {
+            target = '/login';
+          }
+        } catch (_) {
+          target = '/login';
+        }
+      }
+    }
+
+    if (_lastPushedRoute == target) return;
+    _lastPushedRoute = target;
+
+    if (appNavigatorKey.currentState == null) return;
+    try {
+      appNavigatorKey.currentState!.pushNamedAndRemoveUntil(target, (r) => false);
+    } catch (_) {}
+  }
+
+  Future.microtask(() => handleSession(supabase.auth.currentSession));
+
+  supabase.auth.onAuthStateChange.listen((event) {
+    handleSession(event.session);
+  });
+}
+
+void setRegistrationState(bool isRegistering) {
+  _isRegistering = isRegistering;
+}
+
+class MyApp extends StatelessWidget {
   final bool isFirstOpen;
   const MyApp({super.key, required this.isFirstOpen});
 
   @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  Session? _session;
-
-  @override
-  void initState() {
-    super.initState();
-    final supabase = Supabase.instance.client;
-    _session = supabase.auth.currentSession;
-
-    supabase.auth.onAuthStateChange.listen((data) {
-      final session = data.session;
-      setState(() {
-        _session = session;
-      });
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    String initialRoute;
-    if (_session != null) {
-      initialRoute = '/home';
-    } else if (widget.isFirstOpen) {
-      initialRoute = '/welcome';
-    } else {
-      initialRoute = '/login';
-    }
-
     return MaterialApp(
+      navigatorKey: appNavigatorKey,
       scrollBehavior: AppScrollBehavior(),
       debugShowCheckedModeBanner: false,
-      initialRoute: initialRoute,
+      initialRoute: isFirstOpen ? '/welcome' : '/login',
       routes: {
         '/welcome': (context) => const WelcomePage(),
         '/login': (context) => const LoginPage(),
@@ -98,9 +128,7 @@ class _MyAppState extends State<MyApp> {
         '/auth/callback': (context) => const AuthRedirectPage(),
       },
       onUnknownRoute: (settings) => MaterialPageRoute(
-        builder: (_) => _session != null 
-            ? const HomePage() 
-            : (widget.isFirstOpen ? const WelcomePage() : const LoginPage()),
+        builder: (_) => isFirstOpen ? const WelcomePage() : const LoginPage(),
       ),
     );
   }

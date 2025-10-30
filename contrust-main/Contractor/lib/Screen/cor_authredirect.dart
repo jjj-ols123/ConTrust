@@ -18,7 +18,7 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
   }
 
   Future<void> _handleRedirect() async {
-    final next = Uri.base.queryParameters['next'] ?? '/contractor/dashboard';
+    final next = Uri.base.queryParameters['next'] ?? '/dashboard';
 
     try {
       await Supabase.instance.client.auth.getSessionFromUrl(Uri.base);
@@ -27,7 +27,7 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
       Navigator.pushNamedAndRemoveUntil(context, next, (route) => false);
     } catch (e) {
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/contractor/login');
+      Navigator.pushReplacementNamed(context, '/login');
     }
   }
 

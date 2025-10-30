@@ -184,10 +184,10 @@ class SignInGoogleContractor {
   void signInGoogle(BuildContext context) async {
     try {
       final supabase = Supabase.instance.client;
-      final encodedNext = Uri.encodeComponent('/contractor/dashboard');
+      final encodedNext = Uri.encodeComponent('/dashboard');
       final redirect = kIsWeb
           ? '${web.window.location.origin}/auth/callback?next=$encodedNext'
-          : 'io.supabase.contrust://login-callback/contractor/dashboard';
+          : 'io.supabase.contrust://login-callback/dashboard';
 
       await supabase.auth.signInWithOAuth(
         OAuthProvider.google,
@@ -274,11 +274,6 @@ class SignInGoogleContractor {
             'login_method': 'google_oauth',
           },
         );
-
-        if (context.mounted) {
-          Navigator.pushNamedAndRemoveUntil(
-              context, '/contractor/dashboard', (route) => false);
-        }
       }
     } catch (e) {
       await _errorService.logError(
@@ -361,9 +356,6 @@ class SignInGoogleContractor {
 
       ConTrustSnackBar.success(
           context, 'Welcome! Your contractor account has been created.');
-
-      Navigator.pushNamedAndRemoveUntil(
-          context, '/contractor/dashboard', (route) => false);
 
     } catch (e) {
       await _auditService.logAuditEvent(

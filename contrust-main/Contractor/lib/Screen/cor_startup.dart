@@ -32,6 +32,46 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
     super.dispose();
   }
 
+  Future<void> _handleLogin() async {
+    if (!_isAgreed) {
+      ConTrustSnackBar.error(
+        context,
+        'You must agree to the Privacy Policy and Terms of Service.',
+      );
+      return;
+    }
+    
+    setState(() => _isLoggingIn = true);
+    try {
+      final signInContractor = SignInContractor();
+      final success = await signInContractor.signInContractor(
+        context,
+        _emailController.text,
+        _passwordController.text,
+        () => validateFieldsLogin(
+          context,
+          _emailController.text,
+          _passwordController.text,
+        ),
+      );
+      
+      if (success && mounted) {
+        ConTrustSnackBar.success(context, 'Login successful!');
+      }
+    } on SocketException {
+      ConTrustSnackBar.error(
+        context,
+        'No internet connection. Please check your network settings.',
+      );
+    } catch (e) {
+      if (mounted) {
+        ConTrustSnackBar.error(context, 'An unexpected error occurred');
+      }
+    } finally {
+      if (mounted) setState(() => _isLoggingIn = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
@@ -141,47 +181,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
         ),
         const SizedBox(height: 25),
         ElevatedButton(
-          onPressed: _isLoggingIn ? null : () async {
-            if (!_isAgreed) {
-              ConTrustSnackBar.error(
-                context,
-                'You must agree to the Privacy Policy and Terms of Service.',
-              );
-              return;
-            }
-            
-            setState(() => _isLoggingIn = true);
-            try {
-              final signInContractor = SignInContractor();
-              final success = await signInContractor.signInContractor(
-                context,
-                _emailController.text,
-                _passwordController.text,
-                () => validateFieldsLogin(
-                  context,
-                  _emailController.text,
-                  _passwordController.text,
-                ),
-              );
-              
-              if (success && mounted) {
-                ConTrustSnackBar.success(context, 'Login successful!');
-
-                Navigator.pushReplacementNamed(context, '/contractor/dashboard');
-              }
-            } on SocketException {
-              ConTrustSnackBar.error(
-                context,
-                'No internet connection. Please check your network settings.',
-              );
-            } catch (e) {
-              if (mounted) {
-                ConTrustSnackBar.error(context, 'An unexpected error occurred');
-              }
-            } finally {
-              if (mounted) setState(() => _isLoggingIn = false);
-            }
-          },
+          onPressed: _isLoggingIn ? null : _handleLogin,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.amber.shade700,
             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -407,7 +407,6 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
                 ),
                 const Divider(height: 1, thickness: 1),
                 SizedBox(height: isSmallScreen ? 16 : 20),
-                // Content
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
@@ -428,7 +427,6 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
                   ),
                 ),
                 SizedBox(height: isSmallScreen ? 16 : 20),
-                // Footer Button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(

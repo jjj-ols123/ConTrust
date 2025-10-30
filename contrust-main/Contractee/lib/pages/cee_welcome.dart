@@ -1,8 +1,6 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'dart:ui';
-
-import 'package:contractee/pages/cee_home.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
@@ -50,8 +48,9 @@ class _WelcomePageState extends State<WelcomePage> with TickerProviderStateMixin
   Future<void> _skipToHome() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isFirstOpen', false);
+    // Navigate to login, then let auth listener handle proper navigation
     if (mounted) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePage()));
+      Navigator.of(context).pushReplacementNamed('/login');
     }
   }
 

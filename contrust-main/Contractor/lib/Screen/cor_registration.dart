@@ -45,6 +45,114 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _passwordVisible = false;
   bool _confirmPasswordVisible = false;
 
+  Future<void> _handleSignUp() async {
+    FocusScope.of(context).unfocus();
+    ScaffoldMessenger.of(context).clearSnackBars();
+    
+    if (!isValidEmail(emailController.text)) {
+      ConTrustSnackBar.error(
+        context,
+        'Please enter a valid Gmail address (example@gmail.com).',
+      );
+      return;
+    }
+    
+    if (passwordController.text.length < 6) {
+      ConTrustSnackBar.error(
+        context,
+        'Password must be at least 6 characters long.',
+      );
+      return;
+    }
+    
+    if (passwordController.text.length > 15) {
+      ConTrustSnackBar.error(
+        context,
+        'Password must be no more than 15 characters long.',
+      );
+      return;
+    }
+    
+    final hasUppercase = passwordController.text.contains(RegExp(r'[A-Z]'));
+    final hasNumber = passwordController.text.contains(RegExp(r'[0-9]'));
+    final hasSpecialChar = passwordController.text.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+    
+    if (!hasUppercase || !hasNumber || !hasSpecialChar) {
+      ConTrustSnackBar.error(
+        context,
+        'Password must include uppercase, number and special character.',
+      );
+      return;
+    }
+    
+    if (passwordController.text != confirmPasswordController.text) {
+      ConTrustSnackBar.error(
+        context,
+        'Passwords do not match.',
+      );
+      return;
+    }
+
+    setState(() => _isSigningUp = true);
+    app.setRegistrationState(true);
+
+    try {
+      final signUpContractor = SignUpContractor();
+      final success = await signUpContractor.signUpContractor(
+        context,
+        emailController.text,
+        passwordController.text,
+        "contractor",
+        {
+          'user_type': "contractor",
+          'firmName': firmNameController.text,
+          'contactNumber': _formatPhone(contactNumberController.text),
+          'address': addressController.text,
+          'verificationFiles': _verificationFiles,
+        },
+        () => validateFieldsContractor(
+          context,
+          firmNameController.text,
+          _formatPhone(contactNumberController.text),
+          emailController.text,
+          passwordController.text,
+          confirmPasswordController.text,
+        ),
+      );
+
+      setState(() => _isSigningUp = false);
+
+      if (success) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ConTrustSnackBar.success(
+          context,
+          'Account created! Please wait for verification.',
+        );
+
+        try {
+          await Supabase.instance.client.auth.signOut();
+          await Future.delayed(const Duration(milliseconds: 500));
+        } catch (e) {
+          // Ignore sign out errors
+        }
+
+        app.setRegistrationState(false);
+
+        if (!mounted) return;
+
+        Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+          '/login',
+          (route) => false,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSigningUp = false);
+      }
+    }
+  }
+
   void _validatePassword() {
     final s = passwordController.text;
     setState(() {
@@ -144,7 +252,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   } else {
                     Navigator.pushReplacementNamed(
                       context,
-                      '/contractor/login',
+                      '/login',
                     );
                   }
                 },
@@ -742,120 +850,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   child: ElevatedButton(
                     onPressed:
                         canSignUp && !_isSigningUp
-                            ? () async {
-                              FocusScope.of(context).unfocus();
-                              ScaffoldMessenger.of(context).clearSnackBars();
-                              if (!isValidEmail(emailController.text)) {
-                                ConTrustSnackBar.error(
-                                  context,
-                                  'Please enter a valid Gmail address (example@gmail.com).',
-                                );
-                                return;
-                              }
-                              if (passwordController.text.length < 6) {
-                                ConTrustSnackBar.error(
-                                  context,
-                                  'Password must be at least 6 characters long.',
-                                );
-                                return;
-                              }
-                              if (passwordController.text.length > 15) {
-                                ConTrustSnackBar.error(
-                                  context,
-                                  'Password must be no more than 15 characters long.',
-                                );
-                                return;
-                              }
-                              if (!hasUppercase ||
-                                  !hasNumber ||
-                                  !hasSpecialChar) {
-                                ConTrustSnackBar.error(
-                                  context,
-                                  'Password must include uppercase, number and special character.',
-                                );
-                                return;
-                              }
-                              if (passwordController.text !=
-                                  confirmPasswordController.text) {
-                                ConTrustSnackBar.error(
-                                  context,
-                                  'Passwords do not match.',
-                                );
-                                return;
-                              }
-
-                              setState(() => _isSigningUp = true);
-                              app.setRegistrationState(true);
-
-                              try {
-                                final signUpContractor = SignUpContractor();
-                                final success = await signUpContractor
-                                    .signUpContractor(
-                                      context,
-                                      emailController.text,
-                                      passwordController.text,
-                                      "contractor",
-                                      {
-                                        'user_type': "contractor",
-                                        'firmName': firmNameController.text,
-                                        'contactNumber': _formatPhone(
-                                          contactNumberController.text,
-                                        ),
-                                        'address': addressController.text,
-                                        'verificationFiles': _verificationFiles,
-                                      },
-                                      () => validateFieldsContractor(
-                                        context,
-                                        firmNameController.text,
-                                        _formatPhone(
-                                          contactNumberController.text,
-                                        ),
-                                        emailController.text,
-                                        passwordController.text,
-                                        confirmPasswordController.text,
-                                      ),
-                                    );
-
-                                setState(() => _isSigningUp = false);
-
-                                if (success) {
-                                  if (!mounted) return;
-                                  ScaffoldMessenger.of(
-                                    context,
-                                  ).clearSnackBars();
-                                  ConTrustSnackBar.success(
-                                    context,
-                                    'Account created! Please wait for verification.',
-                                  );
-
-                                  try {
-                                    await Supabase.instance.client.auth
-                                        .signOut();
-                                    await Future.delayed(
-                                      const Duration(milliseconds: 500),
-                                    );
-                                  } catch (e) {
-                                    // Ignore sign out errors
-                                  }
-
-                                  app.setRegistrationState(false);
-
-                                  if (!mounted) return;
-
-                                  Navigator.of(
-                                    context,
-                                    rootNavigator: true,
-                                  ).pushNamedAndRemoveUntil(
-                                    '/contractor/login',
-                                    (route) => false,
-                                  );
-                                }
-                              } finally {
-                                if (mounted) {
-                                  setState(() => _isSigningUp = false);
-                                }
-                              }
-                            }
+                            ? () => _handleSignUp()
                             : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green.shade600,
@@ -921,121 +916,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   child: ElevatedButton(
                     onPressed:
                         canSignUp && !_isSigningUp
-                            ? () async {
-                              if (!isValidEmail(emailController.text)) {
-                                ConTrustSnackBar.error(
-                                  context,
-                                  'Please enter a valid Gmail address (e.g., example@gmail.com).',
-                                );
-                                return;
-                              }
-                              if (passwordController.text.length < 6) {
-                                ConTrustSnackBar.error(
-                                  context,
-                                  'Password must be at least 6 characters long.',
-                                );
-                                return;
-                              }
-                              if (passwordController.text.length > 15) {
-                                ConTrustSnackBar.error(
-                                  context,
-                                  'Password must be no more than 15 characters long.',
-                                );
-                                return;
-                              }
-                              if (!hasUppercase ||
-                                  !hasNumber ||
-                                  !hasSpecialChar) {
-                                ConTrustSnackBar.error(
-                                  context,
-                                  'Password must include uppercase, number and special character.',
-                                );
-                                return;
-                              }
-                              if (passwordController.text !=
-                                  confirmPasswordController.text) {
-                                ConTrustSnackBar.error(
-                                  context,
-                                  'Passwords do not match.',
-                                );
-                                return;
-                              }
-
-                              FocusScope.of(context).unfocus();
-                              ScaffoldMessenger.of(context).clearSnackBars();
-                              setState(() => _isSigningUp = true);
-                              // Set registration flag before sign-up
-                              app.setRegistrationState(true);
-
-                              try {
-                                final signUpContractor = SignUpContractor();
-                                final success = await signUpContractor
-                                    .signUpContractor(
-                                      context,
-                                      emailController.text,
-                                      passwordController.text,
-                                      "contractor",
-                                      {
-                                        'user_type': "contractor",
-                                        'firmName': firmNameController.text,
-                                        'contactNumber': _formatPhone(
-                                          contactNumberController.text,
-                                        ),
-                                        'address': addressController.text,
-                                        'verificationFiles': _verificationFiles,
-                                      },
-                                      () => validateFieldsContractor(
-                                        context,
-                                        firmNameController.text,
-                                        _formatPhone(
-                                          contactNumberController.text,
-                                        ),
-                                        emailController.text,
-                                        passwordController.text,
-                                        confirmPasswordController.text,
-                                      ),
-                                    );
-
-                                setState(() => _isSigningUp = false);
-
-                                if (success) {
-                                  if (!mounted) return;
-                                  ScaffoldMessenger.of(
-                                    context,
-                                  ).clearSnackBars();
-                                  ConTrustSnackBar.success(
-                                    context,
-                                    'Account created! Please wait for verification.',
-                                  );
-
-                                  try {
-                                    await Supabase.instance.client.auth
-                                        .signOut();
-                                    await Future.delayed(
-                                      const Duration(milliseconds: 500),
-                                    );
-                                  } catch (e) {
-                                    // Ignore sign out errors
-                                  }
-
-                                  app.setRegistrationState(false);
-
-                                  if (!mounted) return;
-
-                                  Navigator.of(
-                                    context,
-                                    rootNavigator: true,
-                                  ).pushNamedAndRemoveUntil(
-                                    '/contractor/login',
-                                    (route) => false,
-                                  );
-                                }
-                              } finally {
-                                if (mounted) {
-                                  setState(() => _isSigningUp = false);
-                                }
-                              }
-                            }
+                            ? () => _handleSignUp()
                             : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green.shade600,
@@ -1073,7 +954,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
             } else {
-              Navigator.pushReplacementNamed(context, '/contractor/login');
+              Navigator.pushReplacementNamed(context, '/login');
             }
           },
           child: Text.rich(

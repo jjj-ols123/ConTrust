@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
+import 'dart:io';
 import 'package:backend/utils/be_validation.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractee/pages/cee_registration.dart';
@@ -21,6 +22,50 @@ class _LoginPageState extends State<LoginPage> {
 
   bool isValidEmail(String email) {
     return RegExp(r'^[^@]+@gmail\.com$').hasMatch(email);
+  }
+
+  Future<void> _handleLogin() async {
+    if (!isValidEmail(_emailController.text)) {
+      ConTrustSnackBar.error(context, 'Please enter a valid Gmail address (e.g., example@gmail.com).');
+      return;
+    }
+    if (_passwordController.text.isEmpty) {
+      ConTrustSnackBar.error(context, 'Please enter your password.');
+      return;
+    }
+    if (!_isAgreed) {
+      ConTrustSnackBar.error(
+        context,
+        'You must agree to the Privacy Policy and Terms of Service.',
+      );
+      return;
+    }
+
+    setState(() => _isLoggingIn = true);
+    try {
+      final signInContractee = SignInContractee();
+      signInContractee.signInContractee(
+        context,
+        _emailController.text,
+        _passwordController.text,
+        () => validateFieldsLogin(
+          context,
+          _emailController.text,
+          _passwordController.text,
+        ),
+      );
+    } on SocketException {
+      ConTrustSnackBar.error(
+        context,
+        'No internet connection. Please check your network settings.',
+      );
+    } catch (e) {
+      if (mounted) {
+        ConTrustSnackBar.error(context, 'An unexpected error occurred');
+      }
+    } finally {
+      if (mounted) setState(() => _isLoggingIn = false);
+    }
   }
 
   @override
@@ -120,40 +165,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         const SizedBox(height: 25),
         ElevatedButton(
-          onPressed: _isLoggingIn ? null : () async {
-            if (!isValidEmail(_emailController.text)) {
-              ConTrustSnackBar.error(context, 'Please enter a valid Gmail address (e.g., example@gmail.com).');
-              return;
-            }
-            if (_passwordController.text.isEmpty) {
-              ConTrustSnackBar.error(context, 'Please enter your password.');
-              return;
-            }
-            if (!_isAgreed) {
-              ConTrustSnackBar.error(
-                context,
-                'You must agree to the Privacy Policy and Terms of Service.',
-              );
-              return;
-            }
-
-            setState(() => _isLoggingIn = true);
-            try {
-              final signInContractee = SignInContractee();
-              signInContractee.signInContractee(
-                context,
-                _emailController.text,
-                _passwordController.text,
-                () => validateFieldsLogin(
-                  context,
-                  _emailController.text,
-                  _passwordController.text,
-                ),
-              );
-            } finally {
-              if (mounted) setState(() => _isLoggingIn = false);
-            }
-          },
+          onPressed: _isLoggingIn ? null : _handleLogin,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.amber.shade400,
             padding: const EdgeInsets.symmetric(vertical: 16),
