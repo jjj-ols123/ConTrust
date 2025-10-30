@@ -12,6 +12,7 @@ import 'package:contractor/Screen/cor_contracttype.dart';
 import 'package:contractor/Screen/cor_ongoing.dart';
 import 'package:contractor/Screen/cor_profile.dart';
 import 'package:contractor/Screen/cor_startup.dart'; 
+import 'package:contractor/main.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -76,8 +77,7 @@ class ContractorShell extends StatelessWidget {
                 icon: const Icon(Icons.home, color: Colors.white),
                 onPressed: () {
                   if (currentPage != ContractorPage.dashboard) {
-                    Navigator.pushNamedAndRemoveUntil(
-                      context, 
+                    appNavigatorKey.currentState?.pushNamedAndRemoveUntil(
                       '/dashboard', 
                       (route) => false,
                     );
@@ -329,7 +329,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
   }
 
   void navigateToPage(String routeName) {
-    Navigator.pushNamed(context, routeName);
+    appNavigatorKey.currentState?.pushNamed(routeName);
   }
 
   Future<void> logout() async {
@@ -628,16 +628,16 @@ class _ModernBottomNavigationBarState extends State<ModernBottomNavigationBar> {
     
     switch (page) {
       case ContractorPage.messages:
-        Navigator.pushNamed(context, '/messages');
+        appNavigatorKey.currentState?.pushNamed('/messages');
         break;
       case ContractorPage.contracts:
-        Navigator.pushNamed(context, '/contracts');
+        appNavigatorKey.currentState?.pushNamed('/contracts');
         break;
       case ContractorPage.bidding:
-        Navigator.pushNamed(context, '/bidding');
+        appNavigatorKey.currentState?.pushNamed('/bidding');
         break;
       case ContractorPage.profile:
-        Navigator.pushNamed(context, '/profile');
+        appNavigatorKey.currentState?.pushNamed('/profile');
         break;
       default:
         break;
