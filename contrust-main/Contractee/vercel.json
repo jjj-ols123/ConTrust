@@ -3,7 +3,8 @@
   "outputDirectory": "contrust-main/Contractee/build/web",
   "installCommand": "cd contrust-main/Contractee && if cd flutter; then git pull && cd ..; else git clone https://github.com/flutter/flutter.git; fi && ls && flutter/bin/flutter doctor && flutter/bin/flutter clean && flutter/bin/flutter config --enable-web",
   "rewrites": [
-    { "source": "/((?!assets|canvaskit|favicon\\.png|flutter\\.js|flutter_bootstrap\\.js|flutter_service_worker\\.js|icons|index\\.html|main\\.dart\\.js|manifest\\.json|version\\.json).*)", "destination": "/index.html" }
+    { "source": "/(.*?\\..*)", "destination": "/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {
