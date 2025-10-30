@@ -1,4 +1,5 @@
-// ignore_for_file: use_build_context_synchronously
+
+// ignore_for_file: unnecessary_null_comparison
 
 import 'package:contractor/Screen/cor_dashboard.dart';
 import 'package:contractor/Screen/cor_startup.dart';
@@ -10,25 +11,91 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-Future<void> main() async {
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
+
+String? _lastPushedRoute;
+bool _isRegistering = false;
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   if (kIsWeb) {
     usePathUrlStrategy();
   }
 
-await Supabase.initialize(
-  url: const String.fromEnvironment(
-    'SUPABASE_URL',
-    defaultValue: 'https://bgihfdqruamnjionhkeq.supabase.co',
-  ),
-  anonKey: const String.fromEnvironment(
-    'SUPABASE_ANON_KEY',
-    defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJnaWhmZHFydWFtbmppb25oa2VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4NzIyODksImV4cCI6MjA1NjQ0ODI4OX0.-GRaolUVu1hW6NUaEAwJuYJo8C2X5_1wZ-qB4a-9Txs',
-  ),
-);
+  await Supabase.initialize(
+    url: const String.fromEnvironment(
+      'SUPABASE_URL',
+      defaultValue: 'https://bgihfdqruamnjionhkeq.supabase.co',
+    ),
+    anonKey: const String.fromEnvironment(
+      'SUPABASE_ANON_KEY',
+      defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJnaWhmZHFydWFtbmppb25oa2VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4NzIyODksImV4cCI6MjA1NjQ0ODI4OX0.-GRaolUVu1hW6NUaEAwJuYJo8C2X5_1wZ-qB4a-9Txs',
+    ),
+  );
+
+  setupAuthListener();
 
   runApp(const MyApp());
+}
+
+void setupAuthListener() {
+  final supabase = Supabase.instance.client;
+
+  Future<void> handleSession(Session? session) async {
+    String target = '/contractor/login';
+
+    if (session == null) {
+      _isRegistering = false;
+      target = '/contractor/login';
+    } else {
+      if (_isRegistering) {
+        return;
+      }
+
+      final user = session.user;
+      if (user == null) {
+        target = '/contractor/login';
+      } else {
+        try {
+          final resp = await supabase
+              .from('Users')
+              .select('verified, role')
+              .eq('users_id', user.id)
+              .maybeSingle();
+
+          final verified = resp != null && (resp['verified'] == true);
+          final role = resp != null ? resp['role'] : null;
+
+          if (verified && role == 'contractor') {
+            target = '/contractor/dashboard';
+          } else {
+            target = '/contractor/login';
+          }
+        } catch (_) {
+          target = '/contractor/login';
+        }
+      }
+    }
+
+    if (_lastPushedRoute == target) return;
+    _lastPushedRoute = target;
+
+    if (appNavigatorKey.currentState == null) return;
+    try {
+      appNavigatorKey.currentState!.pushNamedAndRemoveUntil(target, (r) => false);
+    } catch (_) {}
+  }
+
+  Future.microtask(() => handleSession(supabase.auth.currentSession));
+
+  supabase.auth.onAuthStateChange.listen((event) {
+    handleSession(event.session);
+  });
+}
+
+void setRegistrationState(bool isRegistering) {
+  _isRegistering = isRegistering;
 }
 
 class MyApp extends StatelessWidget {
@@ -36,42 +103,30 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final session = Supabase.instance.client.auth.currentSession;
-
     return MaterialApp(
+      navigatorKey: appNavigatorKey,
       debugShowCheckedModeBanner: false,
-      title: 'ConTrust - Contractor',
-      theme: ThemeData(
-        primarySwatch: Colors.amber,
-        scaffoldBackgroundColor: Colors.grey.shade100,
-        useMaterial3: true,
-      ),
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        FlutterQuillLocalizations.delegate,
+      ],
       supportedLocales: const [
         Locale('en', 'US'),
       ],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        FlutterQuillLocalizations.delegate,
-      ],
-
-      initialRoute: session != null ? '/dashboard' : '/login',
+      initialRoute: '/contractor/login',
       routes: {
-        '/login': (context) => const ToLoginScreen(),
-        '/auth/callback': (context) => const AuthRedirectPage(),
-        '/dashboard': (context) {
-          final currentSession = Supabase.instance.client.auth.currentSession;
-          if (currentSession != null) {
-            return DashboardScreen(contractorId: currentSession.user.id);
-          } else {
-            return const ToLoginScreen();
+        '/contractor/login': (context) => const ToLoginScreen(),
+        '/contractor/dashboard': (context) {
+          final session = Supabase.instance.client.auth.currentSession;
+          if (session != null) {
+            return DashboardScreen(contractorId: session.user.id);
           }
+          return const ToLoginScreen();
         },
+        '/contractor/auth/callback': (context) => const AuthRedirectPage(),
       },
-      onUnknownRoute: (settings) => MaterialPageRoute(
-        builder: (_) => const ToLoginScreen(),
-      ),
     );
   }
 }

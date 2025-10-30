@@ -11,76 +11,30 @@ class AuthRedirectPage extends StatefulWidget {
 }
 
 class _AuthRedirectPageState extends State<AuthRedirectPage> {
-  bool _hasRedirected = false;
-
   @override
   void initState() {
     super.initState();
-    _handleAuthRedirect();
+    _handleRedirect();
   }
 
-  Future<void> _handleAuthRedirect() async {
+  Future<void> _handleRedirect() async {
+    final next = Uri.base.queryParameters['next'] ?? '/contractor/dashboard';
+
     try {
-      final supabase = Supabase.instance.client;
-      final session = supabase.auth.currentSession;
-      
-      if (session == null) {
-        await Future.delayed(const Duration(seconds: 2));
-        final newSession = supabase.auth.currentSession;
-        if (newSession == null) {
-          if (mounted && !_hasRedirected) {
-            _hasRedirected = true;
-            Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
-          }
-          return;
-        }
-      }
-      
-      final user = session?.user ?? supabase.auth.currentSession?.user;
-      if (user == null) {
-        if (mounted && !_hasRedirected) {
-          _hasRedirected = true;
-          Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
-        }
-        return;
-      }
+      await Supabase.instance.client.auth.getSessionFromUrl(Uri.base);
 
-      final contracteeData = await supabase
-          .from('Contractee')
-          .select()
-          .eq('contractee_id', user.id)
-          .maybeSingle();
-
-      final contractorData = await supabase
-          .from('Contractor')
-          .select()
-          .eq('contractor_id', user.id)
-          .maybeSingle();
-
-      if (mounted && !_hasRedirected) {
-        _hasRedirected = true;
-        if (contractorData != null) {
-          Navigator.pushNamedAndRemoveUntil(context, '/dashboard', (route) => false);
-        } else if (contracteeData != null) {
-          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
-        } else {
-          Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
-        }
-      }
+      if (!mounted) return;
+      Navigator.pushNamedAndRemoveUntil(context, next, (route) => false);
     } catch (e) {
-      if (mounted && !_hasRedirected) {
-        _hasRedirected = true;
-        Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
-      }
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/contractor/login');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(color: Colors.amber), 
-      ),
+      body: Center(child: CircularProgressIndicator()),
     );
   }
 }

@@ -1,10 +1,11 @@
 // ignore_for_file: file_names, use_build_context_synchronously, deprecated_member_use, library_private_types_in_public_api
+import 'dart:io';
+
 import 'package:backend/utils/be_validation.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/Screen/cor_registration.dart';
 import 'package:backend/services/contractor services/cor_signin.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ToLoginScreen extends StatefulWidget {
   const ToLoginScreen({super.key});
@@ -22,12 +23,13 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
   @override
   void initState() {
     super.initState();
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-      final session = data.session;
-      if (session != null && mounted) {
-        Navigator.pushReplacementNamed(context, '/contractor/dashboard');
-      }
-    });
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -84,7 +86,6 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
       children: [
         Column(
           children: [
-            // Removed logo image, replaced with icon
             Icon(Icons.business, size: 80, color: Colors.amber.shade400),
             const SizedBox(height: 16),
             Text(
@@ -152,7 +153,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
             setState(() => _isLoggingIn = true);
             try {
               final signInContractor = SignInContractor();
-              signInContractor.signInContractor(
+              final success = await signInContractor.signInContractor(
                 context,
                 _emailController.text,
                 _passwordController.text,
@@ -162,6 +163,21 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
                   _passwordController.text,
                 ),
               );
+              
+              if (success && mounted) {
+                ConTrustSnackBar.success(context, 'Login successful!');
+
+                Navigator.pushReplacementNamed(context, '/contractor/dashboard');
+              }
+            } on SocketException {
+              ConTrustSnackBar.error(
+                context,
+                'No internet connection. Please check your network settings.',
+              );
+            } catch (e) {
+              if (mounted) {
+                ConTrustSnackBar.error(context, 'An unexpected error occurred');
+              }
             } finally {
               if (mounted) setState(() => _isLoggingIn = false);
             }
@@ -221,7 +237,6 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Replaced asset image with icon
                 Icon(Icons.g_mobiledata, size: 28, color: Colors.grey.shade700),
                 const SizedBox(width: 12),
                 const Text(
@@ -234,7 +249,6 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
         ),
         const SizedBox(height: 25),
         Row(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Checkbox(
               value: _isAgreed,

@@ -3,11 +3,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:contractee/pages/cee_authredirect.dart' as cee;
 import 'about_page.dart';
 import 'services_page.dart';
-import 'dart:html' as html;
 
 class WebsiteStartPage extends StatefulWidget {
   const WebsiteStartPage({super.key});
@@ -17,96 +14,15 @@ class WebsiteStartPage extends StatefulWidget {
 }
 
 class _WebsiteStartPageState extends State<WebsiteStartPage> {
-  bool _isCheckingAuth = true;
   bool get _isWeb => kIsWeb;
 
   @override
   void initState() {
     super.initState();
-    _checkForOAuthCallback();
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-      final session = data.session;
-      if (session != null && mounted) {
-        final userId = session.user.id;
-        _navigateBasedOnUserType(userId);
-      }
-    });
-  }
-
-  Future<void> _checkForOAuthCallback() async {
-    try {
-      if (kIsWeb) {
-        final uri = Uri.parse(html.window.location.href);
-        final code = uri.queryParameters['code'];
-
-        if (code != null && code.isNotEmpty) {
-          if (mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (context) => const cee.AuthRedirectPage(),
-              ),
-            );
-            return;
-          }
-        }
-      }
-      
-      final session = Supabase.instance.client.auth.currentSession;
-      if (session != null && mounted) {
-        final userId = session.user.id;
-        await _navigateBasedOnUserType(userId);
-        return;
-      }
-    } catch (e) {
-      //
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isCheckingAuth = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _navigateBasedOnUserType(String userId) async {
-    try {
-      final contractorData = await Supabase.instance.client
-          .from('Contractor')
-          .select('contractor_id')
-          .eq('contractor_id', userId)
-          .maybeSingle();
-      
-      if (contractorData != null && mounted) {
-        Navigator.of(context).pushReplacementNamed('/contractor/dashboard');
-        return;
-      }
-      
-      final contracteeData = await Supabase.instance.client
-          .from('Contractee')
-          .select('contractee_id')
-          .eq('contractee_id', userId)
-          .maybeSingle();
-      
-      if (contracteeData != null && mounted) {
-        Navigator.of(context).pushReplacementNamed('/contractee/home');
-        return;
-      }
-    } catch (e) {
-      //
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isCheckingAuth) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFFFFA726),
-          ),
-        ),
-      );
-    }
 
     final screenWidth = MediaQuery.of(context).size.width;
     final bool isDesktop = screenWidth >= 900;

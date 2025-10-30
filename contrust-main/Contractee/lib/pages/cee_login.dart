@@ -19,6 +19,10 @@ class _LoginPageState extends State<LoginPage> {
   bool _isAgreed = false;
   bool _isLoggingIn = false;
 
+  bool isValidEmail(String email) {
+    return RegExp(r'^[^@]+@gmail\.com$').hasMatch(email);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -117,6 +121,14 @@ class _LoginPageState extends State<LoginPage> {
         const SizedBox(height: 25),
         ElevatedButton(
           onPressed: _isLoggingIn ? null : () async {
+            if (!isValidEmail(_emailController.text)) {
+              ConTrustSnackBar.error(context, 'Please enter a valid Gmail address (e.g., example@gmail.com).');
+              return;
+            }
+            if (_passwordController.text.isEmpty) {
+              ConTrustSnackBar.error(context, 'Please enter your password.');
+              return;
+            }
             if (!_isAgreed) {
               ConTrustSnackBar.error(
                 context,

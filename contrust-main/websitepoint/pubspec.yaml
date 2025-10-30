@@ -34,7 +34,7 @@ dependencies:
   flutter:
     sdk: flutter
   supabase_flutter: ^2.5.0
-  
+  url_launcher: ^6.3.2
   backend:
     path: ../Back-End
   contractor: 
