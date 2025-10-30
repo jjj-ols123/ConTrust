@@ -60,6 +60,7 @@
         "flutter_quill_delta_from_html",
         "flutter_quill_extensions",
         "flutter_web_plugins",
+        "go_router",
         "path_provider",
         "pdf",
         "printing",
@@ -90,6 +91,7 @@
         "flutter_quill_delta_from_html",
         "flutter_quill_extensions",
         "flutter_web_plugins",
+        "go_router",
         "image_picker",
         "path_provider",
         "pdf",
@@ -227,6 +229,17 @@
         "clock",
         "meta",
         "path"
+      ]
+    },
+    {
+      "name": "go_router",
+      "version": "14.8.1",
+      "dependencies": [
+        "collection",
+        "flutter",
+        "flutter_web_plugins",
+        "logging",
+        "meta"
       ]
     },
     {

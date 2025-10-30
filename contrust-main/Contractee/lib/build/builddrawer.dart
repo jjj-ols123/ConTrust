@@ -6,8 +6,8 @@ import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/services/superadmin%20services/auditlogs_service.dart';
 import 'package:backend/services/superadmin%20services/errorlogs_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractee/main.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum ContracteePage {
@@ -306,7 +306,11 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
   }
 
   void navigateToPage(String routeName, {Object? arguments}) {
-    appNavigatorKey.currentState?.pushNamed(routeName, arguments: arguments);
+    if (arguments != null) {
+      context.go(routeName, extra: arguments);
+    } else {
+      context.go(routeName);
+    }
   }
 
   Future<void> logout() async {
@@ -338,7 +342,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
     try {
       await UserService().signOut();
       if (mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+        context.go('/login');
       }
 
        await _auditService.logAuditEvent(

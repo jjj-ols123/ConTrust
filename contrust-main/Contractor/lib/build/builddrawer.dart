@@ -12,8 +12,8 @@ import 'package:contractor/Screen/cor_contracttype.dart';
 import 'package:contractor/Screen/cor_ongoing.dart';
 import 'package:contractor/Screen/cor_profile.dart';
 import 'package:contractor/Screen/cor_startup.dart'; 
-import 'package:contractor/main.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum ContractorPage {
@@ -77,10 +77,7 @@ class ContractorShell extends StatelessWidget {
                 icon: const Icon(Icons.home, color: Colors.white),
                 onPressed: () {
                   if (currentPage != ContractorPage.dashboard) {
-                    appNavigatorKey.currentState?.pushNamedAndRemoveUntil(
-                      '/dashboard', 
-                      (route) => false,
-                    );
+                    context.go('/dashboard');
                   }
                 },
               )
@@ -320,7 +317,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
       }
 
       if (widget.currentPage != ContractorPage.projectManagement) {
-        appNavigatorKey.currentState?.pushNamed('/project-management', arguments: projectId);
+        context.go('/project-management', extra: projectId);
       }
     } catch (e) {
       setState(() => _loadingPM = false);
@@ -329,7 +326,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
   }
 
   void navigateToPage(String routeName) {
-    appNavigatorKey.currentState?.pushNamed(routeName);
+    context.go(routeName);
   }
 
   Future<void> logout() async {
@@ -628,16 +625,16 @@ class _ModernBottomNavigationBarState extends State<ModernBottomNavigationBar> {
     
     switch (page) {
       case ContractorPage.messages:
-        appNavigatorKey.currentState?.pushNamed('/messages');
+        context.go('/messages');
         break;
       case ContractorPage.contracts:
-        appNavigatorKey.currentState?.pushNamed('/contracts');
+        context.go('/contracts');
         break;
       case ContractorPage.bidding:
-        appNavigatorKey.currentState?.pushNamed('/bidding');
+        context.go('/bidding');
         break;
       case ContractorPage.profile:
-        appNavigatorKey.currentState?.pushNamed('/profile');
+        context.go('/profile');
         break;
       default:
         break;
@@ -723,7 +720,7 @@ class _ProjectNavButton extends StatelessWidget {
               .maybeSingle();
 
           if (response != null && response['project_id'] != null) {
-            appNavigatorKey.currentState?.pushNamed('/project-management', arguments: response['project_id']);
+            context.go('/project-management', extra: response['project_id']);
           } else {
             ConTrustSnackBar.error(context, 'No active project found');
           }

@@ -59,6 +59,7 @@ dependencies:
   file_picker: ^10.3.3
   flutter_web_plugins:
     sdk: flutter
+  go_router: ^14.2.0
   
 
 dev_dependencies:
