@@ -496,13 +496,14 @@ class ProfileBuildMethods {
                         letterSpacing: 2,
                       ),
                     ),
-                    Text(
-                      bio.isNotEmpty ? bio : 'Building Excellence Since Day One',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 14,
+                    if (bio.isNotEmpty)
+                      Text(
+                        bio,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 14,
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -1344,10 +1345,10 @@ class ProfileBuildMethods {
             )
           else
             Text(
-              content,
-              style: const TextStyle(
+              content.isNotEmpty ? content : '',
+              style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF2D3748),
+                color: content.isNotEmpty ? const Color(0xFF2D3748) : Colors.grey.shade400,
                 height: 1.5,
               ),
             ),

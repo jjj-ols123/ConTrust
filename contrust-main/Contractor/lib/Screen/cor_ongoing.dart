@@ -469,7 +469,20 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     final projectTitle = project['title'] ?? 'Project';
     final clientName = project['full_name'] ?? 'Client';
     final address = project['location'] ?? '';
-    final startDate = project['start_date'] ?? '';
+    
+    String startDate = project['start_date'] ?? '';
+    if (startDate.isEmpty && _isCustomContract() && contracts.isNotEmpty) {
+      try {
+        final contract = contracts.first;
+        final fieldValues = contract['field_values'];
+        if (fieldValues != null && fieldValues is Map) {
+          final startDateValue = fieldValues['Project.StartDate'];
+          if (startDateValue != null && startDateValue.toString().isNotEmpty) {
+            startDate = startDateValue.toString();
+          }
+        }
+      } catch (_) {}
+    }
 
     final contractInfo = _extractContractInfo(contracts);
 
@@ -535,7 +548,20 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     final projectTitle = project['title'] ?? 'Project';
     final clientName = project['full_name'] ?? 'Client';
     final address = project['location'] ?? '';
-    final startDate = project['start_date'] ?? '';
+    
+    String startDate = project['start_date'] ?? '';
+    if (startDate.isEmpty && _isCustomContract() && contracts.isNotEmpty) {
+      try {
+        final contract = contracts.first;
+        final fieldValues = contract['field_values'];
+        if (fieldValues != null && fieldValues is Map) {
+          final startDateValue = fieldValues['Project.StartDate'];
+          if (startDateValue != null && startDateValue.toString().isNotEmpty) {
+            startDate = startDateValue.toString();
+          }
+        }
+      } catch (_) {}
+    }
 
     final contractInfo = _extractContractInfo(contracts);
 

@@ -7,7 +7,6 @@ import 'package:contractee/pages/cee_home.dart';
 import 'package:contractee/pages/cee_authredirect.dart' as cee;
 import 'package:contractor/Screen/cor_login.dart';
 import 'package:contractor/Screen/cor_dashboard.dart';
-import 'package:contractor/Screen/cor_authredirect.dart' as cor;
 import 'package:superadmin/pages/login.dart';
 
 void main() async {
@@ -55,19 +54,6 @@ class MyApp extends StatelessWidget {
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/auth/callback') {
-          final session = Supabase.instance.client.auth.currentSession;
-          if (session != null) {
-            return MaterialPageRoute(
-              builder: (context) {
-                final userType = session.user.userMetadata?['user_type'];
-                if (userType == 'contractor') {
-                  return const cor.AuthRedirectPage(); 
-                } else {
-                  return const cee.AuthRedirectPage(); 
-                }
-              },
-            );
-          }
           return MaterialPageRoute(
             builder: (context) => const cee.AuthRedirectPage(),
           );

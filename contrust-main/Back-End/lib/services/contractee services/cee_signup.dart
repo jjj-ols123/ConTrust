@@ -2,7 +2,7 @@
 
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractee/pages/cee_home.dart';
+import 'package:contractee/pages/cee_otp_verification.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
@@ -44,24 +44,39 @@ class SignUpContractee {
       }
 
       if (userType == 'contractee') {
-        await supabase.from('Users').upsert({
-          'users_id': signUpResponse.user?.id,
-          'email': email,
-          'name': data?['full_name'] ?? 'User',
-          'role': 'contractee',
-          'status': 'active',
-          'created_at': DateTime.now().toIso8601String(),
-          'profile_image_url': data?['profilePhoto'],
-          'phone_number': data?['phone_number'] ?? '',
-          'verified': false,
-        }, onConflict: 'users_id');
+        final String userId = signUpResponse.user!.id;
+        await Future.delayed(const Duration(milliseconds: 1000));
+        
+        bool insertSuccess = false;
+        for (int attempt = 0; attempt < 5 && !insertSuccess; attempt++) {
+          try {
+            await supabase.from('Users').upsert({
+              'users_id': userId,
+              'email': email,
+              'name': data?['full_name'] ?? 'User',
+              'role': 'contractee',
+              'status': 'active',
+              'created_at': DateTime.now().toIso8601String(),
+              'profile_image_url': data?['profilePhoto'],
+              'phone_number': data?['phone_number'] ?? '',
+              'verified': false,
+            }, onConflict: 'users_id');
+            insertSuccess = true;
+          } catch (e) {
+            if (attempt == 4) {
+              throw Exception('Failed to create user record: $e');
+            }
+            await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
+          }
+        }
         
         final contracteeData = {
-          'contractee_id': signUpResponse.user?.id,
+          'contractee_id': userId,
           'full_name': data?['full_name'],
           'address': data?['address'] ?? '',
           'created_at': DateTime.now().toIso8601String(),
           'project_history_count': project,
+          'phone_number': data?['phone_number'] ?? '',
         };
 
         final insertResponse = await supabase
@@ -100,7 +115,7 @@ class SignUpContractee {
       await _auditService.logAuditEvent(
         userId: signUpResponse?.user?.id, 
         action: 'USER_REGISTRATION',
-        details: 'Contractee account created successfully',
+        details: 'Contractee account created successfully - pending phone verification',
         metadata: {
           'user_type': userType,
           'email': email,
@@ -110,11 +125,19 @@ class SignUpContractee {
       );
 
       if (!context.mounted) return;
-      ConTrustSnackBar.success(context, 'Account successfully created');
+      ConTrustSnackBar.success(context, 'Account created! Please verify your phone number');
 
-      Navigator.push(
+      // Navigate to OTP verification instead of HomePage
+      Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => HomePage()),
+        MaterialPageRoute(
+          builder: (context) => OTPVerificationPage(
+            phoneNumber: data?['phone_number'] ?? '',
+            userId: signUpResponse.user!.id,
+            email: email,
+            fullName: data?['full_name'] ?? 'User',
+          ),
+        ),
       );
 
     } on AuthException catch (e) {

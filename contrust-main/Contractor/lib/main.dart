@@ -41,6 +41,11 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'ConTrust - Contractor',
+      theme: ThemeData(
+        primarySwatch: Colors.amber,
+        scaffoldBackgroundColor: Colors.grey.shade100,
+        useMaterial3: true,
+      ),
       supportedLocales: const [
         Locale('en', 'US'),
       ],

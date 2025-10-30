@@ -335,10 +335,11 @@ class BuildDashboard {
                 const SizedBox(height: 24),
                 buildSystemHealthCard(context, systemHealth),
                 const SizedBox(height: 24),
-                if (performanceData != null)
-                  buildPerformanceMetricsCard(performanceData),
-                if (performanceData != null)
-                  const SizedBox(height: 24),
+                // Performance Metrics - Hidden
+                // if (performanceData != null)
+                //   buildPerformanceMetricsCard(performanceData),
+                // if (performanceData != null)
+                //   const SizedBox(height: 24),
                 buildAlertsCard(systemAlerts),
               ],
             ),

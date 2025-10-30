@@ -31,6 +31,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool get canSignUp => _verificationFiles.isNotEmpty && !_isUploadingVerification;
 
   @override
+  void initState() {
+    super.initState();
+    contactNumberController.text = '+63';
+    contactNumberController.selection = TextSelection.fromPosition(
+      TextPosition(offset: contactNumberController.text.length),
+    );
+  }
+
+  String _formatPhone(String phone) {
+    String digitsOnly = phone.replaceAll(RegExp(r'[^\d]'), '');
+    
+    if (digitsOnly.startsWith('0')) {
+      digitsOnly = digitsOnly.substring(1);
+    }
+    
+    if (!digitsOnly.startsWith('63')) {
+      digitsOnly = '63$digitsOnly';
+    }
+    
+    return '+$digitsOnly';
+  }
+
+  @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
     bool isPhone = screenWidth < 1000;
@@ -76,7 +99,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
               left: 30,
               child: InkWell(
                 onTap: () {
-                  Navigator.pop(context);
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  } else {
+                    Navigator.pushReplacementNamed(context, '/login');
+                  }
                 },
                 child: Container(
                   padding: const EdgeInsets.all(8),
@@ -354,11 +381,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 children: [
                   TextFormField(
                     controller: contactNumberController,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(11),
-                    ],
+                    keyboardType: TextInputType.phone,
                     decoration: InputDecoration(
                       labelText: 'Contact Number',
                       prefixIcon: const Icon(Icons.phone),
@@ -369,6 +392,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         borderSide: BorderSide.none,
                       ),
                     ),
+                    inputFormatters: [
+                      LengthLimitingTextInputFormatter(13),
+                    ],
+                    onChanged: (value) {
+                      if (!value.startsWith('+63')) {
+                        contactNumberController.text = '+63';
+                        contactNumberController.selection = TextSelection.fromPosition(
+                          TextPosition(offset: contactNumberController.text.length),
+                        );
+                      }
+                    },
                   ),
                   const SizedBox(height: 18),
                   TextFormField(
@@ -392,11 +426,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   Expanded(
                     child: TextFormField(
                       controller: contactNumberController,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(11),
-                      ],
+                      keyboardType: TextInputType.phone,
                       decoration: InputDecoration(
                         labelText: 'Contact Number',
                         prefixIcon: const Icon(Icons.phone),
@@ -407,6 +437,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           borderSide: BorderSide.none,
                         ),
                       ),
+                      inputFormatters: [
+                        LengthLimitingTextInputFormatter(13),
+                      ],
+                      onChanged: (value) {
+                        if (!value.startsWith('+63')) {
+                          contactNumberController.text = '+63';
+                          contactNumberController.selection = TextSelection.fromPosition(
+                            TextPosition(offset: contactNumberController.text.length),
+                          );
+                        }
+                      },
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -547,7 +588,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   {
                                     'user_type': "contractor",
                                     'firmName': firmNameController.text,
-                                    'contactNumber': contactNumberController.text,
+                                    'contactNumber': _formatPhone(contactNumberController.text),
                                     'address': addressController.text, 
                                     'verificationFiles': _verificationFiles,  
                                   },
@@ -637,14 +678,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   {
                                     'user_type': "contractor",
                                     'firmName': firmNameController.text,
-                                    'contactNumber': contactNumberController.text,
+                                    'contactNumber': _formatPhone(contactNumberController.text),
                                     'address': addressController.text, 
                                     'verificationFiles': _verificationFiles,
                                   },
                                   () => validateFieldsContractor(
                                     context,
                                     firmNameController.text,
-                                    contactNumberController.text,
+                                    _formatPhone(contactNumberController.text),
                                     emailController.text,
                                     passwordController.text,
                                     confirmPasswordController.text,
@@ -687,7 +728,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         const SizedBox(height: 20),
         InkWell(
           onTap: () {
-            Navigator.pop(context);
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              Navigator.pushReplacementNamed(context, '/login');
+            }
           },
           child: Text.rich(
             TextSpan(

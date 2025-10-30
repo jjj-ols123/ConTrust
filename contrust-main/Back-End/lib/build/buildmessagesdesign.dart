@@ -380,10 +380,10 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
         bannerText = "Contract sent. Waiting for contractee approval.";
         buttonText = "Pending Approval";
         onPressed = null;
-        bannerColor = Colors.orange[50]!;
+        bannerColor = Colors.white;
       } else {
         bannerText = "Contract sent. Please review and approve.";
-        bannerColor = Colors.orange;
+        bannerColor = Colors.white;
       }
     } else if (projectStatus == 'awaiting_contract') {
       if (widget.userRole == 'contractor') {
@@ -2078,8 +2078,26 @@ class UIMessage {
 
                                 Navigator.of(dialogContext).pop();
                                 
+                                final updatedContract = await Supabase.instance.client
+                                    .from('Contracts')
+                                    .select('contractor_signature_url, contractee_signature_url')
+                                    .eq('contract_id', contractId)
+                                    .single();
+
+                                final bothSigned = 
+                                    (updatedContract['contractor_signature_url'] as String?)?.isNotEmpty == true &&
+                                    (updatedContract['contractee_signature_url'] as String?)?.isNotEmpty == true;
+
                                 onRefresh();
                                 ConTrustSnackBar.contractSigned(context);
+                                
+                                if (bothSigned) {
+                                  await Future.delayed(const Duration(milliseconds: 1500));
+                                  onRefresh();
+                                  
+                                  await Future.delayed(const Duration(milliseconds: 1500));
+                                  onRefresh();
+                                }
                                 
                               } catch (e) {
                                 await _errorService.logError(

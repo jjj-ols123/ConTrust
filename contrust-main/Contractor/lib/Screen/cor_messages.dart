@@ -1,4 +1,5 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
+import 'dart:async';
 import 'package:backend/build/buildmessage.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_contract_service.dart';
@@ -41,6 +42,7 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
   bool _isLoading = true;
 
   late Future<String?> _projectStatus;
+  Timer? _pollingTimer;
 
   @override
   void initState() {
@@ -50,6 +52,14 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
       setState(() {
         _canSend = _messageController.text.trim().isNotEmpty;
       });
+    });
+    
+    _pollingTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      if (mounted) {
+        setState(() {
+          _projectStatus = FetchService().fetchProjectStatus(widget.chatRoomId);
+        });
+      }
     });
   }
   
@@ -79,6 +89,7 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
 
   @override
   void dispose() {
+    _pollingTimer?.cancel();
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();

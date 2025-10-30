@@ -462,7 +462,21 @@ class FetchService {
           .eq('contractor_id', contractorId)
           .order('created_at', ascending: false);
 
-      return response;
+     final projects = List<Map<String, dynamic>>.from(response);
+      
+      projects.sort((a, b) {
+        final statusA = a['status']?.toString().toLowerCase() ?? '';
+        final statusB = b['status']?.toString().toLowerCase() ?? '';
+        
+        if (statusA == 'active' && statusB != 'active') return -1;
+        if (statusA != 'active' && statusB == 'active') return 1;
+        
+        final dateA = DateTime.tryParse(a['created_at'] ?? '') ?? DateTime(1970);
+        final dateB = DateTime.tryParse(b['created_at'] ?? '') ?? DateTime(1970);
+        return dateB.compareTo(dateA);
+      });
+      
+      return projects;
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Failed to fetch contractor project info: ',

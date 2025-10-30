@@ -58,7 +58,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
         SuperAdminServiceBackend.getSystemHealthStatus(),
         SuperAdminServiceBackend.getDashboardData(),
         SuperAdminServiceBackend.getSystemAlerts(),
-        SuperAdminServiceBackend.getBackendPerformanceMetrics(),
+        // SuperAdminServiceBackend.getBackendPerformanceMetrics(), // Hidden
       ]);
 
       if (mounted) {
@@ -67,7 +67,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
           _systemHealth = results[1] as Map<String, dynamic>;
           _dashboardData = results[2] as Map<String, dynamic>;
           _systemAlerts = results[3] as List<Map<String, dynamic>>;
-          _performanceMetrics = results[4] as Map<String, dynamic>;
+          // _performanceMetrics = results[4] as Map<String, dynamic>; // Hidden
           _isLoading = false;
         });
       }
@@ -137,7 +137,7 @@ class _SuperAdminDashboardState extends State<SuperAdminDashboard> {
         _systemHealth,
         _systemAlerts,
         _dashboardData,
-        performanceData: _performanceMetrics,
+        // performanceData: _performanceMetrics, // Hidden
       ),
     );
   }

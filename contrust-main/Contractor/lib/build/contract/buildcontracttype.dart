@@ -258,15 +258,49 @@ class ContractTypeBuild {
     required ThemeData theme,
     required VoidCallback onRefreshContracts,
   }) {
+    final project = contract['project'] as Map<String, dynamic>?;
+    final projectName = project?['title'] ?? 'Unknown Project';
+    
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       leading: CircleAvatar(
         backgroundColor: Colors.amber[100],
         child: Icon(Icons.assignment_turned_in, color: Colors.amber[700]),
       ),
-      title: Text(
-        contract['title'] ?? 'Untitled Contract',
-        style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              contract['title'] ?? 'Untitled Contract',
+              style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.blue.shade200),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.construction, size: 12, color: Colors.blue.shade700),
+                const SizedBox(width: 4),
+                Text(
+                  projectName,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.blue.shade700,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
       subtitle: Text(
         formatDateTime(contract['created_at']),
@@ -534,7 +568,15 @@ class ContractTypeBuild {
     }
 
     try {
-      DateTime dateTime = DateTime.parse(dateTimeString.toString());
+      final dateString = dateTimeString.toString();
+      DateTime dateTime;
+      
+      if (dateString.endsWith('Z') || dateString.contains('+')) {
+        dateTime = DateTime.parse(dateString);
+      } else {
+        dateTime = DateTime.parse('${dateString}Z');
+      }
+      
       DateTime localDateTime = dateTime.toLocal();
       return DateFormat('MMM dd, yyyy • hh:mm a').format(localDateTime);
     } catch (e) {

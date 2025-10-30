@@ -18,6 +18,7 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isAgreed = false;
+  bool _isLoggingIn = false;
 
   @override
   Widget build(BuildContext context) {
@@ -116,7 +117,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         const SizedBox(height: 25),
         ElevatedButton(
-          onPressed: () async {
+          onPressed: _isLoggingIn ? null : () async {
             if (!_isAgreed) {
               ConTrustSnackBar.error(
                 context,
@@ -125,17 +126,22 @@ class _LoginPageState extends State<LoginPage> {
               return;
             }
 
-            final signInContractee = SignInContractee();
-            signInContractee.signInContractee(
-              context,
-              _emailController.text,
-              _passwordController.text,
-              () => validateFieldsLogin(
+            setState(() => _isLoggingIn = true);
+            try {
+              final signInContractee = SignInContractee();
+              signInContractee.signInContractee(
                 context,
                 _emailController.text,
                 _passwordController.text,
-              ),
-            );
+                () => validateFieldsLogin(
+                  context,
+                  _emailController.text,
+                  _passwordController.text,
+                ),
+              );
+            } finally {
+              if (mounted) setState(() => _isLoggingIn = false);
+            }
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.amber.shade400,
@@ -145,10 +151,19 @@ class _LoginPageState extends State<LoginPage> {
             ),
             elevation: 4,
           ),
-          child: const Text(
-            'Login',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          child: _isLoggingIn
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : const Text(
+                  'Login',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
         ),
         const SizedBox(height: 20),
         Row(

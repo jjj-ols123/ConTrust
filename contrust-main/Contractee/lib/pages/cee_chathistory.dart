@@ -1,5 +1,6 @@
 // ignore_for_file: depend_on_referenced_packages
 
+import 'dart:async';
 import 'package:backend/utils/be_constraint.dart';
 import 'package:backend/build/buildmessage.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
@@ -28,12 +29,29 @@ class _ContracteeChatHistoryPageState
   final TextEditingController messageController = TextEditingController();
   final ScrollController scrollController = ScrollController();
   late Future<String?> projectStatus;
+  Timer? _pollingTimer;
 
 
   @override
   void initState() {
     super.initState();
     _loadContracteeId();
+    
+    _pollingTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      if (mounted && selectedChatRoomId != null) {
+        setState(() {
+          projectStatus = FetchService().fetchProjectStatus(selectedChatRoomId!);
+        });
+      }
+    });
+  }
+  
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    messageController.dispose();
+    scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadContracteeId() async {

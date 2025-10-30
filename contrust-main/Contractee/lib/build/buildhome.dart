@@ -346,7 +346,7 @@ class HomePageBuilder {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      isPlaceholder ? 'Placeholder' : 'Active',
+                      isPlaceholder ? '' : 'Active',
                       style: TextStyle(
                         fontSize: 12,
                         color: isPlaceholder ? Colors.grey : Colors.green,

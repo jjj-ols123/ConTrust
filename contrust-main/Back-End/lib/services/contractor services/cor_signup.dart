@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously_user_service.dart';, use_build_context_synchronously, use_build_context_synchronously, use_build_context_synchronously, use_build_context_synchronously, use_build_context_synchronously, use_build_context_synchronously
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
+import 'package:contractor/Screen/cor_otp_verification.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
@@ -78,18 +79,31 @@ class SignUpContractor {
       }
 
       if (userType == 'contractor') {
-        await supabase.from('Users').upsert({
-          'users_id': userId,
-          'email': email,
-          'name': data?['firmName'] ?? 'Contractor Firm',
-          'role': 'contractor',
-          'status': 'active',
-          'created_at': DateTime.now().toIso8601String(),
-          'last_login': DateTime.now().toIso8601String(),
-          'profile_image_url': data?['profilePhoto'],
-          'phone_number': data?['contactNumber'] ?? '',
-          'verified': false,
-        }, onConflict: 'users_id');
+        await Future.delayed(const Duration(milliseconds: 1000));
+        
+        bool insertSuccess = false;
+        for (int attempt = 0; attempt < 5 && !insertSuccess; attempt++) {
+          try {
+            await supabase.from('Users').upsert({
+              'users_id': userId,
+              'email': email,
+              'name': data?['firmName'] ?? 'Contractor Firm',
+              'role': 'contractor',
+              'status': 'active',
+              'created_at': DateTime.now().toIso8601String(),
+              'last_login': DateTime.now().toIso8601String(),
+              'profile_image_url': data?['profilePhoto'],
+              'phone_number': data?['contactNumber'] ?? '',
+              'verified': false,
+            }, onConflict: 'users_id');
+            insertSuccess = true;
+          } catch (e) {
+            if (attempt == 4) {
+              throw Exception('Failed to create user record: $e');
+            }
+            await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
+          }
+        }
 
         final contractorData = {
           'contractor_id': userId,
@@ -166,11 +180,22 @@ class SignUpContractor {
       );
 
       if (!context.mounted) return;
-      ConTrustSnackBar.success(context, 'Account successfully created');
+      ConTrustSnackBar.success(context, 'Account created! Please verify your phone number');
 
-      await Future.delayed(const Duration(seconds: 2));  
-      // ignore: use_build_context_synchronously
-      Navigator.pop(context);
+      await Future.delayed(const Duration(seconds: 1));
+      
+      if (!context.mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CorOTPVerificationPage(
+            phoneNumber: data?['contactNumber'] ?? '',
+            userId: userId,
+            email: email,
+            firmName: data?['firmName'] ?? 'Contractor',
+          ),
+        ),
+      );
       
     } on AuthException catch (e) {
       await _auditService.logAuditEvent(

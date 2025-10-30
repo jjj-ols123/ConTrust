@@ -192,8 +192,22 @@ class SideDashboardDrawer extends StatefulWidget {
 
 class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
   bool _loadingPM = false;
+  bool _hasActiveSession = false;
   final SuperAdminAuditService _auditService = SuperAdminAuditService();
   final SuperAdminErrorService _errorService = SuperAdminErrorService();
+
+  @override
+  void initState() {
+    super.initState();
+    _checkSession();
+  }
+
+  void _checkSession() {
+    final session = Supabase.instance.client.auth.currentSession;
+    setState(() {
+      _hasActiveSession = session != null;
+    });
+  }
 
   Future<void> goProjectManagement() async {
     if (widget.contractorId == null) return;
@@ -332,7 +346,32 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
     );
   }
 
-  void logout() async {
+  Future<void> logout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Confirm Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
     try {
       await UserService().signOut();
       if (!mounted) return;
@@ -457,8 +496,8 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
           _SidebarItem(
             icon: Icons.logout_outlined,
             label: 'Logout',
-            active: true, 
-            onTap: logout,
+            active: _hasActiveSession, 
+            onTap: _hasActiveSession ? logout : null,
           ),
         ],
       ),
@@ -818,8 +857,22 @@ class DashboardDrawer extends StatefulWidget {
 
 class _DashboardDrawerState extends State<DashboardDrawer> {
   bool _loadingPM = false;
+  bool _hasActiveSession = false;
   final SuperAdminAuditService _auditService = SuperAdminAuditService();
   final SuperAdminErrorService _errorService = SuperAdminErrorService();
+
+  @override
+  void initState() {
+    super.initState();
+    _checkSession();
+  }
+
+  void _checkSession() {
+    final session = Supabase.instance.client.auth.currentSession;
+    setState(() {
+      _hasActiveSession = session != null;
+    });
+  }
 
   Future<void> goProjectManagement() async {
     if (widget.contractorId == null) return;
@@ -948,7 +1001,32 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
     }
   }
 
-  void logout() async {
+  Future<void> logout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Confirm Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
     try {
       await UserService().signOut();
       if (!mounted) return;
@@ -1130,8 +1208,8 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
                     label: 'Logout',
                     iconSize: iconSize,
                     fontSize: fontSize,
-                    color: Colors.red.shade600,
-                    onTap: logout,
+                    color: _hasActiveSession ? Colors.red.shade600 : Colors.grey.shade400,
+                    onTap: _hasActiveSession ? logout : () {},
                   ),
                 ],
               ),

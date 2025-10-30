@@ -109,6 +109,8 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
     }
   }
 
+  Map<String, dynamic>? _contractData;
+
   void loadData() async {
     try {
       setState(() => isLoading = true);
@@ -118,8 +120,22 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
       final isPaid = await _paymentService.isProjectPaid(widget.projectId);
       final paymentSummary = await _paymentService.getPaymentSummary(widget.projectId);
       
+      Map<String, dynamic>? contractData;
+      final contractId = data?['contract_id'];
+      if (contractId != null) {
+        try {
+          final contract = await Supabase.instance.client
+              .from('Contracts')
+              .select()
+              .eq('contract_id', contractId)
+              .maybeSingle();
+          contractData = contract;
+        } catch (_) {}
+      }
+      
       setState(() {
         projectData = data;
+        _contractData = contractData;
         _localTasks = tasks;
         _localProgress = (data?['progress'] as num?)?.toDouble() ?? 0.0;
         _isPaid = isPaid;
@@ -586,8 +602,22 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
     final projectTitle = project['title'] ?? 'Project';
     final contractorName = _contractorData?['firm_name'] ?? 'Contractor';
     final address = project['location'] ?? '';
-    final startDate = project['start_date'] ?? '';
+    
+    String startDate = project['start_date'] ?? '';
+    if (startDate.isEmpty && _contractData != null && _contractData!['type'] == 'custom') {
+      try {
+        final fieldValues = _contractData!['field_values'];
+        if (fieldValues != null && fieldValues is Map) {
+          final startDateValue = fieldValues['Project.StartDate'];
+          if (startDateValue != null && startDateValue.toString().isNotEmpty) {
+            startDate = startDateValue.toString();
+          }
+        }
+      } catch (_) {}
+    }
+    
     final estimatedCompletion = project['estimated_completion'] ?? '';
+    final duration = project['duration'] as int?;
     final projectStatus = project['status'] ?? '';
 
     return RefreshIndicator(
@@ -598,6 +628,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
         address: address,
         startDate: startDate,
         estimatedCompletion: estimatedCompletion,
+        duration: duration,
         progress: _localProgress,
         selectedTab: selectedTab,
         onTabChanged: onTabChanged,
@@ -618,8 +649,22 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
     final projectTitle = project['title'] ?? 'Project';
     final contractorName = _contractorData?['firm_name'] ?? 'Contractor';
     final address = project['location'] ?? '';
-    final startDate = project['start_date'] ?? '';
+    
+    String startDate = project['start_date'] ?? '';
+    if (startDate.isEmpty && _contractData != null && _contractData!['type'] == 'custom') {
+      try {
+        final fieldValues = _contractData!['field_values'];
+        if (fieldValues != null && fieldValues is Map) {
+          final startDateValue = fieldValues['Project.StartDate'];
+          if (startDateValue != null && startDateValue.toString().isNotEmpty) {
+            startDate = startDateValue.toString();
+          }
+        }
+      } catch (_) {}
+    }
+    
     final estimatedCompletion = project['estimated_completion'] ?? '';
+    final duration = project['duration'] as int?;
     final projectStatus = project['status'] ?? '';
 
     return RefreshIndicator(
@@ -643,6 +688,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
             address: address,
             startDate: startDate,
             estimatedCompletion: estimatedCompletion,
+            duration: duration,
             progress: _localProgress,
             tasks: _localTasks,
             reports: reports,

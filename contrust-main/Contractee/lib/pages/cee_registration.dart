@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use, no_leading_underscores_for_local_identifiers
+// ignore_for_file: deprecated_member_use
 
 import 'package:backend/utils/be_validation.dart';
 import 'package:backend/services/contractee services/cee_signup.dart';
@@ -18,13 +18,31 @@ class _RegistrationPageState extends State<RegistrationPage> {
   final _lNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _addressController = TextEditingController();
-  final _phoneController = TextEditingController();
+  final _phoneController = TextEditingController(text: '+63');
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
-  bool _isSigningUp = false; 
+  bool _isSigningUp = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _phoneController.selection = TextSelection.collapsed(offset: 3);
+  }
+
+  String _formatPhone(String phone) {
+    if (phone.startsWith('+63')) {
+      return phone;
+    }
+    
+    String digitsOnly = phone.replaceAll(RegExp(r'\D'), '');
+    if (digitsOnly.startsWith('0')) {
+      digitsOnly = digitsOnly.substring(1);
+    }
+    return '+63$digitsOnly';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -189,11 +207,20 @@ class _RegistrationPageState extends State<RegistrationPage> {
         TextField(
           controller: _phoneController,
           keyboardType: TextInputType.phone,
-          maxLength: 11,
           inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(13),
           ],
-          decoration: _inputStyle('Phone Number', Icons.phone_android_outlined),
+          onChanged: (value) {
+            if (!value.startsWith('+63')) {
+              _phoneController.value = TextEditingValue(
+                text: '+63',
+                selection: TextSelection.collapsed(offset: 3),
+              );
+            }
+          },
+          decoration: _inputStyle('Phone Number', Icons.phone_android_outlined).copyWith(
+            helperText: 'Enter mobile number',
+          ),
         ),
         const SizedBox(height: 15),
         TextField(
@@ -249,7 +276,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 {
                   'user_type': 'contractee',
                   'address': _addressController.text,
-                  'phone_number': _phoneController.text,
+                  'phone_number': _formatPhone(_phoneController.text),
                   'full_name':
                       '${_fNameController.text} ${_lNameController.text}',
                 },

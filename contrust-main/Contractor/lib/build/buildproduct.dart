@@ -730,6 +730,7 @@ class ProductBuildMethods {
     final projectId = project['project_id']?.toString() ?? '';
     final projectName = project['title'] ?? 'Unnamed Project';
     final materials = projectMaterials[projectId] ?? [];
+    bool isAddingToProject = false;
 
     showDialog(
       context: context,
@@ -980,14 +981,21 @@ class ProductBuildMethods {
                                       SizedBox(
                                         width: double.infinity,
                                         child: ElevatedButton(
-                                          onPressed: () async {
+                                          onPressed: isAddingToProject ? null : () async {
                                             if (contractorId != null) {
-                                              await CorProductService().addAllCostsToProject(
-                                                projectId,
-                                                projectMaterials,
-                                                contractorId,
-                                                context,
-                                              );
+                                              setDialogState(() => isAddingToProject = true);
+                                              try {
+                                                await CorProductService().addAllCostsToProject(
+                                                  projectId,
+                                                  projectMaterials,
+                                                  contractorId,
+                                                  context,
+                                                );
+                                              } finally {
+                                                if (context.mounted) {
+                                                  setDialogState(() => isAddingToProject = false);
+                                                }
+                                              }
                                             } else {
                                               ConTrustSnackBar.error(
                                                 context,
@@ -1000,7 +1008,16 @@ class ProductBuildMethods {
                                             foregroundColor: Colors.white,
                                             padding: const EdgeInsets.symmetric(vertical: 12),
                                           ),
-                                          child: const Text('Add to Active Project costs'),
+                                          child: isAddingToProject
+                                              ? const SizedBox(
+                                                  height: 20,
+                                                  width: 20,
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    color: Colors.white,
+                                                  ),
+                                                )
+                                              : const Text('Add to Active Project costs'),
                                         ),
                                       ),
                                     const SizedBox(height: 8),
@@ -1032,14 +1049,21 @@ class ProductBuildMethods {
                               const Spacer(),
                               if (materials.isNotEmpty)
                                 ElevatedButton(
-                                  onPressed: () async {
+                                  onPressed: isAddingToProject ? null : () async {
                                     if (contractorId != null) {
-                                      await CorProductService().addAllCostsToProject(
-                                        projectId,
-                                        projectMaterials,
-                                        contractorId,
-                                        context,
-                                      );
+                                      setDialogState(() => isAddingToProject = true);
+                                      try {
+                                        await CorProductService().addAllCostsToProject(
+                                          projectId,
+                                          projectMaterials,
+                                          contractorId,
+                                          context,
+                                        );
+                                      } finally {
+                                        if (context.mounted) {
+                                          setDialogState(() => isAddingToProject = false);
+                                        }
+                                      }
                                     } else {
                                       ConTrustSnackBar.error(
                                         context,
@@ -1051,7 +1075,16 @@ class ProductBuildMethods {
                                     backgroundColor: Colors.amber,
                                     foregroundColor: Colors.white,
                                   ),
-                                  child: const Text('Add to Active Project costs'),
+                                  child: isAddingToProject
+                                      ? const SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : const Text('Add to Active Project costs'),
                                 ),
                               const SizedBox(width: 8),
                               TextButton(

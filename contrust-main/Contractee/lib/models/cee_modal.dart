@@ -83,6 +83,7 @@ class ProjectModal {
                     ],
                   ),
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
                         padding: const EdgeInsets.all(20),
@@ -127,11 +128,9 @@ class ProjectModal {
                           ],
                         ),
                       ),
-                      Expanded(
+                      Flexible(
                         child: SingleChildScrollView(
-                          padding: EdgeInsets.only(
-                            bottom: MediaQuery.of(context).viewInsets.bottom,
-                          ),
+                          padding: const EdgeInsets.all(16),
                           child: Form(
                             key: formKey,
                             child: Column(
@@ -262,61 +261,63 @@ class ProjectModal {
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 16),
-                            _buildLabeledField(
-                              label: 'Bid Duration (in days)',
-                              child: Row(
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.remove),
-                                    onPressed: () {
-                                      int current = int.tryParse(
-                                              bidTimeController.text) ??
-                                          1;
-                                      if (current > 1) {
-                                        current--;
-                                        bidTimeController.text =
-                                            current.toString();
-                                      }
-                                    },
-                                  ),
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller: bidTimeController,
-                                      keyboardType: TextInputType.number,
-                                      decoration: const InputDecoration(
-                                        hintText: 'Enter number of days (1–20)',
-                                        border: OutlineInputBorder(),
-                                      ),
-                                      inputFormatters: [
-                                        FilteringTextInputFormatter.digitsOnly,
-                                      ],
-                                      onChanged: (value) {
-                                        int? val = int.tryParse(value);
-                                        if (val == null || val < 1) {
-                                          bidTimeController.text = '1';
-                                        } else if (val > 20) {
-                                          bidTimeController.text = '20';
+                            if (!isUpdate || (isUpdate && (int.tryParse(bidTimeController.text) ?? 0) > 0)) ...[
+                              const SizedBox(height: 16),
+                              _buildLabeledField(
+                                label: 'Bid Duration (in days)',
+                                child: Row(
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.remove),
+                                      onPressed: () {
+                                        int current = int.tryParse(
+                                                bidTimeController.text) ??
+                                            1;
+                                        if (current > 1) {
+                                          current--;
+                                          bidTimeController.text =
+                                              current.toString();
                                         }
                                       },
                                     ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.add),
-                                    onPressed: () {
-                                      int current = int.tryParse(
-                                              bidTimeController.text) ??
-                                          1;
-                                      if (current < 20) {
-                                        current++;
-                                        bidTimeController.text =
-                                            current.toString();
-                                      }
-                                    },
-                                  ),
-                                ],
+                                    Expanded(
+                                      child: TextFormField(
+                                        controller: bidTimeController,
+                                        keyboardType: TextInputType.number,
+                                        decoration: const InputDecoration(
+                                          hintText: 'Enter number of days (1–20)',
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter.digitsOnly,
+                                        ],
+                                        onChanged: (value) {
+                                          int? val = int.tryParse(value);
+                                          if (val == null || val < 1) {
+                                            bidTimeController.text = '1';
+                                          } else if (val > 20) {
+                                            bidTimeController.text = '20';
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.add),
+                                      onPressed: () {
+                                        int current = int.tryParse(
+                                                bidTimeController.text) ??
+                                            1;
+                                        if (current < 20) {
+                                          current++;
+                                          bidTimeController.text =
+                                              current.toString();
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
+                            ],
                             const SizedBox(height: 24),
                             Padding(
                               padding:
@@ -339,7 +340,7 @@ class ProjectModal {
                                       startDateController.text.trim(),
                                       locationController.text.trim(),
                                       descriptionController.text.trim(),
-                                      bidTimeController.text.trim(),
+                                      isUpdate ? '0' : bidTimeController.text.trim(),
                                     )) {
                                       if (isUpdate && projectId != null) {
                                         await ProjectService().updateProject(
@@ -398,7 +399,6 @@ class ProjectModal {
                                 child: Text(isUpdate ? "Update Project" : "Submit Request"),
                               ),
                             ),
-                            const SizedBox(height: 16),
                           ],
                         ),
                       ),
@@ -1014,6 +1014,9 @@ class HireModal {
     TextEditingController typeController = TextEditingController();
     TextEditingController descriptionController = TextEditingController();
     TextEditingController locationController = TextEditingController();
+    TextEditingController minBudgetController = TextEditingController();
+    TextEditingController maxBudgetController = TextEditingController();
+    DateTime? selectedStartDate;
 
     final existingProjectWithContractor =
         await hasExistingProjectWithContractor(contracteeId, contractorId);
@@ -1024,11 +1027,25 @@ class HireModal {
       typeController.text = pendingProject?['type'] ?? '';
       descriptionController.text = pendingProject?['description'] ?? '';
       locationController.text = pendingProject?['location'] ?? '';
+      minBudgetController.text = pendingProject?['min_budget']?.toString() ?? '';
+      maxBudgetController.text = pendingProject?['max_budget']?.toString() ?? '';
+      if (pendingProject?['start_date'] != null) {
+        try {
+          selectedStartDate = DateTime.parse(pendingProject!['start_date']);
+        } catch (_) {}
+      }
     } else {
       titleController.text = existingProjectWithContractor['title'] ?? '';
       typeController.text = existingProjectWithContractor['type'] ?? '';
       descriptionController.text = existingProjectWithContractor['description'] ?? '';
       locationController.text = existingProjectWithContractor['location'] ?? '';
+      minBudgetController.text = existingProjectWithContractor['min_budget']?.toString() ?? '';
+      maxBudgetController.text = existingProjectWithContractor['max_budget']?.toString() ?? '';
+      if (existingProjectWithContractor['start_date'] != null) {
+        try {
+          selectedStartDate = DateTime.parse(existingProjectWithContractor['start_date']);
+        } catch (_) {}
+      }
     }
 
     final formKey = GlobalKey<FormState>();
@@ -1037,67 +1054,68 @@ class HireModal {
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        return Center(
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 500),
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.all(0),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.shade700,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
-                      ),
-                    ),
-                    child: Row(
-                          children: [
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Icon(
-                            Icons.person_add,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        const Expanded(
-                                child: Text(
-                                  "Hire Contractor",
-                                  style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                        IconButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                      ],
-                    ),
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Center(
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 500),
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.all(0),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.only(
-                        bottom: MediaQuery.of(context).viewInsets.bottom,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade700,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(20),
+                            topRight: Radius.circular(20),
+                          ),
+                        ),
+                        child: Row(
+                              children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Icon(
+                                Icons.person_add,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            const Expanded(
+                                    child: Text(
+                                      "Hire Contractor",
+                                      style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                            IconButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
                       ),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
                       child: Form(
                         key: formKey,
                         child: Column(
@@ -1198,6 +1216,51 @@ class HireModal {
                             ),
                             const SizedBox(height: 16),
                             _buildLabeledField(
+                              label: 'Estimated Budget Range',
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: minBudgetController,
+                                      keyboardType: TextInputType.number,
+                                      decoration: const InputDecoration(
+                                        hintText: 'Min Budget',
+                                        border: OutlineInputBorder(),
+                                        prefixText: '₱ ',
+                                      ),
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.digitsOnly,
+                                      ],
+                                      validator: (value) =>
+                                          (value == null || value.trim().isEmpty)
+                                              ? 'Required'
+                                              : null,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: maxBudgetController,
+                                      keyboardType: TextInputType.number,
+                                      decoration: const InputDecoration(
+                                        hintText: 'Max Budget',
+                                        border: OutlineInputBorder(),
+                                        prefixText: '₱ ',
+                                      ),
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.digitsOnly,
+                                      ],
+                                      validator: (value) =>
+                                          (value == null || value.trim().isEmpty)
+                                              ? 'Required'
+                                              : null,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildLabeledField(
                               label: 'Project Description',
                               child: TextFormField(
                                 controller: descriptionController,
@@ -1210,6 +1273,48 @@ class HireModal {
                                     (value == null || value.trim().isEmpty)
                                         ? 'Please describe your project'
                                         : null,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildLabeledField(
+                              label: 'Start Date',
+                              child: InkWell(
+                                onTap: () async {
+                                  final DateTime? picked = await showDatePicker(
+                                    context: context,
+                                    initialDate: selectedStartDate ?? DateTime.now(),
+                                    firstDate: DateTime.now(),
+                                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                                  );
+                                  if (picked != null) {
+                                    setDialogState(() {
+                                      selectedStartDate = picked;
+                                    });
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        selectedStartDate != null
+                                            ? '${selectedStartDate!.year}-${selectedStartDate!.month.toString().padLeft(2, '0')}-${selectedStartDate!.day.toString().padLeft(2, '0')}'
+                                            : 'Select start date',
+                                        style: TextStyle(
+                                          color: selectedStartDate != null
+                                              ? Colors.black
+                                              : Colors.grey,
+                                        ),
+                                      ),
+                                      const Icon(Icons.calendar_today, color: Colors.grey),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
                             const SizedBox(height: 24),
@@ -1232,6 +1337,9 @@ class HireModal {
                                       description:
                                           descriptionController.text.trim(),
                                       location: locationController.text.trim(),
+                                      minBudget: minBudgetController.text.trim(),
+                                      maxBudget: maxBudgetController.text.trim(),
+                                      startDate: selectedStartDate,
                                     );
 
                                     Navigator.pop(context);
@@ -1240,12 +1348,12 @@ class HireModal {
                                         ? 'Hiring request sent using existing project!'
                                         : 'Hire request sent successfully!');
                                   } catch (e) {
-                                    ConTrustSnackBar.error(context, 'Error sending hire request: ');
+                                    ConTrustSnackBar.error(context, 'Error sending hire request: $e');
                                   }
                                 },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.teal,
-                                  foregroundColor: Colors.white,
+                                  backgroundColor: Colors.amber,
+                                  foregroundColor: Colors.black,
                                   minimumSize: const Size.fromHeight(50),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
@@ -1254,16 +1362,17 @@ class HireModal {
                                 child: const Text("Send Hire Request"),
                               ),
                             ),
-                            const SizedBox(height: 16),
                           ],
                         ),
                       ),
                     ),
                   ),
-                ],
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );

@@ -15,7 +15,8 @@ class ToLoginScreen extends StatefulWidget {
 class _ToLoginScreenState extends State<ToLoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _isAgreed = false; 
+  bool _isAgreed = false;
+  bool _isLoggingIn = false; 
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
@@ -62,7 +63,11 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
               left: 30,
               child: InkWell(
                 onTap: () {
-                  Navigator.pop(context);
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  } else {
+                    Navigator.pushReplacementNamed(context, '/login');
+                  }
                 },
                 child: Container(
                   padding: const EdgeInsets.all(8),
@@ -152,7 +157,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
         ),
         const SizedBox(height: 25),
         ElevatedButton(
-          onPressed: () async {
+          onPressed: _isLoggingIn ? null : () async {
             if (!_isAgreed) {
               ConTrustSnackBar.error(
                 context,
@@ -160,17 +165,23 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
               );
               return;
             }
-            final signInContractor = SignInContractor();
-            signInContractor.signInContractor(
-              context,
-              _emailController.text,
-              _passwordController.text,
-              () => validateFieldsLogin(
+            
+            setState(() => _isLoggingIn = true);
+            try {
+              final signInContractor = SignInContractor();
+              signInContractor.signInContractor(
                 context,
                 _emailController.text,
                 _passwordController.text,
-              ),
-            );
+                () => validateFieldsLogin(
+                  context,
+                  _emailController.text,
+                  _passwordController.text,
+                ),
+              );
+            } finally {
+              if (mounted) setState(() => _isLoggingIn = false);
+            }
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.amber.shade700,
@@ -180,8 +191,17 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
             ),
             elevation: 4,
           ),
-          child: const Text(
-            'Login',
+          child: _isLoggingIn
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : const Text(
+                  'Login',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_user_service.dart';
 import 'package:backend/services/both services/be_message_service.dart';
@@ -24,11 +25,28 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
   final TextEditingController messageController = TextEditingController();
   final ScrollController scrollController = ScrollController();
   late Future<String?> projectStatus;
+  Timer? _pollingTimer;
 
   @override
   void initState() {
     super.initState();
     loadContractorId();
+    
+    _pollingTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      if (mounted && selectedChatRoomId != null) {
+        setState(() {
+          projectStatus = FetchService().fetchProjectStatus(selectedChatRoomId!);
+        });
+      }
+    });
+  }
+  
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    messageController.dispose();
+    scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> loadContractorId() async {
