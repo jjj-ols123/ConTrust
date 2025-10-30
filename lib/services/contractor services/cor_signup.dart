@@ -1,7 +1,6 @@
 // ignore_for_file: use_build_context_synchronously_user_service.dart';, use_build_context_synchronously, use_build_context_synchronously, use_build_context_synchronously, use_build_context_synchronously, use_build_context_synchronously, use_build_context_synchronously
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractor/Screen/cor_otp_verification.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
@@ -183,19 +182,6 @@ class SignUpContractor {
       ConTrustSnackBar.success(context, 'Account created! Please verify your phone number');
 
       await Future.delayed(const Duration(seconds: 1));
-      
-      if (!context.mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => CorOTPVerificationPage(
-            phoneNumber: data?['contactNumber'] ?? '',
-            userId: userId,
-            email: email,
-            firmName: data?['firmName'] ?? 'Contractor',
-          ),
-        ),
-      );
       
     } on AuthException catch (e) {
       await _auditService.logAuditEvent(

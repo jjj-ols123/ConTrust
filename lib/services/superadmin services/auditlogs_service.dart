@@ -12,7 +12,7 @@ class SuperAdminAuditService {
     try {
       final response = await _supabase
           .from('AuditLogs')
-          .select('*')
+          .select('id, users_id, action, details, category, timestamp')
           .order('timestamp', ascending: false);
 
       return List<Map<String, dynamic>>.from(response);
@@ -34,7 +34,7 @@ class SuperAdminAuditService {
     try {
       final response = await _supabase
           .from('AuditLogs')
-          .select('*')
+          .select('id, users_id, action, details, category, timestamp')
           .eq('action', action)
           .order('timestamp', ascending: false);
 
@@ -58,7 +58,7 @@ class SuperAdminAuditService {
     try {
       final response = await _supabase
           .from('AuditLogs')
-          .select('*')
+          .select('id, users_id, action, details, category, timestamp')
           .order('timestamp', ascending: false)
           .limit(limit);
 

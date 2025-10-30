@@ -11,7 +11,7 @@ class SuperAdminErrorService {
     try {
       final response = await _supabase
           .from('ErrorLogs')
-          .select('*')
+          .select('error_id, users_id, error_message, stack_trace, module, severity, timestamp, resolved, extra_info')
           .order('timestamp', ascending: false);
 
       return List<Map<String, dynamic>>.from(response);
@@ -33,7 +33,7 @@ class SuperAdminErrorService {
     try {
       final response = await _supabase
           .from('ErrorLogs')
-          .select('*')
+          .select('error_id, users_id, error_message, stack_trace, module, severity, timestamp, resolved, extra_info')
           .eq('users_id', userId)
           .order('timestamp', ascending: false);
 
@@ -57,7 +57,7 @@ class SuperAdminErrorService {
     try {
       final response = await _supabase
           .from('ErrorLogs')
-          .select('*')
+          .select('error_id, users_id, error_message, stack_trace, module, severity, timestamp, resolved, extra_info')
           .eq('severity', severity)
           .order('timestamp', ascending: false);
 
@@ -81,7 +81,7 @@ class SuperAdminErrorService {
     try {
       final response = await _supabase
           .from('ErrorLogs')
-          .select('*')
+          .select('error_id, users_id, error_message, stack_trace, module, severity, timestamp, resolved, extra_info')
           .eq('module', module)
           .order('timestamp', ascending: false);
 
@@ -105,7 +105,7 @@ class SuperAdminErrorService {
     try {
       final response = await _supabase
           .from('ErrorLogs')
-          .select('*')
+          .select('error_id, users_id, error_message, stack_trace, module, severity, timestamp, resolved, extra_info')
           .eq('resolved', false)
           .order('timestamp', ascending: false);
 
@@ -128,7 +128,7 @@ class SuperAdminErrorService {
     try {
       final response = await _supabase
           .from('ErrorLogs')
-          .select('*')
+          .select('error_id, users_id, error_message, stack_trace, module, severity, timestamp, resolved, extra_info')
           .order('timestamp', ascending: false)
           .limit(limit);
 
