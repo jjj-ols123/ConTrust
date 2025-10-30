@@ -133,10 +133,6 @@ class SignInContractor {
         },
       );
 
-      if (context.mounted) {
-        ConTrustSnackBar.success(context, 'Successfully logged in');
-      }
-      
       return true;
             
     } catch (e) {

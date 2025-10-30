@@ -81,7 +81,7 @@ class SignInContractee {
       }
 
       await _auditService.logAuditEvent(
-        userId: user.id,
+        userId: signInResponse.user!.id,
         action: 'USER_LOGIN',
         details: 'Contractee logged in successfully',
         metadata: {
@@ -90,10 +90,6 @@ class SignInContractee {
           'login_method': 'email_password',
         },
       );
-
-      if (context.mounted) {
-        ConTrustSnackBar.success(context, 'Successfully logged in');
-      }
 
     } catch (e) {
       await _auditService.logAuditEvent(
@@ -122,141 +118,6 @@ class SignInContractee {
       if (context.mounted) {
         ConTrustSnackBar.error(context, 'Login failed. Please try again.');
       }
-    }
-  }
-
-  void signUpContractee(
-    BuildContext context,
-    String email,
-    String password,
-    String userType,
-    Map<String, dynamic>? data,
-    bool Function() validateFields,
-  ) async {
-    if (!validateFields()) {
-      return;
-    }
-
-    dynamic signUpResponse;
-    try {
-      signUpResponse = await UserService().signUp(
-        email: email,
-        password: password,
-        data: data,
-      );
-
-      if (signUpResponse.user == null) {
-        if (!context.mounted) return;
-        ConTrustSnackBar.success(context, 'Account created! Please check your email to confirm and complete registration.');
-        return;
-      }
-
-      final user = signUpResponse.user!;
-      
-      final supabase = Supabase.instance.client;
-
-      await Future.delayed(const Duration(milliseconds: 1000));
-
-      bool insertSuccess = false;
-      for (int attempt = 0; attempt < 5 && !insertSuccess; attempt++) {
-        try {
-          await supabase.from('Users').upsert({
-            'users_id': user.id,
-            'email': email,
-            'name': data?['full_name'] ?? 'Contractee',
-            'role': 'contractee',
-            'status': 'active',
-            'created_at': DateTime.now().toIso8601String(),
-            'last_login': DateTime.now().toIso8601String(),
-            'profile_image_url': data?['profilePhoto'],
-            'phone_number': data?['phone_number'] ?? '',
-            'verified': false,
-          }, onConflict: 'users_id');
-          insertSuccess = true;
-        } catch (e) {
-          if (attempt == 4) {
-            throw Exception('Failed to create user record: $e');
-          }
-          await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
-        }
-      }
-
-      final insertResponse = await supabase.from('Contractee').insert({
-        'contractee_id': user.id,
-        'full_name': data?['full_name'] ?? 'Contractee',
-        'address': data?['address'] ?? '',
-        'created_at': DateTime.now().toUtc().toIso8601String(),
-      }).select();
-
-      if (insertResponse.isEmpty) {
-        throw Exception('Failed to save contractee data');
-      }
-
-      await _auditService.logAuditEvent(
-        userId: user.id,
-        action: 'USER_REGISTRATION',
-        details: 'Contractee account created successfully - pending phone verification',
-        metadata: {
-          'user_type': userType,
-          'email': email,
-          'full_name': data?['full_name'],
-          'registration_method': 'email_password',
-        },
-      );
-
-      if (!context.mounted) return;
-      ConTrustSnackBar.success(context, 'Account created! Please verify your phone number');
-      
-
-    } on AuthException catch (e) {
-      await _auditService.logAuditEvent(
-        action: 'USER_REGISTRATION_FAILED',
-        details: 'Contractee registration failed due to authentication error',
-        metadata: {
-          'user_type': userType,
-          'email': email,
-          'error_type': 'AuthException',
-          'error_message': e.message,
-        },
-      );
-
-      await _errorService.logError(
-        errorMessage: 'Contractee sign-up failed - AuthException: ${e.message}',
-        module: 'Contractee Sign-up',
-        severity: 'Medium',
-        extraInfo: {
-          'operation': 'Sign Up Contractee',
-          'email': email,
-          'timestamp': DateTime.now().toIso8601String(),
-        },
-      );
-      if (!context.mounted) return;
-      ConTrustSnackBar.error(context, 'Error creating account: ${e.message}');
-      return;
-    } catch (e) {
-      await _auditService.logAuditEvent(
-        action: 'USER_REGISTRATION_FAILED',
-        details: 'Contractee registration failed due to unexpected error',
-        metadata: {
-          'user_type': userType,
-          'email': email,
-          'error_type': 'UnexpectedError',
-          'error_message': e.toString(),
-        },
-      );
-
-      await _errorService.logError(
-        errorMessage: 'Contractee sign-up failed - Unexpected error: $e',
-        module: 'Contractee Sign-up',
-        severity: 'High',
-        extraInfo: {
-          'operation': 'Sign Up Contractee',
-          'email': email,
-          'timestamp': DateTime.now().toIso8601String(),
-        },
-      );
-      if (!context.mounted) return;
-      ConTrustSnackBar.error(context, 'Unexpected error: $e');
     }
   }
 }
