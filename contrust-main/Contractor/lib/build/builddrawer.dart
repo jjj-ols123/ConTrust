@@ -320,7 +320,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
       }
 
       if (widget.currentPage != ContractorPage.projectManagement) {
-        Navigator.pushNamed(context, '/project-management', arguments: projectId);
+        appNavigatorKey.currentState?.pushNamed('/project-management', arguments: projectId);
       }
     } catch (e) {
       setState(() => _loadingPM = false);
@@ -723,16 +723,7 @@ class _ProjectNavButton extends StatelessWidget {
               .maybeSingle();
 
           if (response != null && response['project_id'] != null) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ContractorShell(
-                  currentPage: ContractorPage.projectManagement,
-                  contractorId: contractorId,
-                  child: CorOngoingProjectScreen(projectId: response['project_id']),
-                ),
-              ),
-            );
+            appNavigatorKey.currentState?.pushNamed('/project-management', arguments: response['project_id']);
           } else {
             ConTrustSnackBar.error(context, 'No active project found');
           }
