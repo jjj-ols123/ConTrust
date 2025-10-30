@@ -81,7 +81,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
     setState(() => _isSigningUp = true);
     try {
       final signUpContractee = SignUpContractee();
-      signUpContractee.signUpContractee(
+      final success = await signUpContractee.signUpContractee(
         context,
         _emailController.text,
         _passwordController.text,
@@ -102,6 +102,14 @@ class _RegistrationPageState extends State<RegistrationPage> {
           _confirmPasswordController.text,
         ),
       );
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ConTrustSnackBar.success(
+          context,
+          'Account created! Please wait for verification.',
+        );
+      }
     } finally {
       if (mounted) setState(() => _isSigningUp = false);
     }

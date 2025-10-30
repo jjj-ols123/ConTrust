@@ -16,7 +16,6 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:html' as html;
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -52,14 +51,6 @@ Future<void> main() async {
 
   SharedPreferences prefs = await SharedPreferences.getInstance();
   bool isFirstOpen = prefs.getBool('isFirstOpen') ?? true;
-
-  // Disable browser back button for web
-  if (kIsWeb && html.window != null) {
-    html.window.onPopState.listen((event) {
-      event.preventDefault();
-      html.window.history.pushState(null, '', html.window.location.href);
-    });
-  }
 
   runApp(MyApp(isFirstOpen: isFirstOpen));
 }
@@ -161,6 +152,54 @@ class _MyAppState extends State<MyApp> {
               );
             }
             return const LoginPage();
+          },
+        ),
+        // Catch-all route for 404 errors
+        GoRoute(
+          path: '/:path(.*)',
+          builder: (context, state) {
+            return Scaffold(
+              appBar: AppBar(
+                title: const Text('Page Not Found'),
+                backgroundColor: Colors.amber,
+              ),
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      '404 - Page Not Found',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'The page "${state.path}" does not exist.',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () => context.go('/home'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber,
+                      ),
+                      child: const Text('Go to Home'),
+                    ),
+                  ],
+                ),
+              ),
+            );
           },
         ),
       ],

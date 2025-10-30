@@ -44,7 +44,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
     setState(() => _isLoggingIn = true);
     try {
       final signInContractor = SignInContractor();
-      final success = await signInContractor.signInContractor(
+      await signInContractor.signInContractor(
         context,
         _emailController.text,
         _passwordController.text,
@@ -54,10 +54,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
           _passwordController.text,
         ),
       );
-      
-      if (success && mounted) {
-        ConTrustSnackBar.success(context, 'Login successful!');
-      }
+
     } on SocketException {
       ConTrustSnackBar.error(
         context,

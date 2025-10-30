@@ -11,7 +11,7 @@ class SignUpContractee {
   final SuperAdminErrorService _errorService = SuperAdminErrorService();
   final SuperAdminAuditService _auditService = SuperAdminAuditService();
 
-  void signUpContractee(
+  Future<bool> signUpContractee(
     BuildContext context,
     String email,
     String password,
@@ -25,7 +25,7 @@ class SignUpContractee {
     dynamic signUpResponse; 
 
     if (!validateFields()) {
-      return;
+      return false;
     }
 
     try {
@@ -35,11 +35,11 @@ class SignUpContractee {
         data: data,
       );
 
-      if (!context.mounted) return;
+      if (!context.mounted) return false;
 
       if (signUpResponse.user == null) {
         ConTrustSnackBar.error(context, 'Error creating account');
-        return;
+        return false;
       }
 
       if (userType == 'contractee') {
@@ -114,7 +114,7 @@ class SignUpContractee {
       await _auditService.logAuditEvent(
         userId: signUpResponse?.user?.id, 
         action: 'USER_REGISTRATION',
-        details: 'Contractee account created successfully - pending phone verification',
+        details: 'Contractee account created successfully',
         metadata: {
           'user_type': userType,
           'email': email,
@@ -123,8 +123,7 @@ class SignUpContractee {
         },
       );
 
-      if (!context.mounted) return;
-      ConTrustSnackBar.success(context, 'Account created! Please verify your phone number');
+      return true;
 
     } on AuthException catch (e) {
       await _auditService.logAuditEvent(
@@ -151,9 +150,9 @@ class SignUpContractee {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      if (!context.mounted) return;
+      if (!context.mounted) return false;
       ConTrustSnackBar.error(context, 'Error creating account: ${e.message}');
-      return;
+      return false;
     } catch (e) {
       await _auditService.logAuditEvent(
         userId: signUpResponse?.user?.id, 
@@ -179,8 +178,9 @@ class SignUpContractee {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      if (!context.mounted) return;
+      if (!context.mounted) return false;
       ConTrustSnackBar.error(context, 'Unexpected error: $e');
+      return false;
     }
   }
 }

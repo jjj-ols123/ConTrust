@@ -18,7 +18,6 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:html' as html;
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -42,14 +41,6 @@ void main() async {
       defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJnaWhmZHFydWFtbmppb25oa2VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4NzIyODksImV4cCI6MjA1NjQ0ODI4OX0.-GRaolUVu1hW6NUaEAwJuYJo8C2X5_1wZ-qB4a-9Txs',
     ),
   );
-
-  // Disable browser back button for web
-  if (kIsWeb && html.window != null) {
-    html.window.onPopState.listen((event) {
-      event.preventDefault();
-      html.window.history.pushState(null, '', html.window.location.href);
-    });
-  }
 
   runApp(const MyApp());
 }
@@ -185,6 +176,54 @@ class _MyAppState extends State<MyApp> {
               );
             }
             return const ToLoginScreen();
+          },
+        ),
+        // Catch-all route for 404 errors
+        GoRoute(
+          path: '/:path(.*)',
+          builder: (context, state) {
+            return Scaffold(
+              appBar: AppBar(
+                title: const Text('Page Not Found'),
+                backgroundColor: Colors.amber,
+              ),
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      '404 - Page Not Found',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'The page "${state.path}" does not exist.',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () => context.go('/dashboard'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber,
+                      ),
+                      child: const Text('Go to Dashboard'),
+                    ),
+                  ],
+                ),
+              ),
+            );
           },
         ),
       ],
