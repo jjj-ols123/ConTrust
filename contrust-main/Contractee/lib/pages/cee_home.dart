@@ -179,10 +179,14 @@ class _HomePageState extends State<HomePage> {
     final projectsToShow = projects.isEmpty ? [HomePageBuilder.getPlaceholderProject()] : projects;
     final isMobile = MediaQuery.of(context).size.width < 600;
 
-    return ContracteeShell(
-      currentPage: ContracteePage.home,
-      contracteeId: contracteeId,
-      child: SingleChildScrollView(
+    return WillPopScope(
+      onWillPop: () async {
+        return false;
+      },
+      child: ContracteeShell(
+        currentPage: ContracteePage.home,
+        contracteeId: contracteeId,
+        child: SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.symmetric(
             horizontal: isMobile ? 12 : 15, 
@@ -447,6 +451,7 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
         ),
+      ),
       ),
     );
   }
