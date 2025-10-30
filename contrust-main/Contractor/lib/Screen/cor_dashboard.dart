@@ -29,18 +29,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     
-    return WillPopScope(
-      onWillPop: () async {
-        return false;
-      },
-      child: Scaffold(
-        body: ContractorShell(
-          currentPage: ContractorPage.dashboard,
-          contractorId: widget.contractorId,
-          child: widget.contractorId.isEmpty
+    return Scaffold(
+      body: ContractorShell(
+        currentPage: ContractorPage.dashboard,
+        contractorId: widget.contractorId,
+        child: widget.contractorId.isEmpty
               ? const Center(child: CircularProgressIndicator(color: Colors.amber))  
               : DashboardUI(contractorId: widget.contractorId),
-        ),
       ),
     );
   }
