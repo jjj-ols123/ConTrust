@@ -411,7 +411,7 @@ class _WebsiteStartPageState extends State<WebsiteStartPage> {
       buttonText: 'Get Started',
       onPressed: () {
         try {
-          html.window.location.href = 'https://www.contractee.contrust-sjdm.com';
+          html.window.location.href = 'https://contractee.contrust-sjdm.com';
         } catch (e) {
           ConTrustSnackBar.error(context, 'Error navigating to Contractee: $e');
         }
@@ -429,7 +429,7 @@ class _WebsiteStartPageState extends State<WebsiteStartPage> {
       buttonText: 'Get Started',
       onPressed: () {
         try {
-          html.window.location.href = 'https://www.contractor.contrust-sjdm.com';
+          html.window.location.href = 'https://contractor.contrust-sjdm.com';
         } catch (e) {
           ConTrustSnackBar.error(context, 'Error navigating to Contractor: $e');
         }
