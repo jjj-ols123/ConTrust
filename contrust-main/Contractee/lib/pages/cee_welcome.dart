@@ -2,7 +2,6 @@
 
 import 'dart:ui';
 
-import 'package:backend/utils/be_pagetransition.dart';
 import 'package:contractee/pages/cee_home.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -52,7 +51,7 @@ class _WelcomePageState extends State<WelcomePage> with TickerProviderStateMixin
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isFirstOpen', false);
     if (mounted) {
-      transitionBuilder(context, const HomePage(), replace: true);
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePage()));
     }
   }
 

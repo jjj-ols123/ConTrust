@@ -54,7 +54,7 @@ class FetchService {
     try {
       final response = await _supabase
           .from('Contractor')
-          .select('*')
+          .select('contractor_id, firm_name, specialization, bio, past_projects, contact_number, profile_photo, created_at, address, verified, rating')
           .eq('contractor_id', contractorId)
           .single();
       return Map<String, dynamic>.from(response);
@@ -76,7 +76,7 @@ class FetchService {
     try {
       final response = await _supabase
           .from('Contractee')
-          .select('*')
+          .select('contractee_id, address, project_history_count, created_at, full_name, profile_photo, phone_number')
           .eq('contractee_id', contracteeId)
           .single();
       return Map<String, dynamic>.from(response);
@@ -194,7 +194,7 @@ class FetchService {
     try {
       final response = await _supabase
           .from('ProjectReports')
-          .select('*')
+          .select('report_id, project_id, content, author_id, created_at')
           .eq('project_id', projectId)
           .order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(response);
@@ -217,7 +217,7 @@ class FetchService {
     try {
       final response = await _supabase
           .from('ProjectPhotos')
-          .select('*')
+          .select('photo_id, project_id, photo_url, uploader_id, created_at')
           .eq('project_id', projectId)
           .order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(response);
@@ -239,7 +239,7 @@ class FetchService {
     try {
       final response = await _supabase
           .from('ProjectMaterials')
-          .select('*')
+          .select('material_id, project_id, contractor_id, material_name, brand, unit, quantity, unit_price, notes, created_at')
           .eq('project_id', projectId)
           .order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(response);
@@ -261,7 +261,7 @@ class FetchService {
     try {
       final response = await _supabase
           .from('Projects')
-          .select('*')
+          .select('project_id, contractee_id, contractor_id, title, type, description, location, min_budget, max_budget, status, duration, start_date, created_at, estimated_completion, contract_id, progress, projectdata')
           .eq('project_id', projectId)
           .order('created_at', ascending: false)
           .maybeSingle();
@@ -297,7 +297,7 @@ class FetchService {
 
       final projectResponse = await _supabase
           .from('Projects')
-          .select('*')
+          .select('project_id, contractee_id, contractor_id, title, type, description, location, min_budget, max_budget, status, duration, start_date, created_at, estimated_completion, contract_id, progress, projectdata')
           .eq('project_id', projectId)
           .maybeSingle();
 
@@ -458,7 +458,7 @@ class FetchService {
     try {
       final response = await _supabase
           .from('Projects')
-          .select('*')
+          .select('project_id, title, type, description, status, created_at')
           .eq('contractor_id', contractorId)
           .order('created_at', ascending: false);
 
@@ -499,7 +499,7 @@ class FetchService {
     try {
       final query = _supabase
           .from('Contracts')
-          .select()
+          .select('contract_id, contractor_id, contractee_id, project_id, status, title, pdf_url, created_at, updated_at')
           .eq('contract_id', contractId);
       
       if (contractorId != null) {
@@ -694,11 +694,15 @@ class FetchService {
       final query = _supabase
           .from('Contracts')
           .select('''
-            *,
-            project:Projects(*),
-            contractor:Contractor(*),  
-            contractee:Contractee(*),
-            contract_type:ContractTypes(*)
+            contract_id, contractor_id, contractee_id, project_id, contract_type_id,
+            title, status, created_at, updated_at, sent_at, reviewed_at,
+            contractor_signature_url, contractee_signature_url,
+            contractor_signed_at, contractee_signed_at,
+            pdf_url, signed_pdf_url, field_values,
+            project:Projects(project_id, type, description, title),
+            contractor:Contractor(contractor_id, firm_name, profile_photo),  
+            contractee:Contractee(contractee_id, full_name, profile_photo),
+            contract_type:ContractTypes(contract_type_id, template_name, template_description)
           ''')
           .eq('contract_id', contractId);
         
@@ -763,7 +767,10 @@ class FetchService {
     try {
       final query = _supabase
           .from('Contracts')
-          .select('''*, contractee:Contractee(*)''')
+          .select('''
+            contract_id, contractor_id, contractee_id, project_id, title, status, created_at, updated_at, pdf_url,
+            contractee:Contractee(contractee_id, full_name, profile_photo)
+          ''')
           .eq('project_id', projectId);
       
       if (contractorId != null || contracteeId != null) {

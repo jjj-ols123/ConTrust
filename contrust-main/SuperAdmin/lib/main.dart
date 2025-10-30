@@ -1,4 +1,3 @@
-import 'package:backend/services/superadmin%20services/perflogs_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
@@ -28,10 +27,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      SuperAdminPerfLogsService.recordAppStart();
-    });
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,

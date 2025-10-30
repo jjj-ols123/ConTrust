@@ -61,10 +61,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/bgloginscreen.jpg'),
-            fit: BoxFit.cover,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.amber.shade100,
+              Colors.white,
+              Colors.grey.shade100,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
         child: Stack(
@@ -320,7 +325,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       children: [
         Column(
           children: [
-            Image.asset('assets/images/logo3.png', width: 80, height: 80),
+            // Removed logo image
             const SizedBox(height: 16),
             Text(
               'Join ConTrust',

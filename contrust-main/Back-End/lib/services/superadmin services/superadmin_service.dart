@@ -107,8 +107,4 @@ class SuperAdminServiceBackend {
   static Future<Map<String, dynamic>> getSystemHealthStatus() async {
     return await _monitorService.getSystemHealth();
   }
-
-  static Future<Map<String, dynamic>> getBackendPerformanceMetrics() async {
-    return await _monitorService.getPerformanceMetrics();
-  }
 }

@@ -387,7 +387,7 @@ class ContractService {
     try {
       final query = _supabase
           .from('Contracts')
-          .select('*')
+          .select('contract_id, contractor_id, contractee_id, project_id, contract_type_id, title, status, created_at, updated_at, sent_at, reviewed_at, contractor_signature_url, contractee_signature_url, contractor_signed_at, contractee_signed_at, pdf_url, signed_pdf_url, field_values')
           .eq('contract_id', contractId);
       
       if (contractorId != null) {

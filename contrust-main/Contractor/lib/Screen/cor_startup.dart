@@ -4,6 +4,7 @@ import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/Screen/cor_registration.dart';
 import 'package:backend/services/contractor services/cor_signin.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ToLoginScreen extends StatefulWidget {
   const ToLoginScreen({super.key});
@@ -17,6 +18,18 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isAgreed = false;
   bool _isLoggingIn = false; 
+
+  @override
+  void initState() {
+    super.initState();
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      final session = data.session;
+      if (session != null && mounted) {
+        Navigator.pushReplacementNamed(context, '/contractor/dashboard');
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
@@ -25,72 +38,41 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/bgloginscreen.jpg'),
-            fit: BoxFit.cover,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.amber.shade100,
+              Colors.white,
+              Colors.grey.shade100,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
-        child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 100),
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Container(
-                    width: isPhone ? screenWidth * 0.8 : 600,
-                    padding: const EdgeInsets.all(28),
-                    margin: const EdgeInsets.symmetric(horizontal: 20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
+        child: Padding(
+          padding: const EdgeInsets.only(top: 100),
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Container(
+                width: isPhone ? screenWidth * 0.8 : 600,
+                padding: const EdgeInsets.all(28),
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
                     ),
-                    child: _buildLoginForm(context),
-                  ),
+                  ],
                 ),
+                child: _buildLoginForm(context),
               ),
             ),
-            Positioned(
-              top: 50,
-              left: 30,
-              child: InkWell(
-                onTap: () {
-                  if (Navigator.canPop(context)) {
-                    Navigator.pop(context);
-                  } else {
-                    Navigator.pushReplacementNamed(context, '/login');
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.arrow_back,
-                    color: Colors.grey,
-                    size: 24,
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -102,7 +84,8 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
       children: [
         Column(
           children: [
-            Image.asset('assets/images/logo3.png', width: 80, height: 80),
+            // Removed logo image, replaced with icon
+            Icon(Icons.business, size: 80, color: Colors.amber.shade400),
             const SizedBox(height: 16),
             Text(
               'Welcome Back',
@@ -238,7 +221,8 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.asset('assets/images/googleicon.png', height: 28),
+                // Replaced asset image with icon
+                Icon(Icons.g_mobiledata, size: 28, color: Colors.grey.shade700),
                 const SizedBox(width: 12),
                 const Text(
                   "Continue with Google",
@@ -324,6 +308,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
       ],
     );
   }
+
   void _showPolicyTabs(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final isSmallScreen = screenSize.width < 600;
@@ -460,7 +445,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
           ),
         ),
       ),
-    );
+      );
   }
 
   Widget _buildPolicyContent(bool isSmallScreen) {

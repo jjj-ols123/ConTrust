@@ -1,7 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:contractor/Screen/cor_dashboard.dart';
-import 'package:contractor/Screen/cor_login.dart';
+import 'package:contractor/Screen/cor_startup.dart';
 import 'package:contractor/Screen/cor_authredirect.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -58,19 +58,19 @@ class MyApp extends StatelessWidget {
 
       initialRoute: session != null ? '/dashboard' : '/login',
       routes: {
-        '/login': (context) => const LoginScreen(),
+        '/login': (context) => const ToLoginScreen(),
         '/auth/callback': (context) => const AuthRedirectPage(),
         '/dashboard': (context) {
           final currentSession = Supabase.instance.client.auth.currentSession;
           if (currentSession != null) {
             return DashboardScreen(contractorId: currentSession.user.id);
           } else {
-            return const LoginScreen();
+            return const ToLoginScreen();
           }
         },
       },
       onUnknownRoute: (settings) => MaterialPageRoute(
-        builder: (_) => const LoginScreen(),
+        builder: (_) => const ToLoginScreen(),
       ),
     );
   }

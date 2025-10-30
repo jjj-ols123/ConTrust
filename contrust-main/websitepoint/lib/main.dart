@@ -5,7 +5,7 @@ import 'package:websitepoint/app_websitestart.dart';
 import 'package:contractee/pages/cee_welcome.dart';
 import 'package:contractee/pages/cee_home.dart';
 import 'package:contractee/pages/cee_authredirect.dart' as cee;
-import 'package:contractor/Screen/cor_login.dart';
+import 'package:contractor/Screen/cor_startup.dart';
 import 'package:contractor/Screen/cor_dashboard.dart';
 import 'package:superadmin/pages/login.dart';
 
@@ -39,18 +39,16 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => const WebsiteStartPage(),
         '/contractee': (context) => const WelcomePage(),
-        '/contractor': (context) => LoginScreen(),
-        '/superadmin': (context) => const SuperAdminLoginScreen(),
-        // Contractee rou
-        '/home': (context) => const HomePage(),
-        // Contractor 
-        '/dashboard': (context) {
+        '/contractee/home': (context) => const HomePage(),
+        '/contractor': (context) => const ToLoginScreen(),
+        '/contractor/dashboard': (context) {
           final session = Supabase.instance.client.auth.currentSession;
           if (session != null) {
             return DashboardScreen(contractorId: session.user.id);
           }
-          return LoginScreen();
+          return const ToLoginScreen();
         },
+        '/superadmin': (context) => const SuperAdminLoginScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/auth/callback') {

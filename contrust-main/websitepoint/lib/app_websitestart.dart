@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +24,13 @@ class _WebsiteStartPageState extends State<WebsiteStartPage> {
   void initState() {
     super.initState();
     _checkForOAuthCallback();
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      final session = data.session;
+      if (session != null && mounted) {
+        final userId = session.user.id;
+        _navigateBasedOnUserType(userId);
+      }
+    });
   }
 
   Future<void> _checkForOAuthCallback() async {
@@ -47,28 +54,8 @@ class _WebsiteStartPageState extends State<WebsiteStartPage> {
       final session = Supabase.instance.client.auth.currentSession;
       if (session != null && mounted) {
         final userId = session.user.id;
-        
-        final contractorData = await Supabase.instance.client
-            .from('Contractor')
-            .select('contractor_id')
-            .eq('contractor_id', userId)
-            .maybeSingle();
-        
-        if (contractorData != null && mounted) {
-          Navigator.of(context).pushReplacementNamed('/dashboard');
-          return;
-        }
-        
-        final contracteeData = await Supabase.instance.client
-            .from('Contractee')
-            .select('contractee_id')
-            .eq('contractee_id', userId)
-            .maybeSingle();
-        
-        if (contracteeData != null && mounted) {
-          Navigator.of(context).pushReplacementNamed('/home');
-          return;
-        }
+        await _navigateBasedOnUserType(userId);
+        return;
       }
     } catch (e) {
       //
@@ -78,6 +65,34 @@ class _WebsiteStartPageState extends State<WebsiteStartPage> {
           _isCheckingAuth = false;
         });
       }
+    }
+  }
+
+  Future<void> _navigateBasedOnUserType(String userId) async {
+    try {
+      final contractorData = await Supabase.instance.client
+          .from('Contractor')
+          .select('contractor_id')
+          .eq('contractor_id', userId)
+          .maybeSingle();
+      
+      if (contractorData != null && mounted) {
+        Navigator.of(context).pushReplacementNamed('/contractor/dashboard');
+        return;
+      }
+      
+      final contracteeData = await Supabase.instance.client
+          .from('Contractee')
+          .select('contractee_id')
+          .eq('contractee_id', userId)
+          .maybeSingle();
+      
+      if (contracteeData != null && mounted) {
+        Navigator.of(context).pushReplacementNamed('/contractee/home');
+        return;
+      }
+    } catch (e) {
+      //
     }
   }
 
@@ -497,7 +512,7 @@ class _WebsiteStartPageState extends State<WebsiteStartPage> {
       buttonText: 'Get Started',
       onPressed: () {
         try {
-          Navigator.of(context).pushNamed('/contractor');
+          Navigator.of(context).pushReplacementNamed('/contractor');
         } catch (e) {
           ConTrustSnackBar.error(context, 'Error navigating to Contractor: $e');
         }
@@ -799,6 +814,6 @@ class _RoleCardState extends State<_RoleCard> {
           ),
         ),
       ),
-    );
+      );
   }
 }

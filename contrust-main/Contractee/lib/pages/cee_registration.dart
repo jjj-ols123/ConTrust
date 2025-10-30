@@ -151,7 +151,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
   }
 
   Widget _buildRegistrationForm(BuildContext context) {
-    InputDecoration _inputStyle(String label, IconData icon, {Widget? suffix}) {
+    InputDecoration inputStyle(String label, IconData icon, {Widget? suffix}) {
       return InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
@@ -185,23 +185,23 @@ class _RegistrationPageState extends State<RegistrationPage> {
         const SizedBox(height: 30),
         TextField(
           controller: _fNameController,
-          decoration: _inputStyle('First Name', Icons.person),
+          decoration: inputStyle('First Name', Icons.person),
         ),
         const SizedBox(height: 15),
         TextField(
           controller: _lNameController,
-          decoration: _inputStyle('Last Name', Icons.person_outline),
+          decoration: inputStyle('Last Name', Icons.person_outline),
         ),
         const SizedBox(height: 15),
         TextField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
-          decoration: _inputStyle('Email', Icons.email_outlined),
+          decoration: inputStyle('Email', Icons.email_outlined),
         ),
         const SizedBox(height: 15),
         TextField(
           controller: _addressController,
-          decoration: _inputStyle('Address', Icons.home_outlined),
+          decoration: inputStyle('Address', Icons.home_outlined),
         ),
         const SizedBox(height: 15),
         TextField(
@@ -218,7 +218,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
               );
             }
           },
-          decoration: _inputStyle('Phone Number', Icons.phone_android_outlined).copyWith(
+          decoration: inputStyle('Phone Number', Icons.phone_android_outlined).copyWith(
             helperText: 'Enter mobile number',
           ),
         ),
@@ -226,7 +226,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
         TextField(
           controller: _passwordController,
           obscureText: !_isPasswordVisible,
-          decoration: _inputStyle(
+          decoration: inputStyle(
             'Password',
             Icons.lock_outline,
             suffix: IconButton(
@@ -244,7 +244,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
         TextField(
           controller: _confirmPasswordController,
           obscureText: !_isConfirmPasswordVisible,
-          decoration: _inputStyle(
+          decoration: inputStyle(
             'Confirm Password',
             Icons.lock_reset,
             suffix: IconButton(

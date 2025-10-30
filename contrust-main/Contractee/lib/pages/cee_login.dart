@@ -1,6 +1,5 @@
 // ignore_for_file: deprecated_member_use
 
-import 'package:backend/utils/be_pagetransition.dart';
 import 'package:backend/utils/be_validation.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractee/pages/cee_registration.dart';
@@ -194,7 +193,7 @@ class _LoginPageState extends State<LoginPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.asset('assets/googleicon.png', height: 28),
+                Icon(Icons.g_mobiledata, size: 28, color: Colors.grey.shade700),
                 const SizedBox(width: 12),
                 const Text(
                   "Continue with Google",
@@ -243,7 +242,7 @@ class _LoginPageState extends State<LoginPage> {
         const SizedBox(height: 20),
         InkWell(
           onTap: () {
-            transitionBuilder(context, RegistrationPage());
+            Navigator.push(context, MaterialPageRoute(builder: (context) => RegistrationPage()));
           },
           child: Text.rich(
             TextSpan(
@@ -400,7 +399,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
       ),
-    );
+      );
   }
 
   Widget _buildPolicyContent(bool isSmallScreen) {

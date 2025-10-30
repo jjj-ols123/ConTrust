@@ -2,7 +2,6 @@
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractee/pages/cee_home.dart';
-import 'package:contractee/pages/cee_otp_verification.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -213,18 +212,6 @@ class SignInContractee {
       if (!context.mounted) return;
       ConTrustSnackBar.success(context, 'Account created! Please verify your phone number');
       
-      // Navigate to OTP verification instead of HomePage
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => OTPVerificationPage(
-            phoneNumber: data?['phone_number'] ?? '',
-            userId: user.id,
-            email: email,
-            fullName: data?['full_name'] ?? 'User',
-          ),
-        ),
-      );
 
     } on AuthException catch (e) {
       await _auditService.logAuditEvent(
