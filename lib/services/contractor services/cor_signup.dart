@@ -91,7 +91,7 @@ class SignUpContractor {
               'status': 'active',
               'created_at': DateTime.now().toIso8601String(),
               'last_login': DateTime.now().toIso8601String(),
-              'profile_image_url': data?['profilePhoto'],
+              'profile_image_url': data?['profilePhoto'] ?? 'assets/images/defaultpic.png',
               'phone_number': data?['contactNumber'] ?? '',
               'verified': false,
             }, onConflict: 'users_id');
@@ -110,6 +110,7 @@ class SignUpContractor {
           'contact_number': data?['contactNumber'],
           'address': data?['address'] ?? '', 
           'created_at': DateTime.now().toUtc().toIso8601String(),
+          'profile_photo': data?['profilePhoto'] ?? 'assets/images/defaultpic.png',
         };
 
         final insertResponse = await supabase

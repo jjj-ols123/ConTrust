@@ -11,14 +11,14 @@ class SignInContractee {
   final SuperAdminErrorService _errorService = SuperAdminErrorService();
   final SuperAdminAuditService _auditService = SuperAdminAuditService();
 
-  void signInContractee(
+  Future<bool> signInContractee(
     BuildContext context,
     String email,
     String password,
     bool Function() validateFields,
   ) async {
     if (!validateFields()) {
-      return;
+      return false;
     }
 
     dynamic signInResponse;
@@ -39,7 +39,7 @@ class SignInContractee {
           },
         );
         ConTrustSnackBar.error(context, 'Authentication failed');
-        return;
+        return false;
       }
 
       final user = signInResponse.user!;
@@ -58,7 +58,7 @@ class SignInContractee {
           },
         );
         ConTrustSnackBar.error(context, 'Not a contractee account');
-        return;
+        return false;
       }
 
       final supabase = Supabase.instance.client;
@@ -91,6 +91,7 @@ class SignInContractee {
         },
       );
 
+      return true;
     } catch (e) {
       await _auditService.logAuditEvent(
         userId: signInResponse != null && signInResponse.user != null ? signInResponse.user!.id : null,
@@ -116,8 +117,9 @@ class SignInContractee {
       );
 
       if (context.mounted) {
-        ConTrustSnackBar.error(context, 'Login failed. Please try again.');
+        ConTrustSnackBar.error(context, 'Login failed. Please try again. $e');
       }
+      return false;
     }
   }
 }
@@ -235,15 +237,15 @@ class SignInGoogleContractee {
         'role': 'contractee',
         'status': 'active',
         'last_login': DateTime.now().toIso8601String(),
-        'profile_image_url': user.userMetadata?['avatar_url'],
+        'profile_image_url': user.userMetadata?['avatar_url'] ?? 'assets/defaultpic.png',
         'phone_number': '',
-        'verified': false,
+        'verified': true,
       }, onConflict: 'users_id');
 
       await supabase.from('Contractee').insert({
         'contractee_id': user.id,
         'full_name': user.userMetadata?['full_name'] ?? 'User',
-        'profile_photo': user.userMetadata?['avatar_url'],
+        'profile_photo': user.userMetadata?['avatar_url'] ?? 'assets/defaultpic.png',
         'created_at': DateTime.now().toIso8601String(),
       });
 
