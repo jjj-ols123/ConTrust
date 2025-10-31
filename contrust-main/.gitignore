@@ -1,0 +1,113 @@
+# Flutter/Dart/Pub related
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+flutter_*.png
+flutter_*.jpeg
+
+# Android related
+**/android/**/gradle-wrapper.jar
+**/android/.gradle
+**/android/captures/
+**/android/gradlew
+**/android/gradlew.bat
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+
+# iOS/XCode related
+**/ios/**/*.mode1v3
+**/ios/**/*.mode2v3
+**/ios/**/*.moved-aside
+**/ios/**/*.pbxuser
+**/ios/**/*.perspectivev3
+**/ios/**/xcuserdata
+**/ios/.generated/
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+# macOS
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+**/macos/Flutter/ephemeral/
+**/macos/Flutter/Flutter-Debug.xcconfig
+**/macos/Flutter/Flutter-Release.xcconfig
+**/macos/Flutter/Flutter-Profile.xcconfig
+
+# Windows
+**/windows/**/*.exe
+**/windows/**/*.exe~
+**/windows/**/*.dll
+**/windows/**/*.so
+**/windows/**/*.pdb
+**/windows/Flutter/GeneratedPluginRegistrant.*
+**/windows/flutter/ephemeral/
+
+# Linux
+**/linux/**/*.so
+**/linux/**/*.so.*
+**/linux/**/generated_plugin_registrant.*
+**/linux/flutter/ephemeral/
+
+# Web
+**/web/index.html
+**/web/icons/
+**/web/manifest.json
+
+# Coverage
+coverage/
+
+# DS_Store (MacOS)
+.DS_Store
+**/.DS_Store
+
+# Visual Studio Code
+.vscode/
+
+# IntelliJ IDEA
+.idea/
+
+# Temporary folders
+tmp/
+temp/
+
+# Logs
+*.log
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
+# Environment variables
+.env
+.env.local
+
+# VS Code settings
+.vscode/settings.json
+
+# Flutter web build artifacts
+**/build/web/
+**/build/app/
+**/build/windows/
+**/build/macos/
+**/build/linux/
+
+# Package manager lock files (optional - uncomment if you want to ignore)
+# pubspec.lock
+
+# Test coverage
+coverage/
+
+# Screenshots
+screenshots/
+
+# Documentation builds
+doc/api/
