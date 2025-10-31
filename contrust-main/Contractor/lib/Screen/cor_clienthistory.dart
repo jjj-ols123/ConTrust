@@ -1,6 +1,5 @@
 // ignore_for_file: library_private_types_in_public_api
 import 'package:backend/services/both services/be_fetchservice.dart';
-import 'package:backend/utils/be_pagetransition.dart'; 
 import 'package:contractor/Screen/cor_product.dart';
 import 'package:flutter/material.dart';
 
@@ -99,7 +98,7 @@ class _ClientHistoryScreenState extends State<ClientHistoryScreen> {
                   const SizedBox(width: 10),
                   GestureDetector(
                     onTap: () {
-                      transitionBuilder(context, const ProductPanelScreen());
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const ProductPanelScreen()));
                     },
                     child: const Text(
                       "Product Panel",

@@ -6,11 +6,8 @@ import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/services/superadmin%20services/auditlogs_service.dart';
 import 'package:backend/services/superadmin%20services/errorlogs_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractee/pages/cee_profile.dart';
-import 'package:contractee/pages/cee_home.dart';
-import 'package:contractee/pages/cee_ongoing.dart';
-import 'package:contractee/pages/cee_chathistory.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum ContracteePage {
@@ -265,15 +262,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
 
       final projectId = activeProjects.first['project_id'];
       if (widget.currentPage != ContracteePage.ongoing) {
-        navigateToPage(
-          ContracteeShell(
-            currentPage: ContracteePage.ongoing,
-            contracteeId: widget.contracteeId ?? '',
-            child: CeeOngoingProjectScreen(
-              projectId: projectId,
-            ),
-          ),
-        );
+        navigateToPage('/ongoing', arguments: projectId);
       }
     } catch (e) {
       setState(() => _loadingOngoing = false);
@@ -300,15 +289,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
                 subtitle: Text(project['location'] ?? 'No location'),
                 onTap: () {
                   Navigator.pop(context);
-                  navigateToPage(
-                    ContracteeShell(
-                      currentPage: ContracteePage.ongoing,
-                      contracteeId: widget.contracteeId ?? '',
-                      child: CeeOngoingProjectScreen(
-                        projectId: project['project_id'],
-                      ),
-                    ),
-                  );
+                  navigateToPage('/ongoing', arguments: project['project_id']);
                 },
               );
             },
@@ -324,15 +305,12 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
     );
   }
 
-  void navigateToPage(Widget page) {
-    Navigator.push(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => page,
-        transitionDuration: Duration.zero,
-        reverseTransitionDuration: Duration.zero,
-      ),
-    );
+  void navigateToPage(String routeName, {Object? arguments}) {
+    if (arguments != null) {
+      context.go(routeName, extra: arguments);
+    } else {
+      context.go(routeName);
+    }
   }
 
   Future<void> logout() async {
@@ -364,10 +342,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
     try {
       await UserService().signOut();
       if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const HomePage()),
-          (route) => false,
-        );
+        context.go('/login');
       }
 
        await _auditService.logAuditEvent(
@@ -398,7 +373,6 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
 
   @override
   Widget build(BuildContext context) {
-    final id = widget.contracteeId;
     return Container(
       color: Colors.white,
       child: ListView(
@@ -410,7 +384,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             active: widget.currentPage == ContracteePage.home,
             onTap: () {
               if (widget.currentPage != ContracteePage.home) {
-                navigateToPage(const HomePage());
+                navigateToPage('/home');
               }
             },
           ),
@@ -420,13 +394,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             active: widget.currentPage == ContracteePage.messages,
             onTap: () {
               if (widget.currentPage != ContracteePage.messages) {
-                navigateToPage(
-                  ContracteeShell(
-                    currentPage: ContracteePage.messages,
-                    contracteeId: id ?? '',
-                    child: const ContracteeChatHistoryPage(),
-                  ),
-                );
+                navigateToPage('/messages');
               }
             },
           ),
@@ -442,13 +410,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             active: widget.currentPage == ContracteePage.profile,
             onTap: () {
               if (widget.currentPage != ContracteePage.profile) {
-                navigateToPage(
-                  ContracteeShell(
-                    currentPage: ContracteePage.profile,
-                    contracteeId: widget.contracteeId ?? '',
-                    child: CeeProfilePage(contracteeId: widget.contracteeId ?? ''),
-                  ),
-                );
+                navigateToPage('/profile');
               }
             },
           ),

@@ -1,7 +1,6 @@
 // ignore_for_file: use_build_context_synchronously_user_service.dart';, use_build_context_synchronously, use_build_context_synchronously, use_build_context_synchronously, use_build_context_synchronously, use_build_context_synchronously, use_build_context_synchronously
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractor/Screen/cor_otp_verification.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
@@ -12,7 +11,7 @@ class SignUpContractor {
   final SuperAdminErrorService _errorService = SuperAdminErrorService();
   final SuperAdminAuditService _auditService = SuperAdminAuditService();
 
-  Future<void> signUpContractor(
+  Future<bool> signUpContractor(
     BuildContext context,
     String email,
     String password,
@@ -23,21 +22,21 @@ class SignUpContractor {
     final supabase = Supabase.instance.client;
 
     if (!validateFields()) {
-      return;
+      return false;
     }
 
-    final List<Map<String, dynamic>> verificationFiles = (data?['verificationFiles'] as List<Map<String, dynamic>>? ?? []);
+    final List<Map<String, dynamic>> verificationFiles =
+        (data?['verificationFiles'] as List<Map<String, dynamic>>? ?? []);
 
     if (verificationFiles.isEmpty) {
       if (context.mounted) {
         ConTrustSnackBar.error(context, 'Please upload verification documents before signing up.');
       }
-      return;
+      return false;
     }
 
     dynamic signUpResponse;
     try {
-
       Map<String, dynamic> signUpData = Map.from(data ?? {});
       signUpData.remove('verificationFiles');
 
@@ -47,7 +46,7 @@ class SignUpContractor {
         data: signUpData,
       );
 
-      if (!context.mounted) return;
+      if (!context.mounted) return false;
 
       final String? userId = signUpResponse.user?.id ?? signUpResponse.session?.user.id;
 
@@ -73,9 +72,9 @@ class SignUpContractor {
           },
         );
 
-        if (!context.mounted) return;
+        if (!context.mounted) return false;
         ConTrustSnackBar.error(context, 'Failed to create account. Please try again.');
-        return;
+        return false;
       }
 
       if (userType == 'contractor') {
@@ -167,39 +166,12 @@ class SignUpContractor {
         }
       }
 
-      await _auditService.logAuditEvent(
-        userId: userId,
-        action: 'USER_REGISTRATION',
-        details: 'Contractor account created successfully',
-        metadata: {
-          'user_type': userType,
-          'email': email,
-          'firm_name': data?['firmName'],
-          'registration_method': 'email_password',
-        },
-      );
+      if (!context.mounted) return false;
 
-      if (!context.mounted) return;
-      ConTrustSnackBar.success(context, 'Account created! Please verify your phone number');
-
-      await Future.delayed(const Duration(seconds: 1));
-      
-      if (!context.mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => CorOTPVerificationPage(
-            phoneNumber: data?['contactNumber'] ?? '',
-            userId: userId,
-            email: email,
-            firmName: data?['firmName'] ?? 'Contractor',
-          ),
-        ),
-      );
-      
+      return true;
     } on AuthException catch (e) {
       await _auditService.logAuditEvent(
-        userId: signUpResponse?.user?.id, 
+        userId: signUpResponse?.user?.id,
         action: 'USER_REGISTRATION_FAILED',
         details: 'Contractor registration failed due to authentication error',
         metadata: {
@@ -218,16 +190,24 @@ class SignUpContractor {
           'operation': 'Sign Up Contractor',
           'email': email,
           'user_type': userType,
-          'users_id': signUpResponse?.user?.id, 
+          'users_id': signUpResponse?.user?.id,
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      if (!context.mounted) return;
-      ConTrustSnackBar.error(context, 'Error creating account: ${e.message}');
-      return;
+
+      if (!context.mounted) return false;
+      final msg = e.message.toLowerCase();
+      if (msg.contains('password')) {
+        ConTrustSnackBar.error(context, 'Weak password. Ensure it meets the requirements.');
+      } else if (msg.contains('duplicate') || msg.contains('already')) {
+        ConTrustSnackBar.error(context, 'Email already in use. Try logging in or use a different email.');
+      } else {
+        ConTrustSnackBar.error(context, 'Error creating account: ${e.message}');
+      }
+      return false;
     } catch (e) {
       await _auditService.logAuditEvent(
-        userId: signUpResponse?.user?.id,  
+        userId: signUpResponse?.user?.id,
         action: 'USER_REGISTRATION_FAILED',
         details: 'Contractor registration failed due to unexpected error',
         metadata: {
@@ -246,12 +226,13 @@ class SignUpContractor {
           'operation': 'Sign Up Contractor',
           'email': email,
           'user_type': userType,
-          'users_id': signUpResponse?.user?.id,  
+          'users_id': signUpResponse?.user?.id,
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      if (!context.mounted) return;
+      if (!context.mounted) return false;
       ConTrustSnackBar.error(context, 'Unexpected error: $e');
+      return false;
     }
   }
 }

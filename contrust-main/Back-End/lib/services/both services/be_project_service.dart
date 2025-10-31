@@ -575,7 +575,7 @@ class ProjectService {
 
       final existingProject = await _supabase
           .from('Projects')
-          .select('*')
+          .select('project_id')
           .eq('contractee_id', contracteeId)
           .eq('title', title)
           .eq('type', type)
@@ -604,7 +604,7 @@ class ProjectService {
         final projectResponse = await _supabase
             .from('Projects')
             .insert(projectData)
-            .select()
+            .select('project_id')
             .single();
         projectId = projectResponse['project_id'];
       }

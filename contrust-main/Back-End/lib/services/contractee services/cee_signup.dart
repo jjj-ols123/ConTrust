@@ -2,7 +2,6 @@
 
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractee/pages/cee_otp_verification.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
@@ -12,7 +11,7 @@ class SignUpContractee {
   final SuperAdminErrorService _errorService = SuperAdminErrorService();
   final SuperAdminAuditService _auditService = SuperAdminAuditService();
 
-  void signUpContractee(
+  Future<bool> signUpContractee(
     BuildContext context,
     String email,
     String password,
@@ -26,7 +25,7 @@ class SignUpContractee {
     dynamic signUpResponse; 
 
     if (!validateFields()) {
-      return;
+      return false;
     }
 
     try {
@@ -36,11 +35,11 @@ class SignUpContractee {
         data: data,
       );
 
-      if (!context.mounted) return;
+      if (!context.mounted) return false;
 
       if (signUpResponse.user == null) {
         ConTrustSnackBar.error(context, 'Error creating account');
-        return;
+        return false;
       }
 
       if (userType == 'contractee') {
@@ -115,7 +114,7 @@ class SignUpContractee {
       await _auditService.logAuditEvent(
         userId: signUpResponse?.user?.id, 
         action: 'USER_REGISTRATION',
-        details: 'Contractee account created successfully - pending phone verification',
+        details: 'Contractee account created successfully',
         metadata: {
           'user_type': userType,
           'email': email,
@@ -124,21 +123,7 @@ class SignUpContractee {
         },
       );
 
-      if (!context.mounted) return;
-      ConTrustSnackBar.success(context, 'Account created! Please verify your phone number');
-
-      // Navigate to OTP verification instead of HomePage
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => OTPVerificationPage(
-            phoneNumber: data?['phone_number'] ?? '',
-            userId: signUpResponse.user!.id,
-            email: email,
-            fullName: data?['full_name'] ?? 'User',
-          ),
-        ),
-      );
+      return true;
 
     } on AuthException catch (e) {
       await _auditService.logAuditEvent(
@@ -165,9 +150,9 @@ class SignUpContractee {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      if (!context.mounted) return;
+      if (!context.mounted) return false;
       ConTrustSnackBar.error(context, 'Error creating account: ${e.message}');
-      return;
+      return false;
     } catch (e) {
       await _auditService.logAuditEvent(
         userId: signUpResponse?.user?.id, 
@@ -193,8 +178,9 @@ class SignUpContractee {
           'timestamp': DateTime.now().toIso8601String(),
         },
       );
-      if (!context.mounted) return;
+      if (!context.mounted) return false;
       ConTrustSnackBar.error(context, 'Unexpected error: $e');
+      return false;
     }
   }
 }

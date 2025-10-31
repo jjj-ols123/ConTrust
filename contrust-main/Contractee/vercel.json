@@ -1,0 +1,30 @@
+{
+  "buildCommand": "cd contrust-main/Contractee && flutter/bin/flutter build web --release --base-href=/ --dart-define=SUPABASE_URL=${SUPABASE_URL} --dart-define=SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY} --dart-define=SUPABASE_ADMIN_ACCOUNT=${SUPABASE_ADMIN_ACCOUNT} --dart-define=PAYMONGO_PUBLIC_KEY=${PAYMONGO_PUBLIC_KEY} --dart-define=PAYMONGO_SECRET_KEY=${PAYMONGO_SECRET_KEY} && ls -la build/web/",
+  "outputDirectory": "contrust-main/Contractee/build/web",
+  "installCommand": "cd contrust-main/Contractee && if cd flutter; then git pull && cd ..; else git clone https://github.com/flutter/flutter.git; fi && ls && flutter/bin/flutter doctor && flutter/bin/flutter clean && flutter/bin/flutter config --enable-web",
+  "rewrites": [
+    { "source": "/assets/(.*)", "destination": "/assets/$1" },
+    { "source": "/(.*?\\..*)", "destination": "/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    }
+  ]
+}

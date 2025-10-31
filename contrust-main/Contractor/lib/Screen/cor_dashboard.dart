@@ -21,7 +21,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final session = Supabase.instance.client.auth.currentSession;
       if (session == null || session.user.id.isEmpty) {
-        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+        Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
       }
     });
   }
@@ -34,8 +34,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         currentPage: ContractorPage.dashboard,
         contractorId: widget.contractorId,
         child: widget.contractorId.isEmpty
-            ? const Center(child: CircularProgressIndicator(color: Colors.amber))  
-            : DashboardUI(contractorId: widget.contractorId),
+              ? const Center(child: CircularProgressIndicator(color: Colors.amber))  
+              : DashboardUI(contractorId: widget.contractorId),
       ),
     );
   }

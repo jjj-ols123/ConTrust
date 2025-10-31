@@ -4,7 +4,6 @@ import 'dart:async';
 import 'package:backend/services/superadmin%20services/superadmin_service.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
-import 'package:backend/services/superadmin services/perflogs_service.dart';
 
 class BuildSystemMonitor {
   static Widget buildSystemOverviewCard(BuildContext context, Map<String, dynamic> healthData, VoidCallback? onRefresh) {
@@ -272,9 +271,6 @@ class BuildSystemMonitor {
   }
 
 
-  static Widget buildPerfLogsTable() {
-    return const PerfLogsTable();
-  }
 
   static Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
@@ -302,7 +298,6 @@ class SystemMonitorTable extends StatefulWidget {
 class SystemMonitorTableState extends State<SystemMonitorTable> {
   final SuperAdminErrorService _errorService = SuperAdminErrorService();
   Map<String, dynamic> _systemHealth = {};
-  Map<String, dynamic> _performanceMetrics = {};
   List<Map<String, dynamic>> _systemAlerts = [];
   bool _isLoading = true;
   String? _error;
@@ -340,14 +335,12 @@ class SystemMonitorTableState extends State<SystemMonitorTable> {
 
       final results = await Future.wait([
        SuperAdminServiceBackend.getSystemHealthStatus(),
-        SuperAdminServiceBackend.getBackendPerformanceMetrics(),
         SuperAdminServiceBackend.getSystemAlerts(),
       ]);
 
       if (mounted) {
         setState(() {
           _systemHealth = results[0] as Map<String, dynamic>;
-          _performanceMetrics = results[1] as Map<String, dynamic>;
           _systemAlerts = results[2] as List<Map<String, dynamic>>;
           _isLoading = false;
         });
@@ -390,25 +383,6 @@ class SystemMonitorTableState extends State<SystemMonitorTable> {
         },
       );
       rethrow;
-    }
-  }
-
-  Future<void> _refreshPerformanceMetrics() async {
-    try {
-      final metrics = await SuperAdminServiceBackend.getBackendPerformanceMetrics();
-      setState(() {
-        _performanceMetrics = metrics;
-      });
-    } catch (e) {
-      await _errorService.logError(
-        errorMessage: 'Failed to refresh performance metrics: ',
-        module: 'Super Admin System Monitor',
-        severity: 'Medium',
-        extraInfo: {
-          'operation': 'Refresh Performance Metrics',
-          'timestamp': DateTime.now().toIso8601String(),
-        },
-      );
     }
   }
 
@@ -480,8 +454,6 @@ class SystemMonitorTableState extends State<SystemMonitorTable> {
         children: [
           BuildSystemMonitor.buildSystemOverviewCard(context, _systemHealth, _refreshSystemHealth),
           const SizedBox(height: 16),
-          BuildSystemMonitor.buildPerformanceMetricsCard(context, _performanceMetrics, _refreshPerformanceMetrics),
-          const SizedBox(height: 16),
           BuildSystemMonitor.buildSystemAlertsCard(_systemAlerts, _refreshSystemAlerts),
         ],
       ),
@@ -489,217 +461,4 @@ class SystemMonitorTableState extends State<SystemMonitorTable> {
   }
 }
 
-class PerfLogsTable extends StatefulWidget {
-  const PerfLogsTable({super.key});
-
-  @override
-  PerfLogsTableState createState() => PerfLogsTableState();
-}
-
-class PerfLogsTableState extends State<PerfLogsTable> {
-  final SuperAdminPerfLogsService _perfLogsService = SuperAdminPerfLogsService();
-  List<Map<String, dynamic>> _perfLogs = [];
-  bool _isLoading = true;
-  String? _error;
-  Timer? _pollingTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadPerfLogs();
-    _startPolling();
-  }
-
-  @override
-  void dispose() {
-    _pollingTimer?.cancel();
-    super.dispose();
-  }
-
-  void _startPolling() {
-    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      if (mounted) {
-        _loadPerfLogs(silent: true);
-      }
-    });
-  }
-
-  Future<void> _loadPerfLogs({bool silent = false}) async {
-    try {
-      if (!silent) {
-        setState(() {
-          _isLoading = true;
-          _error = null;
-        });
-      }
-
-      final logs = await _perfLogsService.getAllPerfLogs();
-      
-      if (mounted) {
-        setState(() {
-          _perfLogs = logs;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.toString();
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Colors.amber));
-    }
-
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.red),
-            const SizedBox(height: 16),
-            Text('Error: $_error'),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadPerfLogs,
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Card(
-            elevation: 4,
-            color: Colors.white,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.analytics_outlined, color: Colors.grey),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Performance Logs (${_perfLogs.length})',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        onPressed: _loadPerfLogs,
-                        icon: const Icon(Icons.refresh_outlined, color: Colors.grey),
-                        tooltip: 'Refresh Logs',
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  if (_perfLogs.isEmpty)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32),
-                        child: Text(
-                          'No performance logs found',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ),
-                    )
-                  else
-                    DataTable(
-                      columns: const [
-                        DataColumn(
-                          label: Text(
-                            'Metric',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                        DataColumn(
-                          label: Text(
-                            'Value',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                        DataColumn(
-                          label: Text(
-                            'Unit',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                        DataColumn(
-                          label: Text(
-                            'Source',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                        DataColumn(
-                          label: Text(
-                            'Recorded At',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                      ],
-                      rows: _perfLogs.map((log) {
-                        return DataRow(cells: [
-                          DataCell(Text(
-                            log['metric_name'] ?? '',
-                            style: const TextStyle(color: Colors.black),
-                          )),
-                          DataCell(Text(
-                            log['metric_value']?.toString() ?? '',
-                            style: const TextStyle(color: Colors.black),
-                          )),
-                          DataCell(Text(
-                            log['unit'] ?? '',
-                            style: const TextStyle(color: Colors.black),
-                          )),
-                          DataCell(Text(
-                            log['source'] ?? '',
-                            style: const TextStyle(color: Colors.black),
-                          )),
-                          DataCell(Text(
-                            log['recorded_at'] != null
-                                ? DateTime.parse(log['recorded_at']).toLocal().toString()
-                                : '',
-                            style: const TextStyle(color: Colors.black),
-                          )),
-                        ]);
-                      }).toList(),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// PerfLogs UI removed

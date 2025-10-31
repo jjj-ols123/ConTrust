@@ -1,4 +1,6 @@
 // ignore_for_file: file_names, use_build_context_synchronously, deprecated_member_use, library_private_types_in_public_api
+import 'dart:io';
+
 import 'package:backend/utils/be_validation.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/Screen/cor_registration.dart';
@@ -17,6 +19,56 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isAgreed = false;
   bool _isLoggingIn = false; 
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleLogin() async {
+    if (!_isAgreed) {
+      ConTrustSnackBar.error(
+        context,
+        'You must agree to the Privacy Policy and Terms of Service.',
+      );
+      return;
+    }
+    
+    setState(() => _isLoggingIn = true);
+    try {
+      final signInContractor = SignInContractor();
+      await signInContractor.signInContractor(
+        context,
+        _emailController.text,
+        _passwordController.text,
+        () => validateFieldsLogin(
+          context,
+          _emailController.text,
+          _passwordController.text,
+        ),
+      );
+
+    } on SocketException {
+      ConTrustSnackBar.error(
+        context,
+        'No internet connection. Please check your network settings.',
+      );
+    } catch (e) {
+      if (mounted) {
+        ConTrustSnackBar.error(context, 'An unexpected error occurred');
+      }
+    } finally {
+      if (mounted) setState(() => _isLoggingIn = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
@@ -25,72 +77,41 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/bgloginscreen.jpg'),
-            fit: BoxFit.cover,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.amber.shade100,
+              Colors.white,
+              Colors.grey.shade100,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
-        child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 100),
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Container(
-                    width: isPhone ? screenWidth * 0.8 : 600,
-                    padding: const EdgeInsets.all(28),
-                    margin: const EdgeInsets.symmetric(horizontal: 20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
+        child: Padding(
+          padding: const EdgeInsets.only(top: 100),
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Container(
+                width: isPhone ? screenWidth * 0.8 : 600,
+                padding: const EdgeInsets.all(28),
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
                     ),
-                    child: _buildLoginForm(context),
-                  ),
+                  ],
                 ),
+                child: _buildLoginForm(context),
               ),
             ),
-            Positioned(
-              top: 50,
-              left: 30,
-              child: InkWell(
-                onTap: () {
-                  if (Navigator.canPop(context)) {
-                    Navigator.pop(context);
-                  } else {
-                    Navigator.pushReplacementNamed(context, '/login');
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.arrow_back,
-                    color: Colors.grey,
-                    size: 24,
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -102,7 +123,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
       children: [
         Column(
           children: [
-            Image.asset('assets/images/logo3.png', width: 80, height: 80),
+            Icon(Icons.business, size: 80, color: Colors.amber.shade400),
             const SizedBox(height: 16),
             Text(
               'Welcome Back',
@@ -157,32 +178,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
         ),
         const SizedBox(height: 25),
         ElevatedButton(
-          onPressed: _isLoggingIn ? null : () async {
-            if (!_isAgreed) {
-              ConTrustSnackBar.error(
-                context,
-                'You must agree to the Privacy Policy and Terms of Service.',
-              );
-              return;
-            }
-            
-            setState(() => _isLoggingIn = true);
-            try {
-              final signInContractor = SignInContractor();
-              signInContractor.signInContractor(
-                context,
-                _emailController.text,
-                _passwordController.text,
-                () => validateFieldsLogin(
-                  context,
-                  _emailController.text,
-                  _passwordController.text,
-                ),
-              );
-            } finally {
-              if (mounted) setState(() => _isLoggingIn = false);
-            }
-          },
+          onPressed: _isLoggingIn ? null : _handleLogin,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.amber.shade700,
             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -238,7 +234,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.asset('assets/images/googleicon.png', height: 28),
+                Icon(Icons.g_mobiledata, size: 28, color: Colors.grey.shade700),
                 const SizedBox(width: 12),
                 const Text(
                   "Continue with Google",
@@ -250,7 +246,6 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
         ),
         const SizedBox(height: 25),
         Row(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Checkbox(
               value: _isAgreed,
@@ -324,6 +319,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
       ],
     );
   }
+
   void _showPolicyTabs(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final isSmallScreen = screenSize.width < 600;
@@ -408,7 +404,6 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
                 ),
                 const Divider(height: 1, thickness: 1),
                 SizedBox(height: isSmallScreen ? 16 : 20),
-                // Content
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
@@ -429,7 +424,6 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
                   ),
                 ),
                 SizedBox(height: isSmallScreen ? 16 : 20),
-                // Footer Button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -460,7 +454,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
           ),
         ),
       ),
-    );
+      );
   }
 
   Widget _buildPolicyContent(bool isSmallScreen) {

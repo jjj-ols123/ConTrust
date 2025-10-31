@@ -183,7 +183,7 @@ class _HomePageState extends State<HomePage> {
       currentPage: ContracteePage.home,
       contracteeId: contracteeId,
       child: SingleChildScrollView(
-        child: Padding(
+      child: Padding(
           padding: EdgeInsets.symmetric(
             horizontal: isMobile ? 12 : 15, 
             vertical: isMobile ? 8 : 5,

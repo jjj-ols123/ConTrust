@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/utils/be_validation.dart';
 import 'package:backend/services/contractee services/cee_signup.dart';
 import 'package:flutter/material.dart';
@@ -22,8 +23,10 @@ class _RegistrationPageState extends State<RegistrationPage> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  bool _isPasswordVisible = false;
-  bool _isConfirmPasswordVisible = false;
+  final String _profilePhoto = '';
+
+  String get _fullName => '${_fNameController.text.trim()} ${_lNameController.text.trim()}';
+
   bool _isSigningUp = false;
 
   @override
@@ -42,6 +45,74 @@ class _RegistrationPageState extends State<RegistrationPage> {
       digitsOnly = digitsOnly.substring(1);
     }
     return '+63$digitsOnly';
+  }
+
+  bool isValidEmail(String email) {
+    return RegExp(r'^[^@]+@gmail\.com$').hasMatch(email);
+  }
+
+  Future<void> _handleSignUp() async {
+    bool hasUppercase = _passwordController.text.contains(RegExp(r'[A-Z]'));
+    bool hasLowercase = _passwordController.text.contains(RegExp(r'[a-z]'));
+    bool hasNumber = _passwordController.text.contains(RegExp(r'[0-9]'));
+    bool hasSpecialChar = _passwordController.text.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+
+    if (!isValidEmail(_emailController.text)) {
+      ConTrustSnackBar.error(context, 'Please enter a valid Gmail address (e.g., example@gmail.com).');
+      return;
+    }
+    if (_passwordController.text.length < 6) {
+      ConTrustSnackBar.error(context, 'Password must be at least 6 characters long.');
+      return;
+    }
+    if (_passwordController.text.length > 20) {
+      ConTrustSnackBar.error(context, 'Password must be no more than 15 characters long.');
+      return;
+    }
+    if (!hasUppercase || !hasLowercase || !hasNumber || !hasSpecialChar) {
+      ConTrustSnackBar.error(context, 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.');
+      return;
+    }
+    if (_passwordController.text != _confirmPasswordController.text) {
+      ConTrustSnackBar.error(context, 'Passwords do not match.');
+      return;
+    }
+
+    setState(() => _isSigningUp = true);
+    try {
+      final signUpContractee = SignUpContractee();
+      final success = await signUpContractee.signUpContractee(
+        context,
+        _emailController.text,
+        _passwordController.text,
+        "contractee",
+        {
+          'user_type': "contractee",
+          'full_name': _fullName,
+          'phone_number': _formatPhone(_phoneController.text),
+          'address': _addressController.text,
+          'profilePhoto': _profilePhoto,
+        },
+        () => validateFieldsContractee(
+          context,
+          _fullName,
+          _phoneController.text,
+          _emailController.text,
+          _passwordController.text,
+          _confirmPasswordController.text,
+        ),
+      );
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ConTrustSnackBar.success(
+          context,
+          'Account created! Please wait for verification.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSigningUp = false);
+    }
   }
 
   @override
@@ -151,7 +222,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
   }
 
   Widget _buildRegistrationForm(BuildContext context) {
-    InputDecoration _inputStyle(String label, IconData icon, {Widget? suffix}) {
+    InputDecoration inputStyle(String label, IconData icon, {Widget? suffix}) {
       return InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
@@ -161,6 +232,14 @@ class _RegistrationPageState extends State<RegistrationPage> {
         fillColor: Colors.grey.shade100,
       );
     }
+
+    // Password validation checks
+    bool hasMinLength = _passwordController.text.length >= 6;
+    bool hasMaxLength = _passwordController.text.length <= 20;
+    bool hasUppercase = _passwordController.text.contains(RegExp(r'[A-Z]'));
+    bool hasLowercase = _passwordController.text.contains(RegExp(r'[a-z]'));
+    bool hasNumber = _passwordController.text.contains(RegExp(r'[0-9]'));
+    bool hasSpecialChar = _passwordController.text.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -185,23 +264,23 @@ class _RegistrationPageState extends State<RegistrationPage> {
         const SizedBox(height: 30),
         TextField(
           controller: _fNameController,
-          decoration: _inputStyle('First Name', Icons.person),
+          decoration: inputStyle('First Name', Icons.person),
         ),
         const SizedBox(height: 15),
         TextField(
           controller: _lNameController,
-          decoration: _inputStyle('Last Name', Icons.person_outline),
+          decoration: inputStyle('Last Name', Icons.person_outline),
         ),
         const SizedBox(height: 15),
         TextField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
-          decoration: _inputStyle('Email', Icons.email_outlined),
+          decoration: inputStyle('Email', Icons.email_outlined),
         ),
         const SizedBox(height: 15),
         TextField(
           controller: _addressController,
-          decoration: _inputStyle('Address', Icons.home_outlined),
+          decoration: inputStyle('Address', Icons.home_outlined),
         ),
         const SizedBox(height: 15),
         TextField(
@@ -218,81 +297,96 @@ class _RegistrationPageState extends State<RegistrationPage> {
               );
             }
           },
-          decoration: _inputStyle('Phone Number', Icons.phone_android_outlined).copyWith(
+          decoration: inputStyle('Phone Number', Icons.phone_android_outlined).copyWith(
             helperText: 'Enter mobile number',
           ),
         ),
         const SizedBox(height: 15),
-        TextField(
+        TextFormField(
           controller: _passwordController,
-          obscureText: !_isPasswordVisible,
-          decoration: _inputStyle(
-            'Password',
-            Icons.lock_outline,
-            suffix: IconButton(
-              icon: Icon(
-                _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                color: Colors.amber,
-              ),
-              onPressed: () {
-                setState(() => _isPasswordVisible = !_isPasswordVisible);
-              },
+          obscureText: true,
+          maxLength: 15,
+          decoration: InputDecoration(
+            labelText: 'Password',
+            prefixIcon: const Icon(Icons.lock_outline),
+            filled: true,
+            fillColor: Colors.grey.shade100,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
             ),
           ),
         ),
-        const SizedBox(height: 15),
-        TextField(
-          controller: _confirmPasswordController,
-          obscureText: !_isConfirmPasswordVisible,
-          decoration: _inputStyle(
-            'Confirm Password',
-            Icons.lock_reset,
-            suffix: IconButton(
-              icon: Icon(
-                _isConfirmPasswordVisible
-                    ? Icons.visibility
-                    : Icons.visibility_off,
-                color: Colors.amber,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Password must contain:',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '• At least 6 characters',
+              style: TextStyle(
+                fontSize: 12,
+                color: hasMinLength ? Colors.green : Colors.red,
               ),
-              onPressed: () {
-                setState(() => _isConfirmPasswordVisible =
-                    !_isConfirmPasswordVisible);
-              },
+            ),
+            Text(
+              '• No more than 20 characters',
+              style: TextStyle(
+                fontSize: 12,
+                color: hasMaxLength ? Colors.green : Colors.red,
+              ),
+            ),
+            Text(
+              '• One uppercase letter',
+              style: TextStyle(
+                fontSize: 12,
+                color: hasUppercase ? Colors.green : Colors.red,
+              ),
+            ),
+            Text(
+              '• One lowercase letter',
+              style: TextStyle(
+                fontSize: 12,
+                color: hasLowercase ? Colors.green : Colors.red,
+              ),
+            ),
+            Text(
+              '• One number',
+              style: TextStyle(
+                fontSize: 12,
+                color: hasNumber ? Colors.green : Colors.red,
+              ),
+            ),
+            Text(
+              '• One special character',
+              style: TextStyle(
+                fontSize: 12,
+                color: hasSpecialChar ? Colors.green : Colors.red,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        TextFormField(
+          controller: _confirmPasswordController,
+          obscureText: true,
+          decoration: InputDecoration(
+            labelText: 'Confirm Password',
+            prefixIcon: const Icon(Icons.lock_outline),
+            filled: true,
+            fillColor: Colors.grey.shade100,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
             ),
           ),
         ),
         const SizedBox(height: 25),
         ElevatedButton(
-          onPressed: () async {
-            if (_isSigningUp) return; 
-            setState(() => _isSigningUp = true); 
-            try {
-              final signUpContractee = SignUpContractee();
-              signUpContractee.signUpContractee(
-                context,
-                _emailController.text,
-                _confirmPasswordController.text,
-                'contractee',
-                {
-                  'user_type': 'contractee',
-                  'address': _addressController.text,
-                  'phone_number': _formatPhone(_phoneController.text),
-                  'full_name':
-                      '${_fNameController.text} ${_lNameController.text}',
-                },
-                () => validateFieldsContractee(
-                  context,
-                  _fNameController.text,
-                  _lNameController.text,
-                  _emailController.text,
-                  _passwordController.text,
-                  _confirmPasswordController.text,
-                ),
-              );
-            } finally {
-              if (mounted) setState(() => _isSigningUp = false); 
-            }
-          },
+          onPressed: _isSigningUp ? null : _handleSignUp,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.amber,
             padding: const EdgeInsets.symmetric(vertical: 16),

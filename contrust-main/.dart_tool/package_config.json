@@ -344,6 +344,12 @@
       "languageVersion": "3.0"
     },
     {
+      "name": "go_router",
+      "rootUri": "file:///C:/Users/Pau/AppData/Local/Pub/Cache/hosted/pub.dev/go_router-14.8.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
       "name": "gotrue",
       "rootUri": "file:///C:/Users/Pau/AppData/Local/Pub/Cache/hosted/pub.dev/gotrue-2.16.0",
       "packageUri": "lib/",
@@ -1046,7 +1052,7 @@
       "languageVersion": "3.7"
     }
   ],
-  "generated": "2025-10-30T01:22:16.139234Z",
+  "generated": "2025-10-31T06:22:29.283752Z",
   "generator": "pub",
   "generatorVersion": "3.7.2",
   "flutterRoot": "file:///C:/flutter",
