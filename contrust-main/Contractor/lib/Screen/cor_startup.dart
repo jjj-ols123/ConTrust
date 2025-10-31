@@ -117,135 +117,138 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
     );
   }
 
-  Widget _buildLoginForm(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Column(
-          children: [
-            Icon(Icons.business, size: 80, color: Colors.amber.shade400),
-            const SizedBox(height: 16),
-            Text(
-              'Welcome Back',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey.shade800,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Be a part of our community and start your journey with us today!',
-              style: TextStyle(
-                color: Colors.amber.shade600,
-                fontSize: 12,
-                fontStyle: FontStyle.italic,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-        const SizedBox(height: 30),
-        TextFormField(
-          controller: _emailController,
-          keyboardType: TextInputType.emailAddress,
-          decoration: InputDecoration(
-            labelText: 'Email Address',
-            prefixIcon: const Icon(Icons.email_outlined),
-            filled: true,
-            fillColor: Colors.grey.shade100,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-          ),
-        ),
-        const SizedBox(height: 18),
-        TextFormField(
-          controller: _passwordController,
-          keyboardType: TextInputType.visiblePassword,
-          obscureText: true,
-          decoration: InputDecoration(
-            labelText: 'Password',
-            prefixIcon: const Icon(Icons.lock_outline),
-            filled: true,
-            fillColor: Colors.grey.shade100,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-          ),
-        ),
-        const SizedBox(height: 25),
-        ElevatedButton(
-          onPressed: _isLoggingIn ? null : _handleLogin,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.amber.shade700,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            elevation: 4,
-          ),
-          child: _isLoggingIn
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : const Text(
-                  'Login',
+Widget _buildLoginForm(BuildContext context) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.center,
+    children: [
+      Column(
+        children: [
+          Icon(Icons.business, size: 80, color: Colors.amber.shade400),
+          const SizedBox(height: 16),
+          Text(
+            'Welcome Back',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Colors.grey.shade800,
             ),
           ),
-        ),
-        const SizedBox(height: 20),
-        Row(
-          children: [
-            Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 10),
-              child: Text(
-                'Or Continue With',
-                style: TextStyle(color: Colors.grey, fontSize: 14),
-              ),
+          const SizedBox(height: 6),
+          Text(
+            'Be a part of our community and start your journey with us today!',
+            style: TextStyle(
+              color: Colors.amber.shade600,
+              fontSize: 12,
+              fontStyle: FontStyle.italic,
             ),
-            Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
-          ],
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+      const SizedBox(height: 30),
+      TextFormField(
+        controller: _emailController,
+        keyboardType: TextInputType.emailAddress,
+        decoration: InputDecoration(
+          labelText: 'Email Address',
+          prefixIcon: const Icon(Icons.email_outlined),
+          filled: true,
+          fillColor: Colors.grey.shade100,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
         ),
-        const SizedBox(height: 20),
-        InkWell(
-          onTap: () {
-            SignInGoogleContractor().signInGoogle(context);
-          },
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.g_mobiledata, size: 28, color: Colors.grey.shade700),
-                const SizedBox(width: 12),
-                const Text(
-                  "Continue with Google",
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+      ),
+      const SizedBox(height: 18),
+      TextFormField(
+        controller: _passwordController,
+        keyboardType: TextInputType.visiblePassword,
+        obscureText: true,
+        decoration: InputDecoration(
+          labelText: 'Password',
+          prefixIcon: const Icon(Icons.lock_outline),
+          filled: true,
+          fillColor: Colors.grey.shade100,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+        ),
+      ),
+      const SizedBox(height: 25),
+      ElevatedButton(
+        onPressed: _isLoggingIn ? null : _handleLogin,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.amber.shade700,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 4,
+        ),
+        child: _isLoggingIn
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
-              ],
+              )
+            : const Text(
+                'Login',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+      ),
+      const SizedBox(height: 20),
+      Row(
+        children: [
+          Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 10),
+            child: Text(
+              'Or Continue With',
+              style: TextStyle(color: Colors.grey, fontSize: 14),
             ),
           ),
+          Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
+        ],
+      ),
+      const SizedBox(height: 20),
+      InkWell(
+        onTap: () {
+          SignInGoogleContractor().signInGoogle(context);
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.g_mobiledata, size: 28, color: Colors.grey.shade700),
+              const SizedBox(width: 12),
+              const Text(
+                "Continue with Google",
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 25),
-        Row(
+      ),
+      const SizedBox(height: 25),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20), 
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Checkbox(
               value: _isAgreed,
@@ -256,69 +259,75 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
               },
             ),
             Flexible(
-              child: Wrap(
-                alignment: WrapAlignment.center,
-                children: [
-                  const Text(
-                    "I agree to the ",
-                    style: TextStyle(fontSize: 13, color: Colors.grey),
-                  ),
-                  InkWell(
-                    onTap: () => _showPolicyTabs(context),
-                    child: Text(
-                      "Privacy Policy and Terms of Service",
-                      style: TextStyle(
-                        color: Colors.amber.shade700,
-                        fontWeight: FontWeight.bold,
-                        decoration: TextDecoration.underline,
+              child: Align(
+                alignment: Alignment.center,
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    const Text(
+                      "I agree to the ",
+                      style: TextStyle(fontSize: 13, color: Colors.grey),
+                    ),
+                    InkWell(
+                      onTap: () => _showPolicyTabs(context),
+                      child: Text(
+                        "Privacy Policy and Terms of Service",
+                        style: TextStyle(
+                          color: Colors.amber,
+                          fontWeight: FontWeight.bold,
+                          decoration: TextDecoration.underline,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 20),
-        TextButton(
-          onPressed: () {},
-          child: Text(
-            'Forgot Password?',
-            style: TextStyle(
-              color: Colors.amber.shade700,
-              fontWeight: FontWeight.w500,
-            ),
+      ),
+      const SizedBox(height: 20),
+      TextButton(
+        onPressed: () {},
+        child: Text(
+          'Forgot Password?',
+          style: TextStyle(
+            color: Colors.amber.shade700,
+            fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 10),
-        InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const RegisterScreen()),
-            );
-          },
-          child: Text.rich(
-            TextSpan(
-              text: "Don't have an account? ",
-              style: const TextStyle(color: Colors.grey, fontSize: 14),
-              children: [
-                TextSpan(
-                  text: "Sign up",
-                  style: TextStyle(
-                    color: Colors.amber.shade700,
-                    fontWeight: FontWeight.bold,
-                    decoration: TextDecoration.underline,
-                  ),
+      ),
+      const SizedBox(height: 10),
+      InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const RegisterScreen()),
+          );
+        },
+        child: Text.rich(
+          TextSpan(
+            text: "Don't have an account? ",
+            style: const TextStyle(color: Colors.grey, fontSize: 14),
+            children: [
+              TextSpan(
+                text: "Sign up",
+                style: TextStyle(
+                  color: Colors.amber.shade700,
+                  fontWeight: FontWeight.bold,
+                  decoration: TextDecoration.underline,
                 ),
-              ],
-            ),
-            textAlign: TextAlign.center,
+              ),
+            ],
           ),
+          textAlign: TextAlign.center,
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
+
 
   void _showPolicyTabs(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
