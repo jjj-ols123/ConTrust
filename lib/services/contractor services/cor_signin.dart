@@ -1,4 +1,6 @@
-// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages
+
+import 'package:web/web.dart' as web;
 
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
@@ -6,20 +8,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
+
 import 'package:backend/services/superadmin services/auditlogs_service.dart';
 
 class SignInContractor {
   final SuperAdminErrorService _errorService = SuperAdminErrorService();
   final SuperAdminAuditService _auditService = SuperAdminAuditService();
 
-  void signInContractor(
+  Future<bool> signInContractor(
     BuildContext context,
     String email,
     String password,
     bool Function() validateFields,
   ) async {
     if (!validateFields()) {
-      return;
+      return false;
     }
 
     dynamic signInResponse;
@@ -39,8 +42,10 @@ class SignInContractor {
             'failure_reason': 'no_user_id',
           },
         );
-        ConTrustSnackBar.error(context, 'Authentication failed');
-        return;
+        if (context.mounted) {
+          ConTrustSnackBar.error(context, 'Authentication failed');
+        }
+        return false;
       }
 
       final user = signInResponse.user!;
@@ -58,8 +63,10 @@ class SignInContractor {
             'failure_reason': 'wrong_user_type',
           },
         );
-        ConTrustSnackBar.error(context, 'Not a contractor account');
-        return;
+        if (context.mounted) {
+          ConTrustSnackBar.error(context, 'Not a contractor account');
+        }
+        return false;
       }
 
       final supabase = Supabase.instance.client;
@@ -87,12 +94,14 @@ class SignInContractor {
             'failure_reason': 'account_not_verified',
           },
         );
-        ConTrustSnackBar.show(
-          context,
-          'Please wait for your account to be verified to login',
-          type: SnackBarType.info,
-        );
-        return;
+        if (context.mounted) {
+          ConTrustSnackBar.show(
+            context,
+            'Please wait for your account to be verified to login',
+            type: SnackBarType.info,
+          );
+        }
+        return false;
       }
 
       try {
@@ -124,15 +133,8 @@ class SignInContractor {
         },
       );
 
-      if (context.mounted) {
-        ConTrustSnackBar.success(context, 'Successfully logged in');
-        Navigator.pushNamedAndRemoveUntil(
-          context, 
-          '/dashboard', 
-          (route) => false,
-        );
-      }
-          
+      return true;
+            
     } catch (e) {
       await _auditService.logAuditEvent(
         userId: signInResponse != null && signInResponse.user != null ? signInResponse.user!.id : null,
@@ -165,6 +167,8 @@ class SignInContractor {
           ConTrustSnackBar.error(context, 'Error logging in: ${e.toString()}');
         }
       }
+      
+      return false;
     }
   }
 }
@@ -176,24 +180,17 @@ class SignInGoogleContractor {
   void signInGoogle(BuildContext context) async {
     try {
       final supabase = Supabase.instance.client;
+      final encodedNext = Uri.encodeComponent('/dashboard');
+      final redirect = kIsWeb
+          ? '${web.window.location.origin}/auth/callback?next=$encodedNext'
+          : 'io.supabase.contrust://login-callback/dashboard';
+
       await supabase.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: kIsWeb ? null : 'io.supabase.contrust://login-callback/',
+        redirectTo: redirect,
       );
-      
-      // OAuth callback will be handled by AuthRedirectPage
-      // No need for onAuthStateChange listener here
     } catch (e) {
-      await _errorService.logError(
-        errorMessage: 'Google sign-in failed for contractor: $e',
-        module: 'Contractor Google Sign-in',
-        severity: 'High',
-        extraInfo: {
-          'operation': 'Google Sign In Contractor',
-          'timestamp': DateTime.now().toIso8601String(),
-        },
-      );
-      ConTrustSnackBar.error(context, 'Google sign-in failed: $e');
+      rethrow;
     }
   }
 
@@ -273,11 +270,6 @@ class SignInGoogleContractor {
             'login_method': 'google_oauth',
           },
         );
-
-        if (context.mounted) {
-          Navigator.pushNamedAndRemoveUntil(
-              context, '/dashboard', (route) => false);
-        }
       }
     } catch (e) {
       await _errorService.logError(
@@ -360,9 +352,6 @@ class SignInGoogleContractor {
 
       ConTrustSnackBar.success(
           context, 'Welcome! Your contractor account has been created.');
-
-      Navigator.pushNamedAndRemoveUntil(
-          context, '/dashboard', (route) => false);
 
     } catch (e) {
       await _auditService.logAuditEvent(
