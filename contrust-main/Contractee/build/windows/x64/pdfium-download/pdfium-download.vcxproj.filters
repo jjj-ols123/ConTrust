@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\Pau\Downloads\ConTrust-1\contrust-main\Contractee\build\windows\x64\pdfium-download\CMakeFiles\c4b21cf44d940230fc56ade80681fd28\pdfium-download-mkdir.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Pau\Downloads\ConTrust-1\contrust-main\Contractee\build\windows\x64\pdfium-download\CMakeFiles\c4b21cf44d940230fc56ade80681fd28\pdfium-download-download.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Pau\Downloads\ConTrust-1\contrust-main\Contractee\build\windows\x64\pdfium-download\CMakeFiles\c4b21cf44d940230fc56ade80681fd28\pdfium-download-update.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Pau\Downloads\ConTrust-1\contrust-main\Contractee\build\windows\x64\pdfium-download\CMakeFiles\c4b21cf44d940230fc56ade80681fd28\pdfium-download-patch.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Pau\Downloads\ConTrust-1\contrust-main\Contractee\build\windows\x64\pdfium-download\CMakeFiles\c4b21cf44d940230fc56ade80681fd28\pdfium-download-configure.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Pau\Downloads\ConTrust-1\contrust-main\Contractee\build\windows\x64\pdfium-download\CMakeFiles\c4b21cf44d940230fc56ade80681fd28\pdfium-download-build.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Pau\Downloads\ConTrust-1\contrust-main\Contractee\build\windows\x64\pdfium-download\CMakeFiles\c4b21cf44d940230fc56ade80681fd28\pdfium-download-install.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Pau\Downloads\ConTrust-1\contrust-main\Contractee\build\windows\x64\pdfium-download\CMakeFiles\c4b21cf44d940230fc56ade80681fd28\pdfium-download-test.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Pau\Downloads\ConTrust-1\contrust-main\Contractee\build\windows\x64\pdfium-download\CMakeFiles\57f095cb1273233b7242d77460a6d4fb\pdfium-download-complete.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Pau\Downloads\ConTrust-1\contrust-main\Contractee\build\windows\x64\pdfium-download\CMakeFiles\7eb242cc2a75f3682cea7ee1da3b725f\pdfium-download.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Pau\Downloads\ConTrust-1\contrust-main\Contractee\build\windows\x64\pdfium-download\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\Users\Pau\Downloads\ConTrust-1\contrust-main\Contractee\build\windows\x64\pdfium-download\CMakeFiles\pdfium-download" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{8DCDFDE3-1FDA-35AE-918D-794726D26C5A}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

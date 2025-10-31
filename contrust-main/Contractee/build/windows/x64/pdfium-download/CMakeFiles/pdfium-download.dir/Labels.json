@@ -1,0 +1,46 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "C:/Users/Pau/Downloads/ConTrust-1/contrust-main/Contractee/build/windows/x64/pdfium-download/CMakeFiles/pdfium-download"
+		},
+		{
+			"file" : "C:/Users/Pau/Downloads/ConTrust-1/contrust-main/Contractee/build/windows/x64/pdfium-download/CMakeFiles/7eb242cc2a75f3682cea7ee1da3b725f/pdfium-download.rule"
+		},
+		{
+			"file" : "C:/Users/Pau/Downloads/ConTrust-1/contrust-main/Contractee/build/windows/x64/pdfium-download/CMakeFiles/57f095cb1273233b7242d77460a6d4fb/pdfium-download-complete.rule"
+		},
+		{
+			"file" : "C:/Users/Pau/Downloads/ConTrust-1/contrust-main/Contractee/build/windows/x64/pdfium-download/CMakeFiles/c4b21cf44d940230fc56ade80681fd28/pdfium-download-build.rule"
+		},
+		{
+			"file" : "C:/Users/Pau/Downloads/ConTrust-1/contrust-main/Contractee/build/windows/x64/pdfium-download/CMakeFiles/c4b21cf44d940230fc56ade80681fd28/pdfium-download-configure.rule"
+		},
+		{
+			"file" : "C:/Users/Pau/Downloads/ConTrust-1/contrust-main/Contractee/build/windows/x64/pdfium-download/CMakeFiles/c4b21cf44d940230fc56ade80681fd28/pdfium-download-download.rule"
+		},
+		{
+			"file" : "C:/Users/Pau/Downloads/ConTrust-1/contrust-main/Contractee/build/windows/x64/pdfium-download/CMakeFiles/c4b21cf44d940230fc56ade80681fd28/pdfium-download-install.rule"
+		},
+		{
+			"file" : "C:/Users/Pau/Downloads/ConTrust-1/contrust-main/Contractee/build/windows/x64/pdfium-download/CMakeFiles/c4b21cf44d940230fc56ade80681fd28/pdfium-download-mkdir.rule"
+		},
+		{
+			"file" : "C:/Users/Pau/Downloads/ConTrust-1/contrust-main/Contractee/build/windows/x64/pdfium-download/CMakeFiles/c4b21cf44d940230fc56ade80681fd28/pdfium-download-patch.rule"
+		},
+		{
+			"file" : "C:/Users/Pau/Downloads/ConTrust-1/contrust-main/Contractee/build/windows/x64/pdfium-download/CMakeFiles/c4b21cf44d940230fc56ade80681fd28/pdfium-download-test.rule"
+		},
+		{
+			"file" : "C:/Users/Pau/Downloads/ConTrust-1/contrust-main/Contractee/build/windows/x64/pdfium-download/CMakeFiles/c4b21cf44d940230fc56ade80681fd28/pdfium-download-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"pdfium-download"
+		],
+		"name" : "pdfium-download"
+	}
+}

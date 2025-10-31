@@ -1,0 +1,10 @@
+^C:\USERS\PAU\DOWNLOADS\CONTRUST-1\CONTRUST-MAIN\CONTRACTEE\BUILD\WINDOWS\X64\CMAKEFILES\A66FA557B3AA1B516CD204A1F90749C8\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -SC:/Users/Pau/Downloads/ConTrust-1/contrust-main/Contractee/windows -BC:/Users/Pau/Downloads/ConTrust-1/contrust-main/Contractee/build/windows/x64 --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/Pau/Downloads/ConTrust-1/contrust-main/Contractee/build/windows/x64/main.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

@@ -1,0 +1,28 @@
+^C:\USERS\PAU\DOWNLOADS\CONTRUST-1\CONTRUST-MAIN\CONTRACTEE\BUILD\WINDOWS\X64\CMAKEFILES\0045D60BA357F25155F1D2925A9C9866\FLUTTER_WINDOWS.DLL.RULE
+setlocal
+"C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E env FLUTTER_ROOT=C:\flutter PROJECT_DIR=C:\Users\Pau\Downloads\ConTrust-1\contrust-main\Contractee FLUTTER_ROOT=C:\flutter FLUTTER_EPHEMERAL_DIR=C:\Users\Pau\Downloads\ConTrust-1\contrust-main\Contractee\windows\flutter\ephemeral PROJECT_DIR=C:\Users\Pau\Downloads\ConTrust-1\contrust-main\Contractee FLUTTER_TARGET=C:\Users\Pau\Downloads\ConTrust-1\contrust-main\Contractee\lib\main.dart DART_OBFUSCATION=false TRACK_WIDGET_CREATION=true TREE_SHAKE_ICONS=false PACKAGE_CONFIG=C:\Users\Pau\Downloads\ConTrust-1\contrust-main\.dart_tool\package_config.json C:/flutter/packages/flutter_tools/bin/tool_backend.bat windows-x64 Debug
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\PAU\DOWNLOADS\CONTRUST-1\CONTRUST-MAIN\CONTRACTEE\BUILD\WINDOWS\X64\CMAKEFILES\E90184FDA62DA897F8603A2A485A99EB\FLUTTER_ASSEMBLE.RULE
+setlocal
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\PAU\DOWNLOADS\CONTRUST-1\CONTRUST-MAIN\CONTRACTEE\WINDOWS\FLUTTER\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -SC:/Users/Pau/Downloads/ConTrust-1/contrust-main/Contractee/windows -BC:/Users/Pau/Downloads/ConTrust-1/contrust-main/Contractee/build/windows/x64 --check-stamp-file C:/Users/Pau/Downloads/ConTrust-1/contrust-main/Contractee/build/windows/x64/flutter/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
