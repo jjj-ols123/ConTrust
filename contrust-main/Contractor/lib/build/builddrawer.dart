@@ -6,12 +6,6 @@ import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/services/superadmin%20services/auditlogs_service.dart';
 import 'package:backend/services/superadmin%20services/errorlogs_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractor/Screen/cor_bidding.dart';
-import 'package:contractor/Screen/cor_chathistory.dart';
-import 'package:contractor/Screen/cor_contracttype.dart';
-import 'package:contractor/Screen/cor_ongoing.dart';
-import 'package:contractor/Screen/cor_profile.dart';
-import 'package:contractor/Screen/cor_startup.dart'; 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -96,9 +90,9 @@ class ContractorShell extends StatelessWidget {
                 color: Colors.amber[500],
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(2, 0),
+                    color: Colors.black.withOpacity(0.15), // Increased opacity for better visibility
+                    blurRadius: 12, // Slightly increased blur
+                    offset: const Offset(3, 0), // Slightly increased offset
                   ),
                 ],
               ),
@@ -154,9 +148,12 @@ class ContractorShell extends StatelessWidget {
             ),
 
           Expanded(
-            child: Padding(
-              padding: contentPadding ?? EdgeInsets.zero,
-              child: child,
+            child: Container(
+              color: const Color(0xFFF8F9FA), 
+              child: Padding(
+                padding: contentPadding ?? EdgeInsets.zero,
+                child: child,
+              ),
             ),
                 ),
               ],
@@ -358,10 +355,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
     try {
       await UserService().signOut();
       if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const ToLoginScreen()),
-        (route) => false,
-      );
+      context.go('/');
 
       await _auditService.logAuditEvent(
         userId: widget.contractorId,
@@ -898,16 +892,7 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
         projectId = activeProjects.first['project_id'];
       }
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ContractorShell(
-            currentPage: ContractorPage.projectManagement,
-            contractorId: widget.contractorId!,
-            child: CorOngoingProjectScreen(projectId: projectId ?? ''),
-          ),
-        ),
-      );
+      context.go('/project-management', extra: projectId);
     } catch (e) {
       setState(() => _loadingPM = false);
       return;
@@ -943,10 +928,7 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
     try {
       await UserService().signOut();
       if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const ToLoginScreen()),
-        (route) => false,
-      );
+      context.go('/');
 
       await _auditService.logAuditEvent(
         userId: widget.contractorId,
@@ -1035,18 +1017,7 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
                     fontSize: fontSize,
                     color: Colors.black,
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ContractorShell(
-                            currentPage: ContractorPage.messages,
-                            contractorId: widget.contractorId!,
-                            child: ContractorChatHistoryPage(
-                              contractorId: widget.contractorId,
-                            ),
-                          ),
-                        ),
-                      );
+                      context.go('/messages');
                     },
                   ),
                   DrawerIcon(
@@ -1056,16 +1027,7 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
                     fontSize: fontSize,
                     color: Colors.black,
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ContractorShell(
-                            currentPage: ContractorPage.contracts,
-                            contractorId: widget.contractorId!,
-                            child: ContractType(contractorId: widget.contractorId!),
-                          ),
-                        ),
-                      );
+                      context.go('/contracts');
                     },
                   ),
                   DrawerIcon(
@@ -1075,16 +1037,7 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
                     fontSize: fontSize,
                     color: Colors.black,
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ContractorShell(
-                            currentPage: ContractorPage.bidding,
-                            contractorId: widget.contractorId!,
-                            child: BiddingScreen(contractorId: widget.contractorId!),
-                          ),
-                        ),
-                      );
+                      context.go('/bidding');
                     },
                   ),
                   DrawerIcon(
@@ -1094,18 +1047,7 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
                     fontSize: fontSize,
                     color: Colors.black,
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ContractorShell(
-                            currentPage: ContractorPage.profile,
-                            contractorId: widget.contractorId!,
-                            child: ContractorUserProfileScreen(
-                              contractorId: widget.contractorId!,
-                            ),
-                          ),
-                        ),
-                      );
+                      context.go('/profile');
                     },
                   ),
                   DrawerIcon(

@@ -2,8 +2,8 @@
 import 'package:backend/services/contractor services/cor_dashboardservice.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/build/builddashboard.dart';
-import 'package:contractor/build/builddrawer.dart';
 import 'package:flutter/material.dart' hide BottomNavigationBar;
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -21,23 +21,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final session = Supabase.instance.client.auth.currentSession;
       if (session == null || session.user.id.isEmpty) {
-        Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+        context.go('/');
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    
-    return Scaffold(
-      body: ContractorShell(
-        currentPage: ContractorPage.dashboard,
-        contractorId: widget.contractorId,
-        child: widget.contractorId.isEmpty
-              ? const Center(child: CircularProgressIndicator(color: Colors.amber))  
-              : DashboardUI(contractorId: widget.contractorId),
-      ),
-    );
+    return widget.contractorId.isEmpty
+          ? const Center(child: CircularProgressIndicator(color: Colors.amber))
+          : DashboardUI(contractorId: widget.contractorId);
   }
 }
 
@@ -147,70 +140,33 @@ class _DashboardUIState extends State<DashboardUI>
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth > 1200;
 
-    return Column(
-      children: [
-        Container(
-          height: 60,
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 8,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.amber.shade50,
-            border: Border(
-              bottom: BorderSide(color: Colors.grey.shade200),
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.dashboard, color: Colors.amber, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Dashboard',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: fetchDashboardData,
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.all(24),
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: SlideTransition(
-                  position: _slideAnimation,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (!isDesktop) ...[
-                        buildWelcomeCard(),
-                        const SizedBox(height: 20),
-                      ],
-                      buildStatsGrid(),
-                      const SizedBox(height: 20),
-                      if (isDesktop)
-                        buildDesktopProjectsAndTasks()
-                      else
-                        buildMobileProjectsAndTasks(),
-                      const SizedBox(height: 40),
-                    ],
-                  ),
-                ),
-              ),
+    return RefreshIndicator(
+      onRefresh: fetchDashboardData,
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.all(24),
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (isDesktop)
+                  buildDesktopProjectsAndTasks()
+                else ...[
+                  buildWelcomeCard(),
+                  const SizedBox(height: 20),
+                  buildStatsGrid(),
+                  const SizedBox(height: 20),
+                  buildMobileProjectsAndTasks(),
+                ],
+                const SizedBox(height: 40),
+              ],
             ),
           ),
         ),
-      ],
+      ),
     );
   }
 

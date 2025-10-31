@@ -2,7 +2,6 @@
 
 import 'dart:typed_data';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractor/build/builddrawer.dart';
 import 'package:backend/build/buildviewcontract.dart';
 import 'package:backend/services/contractor services/contract/cor_viewcontractservice.dart';
 import 'package:backend/services/both services/be_contract_pdf_service.dart';
@@ -159,15 +158,12 @@ class _ContractorViewContractPageState extends State<ContractorViewContractPage>
 
   @override
   Widget build(BuildContext context) {
-    return ContractorShell(
-      currentPage: ContractorPage.contracts,
-      contractorId: widget.contractorId,
-      child: Column(
-        children: [
-          ViewContractBuild.buildHeader(
-            context, 
-            _getContractTitle(), 
-            onDownload: downloadContract,
+    return Column(
+      children: [
+        ViewContractBuild.buildHeader(
+          context, 
+          _getContractTitle(), 
+          onDownload: downloadContract,
             downloadButtonText: _getDownloadButtonText(),
           ),
           Expanded(
@@ -211,9 +207,8 @@ class _ContractorViewContractPageState extends State<ContractorViewContractPage>
                       ),
           ),
         ],
-      ),
-    );
-  }
+      );
+    }
 
   @override
   void dispose() {

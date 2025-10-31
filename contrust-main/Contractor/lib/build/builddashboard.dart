@@ -3,7 +3,6 @@
 import 'package:backend/services/contractor services/cor_dashboardservice.dart';
 import 'package:backend/utils/be_status.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractor/build/builddrawer.dart';
 import 'package:contractor/build/builddashboardtabs.dart';
 import 'package:contractor/Screen/cor_ongoing.dart';
 import 'package:flutter/material.dart';
@@ -56,57 +55,7 @@ class DashboardBuildMethods {
         const SizedBox(width: 20),
         SizedBox(
           width: screenWidth * 0.25,
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: buildStatCard(
-                      'Active Projects',
-                      activeProjects.toString(),
-                      Icons.work,
-                      Colors.black,
-                      'Currently working on',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: buildStatCard(
-                      'Completed',
-                      completedProjects.toString(),
-                      Icons.check_circle,
-                      Colors.black,
-                      'Successfully finished',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: buildStatCard(
-                      'Total Earnings',
-                      '₱${totalEarnings.toStringAsFixed(0)}',
-                      Icons.money,
-                      Colors.black,
-                      'From all projects',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: buildStatCard(
-                      'Number of Clients',
-                      totalClients.toString(),
-                      Icons.people,
-                      Colors.black,
-                      'Satisfied customers',
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+          child: buildDesktopStatsContainer(),
         ),
       ],
     );
@@ -304,6 +253,105 @@ class DashboardBuildMethods {
     return buildTabbedProjectView();
   }
 
+  Widget buildDesktopStatsContainer() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.grey.shade300,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Statistics Header
+          Row(
+            children: [
+              Icon(
+                Icons.bar_chart,
+                color: Colors.amber,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Statistics',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Stats Cards in Column layout for desktop
+          Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: buildStatCard(
+                      'Active Projects',
+                      activeProjects.toString(),
+                      Icons.work,
+                      Colors.black,
+                      'Currently working on',
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: buildStatCard(
+                      'Completed',
+                      completedProjects.toString(),
+                      Icons.check_circle,
+                      Colors.black,
+                      'Successfully finished',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: buildStatCard(
+                      'Total Earnings',
+                      '₱${totalEarnings.toStringAsFixed(0)}',
+                      Icons.money,
+                      Colors.black,
+                      'From all projects',
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: buildStatCard(
+                      'Number of Clients',
+                      totalClients.toString(),
+                      Icons.people,
+                      Colors.black,
+                      'Satisfied customers',
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget buildWelcomeCard() {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
@@ -431,43 +479,85 @@ class DashboardBuildMethods {
       spacing = 12;
     }
 
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: crossAxisCount,
-      crossAxisSpacing: spacing,
-      mainAxisSpacing: spacing,
-      childAspectRatio: childAspectRatio,
-      children: [
-        buildStatCard(
-          'Active Projects',
-          activeProjects.toString(),
-          Icons.work,
-          Colors.black,
-          'Currently working on',
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.grey.shade300,
+          width: 1,
         ),
-        buildStatCard(
-          'Completed',
-          completedProjects.toString(),
-          Icons.check_circle,
-          Colors.black,
-          'Successfully finished',
-        ),
-        buildStatCard(
-          'Total Earnings',
-          '₱${totalEarnings.toStringAsFixed(0)}',
-          Icons.money,
-          Colors.black,
-          'From all projects',
-        ),
-        buildStatCard(
-          'Number of Clients',
-          totalClients.toString(),
-          Icons.people,
-          Colors.black,
-          'Satisfied customers',
-        ),
-      ],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.bar_chart,
+                color: Colors.amber,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Statistics',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: spacing,
+            mainAxisSpacing: spacing,
+            childAspectRatio: childAspectRatio,
+            children: [
+              buildStatCard(
+                'Active Projects',
+                activeProjects.toString(),
+                Icons.work,
+                Colors.black,
+                'Currently working on',
+              ),
+              buildStatCard(
+                'Completed',
+                completedProjects.toString(),
+                Icons.check_circle,
+                Colors.black,
+                'Successfully finished',
+              ),
+              buildStatCard(
+                'Total Earnings',
+                '₱${totalEarnings.toStringAsFixed(0)}',
+                Icons.money,
+                Colors.black,
+                'From all projects',
+              ),
+              buildStatCard(
+                'Number of Clients',
+                totalClients.toString(),
+                Icons.people,
+                Colors.black,
+                'Satisfied customers',
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -487,6 +577,10 @@ class DashboardBuildMethods {
         color: Colors.white,
         borderRadius: BorderRadius.circular(
           isDesktop ? 20 : (isTablet ? 10 : 12),
+        ),
+        border: Border.all(
+          color: Colors.grey.shade300,
+          width: 1,
         ),
         boxShadow: [
           BoxShadow(
@@ -968,11 +1062,7 @@ class DashboardBuildMethods {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => ContractorShell(
-            currentPage: ContractorPage.projectManagement,
-            contractorId: project['contractor_id']?.toString() ?? '',
-            child: CorOngoingProjectScreen(projectId: projectId),
-          ),
+          builder: (context) => CorOngoingProjectScreen(projectId: projectId),
         ),
       );
     }

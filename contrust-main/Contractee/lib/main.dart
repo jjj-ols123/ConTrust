@@ -83,82 +83,154 @@ class _MyAppState extends State<MyApp> {
       routes: [
         GoRoute(
           path: '/welcome',
-          builder: (context, state) => const WelcomePage(),
+          pageBuilder: (context, state) => NoTransitionPage(
+            child: const WelcomePage(),
+          ),
         ),
         GoRoute(
           path: '/login',
-          builder: (context, state) => const LoginPage(),
-        ),
-        GoRoute(
-          path: '/home',
-          builder: (context, state) => const HomePage(),
+          pageBuilder: (context, state) => NoTransitionPage(
+            child: const LoginPage(),
+          ),
         ),
         GoRoute(
           path: '/auth/callback',
-          builder: (context, state) => const AuthRedirectPage(),
+          pageBuilder: (context, state) => NoTransitionPage(
+            child: const AuthRedirectPage(),
+          ),
         ),
-        GoRoute(
-          path: '/ongoing',
-          builder: (context, state) {
-            final session = Supabase.instance.client.auth.currentSession;
-            final projectId = state.extra as String?;
-            if (session != null && projectId != null) {
-              return ContracteeShell(
-                currentPage: ContracteePage.ongoing,
-                contracteeId: session.user.id,
-                child: CeeOngoingProjectScreen(projectId: projectId),
-              );
-            }
-            return const LoginPage();
+        ShellRoute(
+          pageBuilder: (context, state, child) {
+            return NoTransitionPage(
+              child: Builder(
+                builder: (context) {
+                  final session = Supabase.instance.client.auth.currentSession;
+                  if (session == null) {
+                    return const LoginPage();
+                  }
+
+                  final contracteeId = session.user.id;
+
+                  final location = state.matchedLocation;
+                  ContracteePage currentPage;
+                  switch (location) {
+                    case '/home':
+                      currentPage = ContracteePage.home;
+                      break;
+                    case '/ongoing':
+                      currentPage = ContracteePage.ongoing;
+                      break;
+                    case '/profile':
+                      currentPage = ContracteePage.profile;
+                      break;
+                    case '/messages':
+                      currentPage = ContracteePage.messages;
+                      break;
+                    case '/notifications':
+                      currentPage = ContracteePage.notifications;
+                      break;
+                    default:
+                      currentPage = ContracteePage.home;
+                  }
+
+                  return ContracteeShell(
+                    currentPage: currentPage,
+                    contracteeId: contracteeId,
+                    child: child,
+                  );
+                },
+              ),
+            );
           },
-        ),
-        GoRoute(
-          path: '/profile',
-          builder: (context, state) {
-            final session = Supabase.instance.client.auth.currentSession;
-            if (session != null) {
-              return ContracteeShell(
-                currentPage: ContracteePage.profile,
-                contracteeId: session.user.id,
-                child: CeeProfilePage(contracteeId: session.user.id),
-              );
-            }
-            return const LoginPage();
-          },
-        ),
-        GoRoute(
-          path: '/messages',
-          builder: (context, state) {
-            final session = Supabase.instance.client.auth.currentSession;
-            if (session != null) {
-              return ContracteeShell(
-                currentPage: ContracteePage.messages,
-                contracteeId: session.user.id,
-                child: const ContracteeChatHistoryPage(),
-              );
-            }
-            return const LoginPage();
-          },
-        ),
-        GoRoute(
-          path: '/notifications',
-          builder: (context, state) {
-            final session = Supabase.instance.client.auth.currentSession;
-            if (session != null) {
-              return ContracteeShell(
-                currentPage: ContracteePage.notifications,
-                contracteeId: session.user.id,
-                child: const ContracteeNotificationPage(),
-              );
-            }
-            return const LoginPage();
-          },
+          routes: [
+            GoRoute(
+              path: '/home',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      if (session != null) {
+                        return HomePage();
+                      }
+                      return const LoginPage();
+                    },
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/ongoing',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      final projectId = state.extra as String?;
+                      if (session != null && projectId != null) {
+                        return CeeOngoingProjectScreen(projectId: projectId);
+                      }
+                      return const LoginPage();
+                    },
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/profile',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      if (session != null) {
+                        return CeeProfilePage(contracteeId: session.user.id);
+                      }
+                      return const LoginPage();
+                    },
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/messages',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      if (session != null) {
+                        return const ContracteeChatHistoryPage();
+                      }
+                      return const LoginPage();
+                    },
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/notifications',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      if (session != null) {
+                        return const ContracteeNotificationPage();
+                      }
+                      return const LoginPage();
+                    },
+                  ),
+                );
+              },
+            ),
+          ],
         ),
         // Catch-all route for 404 errors
         GoRoute(
           path: '/:path(.*)',
-          builder: (context, state) {
-            return Scaffold(
+          pageBuilder: (context, state) => NoTransitionPage(
+            child: Scaffold(
               appBar: AppBar(
                 title: const Text('Page Not Found'),
                 backgroundColor: Colors.amber,
@@ -199,8 +271,8 @@ class _MyAppState extends State<MyApp> {
                   ],
                 ),
               ),
-            );
-          },
+            ),
+          ),
         ),
       ],
       redirect: (context, state) async {
@@ -249,9 +321,11 @@ class _MyAppState extends State<MyApp> {
       },
     );
 
-    // Listen to auth changes
-    Supabase.instance.client.auth.onAuthStateChange.listen((event) {
-      _router.refresh();
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      if (data.event == AuthChangeEvent.signedIn ||
+          data.event == AuthChangeEvent.signedOut) {
+        _router.refresh();
+      }
     });
   }
 

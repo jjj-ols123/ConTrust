@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthRedirectPage extends StatefulWidget {
@@ -24,10 +25,10 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
       await Supabase.instance.client.auth.getSessionFromUrl(Uri.base);
 
       if (!mounted) return;
-      Navigator.pushNamedAndRemoveUntil(context, next, (route) => false);
+      context.go(next);
     } catch (e) {
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/');
+      context.go('/');
     }
   }
 

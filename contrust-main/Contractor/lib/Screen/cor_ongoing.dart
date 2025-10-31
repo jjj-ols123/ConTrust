@@ -3,7 +3,6 @@
 import 'package:backend/services/both%20services/be_fetchservice.dart';
 import 'package:backend/services/contractor services/cor_ongoingservices.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractor/build/builddrawer.dart';
 import 'package:contractor/build/buildongoing.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -168,11 +167,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => ContractorShell(
-              currentPage: ContractorPage.projectManagement,
-              contractorId: contractorId!,
-              child: CorOngoingProjectScreen(projectId: selectedProjectId),
-            ),
+            builder: (context) => CorOngoingProjectScreen(projectId: selectedProjectId),
           ),
         );
       }

@@ -105,4 +105,80 @@ class MessageService {
     }
   }
 
+  Future<void> markMessagesAsRead({
+    required String chatRoomId,
+    required String userId,
+  }) async {
+    try {
+      await _supabase
+          .from('Messages')
+          .update({'is_read': true})
+          .eq('chatroom_id', chatRoomId)
+          .eq('receiver_id', userId)
+          .eq('is_read', false);
+
+    } catch (e) {
+      await SuperAdminErrorService().logError(
+        errorMessage: 'Failed to mark messages as read: $e',
+        module: 'Message Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Mark Messages Read',
+          'chatroom_id': chatRoomId,
+          'user_id': userId,
+        },
+      );
+    }
+  }
+
+  Future<int> getUnreadMessageCount({
+    required String chatRoomId,
+    required String userId,
+  }) async {
+    try {
+      final response = await _supabase
+          .from('Messages')
+          .select('msg_id')
+          .eq('chatroom_id', chatRoomId)
+          .eq('receiver_id', userId)
+          .eq('is_read', false);
+
+      return response.length;
+    } catch (e) {
+      await SuperAdminErrorService().logError(
+        errorMessage: 'Failed to get unread message count: $e',
+        module: 'Message Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Get Unread Count',
+          'chatroom_id': chatRoomId,
+          'user_id': userId,
+        },
+      );
+      return 0;
+    }
+  }
+
+  Future<int> getTotalUnreadMessageCount(String userId) async {
+    try {
+      final response = await _supabase
+          .from('Messages')
+          .select('msg_id')
+          .eq('receiver_id', userId)
+          .eq('is_read', false);
+
+      return response.length;
+    } catch (e) {
+      await SuperAdminErrorService().logError(
+        errorMessage: 'Failed to get total unread message count: $e',
+        module: 'Message Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Get Total Unread Count',
+          'user_id': userId,
+        },
+      );
+      return 0;
+    }
+  }
 }

@@ -52,150 +52,153 @@ class ContracteeShell extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= 1000;
 
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        backgroundColor: Colors.amber,
-        centerTitle: true,
-        elevation: 4,
-        automaticallyImplyLeading: false,
-        leading: !isDesktop 
-          ? Builder(
-              builder: (context) => IconButton(
-                icon: const Icon(Icons.menu, color: Colors.black),
-                onPressed: () => Scaffold.of(context).openDrawer(),
-              ),
-            )
-          : null,
-        actions: const [NotificationButton()],
-      ),
-      drawer: !isDesktop ? Drawer(
-        backgroundColor: Colors.white,
-        child: SafeArea(
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.amber.shade50,
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Colors.amber.shade200,
-                      width: 1,
+    return Container(
+      color: const Color(0xFFF8F9FA),
+      child: Scaffold(
+        resizeToAvoidBottomInset: false,
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.amber,
+          centerTitle: true,
+          elevation: 4,
+          automaticallyImplyLeading: false,
+          leading: !isDesktop
+            ? Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu, color: Colors.black),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+              )
+            : null,
+          actions: const [NotificationButton()],
+        ),
+        drawer: !isDesktop ? Drawer(
+          backgroundColor: Colors.white,
+          child: SafeArea(
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Colors.amber.shade200,
+                        width: 1,
+                      ),
                     ),
                   ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade600,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.construction,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'ConTrust',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF2D3748),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                child: Row(
+                Expanded(
+                  child: SideDashboardDrawer(
+                    contracteeId: contracteeId,
+                    currentPage: currentPage,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ) : null,
+        body: Row(
+          children: [
+            if (isDesktop)
+              Container(
+                width: 280,
+                decoration: BoxDecoration(
+                  color: Colors.amber[500],
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 12,
+                      offset: const Offset(3, 0),
+                    ),
+                  ],
+                ),
+                child: Column(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.amber.shade600,
-                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.amber.shade50,
+                        border: Border(
+                          bottom: BorderSide(
+                            color: Colors.amber.shade200,
+                            width: 1,
+                          ),
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.construction,
-                        color: Colors.white,
-                        size: 24,
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.shade600,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.construction,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Text(
+                              'ConTrust',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF2D3748),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'ConTrust',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF2D3748),
-                        ),
+                    Expanded(
+                      child: SideDashboardDrawer(
+                        contracteeId: contracteeId,
+                        currentPage: currentPage,
                       ),
                     ),
                   ],
                 ),
               ),
-              Expanded(
-                child: SideDashboardDrawer(
-                  contracteeId: contracteeId,
-                  currentPage: currentPage,
-                ),
+            Expanded(
+              child: Padding(
+                padding: contentPadding ?? EdgeInsets.zero,
+                child: child,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ) : null,
-      body: Row(
-        children: [
-          if (isDesktop)
-            Container(
-              width: 280,
-              decoration: BoxDecoration(
-                color: Colors.amber[500],
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(2, 0),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.shade50,
-                      border: Border(
-                        bottom: BorderSide(
-                          color: Colors.amber.shade200,
-                          width: 1,
-                        ),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.amber.shade600,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            Icons.construction,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Expanded(
-                          child: Text(
-                            'ConTrust',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF2D3748),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: SideDashboardDrawer(
-                      contracteeId: contracteeId,
-                      currentPage: currentPage,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          Expanded(
-            child: Padding(
-              padding: contentPadding ?? EdgeInsets.zero,
-              child: child,
-            ),
-          ),
-        ],
       ),
     );
   }

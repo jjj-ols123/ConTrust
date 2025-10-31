@@ -8,7 +8,6 @@ import 'package:backend/services/contractee services/cee_checkuser.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/utils/be_constraint.dart';
 import 'package:contractee/models/cee_modal.dart';
-import 'package:contractee/build/builddrawer.dart';
 import 'package:contractee/build/buildhome.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -179,273 +178,269 @@ class _HomePageState extends State<HomePage> {
     final projectsToShow = projects.isEmpty ? [HomePageBuilder.getPlaceholderProject()] : projects;
     final isMobile = MediaQuery.of(context).size.width < 600;
 
-    return ContracteeShell(
-      currentPage: ContracteePage.home,
-      contracteeId: contracteeId,
-      child: SingleChildScrollView(
+    return SingleChildScrollView(
       child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: isMobile ? 12 : 15, 
-            vertical: isMobile ? 8 : 5,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(height: isMobile ? 20 : 30),
-              HomePageBuilder.buildContractorsSection(
-                context: context,
-                isLoading: isLoading,
-                filteredContractors: filteredContractors,
-                searchController: _searchController,
-                selectedIndex: selectedIndex,
-                onSelect: (index) {
-                  CheckUserLogin.isLoggedIn(
-                    context: context,
-                    onAuthenticated: () {
-                      setState(() {
-                        selectedIndex = (selectedIndex == index) ? -1 : index;
-                      });
-                    },
-                  );
-                },
-                profileUrl: HomePageBuilder.profileUrl,
-              ),
-              SizedBox(height: isMobile ? 12 : 16),
-              isMobile
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.work_outline, color: Colors.amber[700], size: 20),
-                          const SizedBox(width: 8),
+        padding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 12 : 15, 
+          vertical: isMobile ? 8 : 5,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: isMobile ? 20 : 30),
+            HomePageBuilder.buildContractorsSection(
+              context: context,
+              isLoading: isLoading,
+              filteredContractors: filteredContractors,
+              searchController: _searchController,
+              selectedIndex: selectedIndex,
+              onSelect: (index) {
+                CheckUserLogin.isLoggedIn(
+                  context: context,
+                  onAuthenticated: () {
+                    setState(() {
+                      selectedIndex = (selectedIndex == index) ? -1 : index;
+                    });
+                  },
+                );
+              },
+              profileUrl: HomePageBuilder.profileUrl,
+            ),
+            SizedBox(height: isMobile ? 12 : 16),
+            isMobile
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.work_outline, color: Colors.amber[700], size: 20),
+                        const SizedBox(width: 8),
 
-                          TextButton(
-                            onPressed: _loadData,
-                            child: Text(
-                              "Refresh",
-                              style: TextStyle(
-                                color: Colors.amber[700],
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
+                        TextButton(
+                          onPressed: _loadData,
+                          child: Text(
+                            "Refresh",
+                            style: TextStyle(
+                              color: Colors.amber[700],
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
                             ),
                           ),
-                        ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _postProject,
+                        icon: const Icon(Icons.add, size: 18),
+                        label: const Text('Post Your Project', style: TextStyle(fontSize: 14)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber[700],
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
                       ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
+                    ),
+                  ],
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        TextButton(
+                          onPressed: _loadData,
+                          child: Text(
+                            "Refresh",
+                            style: TextStyle(
+                              color: Colors.amber[700],
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
                           onPressed: _postProject,
-                          icon: const Icon(Icons.add, size: 18),
-                          label: const Text('Post Your Project', style: TextStyle(fontSize: 14)),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Post Your Project'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.amber[700],
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                         ),
-                      ),
-                    ],
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          TextButton(
-                            onPressed: _loadData,
-                            child: Text(
-                              "Refresh",
-                              style: TextStyle(
-                                color: Colors.amber[700],
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton.icon(
-                            onPressed: _postProject,
-                            icon: const Icon(Icons.add),
-                            label: const Text('Post Your Project'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.amber[700],
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-              SizedBox(height: isMobile ? 12 : 15),
-              isLoading
-                  ? const Center(child: CircularProgressIndicator(color: Colors.amber))
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: projectsToShow.length,
-                      itemBuilder: (context, index) {
-                        final project = projectsToShow[index];
-                        final isPlaceholder = project['isPlaceholder'] == true;
+                      ],
+                    ),
+                  ],
+                ),
+            SizedBox(height: isMobile ? 12 : 15),
+            isLoading
+                ? const Center(child: CircularProgressIndicator(color: Colors.amber))
+                : ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: projectsToShow.length,
+                    itemBuilder: (context, index) {
+                      final project = projectsToShow[index];
+                      final isPlaceholder = project['isPlaceholder'] == true;
 
-                        if (isPlaceholder) {
-                          return HomePageBuilder.buildProjectsSection(
-                            context: context,
-                            projects: [project],
-                            supabase: supabase,
-                            onPostProject: _postProject,
-                          );
-                        }
+                      if (isPlaceholder) {
+                        return HomePageBuilder.buildProjectsSection(
+                          context: context,
+                          projects: [project],
+                          supabase: supabase,
+                          onPostProject: _postProject,
+                        );
+                      }
 
-                        final projectId = project['project_id'].toString();
-                        final highestBid = highestBids[projectId] ?? 0.0;
+                      final projectId = project['project_id'].toString();
+                      final highestBid = highestBids[projectId] ?? 0.0;
 
-                        return FutureBuilder<Map<String, dynamic>>(
-                          future: supabase
-                              .from('Projects')
-                              .select('bid_id')
-                              .eq('project_id', projectId)
-                              .single(),
-                          builder: (context, snapshot) {
-                            String? acceptedBidId;
-                            if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
-                              acceptedBidId = snapshot.data?['bid_id'];
-                            }
-                            return ProjectView(
-                              project: project,
-                              projectId: projectId,
-                              highestBid: highestBid,
-                              duration: project['duration'] ?? 0,
-                              createdAt: DateTime.parse(project['created_at'].toString()).toLocal(),
-                              onTap: () {
-                                CheckUserLogin.isLoggedIn(
-                                  context: context,
-                                  onAuthenticated: () async {
-                                    await BidsModal.show(
-                                      context: context,
-                                      projectId: projectId,
-                                      acceptBidding: (projectId, bidId) async {
-                                        _loadAcceptBidding(projectId, bidId);
-                                        setState(() {
-                                          acceptedBidIds[projectId] = bidId;
-                                        });
-                                      },
-                                      initialAcceptedBidId: acceptedBidId,
-                                      onRefresh: _loadData,
-                                      projectStatus: project['status'],
-                                    );
-                                  },
-                                );
-                              },
-                              handleFinalizeBidding: (projectId) {
-                                return BiddingService().finalizeBidding(projectId);
-                              },
-                              onUpdateProject: (projectId) async {
-                                try {
-                                  if (project['status'] != 'pending' && project['status'] != 'stopped') {
-                                    if (mounted) {
-                                      ConTrustSnackBar.warning(context, 'You cannot update an active project.');
-                                    }
-                                    return;
-                                  }
-
-                                  final projectData = await FetchService().fetchProjectDetails(projectId);
-                                  if (projectData == null) {
-                                    if (mounted) {
-                                      ConTrustSnackBar.error(context, 'Failed to load project details');
-                                    }
-                                    return;
-                                  }
-
-                                  final titleController = TextEditingController(text: projectData['title'] ?? '');
-                                  final constructionTypeController = TextEditingController(text: projectData['type'] ?? '');
-                                  final minBudgetController = TextEditingController(text: projectData['min_budget'] ?? '');
-                                  final maxBudgetController = TextEditingController(text: projectData['max_budget'] ?? '');
-                                  final locationController = TextEditingController(text: projectData['location'] ?? '');
-                                  final descriptionController = TextEditingController(text: projectData['description'] ?? '');
-                                  final bidTimeController = TextEditingController(text: projectData['duration']?.toString() ?? '7');
-
-                                  if (mounted && contracteeId != null) {
-                                    await ProjectModal.show(
-                                      context: context,
-                                      contracteeId: contracteeId,
-                                      titleController: titleController,
-                                      constructionTypeController: constructionTypeController,
-                                      minBudgetController: minBudgetController,
-                                      maxBudgetController: maxBudgetController,
-                                      locationController: locationController,
-                                      descriptionController: descriptionController,
-                                      bidTimeController: bidTimeController,
-                                      isUpdate: true,
-                                      projectId: projectId,
-                                      onRefresh: _loadData,
-                                    );
-                                    
-                                    titleController.dispose();
-                                    constructionTypeController.dispose();
-                                    minBudgetController.dispose();
-                                    maxBudgetController.dispose();
-                                    locationController.dispose();
-                                    descriptionController.dispose();
-                                    bidTimeController.dispose();
-                                  }
-                                } catch (e) {
+                      return FutureBuilder<Map<String, dynamic>>(
+                        future: supabase
+                            .from('Projects')
+                            .select('bid_id')
+                            .eq('project_id', projectId)
+                            .single(),
+                        builder: (context, snapshot) {
+                          String? acceptedBidId;
+                          if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
+                            acceptedBidId = snapshot.data?['bid_id'];
+                          }
+                          return ProjectView(
+                            project: project,
+                            projectId: projectId,
+                            highestBid: highestBid,
+                            duration: project['duration'] ?? 0,
+                            createdAt: DateTime.parse(project['created_at'].toString()).toLocal(),
+                            onTap: () {
+                              CheckUserLogin.isLoggedIn(
+                                context: context,
+                                onAuthenticated: () async {
+                                  await BidsModal.show(
+                                    context: context,
+                                    projectId: projectId,
+                                    acceptBidding: (projectId, bidId) async {
+                                      _loadAcceptBidding(projectId, bidId);
+                                      setState(() {
+                                        acceptedBidIds[projectId] = bidId;
+                                      });
+                                    },
+                                    initialAcceptedBidId: acceptedBidId,
+                                    onRefresh: _loadData,
+                                    projectStatus: project['status'],
+                                  );
+                                },
+                              );
+                            },
+                            handleFinalizeBidding: (projectId) {
+                              return BiddingService().finalizeBidding(projectId);
+                            },
+                            onUpdateProject: (projectId) async {
+                              try {
+                                if (project['status'] != 'pending' && project['status'] != 'stopped') {
                                   if (mounted) {
-                                    ConTrustSnackBar.error(context, 'Failed to update project. Please try again.');
+                                    ConTrustSnackBar.warning(context, 'You cannot update an active project.');
                                   }
+                                  return;
                                 }
-                              },
-                              onCancelProject: (projectId) async {
-                                try {
-                                  setState(() {
-                                    isLoading = true;
-                                  });
 
-                                  await ProjectService().cancelProject(projectId);
-
-                                  await _loadData();
-
+                                final projectData = await FetchService().fetchProjectDetails(projectId);
+                                if (projectData == null) {
                                   if (mounted) {
-                                    final project = projects.firstWhere(
-                                      (p) => p['project_id'] == projectId,
-                                      orElse: () => {},
-                                    );
-                                    
-                                    if (project.isNotEmpty) {
-                                      final status = project['status'] as String?;
-                                      if (status == 'cancellation_requested_by_contractee') {
-                                        ConTrustSnackBar.info(context, 'Cancellation request sent to contractor. Waiting for approval.');
-                                      } else if (status == 'cancelled') {
-                                        ConTrustSnackBar.success(context, 'The project has been cancelled successfully.');
-                                      }
-                                    } else {
+                                    ConTrustSnackBar.error(context, 'Failed to load project details');
+                                  }
+                                  return;
+                                }
+
+                                final titleController = TextEditingController(text: projectData['title'] ?? '');
+                                final constructionTypeController = TextEditingController(text: projectData['type'] ?? '');
+                                final minBudgetController = TextEditingController(text: projectData['min_budget'] ?? '');
+                                final maxBudgetController = TextEditingController(text: projectData['max_budget'] ?? '');
+                                final locationController = TextEditingController(text: projectData['location'] ?? '');
+                                final descriptionController = TextEditingController(text: projectData['description'] ?? '');
+                                final bidTimeController = TextEditingController(text: projectData['duration']?.toString() ?? '7');
+
+                                if (mounted && contracteeId != null) {
+                                  await ProjectModal.show(
+                                    context: context,
+                                    contracteeId: contracteeId,
+                                    titleController: titleController,
+                                    constructionTypeController: constructionTypeController,
+                                    minBudgetController: minBudgetController,
+                                    maxBudgetController: maxBudgetController,
+                                    locationController: locationController,
+                                    descriptionController: descriptionController,
+                                    bidTimeController: bidTimeController,
+                                    isUpdate: true,
+                                    projectId: projectId,
+                                    onRefresh: _loadData,
+                                  );
+                                  
+                                  titleController.dispose();
+                                  constructionTypeController.dispose();
+                                  minBudgetController.dispose();
+                                  maxBudgetController.dispose();
+                                  locationController.dispose();
+                                  descriptionController.dispose();
+                                  bidTimeController.dispose();
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  ConTrustSnackBar.error(context, 'Failed to update project. Please try again.');
+                                }
+                              }
+                            },
+                            onCancelProject: (projectId) async {
+                              try {
+                                setState(() {
+                                  isLoading = true;
+                                });
+
+                                await ProjectService().cancelProject(projectId);
+
+                                await _loadData();
+
+                                if (mounted) {
+                                  final project = projects.firstWhere(
+                                    (p) => p['project_id'] == projectId,
+                                    orElse: () => {},
+                                  );
+                                  
+                                  if (project.isNotEmpty) {
+                                    final status = project['status'] as String?;
+                                    if (status == 'cancellation_requested_by_contractee') {
+                                      ConTrustSnackBar.info(context, 'Cancellation request sent to contractor. Waiting for approval.');
+                                    } else if (status == 'cancelled') {
                                       ConTrustSnackBar.success(context, 'The project has been cancelled successfully.');
                                     }
-                                  }
-                                } catch (e) {
-                                  setState(() {
-                                    isLoading = false;
-                                  });
-                                  if (mounted) {
-                                    ConTrustSnackBar.error(context, 'Failed to cancel project. Please try again.');
+                                  } else {
+                                    ConTrustSnackBar.success(context, 'The project has been cancelled successfully.');
                                   }
                                 }
-                              },
-                            );
-                          },
-                        );
-                      },
-                    ),
-              SizedBox(height: isMobile ? 20 : 30),
-              HomePageBuilder.buildStatsSection(
-                context: context,
-                projects: projects,
-                contractors: contractors,
-              ),
-            ],
-          ),
+                              } catch (e) {
+                                setState(() {
+                                  isLoading = false;
+                                });
+                                if (mounted) {
+                                  ConTrustSnackBar.error(context, 'Failed to cancel project. Please try again.');
+                                }
+                              }
+                            },
+                          );
+                        },
+                      );
+                    },
+                  ),
+            SizedBox(height: isMobile ? 20 : 30),
+            HomePageBuilder.buildStatsSection(
+              context: context,
+              projects: projects,
+              contractors: contractors,
+            ),
+          ],
         ),
       ),
     );

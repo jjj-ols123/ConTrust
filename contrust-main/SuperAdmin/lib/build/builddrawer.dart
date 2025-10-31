@@ -254,7 +254,7 @@ class SideDashboardDrawer extends StatefulWidget {
 
 class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
   void navigateToPage(Widget page) {
-    Navigator.push(
+    Navigator.pushReplacement(
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) => page,
@@ -621,7 +621,7 @@ class DashboardDrawer extends StatelessWidget {
                     fontSize: fontSize,
                     color: Colors.blue,
                     onTap: () {
-                      Navigator.push(
+                      Navigator.pushReplacement(
                         context,
                         PageRouteBuilder(
                           pageBuilder: (context, animation, secondaryAnimation) =>
@@ -642,7 +642,7 @@ class DashboardDrawer extends StatelessWidget {
                     fontSize: fontSize,
                     color: Colors.green,
                     onTap: () {
-                      Navigator.push(
+                      Navigator.pushReplacement(
                         context,
                         PageRouteBuilder(
                           pageBuilder: (context, animation, secondaryAnimation) =>
@@ -663,7 +663,7 @@ class DashboardDrawer extends StatelessWidget {
                     fontSize: fontSize,
                     color: Colors.orange,
                     onTap: () {
-                      Navigator.push(
+                      Navigator.pushReplacement(
                         context,
                         PageRouteBuilder(
                           pageBuilder: (context, animation, secondaryAnimation) =>
@@ -684,7 +684,7 @@ class DashboardDrawer extends StatelessWidget {
                     fontSize: fontSize,
                     color: Colors.indigo,
                     onTap: () {
-                      Navigator.push(
+                      Navigator.pushReplacement(
                         context,
                         PageRouteBuilder(
                           pageBuilder: (context, animation, secondaryAnimation) =>
@@ -705,7 +705,7 @@ class DashboardDrawer extends StatelessWidget {
                     fontSize: fontSize,
                     color: Colors.purple,
                     onTap: () {
-                      Navigator.push(
+                      Navigator.pushReplacement(
                         context,
                         PageRouteBuilder(
                           pageBuilder: (context, animation, secondaryAnimation) =>
@@ -726,7 +726,7 @@ class DashboardDrawer extends StatelessWidget {
                     fontSize: fontSize,
                     color: Colors.red,
                     onTap: () {
-                      Navigator.push(
+                      Navigator.pushReplacement(
                         context,
                         PageRouteBuilder(
                           pageBuilder: (context, animation, secondaryAnimation) =>

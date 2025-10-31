@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:backend/utils/supabase_config.dart';
 import 'pages/dashboard.dart';
 import 'pages/login.dart';
 import 'build/builddrawer.dart';
@@ -14,11 +13,17 @@ void main() async {
     usePathUrlStrategy();
   }
 
-  await Supabase.initialize(
-    url: SupabaseConfig.url,
-    anonKey: SupabaseConfig.anonKey,
+   await Supabase.initialize(
+    url: const String.fromEnvironment(
+      'SUPABASE_URL',
+      defaultValue: 'https://bgihfdqruamnjionhkeq.supabase.co',
+    ),
+    anonKey: const String.fromEnvironment(
+      'SUPABASE_ANON_KEY',
+      defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJnaWhmZHFydWFtbmppb25oa2VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4NzIyODksImV4cCI6MjA1NjQ0ODI4OX0.-GRaolUVu1hW6NUaEAwJuYJo8C2X5_1wZ-qB4a-9Txs',
+    ),
   );
-  
+
   runApp(const MyApp());
 }
 
@@ -93,10 +98,13 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 
   void _listenToAuthChanges() {
-    Supabase.instance.client.auth.onAuthStateChange.listen((event) {
-      setState(() {
-        _user = event.session?.user;
-      });
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      if (data.event == AuthChangeEvent.signedIn ||
+          data.event == AuthChangeEvent.signedOut) {
+        setState(() {
+          _user = data.session?.user;
+        });
+      }
     });
   }
 

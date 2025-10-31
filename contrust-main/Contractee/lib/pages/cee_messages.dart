@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:backend/build/buildmessagesdesign.dart';
 import 'package:backend/build/buildmessage.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/services/both services/be_message_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -37,6 +38,7 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
 
   bool _canSend = false;
   bool _isLoading = true;
+  bool _isSending = false;
 
   late Future<String?> _projectStatus;
   Timer? _pollingTimer;
@@ -65,6 +67,11 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
       _projectStatus = FetchService().fetchProjectStatus(widget.chatRoomId);
     });
     await _projectStatus;
+    // Mark messages as read when opening the chat
+    await MessageService().markMessagesAsRead(
+      chatRoomId: widget.chatRoomId,
+      userId: widget.contracteeId,
+    );
     setState(() {
       _isLoading = false;
     });
@@ -72,26 +79,37 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
 
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || _isSending) return;
 
-    await supabase.from('Messages').insert({
-      'chatroom_id': widget.chatRoomId,
-      'sender_id': widget.contracteeId,
-      'receiver_id': widget.contractorId,
-      'message': text,
-      'timestamp': DateTime.now().toIso8601String(),
-    });
+    setState(() => _isSending = true);
+    try {
+      await supabase.from('Messages').insert({
+        'chatroom_id': widget.chatRoomId,
+        'sender_id': widget.contracteeId,
+        'receiver_id': widget.contractorId,
+        'message': text,
+        'timestamp': DateTime.now().toIso8601String(),
+      });
 
-    await supabase
-        .from('ChatRoom')
-        .update({
-          'last_message': text,
-          'last_message_time': DateTime.now().toIso8601String(),
-        })
-        .eq('chatroom_id', widget.chatRoomId);
+      await supabase
+          .from('ChatRoom')
+          .update({
+            'last_message': text,
+            'last_message_time': DateTime.now().toIso8601String(),
+          })
+          .eq('chatroom_id', widget.chatRoomId);
 
-    _messageController.clear();
-    _scrollToBottom();
+      _messageController.clear();
+      _scrollToBottom();
+    } catch (e) {
+      if (mounted) {
+        ConTrustSnackBar.error(context, 'Failed to send message');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSending = false);
+      }
+    }
   }
 
   void _scrollToBottom() {
@@ -191,6 +209,7 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
       },
       onSendMessage: _sendMessage,
       onScrollToBottom: _scrollToBottom,
+      isSending: _isSending,
     );
 
     return Scaffold(
@@ -321,12 +340,21 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
                       ),
                       const SizedBox(width: 6),
                       CircleAvatar(
-                        backgroundColor: _canSend ? Colors.blue[700] : Colors.grey[400],
+                        backgroundColor: (_canSend && !_isSending) ? Colors.blue[700] : Colors.grey[400],
                         radius: 24,
-                        child: IconButton(
-                          icon: const Icon(Icons.send, color: Colors.white),
-                          onPressed: _canSend ? _sendMessage : null,
-                        ),
+                        child: _isSending
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : IconButton(
+                                icon: const Icon(Icons.send, color: Colors.white),
+                                onPressed: (_canSend && !_isSending) ? _sendMessage : null,
+                              ),
                       ),
                     ],
                   ),

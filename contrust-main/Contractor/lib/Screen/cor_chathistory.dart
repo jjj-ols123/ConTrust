@@ -140,6 +140,7 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
       onSelectChat: selectChat,
       onSendMessage: sendMessage,
       onScrollToBottom: scrollToBottom,
+      isSending: false,
     );
 
     return Scaffold(
@@ -251,82 +252,124 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
                                 ? DateTime.tryParse(chat['last_message_time'])
                                 : null;
 
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              child: InkWell(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => MessagePageContractor(
-                                        chatRoomId: chat['chatroom_id'],
-                                        contractorId: contractorId!,
-                                        contracteeId: contracteeId,
-                                        contracteeName: contracteeName,
-                                        contracteeProfile: contracteeProfile,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                borderRadius: BorderRadius.circular(12),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Row(
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 24,
-                                        backgroundColor: Colors.amber[100],
-                                        backgroundImage: contracteeProfile != null
-                                            ? NetworkImage(contracteeProfile)
-                                            : null,
-                                        child: contracteeProfile == null
-                                            ? Icon(
-                                                Icons.person,
-                                                color: Colors.amber[700],
-                                                size: 24,
-                                              )
-                                            : null,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              contracteeName,
-                                              style: const TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              lastMessage,
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                color: Colors.grey[600],
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                              maxLines: 1,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      if (lastTime != null) ...[
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          formatTime(lastTime),
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey[500],
+                            return FutureBuilder<int>(
+                              future: MessageService().getUnreadMessageCount(
+                                chatRoomId: chat['chatroom_id'],
+                                userId: contractorId!,
+                              ),
+                              builder: (context, unreadSnap) {
+                                final unreadCount = unreadSnap.data ?? 0;
+                                final hasUnread = unreadCount > 0;
+
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  child: InkWell(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => MessagePageContractor(
+                                            chatRoomId: chat['chatroom_id'],
+                                            contractorId: contractorId!,
+                                            contracteeId: contracteeId,
+                                            contracteeName: contracteeName,
+                                            contracteeProfile: contracteeProfile,
                                           ),
                                         ),
-                                      ],
-                                    ],
+                                      );
+                                    },
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Row(
+                                        children: [
+                                          Stack(
+                                            children: [
+                                              CircleAvatar(
+                                                radius: 24,
+                                                backgroundColor: Colors.amber[100],
+                                                backgroundImage: contracteeProfile != null
+                                                    ? NetworkImage(contracteeProfile)
+                                                    : null,
+                                                child: contracteeProfile == null
+                                                    ? Icon(
+                                                        Icons.person,
+                                                        color: Colors.amber[700],
+                                                        size: 24,
+                                                      )
+                                                    : null,
+                                              ),
+                                              if (hasUnread)
+                                                Positioned(
+                                                  right: 0,
+                                                  top: 0,
+                                                  child: Container(
+                                                    padding: const EdgeInsets.all(4),
+                                                    decoration: const BoxDecoration(
+                                                      color: Colors.red,
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                    constraints: const BoxConstraints(
+                                                      minWidth: 16,
+                                                      minHeight: 16,
+                                                    ),
+                                                    child: Text(
+                                                      unreadCount > 99 ? '99+' : unreadCount.toString(),
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 10,
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                      textAlign: TextAlign.center,
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  contracteeName,
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: hasUnread ? FontWeight.bold : FontWeight.w600,
+                                                    color: hasUnread ? Colors.black : Colors.black87,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  lastMessage,
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    color: hasUnread ? Colors.black87 : Colors.grey[600],
+                                                    fontWeight: hasUnread ? FontWeight.w500 : FontWeight.normal,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                  maxLines: 1,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          if (lastTime != null) ...[
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              formatTime(lastTime),
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey[500],
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
+                                );
+                              },
                             );
                           },
                         );

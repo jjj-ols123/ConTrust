@@ -1,7 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractor/build/builddrawer.dart';
 import 'package:contractor/build/contract/buildcontract.dart';
 import 'package:contractor/build/contract/buildcontracttabs.dart';
 import 'package:backend/services/contractor services/contract/cor_createcontractservice.dart';
@@ -544,15 +543,12 @@ class _CreateContractPageState extends State<CreateContractPage>
       controllers,
     );
 
-    return ContractorShell(
-      currentPage: ContractorPage.contracts,
-      contractorId: widget.contractorId,
-      child: Column(
-        children: [
-          CreateContractBuild.buildHeader(
-            context,
-            title: 'Create Contract',
-            actions: [
+    return Column(
+      children: [
+        CreateContractBuild.buildHeader(
+          context,
+          title: 'Create Contract',
+          actions: [
               ElevatedButton.icon(
                 onPressed: isSaving ? null : saveContract,
                 icon: isSaving
@@ -604,9 +600,8 @@ class _CreateContractPageState extends State<CreateContractPage>
             ),
           ),
         ],
-      ),
-    );
-  }
+      );
+    }
   @override
   void dispose() {
     titleController.dispose();

@@ -40,6 +40,7 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
   String? _contracteeName;
   String? _contracteeProfile;
   bool _isLoading = true;
+  bool _isSending = false;
 
   late Future<String?> _projectStatus;
   Timer? _pollingTimer;
@@ -68,6 +69,10 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
       _projectStatus = FetchService().fetchProjectStatus(widget.chatRoomId);
     });
     await _loadContracteeData();
+    await MessageService().markMessagesAsRead(
+      chatRoomId: widget.chatRoomId,
+      userId: widget.contractorId,
+    );
     setState(() {
       _isLoading = false;
     });
@@ -96,11 +101,12 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
   }
 
   Future<void> _sendMessage() async {
-    if (!_canSend) return;
+    if (!_canSend || _isSending) return;
 
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
+    setState(() => _isSending = true);
     try {
       await supabase.from('Messages').insert({
         'chatroom_id': widget.chatRoomId,
@@ -123,6 +129,10 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
     } catch (e) {
       if (mounted) {
         ConTrustSnackBar.error(context, 'Failed to send message: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSending = false);
       }
     }
   }
@@ -618,6 +628,7 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
       },
       onSendMessage: _sendMessage,
       onScrollToBottom: _scrollToBottom,
+      isSending: _isSending,
     );
 
     return Scaffold(

@@ -56,9 +56,9 @@ class SignUpContractee {
               'role': 'contractee',
               'status': 'active',
               'created_at': DateTime.now().toIso8601String(),
-              'profile_image_url': data?['profilePhoto'],
+              'profile_image_url': data?['profilePhoto'] ?? 'assets/defaultpic.png',
               'phone_number': data?['phone_number'] ?? '',
-              'verified': false,
+              'verified': true,
             }, onConflict: 'users_id');
             insertSuccess = true;
           } catch (e) {
@@ -76,6 +76,7 @@ class SignUpContractee {
           'created_at': DateTime.now().toIso8601String(),
           'project_history_count': project,
           'phone_number': data?['phone_number'] ?? '',
+          'profile_photo': data?['profilePhoto'] ?? 'assets/defaultpic.png',
         };
 
         final insertResponse = await supabase

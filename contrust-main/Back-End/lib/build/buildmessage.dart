@@ -6,6 +6,7 @@ import 'package:backend/build/buildmessagesdesign.dart';
 import 'package:backend/services/both%20services/be_fetchservice.dart';
 import 'package:backend/services/both%20services/be_contract_service.dart';
 import 'package:backend/services/both%20services/be_project_service.dart';
+import 'package:backend/services/both%20services/be_message_service.dart';
 import 'package:backend/utils/be_constraint.dart';
 import 'package:backend/utils/be_status.dart';
 import 'package:contractor/Screen/cor_ongoing.dart';
@@ -32,6 +33,7 @@ class MessageUIBuildMethods {
     required this.onSelectChat,
     required this.onSendMessage,
     required this.onScrollToBottom,
+    required this.isSending,
   });
 
   final BuildContext context;
@@ -48,6 +50,7 @@ class MessageUIBuildMethods {
   final Function(String, String, String, String?) onSelectChat;
   final VoidCallback onSendMessage;
   final VoidCallback onScrollToBottom;
+  final bool isSending;
 
   Color get accentColor =>
       userRole == 'contractor' ? Colors.amber : Colors.amber;
@@ -288,123 +291,160 @@ class MessageUIBuildMethods {
     required bool canChat,
     required String otherUserId,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isSelected
-            ? accentColor.withOpacity(0.05)
-            : (canChat
-                ? Colors.transparent
-                : Colors.grey.shade50),
-        border: isSelected
-            ? Border(
-                right: BorderSide(
-                  color: accentColor,
-                  width: 3,
-                ),
-              )
-            : null,
-      ),
-      child: ListTile(
-        dense: isMobile,
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: isDesktop ? 16 : (isTablet ? 12 : 8),
-          vertical: isDesktop ? 8 : (isTablet ? 6 : 4),
-        ),
-        leading: Stack(
-          children: [
-            CircleAvatar(
-              radius: avatarRadius,
-              backgroundImage: NetworkImage(
-                userProfile ??
-                    'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
-              ),
-            ),
-            if (!canChat)
-              Positioned(
-                right: 0,
-                bottom: 0,
-                child: buildConstraintIcon(),
-              ),
-          ],
-        ),
-        title: Text(
-          userName,
-          style: TextStyle(
-            fontWeight: isSelected
-                ? FontWeight.bold
-                : FontWeight.w600,
-            color: canChat ? Colors.black : Colors.grey,
-            fontSize: subtitleFontSize + 1,
+    return FutureBuilder<int>(
+      future: userRole == 'contractor' ? MessageService().getUnreadMessageCount(
+        chatRoomId: chat['chatroom_id'],
+        userId: userId ?? '',
+      ) : Future.value(0),
+      builder: (context, unreadSnap) {
+        final unreadCount = unreadSnap.data ?? 0;
+        final hasUnread = unreadCount > 0 && userRole == 'contractor';
+
+        return Container(
+          decoration: BoxDecoration(
+            color: isSelected
+                ? accentColor.withOpacity(0.05)
+                : (canChat
+                    ? Colors.transparent
+                    : Colors.grey.shade50),
+            border: isSelected
+                ? Border(
+                    right: BorderSide(
+                      color: accentColor,
+                      width: 3,
+                    ),
+                  )
+                : null,
           ),
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: isMobile && screenWidth < 400 
-            ? null 
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (projectTitle.isNotEmpty) ...[
-                    Text(
-                      projectTitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: canChat ? Colors.blue.shade700 : Colors.grey.shade400,
-                        fontSize: subtitleFontSize - 2,
-                        fontWeight: FontWeight.w500,
+          child: ListTile(
+            dense: isMobile,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: isDesktop ? 16 : (isTablet ? 12 : 8),
+              vertical: isDesktop ? 8 : (isTablet ? 6 : 4),
+            ),
+            leading: Stack(
+              children: [
+                CircleAvatar(
+                  radius: avatarRadius,
+                  backgroundImage: NetworkImage(
+                    userProfile ??
+                        'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
+                  ),
+                ),
+                if (!canChat)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: buildConstraintIcon(),
+                  ),
+                if (hasUnread)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        unreadCount > 99 ? '99+' : unreadCount.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
-                    SizedBox(height: 2),
-                  ],
+                  ),
+              ],
+            ),
+            title: Text(
+              userName,
+              style: TextStyle(
+                fontWeight: isSelected || hasUnread
+                    ? FontWeight.bold
+                    : FontWeight.w600,
+                color: canChat ? Colors.black : Colors.grey,
+                fontSize: subtitleFontSize + 1,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: isMobile && screenWidth < 400
+                ? null
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (projectTitle.isNotEmpty) ...[
+                        Text(
+                          projectTitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: canChat ? Colors.blue.shade700 : Colors.grey.shade400,
+                            fontSize: subtitleFontSize - 2,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                      ],
+                      Text(
+                        lastMessage,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: canChat
+                              ? (hasUnread ? Colors.black87 : Colors.grey.shade600)
+                              : Colors.grey.shade400,
+                          fontSize: subtitleFontSize - 1,
+                          fontWeight: hasUnread ? FontWeight.w500 : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (lastTime != null && (!isMobile || screenWidth > 350))
                   Text(
-                    lastMessage,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    "${lastTime.hour.toString().padLeft(2, '0')}:${lastTime.minute.toString().padLeft(2, '0')}",
                     style: TextStyle(
+                      fontSize: subtitleFontSize - 2,
                       color: canChat
-                          ? Colors.grey.shade600
+                          ? Colors.grey
                           : Colors.grey.shade400,
-                      fontSize: subtitleFontSize - 1,
                     ),
                   ),
-                ],
-              ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (lastTime != null && (!isMobile || screenWidth > 350))
-              Text(
-                "${lastTime.hour.toString().padLeft(2, '0')}:${lastTime.minute.toString().padLeft(2, '0')}",
-                style: TextStyle(
-                  fontSize: subtitleFontSize - 2,
-                  color: canChat
-                      ? Colors.grey
-                      : Colors.grey.shade400,
-                ),
-              ),
-            if (!canChat) SizedBox(height: isMobile ? 2 : 4),
-            if (!canChat)
-              Icon(
-                Icons.lock,
-                size: isDesktop ? 16 : 14,
-                color: Colors.grey.shade400,
-              ),
-          ],
-        ),
-        enabled: canChat,
-        onTap: () {
-          if (canChat) {
-            onSelectChat(
-              chat['chatroom_id'],
-              otherUserId,
-              userName,
-              userProfile,
-            );
-          }
-        },
-      ),
+                if (!canChat) SizedBox(height: isMobile ? 2 : 4),
+                if (!canChat)
+                  Icon(
+                    Icons.lock,
+                    size: isDesktop ? 16 : 14,
+                    color: Colors.grey.shade400,
+                  ),
+              ],
+            ),
+            enabled: canChat,
+            onTap: () {
+              if (canChat) {
+                onSelectChat(
+                  chat['chatroom_id'],
+                  otherUserId,
+                  userName,
+                  userProfile,
+                );
+              }
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -695,16 +735,29 @@ class MessageUIBuildMethods {
                           ),
                           SizedBox(width: isDesktop ? 6 : 4),
                           CircleAvatar(
-                            backgroundColor: accentColor,
+                            backgroundColor: isSending || messageController.text.trim().isEmpty 
+                                ? Colors.grey[400] 
+                                : accentColor,
                             radius: isDesktop ? 24 : (isTablet ? 20 : 16),
-                            child: IconButton(
-                              icon: Icon(
-                                Icons.send, 
-                                color: Colors.white,
-                                size: isDesktop ? 20 : (isTablet ? 18 : 16),
-                              ),
-                              onPressed: onSendMessage,
-                            ),
+                            child: isSending
+                                ? SizedBox(
+                                    width: isDesktop ? 20 : (isTablet ? 18 : 16),
+                                    height: isDesktop ? 20 : (isTablet ? 18 : 16),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : IconButton(
+                                    icon: Icon(
+                                      Icons.send, 
+                                      color: Colors.white,
+                                      size: isDesktop ? 20 : (isTablet ? 18 : 16),
+                                    ),
+                                    onPressed: messageController.text.trim().isNotEmpty && !isSending 
+                                        ? onSendMessage 
+                                        : null,
+                                  ),
                           ),
                         ],
                       ),

@@ -72,159 +72,235 @@ class _MyAppState extends State<MyApp> {
       routes: [
         GoRoute(
           path: '/',
-          builder: (context, state) => const ToLoginScreen(),
-        ),
-        GoRoute(
-          path: '/dashboard',
-          builder: (context, state) {
-            final session = Supabase.instance.client.auth.currentSession;
-            if (session != null) {
-              return DashboardScreen(contractorId: session.user.id);
-            }
-            return const ToLoginScreen();
-          },
+          pageBuilder: (context, state) => NoTransitionPage(
+            child: const ToLoginScreen(),
+          ),
         ),
         GoRoute(
           path: '/auth/callback',
-          builder: (context, state) => const AuthRedirectPage(),
+          pageBuilder: (context, state) => NoTransitionPage(
+            child: const AuthRedirectPage(),
+          ),
         ),
-        GoRoute(
-          path: '/messages',
-          builder: (context, state) {
-            final session = Supabase.instance.client.auth.currentSession;
-            if (session != null) {
-              return ContractorShell(
-                currentPage: ContractorPage.messages,
-                contractorId: session.user.id,
-                child: ContractorChatHistoryPage(),
-              );
-            }
-            return const ToLoginScreen();
+        ShellRoute(
+          pageBuilder: (context, state, child) {
+            return NoTransitionPage(
+              child: Builder(
+                builder: (context) {
+                  final session = Supabase.instance.client.auth.currentSession;
+                  if (session == null) {
+                    return const ToLoginScreen();
+                  }
+
+                  final contractorId = session.user.id;
+
+                  final location = state.matchedLocation;
+                  ContractorPage currentPage;
+                  switch (location) {
+                    case '/dashboard':
+                      currentPage = ContractorPage.dashboard;
+                      break;
+                    case '/messages':
+                      currentPage = ContractorPage.messages;
+                      break;
+                    case '/contracts':
+                      currentPage = ContractorPage.contracts;
+                      break;
+                    case '/bidding':
+                      currentPage = ContractorPage.bidding;
+                      break;
+                    case '/profile':
+                      currentPage = ContractorPage.profile;
+                      break;
+                    case '/project-management':
+                      currentPage = ContractorPage.projectManagement;
+                      break;
+                    case '/materials':
+                      currentPage = ContractorPage.materials;
+                      break;
+                    default:
+                      currentPage = ContractorPage.dashboard;
+                  }
+
+                  return ContractorShell(
+                    currentPage: currentPage,
+                    contractorId: contractorId,
+                    child: child,
+                  );
+                },
+              ),
+            );
           },
-        ),
-        GoRoute(
-          path: '/contracts',
-          builder: (context, state) {
-            final session = Supabase.instance.client.auth.currentSession;
-            if (session != null) {
-              return ContractorShell(
-                currentPage: ContractorPage.contracts,
-                contractorId: session.user.id,
-                child: ContractType(contractorId: session.user.id),
-              );
-            }
-            return const ToLoginScreen();
-          },
-        ),
-        GoRoute(
-          path: '/bidding',
-          builder: (context, state) {
-            final session = Supabase.instance.client.auth.currentSession;
-            if (session != null) {
-              return ContractorShell(
-                currentPage: ContractorPage.bidding,
-                contractorId: session.user.id,
-                child: BiddingScreen(contractorId: session.user.id),
-              );
-            }
-            return const ToLoginScreen();
-          },
-        ),
-        GoRoute(
-          path: '/profile',
-          builder: (context, state) {
-            final session = Supabase.instance.client.auth.currentSession;
-            if (session != null) {
-              return ContractorShell(
-                currentPage: ContractorPage.profile,
-                contractorId: session.user.id,
-                child: ContractorUserProfileScreen(contractorId: session.user.id),
-              );
-            }
-            return const ToLoginScreen();
-          },
-        ),
-        GoRoute(
-          path: '/project-management',
-          builder: (context, state) {
-            final session = Supabase.instance.client.auth.currentSession;
-            final projectId = state.extra as String?;
-            if (session != null && projectId != null) {
-              return ContractorShell(
-                currentPage: ContractorPage.projectManagement,
-                contractorId: session.user.id,
-                child: CorOngoingProjectScreen(projectId: projectId),
-              );
-            }
-            return const ToLoginScreen();
-          },
-        ),
-        GoRoute(
-          path: '/materials',
-          builder: (context, state) {
-            final session = Supabase.instance.client.auth.currentSession;
-            final args = state.extra as Map<String, dynamic>?;
-            final projectId = args?['projectId'] as String?;
-            if (session != null && projectId != null) {
-              return ContractorShell(
-                currentPage: ContractorPage.materials,
-                contractorId: session.user.id,
-                child: ProductPanelScreen(
-                  contractorId: session.user.id,
-                  projectId: projectId,
-                ),
-              );
-            }
-            return const ToLoginScreen();
-          },
+          routes: [
+            GoRoute(
+              path: '/dashboard',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      if (session != null) {
+                        return DashboardScreen(contractorId: session.user.id);
+                      }
+                      return const ToLoginScreen();
+                    },
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/messages',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      if (session != null) {
+                        return ContractorChatHistoryPage();
+                      }
+                      return const ToLoginScreen();
+                    },
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/contracts',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      if (session != null) {
+                        return ContractType(contractorId: session.user.id);
+                      }
+                      return const ToLoginScreen();
+                    },
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/bidding',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      if (session != null) {
+                        return BiddingScreen(contractorId: session.user.id);
+                      }
+                      return const ToLoginScreen();
+                    },
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/profile',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      if (session != null) {
+                        return ContractorUserProfileScreen(contractorId: session.user.id);
+                      }
+                      return const ToLoginScreen();
+                    },
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/project-management',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      final projectId = state.extra as String?;
+                      if (session != null && projectId != null) {
+                        return CorOngoingProjectScreen(projectId: projectId);
+                      }
+                      return const ToLoginScreen();
+                    },
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/materials',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      final args = state.extra as Map<String, dynamic>?;
+                      final projectId = args?['projectId'] as String?;
+                      if (session != null && projectId != null) {
+                        return ProductPanelScreen(
+                          contractorId: session.user.id,
+                          projectId: projectId,
+                        );
+                      }
+                      return const ToLoginScreen();
+                    },
+                  ),
+                );
+              },
+            ),
+          ],
         ),
         // Catch-all route for 404 errors
         GoRoute(
           path: '/:path(.*)',
-          builder: (context, state) {
-            return Scaffold(
-              appBar: AppBar(
-                title: const Text('Page Not Found'),
-                backgroundColor: Colors.amber,
-              ),
-              body: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: Colors.grey,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      '404 - Page Not Found',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+          pageBuilder: (context, state) => NoTransitionPage(
+            child: Builder(
+              builder: (context) => Scaffold(
+                appBar: AppBar(
+                  title: const Text('Page Not Found'),
+                  backgroundColor: Colors.amber,
+                ),
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Colors.grey,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'The page "${state.path}" does not exist.',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
+                      const SizedBox(height: 16),
+                      const Text(
+                        '404 - Page Not Found',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: () => context.go('/dashboard'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.amber,
+                      const SizedBox(height: 8),
+                      Text(
+                        'The page "${state.path}" does not exist.',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
                       ),
-                      child: const Text('Go to Dashboard'),
-                    ),
-                  ],
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () => context.go('/dashboard'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber,
+                        ),
+                        child: const Text('Go to Dashboard'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            );
-          },
+            ),
+          ),
         ),
       ],
       redirect: (context, state) async {
@@ -273,8 +349,11 @@ class _MyAppState extends State<MyApp> {
       },
     );
 
-    Supabase.instance.client.auth.onAuthStateChange.listen((event) {
-      _router.refresh();
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      if (data.event == AuthChangeEvent.signedIn ||
+          data.event == AuthChangeEvent.signedOut) {
+        _router.refresh();
+      }
     });
   }
 

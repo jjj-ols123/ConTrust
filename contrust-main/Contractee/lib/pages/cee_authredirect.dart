@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthRedirectPage extends StatefulWidget {
@@ -30,7 +31,7 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
         if (newSession == null) {
           if (mounted && !_hasRedirected) {
             _hasRedirected = true;
-            Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+            context.go('/');
           }
           return;
         }
@@ -40,7 +41,7 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
       if (user == null) {
         if (mounted && !_hasRedirected) {
           _hasRedirected = true;
-          Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+          context.go('/');
         }
         return;
       }
@@ -60,17 +61,17 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
       if (mounted && !_hasRedirected) {
         _hasRedirected = true;
         if (contracteeData != null) {
-          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+          context.go('/home');
         } else if (contractorData != null) {
-          Navigator.pushNamedAndRemoveUntil(context, '/dashboard', (route) => false);
+          context.go('/dashboard');
         } else {
-          Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+          context.go('/');
         }
       }
     } catch (e) {
       if (mounted && !_hasRedirected) {
         _hasRedirected = true;
-        Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+        context.go('/');
       }
     }
   }
