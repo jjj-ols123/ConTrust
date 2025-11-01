@@ -176,8 +176,24 @@ class NotificationService {
       senderType: senderType,
       type: type,
       message: message,
-      information: {'contract_id': contractId},
+      information: {
+        'contract_id': contractId,
+        'project_id': await _getProjectIdFromContract(contractId),
+      },
     );
+  }
+
+  Future<String?> _getProjectIdFromContract(String contractId) async {
+    try {
+      final contract = await _supabase
+          .from('Contracts')
+          .select('project_id')
+          .eq('contract_id', contractId)
+          .maybeSingle();
+      return contract?['project_id'];
+    } catch (e) {
+      return null;
+    }
   }
 
   Future<void> createBidNotification({
@@ -363,15 +379,45 @@ class NotificationService {
     required String projectId,
     required String bidId,
   }) async {
-    await createBidNotification(
-      receiverId: contractorId,
-      receiverType: 'contractor',
-      senderId: contracteeId,
-      senderType: 'contractee',
-      bidId: bidId,
-      projectId: projectId,
-      type: 'bid_accepted',
-      message: 'Congratulations! Your bid has been accepted.',
-    );
+    try {
+      final contractee = await _supabase
+          .from('Contractee')
+          .select('full_name')
+          .eq('contractee_id', contracteeId)
+          .maybeSingle();
+      final contracteeName = contractee?['full_name'] ?? 'Contractee';
+      
+      final project = await _supabase
+          .from('Projects')
+          .select('title')
+          .eq('project_id', projectId)
+          .maybeSingle();
+      final projectTitle = project?['title'] ?? 'Project';
+
+      await createBidNotification(
+        receiverId: contractorId,
+        receiverType: 'contractor',
+        senderId: contracteeId,
+        senderType: 'contractee',
+        bidId: bidId,
+        projectId: projectId,
+        type: 'bid_accepted',
+        message: 'Congratulations! Your bid for "$projectTitle" has been accepted by $contracteeName.',
+      );
+    } catch (e, st) {
+      await _errorService.logError(
+        errorMessage: 'Failed to send bid acceptance notification: ',
+        module: 'Notification Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'notifyBidAccepted',
+          'contractor_id': contractorId,
+          'contractee_id': contracteeId,
+          'project_id': projectId,
+          'bid_id': bidId,
+          'stack': st.toString(),
+        },
+      );
+    }
   }
 }

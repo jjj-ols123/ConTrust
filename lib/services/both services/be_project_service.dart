@@ -5,6 +5,7 @@ import 'package:backend/services/both services/be_notification_service.dart';
 import 'package:backend/services/both services/be_message_service.dart';
 import 'package:backend/services/superadmin services/auditlogs_service.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
+import 'package:backend/utils/be_constraint.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -59,6 +60,11 @@ class ProjectService {
         'status': 'pending',
         'duration': duration,
         'start_date': startDate.toIso8601String(),
+        'projectdata': {
+          'hiring_type': 'bidding',
+          'created_via': 'project_posting',
+          'bid_duration': duration,
+        }
       });
 
       await _auditService.logAuditEvent(
@@ -72,10 +78,6 @@ class ProjectService {
           'contractee_id': contracteeId,
         },
       );
-
-      if (context.mounted) {
-        ConTrustSnackBar.success(context, 'Project created successfully!');
-      }
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Failed to post project: ',
@@ -170,6 +172,7 @@ class ProjectService {
     required double? minBudget,
     required double? maxBudget,
     required int duration,
+    DateTime? startDate,
   }) async {
     try {
       final projectData = await _supabase
@@ -189,10 +192,14 @@ class ProjectService {
         'duration': duration,
       };
 
+      if (startDate != null) {
+        updateData['start_date'] = startDate.toIso8601String();
+      }
+
       if (currentStatus == 'stopped') {
         updateData['status'] = 'pending';
         updateData['created_at'] = DateTime.now().toIso8601String();
-        
+
         await _supabase
             .from('Bids')
             .update({'status': 'rejected'})
@@ -200,11 +207,14 @@ class ProjectService {
             .eq('status', 'stopped');
       }
 
-      await _supabase.from('Projects').update(updateData).eq('project_id', projectId);
+      await _supabase
+          .from('Projects')
+          .update(updateData)
+          .eq('project_id', projectId);
 
       await _auditService.logAuditEvent(
         action: 'PROJECT_UPDATED',
-        details: currentStatus == 'stopped' 
+        details: currentStatus == 'stopped'
             ? 'Project updated and reposted for bidding - old bids rejected'
             : 'Project details updated',
         metadata: {
@@ -228,7 +238,7 @@ class ProjectService {
     }
   }
 
-  Future<void> cancelProject(String projectId) async {
+  Future<void> cancelProject(String projectId, {String? reason}) async {
     try {
       final projectData = await _supabase
           .from('Projects')
@@ -238,8 +248,9 @@ class ProjectService {
 
       final contractorId = projectData['contractor_id'] as String?;
       final contracteeId = projectData['contractee_id'] as String?;
-      final projectTitle = projectData['title'] as String? ?? 'Untitled Project';
-      final originalStatus = projectData['status'] as String?; 
+      final projectTitle =
+          projectData['title'] as String? ?? 'Untitled Project';
+      final originalStatus = projectData['status'] as String?;
 
       if (contractorId != null) {
         await _supabase.from('Projects').update({
@@ -255,11 +266,14 @@ class ProjectService {
           'information': {
             'project_id': projectId,
             'project_title': projectTitle,
-            'message': 'The contractee has requested to cancel the project "$projectTitle". Your approval is required.',
+            'message': reason != null
+                ? 'The contractee has requested to cancel the project "$projectTitle". Reason: $reason'
+                : 'The contractee has requested to cancel the project "$projectTitle". Your approval is required.',
             'cancellation_requested_by': 'contractee',
             'requested_at': DateTime.now().toIso8601String(),
             'requires_contractor_approval': true,
             'original_status': originalStatus,
+            if (reason != null) 'cancellation_reason': reason,
           },
           'is_read': false,
           'created_at': DateTime.now().toIso8601String(),
@@ -267,7 +281,8 @@ class ProjectService {
 
         await _auditService.logAuditEvent(
           action: 'PROJECT_CANCELLATION_REQUESTED',
-          details: 'Contractee requested project cancellation - awaiting contractor approval',
+          details:
+              'Contractee requested project cancellation - awaiting contractor approval',
           metadata: {
             'project_id': projectId,
             'contractor_id': contractorId,
@@ -297,20 +312,31 @@ class ProjectService {
           .select('notification_id, information')
           .eq('headline', 'Hiring Request')
           .filter('information->>project_id', 'eq', projectId);
-      
+
       for (final notif in hiringRequests) {
         final info = notif['information'] as Map<String, dynamic>? ?? {};
         await _supabase.from('Notifications').update({
+          'headline': 'Hiring Request Cancelled',
           'information': {
             ...info,
-            'status': contractorId != null ? 'cancellation_requested' : 'cancelled',
-            'cancelled_reason': contractorId != null 
-                ? 'Project cancellation requested by contractee'
-                : 'Project has been cancelled by the contractee',
+            'status':
+                contractorId != null ? 'cancellation_requested' : 'cancelled',
+            'cancelled_reason': contractorId != null
+                ? (reason != null
+                    ? 'Project cancellation requested by contractee. Reason: $reason'
+                    : 'Project cancellation requested by contractee')
+                : (reason != null
+                    ? 'Project has been cancelled by the contractee. Reason: $reason'
+                    : 'Project has been cancelled by the contractee'),
             'cancelled_at': DateTime.now().toIso8601String(),
-            'cancel_message': contractorId != null 
-                ? 'Project cancellation requested by contractee'
-                : 'Project has been cancelled by the contractee.'
+            'cancel_message': contractorId != null
+                ? (reason != null
+                    ? 'Project cancellation requested by contractee. Reason: $reason'
+                    : 'Project cancellation requested by contractee')
+                : (reason != null
+                    ? 'Project has been cancelled by the contractee. Reason: $reason'
+                    : 'Project has been cancelled by the contractee.'),
+            if (reason != null) 'cancellation_reason': reason,
           },
         }).eq('notification_id', notif['notification_id']);
       }
@@ -320,18 +346,20 @@ class ProjectService {
           .select('notification_id, information')
           .eq('headline', 'Hiring Response')
           .filter('information->>project_id', 'eq', projectId);
-      
+
       for (final notif in hiringResponses) {
         final info = notif['information'] as Map<String, dynamic>? ?? {};
         await _supabase.from('Notifications').update({
+          'headline': 'Hiring Response Cancelled',
           'information': {
             ...info,
-            'status': contractorId != null ? 'cancellation_requested' : 'cancelled',
-            'cancelled_reason': contractorId != null 
+            'status':
+                contractorId != null ? 'cancellation_requested' : 'cancelled',
+            'cancelled_reason': contractorId != null
                 ? 'Project cancellation requested by contractee'
                 : 'Project has been cancelled by the contractee',
             'cancelled_at': DateTime.now().toIso8601String(),
-            'cancel_message': contractorId != null 
+            'cancel_message': contractorId != null
                 ? 'Project cancellation requested by contractee'
                 : 'Project has been cancelled by the contractee.'
           },
@@ -361,7 +389,8 @@ class ProjectService {
 
       final contractorId = projectData['contractor_id'] as String?;
       final contracteeId = projectData['contractee_id'] as String?;
-      final projectTitle = projectData['title'] as String? ?? 'Untitled Project';
+      final projectTitle =
+          projectData['title'] as String? ?? 'Untitled Project';
       final currentStatus = projectData['status'] as String?;
 
       if (contractorId == null) {
@@ -397,7 +426,8 @@ class ProjectService {
           'information': {
             'project_id': projectId,
             'project_title': projectTitle,
-            'message': 'The project "$projectTitle" has been cancelled by mutual agreement.',
+            'message':
+                'The project "$projectTitle" has been cancelled by mutual agreement.',
             'cancelled_by': 'mutual_agreement',
             'cancelled_at': DateTime.now().toIso8601String(),
           },
@@ -413,7 +443,8 @@ class ProjectService {
           'information': {
             'project_id': projectId,
             'project_title': projectTitle,
-            'message': 'The project "$projectTitle" has been cancelled by mutual agreement.',
+            'message':
+                'The project "$projectTitle" has been cancelled by mutual agreement.',
             'cancelled_by': 'mutual_agreement',
             'cancelled_at': DateTime.now().toIso8601String(),
           },
@@ -424,7 +455,8 @@ class ProjectService {
 
       await _auditService.logAuditEvent(
         action: 'PROJECT_CANCELLED_MUTUAL_AGREEMENT',
-        details: 'Project cancelled by mutual agreement between contractor and contractee',
+        details:
+            'Project cancelled by mutual agreement between contractor and contractee',
         metadata: {
           'project_id': projectId,
           'contractor_id': contractorId,
@@ -457,7 +489,8 @@ class ProjectService {
 
       final contractorId = projectData['contractor_id'] as String?;
       final contracteeId = projectData['contractee_id'] as String?;
-      final projectTitle = projectData['title'] as String? ?? 'Untitled Project';
+      final projectTitle =
+          projectData['title'] as String? ?? 'Untitled Project';
       final currentStatus = projectData['status'] as String?;
 
       if (contractorId == null) {
@@ -472,10 +505,11 @@ class ProjectService {
       final isContractee = userId == contracteeId;
 
       if (!isContractor && !isContractee) {
-        throw Exception('User is not authorized to decline cancellation for this project');
+        throw Exception(
+            'User is not authorized to decline cancellation for this project');
       }
 
-      String originalStatus = 'active'; 
+      String originalStatus = 'active';
       try {
         final cancellationNotification = await _supabase
             .from('Notifications')
@@ -487,7 +521,8 @@ class ProjectService {
             .maybeSingle();
 
         if (cancellationNotification != null) {
-          final info = cancellationNotification['information'] as Map<String, dynamic>?;
+          final info =
+              cancellationNotification['information'] as Map<String, dynamic>?;
           originalStatus = info?['original_status'] as String? ?? 'active';
         }
       } catch (e) {
@@ -520,7 +555,8 @@ class ProjectService {
         'information': {
           'project_id': projectId,
           'project_title': projectTitle,
-          'message': 'The $decliningPartyRole has declined to cancel the project "$projectTitle". The project will continue.',
+          'message':
+              'The $decliningPartyRole has declined to cancel the project "$projectTitle". The project will continue.',
           'declined_by': decliningPartyRole,
           'declined_at': DateTime.now().toIso8601String(),
         },
@@ -573,17 +609,57 @@ class ProjectService {
             'You already have a pending hire request to this contractor. Please wait for their response.');
       }
 
+      final pendingHireRequest =
+          await hasPendingHireRequest(contracteeId, contractorId);
+      if (pendingHireRequest != null) {
+        throw Exception(
+            'You already have a pending hire request to this contractor. Please wait for their response.');
+      }
+
       final existingProject = await _supabase
           .from('Projects')
-          .select('project_id')
+          .select('project_id, status, projectdata')
           .eq('contractee_id', contracteeId)
           .eq('title', title)
           .eq('type', type)
+          .neq('status', 'cancelled')
+          .limit(1)
           .maybeSingle();
 
       String projectId;
       if (existingProject != null) {
         projectId = existingProject['project_id'];
+
+        final hasDeclined = await hasContractorDeclinedProject(
+            contracteeId, contractorId, projectId);
+        if (hasDeclined) {
+          throw Exception(
+              'This contractor has already declined this project. You cannot hire them again for the same project.');
+        }
+
+        final existingProjectData =
+            existingProject['projectdata'] as Map<String, dynamic>?;
+        final existingHiringType = existingProjectData?['hiring_type'];
+
+        if (existingHiringType == 'bidding') {
+          throw Exception(
+              'You already have a bidding project with this title. Please use a different title or wait for the current project to complete.');
+        }
+
+        projectId = existingProject['project_id'];
+
+        if (existingProjectData == null ||
+            existingHiringType != 'direct_hire') {
+          final updatedProjectData = {
+            'hiring_type': 'direct_hire',
+            'created_via': 'hire_request',
+            ...(existingProjectData ?? {}),
+          };
+
+          await _supabase.from('Projects').update({
+            'projectdata': updatedProjectData,
+          }).eq('project_id', projectId);
+        }
       } else {
         final projectData = {
           'contractee_id': contracteeId,
@@ -595,12 +671,13 @@ class ProjectService {
           'duration': 0,
           'min_budget': minBudget != null ? double.tryParse(minBudget) : null,
           'max_budget': maxBudget != null ? double.tryParse(maxBudget) : null,
+          'start_date': startDate?.toIso8601String(),
+          'projectdata': {
+            'hiring_type': 'direct_hire',
+            'created_via': 'hire_request',
+          }
         };
-        
-        if (startDate != null) {
-          projectData['start_date'] = startDate.toIso8601String();
-        }
-        
+
         final projectResponse = await _supabase
             .from('Projects')
             .insert(projectData)
@@ -655,11 +732,12 @@ class ProjectService {
           'contractor_id': contractorId,
           'contractee_id': contracteeId,
           'project_title': title,
+          'project_id': projectId,
         },
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to notify contractor: ',
+        errorMessage: 'Failed to notify contractor: $e',
         module: 'Project Service',
         severity: 'Medium',
         extraInfo: {
@@ -786,12 +864,32 @@ class ProjectService {
     required String projectId,
   }) async {
     try {
+      // Check if contractor already has an ongoing project
+      final ongoingProject = await hasOngoingProjectAsContractor(contractorId);
+      if (ongoingProject != null) {
+        throw Exception(
+            'You already have an active project. Complete it before accepting another hire request.');
+      }
+
       final currentNotification = await _supabase
           .from('Notifications')
           .select('information')
           .eq('notification_id', notificationId)
           .single();
 
+      // Get current project to verify it's in pending status
+      final projectResponse = await _supabase
+          .from('Projects')
+          .select('status, projectdata')
+          .eq('project_id', projectId)
+          .single();
+
+      final projectStatus = projectResponse['status'] as String?;
+      if (projectStatus != 'pending') {
+        throw Exception('This hire request is no longer available.');
+      }
+
+      // Update project status and assign contractor (similar to bidding flow)
       await _supabase.from('Projects').update({
         'contractor_id': contractorId,
         'status': 'awaiting_contract',
@@ -843,7 +941,8 @@ class ProjectService {
         senderId: contractorId,
         senderType: 'contractor',
         type: 'Hiring Response',
-        message: 'Congratulations! Your hiring request has been accepted by $contractorName. \nPlease proceed to Messages to discuss further details.',
+        message:
+            'Congratulations! Your hiring request has been accepted by $contractorName. \nPlease proceed to Messages to discuss further details.',
         information: {
           'contractor_id': contractorId,
           'contractor_name': contractorName,
@@ -933,8 +1032,11 @@ class ProjectService {
     required String notificationId,
     required String contractorId,
     required String contracteeId,
+    String? reason,
   }) async {
     try {
+      print('DEBUG: declineHiring called with reason: "$reason"'); // Debug
+
       final currentNotification = await _supabase
           .from('Notifications')
           .select('information')
@@ -946,6 +1048,18 @@ class ProjectService {
       currentInfo['status'] = 'declined';
       currentInfo['updated_at'] = DateTime.now().toIso8601String();
 
+      // Handle decline reason - check for null, empty, or string "null"
+      if (reason != null &&
+          reason.trim().isNotEmpty &&
+          reason.toLowerCase() != 'null') {
+        print(
+            'DEBUG: Adding decline_reason to currentInfo: "$reason"'); // Debug
+        currentInfo['decline_reason'] = reason;
+      } else {
+        print(
+            'DEBUG: No valid reason provided (reason: "$reason"), skipping decline_reason'); // Debug
+      }
+
       await _supabase.from('Notifications').update({
         'information': currentInfo,
       }).eq('notification_id', notificationId);
@@ -955,23 +1069,43 @@ class ProjectService {
       final contractorName = contractorData?['firm_name'] ?? 'A contractor';
       final contractorPhoto = contractorData?['profile_photo'] ?? '';
 
+      // Get project ID from the original notification
+      final projectId = currentInfo['project_id'];
+
+      final notificationInfo = {
+        'contractor_id': contractorId,
+        'contractor_name': contractorName,
+        'contractor_photo': contractorPhoto,
+        'action': 'hire_declined',
+        'original_notification_id': notificationId,
+        'timestamp': DateTime.now().toIso8601String(),
+        'sender_name': contractorName,
+        'sender_photo': contractorPhoto,
+        if (projectId != null) 'project_id': projectId,
+      };
+
+      // Only add decline_reason if we have a valid reason
+      if (reason != null &&
+          reason.trim().isNotEmpty &&
+          reason.toLowerCase() != 'null') {
+        notificationInfo['decline_reason'] = reason;
+      }
+
+      print(
+          'DEBUG: Creating notification with info: $notificationInfo'); // Debug
+
       await NotificationService().createNotification(
         receiverId: contracteeId,
         receiverType: 'contractee',
         senderId: contractorId,
         senderType: 'contractor',
         type: 'Hiring Response',
-        message: 'Your hiring request has been declined.',
-        information: {
-          'contractor_id': contractorId,
-          'contractor_name': contractorName,
-          'contractor_photo': contractorPhoto,
-          'action': 'hire_declined',
-          'original_notification_id': notificationId,
-          'timestamp': DateTime.now().toIso8601String(),
-          'sender_name': contractorName,
-          'sender_photo': contractorPhoto,
-        },
+        message: (reason != null &&
+                reason.trim().isNotEmpty &&
+                reason.toLowerCase() != 'null')
+            ? 'Your hiring request has been declined. Reason: $reason'
+            : 'Your hiring request has been declined.',
+        information: notificationInfo,
       );
 
       await _auditService.logAuditEvent(
@@ -986,7 +1120,7 @@ class ProjectService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to decline hiring: ',
+        errorMessage: 'Failed to decline hiring: $e',
         module: 'Project Service',
         severity: 'Medium',
         extraInfo: {

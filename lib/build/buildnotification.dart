@@ -9,7 +9,6 @@ import 'package:backend/services/superadmin%20services/errorlogs_service.dart';
 import 'package:contractee/pages/cee_notification.dart';
 import 'package:contractor/Screen/cor_notification.dart';
 import 'package:flutter/material.dart';
-import 'package:backend/services/both%20services/be_project_service.dart';
 
 class NotificationUIBuildMethods {
   NotificationUIBuildMethods({
@@ -23,21 +22,26 @@ class NotificationUIBuildMethods {
   double get screenWidth => MediaQuery.of(context).size.width;
   bool get isDesktop => screenWidth > 1200;
 
-  Map<String, List<Map<String, dynamic>>> _groupNotifications(List<Map<String, dynamic>> notifications) {
+  Map<String, List<Map<String, dynamic>>> _groupNotifications(
+      List<Map<String, dynamic>> notifications) {
     final today = DateTime.now();
-    final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-    
+    final todayStr =
+        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
     final Map<String, List<Map<String, dynamic>>> groups = {
       'hiring_requests_today': [],
       'hiring_requests_accepted_today': [],
+      'hiring_requests_cancelled_today': [],
+      'hiring_requests_declined_today': [],
+      'hiring_requests_declined_by_me_today': [],
       'bid_accepted_today': [],
       'other': [],
     };
-    
+
     for (var notification in notifications) {
       final createdAt = notification['created_at'] as String?;
       final headline = notification['headline'] as String?;
-      
+
       if (headline == 'Hiring Request') {
         final rawInfo = notification['information'];
         final info = rawInfo is String
@@ -45,26 +49,63 @@ class NotificationUIBuildMethods {
             : Map<String, dynamic>.from(rawInfo ?? {});
         final status = info['status'] as String?;
         final updatedAt = info['updated_at'] as String?;
-        
-        if (status == 'pending' && createdAt != null && createdAt.startsWith(todayStr)) {
+
+        if (status == 'pending' &&
+            createdAt != null &&
+            createdAt.startsWith(todayStr)) {
           groups['hiring_requests_today']!.add(notification);
           continue;
-        } else if (status == 'accepted' && updatedAt != null && updatedAt.startsWith(todayStr)) {
+        } else if (status == 'accepted' &&
+            updatedAt != null &&
+            updatedAt.startsWith(todayStr)) {
           groups['hiring_requests_accepted_today']!.add(notification);
           continue;
+        } else if (status == 'cancelled' &&
+            updatedAt != null &&
+            updatedAt.startsWith(todayStr)) {
+          groups['hiring_requests_cancelled_today']!.add(notification);
+          continue;
+        } else if (status == 'declined' &&
+            updatedAt != null &&
+            updatedAt.startsWith(todayStr)) {
+          groups['hiring_requests_declined_by_me_today']!.add(notification);
+          continue;
         }
-      } else if (headline == 'Bid Accepted' && createdAt != null && createdAt.startsWith(todayStr)) {
+      } else if (headline == 'Hiring Request Cancelled' &&
+          createdAt != null &&
+          createdAt.startsWith(todayStr)) {
+        // Handle cancelled hire requests (for contractors)
+        groups['hiring_requests_cancelled_today']!.add(notification);
+        continue;
+      } else if (headline == 'Hiring Response') {
+        // Handle declined hire requests (for contractees)
+        final rawInfo = notification['information'];
+        final info = rawInfo is String
+            ? Map<String, dynamic>.from(jsonDecode(rawInfo))
+            : Map<String, dynamic>.from(rawInfo ?? {});
+        final action = info['action'] as String?;
+
+        if (action == 'hire_declined' &&
+            createdAt != null &&
+            createdAt.startsWith(todayStr)) {
+          groups['hiring_requests_declined_today']!.add(notification);
+          continue;
+        }
+      } else if (headline == 'Bid Accepted' &&
+          createdAt != null &&
+          createdAt.startsWith(todayStr)) {
         groups['bid_accepted_today']!.add(notification);
         continue;
       }
-      
+
       groups['other']!.add(notification);
     }
-    
+
     return groups;
   }
 
-  Widget buildNotificationList(Stream<List<Map<String, dynamic>>> notificationStream) {
+  Widget buildNotificationList(
+      Stream<List<Map<String, dynamic>>> notificationStream) {
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: notificationStream,
       builder: (context, snapshot) {
@@ -74,47 +115,82 @@ class NotificationUIBuildMethods {
           );
         }
         if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator(color: Colors.amber));
+          return const Center(
+              child: CircularProgressIndicator(color: Colors.amber));
         }
         if (snapshot.data!.isEmpty) {
           return const Center(child: Text("No notifications yet"));
         }
-        
+
         final groups = _groupNotifications(snapshot.data!);
         final hiringRequestsToday = groups['hiring_requests_today']!;
-        final hiringRequestsAcceptedToday = groups['hiring_requests_accepted_today']!;
+        final hiringRequestsAcceptedToday =
+            groups['hiring_requests_accepted_today']!;
+        final hiringRequestsCancelledToday =
+            groups['hiring_requests_cancelled_today']!;
+        final hiringRequestsDeclinedToday =
+            groups['hiring_requests_declined_today']!;
+        final hiringRequestsDeclinedByMeToday =
+            groups['hiring_requests_declined_by_me_today']!;
         final bidAcceptedToday = groups['bid_accepted_today']!;
         final otherNotifications = groups['other']!;
-        
+
         return ListView(
           children: [
             if (hiringRequestsToday.isNotEmpty)
               _buildGroupedNotification(
-                title: 'You have ${hiringRequestsToday.length} hiring ${hiringRequestsToday.length == 1 ? 'request' : 'requests'} today',
+                title:
+                    'You have ${hiringRequestsToday.length} hiring ${hiringRequestsToday.length == 1 ? 'request' : 'requests'} today',
                 icon: Icons.work_outline,
                 color: Colors.blue,
                 notifications: hiringRequestsToday,
                 groupKey: 'hiring_requests_today',
               ),
-            
             if (hiringRequestsAcceptedToday.isNotEmpty)
               _buildGroupedNotification(
-                title: 'You accepted ${hiringRequestsAcceptedToday.length} hiring ${hiringRequestsAcceptedToday.length == 1 ? 'request' : 'requests'} today',
+                title:
+                    'You accepted ${hiringRequestsAcceptedToday.length} hiring ${hiringRequestsAcceptedToday.length == 1 ? 'request' : 'requests'} today',
                 icon: Icons.check_circle_outline,
                 color: Colors.green,
                 notifications: hiringRequestsAcceptedToday,
                 groupKey: 'hiring_requests_accepted_today',
               ),
-            
+            if (hiringRequestsCancelledToday.isNotEmpty)
+              _buildGroupedNotification(
+                title:
+                    '${hiringRequestsCancelledToday.length} hiring ${hiringRequestsCancelledToday.length == 1 ? 'request was' : 'requests were'} cancelled today',
+                icon: Icons.cancel_outlined,
+                color: Colors.red,
+                notifications: hiringRequestsCancelledToday,
+                groupKey: 'hiring_requests_cancelled_today',
+              ),
+            if (hiringRequestsDeclinedToday.isNotEmpty)
+              _buildGroupedNotification(
+                title:
+                    '${hiringRequestsDeclinedToday.length} hiring ${hiringRequestsDeclinedToday.length == 1 ? 'request was' : 'requests were'} declined today',
+                icon: Icons.thumb_down_outlined,
+                color: Colors.orange,
+                notifications: hiringRequestsDeclinedToday,
+                groupKey: 'hiring_requests_declined_today',
+              ),
+            if (hiringRequestsDeclinedByMeToday.isNotEmpty)
+              _buildGroupedNotification(
+                title:
+                    'You declined ${hiringRequestsDeclinedByMeToday.length} hiring ${hiringRequestsDeclinedByMeToday.length == 1 ? 'request' : 'requests'} today',
+                icon: Icons.block,
+                color: Colors.grey,
+                notifications: hiringRequestsDeclinedByMeToday,
+                groupKey: 'hiring_requests_declined_by_me_today',
+              ),
             if (bidAcceptedToday.isNotEmpty)
               _buildGroupedNotification(
-                title: 'You have ${bidAcceptedToday.length} ${bidAcceptedToday.length == 1 ? 'bid' : 'bids'} accepted today',
+                title:
+                    'You have ${bidAcceptedToday.length} ${bidAcceptedToday.length == 1 ? 'bid' : 'bids'} accepted today',
                 icon: Icons.trending_up,
                 color: Colors.amber,
                 notifications: bidAcceptedToday,
                 groupKey: 'bid_accepted_today',
               ),
-
             ...otherNotifications.map((notification) {
               return _buildSingleNotification(notification);
             }),
@@ -123,7 +199,7 @@ class NotificationUIBuildMethods {
       },
     );
   }
-  
+
   Widget _buildGroupedNotification({
     required String title,
     required IconData icon,
@@ -140,7 +216,7 @@ class NotificationUIBuildMethods {
       receiverId: receiverId,
     );
   }
-  
+
   Widget _buildSingleNotification(Map<String, dynamic> notification) {
     final rawInfo = notification['information'];
     final info = rawInfo is String
@@ -156,11 +232,15 @@ class NotificationUIBuildMethods {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))
+              ],
             ),
             child: const Padding(
               padding: EdgeInsets.all(16),
-              child: Center(child: CircularProgressIndicator(color: Colors.amber)),
+              child:
+                  Center(child: CircularProgressIndicator(color: Colors.amber)),
             ),
           );
         }
@@ -169,123 +249,137 @@ class NotificationUIBuildMethods {
         final senderName = userInfo['senderName'] ?? 'System';
         final senderPhoto = userInfo['senderPhoto'] ?? '';
         final projectType = userInfo['projectType'] ?? '';
-    final notificationMessage = info['message'] ?? notification['message'] ?? '';
+        final notificationMessage =
+            info['message'] ?? notification['message'] ?? '';
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 4,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                bottomLeft: Radius.circular(16),
-              ),
-            ),
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))
+            ],
           ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 4,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    bottomLeft: Radius.circular(16),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircleAvatar(
-                        backgroundImage: senderPhoto.isNotEmpty
-                            ? NetworkImage(senderPhoto)
-                            : const AssetImage('defaultpic.png') as ImageProvider,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              senderName,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            if (projectType.isNotEmpty)
-                              Text(
-                                projectType,
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 14,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CircleAvatar(
+                            backgroundImage: senderPhoto.isNotEmpty
+                                ? NetworkImage(senderPhoto)
+                                : const NetworkImage(
+                                    'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png'),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  senderName,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                          ],
+                                if (projectType.isNotEmpty)
+                                  Text(
+                                    projectType,
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        notification['headline'] ?? '',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
+                      const SizedBox(height: 8),
+                      Text(
+                        notificationMessage,
+                        style: TextStyle(
+                          color: Colors.grey[700],
+                          fontSize: 14,
+                        ),
+                      ),
+                      if ((notification['headline'] ?? '') ==
+                          'Hiring Request') ...[
+                        const SizedBox(height: 12),
+                        _buildHiringRequestActions(notification, info),
+                      ],
+                      if ((notification['headline'] ?? '') ==
+                          'Project Cancellation Request') ...[
+                        const SizedBox(height: 12),
+                        _buildCancellationRequestActions(notification, info),
+                      ],
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    notification['headline'] ?? '',
-                    style: const TextStyle(
-                              fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    notificationMessage,
-                    style: TextStyle(
-                      color: Colors.grey[700],
-                      fontSize: 14,
-                    ),
-                  ),
-                  if ((notification['headline'] ?? '') == 'Hiring Request') ...[
-                    const SizedBox(height: 12),
-                    _buildHiringRequestActions(notification, info),
-                  ],
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
         );
       },
     );
   }
 
-  Future<Map<String, dynamic>> _fetchNotificationUserInfo(Map<String, dynamic> notification, Map<String, dynamic> info) async {
+  Future<Map<String, dynamic>> _fetchNotificationUserInfo(
+      Map<String, dynamic> notification, Map<String, dynamic> info) async {
     final errorService = SuperAdminErrorService();
     try {
-      final senderId = info['sender_id'] ?? info['contractor_id'] ?? info['contractee_id'];
+      final senderId =
+          info['sender_id'] ?? info['contractee_id'] ?? info['contractor_id'];
       final projectId = info['project_id'];
-      
+
       Map<String, dynamic> userInfo = {
         'senderName': 'System',
         'senderPhoto': '',
         'projectType': '',
       };
 
-      // Fetch sender information
       if (senderId != null) {
         try {
-          // Try to fetch as contractor first
-          final contractorData = await FetchService().fetchContractorData(senderId);
+          final contractorData =
+              await FetchService().fetchContractorData(senderId);
           if (contractorData != null) {
-            userInfo['senderName'] = contractorData['firm_name'] ?? 'Unknown Contractor';
+            userInfo['senderName'] =
+                contractorData['firm_name'] ?? 'Unknown Contractor';
             userInfo['senderPhoto'] = contractorData['profile_photo'] ?? '';
           } else {
-            // If not found as contractor, try as contractee
-            final contracteeData = await FetchService().fetchContracteeData(senderId);
+            final contracteeData =
+                await FetchService().fetchContracteeData(senderId);
             if (contracteeData != null) {
-              userInfo['senderName'] = contracteeData['full_name'] ?? 'Unknown Contractee';
+              userInfo['senderName'] =
+                  contracteeData['full_name'] ?? 'Unknown Contractee';
               userInfo['senderPhoto'] = contracteeData['profile_photo'] ?? '';
             }
           }
@@ -304,8 +398,10 @@ class NotificationUIBuildMethods {
       }
       if (projectId != null) {
         try {
-          final projectData = await FetchService().fetchProjectDetails(projectId);
-          userInfo['projectType'] = projectData?['type'] ?? projectData?['title'] ?? '';
+          final projectData =
+              await FetchService().fetchProjectDetails(projectId);
+          userInfo['projectType'] =
+              projectData?['type'] ?? projectData?['title'] ?? '';
         } catch (e) {
           errorService.logError(
             errorMessage: 'Error fetching project data: $e',
@@ -336,11 +432,133 @@ class NotificationUIBuildMethods {
     }
   }
 
-  Widget _buildHiringRequestActions(Map<String, dynamic> notification, Map<String, dynamic> info) {
+  Widget _buildCancellationRequestActions(
+      Map<String, dynamic> notification, Map<String, dynamic> info) {
+    final cancellationReason = info['cancellation_reason'] as String?;
     final status = info['status'] as String?;
-    
+
+    // For pending cancellation requests, show simple notification
+    if (status == 'cancellation_requested_by_contractee' || status == 'pending') {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.orange.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.orange.shade200),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Cancellation Request',
+                  style: TextStyle(
+                    color: Colors.orange.shade700,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'The contractee has requested to cancel this project.',
+              style: TextStyle(
+                color: Colors.orange.shade800,
+                fontSize: 13,
+              ),
+            ),
+            if (cancellationReason != null && cancellationReason.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Reason: $cancellationReason',
+                style: TextStyle(
+                  color: Colors.orange.shade800,
+                  fontSize: 13,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+            Text(
+              'Please check your project dashboard to approve or reject this request.',
+              style: TextStyle(
+                color: Colors.orange.shade700,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // If already approved/rejected, show status
+    if (status == 'approved') {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.green.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.green.shade200),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green.shade700, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Cancellation approved',
+              style: TextStyle(
+                color: Colors.green.shade700,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (status == 'rejected') {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.red.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.red.shade200),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.cancel, color: Colors.red.shade700, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Cancellation rejected',
+              style: TextStyle(
+                color: Colors.red.shade700,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildHiringRequestActions(
+      Map<String, dynamic> notification, Map<String, dynamic> info) {
+    final status = info['status'] as String?;
+
     if (status == 'cancelled') {
-      final cancelledReason = info['cancelled_reason'] as String? ?? 'This request is no longer available';
+      final cancelledReason = info['cancellation_reason'] as String? ?? 
+          info['cancelled_reason'] as String? ??
+          info['cancel_message'] as String? ??
+          'This request is no longer available';
       return Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -366,7 +584,7 @@ class NotificationUIBuildMethods {
         ),
       );
     }
-    
+
     if (status == 'declined') {
       return Container(
         padding: const EdgeInsets.all(12),
@@ -391,7 +609,7 @@ class NotificationUIBuildMethods {
         ),
       );
     }
-    
+
     if (status == 'accepted') {
       return Container(
         padding: const EdgeInsets.all(12),
@@ -416,36 +634,26 @@ class NotificationUIBuildMethods {
         ),
       );
     }
-    
-    return OverflowBar(
-      alignment: MainAxisAlignment.end,
+
+    return Wrap(
+      alignment: WrapAlignment.end,
+      spacing: 4.0,
+      runSpacing: 4.0,
       children: [
         TextButton(
-          onPressed: () async {
-            await ProjectService().declineHiring(
-              notificationId: notification['notification_id'],
-              contractorId: receiverId,
-              contracteeId: info['contractee_id'],
-            );
-          },
-          child: const Text('Decline'),
-        ),
-        ElevatedButton(
-          onPressed: () async {
-            await ProjectService().acceptHiring(
-              notificationId: notification['notification_id'],
-              contractorId: receiverId,
-              contracteeId: info['contractee_id'],
-              projectId: info['project_id'],
-            );
-          },
-          child: const Text('Accept'),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            minimumSize: const Size(0, 32),
+          ),
+          onPressed: () => _showProjectDetailsDialog(context, info),
+          child: const Text('More Info', style: TextStyle(fontSize: 12)),
         ),
       ],
     );
   }
 
-  Widget buildNotificationUI(Stream<List<Map<String, dynamic>>> notificationStream) {
+  Widget buildNotificationUI(
+      Stream<List<Map<String, dynamic>>> notificationStream) {
     return isDesktop
         ? Scaffold(
             body: Row(
@@ -486,7 +694,8 @@ class NotificationUIBuildMethods {
           )
         : Scaffold(
             appBar: AppBar(
-              title: const Text("Notifications", style: TextStyle(fontWeight: FontWeight.bold)),
+              title: const Text("Notifications",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
               backgroundColor: Colors.amber[500],
             ),
             body: buildNotificationList(notificationStream),
@@ -546,7 +755,7 @@ class _NotificationButtonState extends State<NotificationButton> {
         setState(() => _userType = userType);
       }
     } catch (e) {
-      rethrow;  
+      rethrow;
     }
   }
 
@@ -685,7 +894,8 @@ class NotificationOverlay {
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.close, color: Colors.black),
+                              icon:
+                                  const Icon(Icons.close, color: Colors.black),
                               onPressed: () => Navigator.of(context).pop(),
                             ),
                           ],
@@ -697,8 +907,11 @@ class NotificationOverlay {
                               ? UserService().getContracteeId()
                               : UserService().getContractorId(),
                           builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
-                              return const Center(child: CircularProgressIndicator(color: Colors.amber));
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                  child: CircularProgressIndicator(
+                                      color: Colors.amber));
                             }
 
                             if (snapshot.hasError || !snapshot.hasData) {
@@ -708,13 +921,15 @@ class NotificationOverlay {
                             }
 
                             final receiverId = snapshot.data!;
-                            final notificationUIBuilder = NotificationUIBuildMethods(
+                            final notificationUIBuilder =
+                                NotificationUIBuildMethods(
                               context: context,
                               receiverId: receiverId,
                             );
 
                             return notificationUIBuilder.buildNotificationList(
-                              NotificationService().listenToNotifications(receiverId),
+                              NotificationService()
+                                  .listenToNotifications(receiverId),
                             );
                           },
                         ),
@@ -764,17 +979,20 @@ class _GroupedNotificationCard extends StatefulWidget {
   });
 
   @override
-  State<_GroupedNotificationCard> createState() => _GroupedNotificationCardState();
+  State<_GroupedNotificationCard> createState() =>
+      _GroupedNotificationCardState();
 }
 
 class _GroupedNotificationCardState extends State<_GroupedNotificationCard> {
   bool _isExpanded = false;
 
-  Widget _buildGroupedHiringActions(Map<String, dynamic> notification, Map<String, dynamic> info) {
+  Widget _buildGroupedHiringActions(
+      Map<String, dynamic> notification, Map<String, dynamic> info) {
     final status = info['status'] as String?;
-    
+
     if (status == 'cancelled') {
-      final cancelledReason = info['cancelled_reason'] as String? ?? 'This request is no longer available';
+      final cancelledReason = info['cancelled_reason'] as String? ??
+          'This request is no longer available';
       return Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -800,7 +1018,7 @@ class _GroupedNotificationCardState extends State<_GroupedNotificationCard> {
         ),
       );
     }
-    
+
     if (status == 'declined') {
       return Container(
         padding: const EdgeInsets.all(12),
@@ -825,7 +1043,7 @@ class _GroupedNotificationCardState extends State<_GroupedNotificationCard> {
         ),
       );
     }
-    
+
     if (status == 'accepted') {
       return Container(
         padding: const EdgeInsets.all(12),
@@ -850,38 +1068,9 @@ class _GroupedNotificationCardState extends State<_GroupedNotificationCard> {
         ),
       );
     }
-    
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        TextButton(
-          onPressed: () async {
-            await ProjectService().declineHiring(
-              notificationId: notification['notification_id'],
-              contractorId: widget.receiverId,
-              contracteeId: info['contractee_id'],
-            );
-          },
-          child: const Text('Decline'),
-        ),
-        const SizedBox(width: 8),
-        ElevatedButton(
-          onPressed: () async {
-            await ProjectService().acceptHiring(
-              notificationId: notification['notification_id'],
-              contractorId: widget.receiverId,
-              contracteeId: info['contractee_id'],
-              projectId: info['project_id'],
-            );
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: widget.color,
-            foregroundColor: Colors.white,
-          ),
-          child: const Text('Accept'),
-        ),
-      ],
-    );
+
+    // Return empty container instead of action buttons
+    return const SizedBox.shrink();
   }
 
   @override
@@ -954,7 +1143,6 @@ class _GroupedNotificationCardState extends State<_GroupedNotificationCard> {
               ),
             ),
           ),
-          
           if (_isExpanded)
             Container(
               decoration: BoxDecoration(
@@ -978,7 +1166,8 @@ class _GroupedNotificationCardState extends State<_GroupedNotificationCard> {
     );
   }
 
-  Widget _buildNotificationItem(BuildContext context, Map<String, dynamic> notification) {
+  Widget _buildNotificationItem(
+      BuildContext context, Map<String, dynamic> notification) {
     final rawInfo = notification['information'];
     final info = rawInfo is String
         ? Map<String, dynamic>.from(jsonDecode(rawInfo))
@@ -996,7 +1185,8 @@ class _GroupedNotificationCardState extends State<_GroupedNotificationCard> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.grey.shade200),
             ),
-            child: const Center(child: CircularProgressIndicator(color: Colors.amber)),
+            child: const Center(
+                child: CircularProgressIndicator(color: Colors.amber)),
           );
         }
 
@@ -1004,80 +1194,84 @@ class _GroupedNotificationCardState extends State<_GroupedNotificationCard> {
         final senderName = userInfo['senderName'] ?? 'System';
         final senderPhoto = userInfo['senderPhoto'] ?? '';
         final projectTitle = userInfo['projectType'] ?? '';
-    final notificationMessage = info['message'] ?? notification['message'] ?? '';
+        final notificationMessage =
+            info['message'] ?? notification['message'] ?? '';
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundImage: senderPhoto.isNotEmpty
-                    ? NetworkImage(senderPhoto)
-                    : const AssetImage('defaultpic.png') as ImageProvider,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      senderName,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    if (projectTitle.isNotEmpty)
-                      Text(
-                        projectTitle,
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 13,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundImage: senderPhoto.isNotEmpty
+                        ? NetworkImage(senderPhoto)
+                        : const NetworkImage(
+                            'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png'),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          senderName,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                  ],
-                ),
+                        if (projectTitle.isNotEmpty)
+                          Text(
+                            projectTitle,
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 13,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 8),
+              Text(
+                notificationMessage,
+                style: TextStyle(
+                  color: Colors.grey[700],
+                  fontSize: 13,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if ((notification['headline'] ?? '') == 'Hiring Request') ...[
+                const SizedBox(height: 12),
+                _buildGroupedHiringActions(notification, info),
+              ],
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            notificationMessage,
-            style: TextStyle(
-              color: Colors.grey[700],
-              fontSize: 13,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          if ((notification['headline'] ?? '') == 'Hiring Request') ...[
-            const SizedBox(height: 12),
-            _buildGroupedHiringActions(notification, info),
-          ],
-        ],
-      ),
         );
       },
     );
   }
 
-  Future<Map<String, dynamic>> _fetchNotificationUserInfo(Map<String, dynamic> notification, Map<String, dynamic> info) async {
+  Future<Map<String, dynamic>> _fetchNotificationUserInfo(
+      Map<String, dynamic> notification, Map<String, dynamic> info) async {
     final errorService = SuperAdminErrorService();
     try {
-      final senderId = info['sender_id'] ?? info['contractor_id'] ?? info['contractee_id'];
+      final senderId =
+          info['sender_id'] ?? info['contractee_id'] ?? info['contractor_id'];
       final projectId = info['project_id'];
-      
+
       Map<String, dynamic> userInfo = {
         'senderName': 'System',
         'senderPhoto': '',
@@ -1088,15 +1282,19 @@ class _GroupedNotificationCardState extends State<_GroupedNotificationCard> {
       if (senderId != null) {
         try {
           // Try to fetch as contractor first
-          final contractorData = await FetchService().fetchContractorData(senderId);
+          final contractorData =
+              await FetchService().fetchContractorData(senderId);
           if (contractorData != null) {
-            userInfo['senderName'] = contractorData['firm_name'] ?? 'Unknown Contractor';
+            userInfo['senderName'] =
+                contractorData['firm_name'] ?? 'Unknown Contractor';
             userInfo['senderPhoto'] = contractorData['profile_photo'] ?? '';
           } else {
             // If not found as contractor, try as contractee
-            final contracteeData = await FetchService().fetchContracteeData(senderId);
+            final contracteeData =
+                await FetchService().fetchContracteeData(senderId);
             if (contracteeData != null) {
-              userInfo['senderName'] = contracteeData['full_name'] ?? 'Unknown Contractee';
+              userInfo['senderName'] =
+                  contracteeData['full_name'] ?? 'Unknown Contractee';
               userInfo['senderPhoto'] = contracteeData['profile_photo'] ?? '';
             }
           }
@@ -1115,8 +1313,10 @@ class _GroupedNotificationCardState extends State<_GroupedNotificationCard> {
 
       if (projectId != null) {
         try {
-          final projectData = await FetchService().fetchProjectDetails(projectId);
-          userInfo['projectType'] = projectData?['type'] ?? projectData?['title'] ?? '';
+          final projectData =
+              await FetchService().fetchProjectDetails(projectId);
+          userInfo['projectType'] =
+              projectData?['type'] ?? projectData?['title'] ?? '';
         } catch (e) {
           errorService.logError(
             errorMessage: 'Error fetching project data: $e',
@@ -1148,3 +1348,69 @@ class _GroupedNotificationCardState extends State<_GroupedNotificationCard> {
     }
   }
 }
+
+Future<void> _showProjectDetailsDialog(BuildContext context, Map<String, dynamic> info) {
+  return showDialog(
+    context: context,
+    builder: (BuildContext context) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Row(
+        children: [
+          Icon(Icons.info_outline, color: Colors.blue.shade700),
+          const SizedBox(width: 12),
+          const Text('Project Details'),
+        ],
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDetailRow('Title:', info['project_title'] ?? 'N/A'),
+            _buildDetailRow('Type:', info['project_type'] ?? 'N/A'),
+            _buildDetailRow('Location:', info['project_location'] ?? 'N/A'),
+            _buildDetailRow('Description:', info['project_description'] ?? 'N/A'),
+            if (info['min_budget'] != null)
+              _buildDetailRow('Min Budget:', '\$${info['min_budget']}'),
+            if (info['max_budget'] != null)
+              _buildDetailRow('Max Budget:', '\$${info['max_budget']}'),
+            if (info['start_date'] != null)
+              _buildDetailRow('Start Date:', info['start_date']),
+            _buildDetailRow('Contractee:', info['full_name'] ?? info['firm_name'] ?? 'N/A'),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Close'),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildDetailRow(String label, String value) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4.0),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 14),
+        ),
+        const SizedBox(height: 8),
+      ],
+    ),
+  );
+}
+
