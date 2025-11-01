@@ -44,12 +44,11 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
   bool contractSent = false;
   String? projectStatus;
   bool _isLoading = true;
-  bool _isProcessing = false; 
+  final bool _isProcessing = false; 
 
   late final StreamSubscription _projectSubscription;
   late final StreamSubscription _messagesSubscription;
 
-  final SuperAdminAuditService _auditService = SuperAdminAuditService();
   final SuperAdminErrorService _errorService = SuperAdminErrorService();
 
   @override
@@ -121,138 +120,6 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
           'user_role': widget.userRole,
         },
       );
-    }
-  }
-
-  Future<void> _handleAgreeCancellation(String projectId) async{
-    if (_isProcessing) return;
-    
-    setState(() => _isProcessing = true);
-    try {
-      await ProjectService()
-          .agreeCancelAgreement(projectId, supabase.auth.currentUser!.id);
-
-      if (mounted) {
-        setState(() {
-          projectStatus = 'cancelled';
-        });
-      }
-
-      await _auditService.logAuditEvent(
-        userId: supabase.auth.currentUser?.id,
-        action: 'CANCELLATION_AGREED',
-        details: '${widget.userRole} agreed to cancel project',
-        category: 'Project',
-        metadata: {
-          'project_id': projectId,
-          'chat_room_id': widget.chatRoomId,
-          'user_role': widget.userRole,
-        },
-      );
-
-      if (mounted) {
-        ConTrustSnackBar.show(
-          context,
-          'Project cancelled successfully',
-          type: SnackBarType.success,
-        );
-      }
-      
-      await Future.delayed(const Duration(milliseconds: 800));
-      if (mounted) {
-        setState(() {});
-        await Future.delayed(const Duration(milliseconds: 400));
-        if (mounted) setState(() {});
-      }
-    } catch (e) {
-      await _errorService.logError(
-        errorMessage: 'Failed to agree to cancellation: $e',
-        module: 'Contract Agreement Banner',
-        severity: 'High',
-        extraInfo: {
-          'operation': 'Handle Agree Cancellation',
-          'project_id': projectId,
-          'chat_room_id': widget.chatRoomId,
-          'user_role': widget.userRole,
-        },
-      );
-      if (mounted) {
-        ConTrustSnackBar.show(
-          context,
-          'Failed to cancel project: $e',
-          type: SnackBarType.error,
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
-    }
-  }
-
-  Future<void> _handleDeclineCancellation(String projectId) async {
-    if (_isProcessing) return;
-    
-    setState(() => _isProcessing = true);
-    try {
-      await ProjectService()
-          .declineCancelAgreement(projectId, supabase.auth.currentUser!.id);
-
-      if (mounted) {
-        setState(() {
-          projectStatus = 'active';
-        });
-      }
-
-      await _auditService.logAuditEvent(
-        userId: supabase.auth.currentUser?.id,
-        action: 'CANCELLATION_DECLINED',
-        details: '${widget.userRole} declined to cancel project',
-        category: 'Project',
-        metadata: {
-          'project_id': projectId,
-          'chat_room_id': widget.chatRoomId,
-          'user_role': widget.userRole,
-        },
-      );
-
-      if (mounted) {
-        ConTrustSnackBar.show(
-          context,
-          'Cancellation request declined',
-          type: SnackBarType.info,
-        );
-      }
-      
-      await Future.delayed(const Duration(milliseconds: 800));
-      if (mounted) {
-        setState(() {});
-        await Future.delayed(const Duration(milliseconds: 400));
-        if (mounted) setState(() {});
-      }
-    } catch (e) {
-      await _errorService.logError(
-        errorMessage: 'Failed to decline cancellation: $e',
-        module: 'Contract Agreement Banner',
-        severity: 'Medium',
-        extraInfo: {
-          'operation': 'Handle Decline Cancellation',
-          'project_id': projectId,
-          'chat_room_id': widget.chatRoomId,
-          'user_role': widget.userRole,
-        },
-      );
-      if (mounted) {
-        ConTrustSnackBar.show(
-          context,
-          'Failed to decline cancellation: $e',
-          type: SnackBarType.error,
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
     }
   }
 
@@ -546,27 +413,11 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
         bannerColor = Colors.green[50]!;
     }
 
-    VoidCallback? onCancelPressed;
-    String? cancelButtonText;
     if (projectStatus == 'cancellation_requested_by_contractee' &&
         widget.userRole == 'contractor') {
-      bannerText = "The contractee has requested to cancel this project.";
-      buttonText = "Agree";
-      onPressed = () async {
-        final projectId =
-            await ProjectService().getProjectId(widget.chatRoomId);
-        if (projectId != null) {
-          await _handleAgreeCancellation(projectId);
-        }
-      };
-      cancelButtonText = "Reject";
-      onCancelPressed = () async {
-        final projectId =
-            await ProjectService().getProjectId(widget.chatRoomId);
-        if (projectId != null) {
-          await _handleDeclineCancellation(projectId);
-        }
-      };
+      bannerText = "The contractee has requested to cancel this project. Please check your project dashboard to approve or reject this request.";
+      buttonText = "Check Dashboard";
+      onPressed = null; // Remove action buttons - handle in dashboard
       bannerColor = Colors.orange[50]!;
     } else if (projectStatus == 'cancellation_requested_by_contractee' &&
         widget.userRole == 'contractee') {
@@ -627,38 +478,6 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
                               : Text(buttonText, style: const TextStyle(fontSize: 13)),
                         ),
                       ),
-                      if (cancelButtonText != null && onCancelPressed != null) ...[
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _isProcessing ? null : onCancelPressed,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _isProcessing ? Colors.grey : Colors.red,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            child: _isProcessing
-                                ? Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      SizedBox(
-                                        width: 14,
-                                        height: 14,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text('Processing...', style: const TextStyle(fontSize: 13)),
-                                    ],
-                                  )
-                                : Text(cancelButtonText, style: const TextStyle(fontSize: 13)),
-                          ),
-                        ),
-                      ],
                     ],
                   )
                 : Row(
@@ -703,46 +522,6 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
                           ),
                         ),
                       ),
-                      if (cancelButtonText != null && onCancelPressed != null) ...[
-                        SizedBox(width: isTablet ? 8 : 12),
-                        Flexible(
-                          child: ElevatedButton(
-                            onPressed: _isProcessing ? null : onCancelPressed,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _isProcessing ? Colors.grey : Colors.red,
-                              foregroundColor: Colors.white,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: isTablet ? 16 : 20,
-                                vertical: isTablet ? 10 : 12,
-                              ),
-                            ),
-                            child: _isProcessing
-                                ? Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      SizedBox(
-                                        width: isTablet ? 14 : 16,
-                                        height: isTablet ? 14 : 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                        ),
-                                      ),
-                                      SizedBox(width: isTablet ? 6 : 8),
-                                      Text(
-                                        'Processing...', 
-                                        style: TextStyle(fontSize: isTablet ? 13 : 14),
-                                      ),
-                                    ],
-                                  )
-                                : Text(
-                              cancelButtonText, 
-                              style: TextStyle(fontSize: isTablet ? 13 : 14),
-                            ),
-                          ),
-                        ),
-                      ],
                     ],
                   ),
           ],

@@ -91,7 +91,7 @@ class SignUpContractor {
               'status': 'active',
               'created_at': DateTime.now().toIso8601String(),
               'last_login': DateTime.now().toIso8601String(),
-              'profile_image_url': data?['profilePhoto'] ?? 'assets/images/defaultpic.png',
+              'profile_image_url': data?['profilePhoto'] ?? 'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
               'phone_number': data?['contactNumber'] ?? '',
               'verified': false,
             }, onConflict: 'users_id');
@@ -110,8 +110,50 @@ class SignUpContractor {
           'contact_number': data?['contactNumber'],
           'address': data?['address'] ?? '', 
           'created_at': DateTime.now().toUtc().toIso8601String(),
-          'profile_photo': data?['profilePhoto'] ?? 'assets/images/defaultpic.png',
+          'profile_photo': data?['profilePhoto'] ?? 'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
         };
+
+        final firmName = data?['firmName']?.toString().trim();
+        if (firmName != null && firmName.isNotEmpty) {
+          final existingContractor = await supabase
+              .from('Contractor')
+              .select('contractor_id, firm_name')
+              .ilike('firm_name', firmName)
+              .limit(1)
+              .maybeSingle();
+
+          if (existingContractor != null) {
+            await _auditService.logAuditEvent(
+              userId: userId,
+              action: 'USER_REGISTRATION_FAILED',
+              details: 'Contractor registration failed - firm name already exists',
+              metadata: {
+                'user_type': userType,
+                'email': email,
+                'firm_name': firmName,
+                'failure_reason': 'duplicate_firm_name',
+              },
+            );
+
+            await _errorService.logError(
+              errorMessage: 'Contractor registration failed - firm name already exists: $firmName',
+              module: 'Contractor Sign-up',
+              severity: 'Medium',
+              extraInfo: {
+                'operation': 'Validate Firm Name',
+                'users_id': userId,
+                'email': email,
+                'firm_name': firmName,
+                'timestamp': DateTime.now().toIso8601String(),
+              },
+            );
+
+            if (context.mounted) {
+              ConTrustSnackBar.error(context, 'A contractor with this firm name already exists. Please choose a different name.');
+            }
+            return false;
+          }
+        }
 
         final insertResponse = await supabase
             .from('Contractor')

@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:backend/services/contractor services/cor_dashboardservice.dart';
+import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/utils/be_status.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/build/builddashboardtabs.dart';
@@ -24,6 +25,7 @@ class DashboardBuildMethods {
 
   List<Map<String, dynamic>> recentActivities = [];
   List<Map<String, dynamic>> localTasks = [];
+  List<Map<String, dynamic>> pendingHiringRequests = [];
   Map<String, dynamic>? contractorData;
 
   int activeProjects = 0;
@@ -55,7 +57,13 @@ class DashboardBuildMethods {
         const SizedBox(width: 20),
         SizedBox(
           width: screenWidth * 0.25,
-          child: buildDesktopStatsContainer(),
+          child: Column(
+            children: [
+              buildDesktopStatsContainer(),
+              const SizedBox(height: 20),
+              buildHiringRequestContainer(),
+            ],
+          ),
         ),
       ],
     );
@@ -352,6 +360,105 @@ class DashboardBuildMethods {
     );
   }
 
+  Widget buildHiringRequestContainer() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.grey.shade300,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.work_outline,
+                color: Colors.blue,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Hiring Requests',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          FutureBuilder<List<Map<String, dynamic>>>(
+            future: dashboardservice.fetchPendingHiringRequests(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (snapshot.hasError) {
+                return const Center(child: Text('Error loading hiring requests'));
+              }
+
+              final hiringRequests = snapshot.data ?? [];
+
+              if (hiringRequests.isEmpty) {
+                return Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(vertical: 32),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.inbox_outlined,
+                        size: 48,
+                        color: Colors.grey.shade400,
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        'No hiring requests at the moment',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'New opportunities will appear here',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return Column(
+                children: hiringRequests.map((notification) {
+                  return _buildCompactHiringCard(notification);
+                }).toList(),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget buildWelcomeCard() {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
@@ -456,6 +563,312 @@ class DashboardBuildMethods {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildCompactHiringCard(Map<String, dynamic> notification) {
+    final info = notification['information'] as Map<String, dynamic>;
+    final notificationId = notification['notification_id'];
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+    
+    return Container(
+      margin: EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.all(isMobile ? 10 : 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: isMobile ? 18 : 20,
+            backgroundImage: info['profile_photo'] != null && info['profile_photo'].isNotEmpty
+                ? NetworkImage(info['profile_photo'])
+                : NetworkImage('https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png'),
+          ),
+          SizedBox(width: isMobile ? 10 : 12),
+          
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  info['project_title'] ?? 'Untitled Project',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: isMobile ? 13 : 14,
+                    color: Colors.grey.shade800,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'by ${info['full_name'] ?? 'Unknown'}',
+                  style: TextStyle(
+                    fontSize: isMobile ? 11 : 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  info['project_description'] ?? 'No description available',
+                  style: TextStyle(
+                    fontSize: isMobile ? 10 : 11,
+                    color: Colors.grey.shade500,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                onPressed: () => _showProjectDetailsDialog(info),
+                icon: Icon(Icons.info_outline, size: isMobile ? 18 : 20),
+                tooltip: 'More Info',
+                padding: EdgeInsets.all(isMobile ? 3 : 4),
+                constraints: BoxConstraints(
+                  minWidth: isMobile ? 28 : 32, 
+                  minHeight: isMobile ? 28 : 32
+                ),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.blue.shade100,
+                  foregroundColor: Colors.blue.shade700,
+                ),
+              ),
+              SizedBox(width: isMobile ? 3 : 4),
+              
+              // Decline Button
+              IconButton(
+                onPressed: () => dashboardservice.handleDeclineHiring(
+                  context: context,
+                  notificationId: notificationId,
+                ),
+                icon: Icon(Icons.close, size: isMobile ? 16 : 18),
+                tooltip: 'Decline',
+                padding: EdgeInsets.all(isMobile ? 3 : 4),
+                constraints: BoxConstraints(
+                  minWidth: isMobile ? 28 : 32, 
+                  minHeight: isMobile ? 28 : 32
+                ),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.red.shade100,
+                  foregroundColor: Colors.red.shade700,
+                ),
+              ),
+              SizedBox(width: isMobile ? 3 : 4),
+              
+              // Accept Button  
+              IconButton(
+                onPressed: () => dashboardservice.handleAcceptHiring(
+                  context: context,
+                  notificationId: notificationId,
+                  info: info,
+                ),
+                icon: Icon(Icons.check, size: isMobile ? 16 : 18),
+                tooltip: 'Accept',
+                padding: EdgeInsets.all(isMobile ? 3 : 4),
+                constraints: BoxConstraints(
+                  minWidth: isMobile ? 28 : 32, 
+                  minHeight: isMobile ? 28 : 32
+                ),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.green.shade100,
+                  foregroundColor: Colors.green.shade700,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showProjectDetailsDialog(Map<String, dynamic> info) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 500),
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.black, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 20,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade700,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Icon(
+                            Icons.info_outline,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text(
+                            "Project Details",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 16),
+                          
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 30,
+                                backgroundImage: info['profile_photo'] != null && info['profile_photo'].isNotEmpty
+                                    ? NetworkImage(info['profile_photo'])
+                                    : const NetworkImage('https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png'),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      info['full_name'] ?? 'Unknown Client',
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      info['email'] ?? 'No email provided',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          
+                          const SizedBox(height: 24),
+                          
+                          _buildDetailField('Project Title', info['project_title'] ?? 'Untitled Project'),
+                          _buildDetailField('Project Type', info['project_type'] ?? 'Not specified'),
+                          _buildDetailField('Location', info['project_location'] ?? 'Not specified'),
+                          _buildDetailField('Description', info['project_description'] ?? 'No description provided'),
+                          
+                          if (info['min_budget'] != null && info['max_budget'] != null)
+                            _buildDetailField('Budget Range', '₱${info['min_budget']} - ₱${info['max_budget']}')
+                          else if (info['project_budget'] != null)
+                            _buildDetailField('Budget', '₱${info['project_budget']}')
+                          else
+                            _buildDetailField('Budget', 'Not specified'),
+                          
+                          if (info['start_date'] != null)
+                            _buildDetailField('Preferred Start Date', info['start_date'].toString().split(' ')[0]),
+                          
+                          if (info['additional_info'] != null && info['additional_info'].isNotEmpty)
+                            _buildDetailField('Additional Information', info['additional_info']),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailField(String label, String value) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          SizedBox(height: 4),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade800,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -866,80 +1279,402 @@ class DashboardBuildMethods {
 
   Widget projectView(BuildContext context, Map<String, dynamic> project) {
     bool isPlaceholder = project['isPlaceholder'] == true;
+    final projectId = project['project_id']?.toString() ?? '';
+    
     Widget card = Card(
-      margin: const EdgeInsets.only(bottom: 18),
-      elevation: 6,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      shadowColor: Colors.amber.shade100,
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    project['title'] ?? 'No title given',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                    ),
-                  ),
+      margin: const EdgeInsets.only(bottom: 20),
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: InkWell(
+        onTap: isPlaceholder ? null : () => _navigateToProjectPage(context, project),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.white, Colors.grey.shade50],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildProjectHeader(context, project),
+              
+              const SizedBox(height: 16),
+              _buildProjectDetails(project),
+              
+              const SizedBox(height: 16),
+              _buildProjectDescription(project),
+              
+              if (project['status'] == 'cancellation_requested_by_contractee') ...[
+                const SizedBox(height: 16),
+                _buildCancellationRequestCard(
+                  project['information']?['cancellation_reason'] ?? 'No reason provided', 
+                  projectId
                 ),
               ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Description: ${project['description'] ?? 'No description'}',
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 16, color: Colors.black87),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Type: ${project['type'] ?? 'No type'}',
-              style: const TextStyle(fontSize: 16, color: Colors.black87),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const Icon(Icons.info_outline, size: 18, color: Colors.grey),
-                const SizedBox(width: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: status.getStatusColor(
-                      project['status'],
-                    ).withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'Status: ${status.getStatusLabel(project['status'])}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: status.getStatusColor(project['status']),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
-    if (isPlaceholder) {
-      return card;
-    } else {
-      return InkWell(
-        onTap: () => _navigateToProjectPage(context, project),
-        child: card,
+    
+    return card;
+  }
+
+  Widget _buildProjectHeader(BuildContext context, Map<String, dynamic> project) {
+    final projectId = project['project_id']?.toString() ?? '';
+    
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                project['title'] ?? 'No title given',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 8),
+              _buildStatusChip(project),
+            ],
+          ),
+        ),
+        Row(
+          children: [
+            _buildContractButton(context, projectId),
+            const SizedBox(width: 8),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusChip(Map<String, dynamic> project) {
+    final statusColor = status.getStatusColor(project['status']);
+    final statusLabel = status.getStatusLabel(project['status']);
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: statusColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: statusColor.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            _getStatusIcon(project['status']),
+            size: 14,
+            color: statusColor,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            statusLabel,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: statusColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProjectDetails(Map<String, dynamic> project) {
+    final details = [
+      _buildDetailItem(
+        icon: Icons.attach_money,
+        label: 'BUDGET',
+        value: _formatProjectBudget(project),
+      ),
+      _buildDetailItem(
+        icon: Icons.calendar_today,
+        label: 'START DATE',
+        value: _formatProjectStartDate(project),
+      ),
+      _buildDetailItem(
+        icon: Icons.location_on,
+        label: 'LOCATION',
+        value: project['location'] ?? 'Not specified',
+      ),
+      if (project['type'] != null)
+        _buildDetailItem(
+          icon: Icons.category,
+          label: 'TYPE',
+          value: project['type'],
+        ),
+    ];
+
+    return Column(
+      children: [
+        for (int i = 0; i < details.length; i += 2)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: details[i]),
+                if (i + 1 < details.length)
+                  const SizedBox(width: 16),
+                if (i + 1 < details.length)
+                  Expanded(child: details[i + 1]),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildDetailItem({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: Colors.grey.shade600),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$label:',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProjectDescription(Map<String, dynamic> project) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Description:',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: Colors.grey.shade700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          project['description'] ?? 'No description provided',
+          style: const TextStyle(
+            fontSize: 14,
+            color: Colors.black87,
+            height: 1.4,
+          ),
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContractButton(BuildContext context, String projectId) {
+    if (projectId.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.description_outlined, size: 16, color: Colors.grey.shade600),
+            const SizedBox(width: 4),
+            Text(
+              'No Contract',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       );
+    }
+    
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: FetchService().fetchContractsForProject(projectId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.description_outlined, size: 16, color: Colors.grey.shade600),
+                const SizedBox(width: 4),
+                Text(
+                  'No Contract',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final contracts = snapshot.data!;
+        final latestContract = contracts.first;
+        final status = latestContract['status'] as String? ?? 'draft';
+        
+        Color borderColor;
+        Color backgroundColor;
+        Color textColor;
+        IconData icon;
+        String statusText;
+
+        switch (status.toLowerCase()) {
+          case 'approved':
+          case 'active':
+          case 'signed':
+            borderColor = Colors.green.shade600;
+            backgroundColor = Colors.green.shade50;
+            textColor = Colors.green.shade700;
+            icon = Icons.verified;
+            statusText = 'Approved';
+            break;
+          case 'sent':
+          case 'awaiting_signature':
+            borderColor = Colors.orange.shade600;
+            backgroundColor = Colors.orange.shade50;
+            textColor = Colors.orange.shade700;
+            icon = Icons.pending;
+            statusText = 'Pending';
+            break;
+          case 'rejected':
+            borderColor = Colors.red.shade600;
+            backgroundColor = Colors.red.shade50;
+            textColor = Colors.red.shade700;
+            icon = Icons.cancel;
+            statusText = 'Rejected';
+            break;
+          default:
+            borderColor = Colors.blue.shade600;
+            backgroundColor = Colors.blue.shade50;
+            textColor = Colors.blue.shade700;
+            icon = Icons.description;
+            statusText = 'Draft';
+        }
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: borderColor, width: 1.5),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: textColor),
+              const SizedBox(width: 4),
+              Text(
+                statusText,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: textColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _formatProjectBudget(Map<String, dynamic> project) {
+    return "₱${project['min_budget']?.toString() ?? '0'} - ₱${project['max_budget']?.toString() ?? '0'}";
+  }
+
+  String _formatProjectStartDate(Map<String, dynamic> project) {
+    if (project['start_date'] == null) return 'Not specified';
+    
+    try {
+      final date = DateTime.parse(project['start_date']);
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return '${months[date.month - 1]} ${date.day}, ${date.year}';
+    } catch (e) {
+      return 'Invalid date';
+    }
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return Icons.play_circle_filled;
+      case 'pending':
+        return Icons.pending;
+      case 'awaiting_contract':
+        return Icons.description;
+      case 'awaiting_agreement':
+        return Icons.handshake;
+      case 'awaiting_signature':
+        return Icons.edit;
+      case 'cancellation_requested_by_contractee':
+        return Icons.warning;
+      case 'cancelled':
+        return Icons.cancel;
+      case 'completed':
+        return Icons.verified;
+      case 'stopped':
+        return Icons.stop_circle;
+      case 'closed':
+        return Icons.lock;
+      case 'rejected':
+        return Icons.thumb_down;
+      case 'draft':
+        return Icons.edit;
+      default:
+        return Icons.help;
     }
   }
   
@@ -1066,5 +1801,69 @@ class DashboardBuildMethods {
         ),
       );
     }
+  }
+
+  Widget _buildCancellationRequestCard(String reason, String projectId) {
+    return Container(
+      margin: EdgeInsets.only(top: 12),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        border: Border.all(color: Colors.orange.shade200),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Cancellation Request',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange.shade800,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          Text(
+            'Reason: $reason',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          SizedBox(height: 16),
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue.shade700, size: 16),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Check your dashboard for action options.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -3,6 +3,9 @@
 import 'package:flutter/material.dart';
 import 'package:backend/utils/be_contractformat.dart'; // added import
 
+const String profileUrl =
+    'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
+
 class TorProfileBuildMethods {
   static Widget buildMainContent(String selectedTab, Function buildPortfolioContent, Function buildAboutContent, Function buildReviewsContent) {
     switch (selectedTab) {
@@ -21,7 +24,6 @@ class TorProfileBuildMethods {
     required String firmName,
     required String specialization,
     required String? profileImage,
-    required String profileUrl,
     required int completedProjectsCount,
     required double rating,
     required List<String> pastProjects,
@@ -183,7 +185,6 @@ class TorProfileBuildMethods {
     required String firmName,
     required String specialization,
     required String? profileImage,
-    required String profileUrl,
     required int completedProjectsCount,
     required double rating,
     required List<String> pastProjects,

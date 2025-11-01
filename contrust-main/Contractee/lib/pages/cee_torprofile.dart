@@ -8,12 +8,13 @@ import 'package:contractee/build/buildtorprofile.dart';
 import 'package:contractee/models/cee_modal.dart';
 import 'package:backend/services/contractee services/cee_torprofileservice.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ContractorProfileScreen extends StatefulWidget {
-  final String contractorId;
+  final String contractorName;
 
-  const ContractorProfileScreen({super.key, required this.contractorId});
+  const ContractorProfileScreen({super.key, required this.contractorName});
 
   @override
   _ContractorProfileScreenState createState() =>
@@ -41,6 +42,9 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
   List<Map<String, dynamic>> allRatings = [];
   int totalReviews = 0;
   bool hasActiveProject = false;
+  bool hasPendingHireRequest = false;
+  bool hasPendingBiddingProject = false;
+  late String contractorId;
 
   static const String profileUrl =
       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
@@ -51,44 +55,68 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
     _loadContractorData();
     _checkAgreementWithContractor();
     _checkOngoingProjects();
+    _checkPendingBiddingProject();
   }
 
   Future<void> _loadContractorData() async {
     try {
       final contractorData =
-          await FetchService().fetchContractorData(widget.contractorId);
-
-      final completedProjects = await Supabase.instance.client
-          .from('Projects')
-          .select('project_id')
-          .eq('contractor_id', widget.contractorId)
-          .eq('status', 'completed');
-
-      final reviews = await TorProfileService.getContractorReviews(widget.contractorId);
+          await FetchService().fetchContractorDataByName(widget.contractorName);
 
       if (contractorData != null) {
-        setState(() {
-          firmName = contractorData['firm_name'] ?? "No firm name";
-          bio = contractorData['bio'] ?? "No bio available";
-          contactNumber =
-              contractorData['contact_number'] ?? "No contact number";
-          specialization =
-              contractorData['specialization'] ?? "No specialization";
-          address = contractorData['address'] ?? "";
-          rating = contractorData['rating']?.toDouble() ?? 0.0;
-          final photo = contractorData['profile_photo'];
-          profileImage = (photo == null || photo.isEmpty) ? profileUrl : photo;
-          pastProjects = List<String>.from(
-            contractorData['past_projects'] ?? [],
-          );
-          completedProjectsCount = completedProjects.length;
-          allRatings = reviews;
-          totalReviews = reviews.length;
-          isLoading = false;
-        });
+        final fetchedContractorId = contractorData['contractor_id'];
+        if (fetchedContractorId != null) {
+          contractorId = fetchedContractorId;
+
+          final completedProjects = await Supabase.instance.client
+              .from('Projects')
+              .select('project_id')
+              .eq('contractor_id', contractorId)
+              .eq('status', 'completed');
+
+          final reviews =
+              await TorProfileService.getContractorReviews(contractorId);
+
+          setState(() {
+            firmName = contractorData['firm_name'] ?? "No firm name";
+            bio = contractorData['bio'] ?? "No bio available";
+            contactNumber =
+                contractorData['contact_number'] ?? "No contact number";
+            specialization =
+                contractorData['specialization'] ?? "No specialization";
+            address = contractorData['address'] ?? "";
+            rating = contractorData['rating']?.toDouble() ?? 0.0;
+            final photo = contractorData['profile_photo'];
+            profileImage =
+                (photo == null || photo.isEmpty) ? profileUrl : photo;
+            pastProjects = List<String>.from(
+              contractorData['past_projects'] ?? [],
+            );
+            completedProjectsCount = completedProjects.length;
+            allRatings = reviews;
+            totalReviews = reviews.length;
+            isLoading = false;
+          });
+          await _checkPendingHireRequest();
+        } else {
+          setState(() {
+            firmName = "Failed to load contractor";
+            bio = "No bio available";
+            contactNumber = "No contact number";
+            specialization = "No specialization";
+            address = "";
+            rating = 0.0;
+            profileImage = profileUrl;
+            pastProjects = [];
+            completedProjectsCount = 0;
+            allRatings = [];
+            totalReviews = 0;
+            isLoading = false;
+          });
+        }
       } else {
         setState(() {
-          firmName = "No firm name";
+          firmName = "Failed to load contractor";
           bio = "No bio available";
           contactNumber = "No contact number";
           specialization = "No specialization";
@@ -96,9 +124,9 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
           rating = 0.0;
           profileImage = profileUrl;
           pastProjects = [];
-          completedProjectsCount = completedProjects.length;
-          allRatings = reviews;
-          totalReviews = reviews.length;
+          completedProjectsCount = 0;
+          allRatings = [];
+          totalReviews = 0;
           isLoading = false;
         });
       }
@@ -112,14 +140,15 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
 
   Future<void> _checkAgreementWithContractor() async {
     final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
-    final existingProject = await hasExistingProjectWithContractor(
-        currentUserId, widget.contractorId);
+    final existingProject =
+        await hasExistingProjectWithContractor(currentUserId, contractorId);
     setState(() {
       hasAgreementWithThisContractor = existingProject != null;
       existingProjectId = existingProject?['project_id'];
     });
 
     await _checkRatingEligibility();
+    await _checkPendingHireRequest();
   }
 
   Future<void> _notifyContractor() async {
@@ -128,11 +157,17 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
     try {
       final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
 
-      await HireModal.show(
+      final actionTaken = await HireModal.show(
         context: context,
         contracteeId: currentUserId,
-        contractorId: widget.contractorId,
+        contractorId: contractorId,
       );
+
+      if (actionTaken && mounted) {
+        ConTrustSnackBar.success(context, 'Hire request sent successfully!');
+        await _checkPendingHireRequest();
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
     } finally {
       if (mounted) {
         setState(() => isHiring = false);
@@ -148,10 +183,53 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
     });
   }
 
+  Future<void> _checkPendingHireRequest() async {
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    try {
+      final notifications = await Supabase.instance.client
+          .from('Notifications')
+          .select('notification_id, information')
+          .eq('headline', 'Hiring Request')
+          .eq('sender_id', currentUserId)
+          .eq('receiver_id', contractorId)
+          .filter('information->>status', 'eq', 'pending');
+
+      setState(() {
+        hasPendingHireRequest = notifications.isNotEmpty;
+      });
+    } catch (e) {
+      setState(() {
+        hasPendingHireRequest = false;
+      });
+    }
+  }
+
+  Future<void> _checkPendingBiddingProject() async {
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    try {
+      final pendingBiddingProject = await Supabase.instance.client
+          .from('Projects')
+          .select('project_id, title, projectdata')
+          .eq('contractee_id', currentUserId)
+          .eq('status', 'pending')
+          .or('projectdata->>hiring_type.eq.bidding,projectdata.is.null')
+          .limit(1)
+          .maybeSingle();
+
+      setState(() {
+        hasPendingBiddingProject = pendingBiddingProject != null;
+      });
+    } catch (e) {
+      setState(() {
+        hasPendingBiddingProject = false;
+      });
+    }
+  }
+
   Future<void> _checkRatingEligibility() async {
     final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final result = await TorProfileService.checkRatingEligibility(
-        widget.contractorId, currentUserId);
+        contractorId, currentUserId);
     setState(() {
       canRate = result['canRate'];
       hasRated = result['hasRated'];
@@ -163,13 +241,15 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
     final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
     try {
       await TorProfileService.submitRating(
-          widget.contractorId, currentUserId, rating, hasRated, reviewText);
+          contractorId, currentUserId, rating, hasRated, reviewText);
       await _loadContractorData();
       await _checkRatingEligibility();
       if (mounted) {
-        ConTrustSnackBar.success(context, hasRated
-            ? 'Rating updated successfully!'
-            : 'Rating submitted successfully!');
+        ConTrustSnackBar.success(
+            context,
+            hasRated
+                ? 'Rating updated successfully!'
+                : 'Rating submitted successfully!');
       }
     } catch (e) {
       if (mounted) {
@@ -180,7 +260,8 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
 
   double getRatingPercentage(int star) {
     if (allRatings.isEmpty) return 0.0;
-    final count = allRatings.where((r) => (r['rating'] as num).toInt() == star).length;
+    final count =
+        allRatings.where((r) => (r['rating'] as num).toInt() == star).length;
     return count / allRatings.length;
   }
 
@@ -205,7 +286,8 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
           return Dialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             child: Container(
               constraints: const BoxConstraints(maxWidth: 500),
               decoration: BoxDecoration(
@@ -284,7 +366,8 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                                   });
                                 },
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 4),
                                   child: Icon(
                                     index < tempRating.floor()
                                         ? Icons.star
@@ -337,9 +420,12 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.green[600],
                                     foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 16),
                                   ),
-                                  child: Text(hasRated ? 'Update Rating' : 'Submit Rating'),
+                                  child: Text(hasRated
+                                      ? 'Update Rating'
+                                      : 'Submit Rating'),
                                 ),
                               ),
                             ],
@@ -368,79 +454,125 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
     }
 
     return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: () async {
-          await _loadContractorData();
-          await _checkOngoingProjects();
-        },
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isMobile = constraints.maxWidth < 768;
-              final mainContent = TorProfileBuildMethods.buildMainContent(
-                selectedTab,
-                () => TorProfileBuildMethods.buildPortfolio(
-                  bio: bio,
-                  pastProjects: pastProjects,
-                  context: context,
-                  onViewPhoto: (url) => TorProfileBuildMethods.showPhotoDialog(context, {'photo_url': url}),
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+            ),
+            child: Row(
+              children: [
+                InkWell(
+                  onTap: () => context.go('/home'),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.arrow_back,
+                        color: Colors.amber.shade700,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Back to Home',
+                        style: TextStyle(
+                          color: Colors.amber.shade700,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                () => TorProfileBuildMethods.buildAbout(
-                  context: context,
-                  firmName: firmName,
-                  bio: bio,
-                  contactNumber: contactNumber,
-                  specialization: specialization,
-                  address: address,
-                ),
-                () => TorProfileBuildMethods.buildReviewsContainer(
-                  rating: rating,
-                  totalReviews: totalReviews,
-                  getRatingPercentage: getRatingPercentage,
-                  buildRatingBar: TorProfileBuildMethods.buildRatingBar,
-                  allRatings: allRatings,
-                  buildReviewCard: TorProfileBuildMethods.buildReviews,
-                  getTimeAgo: getTimeAgo,
-                  canRate: canRate,
-                  hasRated: hasRated,
-                  userRating: userRating,
-                  onRate: _showRatingDialog,
-                ),
-              );
-
-              if (isMobile) {
-                return TorProfileBuildMethods.buildMobileLayout(
-                  firmName: firmName,
-                  specialization: specialization,
-                  profileImage: profileImage,
-                  profileUrl: profileUrl,
-                  completedProjectsCount: completedProjectsCount,
-                  rating: rating,
-                  pastProjects: pastProjects,
-                  selectedTab: selectedTab,
-                  onTabChanged: (tab) => setState(() => selectedTab = tab),
-                  mainContent: mainContent,
-                  onViewProfilePhoto: () => TorProfileBuildMethods.showPhotoDialog(context, {'photo_url': profileImage ?? profileUrl}),
-                );
-              } else {
-                return TorProfileBuildMethods.buildDesktopLayout(
-                  firmName: firmName,
-                  specialization: specialization,
-                  profileImage: profileImage,
-                  profileUrl: profileUrl,
-                  completedProjectsCount: completedProjectsCount,
-                  rating: rating,
-                  pastProjects: pastProjects,
-                  selectedTab: selectedTab,
-                  onTabChanged: (tab) => setState(() => selectedTab = tab),
-                  mainContent: mainContent,
-                  onViewProfilePhoto: () => TorProfileBuildMethods.showPhotoDialog(context, {'photo_url': profileImage ?? profileUrl}),
-                );
-              }
-            },
+              ],
+            ),
           ),
-        ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await _loadContractorData();
+                await _checkOngoingProjects();
+                await _checkPendingHireRequest();
+                await _checkPendingBiddingProject();
+              },
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isMobile = constraints.maxWidth < 768;
+                    final mainContent = TorProfileBuildMethods.buildMainContent(
+                      selectedTab,
+                      () => TorProfileBuildMethods.buildPortfolio(
+                        bio: bio,
+                        pastProjects: pastProjects,
+                        context: context,
+                        onViewPhoto: (url) =>
+                            TorProfileBuildMethods.showPhotoDialog(
+                                context, {'photo_url': url}),
+                      ),
+                      () => TorProfileBuildMethods.buildAbout(
+                        context: context,
+                        firmName: firmName,
+                        bio: bio,
+                        contactNumber: contactNumber,
+                        specialization: specialization,
+                        address: address,
+                      ),
+                      () => TorProfileBuildMethods.buildReviewsContainer(
+                        rating: rating,
+                        totalReviews: totalReviews,
+                        getRatingPercentage: getRatingPercentage,
+                        buildRatingBar: TorProfileBuildMethods.buildRatingBar,
+                        allRatings: allRatings,
+                        buildReviewCard: TorProfileBuildMethods.buildReviews,
+                        getTimeAgo: getTimeAgo,
+                        canRate: canRate,
+                        hasRated: hasRated,
+                        userRating: userRating,
+                        onRate: _showRatingDialog,
+                      ),
+                    );
+
+                    if (isMobile) {
+                      return TorProfileBuildMethods.buildMobileLayout(
+                        firmName: firmName,
+                        specialization: specialization,
+                        profileImage: profileImage,
+                        completedProjectsCount: completedProjectsCount,
+                        rating: rating,
+                        pastProjects: pastProjects,
+                        selectedTab: selectedTab,
+                        onTabChanged: (tab) =>
+                            setState(() => selectedTab = tab),
+                        mainContent: mainContent,
+                        onViewProfilePhoto: () =>
+                            TorProfileBuildMethods.showPhotoDialog(context,
+                                {'photo_url': profileImage ?? profileUrl}),
+                      );
+                    } else {
+                      return TorProfileBuildMethods.buildDesktopLayout(
+                        firmName: firmName,
+                        specialization: specialization,
+                        profileImage: profileImage,
+                        completedProjectsCount: completedProjectsCount,
+                        rating: rating,
+                        pastProjects: pastProjects,
+                        selectedTab: selectedTab,
+                        onTabChanged: (tab) =>
+                            setState(() => selectedTab = tab),
+                        mainContent: mainContent,
+                        onViewProfilePhoto: () =>
+                            TorProfileBuildMethods.showPhotoDialog(context,
+                                {'photo_url': profileImage ?? profileUrl}),
+                      );
+                    }
+                  },
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
@@ -464,9 +596,11 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                           final confirm = await showDialog<bool>(
                             context: context,
                             builder: (context) => Dialog(
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20)),
                               child: Container(
-                                constraints: const BoxConstraints(maxWidth: 400),
+                                constraints:
+                                    const BoxConstraints(maxWidth: 400),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(20),
                                   gradient: LinearGradient(
@@ -492,8 +626,10 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                                           Container(
                                             padding: const EdgeInsets.all(8),
                                             decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(0.2),
-                                              borderRadius: BorderRadius.circular(8),
+                                              color:
+                                                  Colors.white.withOpacity(0.2),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                             child: const Icon(
                                               Icons.cancel,
@@ -513,8 +649,10 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                                             ),
                                           ),
                                           IconButton(
-                                            onPressed: () => Navigator.pop(context, false),
-                                            icon: const Icon(Icons.close, color: Colors.white),
+                                            onPressed: () =>
+                                                Navigator.pop(context, false),
+                                            icon: const Icon(Icons.close,
+                                                color: Colors.white),
                                           ),
                                         ],
                                       ),
@@ -534,18 +672,27 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                                             children: [
                                               Expanded(
                                                 child: TextButton(
-                                                  onPressed: () => Navigator.pop(context, false),
+                                                  onPressed: () =>
+                                                      Navigator.pop(
+                                                          context, false),
                                                   child: const Text('No'),
                                                 ),
                                               ),
                                               const SizedBox(width: 12),
                                               Expanded(
                                                 child: ElevatedButton(
-                                                  onPressed: () => Navigator.pop(context, true),
-                                                  style: ElevatedButton.styleFrom(
-                                                    backgroundColor: Colors.red[600],
-                                                    foregroundColor: Colors.white,
-                                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                                  onPressed: () =>
+                                                      Navigator.pop(
+                                                          context, true),
+                                                  style:
+                                                      ElevatedButton.styleFrom(
+                                                    backgroundColor:
+                                                        Colors.red[600],
+                                                    foregroundColor:
+                                                        Colors.white,
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        vertical: 16),
                                                   ),
                                                   child: const Text('Yes'),
                                                 ),
@@ -565,7 +712,8 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                               existingProjectId!,
                               Supabase.instance.client.auth.currentUser!.id,
                             );
-                            ConTrustSnackBar.success(context, 'Cancellation request sent.');
+                            ConTrustSnackBar.success(
+                                context, 'Cancellation request sent.');
                             setState(() {
                               isHiring = false;
                             });
@@ -588,20 +736,39 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                   ),
                 )
               : Tooltip(
-                  message: hasActiveProject 
-                      ? "You have an active project. Complete it before hiring another contractor."
-                      : "Send a hiring request to this contractor",
+                  message: hasPendingHireRequest
+                      ? "You already have a pending hire request to this contractor"
+                      : hasActiveProject
+                          ? "You have an active project. Complete it before hiring another contractor."
+                          : hasPendingBiddingProject
+                              ? "You have a project up for bidding. Complete the bidding process first."
+                              : "Send a hiring request to this contractor",
                   child: ElevatedButton(
-                    onPressed: (isHiring || hasActiveProject) ? null : _notifyContractor,
+                    onPressed: (isHiring ||
+                            hasActiveProject ||
+                            hasPendingHireRequest ||
+                            hasPendingBiddingProject)
+                        ? null
+                        : _notifyContractor,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: hasActiveProject ? Colors.grey[400] : Colors.green[700],
+                      backgroundColor: (hasActiveProject ||
+                              hasPendingHireRequest ||
+                              hasPendingBiddingProject)
+                          ? Colors.grey[400]
+                          : Colors.green[700],
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                     child: Text(
-                      hasActiveProject ? "CANNOT HIRE - ACTIVE PROJECT" : "HIRE THIS CONTRACTOR",
+                      hasPendingHireRequest
+                          ? "HIRE REQUEST PENDING"
+                          : hasActiveProject
+                              ? "CANNOT HIRE - ACTIVE PROJECT"
+                              : hasPendingBiddingProject
+                                  ? "CANNOT HIRE - PROJECT UP FOR BIDDING"
+                                  : "HIRE THIS CONTRACTOR",
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

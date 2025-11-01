@@ -5,8 +5,8 @@ import 'package:backend/utils/be_constraint.dart';
 import 'package:backend/build/buildmessage.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_message_service.dart';
-import 'package:contractee/pages/cee_messages.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -222,20 +222,12 @@ class _ContracteeChatHistoryPageState
                               return InkWell(
                                 onTap: canChat
                                     ? () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                MessagePageContractee(
-                                              chatRoomId: chat['chatroom_id'],
-                                              contracteeId: contracteeId!,
-                                              contractorId: contractorId,
-                                              contractorName: contractorName,
-                                              contractorProfile:
-                                                  contractorProfile,
-                                            ),
-                                          ),
-                                        );
+                                        context.go('/chat/$contractorName}', extra: {
+                                          'contracteeId': contracteeId,
+                                          'contractorId': contractorId,
+                                          'contractorName': contractorName,
+                                          'contractorProfile': contractorProfile,
+                                        });
                                       }
                                     : null,
                                 child: Container(

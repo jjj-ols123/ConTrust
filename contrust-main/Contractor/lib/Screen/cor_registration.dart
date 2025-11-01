@@ -29,6 +29,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController addressController = TextEditingController();
 
   final List<Map<String, dynamic>> _verificationFiles = [];
+  final String _profilePhoto = 'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
 
   final bool _isUploadingVerification = false;
   bool _isSigningUp = false;
@@ -42,10 +43,47 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _pwHasNumber = false;
   bool _pwHasSpecial = false;
   bool _isEmailGmail = false;
-
   bool _passwordVisible = false;
+
   bool _confirmPasswordVisible = false;
   bool _isAgreed = false;
+  bool _isCheckingFirmName = false;
+  String? _firmNameError;
+
+  Future<void> _checkFirmNameAvailability(String firmName) async {
+    if (firmName.trim().isEmpty) {
+      setState(() {
+        _firmNameError = null;
+      });
+      return;
+    }
+
+    setState(() {
+      _isCheckingFirmName = true;
+      _firmNameError = null;
+    });
+
+    try {
+      final existingContractor = await Supabase.instance.client
+          .from('Contractor')
+          .select('contractor_id, firm_name')
+          .ilike('firm_name', firmName.trim())
+          .limit(1)
+          .maybeSingle();
+
+      setState(() {
+        _isCheckingFirmName = false;
+        _firmNameError = existingContractor != null
+            ? 'This firm name is already taken. Please choose a different name.'
+            : null;
+      });
+    } catch (e) {
+      setState(() {
+        _isCheckingFirmName = false;
+        _firmNameError = null; 
+      });
+    }
+  }
 
   Future<void> _handleSignUp() async {
     FocusScope.of(context).unfocus();
@@ -119,6 +157,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           'contactNumber': _formatPhone(contactNumberController.text),
           'address': addressController.text,
           'verificationFiles': _verificationFiles,
+          'profilePhoto': _profilePhoto,
         },
         () => validateFieldsContractor(
           context,
@@ -127,6 +166,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           emailController.text,
           passwordController.text,
           confirmPasswordController.text,
+          firmNameError: _firmNameError,
         ),
       );
 
@@ -210,10 +250,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
           if (!mounted) return;
 
-          Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
-            '/',
-            (route) => false,
-          );
+          context.go('/');
         });
       }
     } finally {
@@ -677,13 +714,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
           decoration: InputDecoration(
             labelText: 'Firm / Business Name',
             prefixIcon: const Icon(Icons.business),
+            suffixIcon: _isCheckingFirmName
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : _firmNameError != null
+                    ? const Icon(Icons.error, color: Colors.red)
+                    : null,
             filled: true,
             fillColor: Colors.grey.shade100,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
+            errorText: _firmNameError,
           ),
+          onChanged: (value) {
+            Future.delayed(const Duration(milliseconds: 500), () {
+              if (mounted && firmNameController.text == value) {
+                _checkFirmNameAvailability(value);
+              }
+            });
+          },
         ),
         const SizedBox(height: 18),
         TextFormField(
@@ -912,42 +966,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Checkbox(
-                      value: _isAgreed,
-                      onChanged: (val) {
-                        setState(() {
-                          _isAgreed = val ?? false;
-                        });
-                      },
-                    ),
-                    Flexible(
-                      child: Wrap(
-                        alignment: WrapAlignment.center,
-                        children: [
-                          const Text(
-                            "I agree to the ",
-                            style: TextStyle(fontSize: 13, color: Colors.grey),
-                          ),
-                          InkWell(
-                            onTap: () => _showPolicyTabs(context),
-                            child: Text(
-                              "Privacy Policy and Terms of Service",
-                              style: TextStyle(
-                                color: Colors.amber.shade600,
-                                fontWeight: FontWeight.bold,
-                                decoration: TextDecoration.underline,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -1051,6 +1069,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ],
             ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Checkbox(
+              value: _isAgreed,
+              onChanged: (val) {
+                setState(() {
+                  _isAgreed = val ?? false;
+                });
+              },
+            ),
+            Flexible(
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                children: [
+                  const Text(
+                    "I agree to the ",
+                    style: TextStyle(fontSize: 13, color: Colors.grey),
+                  ),
+                  InkWell(
+                    onTap: () => _showPolicyTabs(context),
+                    child: Text(
+                      "Privacy Policy and Terms of Service",
+                      style: TextStyle(
+                        color: Colors.amber.shade600,
+                        fontWeight: FontWeight.bold,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 20),
         InkWell(
           onTap: () {

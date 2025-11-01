@@ -2,12 +2,14 @@
 // ignore_for_file: unnecessary_null_comparison
 
 import 'package:contractor/Screen/cor_dashboard.dart';
+import 'package:contractor/Screen/cor_profile.dart';
+import 'package:contractor/Screen/cor_registration.dart';
 import 'package:contractor/Screen/cor_startup.dart';
 import 'package:contractor/Screen/cor_authredirect.dart';
 import 'package:contractor/Screen/cor_bidding.dart';
 import 'package:contractor/Screen/cor_chathistory.dart';
 import 'package:contractor/Screen/cor_contracttype.dart';
-import 'package:contractor/Screen/cor_profile.dart';
+import 'package:contractor/Screen/cor_messages.dart';
 import 'package:contractor/Screen/cor_ongoing.dart';
 import 'package:contractor/Screen/cor_product.dart';
 import 'package:contractor/build/builddrawer.dart';
@@ -81,6 +83,36 @@ class _MyAppState extends State<MyApp> {
           pageBuilder: (context, state) => NoTransitionPage(
             child: const AuthRedirectPage(),
           ),
+        ),
+        GoRoute(
+          path: '/register',
+          pageBuilder: (context, state) => NoTransitionPage(
+            child: const RegisterScreen(),
+          ),
+        ),
+        GoRoute(
+          path: '/chat/:chatRoomId',
+          pageBuilder: (context, state) {
+            final chatRoomId = state.pathParameters['chatRoomId'];
+            final contracteeData = state.extra as Map<String, dynamic>?;
+            return NoTransitionPage(
+              child: Builder(
+                builder: (context) {
+                  final session = Supabase.instance.client.auth.currentSession;
+                  if (session != null && chatRoomId != null && contracteeData != null) {
+                    return MessagePageContractor(
+                      chatRoomId: chatRoomId,
+                      contractorId: session.user.id,
+                      contracteeId: contracteeData['contracteeId'] ?? '',
+                      contracteeName: contracteeData['contracteeName'] ?? '',
+                      contracteeProfile: contracteeData['contracteeProfile'],
+                    );
+                  }
+                  return const ToLoginScreen();
+                },
+              ),
+            );
+          },
         ),
         ShellRoute(
           pageBuilder: (context, state, child) {
@@ -238,7 +270,7 @@ class _MyAppState extends State<MyApp> {
                       final session = Supabase.instance.client.auth.currentSession;
                       final args = state.extra as Map<String, dynamic>?;
                       final projectId = args?['projectId'] as String?;
-                      if (session != null && projectId != null) {
+                      if (session != null) {
                         return ProductPanelScreen(
                           contractorId: session.user.id,
                           projectId: projectId,
@@ -308,7 +340,7 @@ class _MyAppState extends State<MyApp> {
         final location = state.matchedLocation;
 
         if (session == null) {
-          if (location != '/' && location != '/auth/callback') {
+          if (location != '/' && location != '/auth/callback' && location != '/register') {
             return '/';
           }
         } else {

@@ -185,6 +185,7 @@ class BiddingUIBuildMethods {
     final status = bid['status'] ?? 'pending';
     final amount = bid['bid_amount'] ?? 0;
     final projectType = project['type'] ?? 'Unknown Project';
+    final projectTitle = project['title'] ?? 'Untitled';
 
     Color statusColor;
     switch (status) {
@@ -203,7 +204,7 @@ class BiddingUIBuildMethods {
 
     return ListTile(
       leading: Icon(Icons.assignment, color: Colors.amber),
-      title: Text(projectType, style: const TextStyle(fontWeight: FontWeight.w600)),
+      title: Text('$projectTitle - $projectType', style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Text('Bid: ₱$amount'),
       trailing: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

@@ -188,7 +188,7 @@ class ContractService {
           .select('contract_id')
           .eq('project_id', projectId)
           .neq('contract_id', contractId)
-          .inFilter('status', ['approved', 'active', 'signed']);
+          .inFilter('status', ['approved', 'active', 'signed', 'sent']);
 
       if (existingApprovedContracts.isNotEmpty) {
         throw Exception('Cannot send new contract: An approved contract already exists for this project.');
@@ -333,6 +333,21 @@ class ContractService {
             .single();
 
         try {
+
+          final contractee = await _supabase
+              .from('Contractee')
+              .select('full_name')
+              .eq('contractee_id', contractData['contractee_id'])
+              .maybeSingle();
+          final contracteeName = contractee?['full_name'] ?? 'Contractee';
+
+          final project = await _supabase
+              .from('Projects')
+              .select('title')
+              .eq('project_id', contractData['project_id'])
+              .maybeSingle();
+          final projectTitle = project?['title'] ?? 'Project';
+
           await NotificationService().createContractNotification(
             receiverId: contractData['contractor_id'],
             receiverType: 'contractor',
@@ -340,7 +355,7 @@ class ContractService {
             senderType: 'contractee',
             contractId: contractId,
             type: 'Contract Rejected',
-            message: 'Your contract has been rejected by the contractee.',
+            message: 'Your contract for "$projectTitle" has been rejected by $contracteeName.',
           );
         } catch (notificationError) {
           rethrow;
@@ -557,6 +572,13 @@ class ContractService {
           contractActivated = true;
 
           try {
+            final project = await _supabase
+                .from('Projects')
+                .select('title')
+                .eq('project_id', projectId)
+                .maybeSingle();
+            final projectTitle = project?['title'] ?? 'Project';
+
             await NotificationService().createContractNotification(
               receiverId: contractorId!,
               receiverType: 'contractor',
@@ -565,7 +587,7 @@ class ContractService {
               contractId: contractId,
               type: 'Contract Activated',
               message:
-                  'The project is now active. Proceed to Project Management Page.',
+                  'The project "$projectTitle" is now active. Proceed to Project Management Page.',
             );
 
             await NotificationService().createContractNotification(
@@ -576,7 +598,7 @@ class ContractService {
               contractId: contractId,
               type: 'Contract Activated',
               message:
-                  'The project is now active. Proceed to Project Management Page.',
+                  'The project "$projectTitle" is now active. Proceed to Project Management Page.',
             );
           } catch (activationNotifError) {
           }

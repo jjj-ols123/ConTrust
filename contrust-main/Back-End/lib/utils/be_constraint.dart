@@ -1,5 +1,7 @@
 // ignore_for_file: no_leading_underscores_for_local_identifiers
 
+import 'dart:convert';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<bool> functionConstraint(String contractorId, String contracteeId) async {
@@ -26,7 +28,7 @@ Future<bool> hasAlreadyBid(String contractorId, String projectId) async {
 Future<Map<String, dynamic>?> hasExistingProjectWithContractor(String contracteeId, String contractorId) async {
   final existingProjectWithContractor = await Supabase.instance.client
       .from('Projects')
-      .select('project_id, title, type, description, location, status, contractor_id')
+      .select('project_id, title, type, description, location, status, contractor_id, min_budget, max_budget, start_date, projectdata')
       .eq('contractee_id', contracteeId)
       .eq('contractor_id', contractorId)
       .inFilter('status', ['awaiting_contract', 'active', 'awaiting_agreement', 'awaiting_signature', 'cancellation_requested_by_contractee'])
@@ -50,15 +52,63 @@ Future<Map<String, dynamic>?> hasOngoingProject(String contracteeId) async {
   return ongoingProject;
 }
 
+Future<Map<String, dynamic>?> hasOngoingProjectAsContractor(String contractorId) async {
+  final ongoingProject = await Supabase.instance.client
+        .from('Projects')
+        .select('project_id, contractee_id, title, status')
+        .eq('contractor_id', contractorId)
+        .neq('status', 'cancelled')
+        .inFilter('status', ['awaiting_contract', 'active', 'awaiting_agreement', 'awaiting_signature'])
+        .limit(1)
+        .maybeSingle();
+  return ongoingProject;
+}
+
 Future<Map<String, dynamic>?> hasPendingProject(String contracteeId) async {
   final pendingProject = await Supabase.instance.client
       .from('Projects')
-      .select('project_id, title, type, description, location')
+      .select('project_id, title, type, description, location, min_budget, max_budget, start_date, duration, projectdata')
       .eq('contractee_id', contracteeId)
       .eq('status', 'pending')
       .limit(1)
       .maybeSingle();
   return pendingProject;
+}
+
+Future<Map<String, dynamic>?> hasPendingHireRequest(String contracteeId, String contractorId) async {
+  // Check notifications for pending hire requests to this specific contractor
+  try {
+    final notifications = await Supabase.instance.client
+        .from('Notifications')
+        .select('notification_id, information')
+        .eq('headline', 'Hiring Request')
+        .eq('sender_id', contracteeId)
+        .eq('receiver_id', contractorId)
+        .filter('information->>status', 'eq', 'pending');
+
+    if (notifications.isNotEmpty) {
+      final notification = notifications.first;
+      final info = notification['information'] as Map<String, dynamic>?;
+      final projectId = info?['project_id'];
+      
+      if (projectId != null) {
+        // Get the project details
+        final project = await Supabase.instance.client
+            .from('Projects')
+            .select('project_id, title, type, description, location, min_budget, max_budget, start_date, projectdata')
+            .eq('project_id', projectId)
+            .eq('status', 'pending')
+            .filter('projectdata->>hiring_type', 'eq', 'direct_hire')
+            .maybeSingle();
+        
+        return project;
+      }
+    }
+    
+    return null;
+  } catch (e) {
+    return null;
+  }
 }
 
 Future<Map<String, dynamic>?> hasExistingHireRequest(String contractorId, String contracteeId) async {
@@ -71,10 +121,18 @@ Future<Map<String, dynamic>?> hasExistingHireRequest(String contractorId, String
         .eq('headline', 'Hiring Request');
 
     for (final notification in notifications) {
-      final info = notification['information'] as Map<String, dynamic>?;
-      if (info != null && 
-          info['action'] == 'hire_request' && 
-          info['status'] == 'pending') {
+      var info = notification['information'];
+      if (info is String) {
+        try {
+          info = jsonDecode(info);
+        } catch (_) {
+          info = null;
+        }
+      }
+      final infoMap = info is Map ? Map<String, dynamic>.from(info) : null;
+      if (infoMap != null &&
+          infoMap['action'] == 'hire_request' &&
+          infoMap['status'] == 'pending') {
         return notification;
       }
     }
@@ -103,6 +161,7 @@ Future<Map<String, dynamic>?> hasExistingHireRequest(String contractorId, String
           await _supabase
               .from('Notifications')
               .update({
+                'headline': 'Hiring Request Cancelled',
                 'information': {
                   ...info,
                   'status': 'cancelled',
@@ -111,29 +170,34 @@ Future<Map<String, dynamic>?> hasExistingHireRequest(String contractorId, String
                 }
               })
               .eq('notification_id', request['notification_id']);
-          await _supabase
-              .from('Notifications')
-              .insert({
-                'receiver_id': request['receiver_id'],
-                'receiver_type': 'contractor',
-                'sender_id': contracteeId,
-                'sender_type': 'contractee',
-                'headline': 'Hiring Request Cancelled',
-                'information': {
-                  'project_id': projectId,
-                  'action': 'hire_request_cancelled',
-                  'timestamp': DateTime.now().toIso8601String(),
-                },
-                'is_read': false,
-                'created_at': DateTime.now().toIso8601String(),
-              });
-          await _supabase
-              .from('Notifications')
-              .delete()
-              .eq('notification_id', request['notification_id']);
         }
       }
     } catch (e) {
       throw Exception('Failed to cancel other hire requests');
     }
   }
+
+Future<bool> hasContractorDeclinedProject(String contracteeId, String contractorId, String projectId) async {
+  try {
+
+    final declinedRequests = await Supabase.instance.client
+        .from('Notifications')
+        .select('notification_id, information')
+        .eq('sender_id', contracteeId)
+        .eq('receiver_id', contractorId)
+        .eq('headline', 'Hiring Request');
+
+    for (final request in declinedRequests) {
+      final info = request['information'] as Map<String, dynamic>?;
+      if (info != null && 
+          info['project_id'] == projectId && 
+          info['status'] == 'declined') {
+        return true;
+      }
+    }
+    
+    return false;
+  } catch (e) {
+    return false;
+  }
+}

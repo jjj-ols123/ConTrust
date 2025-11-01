@@ -5,7 +5,7 @@ import 'package:backend/utils/be_validation.dart';
 import 'package:backend/services/contractee services/cee_signup.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:contractee/pages/cee_login.dart';
+import 'package:go_router/go_router.dart';
 
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({super.key});
@@ -217,10 +217,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
 
         Future.delayed(const Duration(seconds: 2), () {
           if (mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const LoginPage()),
-            );
+            context.go('/login');
           }
         });
       }
@@ -572,10 +569,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
         const SizedBox(height: 20),
         InkWell(
           onTap: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => LoginPage()),
-            );
+            context.go('/login');
           },
           child: Text.rich(
             TextSpan(

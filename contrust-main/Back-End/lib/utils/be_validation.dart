@@ -9,8 +9,8 @@ bool validateFieldsLogin(context, String email, String password) {
   return true;
 }
 
-bool validateFieldsContractor(context, String firmName, String contactNumber,
-    String email, String password, String confirmPassword) {
+bool validateFieldsContractor(BuildContext context, String firmName, String contactNumber,
+    String email, String password, String confirmPassword, {String? firmNameError}) {
   if (firmName.isEmpty ||
       contactNumber.isEmpty ||
       email.isEmpty ||
@@ -19,6 +19,12 @@ bool validateFieldsContractor(context, String firmName, String contactNumber,
     ConTrustSnackBar.error(context, 'Please fill in all fields');
     return false;
   }
+
+  if (firmNameError != null && firmNameError.isNotEmpty) {
+    ConTrustSnackBar.error(context, firmNameError);
+    return false;
+  }
+
   if (password != confirmPassword) {
     ConTrustSnackBar.error(context, 'Passwords do not match');
     return false;
@@ -70,8 +76,8 @@ bool validateFieldsPostRequest(BuildContext context, String title, String constr
 
   int durationInt = int.tryParse(duration) ?? 0;
 
-  if (durationInt < 1 || durationInt > 30) {
-    ConTrustSnackBar.error(context, 'Bid duration must be between 1 and 30 days');
+  if (durationInt != 0 && (durationInt < 1 || durationInt > 20)) {
+    ConTrustSnackBar.error(context, 'Bid duration must be between 1 and 20 days');
     return false;
   }
 

@@ -8,6 +8,9 @@ import 'package:contractee/pages/cee_login.dart';
 import 'package:contractee/pages/cee_ongoing.dart';
 import 'package:contractee/pages/cee_profile.dart';
 import 'package:contractee/pages/cee_chathistory.dart';
+import 'package:contractee/pages/cee_messages.dart';
+import 'package:contractee/pages/cee_registration.dart';
+import 'package:contractee/pages/cee_torprofile.dart';
 import 'package:contractee/pages/cee_notification.dart';
 import 'package:contractee/build/builddrawer.dart';
 import 'package:flutter/foundation.dart';
@@ -98,6 +101,36 @@ class _MyAppState extends State<MyApp> {
           pageBuilder: (context, state) => NoTransitionPage(
             child: const AuthRedirectPage(),
           ),
+        ),
+        GoRoute(
+          path: '/register',
+          pageBuilder: (context, state) => NoTransitionPage(
+            child: const RegistrationPage(),
+          ),
+        ),
+        GoRoute(
+          path: '/chat/:chatRoomId',
+          pageBuilder: (context, state) {
+            final chatRoomId = state.pathParameters['chatRoomId'];
+            final contracteeId = state.extra as Map<String, dynamic>?;
+            return NoTransitionPage(
+              child: Builder(
+                builder: (context) {
+                  final session = Supabase.instance.client.auth.currentSession;
+                  if (session != null && chatRoomId != null && contracteeId != null) {
+                    return MessagePageContractee(
+                      chatRoomId: chatRoomId,
+                      contracteeId: contracteeId['contracteeId'] ?? '',
+                      contractorId: contracteeId['contractorId'] ?? '',
+                      contractorName: contracteeId['contractorName'] ?? '',
+                      contractorProfile: contracteeId['contractorProfile'],
+                    );
+                  }
+                  return const LoginPage();
+                },
+              ),
+            );
+          },
         ),
         ShellRoute(
           pageBuilder: (context, state, child) {
@@ -224,9 +257,25 @@ class _MyAppState extends State<MyApp> {
                 );
               },
             ),
+            GoRoute(
+              path: '/contractor/:name',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      final contractorName = Uri.decodeComponent(state.pathParameters['name'] ?? '');
+                      if (session != null && contractorName != null) {
+                        return ContractorProfileScreen(contractorName: contractorName);
+                      }
+                      return const LoginPage();
+                    },
+                  ),
+                );
+              },
+            ),
           ],
         ),
-        // Catch-all route for 404 errors
         GoRoute(
           path: '/:path(.*)',
           pageBuilder: (context, state) => NoTransitionPage(
@@ -280,7 +329,7 @@ class _MyAppState extends State<MyApp> {
         final location = state.matchedLocation;
 
         if (session == null) {
-          if (location != '/login' && location != '/welcome' && location != '/auth/callback') {
+          if (location != '/login' && location != '/welcome' && location != '/auth/callback' && location != '/register') {
             return '/login';
           }
         } else {

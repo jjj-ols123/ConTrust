@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously, avoid_print, deprecated_member_use
 import 'package:backend/services/contractor services/cor_dashboardservice.dart';
+import 'package:backend/services/both services/be_realtime_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/build/builddashboard.dart';
 import 'package:flutter/material.dart' hide BottomNavigationBar;
@@ -46,6 +47,7 @@ class _DashboardUIState extends State<DashboardUI>
     with TickerProviderStateMixin {
 
   final dashboardService = CorDashboardService();
+  final realtimeService = RealtimeSubscriptionService();
   
   Map<String, dynamic>? contractorData;
   int activeProjects = 0;
@@ -80,10 +82,14 @@ class _DashboardUIState extends State<DashboardUI>
     ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
 
     fetchDashboardData();
+    _setupRealtimeSubscriptions();
   }
 
   @override
   void dispose() {
+    if (widget.contractorId != null) {
+      realtimeService.unsubscribeFromUserChannels(widget.contractorId!);
+    }
     _fadeController.dispose();
     _slideController.dispose();
     super.dispose();
@@ -122,6 +128,34 @@ class _DashboardUIState extends State<DashboardUI>
     }
   }
 
+  Future<void> _setupRealtimeSubscriptions() async {
+    if (widget.contractorId == null) return;
+
+    // Subscribe to notifications
+    realtimeService.subscribeToNotifications(
+      userId: widget.contractorId!,
+      onUpdate: () {
+        if (mounted) fetchDashboardData();
+      },
+    );
+
+    // Subscribe to contractor projects
+    realtimeService.subscribeToContractorProjects(
+      userId: widget.contractorId!,
+      onUpdate: () {
+        if (mounted) fetchDashboardData();
+      },
+    );
+
+    // Subscribe to contractor bids
+    realtimeService.subscribeToContractorBids(
+      userId: widget.contractorId!,
+      onUpdate: () {
+        if (mounted) fetchDashboardData();
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (loading) {
@@ -158,6 +192,8 @@ class _DashboardUIState extends State<DashboardUI>
                   buildWelcomeCard(),
                   const SizedBox(height: 20),
                   buildStatsGrid(),
+                  const SizedBox(height: 20),
+                  buildHiringRequestContainer(),
                   const SizedBox(height: 20),
                   buildMobileProjectsAndTasks(),
                 ],
@@ -210,6 +246,19 @@ class _DashboardUIState extends State<DashboardUI>
     buildMethods.contractorData = contractorData;
     buildMethods.localTasks = localTasks;
     return buildMethods.buildDesktopProjectsAndTasks();
+  }
+
+  Widget buildHiringRequestContainer() {
+    final buildMethods = DashboardBuildMethods(
+      context,
+      recentActivities,
+      activeProjects,
+      completedProjects,
+      totalEarnings,
+      totalClients,
+      rating,
+    );
+    return buildMethods.buildHiringRequestContainer();
   }
 
   Widget buildMobileProjectsAndTasks() {

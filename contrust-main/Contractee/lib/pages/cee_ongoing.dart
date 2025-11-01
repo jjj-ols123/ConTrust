@@ -6,8 +6,8 @@ import 'package:backend/models/be_payment_modal.dart';
 import 'package:backend/utils/be_constraint.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractee/build/buildongoing.dart';
-import 'package:contractee/pages/cee_messages.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CeeOngoingProjectScreen extends StatefulWidget {
@@ -363,18 +363,12 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
            final contractorName = _contractorData?['firm_name'] ?? 'Contractor';
            final contractorPhoto = _contractorData?['profile_photo'] ?? '';
 
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => MessagePageContractee(
-                                          chatRoomId: _chatRoomId!,
-                                          contracteeId: contracteeId,
-                                          contractorId: contractorId,
-                                          contractorName: contractorName,
-                                          contractorProfile: contractorPhoto,
-                                        ),
-                                      ),
-                                    );
+                                    context.go('/chat/$contractorName', extra: {
+                                      'contracteeId': contracteeId,
+                                      'contractorId': contractorId,
+                                      'contractorName': contractorName,
+                                      'contractorProfile': contractorPhoto,
+                                    });
                                   }
 
   Future<void> _handlePayment() async {

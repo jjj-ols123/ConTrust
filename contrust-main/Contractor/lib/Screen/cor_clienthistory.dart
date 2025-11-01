@@ -1,7 +1,7 @@
 // ignore_for_file: library_private_types_in_public_api
 import 'package:backend/services/both services/be_fetchservice.dart';
-import 'package:contractor/Screen/cor_product.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class ClientHistoryScreen extends StatefulWidget {
   final List<Map<String, String>>? initialClients;
@@ -79,11 +79,7 @@ class _ClientHistoryScreenState extends State<ClientHistoryScreen> {
                 children: [
                   GestureDetector(
                     onTap: () {
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        '/dashboard',
-                        (Route<dynamic> route) => false,
-                      );
+                      context.go('/dashboard');
                     },
                     child: const Text(
                       "Home",
@@ -98,7 +94,7 @@ class _ClientHistoryScreenState extends State<ClientHistoryScreen> {
                   const SizedBox(width: 10),
                   GestureDetector(
                     onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => const ProductPanelScreen()));
+                      context.go('/materials');
                     },
                     child: const Text(
                       "Product Panel",

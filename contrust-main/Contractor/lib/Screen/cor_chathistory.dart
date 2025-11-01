@@ -3,8 +3,8 @@ import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_user_service.dart';
 import 'package:backend/services/both services/be_message_service.dart';
 import 'package:backend/build/buildmessage.dart';
-import 'package:contractor/Screen/cor_messages.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ContractorChatHistoryPage extends StatefulWidget {
@@ -265,18 +265,11 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
                                   margin: const EdgeInsets.only(bottom: 12),
                                   child: InkWell(
                                     onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => MessagePageContractor(
-                                            chatRoomId: chat['chatroom_id'],
-                                            contractorId: contractorId!,
-                                            contracteeId: contracteeId,
-                                            contracteeName: contracteeName,
-                                            contracteeProfile: contracteeProfile,
-                                          ),
-                                        ),
-                                      );
+                                      context.go('/chat/${chat['chatroom_id']}', extra: {
+                                        'contracteeId': contracteeId,
+                                        'contracteeName': contracteeName,
+                                        'contracteeProfile': contracteeProfile,
+                                      });
                                     },
                                     borderRadius: BorderRadius.circular(12),
                                     child: Padding(
@@ -290,13 +283,9 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
                                                 backgroundColor: Colors.amber[100],
                                                 backgroundImage: contracteeProfile != null
                                                     ? NetworkImage(contracteeProfile)
-                                                    : null,
+                                                    : NetworkImage('https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png'),
                                                 child: contracteeProfile == null
-                                                    ? Icon(
-                                                        Icons.person,
-                                                        color: Colors.amber[700],
-                                                        size: 24,
-                                                      )
+                                                    ? null
                                                     : null,
                                               ),
                                               if (hasUnread)

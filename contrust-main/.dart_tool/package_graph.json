@@ -27,6 +27,7 @@
         "flutter_quill",
         "flutter_quill_delta_from_html",
         "flutter_quill_extensions",
+        "go_router",
         "http",
         "image_picker",
         "intl",
@@ -1273,6 +1274,17 @@
       ]
     },
     {
+      "name": "leak_tracker",
+      "version": "11.0.2",
+      "dependencies": [
+        "clock",
+        "collection",
+        "meta",
+        "path",
+        "vm_service"
+      ]
+    },
+    {
       "name": "term_glyph",
       "version": "1.2.2",
       "dependencies": []
@@ -1611,6 +1623,11 @@
       "dependencies": []
     },
     {
+      "name": "vm_service",
+      "version": "14.3.1",
+      "dependencies": []
+    },
+    {
       "name": "retry",
       "version": "3.1.2",
       "dependencies": []
@@ -1646,22 +1663,6 @@
       "dependencies": [
         "web"
       ]
-    },
-    {
-      "name": "leak_tracker",
-      "version": "11.0.2",
-      "dependencies": [
-        "clock",
-        "collection",
-        "meta",
-        "path",
-        "vm_service"
-      ]
-    },
-    {
-      "name": "vm_service",
-      "version": "14.3.1",
-      "dependencies": []
     }
   ],
   "configVersion": 1

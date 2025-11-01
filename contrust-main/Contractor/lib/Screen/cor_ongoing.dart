@@ -5,6 +5,7 @@ import 'package:backend/services/contractor services/cor_ongoingservices.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/build/buildongoing.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CorOngoingProjectScreen extends StatefulWidget {
@@ -164,12 +165,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
       );
 
       if (selectedProjectId != null && selectedProjectId != widget.projectId) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => CorOngoingProjectScreen(projectId: selectedProjectId),
-          ),
-        );
+        context.go('/project-management', extra: selectedProjectId);
       }
     } catch (e) {
       ConTrustSnackBar.error(context, 'Failed to switch project');
@@ -345,18 +341,10 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     OngoingBuildMethods.showPhotoDialog(context, photo, createSignedPhotoUrl);
   }
 
-  Future<void> goToMaterials() async {
+  void goToMaterials() {
     final contractorId = Supabase.instance.client.auth.currentUser?.id;
     if (contractorId != null) {
-      final result = await Navigator.pushNamed(
-        context,
-        '/materials',
-        arguments: {'projectId': widget.projectId},
-      );
-
-      if (result == true || result == null) {
-        loadData();
-      }
+      context.go('/materials', extra: {'projectId': widget.projectId});
     }
   }
 

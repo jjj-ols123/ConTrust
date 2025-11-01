@@ -11,7 +11,7 @@ class FetchService {
     try {
       final response = await _supabase
           .from('Contractor')
-          .select('contractor_id, firm_name, profile_photo, bio');
+          .select('contractor_id, firm_name, profile_photo, bio, rating');
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await _errorService.logError(
@@ -56,8 +56,9 @@ class FetchService {
           .from('Contractor')
           .select('contractor_id, firm_name, specialization, bio, past_projects, contact_number, profile_photo, created_at, address, verified, rating')
           .eq('contractor_id', contractorId)
-          .single();
-      return Map<String, dynamic>.from(response);
+          .limit(1)
+          .maybeSingle();
+      return response != null ? Map<String, dynamic>.from(response) : null;
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Failed to fetch contractor data: ${e.toString()}',
@@ -72,14 +73,38 @@ class FetchService {
     }
   }
 
+  Future<Map<String, dynamic>?> fetchContractorDataByName(String contractorName) async {
+    try {
+      final response = await _supabase
+          .from('Contractor')
+          .select('contractor_id, firm_name, specialization, bio, past_projects, contact_number, profile_photo, created_at, address, verified, rating')
+          .eq('firm_name', contractorName)
+          .limit(1)
+          .maybeSingle();
+      return response != null ? Map<String, dynamic>.from(response) : null;
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch contractor data by name: ${e.toString()}',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Contractor Data By Name',
+          'contractor_name': contractorName,
+        },
+      );
+      return null;
+    }
+  }
+
   Future<Map<String, dynamic>?> fetchContracteeData(String contracteeId) async {
     try {
       final response = await _supabase
           .from('Contractee')
           .select('contractee_id, address, project_history_count, created_at, full_name, profile_photo, phone_number')
           .eq('contractee_id', contracteeId)
-          .single();
-      return Map<String, dynamic>.from(response);
+          .limit(1)
+          .maybeSingle();
+      return response != null ? Map<String, dynamic>.from(response) : null;
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Failed to fetch contractee data: $e',
@@ -102,7 +127,7 @@ class FetchService {
       final response = await _supabase
           .from('Projects')
           .select(
-            'project_id, type, title, description, duration, min_budget, max_budget, created_at, status',
+            'project_id, type, title, description, duration, min_budget, max_budget, created_at, status, start_date, location',
           )
           .eq('contractee_id', userId)
           .neq('status', 'cancelled')
@@ -323,21 +348,53 @@ class FetchService {
   }) async {
     try {
       final contract = await fetchContractData(contractId);
+      final projectId = contract?['project_id'];
 
       String receiverId, receiverType, senderId, senderType, message;
+      String? senderName, projectTitle;
+
       if (userType == 'contractor') {
         receiverId = contract?['contractee_id'];
         receiverType = 'contractee';
         senderId = contract?['contractor_id'];
         senderType = 'contractor';
-        message = 'The $userType has $action';
+
+        final contractor = await _supabase
+            .from('Contractor')
+            .select('firm_name')
+            .eq('contractor_id', senderId)
+            .maybeSingle();
+        senderName = contractor?['firm_name'] ?? 'Contractor';
+
+        message = '$senderName has $action the contract';
       } else {
         receiverId = contract?['contractor_id'];
         receiverType = 'contractor';
         senderId = contract?['contractee_id'];
         senderType = 'contractee';
-        message = 'The $userType has $action';
+
+        final contractee = await _supabase
+            .from('Contractee')
+            .select('full_name')
+            .eq('contractee_id', senderId)
+            .maybeSingle();
+        senderName = contractee?['full_name'] ?? 'Contractee';
+
+        message = '$senderName has $action the contract';
       }
+
+      if (projectId != null) {
+        final project = await _supabase
+            .from('Projects')
+            .select('title')
+            .eq('project_id', projectId)
+            .maybeSingle();
+        projectTitle = project?['title'];
+        if (projectTitle != null) {
+          message += ' for "$projectTitle"';
+        }
+      }
+
       return {
         'receiverId': receiverId,
         'receiverType': receiverType,
@@ -458,7 +515,7 @@ class FetchService {
     try {
       final response = await _supabase
           .from('Projects')
-          .select('project_id, title, type, description, status, created_at')
+          .select('project_id, title, type, description, duration, min_budget, max_budget, created_at, status, start_date, location')
           .eq('contractor_id', contractorId)
           .order('created_at', ascending: false);
 

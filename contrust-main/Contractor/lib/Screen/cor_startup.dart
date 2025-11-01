@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:backend/utils/be_validation.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractor/Screen/cor_registration.dart';
 import 'package:backend/services/contractor services/cor_signin.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class ToLoginScreen extends StatefulWidget {
   const ToLoginScreen({super.key});
@@ -173,11 +173,12 @@ Widget _buildLoginForm(BuildContext context) {
         onPressed: _isLoggingIn ? null : _handleLogin,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.amber.shade700,
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32), 
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           elevation: 4,
+          minimumSize: const Size(double.infinity, 50),
         ),
         child: _isLoggingIn
             ? const SizedBox(
@@ -250,10 +251,7 @@ Widget _buildLoginForm(BuildContext context) {
       const SizedBox(height: 10),
       InkWell(
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const RegisterScreen()),
-          );
+          context.go('/register');
         },
         child: Text.rich(
           TextSpan(

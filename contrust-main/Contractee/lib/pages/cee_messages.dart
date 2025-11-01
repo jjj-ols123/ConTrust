@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, unnecessary_null_comparison
 import 'dart:async';
 import 'package:backend/build/buildmessagesdesign.dart';
 import 'package:backend/build/buildmessage.dart';
@@ -33,6 +33,11 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
+  RealtimeChannel? _messagesChannel;
+  RealtimeChannel? _chatRoomChannel;
+  RealtimeChannel? _projectsChannel;
+  RealtimeChannel? _contractsChannel;
+
   static const String profileUrl =
       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
 
@@ -47,19 +52,14 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
   void initState() {
     super.initState();
     _initializeData();
+    _setupRealtimeSubscriptions();
     _messageController.addListener(() {
       setState(() {
         _canSend = _messageController.text.trim().isNotEmpty;
       });
     });
     
-    _pollingTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
-      if (mounted) {
-        setState(() {
-          _projectStatus = FetchService().fetchProjectStatus(widget.chatRoomId);
-        });
-      }
-    });
+    // Remove polling timer - now using real-time subscriptions for project status
   }
   
   Future<void> _initializeData() async {
@@ -67,7 +67,6 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
       _projectStatus = FetchService().fetchProjectStatus(widget.chatRoomId);
     });
     await _projectStatus;
-    // Mark messages as read when opening the chat
     await MessageService().markMessagesAsRead(
       chatRoomId: widget.chatRoomId,
       userId: widget.contracteeId,
@@ -75,6 +74,84 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
     setState(() {
       _isLoading = false;
     });
+  }
+
+  Future<void> _setupRealtimeSubscriptions() async {
+    _messagesChannel = supabase
+        .channel('messages:${widget.chatRoomId}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'Messages',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'chatroom_id',
+            value: widget.chatRoomId,
+          ),
+          callback: (payload) {
+            if (!mounted) return;
+            _scrollToBottom();
+            if (payload.newRecord != null && 
+                payload.newRecord['sender_id'] != widget.contracteeId) {
+              MessageService().markMessagesAsRead(
+                chatRoomId: widget.chatRoomId,
+                userId: widget.contracteeId,
+              );
+            }
+          },
+        )
+        .subscribe();
+
+    _chatRoomChannel = supabase
+        .channel('chatroom:${widget.chatRoomId}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'ChatRoom',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'chatroom_id',
+            value: widget.chatRoomId,
+          ),
+          callback: (payload) {
+            if (!mounted) return;
+          },
+        )
+        .subscribe();
+
+    // Subscribe to project status changes
+    _projectsChannel = supabase
+        .channel('projects_status:${widget.chatRoomId}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'Projects',
+          callback: (payload) {
+            if (!mounted) return;
+            // Update project status when project changes
+            setState(() {
+              _projectStatus = FetchService().fetchProjectStatus(widget.chatRoomId);
+            });
+          },
+        )
+        .subscribe();
+
+    // Subscribe to contract status changes
+    _contractsChannel = supabase
+        .channel('contracts_status:${widget.chatRoomId}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'Contracts',
+          callback: (payload) {
+            if (!mounted) return;
+            // Update project status when contract changes (affects project status)
+            setState(() {
+              _projectStatus = FetchService().fetchProjectStatus(widget.chatRoomId);
+            });
+          },
+        )
+        .subscribe();
   }
 
   Future<void> _sendMessage() async {
@@ -126,6 +203,10 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
 
   @override
   void dispose() {
+    _messagesChannel?.unsubscribe();
+    _chatRoomChannel?.unsubscribe();
+    _projectsChannel?.unsubscribe();
+    _contractsChannel?.unsubscribe();
     _pollingTimer?.cancel();
     _messageController.dispose();
     _scrollController.dispose();

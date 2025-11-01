@@ -3,8 +3,8 @@
 import 'dart:io';
 import 'package:backend/utils/be_validation.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractee/pages/cee_registration.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:backend/services/contractee services/cee_signin.dart';
 
 class LoginPage extends StatefulWidget {
@@ -229,7 +229,7 @@ class _LoginPageState extends State<LoginPage> {
         const SizedBox(height: 25),
         InkWell(
           onTap: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => RegistrationPage()));
+            context.go('/register');
           },
           child: Text.rich(
             TextSpan(
