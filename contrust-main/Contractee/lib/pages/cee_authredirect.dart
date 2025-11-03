@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'package:backend/services/contractee services/cee_signin.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -23,12 +24,12 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
   Future<void> _handleAuthRedirect() async {
     try {
       final supabase = Supabase.instance.client;
-      final session = supabase.auth.currentSession;
+      var session = supabase.auth.currentSession;
       
       if (session == null) {
         await Future.delayed(const Duration(seconds: 2));
-        final newSession = supabase.auth.currentSession;
-        if (newSession == null) {
+        session = supabase.auth.currentSession;
+        if (session == null) {
           if (mounted && !_hasRedirected) {
             _hasRedirected = true;
             context.go('/');
@@ -37,8 +38,17 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
         }
       }
       
-      final user = session?.user ?? supabase.auth.currentSession?.user;
-      if (user == null) {
+      final user = session.user;
+
+      final signInService = SignInGoogleContractee();
+      await signInService.handleSignIn(context, user);
+
+      if (!mounted || _hasRedirected) {
+        return;
+      }
+
+      session = supabase.auth.currentSession;
+      if (session == null) {
         if (mounted && !_hasRedirected) {
           _hasRedirected = true;
           context.go('/');
@@ -46,16 +56,18 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
         return;
       }
 
+      final currentUser = session.user;
+
       final contracteeData = await supabase
           .from('Contractee')
           .select()
-          .eq('contractee_id', user.id)
+          .eq('contractee_id', currentUser.id)
           .maybeSingle();
 
       final contractorData = await supabase
           .from('Contractor')
           .select()
-          .eq('contractor_id', user.id)
+          .eq('contractor_id', currentUser.id)
           .maybeSingle();
 
       if (mounted && !_hasRedirected) {
