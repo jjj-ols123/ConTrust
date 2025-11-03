@@ -35,6 +35,7 @@ class NotificationUIBuildMethods {
       'hiring_requests_declined_today': [],
       'hiring_requests_declined_by_me_today': [],
       'bid_accepted_today': [],
+      'cancellation_declined_today': [],
       'other': [],
     };
 
@@ -74,11 +75,9 @@ class NotificationUIBuildMethods {
       } else if (headline == 'Hiring Request Cancelled' &&
           createdAt != null &&
           createdAt.startsWith(todayStr)) {
-        // Handle cancelled hire requests (for contractors)
         groups['hiring_requests_cancelled_today']!.add(notification);
         continue;
       } else if (headline == 'Hiring Response') {
-        // Handle declined hire requests (for contractees)
         final rawInfo = notification['information'];
         final info = rawInfo is String
             ? Map<String, dynamic>.from(jsonDecode(rawInfo))
@@ -96,6 +95,21 @@ class NotificationUIBuildMethods {
           createdAt.startsWith(todayStr)) {
         groups['bid_accepted_today']!.add(notification);
         continue;
+      } else if (headline == 'Project Cancellation Request') {
+        // Handle cancellation declined notifications
+        final rawInfo = notification['information'];
+        final info = rawInfo is String
+            ? Map<String, dynamic>.from(jsonDecode(rawInfo))
+            : Map<String, dynamic>.from(rawInfo ?? {});
+        final status = info['status'] as String?;
+        final updatedAt = info['updated_at'] as String?;
+
+        if (status == 'rejected' &&
+            updatedAt != null &&
+            updatedAt.startsWith(todayStr)) {
+          groups['cancellation_declined_today']!.add(notification);
+          continue;
+        }
       }
 
       groups['other']!.add(notification);
@@ -133,6 +147,7 @@ class NotificationUIBuildMethods {
         final hiringRequestsDeclinedByMeToday =
             groups['hiring_requests_declined_by_me_today']!;
         final bidAcceptedToday = groups['bid_accepted_today']!;
+        final cancellationDeclinedToday = groups['cancellation_declined_today']!; // Added this
         final otherNotifications = groups['other']!;
 
         return ListView(
@@ -190,6 +205,15 @@ class NotificationUIBuildMethods {
                 color: Colors.amber,
                 notifications: bidAcceptedToday,
                 groupKey: 'bid_accepted_today',
+              ),
+            if (cancellationDeclinedToday.isNotEmpty)
+              _buildGroupedNotification(
+                title:
+                    '${cancellationDeclinedToday.length} cancellation ${cancellationDeclinedToday.length == 1 ? 'request was' : 'requests were'} declined today',
+                icon: Icons.block_outlined,
+                color: Colors.red,
+                notifications: cancellationDeclinedToday,
+                groupKey: 'cancellation_declined_today',
               ),
             ...otherNotifications.map((notification) {
               return _buildSingleNotification(notification);

@@ -10,9 +10,9 @@ import 'package:backend/services/both%20services/be_message_service.dart';
 import 'package:backend/utils/be_constraint.dart';
 import 'package:backend/utils/be_status.dart';
 import 'package:contractor/Screen/cor_ongoing.dart';
-import 'package:contractor/Screen/cor_contracttype.dart';
 import 'package:contractee/pages/cee_ongoing.dart';
 import 'package:contractor/build/builddrawer.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MessageBuildMethods {}
@@ -498,16 +498,7 @@ class MessageUIBuildMethods {
                             if (userId == null) return;
                             try {
                               if (snapshot.data == 'awaiting_contract') {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => ContractorShell(
-                                      currentPage: ContractorPage.contracts,
-                                      contractorId: userId!,
-                                      child: ContractType(contractorId: userId!),
-                                    ),
-                                  ),
-                                );
+                                context.go('/contracttypes');
                               } else {
                                 final activeProjects = await FetchService().fetchContractorActiveProjects(userId!);
                                 if (activeProjects.isEmpty) {
@@ -578,7 +569,7 @@ class MessageUIBuildMethods {
                         .eq('chatroom_id', chatRoomId!)
                         .order('timestamp', ascending: true),
                     builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
+                      if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
                         return Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -729,35 +720,45 @@ class MessageUIBuildMethods {
                                     vertical: isDesktop ? 12 : (isTablet ? 10 : 8),
                                   ),
                                 ),
-                                onSubmitted: (_) => onSendMessage(),
+                                onSubmitted: (_) {
+                                  if (messageController.text.trim().isNotEmpty && !isSending) {
+                                    onSendMessage();
+                                  }
+                                },
                               ),
                             ),
                           ),
                           SizedBox(width: isDesktop ? 6 : 4),
-                          CircleAvatar(
-                            backgroundColor: isSending || messageController.text.trim().isEmpty 
-                                ? Colors.grey[400] 
-                                : accentColor,
-                            radius: isDesktop ? 24 : (isTablet ? 20 : 16),
-                            child: isSending
-                                ? SizedBox(
-                                    width: isDesktop ? 20 : (isTablet ? 18 : 16),
-                                    height: isDesktop ? 20 : (isTablet ? 18 : 16),
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                    ),
-                                  )
-                                : IconButton(
-                                    icon: Icon(
-                                      Icons.send, 
-                                      color: Colors.white,
-                                      size: isDesktop ? 20 : (isTablet ? 18 : 16),
-                                    ),
-                                    onPressed: messageController.text.trim().isNotEmpty && !isSending 
-                                        ? onSendMessage 
-                                        : null,
-                                  ),
+                          ValueListenableBuilder<TextEditingValue>(
+                            valueListenable: messageController,
+                            builder: (context, value, child) {
+                              final hasText = value.text.trim().isNotEmpty;
+                              return CircleAvatar(
+                                backgroundColor: isSending || !hasText 
+                                    ? Colors.grey[400] 
+                                    : accentColor,
+                                radius: isDesktop ? 24 : (isTablet ? 20 : 16),
+                                child: isSending
+                                    ? SizedBox(
+                                        width: isDesktop ? 20 : (isTablet ? 18 : 16),
+                                        height: isDesktop ? 20 : (isTablet ? 18 : 16),
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        ),
+                                      )
+                                    : IconButton(
+                                        icon: Icon(
+                                          Icons.send, 
+                                          color: Colors.white,
+                                          size: isDesktop ? 20 : (isTablet ? 18 : 16),
+                                        ),
+                                        onPressed: hasText && !isSending 
+                                            ? onSendMessage 
+                                            : null,
+                                      ),
+                              );
+                            },
                           ),
                         ],
                       ),

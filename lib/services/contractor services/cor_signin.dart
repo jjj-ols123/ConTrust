@@ -1,7 +1,5 @@
 // ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages
 
-import 'package:web/web.dart' as web;
-
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
@@ -181,8 +179,9 @@ class SignInGoogleContractor {
     try {
       final supabase = Supabase.instance.client;
       final encodedNext = Uri.encodeComponent('/dashboard');
+   
       final redirect = kIsWeb
-          ? '${web.window.location.origin}/auth/callback?next=$encodedNext'
+          ? 'https://contractor.contrust-sjdm.com/auth/callback?next=$encodedNext'
           : 'io.supabase.contrust://login-callback/dashboard';
 
       await supabase.auth.signInWithOAuth(

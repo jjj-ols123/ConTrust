@@ -1035,7 +1035,6 @@ class ProjectService {
     String? reason,
   }) async {
     try {
-      print('DEBUG: declineHiring called with reason: "$reason"'); // Debug
 
       final currentNotification = await _supabase
           .from('Notifications')
@@ -1047,17 +1046,13 @@ class ProjectService {
           Map<String, dynamic>.from(currentNotification['information'] ?? {});
       currentInfo['status'] = 'declined';
       currentInfo['updated_at'] = DateTime.now().toIso8601String();
-
-      // Handle decline reason - check for null, empty, or string "null"
+      
       if (reason != null &&
           reason.trim().isNotEmpty &&
           reason.toLowerCase() != 'null') {
-        print(
-            'DEBUG: Adding decline_reason to currentInfo: "$reason"'); // Debug
         currentInfo['decline_reason'] = reason;
       } else {
-        print(
-            'DEBUG: No valid reason provided (reason: "$reason"), skipping decline_reason'); // Debug
+        //
       }
 
       await _supabase.from('Notifications').update({
@@ -1069,7 +1064,6 @@ class ProjectService {
       final contractorName = contractorData?['firm_name'] ?? 'A contractor';
       final contractorPhoto = contractorData?['profile_photo'] ?? '';
 
-      // Get project ID from the original notification
       final projectId = currentInfo['project_id'];
 
       final notificationInfo = {
@@ -1084,15 +1078,11 @@ class ProjectService {
         if (projectId != null) 'project_id': projectId,
       };
 
-      // Only add decline_reason if we have a valid reason
       if (reason != null &&
           reason.trim().isNotEmpty &&
           reason.toLowerCase() != 'null') {
         notificationInfo['decline_reason'] = reason;
       }
-
-      print(
-          'DEBUG: Creating notification with info: $notificationInfo'); // Debug
 
       await NotificationService().createNotification(
         receiverId: contracteeId,

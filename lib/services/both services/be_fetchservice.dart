@@ -510,6 +510,205 @@ class FetchService {
     }
   }
 
+  Stream<List<Map<String, dynamic>>> streamCreatedContracts(
+      String contractorId) {
+    try {
+      return _supabase
+          .from('Contracts')
+          .stream(primaryKey: ['contract_id'])
+          .eq('contractor_id', contractorId)
+          .order('created_at', ascending: false)
+          .asyncMap((List<Map<String, dynamic>> contracts) async {
+            // Fetch project information for each contract
+            final enrichedContracts = <Map<String, dynamic>>[];
+            
+            for (final contract in contracts) {
+              final projectId = contract['project_id'] as String?;
+              Map<String, dynamic>? projectInfo;
+              
+              if (projectId != null) {
+                try {
+                  final projectResponse = await _supabase
+                      .from('Projects')
+                      .select('type, description, title')
+                      .eq('project_id', projectId)
+                      .maybeSingle();
+                  projectInfo = projectResponse;
+                } catch (e) {
+                  // If project fetch fails, continue without project info
+                  projectInfo = null;
+                }
+              }
+              
+              // Add project info to contract
+              final enrichedContract = Map<String, dynamic>.from(contract);
+              enrichedContract['project'] = projectInfo;
+              enrichedContracts.add(enrichedContract);
+            }
+            
+            return enrichedContracts;
+          });
+    } catch (e) {
+      _errorService.logError(
+        errorMessage: 'Failed to stream created contracts: ',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Stream Created Contracts',
+          'contractor_id': contractorId,
+        },
+      );
+      // Return an empty stream in case of error
+      return Stream.value([]);
+    }
+  }
+
+  Stream<List<Map<String, dynamic>>> streamCompletedProjects() {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return Stream.value([]);
+
+      return _supabase
+          .from('Projects')
+          .stream(primaryKey: ['project_id'])
+          .map((List<Map<String, dynamic>> projects) {
+            // Filter completed projects for the current user
+            return projects.where((project) => 
+              project['contractor_id'] == userId && 
+              project['status'] == 'completed'
+            ).toList()..sort((a, b) {
+              final dateA = DateTime.tryParse(a['created_at'] ?? '') ?? DateTime(1970);
+              final dateB = DateTime.tryParse(b['created_at'] ?? '') ?? DateTime(1970);
+              return dateB.compareTo(dateA);
+            });
+          })
+          .asyncMap((List<Map<String, dynamic>> projects) async {
+            final enrichedProjects = <Map<String, dynamic>>[];
+            
+            for (final project in projects) {
+              final contracteeId = project['contractee_id'] as String?;
+              Map<String, dynamic>? contracteeInfo;
+              
+              if (contracteeId != null) {
+                try {
+                  final contracteeResponse = await _supabase
+                      .from('Contractee')
+                      .select('full_name')
+                      .eq('contractee_id', contracteeId)
+                      .maybeSingle();
+                  contracteeInfo = contracteeResponse;
+                } catch (e) {
+                  contracteeInfo = null;
+                }
+              }
+              
+              final enrichedProject = Map<String, dynamic>.from(project);
+              enrichedProject['contractee'] = contracteeInfo;
+              enrichedProjects.add(enrichedProject);
+            }
+            
+            return enrichedProjects;
+          });
+    } catch (e) {
+      _errorService.logError(
+        errorMessage: 'Failed to stream completed projects: ',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Stream Completed Projects',
+        },
+      );
+      return Stream.value([]);
+    }
+  }
+
+  Stream<List<Map<String, dynamic>>> streamContractorActiveProjects(String contractorId) {
+    try {
+      return _supabase
+          .from('Projects')
+          .stream(primaryKey: ['project_id'])
+          .map((List<Map<String, dynamic>> projects) {
+            // Filter active/ongoing projects for the contractor
+            return projects.where((project) => 
+              project['contractor_id'] == contractorId && 
+              (project['status'] == 'active' || project['status'] == 'ongoing')
+            ).toList()..sort((a, b) {
+              final dateA = DateTime.tryParse(a['created_at'] ?? '') ?? DateTime(1970);
+              final dateB = DateTime.tryParse(b['created_at'] ?? '') ?? DateTime(1970);
+              return dateB.compareTo(dateA);
+            });
+          });
+    } catch (e) {
+      _errorService.logError(
+        errorMessage: 'Failed to stream contractor active projects: ',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Stream Contractor Active Projects',
+          'contractor_id': contractorId,
+        },
+      );
+      return Stream.value([]);
+    }
+  }
+
+  Stream<Map<String, dynamic>> streamProjectData(String projectId) {
+    try {
+      return _supabase
+          .from('Projects')
+          .stream(primaryKey: ['project_id'])
+          .map((List<Map<String, dynamic>> projects) {
+            // Find the specific project
+            final project = projects.firstWhere(
+              (p) => p['project_id'] == projectId,
+              orElse: () => <String, dynamic>{},
+            );
+            return project;
+          })
+          .where((project) => project.isNotEmpty);
+    } catch (e) {
+      _errorService.logError(
+        errorMessage: 'Failed to stream project data: ',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Stream Project Data',
+          'project_id': projectId,
+        },
+      );
+      return Stream.value(<String, dynamic>{});
+    }
+  }
+
+  Stream<List<Map<String, dynamic>>> streamBiddingProjects() {
+    try {
+      return _supabase
+          .from('Projects')
+          .stream(primaryKey: ['project_id'])
+          .map((List<Map<String, dynamic>> projects) {
+            // Filter projects that are open for bidding
+            return projects.where((project) => 
+              project['status'] == 'pending' ||
+              project['status'] == 'open'
+            ).toList()..sort((a, b) {
+              final dateA = DateTime.tryParse(a['created_at'] ?? '') ?? DateTime(1970);
+              final dateB = DateTime.tryParse(b['created_at'] ?? '') ?? DateTime(1970);
+              return dateB.compareTo(dateA);
+            });
+          });
+    } catch (e) {
+      _errorService.logError(
+        errorMessage: 'Failed to stream bidding projects: ',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Stream Bidding Projects',
+        },
+      );
+      return Stream.value([]);
+    }
+  }
+
   Future<List<Map<String, dynamic>>> fetchContractorProjectInfo(
       String contractorId) async {
     try {
@@ -862,6 +1061,32 @@ class FetchService {
         },
       );
       return [];
+    }
+  }
+
+  Stream<List<Map<String, dynamic>>> streamProjectMaterials(String contractorId) {
+    try {
+      return _supabase
+          .from('ProjectMaterials')
+          .stream(primaryKey: ['material_id'])
+          .map((data) => List<Map<String, dynamic>>.from(data))
+          .map((materials) => materials.where((material) => 
+              material['contractor_id'] == contractorId).toList())
+          .map((materials) => materials..sort((a, b) => 
+              DateTime.parse(b['created_at'] ?? '').compareTo(
+                DateTime.parse(a['created_at'] ?? ''))));
+    } catch (e) {
+      _errorService.logError(
+        userId: _supabase.auth.currentUser?.id,
+        errorMessage: 'Failed to stream project materials: $e',
+        module: 'FetchService',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Stream Project Materials',
+          'contractor_id': contractorId,
+        },
+      );
+      return Stream.value([]);
     }
   }
 }

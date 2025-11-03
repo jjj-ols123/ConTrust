@@ -3,10 +3,9 @@
 import 'package:backend/services/both services/be_contract_service.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractor/Screen/cor_createcontract.dart';
-import 'package:contractor/Screen/cor_viewcontract.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class ContractTypeService {
 
@@ -18,17 +17,14 @@ class ContractTypeService {
     required String contractorId,
   }) async {
     try {
-      final result = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => CreateContractPage(
-            contractType: template['template_name'] ?? '',
-            template: template,
-            contractorId: contractorId,
-          ),
-        ),
-      );
-      return result;
+      final templateName = template['template_name'] ?? '';   
+      final encodedName = Uri.encodeComponent(templateName);
+      context.go('/createcontract/template/$encodedName', extra: {
+        'template': template,
+        'contractType': templateName,
+        'contractorId': contractorId,
+      });
+      return true;
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Failed to navigate to create contract: ',
@@ -49,15 +45,10 @@ class ContractTypeService {
     required String contractorId,
   }) async {
     try {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ContractorViewContractPage(
-            contractId: contractId,
-            contractorId: contractorId,
-          ),
-        ),
-      );
+      context.go('/viewcontract', extra: {
+        'contractId': contractId,
+        'contractorId': contractorId,
+      });
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Failed to navigate to view contract: ',
@@ -92,18 +83,13 @@ class ContractTypeService {
         return false;
       }
 
-      final editResult = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => CreateContractPage(
-            template: contractType,
-            contractType: contractType['template_name'] ?? '',
-            contractorId: contractorId,
-            existingContract: contract,
-          ),
-        ),
-      );
-      return editResult;
+      final contractId = contract['contract_id'];
+      context.go('/createcontract/contract/$contractId', extra: {
+        'template': contractType,
+        'contractType': contractType['template_name'] ?? '',
+        'existingContract': contract,
+      });
+      return true;
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Failed to navigate to edit contract: ',
@@ -217,7 +203,6 @@ class ContractTypeService {
     required BuildContext context,
     required Map<String, dynamic> contract,
     required String contractorId,
-    required VoidCallback onRefreshContracts,
   }) {
     try {
       final contractStatus = contract['status'] as String? ?? 'draft';
@@ -273,7 +258,6 @@ class ContractTypeService {
             context: context,
             contract: contract,
             contractorId: contractorId,
-            onRefreshContracts: onRefreshContracts,
           );
         }
       });
@@ -295,7 +279,6 @@ class ContractTypeService {
     required BuildContext context,
     required Map<String, dynamic> contract,
     required String contractorId,
-    required VoidCallback onRefreshContracts,
   }) async {
     try {
       switch (choice) {
@@ -303,14 +286,11 @@ class ContractTypeService {
           await sendContractToContractee(context: context, contract: contract);
           break;
         case 'edit':
-          final editResult = await navigateToEditContract(
+          await navigateToEditContract(
             context: context,
             contract: contract,
             contractorId: contractorId,
           );
-          if (editResult == true) {
-            onRefreshContracts();
-          }
           break;
       }
     } catch (e) {

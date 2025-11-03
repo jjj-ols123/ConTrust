@@ -168,12 +168,30 @@ class UserService {
           'specialization': response['specialization'] ?? "No specialization",
         };
       } else {
+        // Fetch email from Users table
+        String email = '';
+        try {
+          final userData = await _supabase
+              .from('Users')
+              .select('email')
+              .eq('users_id', userId)
+              .maybeSingle();
+          if (userData != null) {
+            email = userData['email'] ?? '';
+          }
+        } catch (e) {
+          //
+        }
+        
         return {
-          'full_name': response['full_name'] ?? "No full name",
-          'address': response['address'] ?? "No address available",
+          'full_name': response['full_name'] ?? "",
+          'phone_number': response['phone_number'] ?? "",
+          'address': response['address'] ?? "",
+          'email': email,
           'profile_photo': response['profile_photo'] ?? 'defaultpic.png',
           'project_history_count':
               (response['project_history_count'] ?? 0).toInt(),
+          'contractee_id': response['contractee_id'],
         };
       }
     } catch (error) {

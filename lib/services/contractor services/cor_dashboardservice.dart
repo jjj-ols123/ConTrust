@@ -21,7 +21,7 @@ class CorDashboardService {
       final projects = await _fetchService.fetchContractorProjectInfo(contractorId);
 
       final completed = projects.where((p) => p['status'] == 'completed').length;
-      final activeStatuses = ['active', 'awaiting_contract', 'awaiting_agreement', 'pending'];
+      final activeStatuses = ['active', 'awaiting_contract', 'awaiting_agreement', 'pending', 'cancellation_requested_by_contractee'];
       final active = projects.where((p) => activeStatuses.contains(p['status'])).length;
       final ratingVal = contractorData?['rating'] ?? 0.0;
 
@@ -44,6 +44,37 @@ class CorDashboardService {
           } catch (e) {
             project['contractee_name'] = 'Unknown Client';
             project['contractee_photo'] = null;
+          }
+          
+          // Fetch cancellation information if project has cancellation request status
+          if (project['status'] == 'cancellation_requested_by_contractee') {
+            try {
+              final supabase = Supabase.instance.client;
+              final cancellationNotification = await supabase
+                  .from('Notifications')
+                  .select('information')
+                  .eq('headline', 'Project Cancellation Request')
+                  .filter('information->>project_id', 'eq', project['project_id'].toString())
+                  .eq('receiver_id', contractorId)
+                  .order('created_at', ascending: false)
+                  .limit(1)
+                  .maybeSingle();
+
+              if (cancellationNotification != null) {
+                final info = cancellationNotification['information'] as Map<String, dynamic>? ?? {};
+                project['information'] = {
+                  'cancellation_reason': info['cancellation_reason'] ?? 'No reason provided',
+                  'message': info['message'] ?? '',
+                  'requested_at': info['requested_at'] ?? '',
+                };
+              }
+            } catch (e) {
+              // If fetching cancellation info fails, provide default
+              project['information'] = {
+                'cancellation_reason': 'No reason provided',
+                'message': 'The contractee has requested to cancel this project.',
+              };
+            }
           }
         }
       }
