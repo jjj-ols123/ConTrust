@@ -1,4 +1,4 @@
-// ignore_for_file: depend_on_referenced_packages
+// ignore_for_file: depend_on_referenced_packages, deprecated_member_use
 
 import 'dart:async';
 import 'package:backend/utils/be_constraint.dart';
@@ -30,26 +30,17 @@ class _ContracteeChatHistoryPageState
   final TextEditingController messageController = TextEditingController();
   final ScrollController scrollController = ScrollController();
   late Future<String?> projectStatus;
-  Timer? _pollingTimer;
+  bool isSending = false;
 
 
   @override
   void initState() {
     super.initState();
     _loadContracteeId();
-    
-    _pollingTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
-      if (mounted && selectedChatRoomId != null) {
-        setState(() {
-          projectStatus = FetchService().fetchProjectStatus(selectedChatRoomId!);
-        });
-      }
-    });
   }
   
   @override
   void dispose() {
-    _pollingTimer?.cancel();
     messageController.dispose();
     scrollController.dispose();
     super.dispose();
@@ -69,32 +60,46 @@ class _ContracteeChatHistoryPageState
       selectedContractorProfile = contractorProfile;
       projectStatus = FetchService().fetchProjectStatus(chatRoomId);
     });
+    if (contracteeId != null) {
+      MessageService().markMessagesAsRead(
+        chatRoomId: chatRoomId,
+        userId: contracteeId!,
+      );
+    }
   }
 
   Future<void> sendMessage() async {
-    if (selectedChatRoomId == null || selectedContractorId == null) return;
+    if (selectedChatRoomId == null || selectedContractorId == null || isSending) return;
     
     final text = messageController.text.trim();
     if (text.isEmpty) return;
 
-    await supabase.from('Messages').insert({
-      'chatroom_id': selectedChatRoomId,
-      'sender_id': contracteeId,
-      'receiver_id': selectedContractorId,
-      'message': text,
-      'timestamp': DateTime.now().toIso8601String(),
-    });
+    setState(() => isSending = true);
+    
+    try {
+      await supabase.from('Messages').insert({
+        'chatroom_id': selectedChatRoomId,
+        'sender_id': contracteeId,
+        'receiver_id': selectedContractorId,
+        'message': text,
+        'timestamp': DateTime.now().toIso8601String(),
+      });
 
-    await supabase
-        .from('ChatRoom')
-        .update({
-          'last_message': text,
-          'last_message_time': DateTime.now().toIso8601String(),
-        })
-        .eq('chatroom_id', selectedChatRoomId!);
+      await supabase
+          .from('ChatRoom')
+          .update({
+            'last_message': text,
+            'last_message_time': DateTime.now().toIso8601String(),
+          })
+          .eq('chatroom_id', selectedChatRoomId!);
 
-    messageController.clear();
-    scrollToBottom();
+      messageController.clear();
+      scrollToBottom();
+    } finally {
+      if (mounted) {
+        setState(() => isSending = false);
+      }
+    }
   }
 
   void scrollToBottom() {
@@ -150,7 +155,7 @@ class _ContracteeChatHistoryPageState
       onSelectChat: selectChat,
       onSendMessage: sendMessage,
       onScrollToBottom: scrollToBottom,
-      isSending: false,
+      isSending: isSending,
     );
 
     return Scaffold(
@@ -222,10 +227,10 @@ class _ContracteeChatHistoryPageState
                               return InkWell(
                                 onTap: canChat
                                     ? () {
-                                        context.go('/chat/$contractorName}', extra: {
+                                        context.go('/chat/${Uri.encodeComponent(contractorName)}', extra: {
+                                          'chatRoomId': chat['chatroom_id'],
                                           'contracteeId': contracteeId,
                                           'contractorId': contractorId,
-                                          'contractorName': contractorName,
                                           'contractorProfile': contractorProfile,
                                         });
                                       }
@@ -242,7 +247,6 @@ class _ContracteeChatHistoryPageState
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        // ignore: deprecated_member_use
                                         color: Colors.grey.withOpacity(0.1),
                                         blurRadius: 6,
                                         offset: const Offset(0, 4),

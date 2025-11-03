@@ -40,7 +40,6 @@ class ContractTypeBuild {
 
   static Widget buildTypeCarousel({
     required String contractorId,
-    required VoidCallback onRefreshContracts,
   }) {
     return SizedBox(
       height: 220,
@@ -60,7 +59,6 @@ class ContractTypeBuild {
             context: context,
             contractTypes: contractTypes,
             contractorId: contractorId,
-            onRefreshContracts: onRefreshContracts,
           );
         },
       ),
@@ -71,7 +69,6 @@ class ContractTypeBuild {
     required BuildContext context,
     required List<Map<String, dynamic>> contractTypes,
     required String contractorId,
-    required VoidCallback onRefreshContracts,
   }) {
     return ScrollConfiguration(
       behavior: const MaterialScrollBehavior().copyWith(
@@ -92,7 +89,6 @@ class ContractTypeBuild {
             context: context,
             template: template,
             contractorId: contractorId,
-            onRefreshContracts: onRefreshContracts,
           );
         },
       ),
@@ -103,7 +99,6 @@ class ContractTypeBuild {
     required BuildContext context,
     required Map<String, dynamic> template,
     required String contractorId,
-    required VoidCallback onRefreshContracts,
   }) {
     final templateName = template['template_name'] ?? '';
     final isUploadOption = templateName.toLowerCase().contains('upload') || templateName.toLowerCase().contains('custom'); 
@@ -117,17 +112,13 @@ class ContractTypeBuild {
             await showUploadContractDialog(
               context: context,
               contractorId: contractorId,
-              onRefreshContracts: onRefreshContracts,
             );
           } else {
-            final result = await ContractTypeService.navigateToCreateContract(
+            ContractTypeService.navigateToCreateContract(
               context: context,
               template: template,
               contractorId: contractorId,
             );
-            if (result == true) {
-              onRefreshContracts();
-            }
           }
         },
         child: Container(
@@ -184,7 +175,6 @@ class ContractTypeBuild {
   static Widget buildContractListContainer({
     required String contractorId,
     required Key contractListKey,
-    required VoidCallback onRefreshContracts,
   }) {
     return Expanded(
       child: Container(
@@ -201,10 +191,13 @@ class ContractTypeBuild {
             ),
           ],
         ),
-        child: FutureBuilder<List<Map<String, dynamic>>>(
+        child: StreamBuilder<List<Map<String, dynamic>>>(
           key: contractListKey,
-          future: FetchService().fetchCreatedContracts(contractorId),
+          stream: FetchService().streamCreatedContracts(contractorId),
           builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator(color: Colors.amber));
+            }
             if (!snapshot.hasData) {
               return const Center(child: CircularProgressIndicator(color: Colors.amber));
             }
@@ -216,7 +209,6 @@ class ContractTypeBuild {
               context: context,
               contracts: contracts,
               contractorId: contractorId,
-              onRefreshContracts: onRefreshContracts,
             );
           },
         ),
@@ -228,7 +220,6 @@ class ContractTypeBuild {
     required BuildContext context,
     required List<Map<String, dynamic>> contracts,
     required String contractorId,
-    required VoidCallback onRefreshContracts,
   }) {
     final theme = Theme.of(context);
     return ListView.separated(
@@ -245,7 +236,6 @@ class ContractTypeBuild {
           contract: contract,
           contractorId: contractorId,
           theme: theme,
-          onRefreshContracts: onRefreshContracts,
         );
       },
     );
@@ -256,7 +246,6 @@ class ContractTypeBuild {
     required Map<String, dynamic> contract,
     required String contractorId,
     required ThemeData theme,
-    required VoidCallback onRefreshContracts,
   }) {
     final project = contract['project'] as Map<String, dynamic>?;
     final projectName = project?['title'] ?? 'Unknown Project';
@@ -315,7 +304,6 @@ class ContractTypeBuild {
                 context: buttonContext,
                 contract: contract,
                 contractorId: contractorId,
-                onRefreshContracts: onRefreshContracts,
               );
             },
           );
@@ -335,7 +323,6 @@ class ContractTypeBuild {
   static Future<void> showUploadContractDialog({
     required BuildContext context,
     required String contractorId,
-    required VoidCallback onRefreshContracts,
   }) async {
     final fetchService = FetchService();
     final projects = await fetchService.fetchContractorProjectInfo(contractorId);
@@ -410,7 +397,6 @@ class ContractTypeBuild {
 
                 ConTrustSnackBar.success(dialogContext, 'Contract uploaded successfully!');
                 Navigator.of(dialogContext).pop();
-                onRefreshContracts();
               } catch (e) {
                 ConTrustSnackBar.error(dialogContext, 'Upload failed');
               } finally {

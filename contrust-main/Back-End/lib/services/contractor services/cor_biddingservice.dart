@@ -158,7 +158,8 @@ class CorBiddingService {
             *,
             project:project_id (
               type,
-              description
+              description,
+              title
             )
           ''')
           .eq('contractor_id', contractorId)

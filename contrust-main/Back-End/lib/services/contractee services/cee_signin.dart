@@ -131,9 +131,15 @@ class SignInGoogleContractee {
   void signInGoogle(BuildContext context) async {
     try {
       final supabase = Supabase.instance.client;
+      final encodedNext = Uri.encodeComponent('/home');
+      
+      final redirect = kIsWeb
+          ? 'https://contractee.contrust-sjdm.com/auth/callback?next=$encodedNext'
+          : 'io.supabase.contrust://login-callback/';
+          
       await supabase.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: kIsWeb ? null : 'io.supabase.contrust://login-callback/',
+        redirectTo: redirect,
       );
     } catch (e) {
       await _errorService.logError(

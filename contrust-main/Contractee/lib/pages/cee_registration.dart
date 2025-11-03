@@ -228,65 +228,108 @@ class _RegistrationPageState extends State<RegistrationPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Colors.amber.shade100,
-              Colors.white,
-              Colors.grey.shade100,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                bool isDesktop = constraints.maxWidth > 800;
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
 
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                  width: isDesktop ? 850 : double.infinity,
-                  padding: const EdgeInsets.all(24),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Image(
+                image: const AssetImage('assets/bgloginscreen.jpg'),
+                fit: BoxFit.cover,
+              ),
+            ),
+            Column(
+              children: [
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isSmallScreen ? 16 : 24,
+                    vertical: isSmallScreen ? 16 : 20,
+                  ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.95),
-                    borderRadius: BorderRadius.circular(25),
+                    color: Colors.white,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.amber.withOpacity(0.15),
-                        blurRadius: 25,
-                        offset: const Offset(0, 10),
+                        color: Colors.black.withOpacity(0.03),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
-                  child: isDesktop
-                      ? Row(
-                          children: [
-                            Expanded(
-                              flex: 1,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Colors.amber.shade400,
-                                      Colors.amber.shade700,
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  borderRadius: BorderRadius.circular(20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: isSmallScreen ? 4 : 6,
+                        height: isSmallScreen ? 28 : 32,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFA726),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                      SizedBox(width: isSmallScreen ? 8 : 12),
+                      Text(
+                        'ConTrust',
+                        style: TextStyle(
+                          fontSize: isSmallScreen ? 24 : 28,
+                          fontWeight: FontWeight.w900,
+                          color: const Color(0xFF1a1a1a),
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(24),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          bool isDesktop = constraints.maxWidth > 800;
+
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                            width: isDesktop ? 850 : double.infinity,
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.95),
+                              borderRadius: BorderRadius.circular(25),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.amber.withOpacity(0.15),
+                                  blurRadius: 25,
+                                  offset: const Offset(0, 10),
                                 ),
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 60, horizontal: 30),
-                                child: const Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
+                              ],
+                            ),
+                            child: isDesktop
+                                ? Row(
+                                    children: [
+                                      Expanded(
+                                        flex: 1,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              colors: [
+                                                Colors.amber.shade400,
+                                                Colors.amber.shade700,
+                                              ],
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                            ),
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 60, horizontal: 30),
+                                          child: const Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            crossAxisAlignment: CrossAxisAlignment.center,
+                                            children: [
                                     Icon(
                                       Icons.verified_user_outlined,
                                       size: 80,
@@ -329,6 +372,10 @@ class _RegistrationPageState extends State<RegistrationPage> {
           ),
         ),
       ),
+              ])
+          ]
+        ),
+      ),
     );
   }
 
@@ -344,12 +391,15 @@ class _RegistrationPageState extends State<RegistrationPage> {
       );
     }
 
-    // Password validation checks - using real-time validation flags
     final hasMinLength = _pwHasMin;
     final hasMaxLength = _pwHasMax;
     final hasUppercase = _pwHasUpper;
     final hasNumber = _pwHasNumber;
     final hasSpecialChar = _pwHasSpecial;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final bool isDesktop = screenWidth >= 900;
+    final bool isTablet = screenWidth >= 600 && screenWidth < 900;
+    final bool isMobile = screenWidth < 600;
 
     Widget checkRow(String label, bool ok) {
       return Row(
@@ -589,6 +639,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
             textAlign: TextAlign.center,
           ),
         ),
+                _buildFooter(context, isDesktop, isTablet, isMobile),
       ],
     );
   }
@@ -788,6 +839,69 @@ class _RegistrationPageState extends State<RegistrationPage> {
           color: Colors.black.withOpacity(0.8),
           fontWeight: FontWeight.w400,
         ),
+      ),
+    );
+  }
+
+  Widget _buildFooter(BuildContext context, bool isDesktop, bool isTablet, bool isMobile) {
+    final double horizontalPadding = isDesktop ? 80 : (isTablet ? 40 : 20);
+    final double verticalPadding = 10;
+    final double logoFontSize = isMobile ? 20 : 24;
+    final double logoHeight = isMobile ? 20 : 24;
+    final double logoWidth = isMobile ? 3 : 4;
+    
+    return Container(
+    width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: verticalPadding,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1a1a1a),
+        border: Border(
+          top: BorderSide(
+            color: Colors.white.withOpacity(0.1),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: logoWidth,
+                height: logoHeight,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFA726),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              SizedBox(width: isMobile ? 8 : 10),
+              Text(
+                'ConTrust',
+                style: TextStyle(
+                  fontSize: logoFontSize,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 10),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 0),
+            child: Text(
+              'Building trust in construction, one contract at a time.',
+              style: TextStyle(
+                fontSize: isMobile ? 13 : 14,
+                color: Colors.white.withOpacity(0.7),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
       ),
     );
   }

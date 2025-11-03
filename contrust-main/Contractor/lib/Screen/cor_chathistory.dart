@@ -25,25 +25,16 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
   final TextEditingController messageController = TextEditingController();
   final ScrollController scrollController = ScrollController();
   late Future<String?> projectStatus;
-  Timer? _pollingTimer;
+  bool isSending = false;
 
   @override
   void initState() {
     super.initState();
     loadContractorId();
-    
-    _pollingTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
-      if (mounted && selectedChatRoomId != null) {
-        setState(() {
-          projectStatus = FetchService().fetchProjectStatus(selectedChatRoomId!);
-        });
-      }
-    });
   }
   
   @override
   void dispose() {
-    _pollingTimer?.cancel();
     messageController.dispose();
     scrollController.dispose();
     super.dispose();
@@ -64,32 +55,47 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
       selectedContracteeProfile = contracteeProfile;
       projectStatus = FetchService().fetchProjectStatus(chatRoomId);
     });
+    
+    if (contractorId != null) {
+      MessageService().markMessagesAsRead(
+        chatRoomId: chatRoomId,
+        userId: contractorId!,
+      );
+    }
   }
 
   Future<void> sendMessage() async {
-    if (selectedChatRoomId == null || selectedContracteeId == null) return;
+    if (selectedChatRoomId == null || selectedContracteeId == null || isSending) return;
     
     final text = messageController.text.trim();
     if (text.isEmpty) return;
 
-    await supabase.from('Messages').insert({
-      'chatroom_id': selectedChatRoomId,
-      'sender_id': contractorId,
-      'receiver_id': selectedContracteeId,
-      'message': text,
-      'timestamp': DateTime.now().toIso8601String(),
-    });
+    setState(() => isSending = true);
+    
+    try {
+      await supabase.from('Messages').insert({
+        'chatroom_id': selectedChatRoomId,
+        'sender_id': contractorId,
+        'receiver_id': selectedContracteeId,
+        'message': text,
+        'timestamp': DateTime.now().toIso8601String(),
+      });
 
-    await supabase
-        .from('ChatRoom')
-        .update({
-          'last_message': text,
-          'last_message_time': DateTime.now().toIso8601String(),
-        })
-        .eq('chatroom_id', selectedChatRoomId!);
+      await supabase
+          .from('ChatRoom')
+          .update({
+            'last_message': text,
+            'last_message_time': DateTime.now().toIso8601String(),
+          })
+          .eq('chatroom_id', selectedChatRoomId!);
 
-    messageController.clear();
-    scrollToBottom();
+      messageController.clear();
+      scrollToBottom();
+    } finally {
+      if (mounted) {
+        setState(() => isSending = false);
+      }
+    }
   }
 
   void scrollToBottom() {
@@ -140,7 +146,7 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
       onSelectChat: selectChat,
       onSendMessage: sendMessage,
       onScrollToBottom: scrollToBottom,
-      isSending: false,
+      isSending: isSending,
     );
 
     return Scaffold(
@@ -265,9 +271,10 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
                                   margin: const EdgeInsets.only(bottom: 12),
                                   child: InkWell(
                                     onTap: () {
-                                      context.go('/chat/${chat['chatroom_id']}', extra: {
+                                      context.go('/chat/${Uri.encodeComponent(contracteeName)}', extra: {
+                                        'chatRoomId': chat['chatroom_id'],
+                                        'contractorId': contractorId,
                                         'contracteeId': contracteeId,
-                                        'contracteeName': contracteeName,
                                         'contracteeProfile': contracteeProfile,
                                       });
                                     },

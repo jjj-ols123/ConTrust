@@ -121,8 +121,8 @@ class _DashboardUIState extends State<DashboardUI>
       _fadeController.forward();
       _slideController.forward();
     } catch (e) {
-      setState(() => loading = false);
       if (mounted) {
+        setState(() => loading = false);
         ConTrustSnackBar.error(context, 'Error loading dashboard data. Please try again.');
       }
     }
@@ -131,7 +131,6 @@ class _DashboardUIState extends State<DashboardUI>
   Future<void> _setupRealtimeSubscriptions() async {
     if (widget.contractorId == null) return;
 
-    // Subscribe to notifications
     realtimeService.subscribeToNotifications(
       userId: widget.contractorId!,
       onUpdate: () {
@@ -139,7 +138,6 @@ class _DashboardUIState extends State<DashboardUI>
       },
     );
 
-    // Subscribe to contractor projects
     realtimeService.subscribeToContractorProjects(
       userId: widget.contractorId!,
       onUpdate: () {
@@ -147,7 +145,6 @@ class _DashboardUIState extends State<DashboardUI>
       },
     );
 
-    // Subscribe to contractor bids
     realtimeService.subscribeToContractorBids(
       userId: widget.contractorId!,
       onUpdate: () {
@@ -215,6 +212,7 @@ class _DashboardUIState extends State<DashboardUI>
       totalEarnings,
       totalClients,
       rating,
+      onDataRefresh: fetchDashboardData,
     );
     buildMethods.contractorData = contractorData;
     return buildMethods.buildWelcomeCard();
@@ -229,6 +227,7 @@ class _DashboardUIState extends State<DashboardUI>
       totalEarnings,
       totalClients,
       rating,
+      onDataRefresh: fetchDashboardData,
     );
     return buildMethods.buildStatsGrid();
   }
@@ -242,6 +241,7 @@ class _DashboardUIState extends State<DashboardUI>
       totalEarnings,
       totalClients,
       rating,
+      onDataRefresh: fetchDashboardData,
     );
     buildMethods.contractorData = contractorData;
     buildMethods.localTasks = localTasks;
@@ -257,6 +257,7 @@ class _DashboardUIState extends State<DashboardUI>
       totalEarnings,
       totalClients,
       rating,
+      onDataRefresh: fetchDashboardData,
     );
     return buildMethods.buildHiringRequestContainer();
   }
@@ -270,6 +271,7 @@ class _DashboardUIState extends State<DashboardUI>
       totalEarnings,
       totalClients,
       rating,
+      onDataRefresh: fetchDashboardData,
     );
     buildMethods.contractorData = contractorData;
     buildMethods.localTasks = localTasks;

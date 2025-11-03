@@ -13,7 +13,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 enum ContractorPage {
   dashboard,
   messages,
-  contracts,
+  contractTypes,
+  createContract,
+  chatHistory,
   bidding,
   profile,
   projectManagement,
@@ -40,8 +42,12 @@ class ContractorShell extends StatelessWidget {
         return 'Dashboard';
       case ContractorPage.messages:
         return 'Messages';
-      case ContractorPage.contracts:
+      case ContractorPage.contractTypes:
         return 'Contracts';
+      case ContractorPage.createContract:
+        return 'Create Contract';
+      case ContractorPage.chatHistory:
+        return 'Chat History';
       case ContractorPage.bidding:
         return 'Bidding';
       case ContractorPage.profile:
@@ -90,9 +96,9 @@ class ContractorShell extends StatelessWidget {
                 color: Colors.amber[500],
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.15), // Increased opacity for better visibility
-                    blurRadius: 12, // Slightly increased blur
-                    offset: const Offset(3, 0), // Slightly increased offset
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 12, 
+                    offset: const Offset(3, 0), 
                   ),
                 ],
               ),
@@ -411,10 +417,10 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
           _SidebarItem(
             icon: Icons.assignment_outlined,
             label: 'Contracts',
-            active: widget.currentPage == ContractorPage.contracts,
+            active: widget.currentPage == ContractorPage.contractTypes,
             onTap: () {
-              if (widget.currentPage != ContractorPage.contracts) {
-                navigateToPage('/contracts');
+              if (widget.currentPage != ContractorPage.contractTypes) {
+                navigateToPage('/contracttypes');
               }
             },
           ),
@@ -578,8 +584,8 @@ class _ModernBottomNavigationBarState extends State<ModernBottomNavigationBar> {
                   icon: Icons.assignment_outlined,
                   activeIcon: Icons.assignment,
                   label: 'Contracts',
-                  isActive: widget.currentPage == ContractorPage.contracts,
-                  onTap: () => _navigateToPage(ContractorPage.contracts),
+                  isActive: widget.currentPage == ContractorPage.contractTypes,
+                  onTap: () => _navigateToPage(ContractorPage.contractTypes),
                 ),
               ),
               Expanded(
@@ -621,8 +627,8 @@ class _ModernBottomNavigationBarState extends State<ModernBottomNavigationBar> {
       case ContractorPage.messages:
         context.go('/messages');
         break;
-      case ContractorPage.contracts:
-        context.go('/contracts');
+      case ContractorPage.contractTypes:
+        context.go('/contracttypes');
         break;
       case ContractorPage.bidding:
         context.go('/bidding');
@@ -1027,7 +1033,7 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
                     fontSize: fontSize,
                     color: Colors.black,
                     onTap: () {
-                      context.go('/contracts');
+                      context.go('/contracttypes');
                     },
                   ),
                   DrawerIcon(

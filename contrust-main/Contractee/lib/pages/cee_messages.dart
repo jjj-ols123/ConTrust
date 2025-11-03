@@ -5,6 +5,7 @@ import 'package:backend/build/buildmessage.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_message_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
+import 'package:contractee/build/buildceeprofile.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -58,8 +59,6 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
         _canSend = _messageController.text.trim().isNotEmpty;
       });
     });
-    
-    // Remove polling timer - now using real-time subscriptions for project status
   }
   
   Future<void> _initializeData() async {
@@ -119,36 +118,41 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
         )
         .subscribe();
 
-    // Subscribe to project status changes
     _projectsChannel = supabase
         .channel('projects_status:${widget.chatRoomId}')
         .onPostgresChanges(
-          event: PostgresChangeEvent.all,
+          event: PostgresChangeEvent.update,
           schema: 'public',
           table: 'Projects',
           callback: (payload) {
             if (!mounted) return;
-            // Update project status when project changes
-            setState(() {
-              _projectStatus = FetchService().fetchProjectStatus(widget.chatRoomId);
-            });
+            final oldStatus = payload.oldRecord != null ? payload.oldRecord['status'] : null;
+            final newStatus = payload.newRecord != null ? payload.newRecord['status'] : null;
+            if (oldStatus != newStatus) {
+              setState(() {
+                _projectStatus = Future.value(newStatus?.toString());
+              });
+            }
           },
         )
         .subscribe();
 
-    // Subscribe to contract status changes
     _contractsChannel = supabase
         .channel('contracts_status:${widget.chatRoomId}')
         .onPostgresChanges(
-          event: PostgresChangeEvent.all,
+          event: PostgresChangeEvent.update,
           schema: 'public',
           table: 'Contracts',
           callback: (payload) {
             if (!mounted) return;
-            // Update project status when contract changes (affects project status)
-            setState(() {
-              _projectStatus = FetchService().fetchProjectStatus(widget.chatRoomId);
-            });
+
+            final oldStatus = payload.oldRecord != null ? payload.oldRecord['status'] : null;
+            final newStatus = payload.newRecord != null ? payload.newRecord['status'] : null;
+            if (oldStatus != newStatus) {
+              setState(() {
+                _projectStatus = FetchService().fetchProjectStatus(widget.chatRoomId);
+              });
+            }
           },
         )
         .subscribe();
@@ -301,6 +305,11 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
         foregroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.white),
         titleSpacing: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        automaticallyImplyLeading: false,
         title: Row(
           children: [
             CircleAvatar(
@@ -325,15 +334,23 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
         ),
       ),
       body: screenWidth > 1200 
-        ? Row(
+        ? Column(
             children: [
-              messageUIBuilder.buildChatHistoryUI(),
-              messageUIBuilder.buildMessagesUI(),
-              messageUIBuilder.buildProjectInfoUI(),
+              CeeProfileBuildMethods.buildHeader(context, 'Messages'),
+              Expanded(
+                child: Row(
+                  children: [
+                    messageUIBuilder.buildChatHistoryUI(),
+                    messageUIBuilder.buildMessagesUI(),
+                    messageUIBuilder.buildProjectInfoUI(),
+                  ],
+                ),
+              ),
             ],
           )
         : Column(
             children: [
+              CeeProfileBuildMethods.buildHeader(context, 'Messages'),
               FutureBuilder<String?>(
                 future: _projectStatus,
                 builder: (context, snapshot) {
@@ -415,7 +432,11 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
                               contentPadding: EdgeInsets.symmetric(
                                   horizontal: 16, vertical: 12),
                             ),
-                            onSubmitted: (_) => _sendMessage(),
+                            onSubmitted: (_) {
+                              if (_canSend && !_isSending) {
+                                _sendMessage();
+                              }
+                            },
                           ),
                         ),
                       ),

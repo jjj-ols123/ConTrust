@@ -10,6 +10,7 @@ import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/utils/be_constraint.dart';
 import 'package:contractee/models/cee_modal.dart';
 import 'package:contractee/build/buildhome.dart';
+import 'package:contractee/build/buildceeprofile.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
   
@@ -70,38 +71,22 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
     final currentUser = supabase.auth.currentUser;
     if (currentUser == null) return;
 
-    // Subscribe to notifications
     realtimeService.subscribeToNotifications(
       userId: currentUser.id,
       onUpdate: () {
-        if (mounted) _loadProjectsOnly();
       },
     );
 
-    // Subscribe to contractee projects
     realtimeService.subscribeToContracteeProjects(
       userId: currentUser.id,
       onUpdate: () {
-        if (mounted) _loadProjectsOnly();
       },
     );
-
-    // Subscribe to bids for contractee's projects
     realtimeService.subscribeToContracteeBids(
       userId: currentUser.id,
       onUpdate: () {
-        if (mounted) _loadProjectsOnly();
       },
     );
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    
-    if (state == AppLifecycleState.resumed && mounted) {
-      _loadProjectsOnly();
-    }
   }
 
   void _filterContractors() {
@@ -153,29 +138,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
     }
   }
 
-  Future<void> _loadProjectsOnly() async {
-    if (!mounted) return;
-    
-    try {
-      List<Map<String, dynamic>> fetchedProjects = [];
-      Map<String, double> fetchedHighestBids = {};
-      if (supabase.auth.currentUser != null) {
-        fetchedProjects = await FetchService().fetchUserProjects();
-        fetchedHighestBids = await BiddingService().getProjectHighestBids();
-      }
-
-      if (!mounted) return;
-      
-      setState(() {
-        projects = fetchedProjects;
-        highestBids = fetchedHighestBids;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      ConTrustSnackBar.error(context, 'Unable to load projects. Please check your connection.');
-    }
-  }
-
   Future<void> _loadAcceptBidding(String projectId, String bidId) async {
     try {
       final contracteeId = supabase.auth.currentUser?.id;
@@ -195,7 +157,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
       await BiddingService().acceptProjectBid(projectId, bidId);
       if (mounted) {
         ConTrustSnackBar.success(context, 'The bid has been accepted successfully!');
-        _loadProjectsOnly();
       }
     } catch (e) {
       if (mounted) {
@@ -243,13 +204,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
           bidTimeController: bidTimeController,
           isUpdate: true,
           projectId: projectId,
-          onRefresh: _loadProjectsOnly,
+          onRefresh: () {},
           initialStartDate: projectData['start_date'],
         );
         if (actionTaken) {
           ConTrustSnackBar.success(context, 'Project updated successfully!');
-          await Future.delayed(const Duration(seconds: 1));
-          await _loadProjectsOnly();
         }
       }
     } catch (e) {
@@ -261,14 +220,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
 
   Future<void> _handleCancelProject(String projectId, String reason) async {
     try {
-      setState(() {
-        isLoading = true;
-      });
-
       await ProjectService().cancelProject(projectId, reason: reason);
-
-      await Future.delayed(const Duration(seconds: 2));
-      await _loadProjectsOnly();
 
       if (mounted) {
         final project = projects.firstWhere(
@@ -288,9 +240,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
         }
       }
     } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
       if (mounted) {
         ConTrustSnackBar.error(context, 'Failed to cancel project. Please try again.');
       }
@@ -355,12 +304,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
             locationController: locationController,
             descriptionController: descriptionController,
             bidTimeController: bidTimeController,
-            onRefresh: _loadProjectsOnly,
+            onRefresh: () {}, 
           );
           if (actionTaken) {
             ConTrustSnackBar.success(context, 'Project posted successfully!');
-            await Future.delayed(const Duration(seconds: 1));
-            await _loadProjectsOnly();
           }
         }
       },
@@ -374,33 +321,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
     final isMobile = MediaQuery.of(context).size.width < 600;
 
     return SingleChildScrollView(
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: isMobile ? 12 : 15, 
-          vertical: isMobile ? 8 : 3,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: isMobile ? 20 : 30),
-            Padding(
-              padding: EdgeInsets.only(bottom: isMobile ? 12 : 16),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: _loadData,
-                  icon: Icon(Icons.refresh, color: Colors.amber[700], size: 20),
-                  label: Text(
-                    "Refresh",
-                    style: TextStyle(
-                      color: Colors.amber[700],
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              ),
+      child: Column(
+        children: [
+          CeeProfileBuildMethods.buildHeader(context, 'Home'),
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 12 : 15, 
+              vertical: isMobile ? 8 : 3,
             ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(height: isMobile ? 20 : 30),
             HomePageBuilder.buildContractorsSection(
               context: context,
               isLoading: isLoading,
@@ -420,13 +352,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
               profileUrl: HomePageBuilder.profileUrl,
             ),
             SizedBox(height: isMobile ? 12 : 16),
-            // Active Projects and Bids in same row
             isLoading
                 ? const Center(child: CircularProgressIndicator(color: Colors.amber))
                 : isMobile
                     ? Column(
                         children: [
-                          // Mobile: Stack vertically
+
                           HomePageBuilder.buildActiveProjectsContainer(
                             context: context,
                             onPostProject: _postProject,
@@ -470,11 +401,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
                             ),
                           ),
                           const SizedBox(height: 16),
-                          // Bids Container for mobile
                           if (projects.isNotEmpty)
                             ...projects.map((project) {
                               final projectId = project['project_id'].toString();
-                              final projectTitle = project['project_title'] ?? 'Untitled Project';
+                              final projectTitle = project['title'] ?? 'Untitled Project';
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 16),
                                 padding: const EdgeInsets.all(16),
@@ -519,13 +449,85 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
                                   ],
                                 ),
                               );
-                            }),
+                            })
+                          else
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: Colors.grey.shade300,
+                                  width: 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withOpacity(0.1),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.gavel,
+                                        color: Colors.amber.shade700,
+                                        size: 24,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Project Bids',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.grey[800],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(vertical: 32),
+                                    child: Column(
+                                      children: [
+                                        Icon(
+                                          Icons.work_outline,
+                                          size: 48,
+                                          color: Colors.grey.shade400,
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          'No active projects yet',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: Colors.grey.shade600,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Create your first project to start receiving bids',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey.shade500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                         ],
                       )
                     : Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Desktop: Active Projects Container
                           Expanded(
                             flex: 3,
                             child: HomePageBuilder.buildActiveProjectsContainer(
@@ -560,19 +562,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
                                       duration: project['duration'] ?? 0,
                                       createdAt: DateTime.parse(project['created_at'].toString()).toLocal(),
                                       onTap: () {},
-                                      handleFinalizeBidding: (projectId) {
-                                        return BiddingService().finalizeBidding(projectId);
-                                      },
-                                      onUpdateProject: (projectId) => _handleUpdateProject(projectId, project),
-                                      onCancelProject: (projectId, reason) => _handleCancelProject(projectId, reason),
-                                    ),
+                                    handleFinalizeBidding: (projectId) {
+                                      return BiddingService().finalizeBidding(projectId);
+                                    },
+                                    onUpdateProject: (projectId) => _handleUpdateProject(projectId, project),
+                                    onCancelProject: (projectId, reason) => _handleCancelProject(projectId, reason),
+                                  ),
                                   );
                                 },
                               ),
                             ),
                           ),
                           const SizedBox(width: 20),
-                          // Desktop: Bids Container
                           Expanded(
                             flex: 2,
                             child: Container(
@@ -625,7 +626,62 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
                                           const SizedBox(height: 20),
                                         ],
                                       );
-                                    }),
+                                    })
+                                  else
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.gavel,
+                                              color: Colors.amber.shade700,
+                                              size: 24,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              'Project Bids',
+                                              style: TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.grey[800],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.symmetric(vertical: 32),
+                                          child: Column(
+                                            children: [
+                                              Icon(
+                                                Icons.work_outline,
+                                                size: 48,
+                                                color: Colors.grey.shade400,
+                                              ),
+                                              const SizedBox(height: 12),
+                                              Text(
+                                                'No active projects yet',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  color: Colors.grey.shade600,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                'Create your first project to start receiving bids',
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: Colors.grey.shade500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                 ],
                               ),
                             ),
@@ -638,8 +694,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
               projects: projects,
               contractors: contractors,
             ),
-          ],
-        ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'package:backend/services/contractee services/cee_profileservice.dart';
 import 'package:contractee/build/buildceeprofile.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:backend/utils/be_snackbar.dart';
 
 class CeeProfilePage extends StatefulWidget {
   final String contracteeId;
@@ -15,8 +16,9 @@ class CeeProfilePage extends StatefulWidget {
 
 class _CeeProfilePageState extends State<CeeProfilePage> {
   final supabase = Supabase.instance.client;
-  
+
   String fullName = '';
+  String email = '';
   String contactNumber = '';
   String address = '';
   String? profileImage;
@@ -29,25 +31,38 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
   static const String profileUrl =
       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
 
-  String selectedTab = 'About'; 
+  String selectedTab = 'About';
 
   bool isEditingFullName = false;
   bool isEditingContact = false;
   bool isEditingAddress = false;
-  
+
   final TextEditingController fullNameController = TextEditingController();
   final TextEditingController contactController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
+  final TextEditingController projectSearchController = TextEditingController();
+  final TextEditingController transactionSearchController =
+      TextEditingController();
 
   List<Map<String, dynamic>> projectHistory = [];
   List<Map<String, dynamic>> ongoingProjects = [];
+  List<Map<String, dynamic>> allProjects = [];
+  List<Map<String, dynamic>> filteredProjects = [];
   List<Map<String, dynamic>> transactions = [];
+  List<Map<String, dynamic>> filteredTransactions = [];
+  List<Map<String, dynamic>> reviews = [];
+
+  String selectedProjectStatus = 'All';
+  String selectedPaymentType = 'All';
 
   @override
   void initState() {
     super.initState();
     loadContracteeData();
     _loadTransactions();
+    _loadReviews();
+    projectSearchController.addListener(_filterProjects);
+    transactionSearchController.addListener(_filterTransactions);
   }
 
   @override
@@ -55,42 +70,140 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
     fullNameController.dispose();
     contactController.dispose();
     addressController.dispose();
+    projectSearchController.dispose();
+    transactionSearchController.dispose();
     super.dispose();
   }
 
   Future<void> loadContracteeData() async {
     try {
       setState(() => isLoading = true);
-      
-      final result = await CeeProfileService().loadContracteeData(widget.contracteeId);
+
+      final result =
+          await CeeProfileService().loadContracteeData(widget.contracteeId);
       final contracteeData = result['contracteeData'];
-      
+
+      // Fetch all projects (including cancelled)
+      final allProjectsData = await supabase
+          .from('Projects')
+          .select(
+              'project_id, title, type, status, created_at, description, contractor_id')
+          .eq('contractee_id', widget.contracteeId)
+          .order('created_at', ascending: false);
+
+      final Map<String, Map<String, dynamic>> uniqueProjects = {};
+      for (var project in allProjectsData) {
+        final projectId = project['project_id'];
+        if (!uniqueProjects.containsKey(projectId)) {
+          uniqueProjects[projectId] = project;
+        }
+      }
+
+      // Sort projects: active/ongoing first, then by date
+      final projectsList = uniqueProjects.values.toList();
+      projectsList.sort((a, b) {
+        final statusA = (a['status'] ?? '').toString().toLowerCase();
+        final statusB = (b['status'] ?? '').toString().toLowerCase();
+
+        // Define priority: active/ongoing at top
+        int getPriority(String status) {
+          if (status == 'active' || status == 'ongoing') return 0;
+          if (status == 'pending') return 1;
+          if (status == 'completed') return 2;
+          if (status == 'cancelled') return 3;
+          return 4;
+        }
+
+        final priorityDiff = getPriority(statusA) - getPriority(statusB);
+        if (priorityDiff != 0) return priorityDiff;
+
+        // If same priority, sort by date (newest first)
+        final dateA =
+            DateTime.tryParse(a['created_at'] ?? '') ?? DateTime.now();
+        final dateB =
+            DateTime.tryParse(b['created_at'] ?? '') ?? DateTime.now();
+        return dateB.compareTo(dateA);
+      });
+
       setState(() {
         if (contracteeData != null) {
-          fullName = contracteeData['full_name'] ?? "No name";
-          contactNumber = contracteeData['phone_number'] ?? "No contact number";
-          address = contracteeData['address'] ?? "No address provided";
-          
-          // Add cache-busting parameter to profile image
-          final String? rawProfileImage = contracteeData['profile_photo'];
-          if (rawProfileImage != null && rawProfileImage.isNotEmpty) {
-            profileImage = '$rawProfileImage?t=${DateTime.now().millisecondsSinceEpoch}';
-          } else {
-            profileImage = null;
-          }
+          // Get data directly from Contractee table (now includes email from Users table)
+          fullName = contracteeData['full_name'] ?? "";
+          contactNumber = contracteeData['phone_number'] ?? "";
+          address = contracteeData['address'] ?? "";
+          email = contracteeData['email'] ?? "";
+
+          // Get profile image directly without cache-busting (like contractor profile)
+          profileImage = contracteeData['profile_photo'];
         }
-        
+
         completedProjectsCount = result['completedProjectsCount'];
         ongoingProjectsCount = result['ongoingProjectsCount'];
         projectHistory = result['projectHistory'];
         ongoingProjects = result['ongoingProjects'];
+        allProjects = projectsList;
+        filteredProjects = projectsList; // Initialize filtered list
+        filteredTransactions =
+            result['projectHistory']; 
         isLoading = false;
       });
-      
+
       _updateControllers();
     } catch (e) {
       setState(() => isLoading = false);
     }
+  }
+
+  Future<void> _loadReviews() async {
+    try {
+      final reviewsWithNames = await CeeProfileService().loadReviews(widget.contracteeId);
+      setState(() {
+        reviews = reviewsWithNames;
+      });
+    } catch (e) {
+      //
+    }
+  }
+
+  Future<void> _loadTransactions() async {
+    try {
+      final loadedTransactions = await CeeProfileService().loadTransactions(widget.contracteeId);
+      if (mounted) {
+        setState(() {
+          transactions = loadedTransactions;
+          filteredTransactions = loadedTransactions;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ConTrustSnackBar.error(
+          context,
+          'Error loading transactions: $e',
+        );
+      }
+    }
+  }
+
+  void _filterProjects() {
+    final query = projectSearchController.text;
+    setState(() {
+      filteredProjects = CeeProfileService().filterProjects(
+        allProjects,
+        query,
+        selectedProjectStatus,
+      );
+    });
+  }
+
+  void _filterTransactions() {
+    final query = transactionSearchController.text;
+    setState(() {
+      filteredTransactions = CeeProfileService().filterTransactions(
+        transactions,
+        query,
+        selectedPaymentType,
+      );
+    });
   }
 
   void _updateControllers() {
@@ -112,40 +225,54 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isMobile = constraints.maxWidth < 768;
-          
+
           if (isMobile) {
-            return SingleChildScrollView(
-              child: CeeProfileBuildMethods.buildMobileLayout(
-                fullName: fullName,
-                profileImage: profileImage,
-                profileUrl: profileUrl,
-                completedProjectsCount: completedProjectsCount,
-                ongoingProjectsCount: ongoingProjectsCount,
-                selectedTab: selectedTab,
-                onTabChanged: (String tab) {
-                  setState(() {
-                    selectedTab = tab;
-                  });
-                },
-                mainContent: _buildMainContent(),
-                onUploadPhoto: isUploadingPhoto ? null : _uploadProfilePhoto,
-              ),
+            return Column(
+              children: [
+                CeeProfileBuildMethods.buildHeader(context, 'My Profile'),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: CeeProfileBuildMethods.buildMobileLayout(
+                      fullName: fullName,
+                      profileImage: profileImage,
+                      profileUrl: profileUrl,
+                      completedProjectsCount: completedProjectsCount,
+                      ongoingProjectsCount: ongoingProjectsCount,
+                      selectedTab: selectedTab,
+                      onTabChanged: (String tab) {
+                        setState(() {
+                          selectedTab = tab;
+                        });
+                      },
+                      mainContent: _buildMainContent(),
+                      onUploadPhoto: isUploadingPhoto ? null : _uploadProfilePhoto,
+                    ),
+                  ),
+                ),
+              ],
             );
           } else {
-            return CeeProfileBuildMethods.buildDesktopLayout(
-              fullName: fullName,
-              profileImage: profileImage,
-              profileUrl: profileUrl,
-              completedProjectsCount: completedProjectsCount,
-              ongoingProjectsCount: ongoingProjectsCount,
-              selectedTab: selectedTab,
-              onTabChanged: (String tab) {
-                setState(() {
-                  selectedTab = tab;
-                });
-              },
-              mainContent: _buildMainContent(),
-              onUploadPhoto: isUploadingPhoto ? null : _uploadProfilePhoto,
+            return Column(
+              children: [
+                CeeProfileBuildMethods.buildHeader(context, 'My Profile'),
+                Expanded(
+                  child: CeeProfileBuildMethods.buildDesktopLayout(
+                    fullName: fullName,
+                    profileImage: profileImage,
+                    profileUrl: profileUrl,
+                    completedProjectsCount: completedProjectsCount,
+                    ongoingProjectsCount: ongoingProjectsCount,
+                    selectedTab: selectedTab,
+                    onTabChanged: (String tab) {
+                      setState(() {
+                        selectedTab = tab;
+                      });
+                    },
+                    mainContent: _buildMainContent(),
+                    onUploadPhoto: isUploadingPhoto ? null : _uploadProfilePhoto,
+                  ),
+                ),
+              ],
             );
           }
         },
@@ -156,17 +283,8 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
   Widget _buildMainContent() {
     return CeeProfileBuildMethods.buildMainContent(
       selectedTab,
-      () => _buildProjectsContent(),
       () => _buildAboutContent(),
       () => _buildHistoryContent(),
-      () => _buildTransactionsContent(),
-    );
-  }
-
-  Widget _buildProjectsContent() {
-    return CeeProfileBuildMethods.buildProjects(
-      ongoingProjects: ongoingProjects,
-      getTimeAgo: _getTimeAgo,
     );
   }
 
@@ -176,6 +294,7 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
       fullName: fullName,
       contactNumber: contactNumber,
       address: address,
+      email: email,
       isEditingFullName: isEditingFullName,
       isEditingContact: isEditingContact,
       isEditingAddress: isEditingAddress,
@@ -194,89 +313,59 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
 
   Widget _buildHistoryContent() {
     return CeeProfileBuildMethods.buildHistory(
-      projectHistory: projectHistory,
+      context: context,
+      filteredProjects: filteredProjects,
+      filteredTransactions: filteredTransactions,
+      reviews: reviews,
+      projectSearchController: projectSearchController,
+      transactionSearchController: transactionSearchController,
+      selectedProjectStatus: selectedProjectStatus,
+      selectedPaymentType: selectedPaymentType,
+      onProjectStatusChanged: (status) {
+        setState(() {
+          selectedProjectStatus = status;
+          _filterProjects();
+        });
+      },
+      onPaymentTypeChanged: (type) {
+        setState(() {
+          selectedPaymentType = type;
+          _filterTransactions();
+        });
+      },
+      onProjectTap: _showProjectDetails,
       getTimeAgo: _getTimeAgo,
     );
   }
 
-  Widget _buildTransactionsContent() {
-    return CeeProfileBuildMethods.buildTransactions(
-      transactions: transactions,
-    );
-  }
-
-  Future<void> _loadTransactions() async {
+  void _showProjectDetails(Map<String, dynamic> project) async {
     try {
-      final projectsResponse = await supabase
+      final projectId = project['project_id'];
+      final projectDetails = await supabase
           .from('Projects')
-          .select('''
-            project_id,
-            title,
-            projectdata,
-            contractor_id,
-            Contractor!inner(firm_name)
-          ''')
-          .eq('contractee_id', widget.contracteeId)
-          .order('created_at', ascending: false);
-
-      List<Map<String, dynamic>> allTransactions = [];
-
-      for (var project in projectsResponse) {
-        final projectdata = project['projectdata'] as Map<String, dynamic>? ?? {};
-        final payments = projectdata['payments'] as List<dynamic>? ?? [];
-        
-        for (var payment in payments) {
-          allTransactions.add({
-            'amount': (payment['amount'] as num?)?.toDouble() ?? 0.0,
-            'payment_type': _getPaymentType(payment['contract_type'] ?? '', payment['payment_structure'] ?? ''),
-            'project_title': project['title'] ?? 'Unknown Project',
-            'contractor_name': project['Contractor']?['firm_name'] ?? 'Unknown Contractor',
-            'payment_date': payment['date'] ?? DateTime.now().toIso8601String(),
-            'reference': payment['reference'] ?? payment['payment_id'] ?? '',
-          });
-        }
-      }
-
-      allTransactions.sort((a, b) {
-        final dateA = DateTime.parse(a['payment_date']);
-        final dateB = DateTime.parse(b['payment_date']);
-        return dateB.compareTo(dateA);
-      });
+          .select('*')
+          .eq('project_id', projectId)
+          .single();
 
       if (mounted) {
-        setState(() {
-          transactions = allTransactions;
-        });
+        showDialog(
+          context: context,
+          barrierDismissible: true,
+          builder: (dialogContext) => CeeProfileBuildMethods.buildProjectDetailsDialog(
+            dialogContext,
+            projectDetails,
+            _getTimeAgo, // Fixed: was getTimeAgo, now _getTimeAgo
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          transactions = [];
-        });
+        ConTrustSnackBar.error(
+          context,
+          'Error loading project details: $e',
+        );
       }
     }
-  }
-
-  String _getPaymentType(String contractType, String paymentStructure) {
-    if (contractType == 'lump_sum') {
-      return 'Full Payment';
-    } else if (contractType == 'percentage_based') {
-      return 'Milestone Payment';
-    } else if (contractType == 'custom') {
-      if (paymentStructure.toLowerCase().contains('down')) {
-        return 'Down Payment';
-      } else if (paymentStructure.toLowerCase().contains('final')) {
-        return 'Final Payment';
-      } else if (paymentStructure.toLowerCase().contains('milestone')) {
-        return 'Milestone Payment';
-      }
-      return 'Contract Payment';
-    }
-    return 'Payment';
-  }
-
-  String _getTimeAgo(DateTime dateTime) {
-    return CeeProfileService().getTimeAgo(dateTime);
   }
 
   void _toggleEdit(String fieldType) {
@@ -327,27 +416,26 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
 
   Future<void> _uploadProfilePhoto() async {
     if (isUploadingPhoto) return;
-    
+
     setState(() => isUploadingPhoto = true);
-    
+
     try {
-      // Clear the image cache for the old profile image
       if (profileImage != null && profileImage!.isNotEmpty) {
-        final oldImageUrl = profileImage!.split('?').first; // Remove query params
+        final oldImageUrl = profileImage!.split('?').first;
         imageCache.evict(NetworkImage(oldImageUrl));
       }
-      
+
       final newImageUrl = await CeeProfileService().uploadProfilePhoto(
         contracteeId: widget.contracteeId,
         context: context,
       );
-      
+
       if (newImageUrl != null && mounted) {
         setState(() {
           profileImage = newImageUrl;
           isUploadingPhoto = false;
         });
-        // Reload data to ensure persistence
+
         await loadContracteeData();
       } else {
         setState(() => isUploadingPhoto = false);
@@ -356,6 +444,27 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
       if (mounted) {
         setState(() => isUploadingPhoto = false);
       }
+    }
+  }
+
+  String _getTimeAgo(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inDays > 365) {
+      final years = (difference.inDays / 365).floor();
+      return '$years year${years == 1 ? '' : 's'} ago';
+    } else if (difference.inDays > 30) {
+      final months = (difference.inDays / 30).floor();
+      return '$months month${months == 1 ? '' : 's'} ago';
+    } else if (difference.inDays > 0) {
+      return '${difference.inDays} day${difference.inDays == 1 ? '' : 's'} ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} hour${difference.inHours == 1 ? '' : 's'} ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} minute${difference.inMinutes == 1 ? '' : 's'} ago';
+    } else {
+      return 'Just now';
     }
   }
 }

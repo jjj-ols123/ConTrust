@@ -4,6 +4,7 @@ import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/build/contract/buildcontract.dart';
 import 'package:contractor/build/contract/buildcontracttabs.dart';
 import 'package:backend/services/contractor services/contract/cor_createcontractservice.dart';
+import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:flutter/material.dart';
 
 class CreateContractPage extends StatefulWidget {
@@ -43,6 +44,10 @@ class _CreateContractPageState extends State<CreateContractPage>
   String? selectedContractType;
   Map<String, dynamic>? selectedTemplate;
 
+  String? contractorId;
+  Map<String, dynamic>? existingContract;
+  bool isLoading = true;
+
   final CreateContractService service = CreateContractService();
 
   @override
@@ -65,34 +70,99 @@ class _CreateContractPageState extends State<CreateContractPage>
     initialProjectId = widget.existingContract?['project_id'] as String?;
     selectedContractType = widget.contractType;
     selectedTemplate = widget.template;
-    initializeFields();
-    checkForProject();
+    contractorId = widget.contractorId;
+    existingContract = widget.existingContract;
+    _initialize();
   }
 
-  void initializeFields() async {
-    if (widget.existingContract != null) {
-      await loadExistingContractFieldValues();
+  void _initialize() async {
+    try {
+      final fetchService = FetchService();
+      
+      if (selectedTemplate != null && selectedTemplate!.containsKey('template_name') && !selectedTemplate!.containsKey('contract_type_id')) {
+        final templateName = selectedTemplate!['template_name'];
+        final templates = await fetchService.fetchContractTypes();
+        selectedTemplate = templates.firstWhere(
+          (t) => t['template_name'] == templateName,
+          orElse: () => <String, dynamic>{},
+        );
+        if (selectedTemplate!.isEmpty && mounted) {
+          ConTrustSnackBar.error(context, 'Template not found');
+          return;
+        }
+        selectedContractType = selectedTemplate!['template_name'];
+      }
+      
+      if (existingContract != null && existingContract!['title'] == null) {
+        final contractId = existingContract!['contract_id'];
+        final contract = await fetchService.fetchContractWithDetails(contractId);
+        if (contract == null && mounted) {
+          ConTrustSnackBar.error(context, 'Contract not found');
+          return;
+        }
+        if (contract != null) {
+          existingContract = contract;
+          
+          final contractType = contract['contract_type'] as Map<String, dynamic>?;
+          if (contractType != null) {
+            selectedTemplate = contractType;
+            selectedContractType = contractType['template_name'];
+          }
+          
+          titleController.text = contract['title'] ?? '';
+          initialProjectId = contract['project_id'];
+        }
+      }
+      
+      await initializeFields();
+      await checkForProject();
+    } catch (e) {
+      debugPrint('Initialization error: $e');
+      if (mounted) {
+        ConTrustSnackBar.error(context, 'Failed to load contract data');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
-    
-    if (selectedTemplate != null) {
-      loadTemplateAndBuildFields();
-    } else {
+  }
+
+  Future<void> initializeFields() async {
+    try {
+      if (widget.existingContract != null) {
+        await loadExistingContractFieldValues();
+      }
+      
+      if (selectedTemplate != null) {
+        await loadTemplateAndBuildFields();
+      } else {
+        buildDefaultFields();
+      }
+    } catch (e) {
+      debugPrint('Error initializing fields: $e');
       buildDefaultFields();
     }
   }
 
   Future<void> checkForProject() async {
-    if (initialProjectId != null) {
-      fetchProjectData(initialProjectId!);
-    } else {
-      await service.checkForSingleProject(widget.contractorId, (projectId) {
-        if (projectId != null) {
-          setState(() {
-            initialProjectId = projectId;
-          });
-          fetchProjectData(projectId);
-        }
-      });
+    try {
+      if (initialProjectId != null) {
+        await fetchProjectData(initialProjectId!);
+      } else if (contractorId != null) {
+        await service.checkForSingleProject(contractorId!, (projectId) {
+          if (projectId != null) {
+            setState(() {
+              initialProjectId = projectId;
+            });
+            fetchProjectData(projectId);
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error checking for project: $e');
     }
   }
 
@@ -104,7 +174,7 @@ class _CreateContractPageState extends State<CreateContractPage>
       if (contractId != null) {
         final fieldValues = await service.fetchContractFieldValues(
           contractId,
-          contractorId: widget.contractorId,
+          contractorId: contractorId!,
         );
         if (fieldValues != null) {
   
@@ -201,7 +271,7 @@ class _CreateContractPageState extends State<CreateContractPage>
           this.projectData = projectData;
         });
 
-        if (widget.existingContract == null) {
+        if (existingContract == null) {
           service.populateProjectFields(
             projectData,
             controllers,
@@ -209,7 +279,7 @@ class _CreateContractPageState extends State<CreateContractPage>
           );
         }
         await service.populateContractorInfo(
-          widget.contractorId,
+          contractorId!,
           controllers,
         );
       }
@@ -343,7 +413,6 @@ class _CreateContractPageState extends State<CreateContractPage>
 
     final contractTypeId =
         selectedTemplate?['contract_type_id'] as String? ??
-        widget.template?['contract_type_id'] as String? ??
         '';
 
     if (contractTypeId.isEmpty) {
@@ -368,15 +437,15 @@ class _CreateContractPageState extends State<CreateContractPage>
         
         ConTrustSnackBar.loading(context, 'Contract saving...');
         
-        if (widget.existingContract != null) {
+        if (existingContract != null) {
           await service.updateContract(
-            contractId: widget.existingContract!['contract_id'] as String,
-            contractorId: widget.contractorId,
+            contractId: existingContract!['contract_id'] as String,
+            contractorId: contractorId!,
             contractTypeId: contractTypeId,
             title: contractData['title'] as String,
             projectId: contractData['projectId'] as String,
             fieldValues: fieldValues,
-            contractType: selectedContractType ?? widget.contractType ?? '',
+            contractType: selectedContractType ?? '',
           );
           if (mounted) {
             Navigator.pop(context); 
@@ -384,12 +453,12 @@ class _CreateContractPageState extends State<CreateContractPage>
           }
         } else {
           await service.saveContract(
-            contractorId: widget.contractorId,
+            contractorId: contractorId!,
             contractTypeId: contractTypeId,
             title: contractData['title'] as String,
             projectId: contractData['projectId'] as String,
             fieldValues: fieldValues,
-            contractType: selectedContractType ?? widget.contractType ?? '',
+            contractType: selectedContractType ?? '',
           );
           if (mounted) {
             Navigator.pop(context);
@@ -419,7 +488,7 @@ class _CreateContractPageState extends State<CreateContractPage>
     String? selectedProjectId = initialProjectId;
     return await CreateContractBuild.showSaveDialog(
       context,
-      widget.contractorId,
+      contractorId!,
       titleController: titleController,
       initialProjectId: selectedProjectId,
       onProjectChanged: (String? projectId) {
@@ -494,14 +563,21 @@ class _CreateContractPageState extends State<CreateContractPage>
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: Colors.amber,),
+        ),
+      );
+    }
+
     final buildHelper = CreateContractBuildMethods(
       context: context,
       contractFields: contractFields,
       controllers: controllers,
       formKey: formKey,
-      contractorId: widget.contractorId,
+      contractorId: contractorId!,
       isLoadingProject: isLoadingProject,
       initialProjectId: initialProjectId,
       projectData: projectData,

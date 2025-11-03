@@ -97,7 +97,6 @@ class _WelcomePageState extends State<WelcomePage> with TickerProviderStateMixin
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Logo
                       Container(
                         width: isSmallScreen ? 4 : 6,
                         height: isSmallScreen ? 28 : 32,
@@ -187,10 +186,41 @@ class _WelcomePageState extends State<WelcomePage> with TickerProviderStateMixin
                           dotColor: Colors.grey.shade300,
                         ),
                       ),
-                      if (_currentPage == 2) ...[
-                        const SizedBox(height: 32),
-                        _buildGetStartedButton(isSmallScreen),
-                      ],
+                      const SizedBox(height: 32),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (_currentPage > 0)
+                            _buildNavigationButton(
+                              icon: Icons.arrow_back,
+                              label: "Previous",
+                              onPressed: () {
+                                _pageController.previousPage(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
+                              },
+                              isSmallScreen: isSmallScreen,
+                            ),
+                          if (_currentPage > 0) const SizedBox(width: 16),
+                          if (_currentPage < 2)
+                            _buildNavigationButton(
+                              icon: Icons.arrow_forward,
+                              label: "Next",
+                              onPressed: () {
+                                _pageController.nextPage(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
+                              },
+                              isSmallScreen: isSmallScreen,
+                            ),
+                          if (_currentPage == 2)
+                            Expanded(
+                              child: _buildGetStartedButton(isSmallScreen),
+                            ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -385,6 +415,74 @@ class _WelcomePageState extends State<WelcomePage> with TickerProviderStateMixin
               ),
               const SizedBox(width: 12),
               const Icon(Icons.arrow_forward, size: 22),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavigationButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+    required bool isSmallScreen,
+  }) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.easeOut,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 20 * (1 - value)),
+            child: child,
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: const Color(0xFFFFA726),
+            elevation: 0,
+            padding: EdgeInsets.symmetric(
+              horizontal: isSmallScreen ? 24 : 32,
+              vertical: isSmallScreen ? 14 : 16,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: const BorderSide(
+                color: Color(0xFFFFA726),
+                width: 1.5,
+              ),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: isSmallScreen ? 18 : 20),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: isSmallScreen ? 15 : 16,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.2,
+                ),
+              ),
             ],
           ),
         ),

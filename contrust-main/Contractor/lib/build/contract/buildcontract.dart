@@ -9,6 +9,7 @@ import 'package:backend/utils/be_contractformat.dart';
 import 'package:backend/contract_templates/TimeandMaterials.dart';
 import 'package:backend/contract_templates/CostPlus.dart';
 import 'package:backend/contract_templates/LumpSum.dart';
+import 'package:go_router/go_router.dart';
 
 class CreateContractBuild {
   static Widget buildHeader(BuildContext context, {required String title, required List<Widget> actions}) {
@@ -131,7 +132,7 @@ static Future<Map<String, dynamic>?> showSaveDialog(
                         ),
                       ),
                       IconButton(
-                        onPressed: () => Navigator.of(dialogContext).pop(),
+                        onPressed: () => context.go('/contracttypes'),
                         icon: const Icon(Icons.close, color: Colors.white),
                       ),
                     ],

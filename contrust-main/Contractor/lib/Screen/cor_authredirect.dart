@@ -21,12 +21,19 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
   Future<void> _handleRedirect() async {
     final next = Uri.base.queryParameters['next'] ?? '/dashboard';
 
+    // Debug logging
+    print('AuthRedirect - Current URL: ${Uri.base}');
+    print('AuthRedirect - Next parameter: $next');
+    print('AuthRedirect - Query parameters: ${Uri.base.queryParameters}');
+
     try {
       await Supabase.instance.client.auth.getSessionFromUrl(Uri.base);
 
       if (!mounted) return;
+      print('AuthRedirect - Redirecting to: $next');
       context.go(next);
     } catch (e) {
+      print('AuthRedirect - Error: $e');
       if (!mounted) return;
       context.go('/');
     }

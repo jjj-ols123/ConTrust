@@ -12,6 +12,7 @@ import 'package:contractee/pages/cee_messages.dart';
 import 'package:contractee/pages/cee_registration.dart';
 import 'package:contractee/pages/cee_torprofile.dart';
 import 'package:contractee/pages/cee_notification.dart';
+import 'package:contractee/pages/cee_ai_assistant.dart';
 import 'package:contractee/build/builddrawer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +20,9 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -36,6 +40,14 @@ class AppScrollBehavior extends MaterialScrollBehavior {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  if (!kIsWeb) {
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      WebViewPlatform.instance = AndroidWebViewPlatform();
+    } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+      WebViewPlatform.instance = WebKitWebViewPlatform();
+    }
+  }
 
   if (kIsWeb) {
     usePathUrlStrategy();
@@ -109,21 +121,21 @@ class _MyAppState extends State<MyApp> {
           ),
         ),
         GoRoute(
-          path: '/chat/:chatRoomId',
+          path: '/chat/:contractorName',
           pageBuilder: (context, state) {
-            final chatRoomId = state.pathParameters['chatRoomId'];
-            final contracteeId = state.extra as Map<String, dynamic>?;
+            final contractorName = Uri.decodeComponent(state.pathParameters['contractorName'] ?? '');
+            final chatData = state.extra as Map<String, dynamic>?;
             return NoTransitionPage(
               child: Builder(
                 builder: (context) {
                   final session = Supabase.instance.client.auth.currentSession;
-                  if (session != null && chatRoomId != null && contracteeId != null) {
+                  if (session != null && contractorName.isNotEmpty && chatData != null) {
                     return MessagePageContractee(
-                      chatRoomId: chatRoomId,
-                      contracteeId: contracteeId['contracteeId'] ?? '',
-                      contractorId: contracteeId['contractorId'] ?? '',
-                      contractorName: contracteeId['contractorName'] ?? '',
-                      contractorProfile: contracteeId['contractorProfile'],
+                      chatRoomId: chatData['chatRoomId'] ?? '',
+                      contracteeId: chatData['contracteeId'] ?? '',
+                      contractorId: chatData['contractorId'] ?? '',
+                      contractorName: contractorName,
+                      contractorProfile: chatData['contractorProfile'],
                     );
                   }
                   return const LoginPage();
@@ -159,8 +171,14 @@ class _MyAppState extends State<MyApp> {
                     case '/messages':
                       currentPage = ContracteePage.messages;
                       break;
+                    case '/chathistory':
+                      currentPage = ContracteePage.chatHistory;
+                      break;
                     case '/notifications':
                       currentPage = ContracteePage.notifications;
+                      break;
+                    case '/ai-assistant':
+                      currentPage = ContracteePage.aiAssistant;
                       break;
                     default:
                       currentPage = ContracteePage.home;
@@ -250,6 +268,54 @@ class _MyAppState extends State<MyApp> {
                       final session = Supabase.instance.client.auth.currentSession;
                       if (session != null) {
                         return const ContracteeNotificationPage();
+                      }
+                      return const LoginPage();
+                    },
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/messages',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      if (session != null) {
+                        return ContracteeChatHistoryPage();
+                      }
+                      return const LoginPage();
+                    },
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/chathistory',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      if (session != null) {
+                        return ContracteeChatHistoryPage();
+                      }
+                      return const LoginPage();
+                    },
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/ai-assistant',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      if (session != null) {
+                        return const AiAssistantPage();
                       }
                       return const LoginPage();
                     },

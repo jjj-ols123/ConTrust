@@ -6,6 +6,7 @@ import 'package:backend/models/be_payment_modal.dart';
 import 'package:backend/utils/be_constraint.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractee/build/buildongoing.dart';
+import 'package:contractee/build/buildceeprofile.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -354,22 +355,36 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
     }
   }
 
-  void _navigateToChat() {
-    if (_chatRoomId == null || !_canChat) return;
+  void _navigateToChat() async {
+    if (!_canChat) return;
     
     final project = projectData!;
-           final contracteeId = project['contractee_id'] ?? '';
-           final contractorId = project['contractor_id'] ?? '';
-           final contractorName = _contractorData?['firm_name'] ?? 'Contractor';
-           final contractorPhoto = _contractorData?['profile_photo'] ?? '';
+    final contracteeId = project['contractee_id'] ?? '';
+    final contractorId = project['contractor_id'] ?? '';
+    final contractorName = _contractorData?['firm_name'] ?? 'Contractor';
+    final contractorPhoto = _contractorData?['profile_photo'] ?? '';
 
-                                    context.go('/chat/$contractorName', extra: {
-                                      'contracteeId': contracteeId,
-                                      'contractorId': contractorId,
-                                      'contractorName': contractorName,
-                                      'contractorProfile': contractorPhoto,
-                                    });
-                                  }
+    String? chatRoomId = _chatRoomId;
+    if (chatRoomId == null) {
+      try {
+        chatRoomId = await FetchService().fetchChatRoomId(widget.projectId);
+        if (chatRoomId == null) {
+          ConTrustSnackBar.error(context, 'Unable to access chat room');
+          return;
+        }
+      } catch (e) {
+        ConTrustSnackBar.error(context, 'Error accessing chat: $e');
+        return;
+      }
+    }
+
+    context.go('/chat/${Uri.encodeComponent(contractorName)}', extra: {
+      'chatRoomId': chatRoomId,
+      'contracteeId': contracteeId,
+      'contractorId': contractorId,
+      'contractorProfile': contractorPhoto,
+    });
+  }
 
   Future<void> _handlePayment() async {
     try {
@@ -616,13 +631,17 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
 
     return RefreshIndicator(
       onRefresh: () async => loadData(),
-      child: CeeOngoingBuildMethods.buildMobileLayout(
-        projectTitle: projectTitle,
-        clientName: contractorName,
-        address: address,
-        startDate: startDate,
-        estimatedCompletion: estimatedCompletion,
-        duration: duration,
+      child: Column(
+        children: [
+          CeeProfileBuildMethods.buildHeader(context, 'Ongoing Project'),
+          Expanded(
+            child: CeeOngoingBuildMethods.buildMobileLayout(
+              projectTitle: projectTitle,
+              clientName: contractorName,
+              address: address,
+              startDate: startDate,
+              estimatedCompletion: estimatedCompletion,
+              duration: duration,
         progress: _localProgress,
         selectedTab: selectedTab,
         onTabChanged: onTabChanged,
@@ -634,6 +653,9 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
         onViewPaymentHistory: _isPaid ? _showPaymentHistory : null,
         paymentButtonText: _paymentSummary?['payment_status'] == 'partial' ? 'Make Payment' : null,
         tabContent: _buildTabContent(),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -663,29 +685,33 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
 
     return RefreshIndicator(
       onRefresh: () async => loadData(),
-      child: FutureBuilder<List<List<Map<String, dynamic>>>>(
-        future: _getTabData(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Colors.amber));
-          }
+      child: Column(
+        children: [
+          CeeProfileBuildMethods.buildHeader(context, 'Ongoing Project'),
+          Expanded(
+            child: FutureBuilder<List<List<Map<String, dynamic>>>>(
+              future: _getTabData(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator(color: Colors.amber));
+                }
 
-          final data = snapshot.data ?? [[], [], []];
-          final reports = data[0];
-          final photos = data[1];
-          final costs = data[2];
+                final data = snapshot.data ?? [[], [], []];
+                final reports = data[0];
+                final photos = data[1];
+                final costs = data[2];
 
-          return CeeOngoingBuildMethods.buildDesktopGridLayout(
-            context: context,
-            projectTitle: projectTitle,
-            clientName: contractorName,
-            address: address,
-            startDate: startDate,
-            estimatedCompletion: estimatedCompletion,
-            duration: duration,
-            progress: _localProgress,
-            tasks: _localTasks,
-            reports: reports,
+                return CeeOngoingBuildMethods.buildDesktopGridLayout(
+                  context: context,
+                  projectTitle: projectTitle,
+                  clientName: contractorName,
+                  address: address,
+                  startDate: startDate,
+                  estimatedCompletion: estimatedCompletion,
+                  duration: duration,
+                  progress: _localProgress,
+                  tasks: _localTasks,
+                  reports: reports,
             photos: photos,
             costs: costs,
             createSignedUrl: createSignedPhotoUrl,
@@ -701,6 +727,9 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
             paymentButtonText: _paymentSummary?['payment_status'] == 'partial' ? 'Make Payment' : null,
           );
         },
+            ),
+          ),
+        ],
       ),
     );
   }

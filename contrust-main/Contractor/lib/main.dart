@@ -9,6 +9,7 @@ import 'package:contractor/Screen/cor_authredirect.dart';
 import 'package:contractor/Screen/cor_bidding.dart';
 import 'package:contractor/Screen/cor_chathistory.dart';
 import 'package:contractor/Screen/cor_contracttype.dart';
+import 'package:contractor/Screen/cor_createcontract.dart';
 import 'package:contractor/Screen/cor_messages.dart';
 import 'package:contractor/Screen/cor_ongoing.dart';
 import 'package:contractor/Screen/cor_product.dart';
@@ -90,30 +91,6 @@ class _MyAppState extends State<MyApp> {
             child: const RegisterScreen(),
           ),
         ),
-        GoRoute(
-          path: '/chat/:chatRoomId',
-          pageBuilder: (context, state) {
-            final chatRoomId = state.pathParameters['chatRoomId'];
-            final contracteeData = state.extra as Map<String, dynamic>?;
-            return NoTransitionPage(
-              child: Builder(
-                builder: (context) {
-                  final session = Supabase.instance.client.auth.currentSession;
-                  if (session != null && chatRoomId != null && contracteeData != null) {
-                    return MessagePageContractor(
-                      chatRoomId: chatRoomId,
-                      contractorId: session.user.id,
-                      contracteeId: contracteeData['contracteeId'] ?? '',
-                      contracteeName: contracteeData['contracteeName'] ?? '',
-                      contracteeProfile: contracteeData['contracteeProfile'],
-                    );
-                  }
-                  return const ToLoginScreen();
-                },
-              ),
-            );
-          },
-        ),
         ShellRoute(
           pageBuilder: (context, state, child) {
             return NoTransitionPage(
@@ -135,23 +112,26 @@ class _MyAppState extends State<MyApp> {
                     case '/messages':
                       currentPage = ContractorPage.messages;
                       break;
-                    case '/contracts':
-                      currentPage = ContractorPage.contracts;
-                      break;
-                    case '/bidding':
-                      currentPage = ContractorPage.bidding;
-                      break;
-                    case '/profile':
-                      currentPage = ContractorPage.profile;
-                      break;
-                    case '/project-management':
-                      currentPage = ContractorPage.projectManagement;
-                      break;
-                    case '/materials':
-                      currentPage = ContractorPage.materials;
+                    case '/contracttypes':
+                      currentPage = ContractorPage.contractTypes;
                       break;
                     default:
-                      currentPage = ContractorPage.dashboard;
+                      // Handle dynamic routes like /createcontract/:mode/:id
+                      if (location.startsWith('/createcontract')) {
+                        currentPage = ContractorPage.createContract;
+                      } else if (location.startsWith('/chathistory')) {
+                        currentPage = ContractorPage.chatHistory;
+                      } else if (location.startsWith('/bidding')) {
+                        currentPage = ContractorPage.bidding;
+                      } else if (location.startsWith('/profile')) {
+                        currentPage = ContractorPage.profile;
+                      } else if (location.startsWith('/project-management')) {
+                        currentPage = ContractorPage.projectManagement;
+                      } else if (location.startsWith('/materials')) {
+                        currentPage = ContractorPage.materials;
+                      } else {
+                        currentPage = ContractorPage.dashboard;
+                      }
                   }
 
                   return ContractorShell(
@@ -197,7 +177,7 @@ class _MyAppState extends State<MyApp> {
               },
             ),
             GoRoute(
-              path: '/contracts',
+              path: '/contracttypes',
               pageBuilder: (context, state) {
                 return NoTransitionPage(
                   child: Builder(
@@ -205,6 +185,70 @@ class _MyAppState extends State<MyApp> {
                       final session = Supabase.instance.client.auth.currentSession;
                       if (session != null) {
                         return ContractType(contractorId: session.user.id);
+                      }
+                      return const ToLoginScreen();
+                    },
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/createcontract/:mode/:identifier',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      if (session != null) {
+                        final mode = state.pathParameters['mode'];
+                        final identifier = state.pathParameters['identifier'];
+                        final extraData = state.extra as Map<String, dynamic>?;
+                        final contractorId = extraData?['contractorId'] ?? session.user.id;
+                        final contractType = extraData?['contractType'];
+
+                        Map<String, dynamic>? template;
+                        Map<String, dynamic>? existingContract;
+
+                        if (mode == 'template' && identifier != null) {
+                          final decodedName = Uri.decodeComponent(identifier);
+                          template = extraData?['template'];
+                          template ??= {'template_name': decodedName};
+                        } else if (mode == 'contract' && identifier != null) {
+                          existingContract = extraData?['existingContract'];
+                          existingContract ??= {'contract_id': identifier};
+                        } else {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            context.go('/contracttypes');
+                          });
+                          return const Scaffold(
+                            body: Center(
+                              child: CircularProgressIndicator(color: Colors.amber),
+                            ),
+                          );
+                        }
+                        
+                        return CreateContractPage(
+                          contractorId: contractorId,
+                          contractType: contractType,
+                          template: template,
+                          existingContract: existingContract,
+                        );
+                      }
+                      return const ToLoginScreen();
+                    },
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/chathistory',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      if (session != null) {
+                        return ContractorChatHistoryPage();
                       }
                       return const ToLoginScreen();
                     },
@@ -284,7 +328,30 @@ class _MyAppState extends State<MyApp> {
             ),
           ],
         ),
-        // Catch-all route for 404 errors
+        GoRoute(
+          path: '/chat/:contracteeName',
+          pageBuilder: (context, state) {
+            final contracteeName = Uri.decodeComponent(state.pathParameters['contracteeName'] ?? '');
+            final chatData = state.extra as Map<String, dynamic>?;
+            return NoTransitionPage(
+              child: Builder(
+                builder: (context) {
+                  final session = Supabase.instance.client.auth.currentSession;
+                  if (session != null && contracteeName.isNotEmpty && chatData != null) {
+                    return MessagePageContractor(
+                      chatRoomId: chatData['chatRoomId'] ?? '',
+                      contractorId: chatData['contractorId'] ?? '',
+                      contracteeId: chatData['contracteeId'] ?? '',
+                      contracteeName: contracteeName,
+                      contracteeProfile: chatData['contracteeProfile'],
+                    );
+                  }
+                  return const ToLoginScreen();
+                },
+              ),
+            );
+          },
+        ),
         GoRoute(
           path: '/:path(.*)',
           pageBuilder: (context, state) => NoTransitionPage(

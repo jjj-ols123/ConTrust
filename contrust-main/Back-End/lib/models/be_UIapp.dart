@@ -131,6 +131,7 @@ class ProjectView extends StatelessWidget {
   final Function(String) handleFinalizeBidding;
   final Function(String)? onUpdateProject;
   final Function(String, String)? onCancelProject;
+  final bool isLoading;
 
   const ProjectView({
     Key? key,
@@ -143,6 +144,7 @@ class ProjectView extends StatelessWidget {
     required this.handleFinalizeBidding,
     this.onUpdateProject,
     this.onCancelProject,
+    this.isLoading = false, 
   }) : super(key: key);
 
   @override
@@ -156,41 +158,73 @@ class ProjectView extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      child: InkWell(
-        onTap: isHiringRequest ? null : onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.white, Colors.grey.shade50],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+      child: Stack(
+        children: [
+          InkWell(
+            onTap: isHiringRequest ? null : onTap,
             borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(context, status),
-              
-              const SizedBox(height: 16),
-              _buildProjectDetails(isHiringRequest),
-              
-              const SizedBox(height: 16),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.white, Colors.grey.shade50],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(context, status),
+                  
+                  const SizedBox(height: 16),
+                  _buildProjectDetails(isHiringRequest),
+                  
+                  const SizedBox(height: 16),
 
-              _buildDescription(),
-              
-              const SizedBox(height: 16),
+                  _buildDescription(),
+                  
+                  const SizedBox(height: 16),
 
-              if (!isHiringRequest && project['status'] == 'pending')
-                _buildBiddingInfo(),
-              
-              if (isHiringRequest)
-                _buildHiringInfo(),
-            ],
+                  if (!isHiringRequest && project['status'] == 'pending')
+                    _buildBiddingInfo(),
+                  
+                  if (isHiringRequest)
+                    _buildHiringInfo(),
+                ],
+              ),
+            ),
           ),
-        ),
+          // Loading overlay
+          if (isLoading)
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        'Processing...',
+                        style: TextStyle(
+                          color: Colors.grey[700],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -628,6 +662,11 @@ class ProjectView extends StatelessWidget {
   }
 
   Widget _buildHiringInfo() {
+
+  if (project['status'] != 'pending') {
+    return const SizedBox.shrink();
+  }
+
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: FetchService().fetchHiringRequestsForProject(projectId),
       builder: (context, snapshot) {

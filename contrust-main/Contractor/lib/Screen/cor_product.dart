@@ -1,9 +1,9 @@
 // ignore_for_file: use_build_context_synchronously, unused_local_variable
 import 'package:backend/services/both services/be_user_service.dart';
+import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/build/buildproduct.dart';
 import 'package:flutter/material.dart';
-import 'package:backend/services/contractor services/cor_productservice.dart';
 
 class ProductPanelScreen extends StatefulWidget {
   final String? contractorId;
@@ -37,6 +37,9 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
 
   bool isLoading = true;
 
+  Stream<List<Map<String, dynamic>>>? _materialsStream;
+  Stream<List<Map<String, dynamic>>>? _projectsStream;
+
   List<Map<String, dynamic>> get filteredCatalog {
     if (search.trim().isEmpty) return catalog;
     final q = search.toLowerCase();
@@ -49,36 +52,70 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
   void initState() {
     super.initState();
     projectId = widget.projectId;
-    _loadData();
+    _initializeData();
   }
 
-  Future<void> _loadData() async {
+  Future<void> _initializeData() async {
     setState(() => isLoading = true);
     try {
       await fetchContractorId();
-      await Future.wait([
-        CorProductService().loadInventory(
-          contractorId!,
-          setState,
-          inventory,
-          projectMaterials,
-        ),
-        CorProductService().loadProjects(
-          contractorId!,
-          projectId ?? '',
-          setState,
-          projects,
-        ),
-      ]);
+      if (contractorId != null) {
+        _initializeStreams();
+      }
     } catch (e) {
-      return;
+      ConTrustSnackBar.error(context, 'Error initializing data');
     } finally {
       setState(() => isLoading = false);
     }
   }
 
+  void _initializeStreams() {
+    if (contractorId != null) {
+
+      _materialsStream = FetchService().streamProjectMaterials(contractorId!);
+      
+      if (projectId != null && projectId!.isNotEmpty) {
+        _projectsStream = FetchService().streamProjectData(projectId!).map((project) => [project]);
+      } else {
+        _projectsStream = FetchService().streamContractorActiveProjects(contractorId!);
+      }
+    }
+  }
+
   Future<void> fetchContractorId() async {
     contractorId = widget.contractorId ?? await UserService().getContractorId();
+  }
+
+  void _processMaterialsData(List<Map<String, dynamic>> materials) {
+    final mappedItems = materials.map((item) {
+      final qty = (item['quantity'] as num).toDouble();
+      final price = (item['unit_price'] as num).toDouble();
+      return {
+        'material_id': item['material_id'],
+        'project_id': item['project_id'],
+        'name': item['material_name'],
+        'brand': item['brand'] ?? '',
+        'qty': qty,
+        'unit': item['unit'] ?? 'pcs',
+        'unitPrice': price,
+        'total': qty * price,
+        'note': item['notes'],
+      };
+    }).toList();
+
+    final newProjectMaterials = <String, List<Map<String, dynamic>>>{};
+    for (final item in mappedItems) {
+      final projectId = item['project_id'] as String;
+      if (!newProjectMaterials.containsKey(projectId)) {
+        newProjectMaterials[projectId] = [];
+      }
+      newProjectMaterials[projectId]!.add(item);
+    }
+
+    inventory.clear();
+    inventory.addAll(mappedItems);
+    projectMaterials.clear();
+    projectMaterials.addAll(newProjectMaterials);
   }
 
   double getProjectTotal(String projectId) {
@@ -178,22 +215,88 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
             ),
           ),
           Expanded(
-            child:
-                isLoading
-                    ? const Center(child: CircularProgressIndicator(color: Colors.amber,))
-                    : ProductBuildMethods.buildProductUI(
-                      context: context,
-                      isLoading: isLoading,
-                      search: search,
-                      onSearchChanged:
-                          (value) => setState(() => search = value),
-                      projects: projects,
-                      filteredCatalog: filteredCatalog,
-                      projectMaterials: projectMaterials,
-                      getProjectTotal: getProjectTotal,
-                      openMaterialDialog: openMaterialDialog,
-                      contractorId: contractorId,
-                    ),
+            child: isLoading || contractorId == null
+                ? const Center(child: CircularProgressIndicator(color: Colors.amber))
+                : StreamBuilder<List<Map<String, dynamic>>>(
+                    stream: _materialsStream,
+                    builder: (context, materialsSnapshot) {
+                      return StreamBuilder<List<Map<String, dynamic>>>(
+                        stream: _projectsStream,
+                        builder: (context, projectsSnapshot) {
+                          if (materialsSnapshot.connectionState == ConnectionState.waiting ||
+                              projectsSnapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator(color: Colors.amber));
+                          }
+
+                          if (materialsSnapshot.hasError) {
+                            return Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Error loading materials',
+                                    style: TextStyle(fontSize: 16, color: Colors.red.shade600),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    materialsSnapshot.error.toString(),
+                                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+
+                          if (projectsSnapshot.hasError) {
+                            return Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Error loading projects',
+                                    style: TextStyle(fontSize: 16, color: Colors.red.shade600),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    projectsSnapshot.error.toString(),
+                                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+
+                          if (materialsSnapshot.hasData) {
+                            _processMaterialsData(materialsSnapshot.data!);
+                          }
+
+                          if (projectsSnapshot.hasData) {
+                            projects.clear();
+                            projects.addAll(projectsSnapshot.data!);
+                          }
+
+                          return ProductBuildMethods.buildProductUI(
+                            context: context,
+                            isLoading: false,
+                            search: search,
+                            onSearchChanged: (value) => setState(() => search = value),
+                            projects: projects,
+                            filteredCatalog: filteredCatalog,
+                            projectMaterials: projectMaterials,
+                            getProjectTotal: getProjectTotal,
+                            openMaterialDialog: openMaterialDialog,
+                            contractorId: contractorId,
+                          );
+                        },
+                      );
+                    },
+                  ),
           ),
         ],
       ),

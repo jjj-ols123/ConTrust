@@ -33,11 +33,40 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   double _localProgress = 0.0;
   bool isLoading = true;
   String? contractorId;
+  Stream<Map<String, dynamic>>? _projectStream;
 
   @override
   void initState() {
     super.initState();
-    loadData();
+    _initializeStreams();
+  }
+
+  void _initializeStreams() {
+    contractorId = Supabase.instance.client.auth.currentUser?.id;
+    _projectStream = _createProjectStream();
+  }
+
+  Stream<Map<String, dynamic>> _createProjectStream() {
+    return FetchService().streamProjectData(widget.projectId).asyncMap((projectDetails) async {
+      try {
+        final data = await ongoingService.loadProjectData(
+          widget.projectId,
+          contractorId: contractorId,
+        );
+
+        final contractId = data['projectDetails']['contract_id'];
+        if (contractId != null) {
+          final contract = await ongoingService.getContractById(contractId);
+          data['contracts'] = contract != null ? [contract] : [];
+        } else {
+          data['contracts'] = [];
+        }
+
+        return data;
+      } catch (e) {
+        throw Exception('Failed to load project data: $e');
+      }
+    });
   }
 
   Future<void> switchProject() async {
@@ -410,14 +439,82 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: isLoading
-          ? const Center(
+      body: StreamBuilder<Map<String, dynamic>>(
+        stream: _projectStream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
               child: CircularProgressIndicator(
-              color: Colors.amber,
-            ))
-          : projectData == null
-              ? const Center(child: Text('Project not found.'))
-              : _buildResponsiveContent(),
+                color: Colors.amber,
+              ),
+            );
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: Colors.red.shade300,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error loading project',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Please try again later',
+                    style: TextStyle(
+                      color: Colors.grey.shade500,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _initializeStreams();
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(
+              child: Text('Project not found.'),
+            );
+          }
+
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                projectData = snapshot.data;
+                _localTasks = List<Map<String, dynamic>>.from(projectData!['tasks'] ?? []);
+                _localProgress = (projectData!['progress'] as num?)?.toDouble() ?? 0.0;
+                isLoading = false;
+              });
+            }
+          });
+
+          return _buildResponsiveContent();
+        },
+      ),
     );
   }
 

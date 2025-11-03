@@ -74,16 +74,43 @@ class ProfileBuildMethods {
                         child: CircleAvatar(
                           radius: 50,
                           backgroundColor: Colors.grey.shade100,
-                          backgroundImage: (profileImage != null && profileImage.isNotEmpty)
-                              ? NetworkImage(profileImage)
-                              : NetworkImage(profileUrl),
-                          child: (profileImage == null || profileImage.isEmpty)
-                              ? Icon(
-                                  Icons.business,
-                                  size: 35,
-                                  color: Colors.grey.shade400,
-                                )
-                              : null,
+                          child: ClipOval(
+                            child: (profileImage != null && profileImage.isNotEmpty)
+                                ? Image.network(
+                                    profileImage,
+                                    width: 100,
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Image.network(
+                                        profileUrl,
+                                        width: 100,
+                                        height: 100,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Icon(
+                                            Icons.business,
+                                            size: 35,
+                                            color: Colors.grey.shade400,
+                                          );
+                                        },
+                                      );
+                                    },
+                                  )
+                                : Image.network(
+                                    profileUrl,
+                                    width: 100,
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Icon(
+                                        Icons.business,
+                                        size: 35,
+                                        color: Colors.grey.shade400,
+                                      );
+                                    },
+                                  ),
+                          ),
                         ),
                       ),
                       if (onProfilePhotoUpload != null)
@@ -272,16 +299,43 @@ class ProfileBuildMethods {
                               child: CircleAvatar(
                                 radius: 60,
                                 backgroundColor: Colors.grey.shade100,
-                                backgroundImage: (profileImage != null && profileImage.isNotEmpty)
-                                    ? NetworkImage(profileImage)
-                                    : NetworkImage(profileUrl),
-                                child: (profileImage == null || profileImage.isEmpty)
-                                    ? Icon(
-                                        Icons.business,
-                                        size: 40,
-                                        color: Colors.grey.shade400,
-                                      )
-                                    : null,
+                                child: ClipOval(
+                                  child: (profileImage != null && profileImage.isNotEmpty)
+                                      ? Image.network(
+                                          profileImage,
+                                          width: 120,
+                                          height: 120,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Image.network(
+                                              profileUrl,
+                                              width: 120,
+                                              height: 120,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) {
+                                                return Icon(
+                                                  Icons.business,
+                                                  size: 40,
+                                                  color: Colors.grey.shade400,
+                                                );
+                                              },
+                                            );
+                                          },
+                                        )
+                                      : Image.network(
+                                          profileUrl,
+                                          width: 120,
+                                          height: 120,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Icon(
+                                              Icons.business,
+                                              size: 40,
+                                              color: Colors.grey.shade400,
+                                            );
+                                          },
+                                        ),
+                                ),
                               ),
                             ),
                             if (onProfilePhotoUpload != null)

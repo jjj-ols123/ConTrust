@@ -1,5 +1,4 @@
 // ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages
-import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -10,23 +9,46 @@ class CeeProfileService {
 
   Future<Map<String, dynamic>> loadContracteeData(String contracteeId) async {
     try {
-      final contracteeData = await UserService().fetchUserData(
-        contracteeId,
-        isContractor: false,
-      );
+      final contracteeResponse = await Supabase.instance.client
+          .from('Contractee')
+          .select()
+          .eq('contractee_id', contracteeId)
+          .single();
+
+      String email = '';
+      try {
+        final userData = await Supabase.instance.client
+            .from('Users')
+            .select('email')
+            .eq('users_id', contracteeId)
+            .maybeSingle();
+        if (userData != null) {
+          email = userData['email'] ?? '';
+        }
+      } catch (e) {
+        //
+      }
+
+      final contracteeData = {
+        'full_name': contracteeResponse['full_name'] ?? "",
+        'phone_number': contracteeResponse['phone_number'] ?? "",
+        'address': contracteeResponse['address'] ?? "",
+        'email': email,
+        'profile_photo': contracteeResponse['profile_photo'] ?? 'defaultpic.png',
+      };
 
       final completedProjects = await Supabase.instance.client
           .from('Projects')
-          .select('project_id, project_name, completion_date, contractor_id')
+          .select('project_id, title, estimated_completion, contractor_id')
           .eq('contractee_id', contracteeId)
           .eq('status', 'completed')
-          .order('completion_date', ascending: false);
+          .order('estimated_completion', ascending: false);
 
       final ongoingProjects = await Supabase.instance.client
           .from('Projects')
-          .select('project_id, project_name, start_date, contractor_id')
+          .select('project_id, title, start_date, contractor_id')
           .eq('contractee_id', contracteeId)
-          .eq('status', 'in_progress')
+          .inFilter('status', ['ongoing', 'pending', 'awaiting_contract', 'awaiting_agreement'])
           .order('start_date', ascending: false);
 
       List<Map<String, dynamic>> projectHistoryWithNames = [];
@@ -77,7 +99,7 @@ class CeeProfileService {
         'ongoingProjects': ongoingProjectsWithNames,
       };
     } catch (e) {
-      throw Exception('Error loading contractee data: ');
+      throw Exception('Error loading contractee data: $e');
     }
   }
 
@@ -118,7 +140,7 @@ class CeeProfileService {
       await saveField(contracteeId, fieldType, newValue);
       
       if (context.mounted) {
-          ConTrustSnackBar.success(context, '${fieldType.replaceAll(RegExp('([A-Z])'), ' \$1').toUpperCase()} updated successfully!');
+          ConTrustSnackBar.success(context, 'Updated successfully!');
       }
       onSuccess();
     } catch (e) {
@@ -207,5 +229,146 @@ class CeeProfileService {
       }
       return null;
     }
+  }
+
+  Future<List<Map<String, dynamic>>> loadReviews(String contracteeId) async {
+    try {
+      final ratingsData = await Supabase.instance.client
+          .from('ContractorRatings')
+          .select('rating, review, created_at, contractor_id')
+          .eq('contractee_id', contracteeId)
+          .order('created_at', ascending: false);
+
+      List<Map<String, dynamic>> reviewsWithNames = [];
+      for (var rating in ratingsData) {
+        final contractorData = await Supabase.instance.client
+            .from('Contractor')
+            .select('firm_name, profile_photo')
+            .eq('contractor_id', rating['contractor_id'])
+            .maybeSingle();
+
+        if (contractorData != null) {
+          rating['contractor_name'] = contractorData['firm_name'];
+          rating['contractor_photo'] = contractorData['profile_photo'];
+        } else {
+          rating['contractor_name'] = 'Unknown Contractor';
+          rating['contractor_photo'] = null;
+        }
+
+        reviewsWithNames.add(rating);
+      }
+
+      return reviewsWithNames;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> loadTransactions(String contracteeId) async {
+    try {
+      final projectsResponse = await Supabase.instance.client
+          .from('Projects')
+          .select('''
+            project_id,
+            title,
+            projectdata,
+            contractor_id,
+            Contractor!inner(firm_name)
+          ''')
+          .eq('contractee_id', contracteeId)
+          .order('created_at', ascending: false);
+
+      List<Map<String, dynamic>> allTransactions = [];
+
+      for (var project in projectsResponse) {
+        final projectdata =
+            project['projectdata'] as Map<String, dynamic>? ?? {};
+        final payments = projectdata['payments'] as List<dynamic>? ?? [];
+
+        for (var payment in payments) {
+          allTransactions.add({
+            'amount': (payment['amount'] as num?)?.toDouble() ?? 0.0,
+            'payment_type': getPaymentType(payment['contract_type'] ?? '',
+                payment['payment_structure'] ?? ''),
+            'project_title': project['title'] ?? 'Unknown Project',
+            'contractor_name':
+                project['Contractor']?['firm_name'] ?? 'Unknown Contractor',
+            'payment_date': payment['date'] ?? DateTime.now().toIso8601String(),
+            'reference': payment['reference'] ?? payment['payment_id'] ?? '',
+          });
+        }
+      }
+
+      allTransactions.sort((a, b) {
+        final dateA = DateTime.parse(a['payment_date']);
+        final dateB = DateTime.parse(b['payment_date']);
+        return dateB.compareTo(dateA);
+      });
+
+      return allTransactions;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  List<Map<String, dynamic>> filterProjects(
+    List<Map<String, dynamic>> allProjects,
+    String searchQuery,
+    String statusFilter,
+  ) {
+    return allProjects.where((project) {
+      final matchesSearch = searchQuery.isEmpty ||
+          (project['title']?.toLowerCase().contains(searchQuery.toLowerCase()) ?? false) ||
+          (project['description']?.toLowerCase().contains(searchQuery.toLowerCase()) ?? false);
+
+      final matchesStatus = statusFilter == 'All' ||
+          (statusFilter == 'Active' && ['active', 'awaiting_contract', 'awaiting_agreement'].contains(project['status']?.toLowerCase())) ||
+          (statusFilter == 'Pending' && project['status']?.toLowerCase() == 'pending') ||
+          (statusFilter == 'Completed' && project['status']?.toLowerCase() == 'completed') ||
+          (statusFilter == 'Cancelled' && project['status']?.toLowerCase() == 'cancelled');
+
+      return matchesSearch && matchesStatus;
+    }).toList();
+  }
+
+  List<Map<String, dynamic>> filterTransactions(
+    List<Map<String, dynamic>> transactions,
+    String searchQuery,
+    String selectedPaymentType,
+  ) {
+    final query = searchQuery.toLowerCase();
+    return transactions.where((transaction) {
+      final matchesSearch = (transaction['project_title']
+                  ?.toString()
+                  .toLowerCase()
+                  .contains(query) ??
+              false) ||
+          (transaction['amount']?.toString().toLowerCase().contains(query) ??
+              false);
+
+      final matchesType = selectedPaymentType == 'All' ||
+          (transaction['payment_type']?.toString() ?? '') ==
+              selectedPaymentType;
+
+      return matchesSearch && matchesType;
+    }).toList();
+  }
+
+  String getPaymentType(String contractType, String paymentStructure) {
+    if (contractType == 'lump_sum') {
+      return 'Full Payment';
+    } else if (contractType == 'percentage_based') {
+      return 'Milestone Payment';
+    } else if (contractType == 'custom') {
+      if (paymentStructure.toLowerCase().contains('down')) {
+        return 'Down Payment';
+      } else if (paymentStructure.toLowerCase().contains('final')) {
+        return 'Final Payment';
+      } else if (paymentStructure.toLowerCase().contains('milestone')) {
+        return 'Milestone Payment';
+      }
+      return 'Contract Payment';
+    }
+    return 'Payment';
   }
 }

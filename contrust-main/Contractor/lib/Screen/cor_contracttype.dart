@@ -14,14 +14,6 @@ class ContractType extends StatefulWidget {
 class _ContractTypeState extends State<ContractType> {
   Key contractListKey = UniqueKey();
 
-  void refreshContracts() {
-    if (mounted) {
-      setState(() {
-        contractListKey = UniqueKey();
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -33,7 +25,6 @@ class _ContractTypeState extends State<ContractType> {
         const SizedBox(height: 10),
         ContractTypeBuild.buildTypeCarousel(
           contractorId: widget.contractorId,
-          onRefreshContracts: refreshContracts,
         ),
         const SizedBox(height: 24),
         Padding(
@@ -48,13 +39,6 @@ class _ContractTypeState extends State<ContractType> {
                   color: Colors.black87,
                 ),
               ),
-              TextButton.icon(
-                onPressed: refreshContracts,
-                label: Text(
-                  'Refresh',
-                  style: TextStyle(color: Colors.amber[700], fontWeight: FontWeight.w600),
-                ),
-              ),
             ],
           ),
         ),
@@ -62,7 +46,6 @@ class _ContractTypeState extends State<ContractType> {
         ContractTypeBuild.buildContractListContainer(
           contractorId: widget.contractorId,
           contractListKey: contractListKey,
-          onRefreshContracts: refreshContracts,
         ),
       ],
     );

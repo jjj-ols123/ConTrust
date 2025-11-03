@@ -2,11 +2,13 @@
 
 import 'package:backend/services/contractor services/cor_dashboardservice.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/services/both services/be_project_service.dart';
 import 'package:backend/utils/be_status.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/build/builddashboardtabs.dart';
 import 'package:contractor/Screen/cor_ongoing.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DashboardBuildMethods {
   DashboardBuildMethods(
@@ -16,10 +18,12 @@ class DashboardBuildMethods {
     this.completedProjects,
     this.totalEarnings,
     this.totalClients,
-    this.rating,
-  );
+    this.rating, {
+    this.onDataRefresh,
+  });
 
   final BuildContext context;
+  final VoidCallback? onDataRefresh;
   final ProjectStatus status = ProjectStatus();
   final CorDashboardService dashboardservice = CorDashboardService();
 
@@ -282,7 +286,6 @@ class DashboardBuildMethods {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Statistics Header
           Row(
             children: [
               Icon(
@@ -302,8 +305,6 @@ class DashboardBuildMethods {
             ],
           ),
           const SizedBox(height: 16),
-
-          // Stats Cards in Column layout for desktop
           Column(
             children: [
               Row(
@@ -495,18 +496,27 @@ class DashboardBuildMethods {
               child: CircleAvatar(
                 radius: isTablet ? 50 : 40,
                 backgroundColor: Colors.white,
-                backgroundImage:
-                    contractorData?['profile_photo'] != null
-                        ? NetworkImage(contractorData!['profile_photo'])
-                        : null,
-                child:
-                    contractorData?['profile_photo'] == null
-                        ? Icon(
+                child: ClipOval(
+                  child: contractorData?['profile_photo'] != null
+                      ? Image.network(
+                          contractorData!['profile_photo'],
+                          width: (isTablet ? 50 : 40) * 2,
+                          height: (isTablet ? 50 : 40) * 2,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(
+                              Icons.business,
+                              size: isTablet ? 50 : 40,
+                              color: Colors.amber.shade700,
+                            );
+                          },
+                        )
+                      : Icon(
                           Icons.business,
                           size: isTablet ? 50 : 40,
                           color: Colors.amber.shade700,
-                        )
-                        : null,
+                        ),
+                ),
               ),
             ),
             SizedBox(width: isTablet ? 24 : 20),
@@ -585,9 +595,23 @@ class DashboardBuildMethods {
         children: [
           CircleAvatar(
             radius: isMobile ? 18 : 20,
-            backgroundImage: info['profile_photo'] != null && info['profile_photo'].isNotEmpty
-                ? NetworkImage(info['profile_photo'])
-                : NetworkImage('https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png'),
+            child: ClipOval(
+              child: Image.network(
+                info['profile_photo'] != null && info['profile_photo'].isNotEmpty
+                    ? info['profile_photo']
+                    : 'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
+                width: (isMobile ? 18 : 20) * 2,
+                height: (isMobile ? 18 : 20) * 2,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Icon(
+                    Icons.person,
+                    size: isMobile ? 18 : 20,
+                    color: Colors.grey.shade400,
+                  );
+                },
+              ),
+            ),
           ),
           SizedBox(width: isMobile ? 10 : 12),
           
@@ -645,8 +669,6 @@ class DashboardBuildMethods {
                 ),
               ),
               SizedBox(width: isMobile ? 3 : 4),
-              
-              // Decline Button
               IconButton(
                 onPressed: () => dashboardservice.handleDeclineHiring(
                   context: context,
@@ -665,8 +687,6 @@ class DashboardBuildMethods {
                 ),
               ),
               SizedBox(width: isMobile ? 3 : 4),
-              
-              // Accept Button  
               IconButton(
                 onPressed: () => dashboardservice.handleAcceptHiring(
                   context: context,
@@ -774,9 +794,23 @@ class DashboardBuildMethods {
                             children: [
                               CircleAvatar(
                                 radius: 30,
-                                backgroundImage: info['profile_photo'] != null && info['profile_photo'].isNotEmpty
-                                    ? NetworkImage(info['profile_photo'])
-                                    : const NetworkImage('https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png'),
+                                child: ClipOval(
+                                  child: Image.network(
+                                    info['profile_photo'] != null && info['profile_photo'].isNotEmpty
+                                        ? info['profile_photo']
+                                        : 'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
+                                    width: 60,
+                                    height: 60,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Icon(
+                                        Icons.person,
+                                        size: 30,
+                                        color: Colors.grey.shade400,
+                                      );
+                                    },
+                                  ),
+                                ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -1838,32 +1872,130 @@ class DashboardBuildMethods {
             ),
           ),
           SizedBox(height: 16),
-          Container(
-            padding: EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue.shade200),
+          Text(
+            'The contractee has requested to cancel this project. Please choose your response:',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade800,
+              fontWeight: FontWeight.w500,
             ),
-            child: Row(
-              children: [
-                Icon(Icons.info_outline, color: Colors.blue.shade700, size: 16),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Check your dashboard for action options.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.blue.shade700,
-                      fontWeight: FontWeight.w500,
+          ),
+          SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _handleCancellationResponse(projectId, false),
+                  icon: Icon(Icons.close, size: 18),
+                  label: Text('Reject'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red.shade600,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _handleCancellationResponse(projectId, true),
+                  icon: Icon(Icons.check, size: 18),
+                  label: Text('Approve'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green.shade600,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _handleCancellationResponse(String projectId, bool approve) async {
+    try {
+      final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+      if (currentUserId == null) {
+        ConTrustSnackBar.error(context, 'User not authenticated');
+        return;
+      }
+
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(approve ? 'Approve Cancellation' : 'Reject Cancellation'),
+          content: Text(
+            approve 
+              ? 'Are you sure you want to approve this cancellation request? This will permanently cancel the project.'
+              : 'Are you sure you want to reject this cancellation request? The project will continue.'
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: approve ? Colors.green : Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: Text(approve ? 'Approve' : 'Reject'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed == true) {
+
+        try {
+          if (approve) {
+            await ProjectService().agreeCancelAgreement(projectId, currentUserId);
+          } else {
+            await ProjectService().declineCancelAgreement(projectId, currentUserId);
+          }
+
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
+
+          if (context.mounted) {
+            ConTrustSnackBar.success(
+              context, 
+              approve 
+                ? 'Cancellation approved. Project has been cancelled.' 
+                : 'Cancellation rejected. Project will continue.'
+            );
+          }
+          
+
+          await Future.delayed(Duration(milliseconds: 500));
+          if (onDataRefresh != null && context.mounted) {
+            onDataRefresh!();
+          }
+          
+        } catch (e) {
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
+          if (context.mounted) {
+            ConTrustSnackBar.error(context, 'Error processing cancellation response: $e');
+          }
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ConTrustSnackBar.error(context, 'Error processing cancellation response: $e');
+      }
+    }
   }
 }

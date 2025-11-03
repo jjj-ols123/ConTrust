@@ -15,7 +15,9 @@ enum ContracteePage {
   ongoing,
   profile,
   notifications,
-  messages
+  messages,
+  chatHistory,
+  aiAssistant
 }
 
 class ContracteeShell extends StatelessWidget {
@@ -44,6 +46,10 @@ class ContracteeShell extends StatelessWidget {
         return 'Notifications';
       case ContracteePage.messages:
         return 'Messages';
+      case ContracteePage.chatHistory:
+        return 'Chat History';
+      case ContracteePage.aiAssistant:
+        return 'AI Assistant';
     }
   }
 
@@ -60,7 +66,7 @@ class ContracteeShell extends StatelessWidget {
         appBar: AppBar(
           backgroundColor: Colors.amber,
           centerTitle: true,
-          elevation: 4,
+          elevation: 0,
           automaticallyImplyLeading: false,
           leading: !isDesktop
             ? Builder(
@@ -73,6 +79,7 @@ class ContracteeShell extends StatelessWidget {
           actions: const [NotificationButton()],
         ),
         drawer: !isDesktop ? Drawer(
+          elevation: 0, 
           backgroundColor: Colors.white,
           child: SafeArea(
             child: Column(
@@ -406,6 +413,16 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             label: _loadingOngoing ? 'Loading...' : 'Ongoing Projects',
             active: widget.currentPage == ContracteePage.ongoing,
             onTap: _loadingOngoing ? null : goToOngoing,
+          ),
+          _SidebarItem(
+            icon: Icons.smart_toy_outlined,
+            label: 'AI Assistant',
+            active: widget.currentPage == ContracteePage.aiAssistant,
+            onTap: () {
+              if (widget.currentPage != ContracteePage.aiAssistant) {
+                navigateToPage('/ai-assistant');
+              }
+            },
           ),
           _SidebarItem(
             icon: Icons.person,

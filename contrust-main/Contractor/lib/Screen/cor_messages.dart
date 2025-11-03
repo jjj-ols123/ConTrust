@@ -6,6 +6,7 @@ import 'package:backend/services/both services/be_contract_service.dart';
 import 'package:backend/services/both services/be_message_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MessagePageContractor extends StatefulWidget {
@@ -145,36 +146,39 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
         )
         .subscribe();
 
-    // Subscribe to project status changes
     _projectsChannel = supabase
         .channel('projects_status:${widget.chatRoomId}')
         .onPostgresChanges(
-          event: PostgresChangeEvent.all,
+          event: PostgresChangeEvent.update,
           schema: 'public',
           table: 'Projects',
           callback: (payload) {
             if (!mounted) return;
-            // Update project status when project changes
-            setState(() {
-              _projectStatus = FetchService().fetchProjectStatus(widget.chatRoomId);
-            });
+            final oldStatus = payload.oldRecord != null ? payload.oldRecord['status'] : null;
+            final newStatus = payload.newRecord != null ? payload.newRecord['status'] : null;
+            if (oldStatus != newStatus) {
+              setState(() {
+                _projectStatus = Future.value(newStatus?.toString());
+              });
+            }
           },
         )
         .subscribe();
-
-    // Subscribe to contract status changes
     _contractsChannel = supabase
         .channel('contracts_status:${widget.chatRoomId}')
         .onPostgresChanges(
-          event: PostgresChangeEvent.all,
+          event: PostgresChangeEvent.update,
           schema: 'public',
           table: 'Contracts',
           callback: (payload) {
             if (!mounted) return;
-            // Update project status when contract changes (affects project status)
-            setState(() {
-              _projectStatus = FetchService().fetchProjectStatus(widget.chatRoomId);
-            });
+            final oldStatus = payload.oldRecord != null ? payload.oldRecord['status'] : null;
+            final newStatus = payload.newRecord != null ? payload.newRecord['status'] : null;
+            if (oldStatus != newStatus) {
+              setState(() {
+                _projectStatus = FetchService().fetchProjectStatus(widget.chatRoomId);
+              });
+            }
           },
         )
         .subscribe();
@@ -716,6 +720,11 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
       appBar: AppBar(
         backgroundColor: Colors.amber,
         foregroundColor: Colors.white,
+        leading: MediaQuery.of(context).size.width < 1200 ? IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/messages'),
+        ) : null,
+        automaticallyImplyLeading: false,
          title: Row(
            children: [
              CircleAvatar(

@@ -275,20 +275,6 @@ class HomePageBuilder {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.work_outline, color: Colors.amber[700], size: isMobile ? 20 : 24),
-              SizedBox(width: isMobile ? 6 : 8),
-              Text(
-                "Your Projects",
-                style: TextStyle(
-                  fontSize: isMobile ? 16 : 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-            ],
-          ),
           SizedBox(height: isMobile ? 12 : 16),
           ...projectsToShow.map((project) => _buildProjectCard(context, project, supabase)),
         ],
@@ -302,7 +288,7 @@ class HomePageBuilder {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
       child: InkWell(
         onTap: isPlaceholder ? null : () {
           final projectStatus = project['status']?.toString().toLowerCase();
@@ -402,6 +388,7 @@ class HomePageBuilder {
     required String projectId,
     required Future<void> Function(String projectId, String bidId) acceptBidding,
     String? projectStatus,
+    Set<String>? bidsLoading, 
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -491,11 +478,14 @@ class HomePageBuilder {
 
               return Column(
                 children: bids.map((bid) {
+                  final bidKey = '$projectId-${bid['bid_id']}';
+                  final isLoading = bidsLoading?.contains(bidKey) ?? false;
                   return _buildCompactBidCard(
                     context: context,
                     bid: bid,
                     onAccept: () => acceptBidding(projectId, bid['bid_id']),
                     projectStatus: projectStatus,
+                    isLoading: isLoading,
                   );
                 }).toList(),
               );
@@ -511,6 +501,7 @@ class HomePageBuilder {
     required Map<String, dynamic> bid,
     required VoidCallback onAccept,
     String? projectStatus,
+    bool isLoading = false,
   }) {
     final contractor = bid['contractor'] as Map<String, dynamic>?;
     final screenWidth = MediaQuery.of(context).size.width;
@@ -518,110 +509,128 @@ class HomePageBuilder {
     final isAccepted = bid['status'] == 'accepted';
     final canAccept = projectStatus == 'pending' && !isAccepted;
     
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: EdgeInsets.all(isMobile ? 10 : 12),
-      decoration: BoxDecoration(
-        color: isAccepted ? Colors.green.shade50 : Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isAccepted ? Colors.green.shade300 : Colors.grey.shade300,
-          width: isAccepted ? 2 : 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: isMobile ? 18 : 20,
-            backgroundImage: contractor?['profile_photo'] != null && contractor!['profile_photo'].isNotEmpty
-                ? NetworkImage(contractor['profile_photo'])
-                : const NetworkImage(profileUrl),
+    return Stack(
+      children: [
+        Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: EdgeInsets.all(isMobile ? 10 : 12),
+          decoration: BoxDecoration(
+            color: isAccepted ? Colors.green.shade50 : Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isAccepted ? Colors.green.shade300 : Colors.grey.shade300,
+              width: isAccepted ? 2 : 1,
+            ),
           ),
-          SizedBox(width: isMobile ? 10 : 12),
-          
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: isMobile ? 18 : 20,
+                backgroundImage: contractor?['profile_photo'] != null && contractor!['profile_photo'].isNotEmpty
+                    ? NetworkImage(contractor['profile_photo'])
+                    : const NetworkImage(profileUrl),
+              ),
+              SizedBox(width: isMobile ? 10 : 12),
+              
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        contractor?['firm_name'] ?? 'Unknown Contractor',
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            contractor?['firm_name'] ?? 'Unknown Contractor',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: isMobile ? 13 : 14,
+                              color: Colors.grey.shade800,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (isAccepted)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade600,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Text(
+                              'ACCEPTED',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '₱${bid['bid_amount']?.toString() ?? '0'}',
+                      style: TextStyle(
+                        fontSize: isMobile ? 15 : 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green.shade700,
+                      ),
+                    ),
+                    if (bid['description'] != null && bid['description'].isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        bid['description'],
                         style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: isMobile ? 13 : 14,
-                          color: Colors.grey.shade800,
+                          fontSize: isMobile ? 10 : 11,
+                          color: Colors.grey.shade500,
+                          fontStyle: FontStyle.italic,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    if (isAccepted)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade600,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Text(
-                          'ACCEPTED',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                    ],
                   ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '₱${bid['bid_amount']?.toString() ?? '0'}',
-                  style: TextStyle(
-                    fontSize: isMobile ? 15 : 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green.shade700,
+              ),
+              
+              if (canAccept) ...[
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: isLoading ? null : () {
+                    _showAcceptBidDialog(context, bid, onAccept);
+                  },
+                  icon: Icon(Icons.check, size: isMobile ? 16 : 18),
+                  tooltip: 'Accept Bid',
+                  padding: EdgeInsets.all(isMobile ? 3 : 4),
+                  constraints: BoxConstraints(
+                    minWidth: isMobile ? 28 : 32, 
+                    minHeight: isMobile ? 28 : 32
+                  ),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.green.shade100,
+                    foregroundColor: Colors.green.shade700,
                   ),
                 ),
-                if (bid['description'] != null && bid['description'].isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    bid['description'],
-                    style: TextStyle(
-                      fontSize: isMobile ? 10 : 11,
-                      color: Colors.grey.shade500,
-                      fontStyle: FontStyle.italic,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
               ],
+            ],
+          ),
+        ),
+        if (isLoading)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
             ),
           ),
-          
-          if (canAccept) ...[
-            const SizedBox(width: 8),
-            IconButton(
-              onPressed: () {
-                _showAcceptBidDialog(context, bid, onAccept);
-              },
-              icon: Icon(Icons.check, size: isMobile ? 16 : 18),
-              tooltip: 'Accept Bid',
-              padding: EdgeInsets.all(isMobile ? 3 : 4),
-              constraints: BoxConstraints(
-                minWidth: isMobile ? 28 : 32, 
-                minHeight: isMobile ? 28 : 32
-              ),
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.green.shade100,
-                foregroundColor: Colors.green.shade700,
-              ),
-            ),
-          ],
-        ],
-      ),
+      ],
     );
   }
 
@@ -720,7 +729,6 @@ class HomePageBuilder {
     required int selectedIndex,
     required Function(int) onSelect,
     required String profileUrl,
-    VoidCallback? onRefreshProjects,
   }) {
     return Container(
       padding: const EdgeInsets.all(20),

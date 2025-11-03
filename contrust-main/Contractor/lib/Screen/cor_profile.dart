@@ -50,6 +50,8 @@ class _ContractorUserProfileScreenState
   List<Map<String, dynamic>> filteredProjects = [];
   late TextEditingController searchController;
 
+  Stream<List<Map<String, dynamic>>>? _completedProjectsStream;
+
   List<Map<String, dynamic>> allRatings = [];
   Map<int, int> ratingDistribution = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
   int totalReviews = 0;
@@ -63,7 +65,7 @@ class _ContractorUserProfileScreenState
         setState(() => isLoading = false);
       }
     });
-    _loadCompletedProjects();
+    _initializeStreams();
     bioController = TextEditingController();
     contactController = TextEditingController();
     specializationController = TextEditingController();
@@ -71,6 +73,10 @@ class _ContractorUserProfileScreenState
     addressController = TextEditingController();
     searchController = TextEditingController();
     searchController.addListener(_onSearchChanged);
+  }
+
+  void _initializeStreams() {
+    _completedProjectsStream = FetchService().streamCompletedProjects();
   }
 
   @override
@@ -119,7 +125,6 @@ class _ContractorUserProfileScreenState
       }
       
       _updateControllers();
-      await _loadCompletedProjects();
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -138,25 +143,9 @@ class _ContractorUserProfileScreenState
     addressController.text = address;
   }
 
-  Future<void> _loadCompletedProjects() async {
-    final projects = await FetchService().fetchCompletedProjects();
-    setState(() {
-      completedProjects = projects;
-      filteredProjects = projects;
-    });
-  }
-
   void _onSearchChanged() {
-    final query = searchController.text.toLowerCase();
     setState(() {
-      filteredProjects = completedProjects.where((project) {
-        final clientName = (project['contractee']?['full_name'] ?? '').toLowerCase();
-        final type = (project['type'] ?? '').toLowerCase();
-        final description = (project['description'] ?? '').toLowerCase();
-        return clientName.contains(query) ||
-            type.contains(query) ||
-            description.contains(query);
-      }).toList();
+      _applySearchFilter();
     });
   }
 
@@ -384,10 +373,54 @@ class _ContractorUserProfileScreenState
   }
 
   Widget _buildClientHistory() {
-    return ProfileBuildMethods.buildClientHistory(
-      filteredProjects: filteredProjects,
-      searchController: searchController,
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: _completedProjectsStream,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.amber),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return const Center(
+            child: Text('Error loading projects'),
+          );
+        }
+
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(
+            child: Text('No completed projects found'),
+          );
+        }
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              completedProjects = snapshot.data!;
+              _applySearchFilter();
+            });
+          }
+        });
+
+        return ProfileBuildMethods.buildClientHistory(
+          filteredProjects: filteredProjects,
+          searchController: searchController,
+        );
+      },
     );
+  }
+
+  void _applySearchFilter() {
+    final query = searchController.text.toLowerCase();
+    filteredProjects = completedProjects.where((project) {
+      final clientName = (project['contractee']?['full_name'] ?? '').toLowerCase();
+      final type = (project['type'] ?? '').toLowerCase();
+      final description = (project['description'] ?? '').toLowerCase();
+      return clientName.contains(query) ||
+          type.contains(query) ||
+          description.contains(query);
+    }).toList();
   }
 
   String _getTimeAgo(DateTime dateTime) {
