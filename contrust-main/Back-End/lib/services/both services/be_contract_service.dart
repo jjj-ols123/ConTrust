@@ -4,6 +4,7 @@ import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_contract_pdf_service.dart';
 import 'package:backend/services/superadmin services/auditlogs_service.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
+import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
@@ -139,7 +140,7 @@ class ContractService {
         'pdf_url': pdfPath,
         'field_values': fieldValues,
         'status': newStatus,
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTimeHelper.getLocalTimeISOString(),
       }).eq('contract_id', contractId);
 
       await _auditService.logAuditEvent(
@@ -206,7 +207,7 @@ class ContractService {
           currentStatus != 'signed') {
         await _supabase.from('Contracts').update({
           'status': 'sent',
-          'sent_at': DateTime.now().toIso8601String(),
+          'sent_at': DateTimeHelper.getLocalTimeISOString(),
         }).eq('contract_id', contractId);
       }
 
@@ -219,7 +220,7 @@ class ContractService {
         'sender_id': contractData['contractor_id'],
         'receiver_id': contracteeId,
         'message': message,
-        'timestamp': DateTime.now().toIso8601String(),
+        'timestamp': DateTimeHelper.getLocalTimeISOString(),
         'message_type': 'contract',
         'contract_id': contractId,
         'contract_status': 'sent',
@@ -228,7 +229,7 @@ class ContractService {
 
       await _supabase.from('ChatRoom').update({
         'last_message': '📄 Contract sent: $message',
-        'last_message_time': DateTime.now().toIso8601String(),
+        'last_message_time': DateTimeHelper.getLocalTimeISOString(),
       }).eq('chatroom_id', chatRoomData['chatroom_id']);
 
       await _auditService.logAuditEvent(
@@ -292,10 +293,10 @@ class ContractService {
     try {
       Map<String, dynamic> updateData = {
         'status': status,
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTimeHelper.getLocalTimeISOString(),
       };
       if (status == 'approved' || status == 'rejected') {
-        updateData['reviewed_at'] = DateTime.now().toIso8601String();
+        updateData['reviewed_at'] = DateTimeHelper.getLocalTimeISOString();
       }
 
       await _supabase
@@ -469,7 +470,7 @@ class ContractService {
           : contractData['contractee_signature_url'];
 
       final fileName = '${userType.toLowerCase()}_${contractId}_$userId.png';
-      final timestamp = DateTime.now().toIso8601String();
+      final timestamp = DateTimeHelper.getLocalTimeISOString();
 
       String? uploadPath;
       for (int attempt = 0; attempt < 3; attempt++) {
@@ -805,7 +806,7 @@ class ContractService {
         'file_size': pdfBytes.length,
         'file_name': fileName,
         'contract_title': contractTitle,
-        'download_time': DateTime.now().toIso8601String(),
+        'download_time': DateTimeHelper.getLocalTimeISOString(),
         'saved_to_device': savedFile != null,
         'file_path': filePath,
         'contract_status': contractStatus,
@@ -1006,7 +1007,7 @@ class ContractService {
         'failed_downloads': failedDownloads.length,
         'download_results': downloadResults,
         'failed_contract_ids': failedDownloads,
-        'download_time': DateTime.now().toIso8601String(),
+        'download_time': DateTimeHelper.getLocalTimeISOString(),
       };
     } catch (e) {
       await _errorService.logError(

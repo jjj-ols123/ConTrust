@@ -1,4 +1,5 @@
- import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:backend/utils/be_datetime_helper.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 
 class SystemMonitorService {
@@ -19,7 +20,7 @@ class SystemMonitorService {
     return {
       'overall_status': overallStatus,
       'checks': checks,
-      'timestamp': DateTime.now().toIso8601String(),
+      'timestamp': DateTimeHelper.getLocalTimeISOString(),
     };
   }
 

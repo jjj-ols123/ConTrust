@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 
@@ -25,7 +26,7 @@ class SuperAdminProjectService {
         severity: 'Medium',
         extraInfo: {
           'operation': 'Fetch All Projects',
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to fetch projects: ');
@@ -62,7 +63,7 @@ class SuperAdminProjectService {
         severity: 'Medium',
         extraInfo: {
           'operation': 'Get Project Statistics',
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to get project statistics: ');
@@ -84,7 +85,7 @@ class SuperAdminProjectService {
           'operation': 'Update Project Status',
           'project_id': projectId,
           'new_status': status,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to update project status: ');
@@ -112,7 +113,7 @@ class SuperAdminProjectService {
         extraInfo: {
           'operation': 'Fetch Projects By Status',
           'status': status,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to fetch projects by status: ');
@@ -140,7 +141,7 @@ class SuperAdminProjectService {
         extraInfo: {
           'operation': 'Fetch Projects By Contractor',
           'contractor_id': contractorId,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to fetch projects by contractor: ');
@@ -168,7 +169,7 @@ class SuperAdminProjectService {
         extraInfo: {
           'operation': 'Fetch Projects By Contractee',
           'contractee_id': contracteeId,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to fetch projects by contractee: ');

@@ -91,12 +91,12 @@ class CeeProfileBuildMethods {
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.amber.shade50,
+        color: const Color(0xFFFFF9E6),     
         border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
       ),
       child: Row(
         children: [
-          Icon(Icons.handyman_rounded, color: Colors.amber, size: 20),
+          Icon(Icons.handyman_rounded, color: const Color(0xFFFFB300), size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

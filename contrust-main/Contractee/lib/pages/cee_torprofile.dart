@@ -82,8 +82,16 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
             bio = contractorData['bio'] ?? "No bio available";
             contactNumber =
                 contractorData['contact_number'] ?? "No contact number";
-            specialization =
-                contractorData['specialization'] ?? "No specialization";
+            final specData = contractorData['specialization'];
+            if (specData is List) {
+              specialization = specData.isEmpty 
+                  ? "No specialization" 
+                  : specData.join(", ");
+            } else if (specData is String) {
+              specialization = specData.isEmpty ? "No specialization" : specData;
+            } else {
+              specialization = "No specialization";
+            }
             address = contractorData['address'] ?? "";
             rating = contractorData['rating']?.toDouble() ?? 0.0;
             final photo = contractorData['profile_photo'];
@@ -164,9 +172,10 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
       );
 
       if (actionTaken && mounted) {
-        ConTrustSnackBar.success(context, 'Hire request sent successfully!');
-        await _checkPendingHireRequest();
-        Navigator.of(context).popUntil((route) => route.isFirst);
+  ConTrustSnackBar.success(context, 'Hire request sent successfully!');
+  await _checkPendingHireRequest();
+
+  context.go('/home');
       }
     } finally {
       if (mounted) {
@@ -537,7 +546,6 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                     if (isMobile) {
                       return TorProfileBuildMethods.buildMobileLayout(
                         firmName: firmName,
-                        specialization: specialization,
                         profileImage: profileImage,
                         completedProjectsCount: completedProjectsCount,
                         rating: rating,
@@ -553,7 +561,6 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                     } else {
                       return TorProfileBuildMethods.buildDesktopLayout(
                         firmName: firmName,
-                        specialization: specialization,
                         profileImage: profileImage,
                         completedProjectsCount: completedProjectsCount,
                         rating: rating,

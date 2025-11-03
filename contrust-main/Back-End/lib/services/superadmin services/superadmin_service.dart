@@ -1,5 +1,6 @@
 import 'package:backend/services/superadmin%20services/errorlogs_service.dart';
 import 'package:backend/services/superadmin%20services/monitor_service.dart';
+import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SuperAdminServiceBackend {
@@ -51,7 +52,7 @@ class SuperAdminServiceBackend {
         severity: 'Medium',
         extraInfo: {
           'operation': 'Fetch System Statistics',
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to fetch system statistics: ');
@@ -93,7 +94,7 @@ class SuperAdminServiceBackend {
         severity: 'Medium',
         extraInfo: {
           'operation': 'Fetch Dashboard Data',
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to fetch dashboard data: ');

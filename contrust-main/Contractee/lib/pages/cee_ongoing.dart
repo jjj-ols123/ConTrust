@@ -1,4 +1,5 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
+import 'dart:async';
 
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_payment_service.dart';
@@ -41,6 +42,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
   bool isLoading = true;
   bool _isPaid = false;
   Map<String, dynamic>? _paymentSummary;
+  final List<StreamSubscription> _subscriptions = [];
 
   @override
   void initState() {
@@ -49,15 +51,65 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
     _getChatRoomId();
     _checkChatPermission();
     _loadContractorData();
+    _attachRealtimeListeners();
   }
 
   @override
   void dispose() {
+    for (final sub in _subscriptions) {
+      sub.cancel();
+    }
     reportController.dispose();
     costAmountController.dispose();
     costNoteController.dispose();
     progressController.dispose();
     super.dispose();
+  }
+
+  void _attachRealtimeListeners() {
+    final client = Supabase.instance.client;
+    _subscriptions.add(
+      client
+          .from('Projects')
+          .stream(primaryKey: ['project_id'])
+          .eq('project_id', widget.projectId)
+          .listen((_) => loadData()),
+    );
+    _subscriptions.add(
+      client
+          .from('ProjectTasks')
+          .stream(primaryKey: ['task_id'])
+          .eq('project_id', widget.projectId)
+          .listen((_) => loadData()),
+    );
+    _subscriptions.add(
+      client
+          .from('ProjectReports')
+          .stream(primaryKey: ['report_id'])
+          .eq('project_id', widget.projectId)
+          .listen((_) => loadData()),
+    );
+    _subscriptions.add(
+      client
+          .from('ProjectPhotos')
+          .stream(primaryKey: ['photo_id'])
+          .eq('project_id', widget.projectId)
+          .listen((_) => loadData()),
+    );
+    _subscriptions.add(
+      client
+          .from('ProjectMaterials')
+          .stream(primaryKey: ['material_id'])
+          .eq('project_id', widget.projectId)
+          .listen((_) => loadData()),
+    );
+    _subscriptions.add(
+      client
+          .from('Contracts')
+          .stream(primaryKey: ['contract_id'])
+          .eq('project_id', widget.projectId)
+          .listen((_) => loadData()),
+    );
   }
 
   Future<void> _getChatRoomId() async {
@@ -307,7 +359,12 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                           itemCount: payments.length,
                           itemBuilder: (context, index) {
                             final payment = payments[payments.length - 1 - index];
-                            final date = DateTime.parse(payment['date']).toLocal();
+                            final rawDate = (payment['date'] ?? payment['payment_date'] ?? payment['created_at'] ?? '') as Object?;
+                            DateTime? parsed;
+                            if (rawDate is String && rawDate.isNotEmpty) {
+                              try { parsed = DateTime.parse(rawDate).toLocal(); } catch (_) {}
+                            }
+                            final date = parsed ?? DateTime.now();
                             return Card(
                               margin: const EdgeInsets.only(bottom: 12),
                               child: ListTile(
@@ -316,7 +373,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                                   child: Icon(Icons.check_circle, color: Colors.green.shade700),
                                 ),
                                 title: Text(
-                                  '₱${(payment['amount'] as num).toStringAsFixed(2)}',
+                                  '₱${((payment['amount'] as num?)?.toDouble() ?? 0.0).toStringAsFixed(2)}',
                                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                                 ),
                                 subtitle: Text(
@@ -629,23 +686,21 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
     final duration = project['duration'] as int?;
     final projectStatus = project['status'] ?? '';
 
-    return RefreshIndicator(
-      onRefresh: () async => loadData(),
-      child: Column(
-        children: [
-          CeeProfileBuildMethods.buildHeader(context, 'Ongoing Project'),
-          Expanded(
-            child: CeeOngoingBuildMethods.buildMobileLayout(
-              projectTitle: projectTitle,
-              clientName: contractorName,
-              address: address,
-              startDate: startDate,
-              estimatedCompletion: estimatedCompletion,
-              duration: duration,
+    return Column(
+      children: [
+        CeeProfileBuildMethods.buildHeader(context, 'Ongoing Project'),
+        Expanded(
+          child: CeeOngoingBuildMethods.buildMobileLayout(
+            projectTitle: projectTitle,
+            clientName: contractorName,
+            address: address,
+            startDate: startDate,
+            estimatedCompletion: estimatedCompletion,
+            duration: duration,
         progress: _localProgress,
         selectedTab: selectedTab,
         onTabChanged: onTabChanged,
-        onRefresh: loadData,
+        onRefresh: null,
         onChat: _canChat && _chatRoomId != null ? _navigateToChat : null,
         canChat: _canChat,
         onPayment: projectStatus == 'active' ? _handlePayment : null,
@@ -656,7 +711,6 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
             ),
           ),
         ],
-      ),
     );
   }
 
@@ -683,13 +737,11 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
     final duration = project['duration'] as int?;
     final projectStatus = project['status'] ?? '';
 
-    return RefreshIndicator(
-      onRefresh: () async => loadData(),
-      child: Column(
-        children: [
-          CeeProfileBuildMethods.buildHeader(context, 'Ongoing Project'),
-          Expanded(
-            child: FutureBuilder<List<List<Map<String, dynamic>>>>(
+    return Column(
+      children: [
+        CeeProfileBuildMethods.buildHeader(context, 'Ongoing Project'),
+        Expanded(
+          child: FutureBuilder<List<List<Map<String, dynamic>>>>(
               future: _getTabData(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -718,7 +770,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
             onViewReport: onViewReport,
             onViewPhoto: onViewPhoto,
             onViewMaterial: onViewMaterial,
-            onRefresh: loadData,
+            onRefresh: null,
             onChat: _canChat && _chatRoomId != null ? _navigateToChat : null,
             canChat: _canChat,
             onPayment: projectStatus == 'active' ? _handlePayment : null,
@@ -727,10 +779,9 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
             paymentButtonText: _paymentSummary?['payment_status'] == 'partial' ? 'Make Payment' : null,
           );
         },
-            ),
-          ),
-        ],
       ),
+    ),
+      ],
     );
   }
 

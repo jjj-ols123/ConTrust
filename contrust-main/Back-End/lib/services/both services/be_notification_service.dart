@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:backend/services/superadmin%20services/errorlogs_service.dart';
+import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class NotificationService {
@@ -30,7 +31,7 @@ class NotificationService {
           'message': message,
         },
         'is_read': false,
-        'created_at': DateTime.now().toIso8601String(),
+        'created_at': DateTimeHelper.getLocalTimeISOString(),
       };
 
       final response = await _supabase
@@ -316,7 +317,7 @@ class NotificationService {
           'contractor_name': contractorName,
           'contractor_photo': contractorPhoto,
           'bid_amount': bidAmount,
-          'created_at': DateTime.now().toIso8601String(),
+          'created_at': DateTimeHelper.getLocalTimeISOString(),
         });
         infoMap['bids'] = bids;
         infoMap['count'] = bids.length;
@@ -340,7 +341,7 @@ class NotificationService {
               'contractor_name': contractorName,
               'contractor_photo': contractorPhoto,
               'bid_amount': bidAmount,
-              'created_at': DateTime.now().toIso8601String(),
+              'created_at': DateTimeHelper.getLocalTimeISOString(),
             }
           ],
           'count': 1,

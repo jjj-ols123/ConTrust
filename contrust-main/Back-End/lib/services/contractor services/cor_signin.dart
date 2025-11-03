@@ -2,8 +2,9 @@
 
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
+import 'package:backend/utils/be_datetime_helper.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 
@@ -104,7 +105,7 @@ class SignInContractor {
 
       try {
         await supabase.from('Users').update({
-          'last_login': DateTime.now().toIso8601String(),
+          'last_login': DateTimeHelper.getLocalTimeISOString(),
         }).eq('users_id', user.id);
       } catch (e) {
         
@@ -115,7 +116,7 @@ class SignInContractor {
           extraInfo: {
             'operation': 'Update Last Login',
             'users_id': user.id,
-            'timestamp': DateTime.now().toIso8601String(),
+            'timestamp': DateTimeHelper.getLocalTimeISOString(),
           },
         );
       }
@@ -133,7 +134,7 @@ class SignInContractor {
 
       return true;
             
-    } catch (e) {
+  } catch (e) {
       await _auditService.logAuditEvent(
         userId: signInResponse != null && signInResponse.user != null ? signInResponse.user!.id : null,
         action: 'USER_LOGIN_FAILED',
@@ -154,16 +155,29 @@ class SignInContractor {
           'operation': 'Sign In Contractor',
           'email': email,
           'users_id': signInResponse != null && signInResponse.user != null ? signInResponse.user!.id : null,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       
       if (context.mounted) {
-        if (e.toString().contains('null check')) {
-          ConTrustSnackBar.error(context, 'Authentication error. Please try again.');
-        } else {
-          ConTrustSnackBar.error(context, 'Error logging in: ${e.toString()}');
+        String message = 'Login failed. Please try again.';
+        if (e is AuthException) {
+          final m = e.message.toLowerCase();
+          if (m.contains('invalid login') || m.contains('invalid') || m.contains('credentials')) {
+            message = 'Invalid email or password.';
+          } else if (m.contains('email not confirmed') || m.contains('not confirmed') || m.contains('verify')) {
+            message = 'Please verify your email before logging in.';
+          } else if (m.contains('rate') && m.contains('limit')) {
+            message = 'Too many attempts. Please try again later.';
+          } else {
+            message = 'Authentication error. Please try again.';
+          }
+        } else if (e.toString().toLowerCase().contains('null check')) {
+          message = 'Authentication error. Please try again.';
+        } else if (e.toString().toLowerCase().contains('network') || e.toString().toLowerCase().contains('socket')) {
+          message = 'Network error. Please check your connection.';
         }
+        ConTrustSnackBar.error(context, message);
       }
       
       return false;
@@ -175,20 +189,42 @@ class SignInGoogleContractor {
   final SuperAdminErrorService _errorService = SuperAdminErrorService();
   final SuperAdminAuditService _auditService = SuperAdminAuditService();
 
-  void signInGoogle(BuildContext context) async {
+  Future<void> signInGoogle(BuildContext context) async {
     try {
       final supabase = Supabase.instance.client;
-      final encodedNext = Uri.encodeComponent('/dashboard');
-
-      final redirect = kIsWeb
-          ? '${Uri.base.origin}/auth/callback?next=$encodedNext'
-          : 'io.supabase.contrust://login-callback/dashboard';
+      
+      // Use the current origin (subdomain) dynamically for redirect URL
+      // This ensures the redirect goes to the correct subdomain instead of the main domain
+      String redirectUrl;
+      
+      if (kIsWeb) {
+        // For web: use current origin (subdomain) + callback path
+        final origin = Uri.base.origin; // This will be contractor.contrust-sjdm.com or contractee.contrust-sjdm.com
+        redirectUrl = '$origin/auth/callback?next=${Uri.encodeComponent('/dashboard')}';
+      } else {
+        // For mobile: use deep link
+        redirectUrl = 'io.supabase.contrust://login-callback/dashboard';
+      }
       
       await supabase.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: redirect,
+        redirectTo: redirectUrl,
+        authScreenLaunchMode: LaunchMode.platformDefault,
       );
     } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Google sign-in failed for contractor: $e',
+        module: 'Contractor Google Sign-in',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Google Sign In Contractor',
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
+        },
+      );
+      
+      if (context.mounted) {
+        ConTrustSnackBar.error(context, 'Google sign-in failed: $e');
+      }
       rethrow;
     }
   }
@@ -278,7 +314,7 @@ class SignInGoogleContractor {
         extraInfo: {
           'operation': 'Handle Google Sign In Contractor',
           'users_id': user.id,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       if (context.mounted) {
@@ -313,8 +349,8 @@ class SignInGoogleContractor {
             'name': user.userMetadata?['full_name'] ?? 'Contractor Firm',
             'role': 'contractor',
             'status': 'active',
-            'created_at': DateTime.now().toIso8601String(),
-            'last_login': DateTime.now().toIso8601String(),
+            'created_at': DateTimeHelper.getLocalTimeISOString(),
+            'last_login': DateTimeHelper.getLocalTimeISOString(),
             'profile_image_url': user.userMetadata?['avatar_url'],
             'phone_number': '',
             'verified': false,
@@ -334,7 +370,7 @@ class SignInGoogleContractor {
         'profile_photo': user.userMetadata?['avatar_url'],
         'contact_number': '',
         'rating': 0.0,
-        'created_at': DateTime.now().toIso8601String(),
+        'created_at': DateTimeHelper.getLocalTimeISOString(),
       });
 
       await _auditService.logAuditEvent(
@@ -371,7 +407,7 @@ class SignInGoogleContractor {
         extraInfo: {
           'operation': 'Setup Contractor Google',
           'users_id': user.id,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       ConTrustSnackBar.error(context, 'Account setup failed: $e');

@@ -265,6 +265,34 @@ class ContractTypeBuild {
               overflow: TextOverflow.ellipsis,
             ),
           ),
+          // Contract status pill
+          if ((contract['status'] as String?) != null) ...[
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: _getContractStatusColor((contract['status'] as String?) ?? 'unknown').withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _getContractStatusColor((contract['status'] as String?) ?? 'unknown').withOpacity(0.6)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.circle, size: 10, color: _getContractStatusColor((contract['status'] as String?) ?? 'unknown')),
+                  const SizedBox(width: 6),
+                  Text(
+                    _getContractStatusLabel((contract['status'] as String?) ?? 'Unknown'),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: _getContractStatusColor((contract['status'] as String?) ?? 'unknown').withOpacity(0.9),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 11,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
@@ -395,11 +423,13 @@ class ContractTypeBuild {
                 );
 
 
-                ConTrustSnackBar.success(dialogContext, 'Contract uploaded successfully!');
+                Navigator.of(dialogContext, rootNavigator: true).pop();
                 Navigator.of(dialogContext).pop();
               } catch (e) {
                 ConTrustSnackBar.error(dialogContext, 'Upload failed');
-              } finally {
+                if (dialogContext.mounted) {
+                  setState(() => isLoading = false);
+                }
                 setState(() => isLoading = false);
               }
             }
@@ -454,7 +484,7 @@ class ContractTypeBuild {
                             ),
                           ),
                           IconButton(
-                            onPressed: () => Navigator.of(dialogContext).pop(),
+                            onPressed: () => Navigator.of(dialogContext, rootNavigator: true).pop(),
                             icon: const Icon(Icons.close, color: Colors.white),
                           ),
                         ],
@@ -507,7 +537,7 @@ class ContractTypeBuild {
                               children: [
                                 Expanded(
                                   child: TextButton(
-                                    onPressed: () => Navigator.of(dialogContext).pop(),
+                                    onPressed: () => Navigator.of(dialogContext, rootNavigator: true).pop(),
                                     child: const Text('Cancel'),
                                   ),
                                 ),
@@ -567,6 +597,59 @@ class ContractTypeBuild {
       return DateFormat('MMM dd, yyyy • hh:mm a').format(localDateTime);
     } catch (e) {
       return dateTimeString.toString();
+    }
+  }
+
+  // Helpers: contract status label/color used in list items
+  static Color _getContractStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'draft':
+        return Colors.grey;
+      case 'sent':
+        return Colors.orange;
+      case 'approved':
+        return Colors.green;
+      case 'rejected':
+        return Colors.red;
+      case 'awaiting_signature':
+      case 'awaiting_agreement':
+        return Colors.blue;
+      case 'active':
+        return Colors.green;
+      case 'completed':
+        return Colors.green.shade700;
+      case 'cancelled':
+      case 'expired':
+        return Colors.grey.shade600;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  static String _getContractStatusLabel(String status) {
+    switch (status.toLowerCase()) {
+      case 'draft':
+        return 'Draft';
+      case 'sent':
+        return 'Sent';
+      case 'approved':
+        return 'Approved';
+      case 'rejected':
+        return 'Rejected';
+      case 'awaiting_signature':
+        return 'Awaiting Signature';
+      case 'awaiting_agreement':
+        return 'Awaiting Agreement';
+      case 'active':
+        return 'Active';
+      case 'completed':
+        return 'Completed';
+      case 'cancelled':
+        return 'Cancelled';
+      case 'expired':
+        return 'Expired';
+      default:
+        return status;
     }
   }
 }

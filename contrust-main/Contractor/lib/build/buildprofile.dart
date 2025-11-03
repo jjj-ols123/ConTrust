@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
+import 'package:backend/utils/be_status.dart';
 
 class ProfileBuildMethods {
   static Widget buildMainContent(String selectedTab, Function buildPortfolioContent, Function buildAboutContent, Function buildReviewsContent, Function buildClientHistoryContent) {
@@ -10,7 +11,7 @@ class ProfileBuildMethods {
         return buildAboutContent();
       case 'Reviews':
         return buildReviewsContent();
-      case 'Client History':
+      case 'History':
         return buildClientHistoryContent();
       default:
         return buildPortfolioContent();
@@ -19,7 +20,6 @@ class ProfileBuildMethods {
 
   static Widget buildMobileLayout({
     required String firmName,
-    required String specialization,
     required String? profileImage,
     required String profileUrl,
     required int completedProjectsCount,
@@ -152,16 +152,6 @@ class ProfileBuildMethods {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  specialization,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -239,7 +229,6 @@ class ProfileBuildMethods {
 
   static Widget buildDesktopLayout({
     required String firmName,
-    required String specialization,
     required String? profileImage,
     required String profileUrl,
     required int completedProjectsCount,
@@ -377,16 +366,6 @@ class ProfileBuildMethods {
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        specialization,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
                       const SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -471,7 +450,7 @@ class ProfileBuildMethods {
                       buildNavigation('Portfolio', selectedTab == 'Portfolio', () => onTabChanged('Portfolio')),
                       buildNavigation('About', selectedTab == 'About', () => onTabChanged('About')),
                       buildNavigation('Reviews', selectedTab == 'Reviews', () => onTabChanged('Reviews')),
-                      buildNavigation('Client History', selectedTab == 'Client History', () => onTabChanged('Client History')),
+                      buildNavigation('History', selectedTab == 'History', () => onTabChanged('History')),
                     ],
                   ),
                 ),
@@ -706,22 +685,18 @@ class ProfileBuildMethods {
     required bool isEditingFirmName,
     required bool isEditingBio,
     required bool isEditingContact,
-    required bool isEditingSpecialization,
     required bool isEditingAddress,
     required TextEditingController firmNameController,
     required TextEditingController bioController,
     required TextEditingController contactController,
-    required TextEditingController specializationController,
     required TextEditingController addressController,
     required VoidCallback toggleEditFirmName,
     required VoidCallback toggleEditBio,
     required VoidCallback toggleEditContact,
-    required VoidCallback toggleEditSpecialization,
     required VoidCallback toggleEditAddress,
     required VoidCallback saveFirmName,
     required VoidCallback saveBio,
     required VoidCallback saveContact,
-    required VoidCallback saveSpecialization,
     required VoidCallback saveAddress,
     required String contractorId,
   }) {
@@ -796,14 +771,58 @@ class ProfileBuildMethods {
             ),
             const SizedBox(height: 24),
             
-            buildContractorInfo(
-              'Specialization',
-              specialization,
-              Icons.work,
-              isEditingSpecialization,
-              specializationController,
-              toggleEditSpecialization,
-              saveSpecialization,
+            // Specialization Section - Display as chips from JSONB
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.black, width: 1),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.work, color: Colors.grey.shade800, size: 20),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Specialization',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (specialization.isEmpty || specialization == "No specialization")
+                    Text(
+                      'No specialization',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                    )
+                  else
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: specialization.split(", ").map((spec) {
+                        if (spec.trim().isEmpty) return const SizedBox.shrink();
+                        return Chip(
+                          label: Text(
+                            spec.trim(),
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                          backgroundColor: Colors.amber.shade100,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        );
+                      }).toList(),
+                    ),
+                ],
+              ),
             ),
             const SizedBox(height: 24),
             
@@ -1211,7 +1230,7 @@ class ProfileBuildMethods {
   }
   
   static Widget buildMobileNavigation(String selectedTab, Function(String) onTabChanged) {
-    final tabs = ['Portfolio', 'About', 'Reviews', 'Client History'];
+    final tabs = ['Portfolio', 'About', 'Reviews', 'History'];
     
     return Container(
       decoration: BoxDecoration(
@@ -1412,177 +1431,451 @@ class ProfileBuildMethods {
   }
 
   static Widget buildClientHistory({
+    required BuildContext context,
     required List<Map<String, dynamic>> filteredProjects,
-    required TextEditingController searchController,
+    required List<Map<String, dynamic>> filteredTransactions,
+    required TextEditingController projectSearchController,
+    required TextEditingController transactionSearchController,
+    required String selectedProjectStatus,
+    required String selectedPaymentType,
+    required Function(String) onProjectStatusChanged,
+    required Function(String) onPaymentTypeChanged,
+    required Function(Map<String, dynamic>) onProjectTap,
+    required Function getTimeAgo,
   }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = constraints.maxWidth > 900;
+        
+        if (isDesktop) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _buildClientsSection(
+                  context: context,
+                  filteredProjects: filteredProjects,
+                  projectSearchController: projectSearchController,
+                  selectedProjectStatus: selectedProjectStatus,
+                  onProjectStatusChanged: onProjectStatusChanged,
+                  onProjectTap: onProjectTap,
+                  getTimeAgo: getTimeAgo,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildTransactionsSection(
+                  context: context,
+                  filteredTransactions: filteredTransactions,
+                  transactionSearchController: transactionSearchController,
+                  selectedPaymentType: selectedPaymentType,
+                  onPaymentTypeChanged: onPaymentTypeChanged,
+                  getTimeAgo: getTimeAgo,
+                ),
+              ),
+            ],
+          );
+        } else {
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: constraints.maxWidth,
+                  child: _buildClientsSection(
+                    context: context,
+                    filteredProjects: filteredProjects,
+                    projectSearchController: projectSearchController,
+                    selectedProjectStatus: selectedProjectStatus,
+                    onProjectStatusChanged: onProjectStatusChanged,
+                    onProjectTap: onProjectTap,
+                    getTimeAgo: getTimeAgo,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                SizedBox(
+                  width: constraints.maxWidth,
+                  child: _buildTransactionsSection(
+                    context: context,
+                    filteredTransactions: filteredTransactions,
+                    transactionSearchController: transactionSearchController,
+                    selectedPaymentType: selectedPaymentType,
+                    onPaymentTypeChanged: onPaymentTypeChanged,
+                    getTimeAgo: getTimeAgo,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  static Widget _buildClientsSection({
+    required BuildContext context,
+    required List<Map<String, dynamic>> filteredProjects,
+    required TextEditingController projectSearchController,
+    required String selectedProjectStatus,
+    required Function(String) onProjectStatusChanged,
+    required Function(Map<String, dynamic>) onProjectTap,
+    required Function getTimeAgo,
+  }) {
+    final sortedProjects = List<Map<String, dynamic>>.from(filteredProjects);
+    sortedProjects.sort((a, b) {
+      final statusA = (a['status'] ?? '').toString().toLowerCase();
+      final statusB = (b['status'] ?? '').toString().toLowerCase();
+
+      bool isActiveA = statusA != 'completed' && statusA != 'cancelled';
+      bool isActiveB = statusB != 'completed' && statusB != 'cancelled';
+      
+      if (isActiveA && !isActiveB) return -1;
+      if (!isActiveA && isActiveB) return 1;
+      
+      final dateA = DateTime.tryParse(a['created_at'] ?? '') ?? DateTime.now();
+      final dateB = DateTime.tryParse(b['created_at'] ?? '') ?? DateTime.now();
+      return dateB.compareTo(dateA);
+    });
+
     return Container(
+      height: 600,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.folder_open, color: Colors.amber.shade700, size: 22),
+              const SizedBox(width: 12),
+              const Text(
+                'Client History',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: projectSearchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search clients...',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.amber.shade700, width: 2),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              DropdownButton<String>(
+                value: selectedProjectStatus,
+                items: ['All', 'Active', 'Completed', 'Cancelled', 'Pending']
+                    .map((status) => DropdownMenuItem(value: status, child: Text(status, style: const TextStyle(fontSize: 13))))
+                    .toList(),
+                onChanged: (value) => onProjectStatusChanged(value ?? 'All'),
+                underline: Container(),
+                icon: const Icon(Icons.filter_list, size: 20),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: sortedProjects.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.inbox_outlined, size: 50, color: Colors.grey.shade300),
+                        const SizedBox(height: 12),
+                        Text('No clients found', style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    itemCount: sortedProjects.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final project = sortedProjects[index];
+                      return _buildClientHistoryCard(project, onProjectTap, getTimeAgo);
+                    },
+                  ),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(32),
+    );
+  }
+
+  static Widget _buildTransactionsSection({
+    required BuildContext context,
+    required List<Map<String, dynamic>> filteredTransactions,
+    required TextEditingController transactionSearchController,
+    required String selectedPaymentType,
+    required Function(String) onPaymentTypeChanged,
+    required Function getTimeAgo,
+  }) {
+    return Container(
+      height: 600,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.payment, color: Colors.amber.shade700, size: 22),
+              const SizedBox(width: 12),
+              const Text(
+                'Transaction History',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: transactionSearchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search transactions...',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.amber.shade700, width: 2),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              DropdownButton<String>(
+                value: selectedPaymentType,
+                items: ['All', 'Deposit', 'Final', 'Milestone']
+                    .map((type) => DropdownMenuItem(value: type, child: Text(type, style: const TextStyle(fontSize: 13))))
+                    .toList(),
+                onChanged: (value) => onPaymentTypeChanged(value ?? 'All'),
+                underline: Container(),
+                icon: const Icon(Icons.filter_list, size: 20),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: filteredTransactions.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.receipt_long_outlined, size: 50, color: Colors.grey.shade300),
+                        const SizedBox(height: 12),
+                        Text('No transactions found', style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    itemCount: filteredTransactions.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final transaction = filteredTransactions[index];
+                      return _buildTransactionCard(transaction, getTimeAgo);
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _buildClientHistoryCard(
+    Map<String, dynamic> project,
+    Function(Map<String, dynamic>) onProjectTap,
+    Function getTimeAgo,
+  ) {
+    final status = project['status']?.toString();
+    final statusColor = _getStatusColor(status);
+    final statusIcon = _getStatusIcon(status);
+    final statusLabel = _getStatusLabel(status);
+    
+    return InkWell(
+      onTap: () => onProjectTap(project),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade200, width: 1),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.history, color: Colors.amber.shade700, size: 24),
-                const SizedBox(width: 12),
-                const Text(
-                  'Client History',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2D3748),
+                Icon(statusIcon, color: statusColor, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    project['contractee']?['full_name'] ?? 'Unknown Client',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1F2937)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    statusLabel,
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: statusColor),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-            TextField(
-              controller: searchController,
-              decoration: InputDecoration(
-                prefixIcon: Icon(Icons.search, color: Colors.grey.shade600),
-                hintText: 'Search clients or projects...',
-                hintStyle: TextStyle(color: Colors.grey.shade500),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.amber.shade400),
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade50,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              ),
+            const SizedBox(height: 8),
+            Text(
+              project['type'] ?? 'No type',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
-            const SizedBox(height: 32),
-            if (filteredProjects.isEmpty)
-              Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.history_outlined,
-                      size: 64,
-                      color: Colors.grey.shade400,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No completed projects found.',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: filteredProjects.length,
-                itemBuilder: (context, index) {
-                  final project = filteredProjects[index];
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: Colors.amber.shade100,
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: Icon(
-                            Icons.person,
-                            color: Colors.amber.shade700,
-                            size: 30,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                project['contractee']?['full_name'] ?? 'Unknown Client',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF2D3748),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                project['type'] ?? 'Project Type',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.amber.shade700,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                project['description'] ?? 'No description available',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey.shade600,
-                                  height: 1.4,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.green.shade100,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            'Completed',
-                            style: TextStyle(
-                              color: Colors.green.shade700,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+            if (project['created_at'] != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Created ${getTimeAgo(DateTime.parse(project['created_at']))}',
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
               ),
+            ],
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton.icon(
+                  onPressed: () => onProjectTap(project),
+                  icon: const Icon(Icons.visibility_outlined, size: 14),
+                  label: const Text('View Details', style: TextStyle(fontSize: 12)),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.amber.shade700,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
     );
+  }
+
+  static Widget _buildTransactionCard(
+    Map<String, dynamic> transaction,
+    Function getTimeAgo,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.green.shade50,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(Icons.payment, color: Colors.green.shade700, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  transaction['project_title'] ?? 'Untitled',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1F2937)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  transaction['payment_type'] ?? 'Payment',
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                ),
+                if (transaction['payment_date'] != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    getTimeAgo(DateTime.parse(transaction['payment_date'])),
+                    style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Text(
+            '₱${transaction['amount'] ?? 0}',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.green.shade700),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Color _getStatusColor(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'completed':
+        return Colors.green;
+      case 'active':
+        return Colors.blue;
+      case 'cancelled':
+        return Colors.red;
+      case 'pending':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  static IconData _getStatusIcon(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'completed':
+        return Icons.check_circle;
+      case 'active':
+        return Icons.play_circle;
+      case 'cancelled':
+        return Icons.cancel;
+      case 'pending':
+        return Icons.schedule;
+      default:
+        return Icons.help_outline;
+    }
+  }
+
+  static String _getStatusLabel(String? status) {
+    return ProjectStatus().getStatusLabel(status);
   }
 
   static void showPhotoDialog(BuildContext context, Map<String, dynamic> photo) {

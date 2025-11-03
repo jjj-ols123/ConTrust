@@ -34,6 +34,46 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final bool _isUploadingVerification = false;
   bool _isSigningUp = false;
 
+  final List<String> _selectedSpecializations = [];
+  bool _showSpecializationDropdown = false;
+  
+
+  final List<String> _availableSpecializations = [
+    'General Construction',
+    'Residential Construction',
+    'Commercial Construction',
+    'Interior Design',
+    'Exterior Design',
+    'Architecture',
+    'Electrical Work',
+    'Plumbing',
+    'HVAC (Heating, Ventilation, Air Conditioning)',
+    'Roofing',
+    'Flooring',
+    'Painting',
+    'Landscaping',
+    'Kitchen Renovation',
+    'Bathroom Renovation',
+    'Structural Engineering',
+    'Civil Engineering',
+    'Project Management',
+    'Home Improvement',
+    'Maintenance & Repair',
+    'Concrete Work',
+    'Masonry',
+    'Carpentry',
+    'Welding',
+    'Flooring Installation',
+    'Wall Finishing',
+    'Window Installation',
+    'Door Installation',
+    'Tile Work',
+    'Drywall',
+    'Insulation',
+    'Solar Installation',
+    'Smart Home Integration',
+  ];
+
   bool get canSignUp =>
       _verificationFiles.isNotEmpty && !_isUploadingVerification;
 
@@ -156,6 +196,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           'firmName': firmNameController.text,
           'contactNumber': _formatPhone(contactNumberController.text),
           'address': addressController.text,
+          'specialization': _selectedSpecializations, // JSONB array
           'verificationFiles': _verificationFiles,
           'profilePhoto': _profilePhoto,
         },
@@ -810,6 +851,123 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
         const SizedBox(height: 18),
+        // Specialization Field
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _showSpecializationDropdown = !_showSpecializationDropdown;
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.work_outline, color: Colors.grey),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _selectedSpecializations.isEmpty
+                            ? 'Select Specializations (Tap to choose)'
+                            : '${_selectedSpecializations.length} specialization(s) selected',
+                        style: TextStyle(
+                          color: _selectedSpecializations.isEmpty
+                              ? Colors.grey.shade600
+                              : Colors.black87,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      _showSpecializationDropdown
+                          ? Icons.keyboard_arrow_up
+                          : Icons.keyboard_arrow_down,
+                      color: Colors.grey,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Selected Specializations Chips
+            if (_selectedSpecializations.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _selectedSpecializations.map((spec) {
+                  return Chip(
+                    label: Text(spec),
+                    backgroundColor: Colors.amber.shade100,
+                    deleteIcon: const Icon(Icons.close, size: 18),
+                    onDeleted: () {
+                      setState(() {
+                        _selectedSpecializations.remove(spec);
+                      });
+                    },
+                    labelStyle: const TextStyle(fontSize: 13),
+                  );
+                }).toList(),
+              ),
+            ],
+            // Dropdown List
+            if (_showSpecializationDropdown) ...[
+              const SizedBox(height: 8),
+              Container(
+                constraints: const BoxConstraints(maxHeight: 250),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _availableSpecializations.length,
+                  itemBuilder: (context, index) {
+                    final spec = _availableSpecializations[index];
+                    final isSelected = _selectedSpecializations.contains(spec);
+                    
+                    return ListTile(
+                      dense: true,
+                      title: Text(
+                        spec,
+                        style: TextStyle(
+                          color: isSelected ? Colors.amber.shade700 : Colors.black87,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                        ),
+                      ),
+                      trailing: isSelected
+                          ? Icon(Icons.check_circle, color: Colors.amber.shade700, size: 20)
+                          : const Icon(Icons.circle_outlined, size: 20),
+                      onTap: () {
+                        setState(() {
+                          if (isSelected) {
+                            _selectedSpecializations.remove(spec);
+                          } else {
+                            _selectedSpecializations.add(spec);
+                          }
+                        });
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 18),
 
         isPhone
             ? Column(
@@ -1439,6 +1597,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final double verticalPadding = 10;
     
     return Container(
+      width: double.infinity,
       padding: EdgeInsets.symmetric(
         horizontal: horizontalPadding,
         vertical: verticalPadding,

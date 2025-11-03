@@ -22,7 +22,6 @@ class TorProfileBuildMethods {
 
   static Widget buildMobileLayout({
     required String firmName,
-    required String specialization,
     required String? profileImage,
     required int completedProjectsCount,
     required double rating,
@@ -97,15 +96,6 @@ class TorProfileBuildMethods {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  specialization,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -183,7 +173,6 @@ class TorProfileBuildMethods {
 
   static Widget buildDesktopLayout({
     required String firmName,
-    required String specialization,
     required String? profileImage,
     required int completedProjectsCount,
     required double rating,
@@ -259,16 +248,6 @@ class TorProfileBuildMethods {
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF2D3748),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        specialization,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -616,10 +595,58 @@ class TorProfileBuildMethods {
               Icons.phone,
             ),
             const SizedBox(height: 24),
-            buildContractorInfo(
-              'Specialization',
-              specialization,
-              Icons.work,
+            // Specialization Section - Display as chips from JSONB
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.black, width: 1),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.work, color: Colors.grey.shade800, size: 20),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Specialization',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (specialization.isEmpty || specialization == "No specialization")
+                    Text(
+                      'No specialization',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                    )
+                  else
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: specialization.split(", ").map((spec) {
+                        if (spec.trim().isEmpty) return const SizedBox.shrink();
+                        return Chip(
+                          label: Text(
+                            spec.trim(),
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                          backgroundColor: Colors.amber.shade100,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        );
+                      }).toList(),
+                    ),
+                ],
+              ),
             ),
             const SizedBox(height: 24),
             buildContractorInfo(
@@ -1023,7 +1050,7 @@ class TorProfileBuildMethods {
   }
 
   static Widget buildMobileNavigation(String selectedTab, Function(String) onTabChanged) {
-    final tabs = ['Portfolio', 'About', 'Reviews']; // removed 'Client History'
+    final tabs = ['Portfolio', 'About', 'Reviews', 'History']; 
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

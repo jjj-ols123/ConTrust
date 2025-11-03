@@ -1,8 +1,13 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
+
+import 'dart:html' as html;
+import 'dart:ui_web' as ui_web;
 
 class AiAssistantPage extends StatefulWidget {
   const AiAssistantPage({super.key});
@@ -12,9 +17,10 @@ class AiAssistantPage extends StatefulWidget {
 }
 
 class _AiAssistantPageState extends State<AiAssistantPage> {
-  late final WebViewController _controller;
+  WebViewController? _controller;
   bool _isLoading = true;
   bool _hasError = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -24,12 +30,44 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
 
   Future<void> _initializeWebView() async {
     try {
+      // Check if WebView is supported on this platform
+      final isDesktop = !kIsWeb && 
+        (defaultTargetPlatform == TargetPlatform.windows ||
+         defaultTargetPlatform == TargetPlatform.linux ||
+         defaultTargetPlatform == TargetPlatform.macOS);
+      
+      if (isDesktop) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _hasError = true;
+            _errorMessage = 'WebView is not supported on desktop platforms. This feature is only available on mobile devices (Android/iOS).';
+          });
+        }
+        return;
+      }
+
+      // For web, we'll use iframe instead of WebView
+      if (kIsWeb) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
       final WebViewController controller = WebViewController();
 
       if (controller.platform is AndroidWebViewController) {
         AndroidWebViewController.enableDebugging(true);
         (controller.platform as AndroidWebViewController)
             .setMediaPlaybackRequiresUserGesture(false);
+      }
+
+      if (defaultTargetPlatform == TargetPlatform.iOS && controller.platform is WebKitWebViewController) {
+        final webKitController = controller.platform as WebKitWebViewController;
+        await webKitController.setAllowsBackForwardNavigationGestures(true);
       }
 
       await controller.setJavaScriptMode(JavaScriptMode.unrestricted);
@@ -64,11 +102,22 @@ Page resource error:
   description: ${error.description}
   errorType: ${error.errorType}
   isForMainFrame: ${error.isForMainFrame}
+  failingUrl: ${error.url}
             ''');
             if (mounted) {
               setState(() {
                 _isLoading = false;
                 _hasError = true;
+                // More specific error message based on error code
+                if (error.errorCode == -2) {
+                  _errorMessage = 'Unable to connect to the service. The Hugging Face space may be offline or the URL may be incorrect.';
+                } else if (error.errorCode == -8) {
+                  _errorMessage = 'Connection timeout. The service is taking too long to respond.';
+                } else if (error.errorCode == -6) {
+                  _errorMessage = 'Unable to find the service. Please verify the URL is correct.';
+                } else {
+                  _errorMessage = 'Failed to load: ${error.description}';
+                }
               });
             }
           },
@@ -93,28 +142,59 @@ Page resource error:
         setState(() {
           _isLoading = false;
           _hasError = true;
+          _errorMessage = 'Failed to initialize WebView: ${e.toString()}';
         });
       }
     }
   }
 
   Future<void> _loadHuggingFaceSpace() async {
+    if (_controller == null) {
+      debugPrint('WebView controller is not initialized yet');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+          _errorMessage = 'WebView is not ready. Please try refreshing.';
+        });
+      }
+      return;
+    }
+    
     try {
-      await _controller.loadRequest(
-        Uri.parse('https://ryg112-contrustaimodel.hf.space/'),
-      );
+      // Wait a bit to ensure WebView is fully initialized
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+      const huggingFaceUrl = 'https://Ryg112-ConTrustAiModel.hf.space/';
+      
+      // Load the Hugging Face space
+      await _controller!.loadRequest(Uri.parse(huggingFaceUrl));
+      
+      // Set a timeout - if still loading after 15 seconds, show error
+      Future.delayed(const Duration(seconds: 15), () {
+        if (mounted && _isLoading) {
+          setState(() {
+            _isLoading = false;
+            _hasError = true;
+            _errorMessage = 'The service took too long to load. The Hugging Face space might be temporarily unavailable.';
+          });
+        }
+      });
     } catch (e) {
       debugPrint('Error loading Hugging Face space: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
           _hasError = true;
+          _errorMessage = 'Failed to connect to the Wall Color Filter service. ${e.toString()}';
         });
       }
     }
   }
 
   Future<void> _injectCustomCSS() async {
+    if (_controller == null) return;
+    
     try {
       final String css = '''
         <style>
@@ -165,7 +245,7 @@ Page resource error:
         </style>
       ''';
       
-      await _controller.runJavaScript('''
+      await _controller!.runJavaScript('''
         if (document && document.head) {
           var style = document.createElement('style');
           style.innerHTML = `$css`;
@@ -182,9 +262,42 @@ Page resource error:
       setState(() {
         _isLoading = true;
         _hasError = false;
+        _errorMessage = null;
       });
     }
-    _loadHuggingFaceSpace();
+    if (kIsWeb) {
+      // For web, just reload the iframe by rebuilding
+      setState(() {});
+    } else {
+      _loadHuggingFaceSpace();
+    }
+  }
+
+  Widget _buildWebIframe() {
+    const huggingFaceUrl = 'https://Ryg112-ConTrustAiModel.hf.space/';
+    const viewType = 'webview-iframe';
+    
+    // Register the platform view for web
+    if (!kIsWeb) {
+      return const SizedBox.shrink();
+    }
+
+    // Create iframe element
+    final iframe = html.IFrameElement()
+      ..src = huggingFaceUrl
+      ..style.border = 'none'
+      ..style.width = '100%'
+      ..style.height = '100%'
+      ..allowFullscreen = true;
+
+     // Register platform view (only works on web)
+     ui_web.platformViewRegistry.registerViewFactory(
+       viewType,
+       (int viewId) => iframe,
+     );
+
+    // ignore: undefined_prefixed_name
+    return HtmlElementView(viewType: viewType);
   }
 
   @override
@@ -216,13 +329,13 @@ Page resource error:
               child: Row(
                 children: [
                   Icon(
-                    Icons.smart_toy,
+                    Icons.palette,
                     size: 24,
                     color: Colors.amber.shade700,
                   ),
                   const SizedBox(width: 12),
                   const Text(
-                    'AI Assistant',
+                    'Wall Color Filter',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
@@ -252,14 +365,18 @@ Page resource error:
               ),
             ),
             Expanded(
-              child: _hasError
+              child: _hasError 
                   ? _buildErrorWidget()
-                  : Stack(
-                      children: [
-                        WebViewWidget(controller: _controller),
-                        if (_isLoading) _buildLoadingWidget(),
-                      ],
-                    ),
+                  : kIsWeb 
+                      ? _buildWebIframe()
+                      : (_controller == null
+                          ? _buildErrorWidget()
+                          : Stack(
+                              children: [
+                                WebViewWidget(controller: _controller!),
+                                if (_isLoading) _buildLoadingWidget(),
+                              ],
+                            )),
             ),
           ],
         ),
@@ -279,7 +396,7 @@ Page resource error:
             ),
             const SizedBox(height: 16),
             const Text(
-              'Loading AI Assistant...',
+              'Loading Wall Color Filter...',
               style: TextStyle(
                 fontSize: 16,
                 color: Color(0xFF6B7280),
@@ -307,7 +424,7 @@ Page resource error:
               ),
               const SizedBox(height: 16),
               const Text(
-                'Unable to load AI Assistant',
+                'Unable to load Wall Color Filter',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -316,25 +433,50 @@ Page resource error:
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Please check your internet connection and try again.',
-                style: TextStyle(
+              Text(
+                _errorMessage ?? 'The service may be temporarily unavailable. Please try again in a few moments.',
+                style: const TextStyle(
                   fontSize: 14,
                   color: Color(0xFF6B7280),
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 10,
+                overflow: TextOverflow.visible,
               ),
               const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: _refreshPage,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Try Again'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber.shade700,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: _refreshPage,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Try Again'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber.shade700,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () {
+                  // Show debug info
+                  debugPrint('WebView Error Details:');
+                  debugPrint('Error Message: $_errorMessage');
+                  debugPrint('Is Loading: $_isLoading');
+                  debugPrint('Has Error: $_hasError');
+                },
+                child: const Text(
+                  'Troubleshooting Tips',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF6B7280),
+                    decoration: TextDecoration.underline,
                   ),
                 ),
               ),

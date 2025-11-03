@@ -3,6 +3,7 @@
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/utils/be_status.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/utils/be_pdfextract.dart';
 import 'package:backend/utils/be_contractformat.dart';
@@ -847,6 +848,8 @@ class CreateContractBuildMethods {
                     const Expanded(child: Text('Duration (days)', style: TextStyle(fontWeight: FontWeight.bold))),
                     const SizedBox(width: 16),
                     const Expanded(child: Text('Target Date', style: TextStyle(fontWeight: FontWeight.bold))),
+                    const SizedBox(width: 16),
+                    const Expanded(child: Text('Payment Amount (₱)', style: TextStyle(fontWeight: FontWeight.bold))),
                     const SizedBox(width: 48),
                   ],
                 ),
@@ -872,6 +875,8 @@ class CreateContractBuildMethods {
                       Expanded(child: buildFormField(milestoneFields['Duration'])),
                       const SizedBox(width: 16),
                       Expanded(child: buildFormField(milestoneFields['Date'])),
+                      const SizedBox(width: 16),
+                      Expanded(child: buildFormField(milestoneFields['Amount'])),
                       const SizedBox(width: 8),
                       if (milestoneGroups.length > 1)
                         IconButton(
@@ -926,6 +931,8 @@ class CreateContractBuildMethods {
                         buildFormField(milestoneFields['Duration']),
                         const SizedBox(height: 12),
                         buildFormField(milestoneFields['Date']),
+                        const SizedBox(height: 12),
+                        buildFormField(milestoneFields['Amount']),
                       ],
                     ),
                   ),
@@ -1214,8 +1221,8 @@ class CreateContractBuildMethods {
           final DateTime? pickedDate = await showDatePicker(
             context: context,
             initialDate: DateTime.now(),
-            firstDate: DateTime(2000),
-            lastDate: DateTime(2100),
+            firstDate: DateTime.now(),
+            lastDate: DateTime.now().add(const Duration(days: 3650)),
             builder: (context, child) {
               return Theme(
                 data: Theme.of(context).copyWith(
@@ -1294,6 +1301,11 @@ class CreateContractBuildMethods {
       ),
       keyboardType: inputType,
       maxLines: maxLines,
+      inputFormatters: inputType == TextInputType.number
+          ? (_allowsDecimal(key)
+              ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9\.]'))]
+              : [FilteringTextInputFormatter.digitsOnly])
+          : null,
       validator: isRequired 
         ? (value) {
             if (value == null || value.trim().isEmpty) {
@@ -1308,6 +1320,18 @@ class CreateContractBuildMethods {
         }
       },
     );
+  }
+
+  bool _allowsDecimal(String key) {
+    final k = key.toLowerCase();
+    return k.contains('price') ||
+        k.contains('amount') ||
+        k.contains('rate') ||
+        k.contains('percentage') ||
+        k.contains('subtotal') ||
+        k.contains('total') ||
+        k.contains('tax') ||
+        k.contains('fee');
   }
 
   void _triggerCalculation() {

@@ -6,6 +6,7 @@ import 'package:contractor/build/contract/buildcontracttabs.dart';
 import 'package:backend/services/contractor services/contract/cor_createcontractservice.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class CreateContractPage extends StatefulWidget {
   final String? contractType;
@@ -433,8 +434,6 @@ class _CreateContractPageState extends State<CreateContractPage>
       final contractData = await showSaveDialog();
 
       if (contractData != null) {
-        Navigator.pop(context, true);
-        
         ConTrustSnackBar.loading(context, 'Contract saving...');
         
         if (existingContract != null) {
@@ -448,8 +447,9 @@ class _CreateContractPageState extends State<CreateContractPage>
             contractType: selectedContractType ?? '',
           );
           if (mounted) {
-            Navigator.pop(context); 
+            context.pop();
             ConTrustSnackBar.success(context, 'Contract updated successfully!');
+            if (mounted) context.go('/contracttypes');
           }
         } else {
           await service.saveContract(
@@ -461,18 +461,15 @@ class _CreateContractPageState extends State<CreateContractPage>
             contractType: selectedContractType ?? '',
           );
           if (mounted) {
-            Navigator.pop(context);
+            context.pop();
             ConTrustSnackBar.success(context, 'Contract saved successfully!');
+            if (mounted) context.go('/contracttypes');
           }
         }
       }
     } catch (e) {
-      if (mounted) {  
-        try {
-          Navigator.pop(context);
-        } catch (_) {
-          return;
-        }
+      if (mounted) {
+        try { context.pop(); } catch (_) {}
         ConTrustSnackBar.error(context, 'Failed to save contract');
       }
     } finally {
@@ -633,7 +630,7 @@ class _CreateContractPageState extends State<CreateContractPage>
                         height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.amber,
+                          color:Color(0xFFFFB300),
                         ),
                       )
                     : const Icon(Icons.save),
@@ -641,6 +638,10 @@ class _CreateContractPageState extends State<CreateContractPage>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green[600],
                   foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
               ),
             ],

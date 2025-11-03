@@ -6,8 +6,8 @@ import 'package:backend/services/both services/be_project_service.dart';
 import 'package:backend/utils/be_status.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/build/builddashboardtabs.dart';
-import 'package:contractor/Screen/cor_ongoing.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DashboardBuildMethods {
@@ -1565,8 +1565,8 @@ class DashboardBuildMethods {
       );
     }
     
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: FetchService().fetchContractsForProject(projectId),
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: FetchService().streamContractsForProject(projectId),
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return Container(
@@ -1612,29 +1612,35 @@ class DashboardBuildMethods {
             backgroundColor = Colors.green.shade50;
             textColor = Colors.green.shade700;
             icon = Icons.verified;
-            statusText = 'Approved';
+            statusText = 'Contract Accepted';
             break;
           case 'sent':
+            borderColor = Colors.orange.shade600;
+            backgroundColor = Colors.orange.shade50;
+            textColor = Colors.orange.shade700;
+            icon = Icons.pending;
+            statusText = 'Contract Waiting for approval';
+            break;
           case 'awaiting_signature':
             borderColor = Colors.orange.shade600;
             backgroundColor = Colors.orange.shade50;
             textColor = Colors.orange.shade700;
             icon = Icons.pending;
-            statusText = 'Pending';
+            statusText = 'Contract Awaiting Signature';
             break;
           case 'rejected':
             borderColor = Colors.red.shade600;
             backgroundColor = Colors.red.shade50;
             textColor = Colors.red.shade700;
             icon = Icons.cancel;
-            statusText = 'Rejected';
+            statusText = 'Contract Rejected';
             break;
           default:
             borderColor = Colors.blue.shade600;
             backgroundColor = Colors.blue.shade50;
             textColor = Colors.blue.shade700;
             icon = Icons.description;
-            statusText = 'Draft';
+            statusText = 'Contract Draft';
         }
 
         return Container(
@@ -1715,9 +1721,15 @@ class DashboardBuildMethods {
   void _navigateToProjectPage(BuildContext context, Map<String, dynamic> project) async {
     final projectStatus = project['status']?.toString().toLowerCase();
     final projectId = project['project_id']?.toString();
+    final projectTitle = project['title']?.toString();
     
     if (projectId == null) {
       ConTrustSnackBar.error(context, 'Invalid project ID');
+      return;
+    }
+    
+    if (projectTitle == null || projectTitle.isEmpty) {
+      ConTrustSnackBar.error(context, 'Invalid project title');
       return;
     }
     
@@ -1828,12 +1840,7 @@ class DashboardBuildMethods {
     );
 
     if (confirmed == true && context.mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => CorOngoingProjectScreen(projectId: projectId),
-        ),
-      );
+      context.push('/project-management/$projectId');
     }
   }
 

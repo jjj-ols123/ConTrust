@@ -1,8 +1,12 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
+import 'dart:async';
+
 import 'package:backend/services/both%20services/be_fetchservice.dart';
 import 'package:backend/services/contractor services/cor_ongoingservices.dart';
 import 'package:backend/utils/be_snackbar.dart';
+import 'package:backend/build/buildviewcontract.dart';
+import 'package:backend/services/contractor services/contract/cor_viewcontractservice.dart';
 import 'package:contractor/build/buildongoing.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -34,6 +38,9 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   bool isLoading = true;
   String? contractorId;
   Stream<Map<String, dynamic>>? _projectStream;
+  final List<StreamSubscription> _subscriptions = [];
+  StreamController<Map<String, dynamic>>? _controller;
+  final Map<String, String?> _photoUrlCache = {};
 
   @override
   void initState() {
@@ -42,31 +49,85 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   }
 
   void _initializeStreams() {
+    _disposeRealtime();
     contractorId = Supabase.instance.client.auth.currentUser?.id;
-    _projectStream = _createProjectStream();
+    _controller = StreamController<Map<String, dynamic>>.broadcast();
+    _projectStream = _controller!.stream;
+    _attachRealtimeListeners();
+    _emitAggregatedData();
   }
 
-  Stream<Map<String, dynamic>> _createProjectStream() {
-    return FetchService().streamProjectData(widget.projectId).asyncMap((projectDetails) async {
-      try {
-        final data = await ongoingService.loadProjectData(
-          widget.projectId,
-          contractorId: contractorId,
-        );
+  void _attachRealtimeListeners() {
+    final supabase = Supabase.instance.client;
+    // Projects stream (status/progress/fields)
+    _subscriptions.add(
+      supabase
+          .from('Projects')
+          .stream(primaryKey: ['project_id'])
+          .eq('project_id', widget.projectId)
+          .listen((_) => _emitAggregatedData()),
+    );
+    // Tasks
+    _subscriptions.add(
+      supabase
+          .from('ProjectTasks')
+          .stream(primaryKey: ['task_id'])
+          .eq('project_id', widget.projectId)
+          .listen((_) => _emitAggregatedData()),
+    );
+    // Reports
+    _subscriptions.add(
+      supabase
+          .from('ProjectReports')
+          .stream(primaryKey: ['report_id'])
+          .eq('project_id', widget.projectId)
+          .listen((_) => _emitAggregatedData()),
+    );
+    // Photos
+    _subscriptions.add(
+      supabase
+          .from('ProjectPhotos')
+          .stream(primaryKey: ['photo_id'])
+          .eq('project_id', widget.projectId)
+          .listen((_) => _emitAggregatedData()),
+    );
+    // Materials/Costs
+    _subscriptions.add(
+      supabase
+          .from('ProjectMaterials')
+          .stream(primaryKey: ['material_id'])
+          .eq('project_id', widget.projectId)
+          .listen((_) => _emitAggregatedData()),
+    );
+    // Contracts (e.g., signatures)
+    _subscriptions.add(
+      supabase
+          .from('Contracts')
+          .stream(primaryKey: ['contract_id'])
+          .eq('project_id', widget.projectId)
+          .listen((_) => _emitAggregatedData()),
+    );
+  }
 
-        final contractId = data['projectDetails']['contract_id'];
-        if (contractId != null) {
-          final contract = await ongoingService.getContractById(contractId);
-          data['contracts'] = contract != null ? [contract] : [];
-        } else {
-          data['contracts'] = [];
-        }
-
-        return data;
-      } catch (e) {
-        throw Exception('Failed to load project data: $e');
+  Future<void> _emitAggregatedData() async {
+    try {
+      final data = await ongoingService.loadProjectData(
+        widget.projectId,
+        contractorId: contractorId,
+      );
+      final contractId = data['projectDetails']['contract_id'];
+      if (contractId != null) {
+        final contract = await ongoingService.getContractById(contractId);
+        data['contracts'] = contract != null ? [contract] : [];
+      } else {
+        data['contracts'] = [];
       }
-    });
+      if (!(_controller?.isClosed ?? true)) {
+        _controller!.add(data);
+      }
+    } catch (e) {
+      // Optionally report error; keep stream alive
+    }
   }
 
   Future<void> switchProject() async {
@@ -90,23 +151,30 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
 
       final selectedProjectId = await showDialog<String>(
         context: context,
-        builder: (dialogContext) => Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 500),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Colors.white, Colors.grey.shade50],
+        builder: (dialogContext) => Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 500),
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.black, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 20,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
-            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: Colors.amber.shade700,
                     borderRadius: const BorderRadius.only(
@@ -117,31 +185,33 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Icon(
                           Icons.swap_horiz,
                           color: Colors.white,
-                          size: 20,
+                          size: 18,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       const Expanded(
                         child: Text(
                           'Switch Project',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 18,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                       IconButton(
                         onPressed: () => Navigator.of(dialogContext).pop(),
-                        icon: const Icon(Icons.close, color: Colors.white),
+                        icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
                       ),
                     ],
                   ),
@@ -188,13 +258,14 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                   ),
                 ),
               ],
+              ),
             ),
           ),
         ),
       );
 
       if (selectedProjectId != null && selectedProjectId != widget.projectId) {
-        context.go('/project-management', extra: selectedProjectId);
+        context.go('/project-management/$selectedProjectId');
       }
     } catch (e) {
       ConTrustSnackBar.error(context, 'Failed to switch project');
@@ -327,7 +398,19 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   }
 
   Future<String?> createSignedPhotoUrl(String? path) async {
-    return await ongoingService.createSignedPhotoUrl(path);
+    if (path == null || path.isEmpty) return null;
+    
+    // Check cache first - return completed future if cached
+    if (_photoUrlCache.containsKey(path)) {
+      return Future.value(_photoUrlCache[path]);
+    }
+    
+    // Fetch and cache the URL
+    final url = await ongoingService.createSignedPhotoUrl(path);
+    if (url != null) {
+      _photoUrlCache[path] = url;
+    }
+    return url;
   }
 
   Future<void> deleteTask(String taskId) async {
@@ -347,6 +430,15 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   }
 
   Future<void> deletePhoto(String photoId) async {
+    // Find and remove from cache
+    final photo = projectData?['photos']?.firstWhere(
+      (p) => p['photo_id']?.toString() == photoId,
+      orElse: () => null,
+    );
+    if (photo != null && photo['photo_url'] != null) {
+      _photoUrlCache.remove(photo['photo_url']);
+    }
+    
     await ongoingService.deletePhoto(
       photoId: photoId,
       context: context,
@@ -360,6 +452,16 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
       context: context,
       onSuccess: loadData,
     );
+  }
+
+  @override
+  void dispose() {
+    _disposeRealtime();
+    reportController.dispose();
+    costAmountController.dispose();
+    costNoteController.dispose();
+    progressController.dispose();
+    super.dispose();
   }
 
   void onViewReport(Map<String, dynamic> report) {
@@ -501,21 +603,24 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
             );
           }
 
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              setState(() {
-                projectData = snapshot.data;
-                _localTasks = List<Map<String, dynamic>>.from(projectData!['tasks'] ?? []);
-                _localProgress = (projectData!['progress'] as num?)?.toDouble() ?? 0.0;
-                isLoading = false;
-              });
-            }
-          });
+          projectData = snapshot.data;
+          _localTasks = List<Map<String, dynamic>>.from(projectData!['tasks'] ?? []);
+          _localProgress = (projectData!['progress'] as num?)?.toDouble() ?? 0.0;
+          isLoading = false;
 
           return _buildResponsiveContent();
         },
       ),
     );
+  }
+
+  void _disposeRealtime() {
+    for (final sub in _subscriptions) {
+      sub.cancel();
+    }
+    _subscriptions.clear();
+    _controller?.close();
+    _controller = null;
   }
 
   Widget _buildResponsiveContent() {
@@ -567,6 +672,17 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
         ? (project['estimated_completion'] ?? '') 
         : (contractInfo['estimateDate'] ?? project['estimated_completion'] ?? '');
 
+    String? contractStatus;
+    Color? contractStatusColor;
+    String? contractId;
+    if (projectData!['contracts'] is List && (projectData!['contracts'] as List).isNotEmpty) {
+      final first = Map<String, dynamic>.from((projectData!['contracts'] as List).first as Map);
+      contractId = first['contract_id']?.toString();
+      final status = (first['status'] as String?) ?? '';
+      contractStatus = _contractStatusLabel(status);
+      contractStatusColor = _contractStatusColor(status);
+    }
+
     return RefreshIndicator(
       onRefresh: () async => loadData(),
       child: OngoingBuildMethods.buildMobileLayout(
@@ -587,6 +703,11 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
         onEditCompletion:
             _isCustomContract() ? _editCompletion : null,
         onSwitchProject: switchProject,
+        contractStatusLabel: contractStatus,
+        contractStatusColor: contractStatusColor,
+        onViewContract: (contractId != null)
+            ? () => _showContractDialog(context, contractId!)
+            : null,
         tabContent: OngoingBuildMethods.buildTabContent(
           context: context,
           selectedTab: selectedTab,
@@ -649,6 +770,18 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
         ? (project['estimated_completion'] ?? '') 
         : (contractInfo['estimateDate'] ?? project['estimated_completion'] ?? '');
 
+    // Determine contract status and availability
+    String? contractStatus;
+    Color? contractStatusColor;
+    String? contractId;
+    if (projectData!['contracts'] is List && (projectData!['contracts'] as List).isNotEmpty) {
+      final first = Map<String, dynamic>.from((projectData!['contracts'] as List).first as Map);
+      contractId = first['contract_id']?.toString();
+      final status = (first['status'] as String?) ?? '';
+      contractStatus = _contractStatusLabel(status);
+      contractStatusColor = _contractStatusColor(status);
+    }
+
     return RefreshIndicator(
       onRefresh: () async => loadData(),
       child: OngoingBuildMethods.buildDesktopGridLayout(
@@ -680,7 +813,179 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
         onRefresh: loadData,
         onEditCompletion: _isCustomContract() ? _editCompletion : null,
         onSwitchProject: switchProject,
+        contractStatusLabel: contractStatus,
+        contractStatusColor: contractStatusColor,
+        onViewContract: (contractId != null)
+            ? () => _showContractDialog(context, contractId!)
+            : null,
       ),
     );
+  }
+
+  Future<void> _showContractDialog(BuildContext context, String contractId) async {
+    try {
+      final contractor = Supabase.instance.client.auth.currentUser?.id ?? '';
+      final contractData = await ViewContractService.loadContract(contractId, contractorId: contractor);
+      
+      if (!context.mounted) return;
+      
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (dialogContext) => Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 900, maxHeight: 700),
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.black, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 20,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade700,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.description, color: Colors.white, size: 24),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            contractData['title'] ?? 'Contract Details',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(dialogContext).pop(),
+                          icon: const Icon(Icons.close, color: Colors.white, size: 24),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          FutureBuilder<String?>(
+                            future: ViewContractService.getPdfSignedUrl(contractData),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                return ViewContractBuild.buildLoadingState();
+                              }
+                              if (!snapshot.hasData || (snapshot.data?.isEmpty ?? true)) {
+                                return ViewContractBuild.buildPdfViewer(
+                                  pdfUrl: null,
+                                  onDownload: () => ViewContractService.handleDownload(
+                                    contractData: contractData,
+                                    context: context,
+                                  ),
+                                  height: 400,
+                                );
+                              }
+                              return ViewContractBuild.buildPdfViewer(
+                                pdfUrl: snapshot.data,
+                                onDownload: () => ViewContractService.handleDownload(
+                                  contractData: contractData,
+                                  context: context,
+                                ),
+                                height: 400,
+                                isSignedContract: (contractData['signed_pdf_url'] as String?)?.isNotEmpty == true,
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 20),
+                          ViewContractBuild.buildEnhancedSignaturesSection(contractData),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ConTrustSnackBar.error(context, 'Error loading contract: $e');
+      }
+    }
+  }
+
+  // Local helpers: status label and color (match Contractee style)
+  Color _contractStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'draft':
+        return Colors.grey;
+      case 'sent':
+        return Colors.orange;
+      case 'approved':
+        return Colors.green;
+      case 'rejected':
+        return Colors.red;
+      case 'awaiting_signature':
+      case 'awaiting_agreement':
+        return Colors.blue;
+      case 'active':
+        return Colors.green;
+      case 'completed':
+        return Colors.greenAccent.shade700;
+      case 'cancelled':
+      case 'expired':
+        return Colors.grey.shade600;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _contractStatusLabel(String status) {
+    switch (status.toLowerCase()) {
+      case 'draft':
+        return 'Draft';
+      case 'sent':
+        return 'Sent';
+      case 'approved':
+        return 'Approved';
+      case 'rejected':
+        return 'Rejected';
+      case 'awaiting_signature':
+        return 'Awaiting Signature';
+      case 'awaiting_agreement':
+        return 'Awaiting Agreement';
+      case 'active':
+        return 'Active';
+      case 'completed':
+        return 'Completed';
+      case 'cancelled':
+        return 'Cancelled';
+      case 'expired':
+        return 'Expired';
+      default:
+        return status;
+    }
   }
 }

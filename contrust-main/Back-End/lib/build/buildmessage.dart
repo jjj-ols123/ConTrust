@@ -4,14 +4,10 @@ import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/build/buildmessagesdesign.dart';
 import 'package:backend/services/both%20services/be_fetchservice.dart';
-import 'package:backend/services/both%20services/be_contract_service.dart';
 import 'package:backend/services/both%20services/be_project_service.dart';
 import 'package:backend/services/both%20services/be_message_service.dart';
 import 'package:backend/utils/be_constraint.dart';
 import 'package:backend/utils/be_status.dart';
-import 'package:contractor/Screen/cor_ongoing.dart';
-import 'package:contractee/pages/cee_ongoing.dart';
-import 'package:contractor/build/builddrawer.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -292,13 +288,13 @@ class MessageUIBuildMethods {
     required String otherUserId,
   }) {
     return FutureBuilder<int>(
-      future: userRole == 'contractor' ? MessageService().getUnreadMessageCount(
+      future: MessageService().getUnreadMessageCount(
         chatRoomId: chat['chatroom_id'],
         userId: userId ?? '',
-      ) : Future.value(0),
+      ),
       builder: (context, unreadSnap) {
         final unreadCount = unreadSnap.data ?? 0;
-        final hasUnread = unreadCount > 0 && userRole == 'contractor';
+        final hasUnread = unreadCount > 0;
 
         return Container(
           decoration: BoxDecoration(
@@ -506,16 +502,8 @@ class MessageUIBuildMethods {
                                   return;
                                 }
                                 final projectId = activeProjects.first['project_id'];
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => ContractorShell(
-                                      currentPage: ContractorPage.projectManagement,
-                                      contractorId: userId!,
-                                      child: CorOngoingProjectScreen(projectId: projectId ?? ''),
-                                    ),
-                                  ),
-                                );
+                                // Use app routing to show the ongoing project screen
+                                context.go('/project-management', extra: projectId);
                               }
                             } catch (e) {
                               ConTrustSnackBar.error(context, 'Error navigating: $e');
@@ -545,12 +533,8 @@ class MessageUIBuildMethods {
                             try {
                               final projectId = await ProjectService().getProjectId(chatRoomId!);
                               if (projectId != null) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => CeeOngoingProjectScreen(projectId: projectId),
-                                  ),
-                                );
+                                // Navigate within the contractee app to the ongoing project screen
+                                context.go('/ongoing', extra: projectId);
                               }
                             } catch (e) {
                               ConTrustSnackBar.error(context, 'Error navigating to project:');
@@ -999,8 +983,8 @@ class MessageUIBuildMethods {
                     ),
                     itemBuilder: (context, index) {
                       final contractMsg = contractMessages[index];
-                      return FutureBuilder<Map<String, dynamic>?>(
-                        future: ContractService.getContractById(contractMsg['contract_id']),
+                      return StreamBuilder<Map<String, dynamic>?>(
+                        stream: FetchService().streamContractById(contractMsg['contract_id']),
                         builder: (context, contractSnapshot) {
                           if (!contractSnapshot.hasData || contractSnapshot.data == null) {
                             return Container(

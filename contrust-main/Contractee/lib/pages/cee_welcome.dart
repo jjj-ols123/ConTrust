@@ -216,9 +216,7 @@ class _WelcomePageState extends State<WelcomePage> with TickerProviderStateMixin
                               isSmallScreen: isSmallScreen,
                             ),
                           if (_currentPage == 2)
-                            Expanded(
-                              child: _buildGetStartedButton(isSmallScreen),
-                            ),
+                            _buildGetStartedButton(isSmallScreen),
                         ],
                       ),
                     ],
@@ -391,30 +389,34 @@ class _WelcomePageState extends State<WelcomePage> with TickerProviderStateMixin
         child: ElevatedButton(
           onPressed: _skipToHome,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFFFA726),
-            foregroundColor: Colors.white,
+            backgroundColor: Colors.white,
+            foregroundColor: const Color(0xFFFFA726),
             elevation: 0,
             padding: EdgeInsets.symmetric(
-              horizontal: isSmallScreen ? 48 : 64,
-              vertical: isSmallScreen ? 18 : 22,
+              horizontal: isSmallScreen ? 24 : 32,
+              vertical: isSmallScreen ? 14 : 16,
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
+              side: const BorderSide(
+                color: Color(0xFFFFA726),
+                width: 1.5,
+              ),
             ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Icon(Icons.arrow_forward, size: isSmallScreen ? 18 : 20),
+              const SizedBox(width: 8),
               Text(
                 "Get Started",
                 style: TextStyle(
-                  fontSize: isSmallScreen ? 17 : 19,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.3,
+                  fontSize: isSmallScreen ? 15 : 16,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.2,
                 ),
               ),
-              const SizedBox(width: 12),
-              const Icon(Icons.arrow_forward, size: 22),
             ],
           ),
         ),

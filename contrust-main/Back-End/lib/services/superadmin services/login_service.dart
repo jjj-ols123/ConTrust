@@ -1,4 +1,5 @@
 import 'package:backend/utils/supabase_config.dart';
+import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:backend/services/superadmin services/auditlogs_service.dart';
@@ -90,12 +91,12 @@ class AdminLoginService {
         extraInfo: {
           'operation': 'Sign In With Email Password',
           'email': email,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       return {
         'success': false,
-        'message': 'Authentication failed. Please try again.',
+        'message': 'Authentication failed. Please try again. $e',
       };
     }
   }
@@ -123,7 +124,7 @@ class AdminLoginService {
         severity: 'Medium',
         extraInfo: {
           'operation': 'Sign Out',
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Sign out failed: ');

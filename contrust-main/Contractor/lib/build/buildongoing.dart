@@ -13,6 +13,9 @@ class OngoingBuildMethods {
     required int? duration,
     required bool isCustomContract,
     required double progress,
+    String? contractStatusLabel,
+    Color? contractStatusColor,
+    VoidCallback? onViewContract,
     VoidCallback? onRefresh,
     VoidCallback? onEditCompletion,
     VoidCallback? onSwitchProject,
@@ -105,6 +108,44 @@ class OngoingBuildMethods {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
+                          if (contractStatusLabel != null && contractStatusLabel.isNotEmpty)
+                            Container(
+                              margin: const EdgeInsets.only(right: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: (contractStatusColor ?? Colors.grey).withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: (contractStatusColor ?? Colors.grey).withOpacity(0.4)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.assignment_turned_in,
+                                      size: 14, color: contractStatusColor ?? Colors.grey),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    contractStatusLabel,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: contractStatusColor ?? Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          if (onViewContract != null)
+                            ElevatedButton.icon(
+                              onPressed: onViewContract,
+                              icon: const Icon(Icons.description, size: 16),
+                              label: const Text('View Contract', style: TextStyle(fontSize: 12)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blueGrey.shade600,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                            ),
                           if (isCustomContract && onEditCompletion != null)
                             IconButton(
                               onPressed: onEditCompletion,
@@ -117,12 +158,6 @@ class OngoingBuildMethods {
                               icon: const Icon(Icons.swap_horiz, color: Colors.orange, size: 20),
                               tooltip: 'Switch Project',
                             ),
-                          if (onRefresh != null)
-                            IconButton(
-                              onPressed: onRefresh,
-                              icon: const Icon(Icons.refresh, color: Colors.blue, size: 20),
-                              tooltip: 'Refresh',
-                            ),
                         ],
                       ),
                     ],
@@ -130,7 +165,7 @@ class OngoingBuildMethods {
                 } else {
                   return Row(
               children: [
-                const Icon(Icons.construction, color: Colors.orange, size: 28),
+                const Icon(Icons.construction, color: Colors.grey, size: 28),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -161,17 +196,47 @@ class OngoingBuildMethods {
                     icon: const Icon(Icons.edit, color: Colors.blue),
                     tooltip: 'Edit Completion Date',
                   ),
+                if (contractStatusLabel != null && contractStatusLabel.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: (contractStatusColor ?? Colors.grey).withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: (contractStatusColor ?? Colors.grey).withOpacity(0.4)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.assignment_turned_in, size: 16, color: contractStatusColor ?? Colors.grey),
+                        const SizedBox(width: 6),
+                        Text(
+                          contractStatusLabel,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: contractStatusColor ?? Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (onViewContract != null)
+                  ElevatedButton.icon(
+                    onPressed: onViewContract,
+                    icon: const Icon(Icons.description),
+                    label: const Text('View Contract'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueGrey.shade600,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
                 if (onSwitchProject != null)
                   IconButton(
                     onPressed: onSwitchProject,
                     icon: const Icon(Icons.swap_horiz, color: Colors.orange),
                     tooltip: 'Switch Project',
-                  ),
-                if (onRefresh != null)
-                  IconButton(
-                    onPressed: onRefresh,
-                    icon: const Icon(Icons.refresh, color: Colors.blue),
-                    tooltip: 'Refresh',
                   ),
               ],
                   );
@@ -181,7 +246,7 @@ class OngoingBuildMethods {
             const SizedBox(height: 16),
             Row(
               children: [
-                const Icon(Icons.location_on, color: Colors.red, size: 20),
+                const Icon(Icons.location_on, color: Colors.grey, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -194,22 +259,22 @@ class OngoingBuildMethods {
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.calendar_today, color: Colors.blue, size: 20),
+                const Icon(Icons.calendar_today, color: Colors.grey, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   'Started: ${ContractStyle.formatDate(startDate)}', 
-                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[700], fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.schedule, color: Colors.green, size: 20),
+                const Icon(Icons.schedule, color: Colors.grey, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   'Est. Completion: ${ContractStyle.formatDate(estimatedCompletion)}', 
-                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[700], fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -218,7 +283,7 @@ class OngoingBuildMethods {
               children: [
                 const Icon(
                   Icons.timer,
-                  color: Colors.red,
+                  color: Colors.grey,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
@@ -252,7 +317,7 @@ class OngoingBuildMethods {
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.orange,
+                        color: Colors.grey,
                       ),
                     ),
                   ],
@@ -262,7 +327,7 @@ class OngoingBuildMethods {
                   value: progress,
                   backgroundColor: Colors.grey[300],
                   valueColor: const AlwaysStoppedAnimation<Color>(
-                    Colors.orange,
+                    Colors.amber,
                   ),
                   minHeight: 8,
                 ),
@@ -279,11 +344,15 @@ class OngoingBuildMethods {
     required DateTime? currentCompletion,
     required Function(DateTime) onSave,
   }) async {
+    final now = DateTime.now();
+    final initial = (currentCompletion != null && currentCompletion.isAfter(now))
+        ? currentCompletion
+        : now;
     final selectedDate = await showDatePicker(
       context: context,
-      initialDate: currentCompletion ?? DateTime.now().add(const Duration(days: 30)),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+      initialDate: initial,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365 * 2)),
     );
 
     if (selectedDate != null) {
@@ -459,7 +528,9 @@ class OngoingBuildMethods {
       itemCount: photos.length,
       itemBuilder: (context, index) {
         final photo = photos[index];
+        final photoId = photo['photo_id']?.toString() ?? '';
         return FutureBuilder<String?>(
+          key: ValueKey('photo_$photoId'),
           future: createSignedUrl(photo['photo_url']),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -906,21 +977,26 @@ class OngoingBuildMethods {
     showDialog(
       context: context,
       builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Container(
-            width: 600,
-            constraints: const BoxConstraints(maxHeight: 600),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Colors.white, Colors.grey.shade50],
+        return Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              width: 600,
+              constraints: const BoxConstraints(maxWidth: 600, maxHeight: 600),
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.black, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 20,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
-            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -936,18 +1012,18 @@ class OngoingBuildMethods {
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Icon(
                           Icons.description,
                           color: Colors.white,
-                          size: 20,
+                          size: 18,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       const Expanded(
                         child: Text(
                           'Add Progress Report',
@@ -960,14 +1036,16 @@ class OngoingBuildMethods {
                       ),
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close, color: Colors.white),
+                        icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
                       ),
                     ],
                   ),
                 ),
                 Flexible(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       mainAxisSize: MainAxisSize.min,
@@ -1014,14 +1092,11 @@ class OngoingBuildMethods {
                                 }
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green[600],
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 12,
-                                ),
+                                backgroundColor: const Color(0xFFFFB300),
+                                foregroundColor: Colors.black,
+                                minimumSize: const Size.fromHeight(50),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
                               child: const Text('Add Report'),
@@ -1034,6 +1109,7 @@ class OngoingBuildMethods {
                 ),
               ],
             ),
+          ),
           ),
         );
       },
@@ -1051,21 +1127,26 @@ class OngoingBuildMethods {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Container(
-                width: 500,
-                constraints: const BoxConstraints(maxHeight: 600),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Colors.white, Colors.grey.shade50],
+            return Center(
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  width: 500,
+                  constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.black, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 20,
+                        spreadRadius: 1,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
                   ),
-                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -1081,18 +1162,18 @@ class OngoingBuildMethods {
                       child: Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(8),
+                            padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(6),
                             ),
                             child: const Icon(
                               Icons.checklist,
                               color: Colors.white,
-                              size: 20,
+                              size: 18,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 10),
                           const Expanded(
                             child: Text(
                               'Add Multiple Tasks',
@@ -1105,14 +1186,16 @@ class OngoingBuildMethods {
                           ),
                           IconButton(
                             onPressed: () => Navigator.pop(context),
-                            icon: const Icon(Icons.close, color: Colors.white),
+                            icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
                           ),
                         ],
                       ),
                     ),
                     Flexible(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1125,131 +1208,124 @@ class OngoingBuildMethods {
                               ),
                             ),
                             const SizedBox(height: 20),
-                    Flexible(
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            ...controllers.asMap().entries.map((entry) {
-                              final index = entry.key;
-                              final controller = entry.value;
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: Colors.grey.shade300,
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                  color: Colors.grey.shade50,
-                                ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: TextField(
-                                        controller: controller,
-                                        decoration: InputDecoration(
-                                          hintText: 'Enter task ...',
-                                          border: InputBorder.none,
-                                          contentPadding:
-                                              const EdgeInsets.symmetric(
-                                                horizontal: 16,
-                                                vertical: 12,
-                                              ),
-                                        ),
-                                        maxLines: null,
-                                        minLines: 1,
+                            Column(
+                              children: [
+                                ...controllers.asMap().entries.map((entry) {
+                                  final index = entry.key;
+                                  final controller = entry.value;
+                                  return Container(
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: Colors.grey.shade300,
                                       ),
+                                      borderRadius: BorderRadius.circular(12),
+                                      color: Colors.grey.shade50,
                                     ),
-                                    if (controllers.length > 1)
-                                      IconButton(
-                                        icon: Icon(
-                                          Icons.remove_circle,
-                                          color: Colors.red.shade400,
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: TextField(
+                                            controller: controller,
+                                            decoration: InputDecoration(
+                                              hintText: 'Enter task ...',
+                                              border: InputBorder.none,
+                                              contentPadding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 16,
+                                                    vertical: 12,
+                                                  ),
+                                            ),
+                                            maxLines: null,
+                                            minLines: 1,
+                                          ),
                                         ),
-                                        onPressed: () {
-                                          setState(() {
-                                            controllers.removeAt(index);
-                                          });
-                                        },
-                                      ),
-                                  ],
+                                        if (controllers.length > 1)
+                                          IconButton(
+                                            icon: Icon(
+                                              Icons.remove_circle,
+                                              color: Colors.red.shade400,
+                                            ),
+                                            onPressed: () {
+                                              setState(() {
+                                                controllers.removeAt(index);
+                                              });
+                                            },
+                                          ),
+                                      ],
+                                    ),
+                                  );
+                                }),
+                                const SizedBox(height: 12),
+                                OutlinedButton.icon(
+                                  onPressed: () {
+                                    setState(() {
+                                      controllers.add(TextEditingController());
+                                    });
+                                  },
+                                  icon: Icon(
+                                    Icons.add,
+                                    color: Colors.blue.shade700,
+                                  ),
+                                  label: Text(
+                                    'Add Another Task',
+                                    style: TextStyle(color: Colors.blue.shade700),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(color: Colors.blue.shade700),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
+                                  ),
                                 ),
-                              );
-                            }),
-                            const SizedBox(height: 12),
-                            OutlinedButton.icon(
-                              onPressed: () {
-                                setState(() {
-                                  controllers.add(TextEditingController());
-                                });
-                              },
-                              icon: Icon(
-                                Icons.add,
-                                color: Colors.blue.shade700,
-                              ),
-                              label: Text(
-                                'Add Another Task',
-                                style: TextStyle(color: Colors.blue.shade700),
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                side: BorderSide(color: Colors.blue.shade700),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Cancel',
+                                    style: TextStyle(color: Colors.grey.shade600),
+                                  ),
                                 ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
+                                const SizedBox(width: 12),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    final validTasks =
+                                        controllers
+                                            .map((c) => c.text.trim())
+                                            .where((text) => text.isNotEmpty)
+                                            .toList();
+                                    if (validTasks.isNotEmpty) {
+                                      Navigator.pop(context);
+                                      onAdd(validTasks);
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFFFB300),
+                                    foregroundColor: Colors.black,
+                                    minimumSize: const Size.fromHeight(50),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: const Text('Add Tasks'),
                                 ),
-                              ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
-                            ),
-                          ),
-                          child: Text(
-                            'Cancel',
-                            style: TextStyle(color: Colors.grey.shade600),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        ElevatedButton(
-                          onPressed: () {
-                            final validTasks =
-                                controllers
-                                    .map((c) => c.text.trim())
-                                    .where((text) => text.isNotEmpty)
-                                    .toList();
-                            if (validTasks.isNotEmpty) {
-                              Navigator.pop(context);
-                              onAdd(validTasks);
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.amber, 
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 12,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text('Add Tasks'),
-                        ),
-                      ],
-                    ),
                           ],
                         ),
                       ),
@@ -1257,7 +1333,7 @@ class OngoingBuildMethods {
                   ],
                 ),
               ),
-            );
+            ));
           },
         );
       },
@@ -1277,16 +1353,29 @@ class OngoingBuildMethods {
     List<Map<String, dynamic>> activities = [];
 
     for (var task in tasks) {
-      if (task['done'] == true) {
+      final createdAt = task['created_at'] ?? DateTime.now().toIso8601String();
+      final taskDone = task['task_done'];
+      final isDone = task['done'] == true;
+      
+      // Add task_done activity if task was completed (has task_done timestamp)
+      if (isDone && taskDone != null && taskDone.toString().isNotEmpty) {
         activities.add({
-          'type': 'task',
+          'type': 'task_done',
           'title': 'Task completed',
           'description': task['task'] ?? 'Unknown task',
-          'timestamp': task['created_at'] ?? DateTime.now().toIso8601String(),
+          'timestamp': taskDone.toString(),
           'icon': Icons.check_circle,
-          'color': Colors.green,
         });
       }
+      
+      // Always add task creation activity
+      activities.add({
+        'type': 'task_added',
+        'title': 'Task added',
+        'description': task['task'] ?? 'New task',
+        'timestamp': createdAt,
+        'icon': Icons.playlist_add,
+      });
     }
 
     for (var report in reports) {
@@ -1298,7 +1387,6 @@ class OngoingBuildMethods {
             : report['content'] ?? 'No content',
         'timestamp': report['created_at'] ?? DateTime.now().toIso8601String(),
         'icon': Icons.description,
-        'color': Colors.orange,
       });
     }
 
@@ -1309,7 +1397,6 @@ class OngoingBuildMethods {
         'description': photo['description'] ?? 'Project photo',
         'timestamp': photo['created_at'] ?? DateTime.now().toIso8601String(),
         'icon': Icons.photo_camera,
-        'color': Colors.blue,
       });
     }
 
@@ -1346,10 +1433,10 @@ class OngoingBuildMethods {
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: activity['color'],
+          backgroundColor: Colors.grey[300],
           child: Icon(
             activity['icon'],
-            color: Colors.white,
+            color: Colors.grey[700],
             size: 20,
           ),
         ),
@@ -1470,12 +1557,15 @@ class OngoingBuildMethods {
     required int? duration,
     required bool isCustomContract,
     required double progress,
+    String? contractStatusLabel,
+    Color? contractStatusColor,
     required List<Map<String, dynamic>> tasks,
     required List<Map<String, dynamic>> reports,
     required List<Map<String, dynamic>> photos,
     VoidCallback? onRefresh,
     VoidCallback? onEditCompletion,
     VoidCallback? onSwitchProject,
+    VoidCallback? onViewContract,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1491,6 +1581,9 @@ class OngoingBuildMethods {
             duration: duration,
             isCustomContract: isCustomContract,
             progress: progress,
+            contractStatusLabel: contractStatusLabel,
+            contractStatusColor: contractStatusColor,
+            onViewContract: onViewContract,
             onRefresh: onRefresh,
             onEditCompletion: onEditCompletion,
             onSwitchProject: onSwitchProject,
@@ -1502,14 +1595,14 @@ class OngoingBuildMethods {
           child: Card(
             elevation: 3,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Container(
-              height: 320, // Match approximate header height
+            child: SizedBox(
+              height: 320,
               child: Column(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.purple.shade50,
+                      color: Colors.grey.shade200,
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(12),
                         topRight: Radius.circular(12),
@@ -1517,13 +1610,16 @@ class OngoingBuildMethods {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.timeline, color: Colors.purple, size: 20),
+                        Icon(Icons.timeline, color: Colors.grey, size: 20),
                         const SizedBox(width: 8),
-                        const Text(
-                          'Recent Activity',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                        const Expanded(
+                          child: Text(
+                            'Recent Activity',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
                           ),
                         ),
                       ],
@@ -1532,11 +1628,16 @@ class OngoingBuildMethods {
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.all(8),
-                      child: buildRecentActivityFeed(
-                        tasks: tasks,
-                        reports: reports,
-                        photos: photos,
-                        maxItems: 4,
+                      child: Scrollbar(
+                        thumbVisibility: true,
+                        child: SingleChildScrollView(
+                          child: buildRecentActivityFeed(
+                            tasks: tasks,
+                            reports: reports,
+                            photos: photos,
+                            maxItems: 20,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -1558,6 +1659,9 @@ class OngoingBuildMethods {
     required int? duration, 
     required bool isCustomContract, 
     required double progress,
+    String? contractStatusLabel,
+    Color? contractStatusColor,
+    VoidCallback? onViewContract,
     required String selectedTab,
     required Function(String) onTabChanged,
     required Widget tabContent,
@@ -1581,12 +1685,15 @@ class OngoingBuildMethods {
             duration: duration,
             isCustomContract: isCustomContract, 
             progress: progress,
+            contractStatusLabel: contractStatusLabel,
+            contractStatusColor: contractStatusColor,
             tasks: tasks,
             reports: reports,
             photos: photos,
             onRefresh: onRefresh,
             onEditCompletion: onEditCompletion,
             onSwitchProject: onSwitchProject,
+            onViewContract: onViewContract,
           ),
           const SizedBox(height: 16),
           buildMobileTabNavigation(selectedTab, onTabChanged),
@@ -1713,6 +1820,8 @@ class OngoingBuildMethods {
     required int? duration,
     required bool isCustomContract,
     required double progress,
+    String? contractStatusLabel,
+    Color? contractStatusColor,
     required List<Map<String, dynamic>> tasks,
     required List<Map<String, dynamic>> reports,
     required List<Map<String, dynamic>> photos,
@@ -1732,12 +1841,13 @@ class OngoingBuildMethods {
     VoidCallback? onRefresh,
     VoidCallback? onEditCompletion,
     VoidCallback? onSwitchProject,
+    VoidCallback? onViewContract,
   }) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          buildProjectHeader(
+          buildProjectHeaderWithActivity(
             projectTitle: projectTitle,
             clientName: clientName,
             address: address,
@@ -1746,6 +1856,12 @@ class OngoingBuildMethods {
             duration: duration, 
             isCustomContract: isCustomContract,
             progress: progress,
+            contractStatusLabel: contractStatusLabel,
+            contractStatusColor: contractStatusColor,
+            tasks: tasks,
+            reports: reports,
+            photos: photos,
+            onViewContract: onViewContract,
             onRefresh: onRefresh,
             onEditCompletion: onEditCompletion,
             onSwitchProject: onSwitchProject,
@@ -1831,20 +1947,6 @@ class OngoingBuildMethods {
                   ),
                 ),
                 const SizedBox(width: 16),
-                SizedBox(
-                  width: 300,
-                  child: buildGridSectionCard(
-                    title: 'Recent Activity',
-                    icon: Icons.timeline,
-                    iconColor: Colors.purple,
-                    child: buildRecentActivityFeed(
-                      tasks: tasks,
-                      reports: reports,
-                      photos: photos,
-                      maxItems: 8,
-                    ),
-                  ),
-                ),
               ],
             ),
           ),

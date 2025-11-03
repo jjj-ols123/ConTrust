@@ -16,6 +16,10 @@ class _BiddingScreenState extends State<BiddingScreen> {
   final _biddingService = CorBiddingService();
   final Set<String> finalizedProjects = {};
 
+  // Preserve inputs across rebuilds
+  final TextEditingController bidController = TextEditingController();
+  final TextEditingController messageController = TextEditingController();
+
   List<Map<String, dynamic>> projects = [];
   Map<String, double> highestBids = {};
   Map<String, Map<String, dynamic>> contracteeInfo = {};
@@ -141,6 +145,8 @@ class _BiddingScreenState extends State<BiddingScreen> {
             selectedProject: selectedProject,
             contracteeInfo: contracteeInfo,
             contractorBids: contractorBids,
+            bidController: bidController,
+            messageController: messageController,
             onProjectSelected: (project) {
               if (mounted) {
                 setState(() {
@@ -153,5 +159,12 @@ class _BiddingScreenState extends State<BiddingScreen> {
         },
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    bidController.dispose();
+    messageController.dispose();
+    super.dispose();
   }
 }

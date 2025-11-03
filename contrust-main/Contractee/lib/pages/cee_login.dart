@@ -37,7 +37,7 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _isLoggingIn = true);
     try {
       final signInContractee = SignInContractee();
-      await signInContractee.signInContractee(
+      final success = await signInContractee.signInContractee(
         context,
         _emailController.text,
         _passwordController.text,
@@ -47,6 +47,10 @@ class _LoginPageState extends State<LoginPage> {
           _passwordController.text,
         ),
       );
+
+      if (success && mounted) {
+        context.replace('/home');
+      }
     } on SocketException {
       ConTrustSnackBar.error(
         context,
@@ -311,6 +315,7 @@ class _LoginPageState extends State<LoginPage> {
     final double verticalPadding = 10;
     
     return Container(
+      width: double.infinity,
       padding: EdgeInsets.symmetric(
         horizontal: horizontalPadding,
         vertical: verticalPadding,

@@ -6,6 +6,7 @@ import 'package:backend/utils/supabase_config.dart';
 import 'package:backend/services/both services/be_notification_service.dart';
 import 'package:backend/services/superadmin services/auditlogs_service.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
+import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class PaymentService {
@@ -108,13 +109,13 @@ class PaymentService {
           .eq('contract_id', contractId)
           .single();
 
-      final contractTypeData = await _supabase
-          .from('ContractTypes')
-          .select('template_name')
-          .eq('contract_type_id', contractData['contract_type_id'])
-          .single();
+    final contractTypeData = await _supabase
+      .from('ContractTypes')
+      .select('template_name')
+      .eq('contract_type_id', contractData['contract_type_id'])
+      .maybeSingle();
 
-      final contractType = (contractTypeData['template_name'] as String).toLowerCase();
+    final String contractType = ((contractTypeData?['template_name'])?.toString() ?? 'custom').toLowerCase();
       final fieldValues = contractData['field_values'] as Map<String, dynamic>? ?? {};
 
 
@@ -180,14 +181,12 @@ class PaymentService {
     }
   }
 
-  /// Detects if a contract has milestone-based payments and returns payment structure
   Map<String, dynamic>? _detectMilestonePayments(String contractType, Map<String, dynamic> fieldValues) {
-    // Check if contract type suggests milestone payments
+
     final isMilestoneContract = contractType.contains('milestone') || 
                                contractType.contains('phased') ||
                                contractType.contains('progressive');
 
-    // Check if field values contain milestone payment information
     final hasMilestoneFields = fieldValues.keys.any((key) => 
         key.toLowerCase().contains('milestone') || 
         key.toLowerCase().contains('payment.milestone') ||
@@ -197,11 +196,9 @@ class PaymentService {
       return null;
     }
 
-    // Extract milestone payment information
     final milestones = <Map<String, dynamic>>[];
     double totalContractAmount = 0.0;
 
-    // Look for total contract amount
     final contractPriceKeys = ['Payment.Total', 'Project.ContractPrice', 'Total.Amount', 'Contract.TotalAmount'];
     for (final key in contractPriceKeys) {
       if (fieldValues.containsKey(key) && fieldValues[key] != null) {
@@ -459,7 +456,7 @@ class PaymentService {
         payments.add({
           'payment_id': paymentIntentId,
           'amount': amount,
-          'date': DateTime.now().toIso8601String(),
+          'date': DateTimeHelper.getLocalTimeISOString(),
           'reference': paymentIntentId,
           'contract_type': contractType,
           'payment_structure': paymentInfo['payment_structure'],
@@ -474,7 +471,7 @@ class PaymentService {
 
         updatedProjectdata['payments'] = payments;
         updatedProjectdata['total_paid'] = totalPaid;
-        updatedProjectdata['last_payment_date'] = DateTime.now().toIso8601String();
+        updatedProjectdata['last_payment_date'] = DateTimeHelper.getLocalTimeISOString();
         updatedProjectdata['last_payment_reference'] = paymentIntentId;
         updatedProjectdata['contract_type'] = contractType;
         updatedProjectdata['payment_structure'] = paymentInfo['payment_structure'];
@@ -516,7 +513,7 @@ class PaymentService {
             information: {
               'project_id': projectId,
               'amount': amount,
-              'payment_date': DateTime.now().toIso8601String(),
+              'payment_date': DateTimeHelper.getLocalTimeISOString(),
             },
           );
         }
@@ -534,7 +531,7 @@ class PaymentService {
         final projectdata = projectData['projectdata'] as Map<String, dynamic>? ?? {};
         final updatedProjectdata = Map<String, dynamic>.from(projectdata);
         updatedProjectdata['payment_status'] = 'failed';
-        updatedProjectdata['last_payment_attempt'] = DateTime.now().toIso8601String();
+        updatedProjectdata['last_payment_attempt'] = DateTimeHelper.getLocalTimeISOString();
 
         await _supabase.from('Projects').update({
           'projectdata': updatedProjectdata,

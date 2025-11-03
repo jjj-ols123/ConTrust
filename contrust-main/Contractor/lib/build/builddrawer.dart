@@ -320,7 +320,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
       }
 
       if (widget.currentPage != ContractorPage.projectManagement) {
-        context.go('/project-management', extra: projectId);
+        context.go('/project-management/$projectId');
       }
     } catch (e) {
       setState(() => _loadingPM = false);
@@ -720,7 +720,7 @@ class _ProjectNavButton extends StatelessWidget {
               .maybeSingle();
 
           if (response != null && response['project_id'] != null) {
-            context.go('/project-management', extra: response['project_id']);
+            context.go('/project-management/${response['project_id']}');
           } else {
             ConTrustSnackBar.error(context, 'No active project found');
           }
@@ -898,7 +898,7 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
         projectId = activeProjects.first['project_id'];
       }
 
-      context.go('/project-management', extra: projectId);
+  context.go('/project-management/$projectId');
     } catch (e) {
       setState(() => _loadingPM = false);
       return;

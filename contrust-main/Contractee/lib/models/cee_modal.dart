@@ -2,8 +2,8 @@
 
 import 'package:backend/services/both services/be_bidding_service.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
-import 'package:backend/services/both services/be_notification_service.dart';
 import 'package:backend/services/both services/be_project_service.dart';
+import 'package:backend/services/both services/be_realtime_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/utils/be_validation.dart';
 import 'package:backend/utils/be_constraint.dart';
@@ -12,15 +12,17 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-final List<String> constructionTypes = [
-  'House',
-  'Building',
-  'Renovation',
-  'Extension',
-  'Interior',
-  'Exterior',
-  'Other',
-];
+String toProperCase(String text) {
+  if (text.isEmpty) return text;
+  
+  final words = text.trim().split(RegExp(r'\s+'));
+  final properCaseWords = words.map((word) {
+    if (word.isEmpty) return word;
+    return word[0].toUpperCase() + word.substring(1).toLowerCase();
+  }).toList();
+  
+  return properCaseWords.join(' ');
+}
 
 const String profileUrl =
     'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
@@ -64,6 +66,11 @@ class ProjectDialog extends StatefulWidget {
 class _ProjectDialogState extends State<ProjectDialog> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _startDateController = TextEditingController();
+  final TextEditingController _customTypeController = TextEditingController();
+  
+  List<String> _availableSpecializations = [];
+  bool _isLoadingSpecializations = true;
+  bool _showCustomTypeField = false;
 
   @override
   void initState() {
@@ -77,6 +84,42 @@ class _ProjectDialogState extends State<ProjectDialog> {
         _startDateController.text = widget.initialStartDate!;
       }
     }
+    
+    _loadSpecializations();
+    
+    // Check if current type is custom
+    if (widget.constructionTypeController.text.isNotEmpty) {
+      final currentType = widget.constructionTypeController.text;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await _loadSpecializations();
+        if (mounted && !_availableSpecializations.contains(currentType) && 
+            currentType.toLowerCase() != 'other') {
+          setState(() {
+            _showCustomTypeField = true;
+            _customTypeController.text = currentType;
+            widget.constructionTypeController.text = 'Other';
+          });
+        }
+      });
+    }
+  }
+  
+  Future<void> _loadSpecializations() async {
+    try {
+      final specializations = await FetchService().fetchAllContractorSpecializations();
+      if (mounted) {
+        setState(() {
+          _availableSpecializations = specializations;
+          _isLoadingSpecializations = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingSpecializations = false;
+        });
+      }
+    }
   }
 
   bool _isLoading = false;
@@ -86,7 +129,7 @@ class _ProjectDialogState extends State<ProjectDialog> {
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime.now(),
-      lastDate: DateTime(2100),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
     );
     if (picked != null) {
       _startDateController.text = DateFormat('yyyy-MM-dd').format(picked);
@@ -115,11 +158,19 @@ class _ProjectDialogState extends State<ProjectDialog> {
 
       if (!isValid) return;
 
+      // Determine the final project type (use custom if "Other" is selected)
+      String finalProjectType;
+      if (widget.constructionTypeController.text.trim().toLowerCase() == 'other') {
+        finalProjectType = toProperCase(_customTypeController.text.trim());
+      } else {
+        finalProjectType = widget.constructionTypeController.text.trim();
+      }
+      
       if (widget.isUpdate && widget.projectId != null) {
         await ProjectService().updateProject(
           projectId: widget.projectId!,
           title: widget.titleController.text.trim(),
-          type: widget.constructionTypeController.text.trim(),
+          type: finalProjectType,
           description: widget.descriptionController.text.trim(),
           location: widget.locationController.text.trim(),
           minBudget: double.tryParse(widget.minBudgetController.text.trim()),
@@ -131,7 +182,7 @@ class _ProjectDialogState extends State<ProjectDialog> {
         await ProjectService().postProject(
           contracteeId: widget.contracteeId,
           title: widget.titleController.text.trim(),
-          type: widget.constructionTypeController.text.trim(),
+          type: finalProjectType,
           description: widget.descriptionController.text.trim(),
           location: widget.locationController.text.trim(),
           minBudget: widget.minBudgetController.text.trim(),
@@ -159,6 +210,7 @@ class _ProjectDialogState extends State<ProjectDialog> {
   @override
   void dispose() {
     _startDateController.dispose();
+    _customTypeController.dispose();
     super.dispose();
   }
 
@@ -253,24 +305,66 @@ class _ProjectDialogState extends State<ProjectDialog> {
                         const SizedBox(height: 16),
                         _buildLabeledField(
                             label: 'Type of Construction',
-                            child: DropdownButtonFormField<String>(
-                              value: widget.constructionTypeController.text
-                                      .isNotEmpty
-                                  ? widget.constructionTypeController.text
-                                  : null,
-                              items: constructionTypes
-                                  .map((t) => DropdownMenuItem(
-                                      value: t, child: Text(t)))
-                                  .toList(),
-                              onChanged: (val) => widget
-                                  .constructionTypeController.text = val ?? '',
-                              decoration: const InputDecoration(
-                                  labelText: 'Select construction type',
-                                  border: OutlineInputBorder()),
-                              validator: (v) => (v == null || v.isEmpty)
-                                  ? 'Please select a type'
-                                  : null,
-                            )),
+                            child: _isLoadingSpecializations
+                                ? const Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(16.0),
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  )
+                                : Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      DropdownButtonFormField<String>(
+                                        value: widget.constructionTypeController.text.isNotEmpty &&
+                                                (_availableSpecializations.contains(widget.constructionTypeController.text) ||
+                                                 widget.constructionTypeController.text.toLowerCase() == 'other')
+                                            ? widget.constructionTypeController.text
+                                            : null,
+                                        items: [
+                                          ..._availableSpecializations.map((t) => DropdownMenuItem(
+                                              value: t, child: Text(t))),
+                                          const DropdownMenuItem(
+                                              value: 'Other', child: Text('Other')),
+                                        ],
+                                        onChanged: (val) {
+                                          setState(() {
+                                            widget.constructionTypeController.text = val ?? '';
+                                            _showCustomTypeField = (val?.toLowerCase() == 'other');
+                                            if (!_showCustomTypeField) {
+                                              _customTypeController.clear();
+                                            }
+                                          });
+                                        },
+                                        decoration: const InputDecoration(
+                                            labelText: 'Select construction type',
+                                            border: OutlineInputBorder()),
+                                        validator: (v) => (v == null || v.isEmpty)
+                                            ? 'Please select a type'
+                                            : null,
+                                      ),
+                                      if (_showCustomTypeField) ...[
+                                        const SizedBox(height: 16),
+                                        TextFormField(
+                                          controller: _customTypeController,
+                                          decoration: const InputDecoration(
+                                            labelText: 'Enter custom construction type',
+                                            hintText: 'e.g., Kitchen Renovation',
+                                            border: OutlineInputBorder(),
+                                            prefixIcon: Icon(Icons.edit),
+                                          ),
+                                          textCapitalization: TextCapitalization.words,
+                                          validator: (v) {
+                                            if (_showCustomTypeField &&
+                                                (v == null || v.trim().isEmpty)) {
+                                              return 'Please enter a construction type';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                      ],
+                                    ],
+                                  )),
                         const SizedBox(height: 16),
                         _buildLabeledField(
                             label: 'Estimated Budget Range',
@@ -438,7 +532,7 @@ class _ProjectDialogState extends State<ProjectDialog> {
                           child: ElevatedButton(
                             onPressed: _isLoading ? null : _submit,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.yellow[700],
+                              backgroundColor: const Color(0xFFFFB300),
                               foregroundColor: Colors.black,
                               minimumSize: const Size.fromHeight(50),
                               shape: RoundedRectangleBorder(
@@ -560,682 +654,23 @@ class BidsModal {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.black, width: 1.5),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withOpacity(0.15),
                     blurRadius: 20,
-                    spreadRadius: 2,
-                    offset: const Offset(0, 10),
+                    spreadRadius: 1,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
-              child: StatefulBuilder(
-                builder: (context, setState) {
-                  return Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.shade700,
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(20),
-                            topRight: Radius.circular(20),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: const Icon(
-                                Icons.gavel,
-                                color: Colors.white,
-                                size: 18,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            const Expanded(
-                              child: Text(
-                                'Project Bids',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              icon: const Icon(Icons.close,
-                                  color: Colors.white, size: 20),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: FutureBuilder<List<Map<String, dynamic>>>(
-                            future: bidsFuture,
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return const SizedBox(
-                                  height: 400,
-                                  child: Center(
-                                      child: CircularProgressIndicator(
-                                    color: Colors.amber,
-                                  )),
-                                );
-                              }
-                              if (snapshot.hasError) {
-                                return SizedBox(
-                                  height: 400,
-                                  child: Center(
-                                    child: Text(
-                                        'Error loading bids: ${snapshot.error}'),
-                                  ),
-                                );
-                              }
-                              final bids = snapshot.data ?? [];
-                              if (bids.isEmpty) {
-                                return const SizedBox(
-                                  height: 400,
-                                  child: Center(
-                                      child: Text(
-                                          'No bids for this project yet.')),
-                                );
-                              }
-                              final anyAccepted = bids
-                                  .any((bid) => bid['status'] == 'accepted');
-                              return SizedBox(
-                                height: 500,
-                                child: Column(
-                                  children: [
-                                    if (projectStatus == 'stopped')
-                                      Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.all(12),
-                                        margin:
-                                            const EdgeInsets.only(bottom: 8),
-                                        decoration: BoxDecoration(
-                                          color: Colors.orange.shade50,
-                                          border: Border.all(
-                                              color: Colors.orange.shade300),
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Icon(Icons.info_outline,
-                                                color: Colors.orange.shade700,
-                                                size: 20),
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: Text(
-                                                'Bidding period has expired. Update the project to restart bidding or cancel it.',
-                                                style: TextStyle(
-                                                  color: Colors.orange.shade900,
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    Expanded(
-                                      child: ListView.separated(
-                                        itemCount: bids.length,
-                                        separatorBuilder: (context, index) =>
-                                            const Divider(
-                                                height: 1, color: Colors.grey),
-                                        itemBuilder: (context, index) {
-                                          final bid = bids[index];
-                                          final contractor =
-                                              bid['contractor'] ?? {};
-                                          final dynamic profilePhotoRaw =
-                                              contractor['profile_photo'];
-                                          final String profilePhoto =
-                                              profilePhotoRaw is String
-                                                  ? profilePhotoRaw
-                                                  : profilePhotoRaw
-                                                          ?.toString() ??
-                                                      '';
-                                          final firmName =
-                                              contractor['firm_name']
-                                                      as String? ??
-                                                  'Unknown Firm';
-                                          final bidAmount =
-                                              bid['bid_amount'] ?? 0;
-                                          final message =
-                                              bid['message'] as String? ?? '';
-                                          final createdAtStr =
-                                              bid['created_at'] as String? ??
-                                                  '';
-                                          final status =
-                                              bid['status'] as String? ??
-                                                  'pending';
-                                          DateTime? createdAt;
-                                          if (createdAtStr.isNotEmpty) {
-                                            try {
-                                              createdAt =
-                                                  DateTime.parse(createdAtStr)
-                                                      .toLocal();
-                                            } catch (_) {
-                                              createdAt = null;
-                                            }
-                                          }
-
-                                          return Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 16,
-                                                      vertical: 8),
-                                              child: Container(
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white,
-                                                  border: Border.all(
-                                                      color:
-                                                          Colors.grey.shade300,
-                                                      width: 1),
-                                                  borderRadius:
-                                                      BorderRadius.circular(14),
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                      color: Colors.black
-                                                          .withOpacity(0.05),
-                                                      blurRadius: 4,
-                                                      offset:
-                                                          const Offset(0, 2),
-                                                    ),
-                                                  ],
-                                                ),
-                                                padding:
-                                                    const EdgeInsets.all(16),
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Row(
-                                                      children: [
-                                                        CircleAvatar(
-                                                          radius: 28,
-                                                          backgroundImage: profilePhoto
-                                                                  .isNotEmpty
-                                                              ? NetworkImage(
-                                                                  profilePhoto)
-                                                              : NetworkImage(
-                                                                  profileUrl),
-                                                        ),
-                                                        const SizedBox(
-                                                            width: 12),
-                                                        Expanded(
-                                                          child: Column(
-                                                            crossAxisAlignment:
-                                                                CrossAxisAlignment
-                                                                    .start,
-                                                            children: [
-                                                              Text(
-                                                                firmName,
-                                                                style:
-                                                                    const TextStyle(
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w700,
-                                                                  fontSize: 16,
-                                                                ),
-                                                              ),
-                                                              const SizedBox(
-                                                                  height: 4),
-                                                              Text(
-                                                                'Bid Amount: ₱$bidAmount',
-                                                                style:
-                                                                    const TextStyle(
-                                                                  fontSize: 14,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w500,
-                                                                  color: Colors
-                                                                      .black87,
-                                                                ),
-                                                              ),
-                                                              const SizedBox(
-                                                                  height: 4),
-                                                              Text(
-                                                                createdAt !=
-                                                                        null
-                                                                    ? DateFormat
-                                                                            .yMMMd()
-                                                                        .add_jm()
-                                                                        .format(
-                                                                            createdAt)
-                                                                    : '',
-                                                                style:
-                                                                    const TextStyle(
-                                                                  fontSize: 12,
-                                                                  color: Colors
-                                                                      .grey,
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    const SizedBox(height: 12),
-                                                    if (status ==
-                                                        'accepted') ...[
-                                                      Container(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .symmetric(
-                                                                vertical: 6,
-                                                                horizontal: 10),
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          color: Colors
-                                                              .green.shade600,
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(6),
-                                                        ),
-                                                        child: const Text(
-                                                          'Accepted Bid',
-                                                          style: TextStyle(
-                                                            color: Colors.white,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                            fontSize: 14,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ] else if (status ==
-                                                        'rejected') ...[
-                                                      Container(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .symmetric(
-                                                                vertical: 6,
-                                                                horizontal: 10),
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          color: Colors
-                                                              .red.shade100,
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(6),
-                                                          border: Border.all(
-                                                              color: Colors.red
-                                                                  .shade300),
-                                                        ),
-                                                        child: const Text(
-                                                          'Rejected',
-                                                          style: TextStyle(
-                                                            color: Colors.red,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                            fontSize: 14,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ] else if (!anyAccepted) ...[
-                                                      Row(
-                                                        mainAxisAlignment:
-                                                            MainAxisAlignment
-                                                                .spaceBetween,
-                                                        children: [
-                                                          TextButton.icon(
-                                                            onPressed: () {
-                                                              showDialog(
-                                                                context:
-                                                                    context,
-                                                                builder:
-                                                                    (context) =>
-                                                                        Dialog(
-                                                                  shape: RoundedRectangleBorder(
-                                                                      borderRadius:
-                                                                          BorderRadius.circular(
-                                                                              20)),
-                                                                  child:
-                                                                      Container(
-                                                                    constraints:
-                                                                        const BoxConstraints(
-                                                                            maxWidth:
-                                                                                500),
-                                                                    decoration:
-                                                                        BoxDecoration(
-                                                                      borderRadius:
-                                                                          BorderRadius.circular(
-                                                                              20),
-                                                                      gradient:
-                                                                          LinearGradient(
-                                                                        begin: Alignment
-                                                                            .topLeft,
-                                                                        end: Alignment
-                                                                            .bottomRight,
-                                                                        colors: [
-                                                                          Colors
-                                                                              .white,
-                                                                          Colors
-                                                                              .grey
-                                                                              .shade50
-                                                                        ],
-                                                                      ),
-                                                                    ),
-                                                                    child:
-                                                                        Column(
-                                                                      mainAxisSize:
-                                                                          MainAxisSize
-                                                                              .min,
-                                                                      children: [
-                                                                        Container(
-                                                                          padding: const EdgeInsets
-                                                                              .all(
-                                                                              20),
-                                                                          decoration:
-                                                                              BoxDecoration(
-                                                                            color:
-                                                                                Colors.amber.shade700,
-                                                                            borderRadius:
-                                                                                const BorderRadius.only(
-                                                                              topLeft: Radius.circular(20),
-                                                                              topRight: Radius.circular(20),
-                                                                            ),
-                                                                          ),
-                                                                          child:
-                                                                              Row(
-                                                                            children: [
-                                                                              Container(
-                                                                                padding: const EdgeInsets.all(6),
-                                                                                decoration: BoxDecoration(
-                                                                                  color: Colors.white.withOpacity(0.2),
-                                                                                  borderRadius: BorderRadius.circular(6),
-                                                                                ),
-                                                                                child: const Icon(
-                                                                                  Icons.description,
-                                                                                  color: Colors.white,
-                                                                                  size: 18,
-                                                                                ),
-                                                                              ),
-                                                                              const SizedBox(width: 10),
-                                                                              const Expanded(
-                                                                                child: Text(
-                                                                                  'Bid Description',
-                                                                                  style: TextStyle(
-                                                                                    color: Colors.white,
-                                                                                    fontSize: 16,
-                                                                                    fontWeight: FontWeight.bold,
-                                                                                  ),
-                                                                                ),
-                                                                              ),
-                                                                              IconButton(
-                                                                                onPressed: () => Navigator.pop(context),
-                                                                                icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                                                                                padding: EdgeInsets.zero,
-                                                                                constraints: const BoxConstraints(),
-                                                                              ),
-                                                                            ],
-                                                                          ),
-                                                                        ),
-                                                                        Padding(
-                                                                          padding: const EdgeInsets
-                                                                              .all(
-                                                                              24),
-                                                                          child:
-                                                                              Column(
-                                                                            mainAxisSize:
-                                                                                MainAxisSize.min,
-                                                                            children: [
-                                                                              Text(
-                                                                                message,
-                                                                                style: const TextStyle(fontSize: 14),
-                                                                              ),
-                                                                              const SizedBox(height: 24),
-                                                                              SizedBox(
-                                                                                width: double.infinity,
-                                                                                child: ElevatedButton(
-                                                                                  onPressed: () => Navigator.pop(context),
-                                                                                  style: ElevatedButton.styleFrom(
-                                                                                    backgroundColor: Colors.amber.shade700,
-                                                                                    foregroundColor: Colors.white,
-                                                                                    padding: const EdgeInsets.symmetric(vertical: 16),
-                                                                                  ),
-                                                                                  child: const Text('Close'),
-                                                                                ),
-                                                                              ),
-                                                                            ],
-                                                                          ),
-                                                                        ),
-                                                                      ],
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              );
-                                                            },
-                                                            icon: const Icon(
-                                                                Icons
-                                                                    .info_outline,
-                                                                size: 16),
-                                                            label: const Text(
-                                                                'More Details'),
-                                                            style: TextButton
-                                                                .styleFrom(
-                                                              foregroundColor:
-                                                                  Colors.blue
-                                                                      .shade700,
-                                                              textStyle:
-                                                                  const TextStyle(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w600,
-                                                                fontSize: 14,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                          if (projectStatus !=
-                                                              'stopped')
-                                                            Row(
-                                                              children: [
-                                                                TextButton(
-                                                                  onPressed:
-                                                                      () async {
-                                                                    final reasonController = TextEditingController();
-                                                                    final reason = await showDialog<String>(
-                                                                      context: context,
-                                                                      builder: (context) => AlertDialog(
-                                                                        title: const Text('Reject Bid'),
-                                                                        content: TextField(
-                                                                          controller: reasonController,
-                                                                          decoration: const InputDecoration(
-                                                                            labelText: 'Reason for rejection (optional)',
-                                                                            hintText: 'Enter reason...',
-                                                                          ),
-                                                                          maxLines: 3,
-                                                                        ),
-                                                                        actions: [
-                                                                          TextButton(
-                                                                            onPressed: () => Navigator.pop(context),
-                                                                            child: const Text('Cancel'),
-                                                                          ),
-                                                                          TextButton(
-                                                                            onPressed: () => Navigator.pop(context, reasonController.text.trim()),
-                                                                            child: const Text('Reject'),
-                                                                          ),
-                                                                        ],
-                                                                      ),
-                                                                    );
-                                                                    
-                                                                    if (reason != null) {
-                                                                      try {
-                                                                        await BiddingService().rejectBid(bid['bid_id']);
-
-                                                                        final supabase = Supabase.instance.client;
-                                                                        
-                                                             
-                                                                        final contracteeData = await FetchService().fetchContracteeData(supabase.auth.currentUser!.id);
-                                                                        final contracteeName = contracteeData != null 
-                                                                          ? '${contracteeData['full_name']}'
-                                                                          : 'Contractee';
-                                                                        
-                                                                        final contractorId = bid['contractor']?['contractor_id'] ?? bid['contractor_id'];
-                                                                        if (contractorId != null) {
-                                                                          await NotificationService().createBidNotification(
-                                                                            receiverId: contractorId,
-                                                                            receiverType: 'contractor',
-                                                                            senderId: supabase.auth.currentUser!.id,
-                                                                            senderType: 'contractee',
-                                                                            bidId: bid['bid_id'],
-                                                                            projectId: projectId,
-                                                                            type: 'Bid Rejected',
-                                                                            message: reason.isNotEmpty 
-                                                                              ? 'Your bid was rejected by $contracteeName: $reason' 
-                                                                              : 'Your bid was rejected by $contracteeName.',
-                                                                          );
-                                                                        }
-                                                                        
-                                                                        if (context.mounted) {
-                                                                          setState(() {
-                                                                            bidsFuture = BiddingService().getBidsForProject(projectId);
-                                                                          });
-                                                                          Navigator.of(context).pop(true);
-                                                                        }
-                                                                      } catch (e) {
-                                                                        if (context.mounted) {
-                                                                          ConTrustSnackBar.error(context, 'Error rejecting bid: $e');
-                                                                        }
-                                                                      }
-                                                                    }
-                                                                  },
-                                                                  style: TextButton
-                                                                      .styleFrom(
-                                                                    backgroundColor:
-                                                                        Colors
-                                                                            .red
-                                                                            .shade50,
-                                                                    foregroundColor:
-                                                                        Colors
-                                                                            .red
-                                                                            .shade700,
-                                                                    side: BorderSide(
-                                                                        color: Colors
-                                                                            .red
-                                                                            .shade300,
-                                                                        width:
-                                                                            1),
-                                                                    padding: const EdgeInsets
-                                                                        .symmetric(
-                                                                        horizontal:
-                                                                            16,
-                                                                        vertical:
-                                                                            8),
-                                                                    shape:
-                                                                        RoundedRectangleBorder(
-                                                                      borderRadius:
-                                                                          BorderRadius.circular(
-                                                                              6),
-                                                                    ),
-                                                                    textStyle:
-                                                                        const TextStyle(
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .w600,
-                                                                      fontSize:
-                                                                          14,
-                                                                    ),
-                                                                  ),
-                                                                  child: const Text(
-                                                                      'Reject'),
-                                                                ),
-                                                                const SizedBox(
-                                                                    width: 8),
-                                                                ElevatedButton(
-                                                                  onPressed:
-                                                                      () async {
-                                                                    try {
-                                                                      await acceptBidding(
-                                                                          projectId,
-                                                                          bid['bid_id']);
-                                                                      if (context
-                                                                          .mounted) {
-                                                                        setState(
-                                                                            () {
-                                                                          acceptedBidId =
-                                                                              bid['bid_id'];
-                                                                          bidsFuture =
-                                                                              BiddingService().getBidsForProject(projectId);
-                                                                        });
-
-                                                                        Navigator.pop(
-                                                                            context);
-                                                                      }
-                                                                    } catch (e) {
-                                                                      if (context.mounted) {
-                                                                        ConTrustSnackBar.error(context, 'Error accepting bid: $e');
-                                                                      }
-                                                                    }
-                                                                  },
-                                                                  style: ElevatedButton
-                                                                      .styleFrom(
-                                                                    backgroundColor:
-                                                                        Colors
-                                                                            .green
-                                                                            .shade600,
-                                                                    side: BorderSide(
-                                                                        color: Colors
-                                                                            .green
-                                                                            .shade600,
-                                                                        width:
-                                                                            1),
-                                                                    foregroundColor:
-                                                                        Colors
-                                                                            .white,
-                                                                    padding: const EdgeInsets
-                                                                        .symmetric(
-                                                                        horizontal:
-                                                                            16,
-                                                                        vertical:
-                                                                            8),
-                                                                    shape:
-                                                                        RoundedRectangleBorder(
-                                                                      borderRadius:
-                                                                          BorderRadius.circular(
-                                                                              6),
-                                                                    ),
-                                                                    textStyle:
-                                                                        const TextStyle(
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .w600,
-                                                                      fontSize:
-                                                                          14,
-                                                                    ),
-                                                                  ),
-                                                                  child: const Text(
-                                                                      'Accept'),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                        ],
-                                                      ),
-                                                    ],
-                                                  ],
-                                                ),
-                                              ));
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }),
-                      ),
-                    ],
-                  );
-                },
+              child: _BidsModalContent(
+                projectId: projectId,
+                initialAcceptedBidId: initialAcceptedBidId,
+                acceptBidding: acceptBidding,
+                onRefresh: onRefresh,
+                projectStatus: projectStatus,
+                initialBidsFuture: bidsFuture,
               ),
             ),
           ),
@@ -1244,6 +679,679 @@ class BidsModal {
     );
 
     return result ?? false;
+  }
+}
+
+class _BidsModalContent extends StatefulWidget {
+  final String projectId;
+  final String? initialAcceptedBidId;
+  final Future<void> Function(String projectId, String bidId) acceptBidding;
+  final VoidCallback? onRefresh;
+  final String? projectStatus;
+  final Future<List<Map<String, dynamic>>> initialBidsFuture;
+
+  const _BidsModalContent({
+    required this.projectId,
+    this.initialAcceptedBidId,
+    required this.acceptBidding,
+    this.onRefresh,
+    this.projectStatus,
+    required this.initialBidsFuture,
+  });
+
+  @override
+  State<_BidsModalContent> createState() => _BidsModalContentState();
+}
+
+class _BidsModalContentState extends State<_BidsModalContent> {
+  String? acceptedBidId;
+  late Future<List<Map<String, dynamic>>> bidsFuture;
+  RealtimeChannel? _bidsChannel;
+  int _refreshKey = 0; // Key to force FutureBuilder rebuild
+
+  @override
+  void initState() {
+    super.initState();
+    acceptedBidId = widget.initialAcceptedBidId;
+    bidsFuture = widget.initialBidsFuture;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _setupRealtimeSubscription();
+    });
+  }
+
+  void _setupRealtimeSubscription() {
+    _bidsChannel = RealtimeSubscriptionService().subscribeToProjectBids(
+      projectId: widget.projectId,
+      onUpdate: () {
+        if (mounted) {
+          // Force a complete refresh by creating a new future and incrementing key
+          setState(() {
+            _refreshKey++;
+            bidsFuture = BiddingService().getBidsForProject(widget.projectId);
+          });
+        }
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _bidsChannel?.unsubscribe();
+    RealtimeSubscriptionService().unsubscribeFromChannel('project_bids_${widget.projectId}');
+    super.dispose();
+  }
+
+  void _refreshBids() {
+    setState(() {
+      _refreshKey++;
+      bidsFuture = BiddingService().getBidsForProject(widget.projectId);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.amber.shade700,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Icon(
+                  Icons.gavel,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Project Bids',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.close,
+                    color: Colors.white, size: 20),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: FutureBuilder<List<Map<String, dynamic>>>(
+            key: ValueKey('bids_$_refreshKey'),
+            future: bidsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const SizedBox(
+                  height: 400,
+                  child: Center(
+                    child: CircularProgressIndicator(color: Colors.amber),
+                  ),
+                );
+              }
+              if (snapshot.hasError) {
+                return SizedBox(
+                  height: 400,
+                  child: Center(
+                    child: Text('Error loading bids: ${snapshot.error}'),
+                  ),
+                );
+              }
+              final bids = snapshot.data ?? [];
+              if (bids.isEmpty) {
+                return const SizedBox(
+                  height: 400,
+                  child: Center(
+                    child: Text('No bids for this project yet.'),
+                  ),
+                );
+              }
+              final anyAccepted = bids.any((bid) => bid['status'] == 'accepted');
+              return SizedBox(
+                height: 500,
+                child: Column(
+                  children: [
+                    if (widget.projectStatus == 'stopped')
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          border: Border.all(color: Colors.orange.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline,
+                                color: Colors.orange.shade700, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Bidding period has expired. Update the project to restart bidding or cancel it.',
+                                style: TextStyle(
+                                  color: Colors.orange.shade900,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    Expanded(
+                      child: ListView.separated(
+                        itemCount: bids.length,
+                        separatorBuilder: (context, index) =>
+                            const Divider(height: 1, color: Colors.grey),
+                        itemBuilder: (context, index) {
+                          final bid = bids[index];
+                          final contractor = bid['contractor'] ?? {};
+                          final dynamic profilePhotoRaw = contractor['profile_photo'];
+                          final String profilePhoto = profilePhotoRaw is String
+                              ? profilePhotoRaw
+                              : profilePhotoRaw?.toString() ?? '';
+                          final firmName = contractor['firm_name'] as String? ?? 'Unknown Firm';
+                          final bidAmount = bid['bid_amount'] ?? 0;
+                          final message = bid['message'] as String? ?? '';
+                          final createdAtStr = bid['created_at'] as String? ?? '';
+                          final status = bid['status'] as String? ?? 'pending';
+                          DateTime? createdAt;
+                          if (createdAtStr.isNotEmpty) {
+                            try {
+                              createdAt = DateTime.parse(createdAtStr).toLocal();
+                            } catch (_) {
+                              createdAt = null;
+                            }
+                          }
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border.all(color: Colors.grey.shade300, width: 1),
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 28,
+                                        backgroundImage: profilePhoto.isNotEmpty
+                                            ? NetworkImage(profilePhoto)
+                                            : NetworkImage(BidsModal.profileUrl),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              firmName,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 8,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.amber.shade50,
+                                                borderRadius: BorderRadius.circular(8),
+                                                border: Border.all(
+                                                  color: Colors.amber.shade200,
+                                                  width: 1,
+                                                ),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  const Text(
+                                                    'Bid Amount: ',
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: Colors.black87,
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    '₱$bidAmount',
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Colors.amber.shade700,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              createdAt != null
+                                                  ? DateFormat.yMMMd().add_jm().format(createdAt)
+                                                  : '',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  if (status == 'accepted') ...[
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.shade600,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Text(
+                                        'Accepted Bid',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ] else if (status == 'rejected') ...[
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.shade100,
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: Colors.red.shade300),
+                                      ),
+                                      child: const Text(
+                                        'Rejected',
+                                        style: TextStyle(
+                                          color: Colors.red,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ] else if (!anyAccepted) ...[
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        TextButton.icon(
+                                          onPressed: () {
+                                            if (!mounted) return;
+                                            showDialog(
+                                              context: context,
+                                              builder: (dialogContext) => Dialog(
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(20)),
+                                                child: Container(
+                                                  constraints: const BoxConstraints(maxWidth: 500),
+                                                  decoration: BoxDecoration(
+                                                    borderRadius: BorderRadius.circular(20),
+                                                    gradient: LinearGradient(
+                                                      begin: Alignment.topLeft,
+                                                      end: Alignment.bottomRight,
+                                                      colors: [Colors.white, Colors.grey.shade50],
+                                                    ),
+                                                  ),
+                                                  child: Column(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Container(
+                                                        padding: const EdgeInsets.all(20),
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.amber.shade700,
+                                                          borderRadius: const BorderRadius.only(
+                                                            topLeft: Radius.circular(20),
+                                                            topRight: Radius.circular(20),
+                                                          ),
+                                                        ),
+                                                        child: Row(
+                                                          children: [
+                                                            Container(
+                                                              padding: const EdgeInsets.all(6),
+                                                              decoration: BoxDecoration(
+                                                                color: Colors.white.withOpacity(0.2),
+                                                                borderRadius: BorderRadius.circular(6),
+                                                              ),
+                                                              child: const Icon(Icons.description,
+                                                                  color: Colors.white, size: 18),
+                                                            ),
+                                                            const SizedBox(width: 10),
+                                                            const Expanded(
+                                                              child: Text(
+                                                                'Bid Description',
+                                                                style: TextStyle(
+                                                                  color: Colors.white,
+                                                                  fontSize: 16,
+                                                                  fontWeight: FontWeight.bold,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                            IconButton(
+                                                              onPressed: () => Navigator.pop(dialogContext),
+                                                              icon: const Icon(Icons.close,
+                                                                  color: Colors.white, size: 20),
+                                                              padding: EdgeInsets.zero,
+                                                              constraints: const BoxConstraints(),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      Padding(
+                                                        padding: const EdgeInsets.all(24),
+                                                        child: Column(
+                                                          mainAxisSize: MainAxisSize.min,
+                                                          children: [
+                                                            Text(message, style: const TextStyle(fontSize: 14)),
+                                                            const SizedBox(height: 24),
+                                                            SizedBox(
+                                                              width: double.infinity,
+                                                              child: ElevatedButton(
+                                                                onPressed: () => Navigator.pop(dialogContext),
+                                                                style: ElevatedButton.styleFrom(
+                                                                  backgroundColor: const Color(0xFFFFB300),
+                                                                  foregroundColor: Colors.white,
+                                                                  minimumSize: const Size.fromHeight(50),
+                                                                  shape: RoundedRectangleBorder(
+                                                                    borderRadius: BorderRadius.circular(8),
+                                                                  ),
+                                                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                                                ),
+                                                                child: const Text('Close'),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          icon: const Icon(Icons.info_outline, size: 16),
+                                          label: const Text('More Details'),
+                                          style: TextButton.styleFrom(
+                                            foregroundColor: Colors.blue.shade700,
+                                            textStyle: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ),
+                                        if (widget.projectStatus != 'stopped')
+                                          Row(
+                                            children: [
+                                              TextButton(
+                                                onPressed: () async {
+                                                  if (!mounted) return;
+                                                  final reasonController = TextEditingController();
+                                                  final reason = await showDialog<String>(
+                                                    context: context,
+                                                    builder: (dialogContext) => Center(
+                                                      child: Material(
+                                                        color: Colors.transparent,
+                                                        child: Container(
+                                                          constraints: const BoxConstraints(maxWidth: 500),
+                                                          margin: const EdgeInsets.symmetric(horizontal: 16),
+                                                          decoration: BoxDecoration(
+                                                            color: Colors.white,
+                                                            borderRadius: BorderRadius.circular(20),
+                                                            border: Border.all(color: Colors.black, width: 1.5),
+                                                            boxShadow: [
+                                                              BoxShadow(
+                                                                color: Colors.black.withOpacity(0.15),
+                                                                blurRadius: 20,
+                                                                spreadRadius: 1,
+                                                                offset: const Offset(0, 8),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                          child: Column(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            children: [
+                                                              Container(
+                                                                padding: const EdgeInsets.all(20),
+                                                                decoration: BoxDecoration(
+                                                                  color: Colors.amber.shade700,
+                                                                  borderRadius: const BorderRadius.only(
+                                                                    topLeft: Radius.circular(20),
+                                                                    topRight: Radius.circular(20),
+                                                                  ),
+                                                                ),
+                                                                child: Row(
+                                                                  children: [
+                                                                    Container(
+                                                                      padding: const EdgeInsets.all(6),
+                                                                      decoration: BoxDecoration(
+                                                                        color: Colors.white.withOpacity(0.2),
+                                                                        borderRadius: BorderRadius.circular(6),
+                                                                      ),
+                                                                      child: const Icon(Icons.cancel,
+                                                                          color: Colors.white, size: 18),
+                                                                    ),
+                                                                    const SizedBox(width: 10),
+                                                                    const Expanded(
+                                                                      child: Text(
+                                                                        'Reject Bid',
+                                                                        style: TextStyle(
+                                                                          color: Colors.white,
+                                                                          fontSize: 16,
+                                                                          fontWeight: FontWeight.bold,
+                                                                        ),
+                                                                      ),
+                                                                    ),
+                                                                    IconButton(
+                                                                      onPressed: () => Navigator.pop(dialogContext),
+                                                                      icon: const Icon(Icons.close,
+                                                                          color: Colors.white, size: 20),
+                                                                      padding: EdgeInsets.zero,
+                                                                      constraints: const BoxConstraints(),
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                              ),
+                                                              Flexible(
+                                                                child: SingleChildScrollView(
+                                                                  padding: const EdgeInsets.all(16),
+                                                                  child: Column(
+                                                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                                                    children: [
+                                                                      const SizedBox(height: 16),
+                                                                      Padding(
+                                                                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                                                                        child: Column(
+                                                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                                                          children: [
+                                                                            const Text(
+                                                                              'Reason for rejection (optional)',
+                                                                              style: TextStyle(
+                                                                                fontWeight: FontWeight.bold,
+                                                                                fontSize: 16,
+                                                                              ),
+                                                                            ),
+                                                                            const SizedBox(height: 8),
+                                                                            TextField(
+                                                                              controller: reasonController,
+                                                                              decoration: const InputDecoration(
+                                                                                hintText: 'Enter reason...',
+                                                                                border: OutlineInputBorder(),
+                                                                              ),
+                                                                              maxLines: 3,
+                                                                            ),
+                                                                          ],
+                                                                        ),
+                                                                      ),
+                                                                      const SizedBox(height: 24),
+                                                                      Padding(
+                                                                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                                                                        child: Row(
+                                                                          mainAxisAlignment: MainAxisAlignment.end,
+                                                                          children: [
+                                                                            TextButton(
+                                                                              onPressed: () => Navigator.pop(dialogContext),
+                                                                              child: const Text('Cancel'),
+                                                                            ),
+                                                                            const SizedBox(width: 8),
+                                                                            ElevatedButton(
+                                                                              onPressed: () => Navigator.pop(
+                                                                                  dialogContext, reasonController.text.trim()),
+                                                                              style: ElevatedButton.styleFrom(
+                                                                                backgroundColor: const Color(0xFFFFB300),
+                                                                                foregroundColor: Colors.black,
+                                                                                minimumSize: const Size.fromHeight(50),
+                                                                                shape: RoundedRectangleBorder(
+                                                                                  borderRadius: BorderRadius.circular(8),
+                                                                                ),
+                                                                              ),
+                                                                              child: const Text('Reject'),
+                                                                            ),
+                                                                          ],
+                                                                        ),
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  );
+                                                  
+                                                  if (!mounted) return;
+                                                  
+                                                  if (reason != null) {
+                                                    try {
+                                                      await BiddingService().rejectBid(
+                                                        bid['bid_id'],
+                                                        reason: reason.isNotEmpty ? reason : null,
+                                                        projectId: widget.projectId,
+                                                      );
+                                                      
+                                                      if (mounted) {
+                                                        _refreshBids();
+                                                        ConTrustSnackBar.success(context, 'Bid rejected successfully');
+                                                      }
+                                                    } catch (e) {
+                                                      if (mounted) {
+                                                        ConTrustSnackBar.error(context, 'Error rejecting bid: $e');
+                                                      }
+                                                    }
+                                                  }
+                                                },
+                                                style: TextButton.styleFrom(
+                                                  backgroundColor: Colors.red.shade50,
+                                                  foregroundColor: Colors.red.shade700,
+                                                  side: BorderSide(color: Colors.red.shade300, width: 1),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(6),
+                                                  ),
+                                                  textStyle: const TextStyle(
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                                child: const Text('Reject'),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              ElevatedButton(
+                                                onPressed: () async {
+                                                  if (!mounted) return;
+                                                  try {
+                                                    await widget.acceptBidding(widget.projectId, bid['bid_id']);
+                                                    if (!mounted) return;
+                                                    setState(() {
+                                                      acceptedBidId = bid['bid_id'];
+                                                    });
+                                                    _refreshBids();
+                                                    if (mounted) {
+                                                      ConTrustSnackBar.success(context, 'Bid accepted successfully!');
+                                                    }
+                                                    if (widget.onRefresh != null) {
+                                                      widget.onRefresh!();
+                                                    }
+                                                  } catch (e) {
+                                                    if (mounted) {
+                                                      ConTrustSnackBar.error(context, 'Error accepting bid: $e');
+                                                    }
+                                                  }
+                                                },
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.green.shade600,
+                                                  side: BorderSide(color: Colors.green.shade600, width: 1),
+                                                  foregroundColor: Colors.white,
+                                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(6),
+                                                  ),
+                                                  textStyle: const TextStyle(
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                                child: const Text('Accept'),
+                                              ),
+                                            ],
+                                          ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -1269,6 +1377,7 @@ class HireModal {
 
     TextEditingController titleController = TextEditingController();
     TextEditingController typeController = TextEditingController();
+    TextEditingController customTypeController = TextEditingController();
     TextEditingController descriptionController = TextEditingController();
     TextEditingController locationController = TextEditingController();
     TextEditingController minBudgetController = TextEditingController();
@@ -1326,6 +1435,9 @@ class HireModal {
 
     final formKey = GlobalKey<FormState>();
     bool isLoading = false;
+    
+    // Fetch specializations once before showing dialog
+    final availableSpecializations = await FetchService().fetchAllContractorSpecializations();
 
     final result = await showDialog<bool>(
       context: context,
@@ -1336,6 +1448,21 @@ class HireModal {
             final hasAutoFilledProject = existingProjectWithContractor != null || 
                                                pendingProject != null || 
                                                pendingHireRequest != null;
+            
+            // Check if current type is custom
+            final showCustomField = !hasAutoFilledProject && 
+                (typeController.text.toLowerCase() == 'other' || 
+                 (typeController.text.isNotEmpty && 
+                  !availableSpecializations.contains(typeController.text)));
+            
+            // If existing type is custom, populate custom field once
+            if (typeController.text.isNotEmpty && 
+                !availableSpecializations.contains(typeController.text) &&
+                typeController.text.toLowerCase() != 'other' &&
+                customTypeController.text.isEmpty) {
+              customTypeController.text = typeController.text;
+              typeController.text = 'Other';
+            }
             
             return Center(
               child: Material(
@@ -1496,35 +1623,69 @@ class HireModal {
                                 const SizedBox(height: 16),
                                 _buildLabeledField(
                                   label: 'Type of Construction',
-                                  child: DropdownButtonFormField<String>(
-                                    value: typeController.text.isNotEmpty
-                                        ? typeController.text
-                                        : null,
-                                    items: constructionTypes
-                                        .map((type) => DropdownMenuItem(
-                                              value: type,
-                                              child: Text(type),
-                                            ))
-                                        .toList(),
-                                    onChanged: hasAutoFilledProject 
-                                      ? null
-                                      : (value) {
-                                          typeController.text = value ?? '';
-                                        },
-                                    decoration: InputDecoration(
-                                      labelText: hasAutoFilledProject
-                                        ? 'Construction type'
-                                        : 'Select construction type',
-                                      border: const OutlineInputBorder(),
-                                      filled: hasAutoFilledProject,
-                                      fillColor: hasAutoFilledProject 
-                                        ? Colors.grey.shade100 
-                                        : null,
-                                    ),
-                                    validator: (value) =>
-                                        (value == null || value.isEmpty)
-                                            ? 'Please select a type'
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      DropdownButtonFormField<String>(
+                                        value: typeController.text.isNotEmpty &&
+                                                (availableSpecializations.contains(typeController.text) ||
+                                                 typeController.text.toLowerCase() == 'other')
+                                            ? typeController.text
                                             : null,
+                                        items: [
+                                          ...availableSpecializations.map((type) => DropdownMenuItem(
+                                                value: type,
+                                                child: Text(type),
+                                              )),
+                                          const DropdownMenuItem(
+                                              value: 'Other', child: Text('Other')),
+                                        ],
+                                        onChanged: hasAutoFilledProject 
+                                          ? null
+                                          : (value) {
+                                              setDialogState(() {
+                                                typeController.text = value ?? '';
+                                                if (value?.toLowerCase() != 'other') {
+                                                  customTypeController.clear();
+                                                }
+                                              });
+                                            },
+                                        decoration: InputDecoration(
+                                          labelText: hasAutoFilledProject
+                                            ? 'Construction type'
+                                            : 'Select construction type',
+                                          border: const OutlineInputBorder(),
+                                          filled: hasAutoFilledProject,
+                                          fillColor: hasAutoFilledProject 
+                                            ? Colors.grey.shade100 
+                                            : null,
+                                        ),
+                                        validator: (value) =>
+                                            (value == null || value.isEmpty)
+                                                ? 'Please select a type'
+                                                : null,
+                                      ),
+                                      if (showCustomField) ...[
+                                        const SizedBox(height: 16),
+                                        TextFormField(
+                                          controller: customTypeController,
+                                          decoration: const InputDecoration(
+                                            labelText: 'Enter custom construction type',
+                                            hintText: 'e.g., Kitchen Renovation',
+                                            border: OutlineInputBorder(),
+                                            prefixIcon: Icon(Icons.edit),
+                                          ),
+                                          textCapitalization: TextCapitalization.words,
+                                          validator: (value) {
+                                            if (showCustomField &&
+                                                (value == null || value.trim().isEmpty)) {
+                                              return 'Please enter a construction type';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                 ),
                                 const SizedBox(height: 16),
@@ -1674,8 +1835,7 @@ class HireModal {
                                                 initialDate:
                                                     selectedStartDate ?? DateTime.now(),
                                                 firstDate: DateTime.now(),
-                                                lastDate: DateTime.now()
-                                                    .add(const Duration(days: 365)),
+                                                lastDate: DateTime.now().add(const Duration(days: 365)),
                                               );
                                               if (picked != null) {
                                                 setDialogState(() {
@@ -1749,11 +1909,19 @@ class HireModal {
                                       setDialogState(() => isLoading = true);
 
                                       try {
+                                        // Determine final project type (use custom if "Other" is selected)
+                                        String finalProjectType;
+                                        if (typeController.text.trim().toLowerCase() == 'other') {
+                                          finalProjectType = toProperCase(customTypeController.text.trim());
+                                        } else {
+                                          finalProjectType = typeController.text.trim();
+                                        }
+                                        
                                         await ProjectService().notifyContractor(
                                           contracteeId: contracteeId,
                                           contractorId: contractorId,
                                           title: titleController.text.trim(),
-                                          type: typeController.text.trim(),
+                                          type: finalProjectType,
                                           description:
                                               descriptionController.text.trim(),
                                           location:
@@ -1773,7 +1941,7 @@ class HireModal {
                                       }
                                     },
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.amber,
+                                      backgroundColor: const Color(0xFFFFB300),
                                       foregroundColor: Colors.black,
                                       minimumSize: const Size.fromHeight(50),
                                       shape: RoundedRectangleBorder(

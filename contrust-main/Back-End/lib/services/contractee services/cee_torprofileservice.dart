@@ -1,3 +1,4 @@
+import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class TorProfileService {
@@ -58,7 +59,7 @@ class TorProfileService {
           'contractee_id': contracteeId,
           'rating': rating,
           'review': reviewText,
-          'created_at': DateTime.now().toIso8601String(),
+          'created_at': DateTimeHelper.getLocalTimeISOString(),
         });
       }
       await updateContractorAverageRating(contractorId);

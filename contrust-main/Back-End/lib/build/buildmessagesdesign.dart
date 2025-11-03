@@ -46,8 +46,12 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
   bool _isLoading = true;
   final bool _isProcessing = false; 
 
+  bool _contractorSigned = false;
+  bool _contracteeSigned = false;
+
   late final StreamSubscription _projectSubscription;
   late final StreamSubscription _messagesSubscription;
+  StreamSubscription? _contractsSubscription;
 
   final SuperAdminErrorService _errorService = SuperAdminErrorService();
 
@@ -109,6 +113,36 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
               });
             }
           });
+
+      // Subscribe to Contracts for signature updates
+      _contractsSubscription?.cancel();
+      _contractsSubscription = supabase
+          .from('Contracts')
+          .stream(primaryKey: ['contract_id'])
+          .eq('project_id', projectId)
+          .listen((contracts) {
+        if (contracts.isNotEmpty) {
+          // Consider the most recent contract row
+          final latest = contracts.first;
+          final contractorUrl = latest['contractor_signature_url'] as String?;
+          final contracteeUrl = latest['contractee_signature_url'] as String?;
+          final contractorSigned = (contractorUrl != null && contractorUrl.isNotEmpty);
+          final contracteeSigned = (contracteeUrl != null && contracteeUrl.isNotEmpty);
+          if (mounted) {
+            setState(() {
+              _contractorSigned = contractorSigned;
+              _contracteeSigned = contracteeSigned;
+            });
+          }
+        } else {
+          if (mounted) {
+            setState(() {
+              _contractorSigned = false;
+              _contracteeSigned = false;
+            });
+          }
+        }
+      });
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Failed to check project: $e',
@@ -127,6 +161,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
   void dispose() {
     _projectSubscription.cancel();
     _messagesSubscription.cancel();
+    _contractsSubscription?.cancel();
     super.dispose();
   }
 
@@ -238,7 +273,18 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
     }
 
     if (projectStatus == 'awaiting_signature') {
-      bannerText = "Contract approved! Waiting for both parties to sign.";
+      // Provide more specific message depending on who has signed
+      if (_contractorSigned && !_contracteeSigned) {
+        bannerText = widget.userRole == 'contractor'
+            ? "You've signed the contract. Waiting for the contractee to sign."
+            : "Contractor has signed. Please review and sign to activate the project.";
+      } else if (_contracteeSigned && !_contractorSigned) {
+        bannerText = widget.userRole == 'contractee'
+            ? "You've signed the contract. Waiting for the contractor to sign."
+            : "Contractee has signed. Please sign to activate the project.";
+      } else {
+        bannerText = "Contract approved! Waiting for both parties to sign.";
+      }
       buttonText = "Awaiting Signatures";
       onPressed = null;
       bannerColor = Colors.purple[50]!;
@@ -779,9 +825,6 @@ class UIMessage {
       final isContractee = currentUserId != null &&
           contractData['contractee_id'] == currentUserId;
 
-      final contractStatus = contractData['status'] as String?;
-      final messageStatus = messageData?['status'] as String?;
-      final displayStatus = messageStatus ?? contractStatus;
 
       showDialog(
           context: context,
@@ -840,26 +883,36 @@ class UIMessage {
                             ),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    contractData['title'] ?? 'Contract',
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Status: ${_formatStatus(displayStatus)}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.white70,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
+                              child: StreamBuilder<Map<String, dynamic>?>(
+                                stream: FetchService().streamContractById(contractId),
+                                initialData: contractData,
+                                builder: (context, snapshot) {
+                                  final liveData = snapshot.data ?? contractData;
+                                  final contractStatus = liveData['status'] as String?;
+                                  final messageStatus = messageData?['status'] as String?;
+                                  final displayStatus = messageStatus ?? contractStatus;
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        liveData['title'] ?? 'Contract',
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Status: ${_formatStatus(displayStatus)}',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.white70,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
                               ),
                             ),
                             IconButton(
@@ -870,12 +923,20 @@ class UIMessage {
                         ),
                       ),
                       Expanded(
-                        child: SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (isContractee &&
-                                  (displayStatus == 'sent')) ...[
+                        child: StreamBuilder<Map<String, dynamic>?>(
+                          stream: FetchService().streamContractById(contractId),
+                          initialData: contractData,
+                          builder: (context, snap) {
+                            final data = snap.data ?? contractData;
+                            final contractStatus = data['status'] as String?;
+                            final messageStatus = messageData?['status'] as String?;
+                            final displayStatus = messageStatus ?? contractStatus;
+                            return SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (isContractee &&
+                                      (displayStatus == 'sent')) ...[
                                 Card(
                                   color: Colors.amber[50],
                                   child: Padding(
@@ -883,13 +944,11 @@ class UIMessage {
                                     child: _ContractApprovalButtons(
                                       contractId: contractId,
                                       onApproved: () async {
-                                        onRefresh();
                                         Navigator.of(context).pop();
                                         ConTrustSnackBar.contractApproved(
                                             context);
                                       },
                                       onRejected: () async {
-                                        onRefresh();
                                         Navigator.of(context).pop();
                                         ConTrustSnackBar.contractRejected(
                                             context);
@@ -916,12 +975,12 @@ class UIMessage {
                                           children: [
                                             ElevatedButton.icon(
                                               onPressed: () async {
-                                                await _downloadContract(contractData,
+                                                await _downloadContract(data,
                                                     context, messageData);
                                               },
                                               icon: const Icon(Icons.download, size: 16),
                                               label: Text(
-                                                _hasSignedPdf(contractData)
+                                                _hasSignedPdf(data)
                                                     ? 'Download Signed Contract'
                                                     : 'Download Contract',
                                                 style: const TextStyle(fontSize: 12),
@@ -945,7 +1004,7 @@ class UIMessage {
                                                   borderRadius: BorderRadius.circular(8),
                                                 ),
                                                 child: Text(
-                                                  _getSignatureMessage(contractData,
+                                                  _getSignatureMessage(data,
                                                       currentUserId, displayStatus),
                                                   textAlign: TextAlign.center,
                                                   style: TextStyle(
@@ -963,11 +1022,11 @@ class UIMessage {
                                     children: [
                                       ElevatedButton.icon(
                                         onPressed: () async {
-                                          await _downloadContract(contractData,
+                                          await _downloadContract(data,
                                               context, messageData);
                                         },
                                         icon: const Icon(Icons.download),
-                                        label: Text(_hasSignedPdf(contractData)
+                                        label: Text(_hasSignedPdf(data)
                                             ? 'Download Signed Contract'
                                             : 'Download Contract'),
                                         style: ElevatedButton.styleFrom(
@@ -989,7 +1048,7 @@ class UIMessage {
                                                     borderRadius: BorderRadius.circular(8),
                                             ),
                                             child: Text(
-                                              _getSignatureMessage(contractData,
+                                              _getSignatureMessage(data,
                                                   currentUserId, displayStatus),
                                               textAlign: TextAlign.center,
                                               style: TextStyle(
@@ -1010,7 +1069,7 @@ class UIMessage {
                               ),
                               const SizedBox(height: 16),
                               FutureBuilder<String?>(
-                                future: _getPdfUrl(contractData, messageData),
+                                future: _getPdfUrl(data, messageData),
                                 builder: (context, snapshot) {
                                   if (snapshot.connectionState ==
                                       ConnectionState.waiting) {
@@ -1056,14 +1115,14 @@ class UIMessage {
                                               ),
                                               const SizedBox(height: 8),
                                               Text(
-                                                'Signed PDF available: ${_hasSignedPdf(contractData)}',
+                                                'Signed PDF available: ${_hasSignedPdf(data)}',
                                                 style: TextStyle(
                                                     color: Colors.grey[600],
                                                     fontSize: 12),
                                               ),
-                                              if (_hasSignedPdf(contractData))
+                                              if (_hasSignedPdf(data))
                                                 Text(
-                                                  'Signed PDF path: ${contractData['signed_pdf_url']}',
+                                                  'Signed PDF path: ${data['signed_pdf_url']}',
                                                   style: TextStyle(
                                                       color: Colors.grey[600],
                                                       fontSize: 12),
@@ -1072,7 +1131,7 @@ class UIMessage {
                                               ElevatedButton.icon(
                                                 onPressed: () async {
                                                   await _downloadContract(
-                                                      contractData,
+                                                      data,
                                                       context,
                                                       messageData);
                                                 },
@@ -1102,11 +1161,11 @@ class UIMessage {
                                     pdfUrl: snapshot.data,
                                     onDownload: () async {
                                       await _downloadContract(
-                                          contractData, context);
+                                          data, context);
                                     },
                                     height: 500,
                                     isSignedContract:
-                                        _hasSignedPdf(contractData),
+                                        _hasSignedPdf(data),
                                   );
                                 },
                               ),
@@ -1131,7 +1190,7 @@ class UIMessage {
                                           Expanded(
                                             child: _buildSignatureDisplay(
                                               'Contractor',
-                                              contractData[
+                                              data[
                                                   'contractor_signature_url'],
                                             ),
                                           ),
@@ -1139,7 +1198,7 @@ class UIMessage {
                                           Expanded(
                                             child: _buildSignatureDisplay(
                                               'Contractee',
-                                              contractData[
+                                              data[
                                                   'contractee_signature_url'],
                                             ),
                                           ),
@@ -1147,18 +1206,20 @@ class UIMessage {
                                       ),
                                       const SizedBox(height: 16),
                                       _buildSignaturePad(
-                                          contractData,
+                                          data,
                                           currentUserId,
                                           context,
-                                          _canUserSign(contractData,
+                                          _canUserSign(data,
                                               currentUserId, displayStatus),
                                           onRefresh),
                                     ],
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
+                                ],
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ],

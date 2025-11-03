@@ -718,7 +718,7 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        backgroundColor: Colors.amber,
+        backgroundColor: const Color(0xFFFFB300),
         foregroundColor: Colors.white,
         leading: MediaQuery.of(context).size.width < 1200 ? IconButton(
           icon: const Icon(Icons.arrow_back),

@@ -12,6 +12,8 @@ import 'package:contractor/Screen/cor_contracttype.dart';
 import 'package:contractor/Screen/cor_createcontract.dart';
 import 'package:contractor/Screen/cor_messages.dart';
 import 'package:contractor/Screen/cor_ongoing.dart';
+import 'package:contractor/Screen/cor_notification.dart';
+import 'package:contractor/Screen/cor_viewcontract.dart';
 import 'package:contractor/Screen/cor_product.dart';
 import 'package:contractor/build/builddrawer.dart';
 import 'package:flutter/foundation.dart';
@@ -116,7 +118,6 @@ class _MyAppState extends State<MyApp> {
                       currentPage = ContractorPage.contractTypes;
                       break;
                     default:
-                      // Handle dynamic routes like /createcontract/:mode/:id
                       if (location.startsWith('/createcontract')) {
                         currentPage = ContractorPage.createContract;
                       } else if (location.startsWith('/chathistory')) {
@@ -129,6 +130,8 @@ class _MyAppState extends State<MyApp> {
                         currentPage = ContractorPage.projectManagement;
                       } else if (location.startsWith('/materials')) {
                         currentPage = ContractorPage.materials;
+                      } else if (location.startsWith('/viewcontract')) {
+                        currentPage = ContractorPage.contractTypes;
                       } else {
                         currentPage = ContractorPage.dashboard;
                       }
@@ -222,7 +225,7 @@ class _MyAppState extends State<MyApp> {
                           });
                           return const Scaffold(
                             body: Center(
-                              child: CircularProgressIndicator(color: Colors.amber),
+                              child: CircularProgressIndicator(color: Color(0xFFFFB300)),
                             ),
                           );
                         }
@@ -289,14 +292,14 @@ class _MyAppState extends State<MyApp> {
               },
             ),
             GoRoute(
-              path: '/project-management',
+              path: '/project-management/:projectId',
               pageBuilder: (context, state) {
                 return NoTransitionPage(
                   child: Builder(
                     builder: (context) {
                       final session = Supabase.instance.client.auth.currentSession;
-                      final projectId = state.extra as String?;
-                      if (session != null && projectId != null) {
+                      final projectId = state.pathParameters['projectId'];
+                      if (session != null && projectId != null && projectId.isNotEmpty) {
                         return CorOngoingProjectScreen(projectId: projectId);
                       }
                       return const ToLoginScreen();
@@ -319,6 +322,44 @@ class _MyAppState extends State<MyApp> {
                           contractorId: session.user.id,
                           projectId: projectId,
                         );
+                      }
+                      return const ToLoginScreen();
+                    },
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/viewcontract',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      final args = state.extra as Map<String, dynamic>?;
+                      final contractId = args?['contractId'] as String?;
+                      final contractorId = args?['contractorId'] as String? ?? session?.user.id;
+                      if (session != null && contractId != null && contractorId != null) {
+                        return ContractorViewContractPage(
+                          contractId: contractId,
+                          contractorId: contractorId,
+                        );
+                      }
+                      return const ToLoginScreen();
+                    },
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/notifications',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      if (session != null) {
+                        return const ContractorNotificationPage();
                       }
                       return const ToLoginScreen();
                     },
@@ -356,10 +397,40 @@ class _MyAppState extends State<MyApp> {
           path: '/:path(.*)',
           pageBuilder: (context, state) => NoTransitionPage(
             child: Builder(
-              builder: (context) => Scaffold(
+              builder: (context) {
+                final path = state.path ?? '';
+                if (path.startsWith('/createcontract/')) {
+                  final session = Supabase.instance.client.auth.currentSession;
+                  if (session != null) {
+                    final segments = Uri.parse(path).pathSegments;
+                    if (segments.length >= 3) {
+                      final mode = segments[1];
+                      final identifier = segments[2];
+
+                      Map<String, dynamic>? template;
+                      Map<String, dynamic>? existingContract;
+
+                      if (mode == 'template') {
+                        final decodedName = Uri.decodeComponent(identifier);
+                        template = {'template_name': decodedName};
+                      } else if (mode == 'contract') {
+                        existingContract = {'contract_id': identifier};
+                      }
+
+                      return CreateContractPage(
+                        contractorId: session.user.id,
+                        contractType: null,
+                        template: template,
+                        existingContract: existingContract,
+                      );
+                    }
+                  }
+                }
+
+                return Scaffold(
                 appBar: AppBar(
                   title: const Text('Page Not Found'),
-                  backgroundColor: Colors.amber,
+                  backgroundColor: const Color(0xFFFFB300),
                 ),
                 body: Center(
                   child: Column(
@@ -390,14 +461,19 @@ class _MyAppState extends State<MyApp> {
                       ElevatedButton(
                         onPressed: () => context.go('/dashboard'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.amber,
+                          backgroundColor: const Color(0xFFFFB300),
+                          minimumSize: const Size.fromHeight(50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                         child: const Text('Go to Dashboard'),
                       ),
                     ],
                   ),
                 ),
-              ),
+              );
+              },
             ),
           ),
         ),

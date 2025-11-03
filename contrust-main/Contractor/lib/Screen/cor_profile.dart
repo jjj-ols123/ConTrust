@@ -36,19 +36,21 @@ class _ContractorUserProfileScreenState
 
   bool isEditingBio = false;
   bool isEditingContact = false;
-  bool isEditingSpecialization = false;
   bool isEditingFirmName = false;
   bool isEditingAddress = false;
   
   late TextEditingController bioController;
   late TextEditingController contactController;
-  late TextEditingController specializationController;
   late TextEditingController firmNameController;
   late TextEditingController addressController;
 
   List<Map<String, dynamic>> completedProjects = [];
   List<Map<String, dynamic>> filteredProjects = [];
+  List<Map<String, dynamic>> allProjects = [];
+  List<Map<String, dynamic>> transactions = [];
+  List<Map<String, dynamic>> filteredTransactions = [];
   late TextEditingController searchController;
+  late TextEditingController transactionSearchController;
 
   Stream<List<Map<String, dynamic>>>? _completedProjectsStream;
 
@@ -56,6 +58,9 @@ class _ContractorUserProfileScreenState
   Map<int, int> ratingDistribution = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
   int totalReviews = 0;
   String? _error;
+  
+  String selectedProjectStatus = 'All';
+  String selectedPaymentType = 'All';
 
   @override
   void initState() {
@@ -68,11 +73,13 @@ class _ContractorUserProfileScreenState
     _initializeStreams();
     bioController = TextEditingController();
     contactController = TextEditingController();
-    specializationController = TextEditingController();
     firmNameController = TextEditingController();
     addressController = TextEditingController();
     searchController = TextEditingController();
+    transactionSearchController = TextEditingController();
     searchController.addListener(_onSearchChanged);
+    transactionSearchController.addListener(_filterTransactions);
+    _loadTransactions();
   }
 
   void _initializeStreams() {
@@ -83,11 +90,12 @@ class _ContractorUserProfileScreenState
   void dispose() {
     bioController.dispose();
     contactController.dispose();
-    specializationController.dispose();
     firmNameController.dispose();
     addressController.dispose();
     searchController.removeListener(_onSearchChanged);
+    transactionSearchController.removeListener(_filterTransactions);
     searchController.dispose();
+    transactionSearchController.dispose();
     super.dispose();
   }
 
@@ -107,7 +115,16 @@ class _ContractorUserProfileScreenState
             firmName = contractorData['firm_name'] ?? "No firm name";
             bio = contractorData['bio'] ?? "No bio available";
             contactNumber = contractorData['contact_number'] ?? "No contact number";
-            specialization = contractorData['specialization'] ?? "No specialization";
+            final specData = contractorData['specialization'];
+            if (specData is List) {
+              specialization = specData.isEmpty 
+                  ? "No specialization" 
+                  : specData.join(", ");
+            } else if (specData is String) {
+              specialization = specData.isEmpty ? "No specialization" : specData;
+            } else {
+              specialization = "No specialization";
+            }
             address = contractorData['address'] ?? "No address provided";
             rating = contractorData['rating']?.toDouble() ?? 0.0;
             profileImage = contractorData['profile_photo'];
@@ -138,7 +155,6 @@ class _ContractorUserProfileScreenState
   void _updateControllers() {
     bioController.text = bio;
     contactController.text = contactNumber;
-    specializationController.text = specialization;
     firmNameController.text = firmName;
     addressController.text = address;
   }
@@ -233,7 +249,6 @@ class _ContractorUserProfileScreenState
                     return SingleChildScrollView(
                       child: ProfileBuildMethods.buildMobileLayout(
                         firmName: firmName,
-                        specialization: specialization,
                         profileImage: profileImage,
                         profileUrl: profileUrl,
                         completedProjectsCount: completedProjectsCount,
@@ -261,7 +276,6 @@ class _ContractorUserProfileScreenState
                   } else {
                     return ProfileBuildMethods.buildDesktopLayout(
                       firmName: firmName,
-                      specialization: specialization,
                       profileImage: profileImage,
                       profileUrl: profileUrl,
                       completedProjectsCount: completedProjectsCount,
@@ -339,22 +353,18 @@ class _ContractorUserProfileScreenState
       isEditingFirmName: isEditingFirmName,
       isEditingBio: isEditingBio,
       isEditingContact: isEditingContact,
-      isEditingSpecialization: isEditingSpecialization,
       isEditingAddress: isEditingAddress,
       firmNameController: firmNameController,
       bioController: bioController,
       contactController: contactController,
-      specializationController: specializationController,
       addressController: addressController,
       toggleEditFirmName: () => _toggleEdit('firmName'),
       toggleEditBio: () => _toggleEdit('bio'),
       toggleEditContact: () => _toggleEdit('contact'),
-      toggleEditSpecialization: () => _toggleEdit('specialization'),
       toggleEditAddress: () => _toggleEdit('address'),
       saveFirmName: () => _saveField('firmName', firmNameController.text),
       saveBio: () => _saveField('bio', bioController.text),
       saveContact: () => _saveField('contact', contactController.text),
-      saveSpecialization: () => _saveField('specialization', specializationController.text),
       saveAddress: () => _saveField('address', addressController.text),
       contractorId: widget.contractorId,
     );
@@ -388,39 +398,88 @@ class _ContractorUserProfileScreenState
           );
         }
 
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(
-            child: Text('No completed projects found'),
-          );
-        }
-
+        final projectsData = snapshot.data ?? [];
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             setState(() {
-              completedProjects = snapshot.data!;
+              completedProjects = projectsData;
+              allProjects = projectsData;
+              filteredProjects = projectsData;
               _applySearchFilter();
             });
           }
         });
 
         return ProfileBuildMethods.buildClientHistory(
+          context: context,
           filteredProjects: filteredProjects,
-          searchController: searchController,
+          filteredTransactions: filteredTransactions,
+          projectSearchController: searchController,
+          transactionSearchController: transactionSearchController,
+          selectedProjectStatus: selectedProjectStatus,
+          selectedPaymentType: selectedPaymentType,
+          onProjectStatusChanged: (status) {
+            setState(() {
+              selectedProjectStatus = status;
+              _filterProjects();
+            });
+          },
+          onPaymentTypeChanged: (type) {
+            setState(() {
+              selectedPaymentType = type;
+              _filterTransactions();
+            });
+          },
+          onProjectTap: _showProjectDetails,
+          getTimeAgo: _getTimeAgo,
         );
       },
     );
   }
 
+  Future<void> _loadTransactions() async {
+    try {
+      final loadedTransactions = await CorProfileService().loadTransactions(widget.contractorId);
+      if (mounted) {
+        setState(() {
+          transactions = loadedTransactions;
+          filteredTransactions = loadedTransactions;
+        });
+      }
+    } catch (e) {
+      // Handle error silently or show snackbar
+    }
+  }
+
+  void _filterProjects() {
+    final query = searchController.text;
+    setState(() {
+      filteredProjects = CorProfileService().filterProjects(
+        allProjects,
+        query,
+        selectedProjectStatus,
+      );
+    });
+  }
+
+  void _filterTransactions() {
+    final query = transactionSearchController.text;
+    setState(() {
+      filteredTransactions = CorProfileService().filterTransactions(
+        transactions,
+        query,
+        selectedPaymentType,
+      );
+    });
+  }
+
   void _applySearchFilter() {
-    final query = searchController.text.toLowerCase();
-    filteredProjects = completedProjects.where((project) {
-      final clientName = (project['contractee']?['full_name'] ?? '').toLowerCase();
-      final type = (project['type'] ?? '').toLowerCase();
-      final description = (project['description'] ?? '').toLowerCase();
-      return clientName.contains(query) ||
-          type.contains(query) ||
-          description.contains(query);
-    }).toList();
+    _filterProjects();
+  }
+
+  void _showProjectDetails(Map<String, dynamic> project) async {
+    // You can implement a dialog or navigation to show project details
+    // For now, this is a placeholder
   }
 
   String _getTimeAgo(DateTime dateTime) {
@@ -450,10 +509,6 @@ class _ContractorUserProfileScreenState
           isEditingContact = !isEditingContact;
           if (!isEditingContact) contactController.text = contactNumber;
           break;
-        case 'specialization':
-          isEditingSpecialization = !isEditingSpecialization;
-          if (!isEditingSpecialization) specializationController.text = specialization;
-          break;
         case 'firmName':
           isEditingFirmName = !isEditingFirmName;
           if (!isEditingFirmName) firmNameController.text = firmName;
@@ -482,10 +537,6 @@ class _ContractorUserProfileScreenState
             case 'contact':
               contactNumber = newValue;
               isEditingContact = false;
-              break;
-            case 'specialization':
-              specialization = newValue;
-              isEditingSpecialization = false;
               break;
             case 'firmName':
               firmName = newValue;

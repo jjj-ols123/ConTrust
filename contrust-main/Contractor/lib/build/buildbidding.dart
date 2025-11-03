@@ -20,6 +20,8 @@ class BiddingUIBuildMethods {
     required this.contracteeInfo,
     required this.contractorBids,
     required this.onProjectSelected, 
+    required this.bidController,
+    required this.messageController,
   }) ;
 
   final BuildContext context;
@@ -34,6 +36,8 @@ class BiddingUIBuildMethods {
   final Function(Map<String, dynamic>?) onProjectSelected;
   final CorBiddingService _service = CorBiddingService();
   final List<Map<String, dynamic>> contractorBids;
+  final TextEditingController bidController;
+  final TextEditingController messageController;
 
   Widget buildBiddingUI() {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -145,8 +149,12 @@ class BiddingUIBuildMethods {
   }
 
   Widget buildContractorBidsOverview() {
+    if (contractorBids.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -158,24 +166,65 @@ class BiddingUIBuildMethods {
           ),
         ],
       ),
-      child: ExpansionTile(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Your Bids',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Icon(Icons.assignment, color: Colors.amber.shade700, size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  'Your Bids',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const Spacer(),
+                if (contractorBids.length > 3)
+                  Text(
+                    '${contractorBids.length} bids',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+              ],
             ),
-            const SizedBox(height: 12),
-            ...contractorBids.take(2).map(buildBidItem),
-            if (contractorBids.length > 2)
-              Text(
-                '... and ${contractorBids.length - 2} more',
-                style: TextStyle(color: Colors.grey, fontSize: 14),
-              ),
-          ],
-        ),
-        children: contractorBids.skip(2).map(buildBidItem).toList(),
+          ),
+          Container(
+            constraints: const BoxConstraints(maxHeight: 140),
+            child: contractorBids.length <= 3
+                ? ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    itemCount: contractorBids.length,
+                    separatorBuilder: (context, index) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      return SizedBox(
+                        width: 280,
+                        child: buildBidItem(contractorBids[index]),
+                      );
+                    },
+                  )
+                : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Row(
+                      children: contractorBids.map((bid) {
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: SizedBox(
+                            width: 280,
+                            child: buildBidItem(bid),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+          ),
+          const SizedBox(height: 8),
+        ],
       ),
     );
   }
@@ -188,34 +237,117 @@ class BiddingUIBuildMethods {
     final projectTitle = project['title'] ?? 'Untitled';
 
     Color statusColor;
+    IconData statusIcon;
     switch (status) {
       case 'accepted':
         statusColor = Colors.green;
+        statusIcon = Icons.check_circle;
         break;
       case 'rejected':
         statusColor = Colors.red;
+        statusIcon = Icons.cancel;
         break;
       case 'stopped':
         statusColor = Colors.grey;
+        statusIcon = Icons.stop_circle;
         break;
       default:
         statusColor = Colors.orange;
+        statusIcon = Icons.pending;
     }
 
-    return ListTile(
-      leading: Icon(Icons.assignment, color: Colors.amber),
-      title: Text('$projectTitle - $projectType', style: const TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: Text('Bid: ₱$amount'),
-      trailing: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    return InkWell(
+      onTap: () {
+        // Optional: Navigate to project or show details
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: statusColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: statusColor),
+          color: statusColor.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: statusColor.withOpacity(0.3),
+            width: 1,
+          ),
         ),
-        child: Text(
-          status.toUpperCase(),
-          style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.bold),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.description,
+                  size: 16,
+                  color: Colors.amber.shade700,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    projectTitle,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1F2937),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              projectType,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '₱${amount.toStringAsFixed(0)}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green.shade700,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: statusColor.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(statusIcon, size: 12, color: statusColor),
+                      const SizedBox(width: 4),
+                      Text(
+                        status.toUpperCase(),
+                        style: TextStyle(
+                          color: statusColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -492,9 +624,6 @@ class BiddingUIBuildMethods {
   }
 
   Widget buildBidInput() {
-    final TextEditingController bidController = TextEditingController();
-    final TextEditingController messageController = TextEditingController();
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

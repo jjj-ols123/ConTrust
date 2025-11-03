@@ -7,11 +7,65 @@ class FetchService {
 
   //For Contractees
 
-  Future<List<Map<String, dynamic>>> fetchContractors() async {
+  Future<List<Map<String, dynamic>>> fetchContractors({String? projectType}) async {
     try {
-      final response = await _supabase
+      final query = _supabase
           .from('Contractor')
-          .select('contractor_id, firm_name, profile_photo, bio, rating');
+          .select('contractor_id, firm_name, profile_photo, bio, rating, specialization');
+      
+      if (projectType != null && projectType.isNotEmpty) {
+        final response = await query;
+        final allContractors = List<Map<String, dynamic>>.from(response);
+      
+        final scoredContractors = allContractors.map((contractor) {
+          final specs = contractor['specialization'];
+          int matchScore = 0;
+          
+          if (specs != null) {
+            List<String> specList = [];
+            if (specs is List) {
+              specList = specs.map((e) => e.toString().toLowerCase()).toList();
+            } else if (specs is String) {
+              specList = [specs.toLowerCase()];
+            }
+            
+            final projectTypeLower = projectType.toLowerCase();
+            
+            if (specList.contains(projectTypeLower)) {
+              matchScore = 10;
+            } else {
+              for (String spec in specList) {
+                if (spec.contains(projectTypeLower) || projectTypeLower.contains(spec)) {
+                  matchScore = 5;
+                  break;
+                }
+              }
+            }
+          }
+          
+          return {
+            ...contractor,
+            '_matchScore': matchScore,
+          };
+        }).toList();
+        
+        scoredContractors.sort((a, b) {
+          final scoreA = a['_matchScore'] as int;
+          final scoreB = b['_matchScore'] as int;
+          
+          if (scoreA != scoreB) {
+            return scoreB.compareTo(scoreA);
+          }
+          
+          final ratingA = (a['rating'] as num?)?.toDouble() ?? 0.0;
+          final ratingB = (b['rating'] as num?)?.toDouble() ?? 0.0;
+          return ratingB.compareTo(ratingA);
+        });
+        
+        return scoredContractors;
+      }
+      
+      final response = await query;
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await _errorService.logError(
@@ -49,6 +103,44 @@ class FetchService {
   }
 
   //For Both Users
+
+  Future<List<String>> fetchAllContractorSpecializations() async {
+    try {
+      final response = await _supabase
+          .from('Contractor')
+          .select('specialization');
+      
+      Set<String> uniqueSpecializations = {};
+      
+      for (var contractor in response) {
+        final specs = contractor['specialization'];
+        if (specs != null) {
+          if (specs is List) {
+            for (var spec in specs) {
+              if (spec != null && spec.toString().trim().isNotEmpty) {
+                uniqueSpecializations.add(spec.toString().trim());
+              }
+            }
+          } else if (specs is String && specs.trim().isNotEmpty) {
+            uniqueSpecializations.add(specs.trim());
+          }
+        }
+      }
+      
+      final sortedSpecs = uniqueSpecializations.toList()..sort();
+      return sortedSpecs;
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch contractor specializations: ${e.toString()}',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch All Contractor Specializations',
+        },
+      );
+      return [];
+    }
+  }
 
   Future<Map<String, dynamic>?> fetchContractorData(String contractorId) async {
     try {
@@ -195,7 +287,7 @@ class FetchService {
     try {
       final response = await _supabase
           .from('ProjectTasks')
-          .select('task_id, project_id, task, done, created_at')
+          .select('task_id, project_id, task, done, created_at, task_done')
           .eq('project_id', projectId)
           .order('created_at', ascending: false);
 
@@ -1061,6 +1153,52 @@ class FetchService {
         },
       );
       return [];
+    }
+  }
+
+  Stream<List<Map<String, dynamic>>> streamContractsForProject(String projectId) {
+    try {
+      return _supabase
+          .from('Contracts')
+          .stream(primaryKey: ['contract_id'])
+          .eq('project_id', projectId)
+          .order('created_at', ascending: false)
+          .map((rows) => List<Map<String, dynamic>>.from(rows));
+    } catch (e) {
+      _errorService.logError(
+        errorMessage: 'Failed to stream contracts for project: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Stream Contracts For Project',
+          'project_id': projectId,
+        },
+      );
+      return Stream.value([]);
+    }
+  }
+
+  Stream<Map<String, dynamic>?> streamContractById(String contractId) {
+    try {
+      return _supabase
+          .from('Contracts')
+          .stream(primaryKey: ['contract_id'])
+          .eq('contract_id', contractId)
+          .map((rows) {
+            if (rows.isEmpty) return null;
+            return Map<String, dynamic>.from(rows.first);
+          });
+    } catch (e) {
+      _errorService.logError(
+        errorMessage: 'Failed to stream contract by id: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Stream Contract By Id',
+          'contract_id': contractId,
+        },
+      );
+      return Stream.value(null);
     }
   }
 

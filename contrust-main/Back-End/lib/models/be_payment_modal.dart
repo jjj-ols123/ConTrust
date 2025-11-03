@@ -15,12 +15,10 @@ class PaymentModal {
     required VoidCallback onPaymentSuccess,
     double? customAmount,
   }) async {
-    // Check if this is a milestone-based contract
     final paymentService = PaymentService();
     final isMilestone = await paymentService.isMilestoneContract(projectId);
     
     if (isMilestone) {
-      // Show milestone selection dialog first
       final milestoneInfo = await paymentService.getMilestonePaymentInfo(projectId);
       if (milestoneInfo != null) {
         await MilestonePaymentModal.show(
@@ -34,7 +32,6 @@ class PaymentModal {
       }
     }
 
-    // Show regular payment modal for non-milestone contracts
     await _showRegularPaymentModal(
       context: context,
       projectId: projectId,

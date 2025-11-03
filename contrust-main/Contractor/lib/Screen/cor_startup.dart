@@ -17,7 +17,8 @@ class ToLoginScreen extends StatefulWidget {
 class _ToLoginScreenState extends State<ToLoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _isLoggingIn = false; 
+  bool _isLoggingIn = false;
+  bool _passwordVisible = false; 
 
   @override
   void initState() {
@@ -36,7 +37,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
     setState(() => _isLoggingIn = true);
     try {
       final signInContractor = SignInContractor();
-      await signInContractor.signInContractor(
+      final success = await signInContractor.signInContractor(
         context,
         _emailController.text,
         _passwordController.text,
@@ -46,6 +47,10 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
           _passwordController.text,
         ),
       );
+
+      if (success && mounted) {
+        context.replace('/dashboard');
+      }
 
     } on SocketException {
       ConTrustSnackBar.error(
@@ -205,10 +210,16 @@ Widget _buildLoginForm(BuildContext context) {
       TextFormField(
         controller: _passwordController,
         keyboardType: TextInputType.visiblePassword,
-        obscureText: true,
+        obscureText: !_passwordVisible,
         decoration: InputDecoration(
           labelText: 'Password',
           prefixIcon: const Icon(Icons.lock_outline),
+          suffixIcon: IconButton(
+            icon: Icon(
+              _passwordVisible ? Icons.visibility : Icons.visibility_off,
+            ),
+            onPressed: () => setState(() => _passwordVisible = !_passwordVisible),
+          ),
           filled: true,
           fillColor: Colors.grey.shade100,
           border: OutlineInputBorder(
@@ -329,6 +340,7 @@ Widget _buildLoginForm(BuildContext context) {
     final double verticalPadding = 10;
     
     return Container(
+      width: double.infinity,
       padding: EdgeInsets.symmetric(
         horizontal: horizontalPadding,
         vertical: verticalPadding,

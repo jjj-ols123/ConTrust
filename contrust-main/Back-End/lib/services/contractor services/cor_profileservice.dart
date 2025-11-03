@@ -6,6 +6,7 @@ import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/services/superadmin%20services/auditlogs_service.dart';
 import 'package:backend/services/superadmin%20services/errorlogs_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
+import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -181,7 +182,7 @@ class CorProfileService {
             details: 'Uploaded project photo',
             metadata: {
               'contractor_id': contractorId,
-              'timestamp': DateTime.now().toIso8601String(),
+              'timestamp': DateTimeHelper.getLocalTimeISOString(),
             },
           );
 
@@ -302,5 +303,111 @@ class CorProfileService {
         totalReviews++;
       }
     }
+  }
+
+  Future<List<Map<String, dynamic>>> loadTransactions(String contractorId) async {
+    try {
+      final projectsResponse = await Supabase.instance.client
+          .from('Projects')
+          .select('''
+            project_id,
+            title,
+            projectdata,
+            contractee_id,
+            Contractee!inner(full_name)
+          ''')
+          .eq('contractor_id', contractorId)
+          .order('created_at', ascending: false);
+
+      List<Map<String, dynamic>> allTransactions = [];
+
+      for (var project in projectsResponse) {
+        final projectdata =
+            project['projectdata'] as Map<String, dynamic>? ?? {};
+        final payments = projectdata['payments'] as List<dynamic>? ?? [];
+
+        for (var payment in payments) {
+          allTransactions.add({
+            'amount': (payment['amount'] as num?)?.toDouble() ?? 0.0,
+            'payment_type': _getPaymentType(payment['contract_type'] ?? '',
+                payment['payment_structure'] ?? ''),
+            'project_title': project['title'] ?? 'Unknown Project',
+            'client_name':
+                project['Contractee']?['full_name'] ?? 'Unknown Client',
+            'payment_date': payment['date'] ?? DateTimeHelper.getLocalTimeISOString(),
+            'reference': payment['reference'] ?? payment['payment_id'] ?? '',
+          });
+        }
+      }
+
+      allTransactions.sort((a, b) {
+        final dateA = DateTime.parse(a['payment_date']);
+        final dateB = DateTime.parse(b['payment_date']);
+        return dateB.compareTo(dateA);
+      });
+
+      return allTransactions;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  String _getPaymentType(String contractType, String paymentStructure) {
+    if (paymentStructure.toLowerCase().contains('milestone')) {
+      return 'Milestone';
+    } else if (contractType.toLowerCase().contains('deposit') ||
+        paymentStructure.toLowerCase().contains('deposit')) {
+      return 'Deposit';
+    } else if (paymentStructure.toLowerCase().contains('final')) {
+      return 'Final';
+    }
+    return 'Payment';
+  }
+
+  List<Map<String, dynamic>> filterProjects(
+    List<Map<String, dynamic>> allProjects,
+    String searchQuery,
+    String statusFilter,
+  ) {
+    return allProjects.where((project) {
+      final matchesSearch = searchQuery.isEmpty ||
+          (project['title']?.toLowerCase().contains(searchQuery.toLowerCase()) ?? false) ||
+          (project['description']?.toLowerCase().contains(searchQuery.toLowerCase()) ?? false) ||
+          (project['contractee']?['full_name']?.toLowerCase().contains(searchQuery.toLowerCase()) ?? false);
+
+      final matchesStatus = statusFilter == 'All' ||
+          (statusFilter == 'Active' && ['active', 'awaiting_contract', 'awaiting_agreement'].contains(project['status']?.toLowerCase())) ||
+          (statusFilter == 'Pending' && project['status']?.toLowerCase() == 'pending') ||
+          (statusFilter == 'Completed' && project['status']?.toLowerCase() == 'completed') ||
+          (statusFilter == 'Cancelled' && project['status']?.toLowerCase() == 'cancelled');
+
+      return matchesSearch && matchesStatus;
+    }).toList();
+  }
+
+  List<Map<String, dynamic>> filterTransactions(
+    List<Map<String, dynamic>> transactions,
+    String searchQuery,
+    String selectedPaymentType,
+  ) {
+    final query = searchQuery.toLowerCase();
+    return transactions.where((transaction) {
+      final matchesSearch = (transaction['project_title']
+                  ?.toString()
+                  .toLowerCase()
+                  .contains(query) ??
+              false) ||
+          (transaction['amount']?.toString().toLowerCase().contains(query) ??
+              false) ||
+          (transaction['client_name']
+                  ?.toString()
+                  .toLowerCase()
+                  .contains(query) ??
+              false);
+      final matchesType = selectedPaymentType == 'All' ||
+          (transaction['payment_type']?.toString().toLowerCase() ==
+              selectedPaymentType.toLowerCase());
+      return matchesSearch && matchesType;
+    }).toList();
   }
 }

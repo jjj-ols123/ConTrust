@@ -45,16 +45,6 @@ class _WebsiteStartPageState extends State<WebsiteStartPage> {
                 ],
               ),
             ),     
-            Positioned(
-              top: isMobile ? 8 : 16,
-              right: isMobile ? 8 : 16,
-              child: _AdminButton(
-                onPressed: () {
-                  Navigator.of(context).pushNamed('/superadmin');
-                },
-                isMobile: isMobile,
-              ),
-            ),
           ],
         ),
       ),
@@ -528,73 +518,7 @@ class _FooterLinkState extends State<_FooterLink> {
   }
 }
 
-class _AdminButton extends StatefulWidget {
-  final VoidCallback onPressed;
-  final bool isMobile;
-
-  const _AdminButton({required this.onPressed, this.isMobile = false});
-
-  @override
-  State<_AdminButton> createState() => _AdminButtonState();
-}
-
-class _AdminButtonState extends State<_AdminButton> {
-  bool _isHovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: widget.onPressed,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          padding: EdgeInsets.symmetric(
-            horizontal: widget.isMobile ? 12 : 16,
-            vertical: widget.isMobile ? 6 : 8,
-          ),
-          decoration: BoxDecoration(
-            color: _isHovered
-                ? const Color(0xFFFFA726).withOpacity(0.1)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: _isHovered
-                  ? const Color(0xFFFFA726)
-                  : Colors.black26,
-              width: _isHovered ? 2 : 1,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.admin_panel_settings,
-                color: _isHovered
-                    ? const Color(0xFFFFA726)
-                    : Colors.black54,
-                size: widget.isMobile ? 16 : 18,
-              ),
-              SizedBox(width: widget.isMobile ? 4 : 6),
-              Text(
-                'Admin',
-                style: TextStyle(
-                  color: _isHovered
-                      ? const Color(0xFFFFA726)
-                      : Colors.black54,
-                  fontSize: widget.isMobile ? 12 : 14,
-                  fontWeight: _isHovered ? FontWeight.w600 : FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+// Admin button removed per request.
 
 class _RoleCard extends StatefulWidget {
   final Color color;

@@ -220,43 +220,17 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: loadContracteeData,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isMobile = constraints.maxWidth < 768;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 768;
 
-          if (isMobile) {
-            return Column(
-              children: [
-                CeeProfileBuildMethods.buildHeader(context, 'My Profile'),
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: CeeProfileBuildMethods.buildMobileLayout(
-                      fullName: fullName,
-                      profileImage: profileImage,
-                      profileUrl: profileUrl,
-                      completedProjectsCount: completedProjectsCount,
-                      ongoingProjectsCount: ongoingProjectsCount,
-                      selectedTab: selectedTab,
-                      onTabChanged: (String tab) {
-                        setState(() {
-                          selectedTab = tab;
-                        });
-                      },
-                      mainContent: _buildMainContent(),
-                      onUploadPhoto: isUploadingPhoto ? null : _uploadProfilePhoto,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          } else {
-            return Column(
-              children: [
-                CeeProfileBuildMethods.buildHeader(context, 'My Profile'),
-                Expanded(
-                  child: CeeProfileBuildMethods.buildDesktopLayout(
+        if (isMobile) {
+          return Column(
+            children: [
+              CeeProfileBuildMethods.buildHeader(context, 'My Profile'),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: CeeProfileBuildMethods.buildMobileLayout(
                     fullName: fullName,
                     profileImage: profileImage,
                     profileUrl: profileUrl,
@@ -272,11 +246,34 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
                     onUploadPhoto: isUploadingPhoto ? null : _uploadProfilePhoto,
                   ),
                 ),
-              ],
-            );
-          }
-        },
-      ),
+              ),
+            ],
+          );
+        } else {
+          return Column(
+            children: [
+              CeeProfileBuildMethods.buildHeader(context, 'My Profile'),
+              Expanded(
+                child: CeeProfileBuildMethods.buildDesktopLayout(
+                  fullName: fullName,
+                  profileImage: profileImage,
+                  profileUrl: profileUrl,
+                  completedProjectsCount: completedProjectsCount,
+                  ongoingProjectsCount: ongoingProjectsCount,
+                  selectedTab: selectedTab,
+                  onTabChanged: (String tab) {
+                    setState(() {
+                      selectedTab = tab;
+                    });
+                  },
+                  mainContent: _buildMainContent(),
+                  onUploadPhoto: isUploadingPhoto ? null : _uploadProfilePhoto,
+                ),
+              ),
+            ],
+          );
+        }
+      },
     );
   }
 
