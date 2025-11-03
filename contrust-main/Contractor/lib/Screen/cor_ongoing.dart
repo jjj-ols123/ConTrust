@@ -579,6 +579,9 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
         isCustomContract: _isCustomContract(),
         progress: _localProgress,
         selectedTab: selectedTab,
+        tasks: _localTasks,
+        reports: reports,
+        photos: photos,
         onTabChanged: onTabChanged,
         onRefresh: loadData,
         onEditCompletion:

@@ -282,29 +282,30 @@ class LumpSumContract extends StatelessWidget {
                       Expanded(flex: 3, child: Text('Description', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
                       Expanded(flex: 2, child: Text('Duration', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
                       Expanded(flex: 2, child: Text('Target Date', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                      Expanded(flex: 2, child: Text('Payment Amount', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
                     ],
                   ),
                 ),
                 if (ContractStyle.shouldShowMilestoneRow(1))
-                  _buildMilestoneRow('1', '[Milestone.1.Description]', '[Milestone.1.Duration]', '[Milestone.1.Date]'),
+                  _buildMilestoneRow('1', '[Milestone.1.Description]', '[Milestone.1.Duration]', '[Milestone.1.Date]', '[Milestone.1.Amount]'),
                 if (ContractStyle.shouldShowMilestoneRow(2))
-                  _buildMilestoneRow('2', '[Milestone.2.Description]', '[Milestone.2.Duration]', '[Milestone.2.Date]'),
+                  _buildMilestoneRow('2', '[Milestone.2.Description]', '[Milestone.2.Duration]', '[Milestone.2.Date]', '[Milestone.2.Amount]'),
                 if (ContractStyle.shouldShowMilestoneRow(3))
-                  _buildMilestoneRow('3', '[Milestone.3.Description]', '[Milestone.3.Duration]', '[Milestone.3.Date]'),
+                  _buildMilestoneRow('3', '[Milestone.3.Description]', '[Milestone.3.Duration]', '[Milestone.3.Date]', '[Milestone.3.Amount]'),
                 if (ContractStyle.shouldShowMilestoneRow(4))
-                  _buildMilestoneRow('4', '[Milestone.4.Description]', '[Milestone.4.Duration]', '[Milestone.4.Date]', isLast: true),
+                  _buildMilestoneRow('4', '[Milestone.4.Description]', '[Milestone.4.Duration]', '[Milestone.4.Date]', '[Milestone.4.Amount]', isLast: true),
                 if (ContractStyle.shouldShowMilestoneRow(5))
-                  _buildMilestoneRow('5', '[Milestone.5.Description]', '[Milestone.5.Duration]', '[Milestone.5.Date]', isLast: true),
+                  _buildMilestoneRow('5', '[Milestone.5.Description]', '[Milestone.5.Duration]', '[Milestone.5.Date]', '[Milestone.5.Amount]', isLast: true),
                 if (ContractStyle.shouldShowMilestoneRow(6))
-                  _buildMilestoneRow('6', '[Milestone.6.Description]', '[Milestone.6.Duration]', '[Milestone.6.Date]', isLast: true),
+                  _buildMilestoneRow('6', '[Milestone.6.Description]', '[Milestone.6.Duration]', '[Milestone.6.Date]', '[Milestone.6.Amount]', isLast: true),
                 if (ContractStyle.shouldShowMilestoneRow(7))
-                  _buildMilestoneRow('7', '[Milestone.7.Description]', '[Milestone.7.Duration]', '[Milestone.7.Date]', isLast: true),
+                  _buildMilestoneRow('7', '[Milestone.7.Description]', '[Milestone.7.Duration]', '[Milestone.7.Date]', '[Milestone.7.Amount]', isLast: true),
                 if (ContractStyle.shouldShowMilestoneRow(8))
-                  _buildMilestoneRow('8', '[Milestone.8.Description]', '[Milestone.8.Duration]', '[Milestone.8.Date]', isLast: true),
+                  _buildMilestoneRow('8', '[Milestone.8.Description]', '[Milestone.8.Duration]', '[Milestone.8.Date]', '[Milestone.8.Amount]', isLast: true),
                 if (ContractStyle.shouldShowMilestoneRow(9))
-                  _buildMilestoneRow('9', '[Milestone.9.Description]', '[Milestone.9.Duration]', '[Milestone.9.Date]', isLast: true),
+                  _buildMilestoneRow('9', '[Milestone.9.Description]', '[Milestone.9.Duration]', '[Milestone.9.Date]', '[Milestone.9.Amount]', isLast: true),
                 if (ContractStyle.shouldShowMilestoneRow(10))
-                  _buildMilestoneRow('10', '[Milestone.10.Description]', '[Milestone.10.Duration]', '[Milestone.10.Date]', isLast: true),
+                  _buildMilestoneRow('10', '[Milestone.10.Description]', '[Milestone.10.Duration]', '[Milestone.10.Date]', '[Milestone.10.Amount]', isLast: true),
               ],
             ),
           ),
@@ -490,7 +491,7 @@ class LumpSumContract extends StatelessWidget {
     );
   }
 
-  static Widget _buildMilestoneRow(String phase, String description, String duration, String date, {bool isLast = false}) {
+  static Widget _buildMilestoneRow(String phase, String description, String duration, String date, String amount, {bool isLast = false}) {
     return Container(
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: Colors.grey.shade400)),
@@ -531,6 +532,15 @@ class LumpSumContract extends StatelessWidget {
                   ? ContractStyle.textResolver!(date) 
                   : date,
               style: const TextStyle(fontSize: 11)
+            )
+          ),
+          Expanded(
+            flex: 2, 
+            child: Text(
+              ContractStyle.textResolver != null 
+                  ? '₱${ContractStyle.textResolver!(amount)}' 
+                  : '₱$amount',
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)
             )
           ),
         ],

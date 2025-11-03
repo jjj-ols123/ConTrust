@@ -1268,6 +1268,144 @@ class OngoingBuildMethods {
     });
   }
 
+  static Widget buildRecentActivityFeed({
+    required List<Map<String, dynamic>> tasks,
+    required List<Map<String, dynamic>> reports,
+    required List<Map<String, dynamic>> photos,
+    int maxItems = 5,
+  }) {
+    List<Map<String, dynamic>> activities = [];
+
+    for (var task in tasks) {
+      if (task['done'] == true) {
+        activities.add({
+          'type': 'task',
+          'title': 'Task completed',
+          'description': task['task'] ?? 'Unknown task',
+          'timestamp': task['created_at'] ?? DateTime.now().toIso8601String(),
+          'icon': Icons.check_circle,
+          'color': Colors.green,
+        });
+      }
+    }
+
+    for (var report in reports) {
+      activities.add({
+        'type': 'report',
+        'title': 'Progress report added',
+        'description': (report['content'] ?? '').length > 50 
+            ? '${(report['content'] ?? '').substring(0, 50)}...'
+            : report['content'] ?? 'No content',
+        'timestamp': report['created_at'] ?? DateTime.now().toIso8601String(),
+        'icon': Icons.description,
+        'color': Colors.orange,
+      });
+    }
+
+    for (var photo in photos) {
+      activities.add({
+        'type': 'photo',
+        'title': 'Photo uploaded',
+        'description': photo['description'] ?? 'Project photo',
+        'timestamp': photo['created_at'] ?? DateTime.now().toIso8601String(),
+        'icon': Icons.photo_camera,
+        'color': Colors.blue,
+      });
+    }
+
+    activities.sort((a, b) {
+      try {
+        final aTime = DateTime.parse(a['timestamp']);
+        final bTime = DateTime.parse(b['timestamp']);
+        return bTime.compareTo(aTime);
+      } catch (e) {
+        return 0;
+      }
+    });
+
+    activities = activities.take(maxItems).toList();
+
+    if (activities.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: Text('No recent activity'),
+        ),
+      );
+    }
+
+    return Column(
+      children: activities.map((activity) => _buildActivityItem(activity)).toList(),
+    );
+  }
+
+  static Widget _buildActivityItem(Map<String, dynamic> activity) {
+    String timeAgo = _getTimeAgo(activity['timestamp']);
+    
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: activity['color'],
+          child: Icon(
+            activity['icon'],
+            color: Colors.white,
+            size: 20,
+          ),
+        ),
+        title: Text(
+          activity['title'],
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              activity['description'],
+              style: const TextStyle(fontSize: 12),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              timeAgo,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey[600],
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        dense: true,
+      ),
+    );
+  }
+
+  static String _getTimeAgo(String timestamp) {
+    try {
+      final DateTime activityTime = DateTime.parse(timestamp);
+      final DateTime now = DateTime.now();
+      final Duration difference = now.difference(activityTime);
+
+      if (difference.inDays > 0) {
+        return '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes} minute${difference.inMinutes > 1 ? 's' : ''} ago';
+      } else {
+        return 'Just now';
+      }
+    } catch (e) {
+      return 'Unknown time';
+    }
+  }
+
   static Widget buildMobileTabNavigation(
     String selectedTab,
     Function(String) onTabChanged,
@@ -1323,6 +1461,94 @@ class OngoingBuildMethods {
     );
   }
 
+  static Widget buildProjectHeaderWithActivity({
+    required String projectTitle,
+    required String clientName,
+    required String address,
+    required String startDate,
+    String? estimatedCompletion,
+    required int? duration,
+    required bool isCustomContract,
+    required double progress,
+    required List<Map<String, dynamic>> tasks,
+    required List<Map<String, dynamic>> reports,
+    required List<Map<String, dynamic>> photos,
+    VoidCallback? onRefresh,
+    VoidCallback? onEditCompletion,
+    VoidCallback? onSwitchProject,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          flex: 3,
+          child: buildProjectHeader(
+            projectTitle: projectTitle,
+            clientName: clientName,
+            address: address,
+            startDate: startDate,
+            estimatedCompletion: estimatedCompletion,
+            duration: duration,
+            isCustomContract: isCustomContract,
+            progress: progress,
+            onRefresh: onRefresh,
+            onEditCompletion: onEditCompletion,
+            onSwitchProject: onSwitchProject,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          flex: 1,
+          child: Card(
+            elevation: 3,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Container(
+              height: 320, // Match approximate header height
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.shade50,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        topRight: Radius.circular(12),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.timeline, color: Colors.purple, size: 20),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Recent Activity',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: buildRecentActivityFeed(
+                        tasks: tasks,
+                        reports: reports,
+                        photos: photos,
+                        maxItems: 4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   static Widget buildMobileLayout({
     required String projectTitle,
     required String clientName,
@@ -1335,6 +1561,9 @@ class OngoingBuildMethods {
     required String selectedTab,
     required Function(String) onTabChanged,
     required Widget tabContent,
+    required List<Map<String, dynamic>> tasks,
+    required List<Map<String, dynamic>> reports,
+    required List<Map<String, dynamic>> photos,
     VoidCallback? onRefresh,
     VoidCallback? onEditCompletion, 
     VoidCallback? onSwitchProject,
@@ -1343,7 +1572,7 @@ class OngoingBuildMethods {
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          buildProjectHeader(
+          buildProjectHeaderWithActivity(
             projectTitle: projectTitle,
             clientName: clientName,
             address: address,
@@ -1352,6 +1581,9 @@ class OngoingBuildMethods {
             duration: duration,
             isCustomContract: isCustomContract, 
             progress: progress,
+            tasks: tasks,
+            reports: reports,
+            photos: photos,
             onRefresh: onRefresh,
             onEditCompletion: onEditCompletion,
             onSwitchProject: onSwitchProject,
@@ -1596,6 +1828,21 @@ class OngoingBuildMethods {
                         ),
                       ),
                     ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                SizedBox(
+                  width: 300,
+                  child: buildGridSectionCard(
+                    title: 'Recent Activity',
+                    icon: Icons.timeline,
+                    iconColor: Colors.purple,
+                    child: buildRecentActivityFeed(
+                      tasks: tasks,
+                      reports: reports,
+                      photos: photos,
+                      maxItems: 8,
+                    ),
                   ),
                 ),
               ],

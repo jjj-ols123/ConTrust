@@ -1,8 +1,8 @@
 // ignore_for_file: use_build_context_synchronously
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart'; 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:backend/services/superadmin services/auditlogs_service.dart';
@@ -131,15 +131,12 @@ class SignInGoogleContractee {
   void signInGoogle(BuildContext context) async {
     try {
       final supabase = Supabase.instance.client;
-      final encodedNext = Uri.encodeComponent('/home');
+      final redirectTo = kIsWeb ? '${Uri.base.origin}/auth/callback' : null;
       
-      final redirect = kIsWeb
-          ? 'https://contractee.contrust-sjdm.com/auth/callback?next=$encodedNext'
-          : 'io.supabase.contrust://login-callback/';
-          
       await supabase.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: redirect,
+        redirectTo: redirectTo,
+        authScreenLaunchMode: LaunchMode.platformDefault,
       );
     } catch (e) {
       await _errorService.logError(
