@@ -5,6 +5,7 @@ import 'package:backend/services/both services/be_message_service.dart';
 import 'package:backend/services/both services/be_notification_service.dart';
 import 'package:backend/utils/be_status.dart';
 import 'package:backend/utils/be_snackbar.dart';
+import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -21,7 +22,7 @@ class CorDashboardService {
       final projects = await _fetchService.fetchContractorProjectInfo(contractorId);
 
       final completed = projects.where((p) => p['status'] == 'completed').length;
-      final activeStatuses = ['active', 'awaiting_contract', 'awaiting_agreement', 'pending', 'cancellation_requested_by_contractee'];
+      final activeStatuses = ['active', 'awaiting_contract', 'awaiting_agreement', 'pending', 'cancellation_requested_by_contractee, awaiting_signature'];
       final active = projects.where((p) => activeStatuses.contains(p['status'])).length;
       final ratingVal = contractorData?['rating'] ?? 0.0;
 
@@ -46,7 +47,6 @@ class CorDashboardService {
             project['contractee_photo'] = null;
           }
           
-          // Fetch cancellation information if project has cancellation request status
           if (project['status'] == 'cancellation_requested_by_contractee') {
             try {
               final supabase = Supabase.instance.client;
@@ -69,7 +69,6 @@ class CorDashboardService {
                 };
               }
             } catch (e) {
-              // If fetching cancellation info fails, provide default
               project['information'] = {
                 'cancellation_reason': 'No reason provided',
                 'message': 'The contractee has requested to cancel this project.',
@@ -432,7 +431,7 @@ class CorDashboardService {
         final info = Map<String, dynamic>.from(request['information'] ?? {});
         info['status'] = 'cancelled';
         info['cancelled_reason'] = 'Another contractor was selected';
-        info['cancelled_at'] = DateTime.now().toIso8601String();
+        info['cancelled_at'] = DateTimeHelper.getLocalTimeISOString();
 
         await Supabase.instance.client.from('Notifications').update({
           'information': info,

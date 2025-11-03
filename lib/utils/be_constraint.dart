@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 
+import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<bool> functionConstraint(String contractorId, String contracteeId) async {
@@ -166,7 +167,7 @@ Future<Map<String, dynamic>?> hasExistingHireRequest(String contractorId, String
                   ...info,
                   'status': 'cancelled',
                   'cancelled_reason': 'Project already has an accepted contractor',
-                  'cancelled_at': DateTime.now().toIso8601String(),
+                  'cancelled_at': DateTimeHelper.getLocalTimeISOString(),
                 }
               })
               .eq('notification_id', request['notification_id']);

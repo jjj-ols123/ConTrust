@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages
 import 'package:backend/utils/be_snackbar.dart';
+import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:file_picker/file_picker.dart';
@@ -293,7 +294,7 @@ class CeeProfileService {
             'project_title': project['title'] ?? 'Unknown Project',
             'contractor_name':
                 project['Contractor']?['firm_name'] ?? 'Unknown Contractor',
-            'payment_date': payment['date'] ?? DateTime.now().toIso8601String(),
+            'payment_date': payment['date'] ?? DateTimeHelper.getLocalTimeISOString(),
             'reference': payment['reference'] ?? payment['payment_id'] ?? '',
           });
         }

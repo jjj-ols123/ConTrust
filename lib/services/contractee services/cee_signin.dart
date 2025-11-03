@@ -1,7 +1,8 @@
 // ignore_for_file: use_build_context_synchronously
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:flutter/foundation.dart';
+import 'package:backend/utils/be_datetime_helper.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart'; 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
@@ -65,7 +66,7 @@ class SignInContractee {
 
       try {
         await supabase.from('Users').update({
-          'last_login': DateTime.now().toIso8601String(),
+          'last_login': DateTimeHelper.getLocalTimeISOString(),
         }).eq('users_id', user.id);
       } catch (e) {
         await _errorService.logError(
@@ -75,7 +76,7 @@ class SignInContractee {
           extraInfo: {
             'operation': 'Update Last Login',
             'users_id': user.id,
-            'timestamp': DateTime.now().toIso8601String(),
+            'timestamp': DateTimeHelper.getLocalTimeISOString(),
           },
         );
       }
@@ -112,12 +113,28 @@ class SignInContractee {
         extraInfo: {
           'operation': 'Sign In Contractee',
           'email': email,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
 
       if (context.mounted) {
-        ConTrustSnackBar.error(context, 'Login failed. Please try again. $e');
+        String message = 'Login failed. Please try again.';
+        final errorText = e.toString().toLowerCase();
+        if (e is AuthException) {
+          final m = e.message.toLowerCase();
+          if (m.contains('invalid login') || m.contains('invalid') || m.contains('credentials')) {
+            message = 'Invalid email or password.';
+          } else if (m.contains('email not confirmed') || m.contains('not confirmed') || m.contains('verify')) {
+            message = 'Please verify your email before logging in.';
+          } else if (m.contains('rate') && m.contains('limit')) {
+            message = 'Too many attempts. Please try again later.';
+          } else {
+            message = 'Authentication error. Please try again.';
+          }
+        } else if (errorText.contains('network') || errorText.contains('socket')) {
+          message = 'Network error. Please check your connection.';
+        }
+        ConTrustSnackBar.error(context, message);
       }
       return false;
     }
@@ -128,14 +145,26 @@ class SignInGoogleContractee {
   final SuperAdminErrorService _errorService = SuperAdminErrorService();
   final SuperAdminAuditService _auditService = SuperAdminAuditService();
 
-  void signInGoogle(BuildContext context) async {
+  Future<void> signInGoogle(BuildContext context) async {
     try {
       final supabase = Supabase.instance.client;
-      final redirectTo = kIsWeb ? '${Uri.base.origin}/auth/callback' : null;
       
+      // Use the current origin (subdomain) dynamically for redirect URL
+      // This ensures the redirect goes to the correct subdomain instead of the main domain
+      String? redirectUrl;
+      
+      if (kIsWeb) {
+        // For web: use current origin (subdomain) + callback path
+        final origin = Uri.base.origin; // This will be contractor.contrust-sjdm.com or contractee.contrust-sjdm.com
+        redirectUrl = '$origin/auth/callback';
+      } else {
+        // For mobile: null means use default deep link
+        redirectUrl = null;
+      }
+
       await supabase.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: redirectTo,
+        redirectTo: redirectUrl,
         authScreenLaunchMode: LaunchMode.platformDefault,
       );
     } catch (e) {
@@ -145,10 +174,12 @@ class SignInGoogleContractee {
         severity: 'High',
         extraInfo: {
           'operation': 'Google Sign In Contractee',
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
-      ConTrustSnackBar.error(context, 'Google sign-in failed: $e');
+      if (context.mounted) {
+        ConTrustSnackBar.error(context, 'Google sign-in failed: $e');
+      }
     }
   }
 
@@ -209,7 +240,7 @@ class SignInGoogleContractee {
         extraInfo: {
           'operation': 'Handle Google Sign In Contractee',
           'users_id': user.id,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       if (context.mounted) {
@@ -239,7 +270,7 @@ class SignInGoogleContractee {
         'name': user.userMetadata?['full_name'] ?? 'User',
         'role': 'contractee',
         'status': 'active',
-        'last_login': DateTime.now().toIso8601String(),
+        'last_login': DateTimeHelper.getLocalTimeISOString(),
         'profile_image_url': user.userMetadata?['avatar_url'] ?? 'assets/defaultpic.png',
         'phone_number': '',
         'verified': true,
@@ -249,7 +280,7 @@ class SignInGoogleContractee {
         'contractee_id': user.id,
         'full_name': user.userMetadata?['full_name'] ?? 'User',
         'profile_photo': user.userMetadata?['avatar_url'] ?? 'assets/defaultpic.png',
-        'created_at': DateTime.now().toIso8601String(),
+        'created_at': DateTimeHelper.getLocalTimeISOString(),
       });
 
       await _auditService.logAuditEvent(
@@ -286,7 +317,7 @@ class SignInGoogleContractee {
         extraInfo: {
           'operation': 'Setup Contractee Google',
           'users_id': user.id,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       ConTrustSnackBar.error(context, 'Account setup failed: $e');

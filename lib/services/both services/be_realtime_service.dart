@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:backend/services/superadmin services/errorlogs_service.dart';
 
 class RealtimeSubscriptionService {
   static final RealtimeSubscriptionService _instance = RealtimeSubscriptionService._internal();
@@ -10,6 +11,7 @@ class RealtimeSubscriptionService {
 
   final SupabaseClient _supabase = Supabase.instance.client;
   final Map<String, RealtimeChannel> _channels = {};
+  final SuperAdminErrorService _errorService = SuperAdminErrorService();
 
   RealtimeChannel? subscribeToNotifications({
     required String userId,
@@ -155,6 +157,58 @@ class RealtimeSubscriptionService {
             value: userId,
           ),
           callback: (payload) => onUpdate(),
+        )
+        .subscribe();
+    
+    _channels[channelKey] = channel;
+    return channel;
+  }
+
+  RealtimeChannel? subscribeToProjectBids({
+    required String projectId,
+    required VoidCallback onUpdate,
+  }) {
+    final channelKey = 'project_bids_$projectId';
+
+    _channels[channelKey]?.unsubscribe();
+    
+    final channel = _supabase
+        .channel('project_bids:$projectId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'Bids',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'project_id',
+            value: projectId,
+          ),
+          callback: (payload) {
+            try {
+              dynamic bidProjectId;
+              try {
+                bidProjectId = (payload.newRecord as Map?)?['project_id'] ?? 
+                               (payload.oldRecord as Map?)?['project_id'];
+              } catch (_) {
+                bidProjectId = null;
+              }
+              
+              if (bidProjectId == null || bidProjectId.toString() == projectId) {
+                onUpdate();
+              }
+            } catch (e) {
+              _errorService.logError(
+                errorMessage: 'Error in real-time subscription callback for project bids: $e',
+                module: 'Realtime Subscription Service',
+                severity: 'Medium',
+                extraInfo: {
+                  'operation': 'Project Bids Subscription Callback',
+                  'project_id': projectId,
+                  'event_type': payload.eventType.toString(),
+                },
+              );
+            }
+          },
         )
         .subscribe();
     

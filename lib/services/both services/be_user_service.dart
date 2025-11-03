@@ -158,6 +158,18 @@ class UserService {
           .single();
 
       if (tableName == "Contractor") {
+        String email = '';
+        try {
+          final userData = await _supabase
+              .from('Users')
+              .select('email')
+              .eq('users_id', userId)
+              .maybeSingle();
+          if (userData != null) {
+            email = userData['email'] ?? '';
+          }
+        } catch (_) {}
+
         return {
           'firm_name': response['firm_name'] ?? "No firm name",
           'bio': response['bio'] ?? "No bio available",
@@ -166,6 +178,8 @@ class UserService {
           'past_projects': List<String>.from(response['past_projects'] ?? []),
           'contact_number': response['contact_number'] ?? "No contact number",
           'specialization': response['specialization'] ?? "No specialization",
+          'address': response['address'] ?? "",
+          'email': email,
         };
       } else {
         // Fetch email from Users table

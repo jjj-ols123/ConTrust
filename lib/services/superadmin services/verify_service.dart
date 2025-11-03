@@ -1,3 +1,4 @@
+import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 
@@ -24,7 +25,7 @@ class VerifyService {
         severity: 'High',
         extraInfo: {
           'operation': 'Get Unverified Contractors',
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       rethrow;
@@ -60,7 +61,7 @@ class VerifyService {
         extraInfo: {
           'operation': 'Get Verification Docs',
           'contractor_id': contractorId,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       rethrow;
@@ -87,7 +88,7 @@ class VerifyService {
           'operation': 'Get Verification Doc URL',
           'contractor_id': contractorId,
           'file_name': fileName,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       rethrow;
@@ -132,7 +133,7 @@ class VerifyService {
           'operation': 'Verify Contractor',
           'contractor_id': contractorId,
           'approve': approve,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       rethrow;
@@ -155,7 +156,7 @@ class VerifyService {
         extraInfo: {
           'operation': 'Get Contractor Details',
           'contractor_id': contractorId,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       rethrow;

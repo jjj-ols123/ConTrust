@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use, use_super_parameters, file_names
 import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/services/both services/be_contract_service.dart';
 import 'package:backend/services/contractor services/cor_biddingservice.dart';
 import 'package:backend/utils/be_status.dart';
 import 'package:backend/build/buildviewcontract.dart';
@@ -339,8 +340,8 @@ class ProjectView extends StatelessWidget {
   }
 
   Widget _buildContractButton(BuildContext context) {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: FetchService().fetchContractsForProject(projectId),
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: FetchService().streamContractsForProject(projectId),
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return Container(
@@ -366,10 +367,10 @@ class ProjectView extends StatelessWidget {
               ],
             ),
           );
-        }
+  }
 
-        final contracts = snapshot.data!;
-        final latestContract = contracts.first;
+  final contracts = snapshot.data!;
+  final latestContract = contracts.first;
         final status = latestContract['status'] as String? ?? 'draft';
         
         Color borderColor;
@@ -386,29 +387,35 @@ class ProjectView extends StatelessWidget {
             backgroundColor = Colors.green.shade50;
             textColor = Colors.green.shade700;
             icon = Icons.verified;
-            statusText = 'Approved';
+            statusText = 'Contract Accepted';
             break;
           case 'sent':
+            borderColor = Colors.orange.shade600;
+            backgroundColor = Colors.orange.shade50;
+            textColor = Colors.orange.shade700;
+            icon = Icons.pending;
+            statusText = 'Contract Waiting for approval';
+            break;
           case 'awaiting_signature':
             borderColor = Colors.orange.shade600;
             backgroundColor = Colors.orange.shade50;
             textColor = Colors.orange.shade700;
             icon = Icons.pending;
-            statusText = 'Pending';
+            statusText = 'Contract Waiting for signature';
             break;
           case 'rejected':
             borderColor = Colors.red.shade600;
             backgroundColor = Colors.red.shade50;
             textColor = Colors.red.shade700;
             icon = Icons.cancel;
-            statusText = 'Rejected';
+            statusText = 'Contract Rejected';
             break;
           default:
             borderColor = Colors.blue.shade600;
             backgroundColor = Colors.blue.shade50;
             textColor = Colors.blue.shade700;
             icon = Icons.description;
-            statusText = 'Draft';
+            statusText = 'Contract Draft';
         }
 
         return InkWell(
@@ -819,6 +826,10 @@ class ProjectView extends StatelessWidget {
     if (value == 'update' && onUpdateProject != null) {
       onUpdateProject!(projectId);
     } else if (value == 'cancel' && onCancelProject != null) {
+      if (project['contractor_id'] == null) {
+        onCancelProject!(projectId, '');
+        return;
+      }
       final reason = await _showCancelReasonDialog(context);
       if (reason != null && reason.isNotEmpty) {
         onCancelProject!(projectId, reason);
@@ -831,55 +842,147 @@ class ProjectView extends StatelessWidget {
     
     return showDialog<String>(
       context: context,
-      builder: (BuildContext context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(Icons.warning, color: Colors.orange.shade700),
-            const SizedBox(width: 12),
-            const Text('Cancel Project'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              project['contractor_id'] != null 
-                ? 'This will notify the assigned contractor and terminate any ongoing work.'
-                : 'This action cannot be undone.',
+      builder: (BuildContext context) => Center(
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 500),
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.black, width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 20,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            const Text('Please provide a reason for cancelling:'),
-            const SizedBox(height: 8),
-            TextField(
-              controller: reasonController,
-              decoration: const InputDecoration(
-                hintText: 'Enter your reason...',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
-              maxLength: 200,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade700,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Icon(
+                          Icons.warning,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Cancel Project',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                project['contractor_id'] != null 
+                                  ? 'This will notify the assigned contractor and terminate any ongoing work.'
+                                  : 'This action cannot be undone.',
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'Please provide a reason for cancelling:',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              TextField(
+                                controller: reasonController,
+                                decoration: const InputDecoration(
+                                  hintText: 'Enter your reason...',
+                                  border: OutlineInputBorder(),
+                                ),
+                                maxLines: 3,
+                                maxLength: 200,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                child: const Text('Keep Project'),
+                              ),
+                              const SizedBox(width: 8),
+                              ElevatedButton(
+                                onPressed: () {
+                                  final reason = reasonController.text.trim();
+                                  Navigator.of(context).pop(reason.isEmpty ? 'No reason provided' : reason);
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFFFB300),
+                                  foregroundColor: Colors.black,
+                                  minimumSize: const Size.fromHeight(50),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: const Text('Cancel Project'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Keep Project'),
           ),
-          ElevatedButton(
-            onPressed: () {
-              final reason = reasonController.text.trim();
-              Navigator.of(context).pop(reason.isEmpty ? 'No reason provided' : reason);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange.shade600,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Cancel Project'),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -950,36 +1053,84 @@ class ProjectView extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // Content
                   Flexible(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Status Badge
-                          _buildStatusBadge(contractData['status'] as String? ?? 'draft'),
-                          const SizedBox(height: 20),
-                          
-                          // Contract Info
-                          _buildContractInfo(contractData),
-                          const SizedBox(height: 20),
-                          
-                          // PDF Viewer
-                          ViewContractBuild.buildPdfViewer(
-                            pdfUrl: contractData['pdf_url'] as String?,
-                            onDownload: () => _downloadContract(contractData),
-                            height: 400,
+                    child: StreamBuilder<Map<String, dynamic>?>(
+                      stream: FetchService().streamContractById(contractData['contract_id'] as String),
+                      initialData: contractData,
+                      builder: (context, contractSnap) {
+                        final liveData = contractSnap.data ?? contractData;
+                        return SingleChildScrollView(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildStatusBadge(liveData['status'] as String? ?? 'draft'),
+                              const SizedBox(height: 20),
+ 
+                              _buildContractInfo(liveData),
+                              const SizedBox(height: 20),
+
+                              if ((liveData['status'] as String?)?.toLowerCase() == 'sent') ...[
+                                Card(
+                                  color: Colors.amber[50],
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: _ProjectContractApprovalButtons(
+                                      contractId: liveData['contract_id'] as String,
+                                      onApproved: () {
+                                        Navigator.of(dialogContext).pop();
+                                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+                                          const SnackBar(content: Text('Contract approved')),
+                                        );
+                                      },
+                                      onRejected: () {
+                                        Navigator.of(dialogContext).pop();
+                                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+                                          const SnackBar(content: Text('Contract rejected')),
+                                        );
+                                      },
+                                      onError: (err) {
+                                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+                                          SnackBar(content: Text(err)),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                              ],
+                              
+                              FutureBuilder<String?>(
+                                future: ViewContractService.getPdfSignedUrl(liveData),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState == ConnectionState.waiting) {
+                                    return ViewContractBuild.buildLoadingState();
+                                  }
+                                  if (!snapshot.hasData || (snapshot.data?.isEmpty ?? true)) {
+                                    return ViewContractBuild.buildPdfViewer(
+                                      pdfUrl: null,
+                                      onDownload: () => _downloadContract(liveData),
+                                      height: 400,
+                                    );
+                                  }
+                                  return ViewContractBuild.buildPdfViewer(
+                                    pdfUrl: snapshot.data,
+                                    onDownload: () => _downloadContract(liveData),
+                                    height: 400,
+                                    isSignedContract: (liveData['signed_pdf_url'] as String?)?.isNotEmpty == true,
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 20),
+                              
+                              ViewContractBuild.buildEnhancedSignaturesSection(
+                                liveData,
+                                onRefresh: () => Navigator.of(dialogContext).pop(),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 20),
-                          
-                          // Signatures Section
-                          ViewContractBuild.buildEnhancedSignaturesSection(
-                            contractData,
-                            onRefresh: () => Navigator.of(dialogContext).pop(),
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -1150,6 +1301,91 @@ class ProjectView extends StatelessWidget {
     } catch (e) {
       // Handle error
     }
+  }
+}
+
+class _ProjectContractApprovalButtons extends StatefulWidget {
+  final String contractId;
+  final VoidCallback onApproved;
+  final VoidCallback onRejected;
+  final Function(String) onError;
+
+  const _ProjectContractApprovalButtons({
+    required this.contractId,
+    required this.onApproved,
+    required this.onRejected,
+    required this.onError,
+  });
+
+  @override
+  State<_ProjectContractApprovalButtons> createState() => _ProjectContractApprovalButtonsState();
+}
+
+class _ProjectContractApprovalButtonsState extends State<_ProjectContractApprovalButtons> {
+  bool _isApproving = false;
+  bool _isRejecting = false;
+
+  Future<void> _approve() async {
+    if (_isApproving || _isRejecting) return;
+    setState(() => _isApproving = true);
+    try {
+      await ContractService.updateContractStatus(contractId: widget.contractId, status: 'approved');
+      widget.onApproved();
+    } catch (e) {
+      widget.onError('Failed to approve contract: $e');
+    } finally {
+      if (mounted) setState(() => _isApproving = false);
+    }
+  }
+
+  Future<void> _reject() async {
+    if (_isApproving || _isRejecting) return;
+    setState(() => _isRejecting = true);
+    try {
+      await ContractService.updateContractStatus(contractId: widget.contractId, status: 'rejected');
+      widget.onRejected();
+    } catch (e) {
+      widget.onError('Failed to reject contract: $e');
+    } finally {
+      if (mounted) setState(() => _isRejecting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _isApproving || _isRejecting ? null : _approve,
+            icon: _isApproving
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
+                  )
+                : const Icon(Icons.check_circle),
+            label: Text(_isApproving ? 'Approving...' : 'Approve'),
+            style: ElevatedButton.styleFrom(backgroundColor: _isApproving ? Colors.grey : Colors.green[600], foregroundColor: Colors.white),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _isApproving || _isRejecting ? null : _reject,
+            icon: _isRejecting
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
+                  )
+                : const Icon(Icons.cancel),
+            label: Text(_isRejecting ? 'Rejecting...' : 'Reject'),
+            style: ElevatedButton.styleFrom(backgroundColor: _isRejecting ? Colors.grey : Colors.red[600], foregroundColor: Colors.white),
+          ),
+        ),
+      ],
+    );
   }
 }
 

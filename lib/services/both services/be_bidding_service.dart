@@ -4,6 +4,7 @@ import 'package:backend/services/both services/be_notification_service.dart';
 import 'package:backend/services/both services/be_message_service.dart';
 import 'package:backend/services/superadmin services/auditlogs_service.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
+import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class BiddingService {
@@ -79,23 +80,51 @@ class BiddingService {
         'contractor_id': contractorId,
       }).eq('project_id', projectId);
 
-      final allBids =
-          await _supabase.from('Bids').select().eq('project_id', projectId);
+    final allBids =
+      await _supabase.from('Bids').select().eq('project_id', projectId);
 
       final losingBidIds = allBids
           .where((bid) => bid['bid_id'] != bidId)
           .map((bid) => bid['bid_id'])
           .toList();
 
-      if (losingBidIds.isNotEmpty) {
+  if (losingBidIds.isNotEmpty) {
+    try {
+      await _supabase
+      .from('Bids')
+      .update({'status': 'rejected'}).inFilter('bid_id', losingBidIds);
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to reject losing bids: $e',
+        module: 'Bidding Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Accept Project Bid - Reject Losing Bids',
+          'project_id': projectId,
+          'losing_bid_ids': losingBidIds,
+        },
+      );
+      rethrow;
+    }
+  }
+
+      try {
         await _supabase
             .from('Bids')
-            .update({'status': 'rejected'}).inFilter('bid_id', losingBidIds);
+            .update({'status': 'accepted'}).eq('bid_id', bidId);
+      } catch (e) {
+        await _errorService.logError(
+          errorMessage: 'Failed to update bid status to accepted: $e',
+          module: 'Bidding Service',
+          severity: 'High',
+          extraInfo: {
+            'operation': 'Accept Project Bid - Update Status',
+            'project_id': projectId,
+            'bid_id': bidId,
+          },
+        );
+        rethrow;
       }
-
-      await _supabase
-          .from('Bids')
-          .update({'status': 'accepted'}).eq('bid_id', bidId);
 
       await _auditService.logAuditEvent(
         action: 'BID_ACCEPTED',
@@ -159,6 +188,29 @@ class BiddingService {
             'profile_photo': contracteePhoto,
           },
         );
+
+        // Notify other bidders their bid was rejected because another was accepted
+        if (losingBidIds.isNotEmpty) {
+          final losingBids = allBids.where((b) => losingBidIds.contains(b['bid_id'])).toList();
+          for (final lb in losingBids) {
+            final losingContractorId = lb['contractor_id'];
+            try {
+              await notificationService.createNotification(
+                receiverId: losingContractorId,
+                receiverType: 'contractor',
+                senderId: contracteeId,
+                senderType: 'contractee',
+                type: 'Bid Rejected',
+                message: 'Your bid for the $projectType project was not selected. Another bid has been accepted.',
+                information: {
+                  'project_id': projectId,
+                  'accepted_bid_id': bidId,
+                  'status': 'auto_rejected',
+                },
+              );
+            } catch (_) {}
+          }
+        }
       } catch (e) {
         await _errorService.logError(
           errorMessage: 'Failed to send notification after accepting bid: ',
@@ -186,11 +238,11 @@ class BiddingService {
     }
   }
 
-  Future<void> rejectBid(String bidId) async {
+  Future<void> rejectBid(String bidId, {String? reason, String? projectId}) async {
     try {
       final bidResponse = await _supabase
           .from('Bids')
-          .select('status, project_id')
+          .select('status, project_id, contractor_id')
           .eq('bid_id', bidId)
           .single();
 
@@ -199,10 +251,53 @@ class BiddingService {
         throw Exception('Cannot reject bids for a project with expired bidding period.');
       }
 
-      await _supabase
-          .from('Bids')
-          .update({'status': 'rejected'})
-          .eq('bid_id', bidId);
+      try {
+        await _supabase
+            .from('Bids')
+            .update({'status': 'rejected'})
+            .eq('bid_id', bidId);
+      } catch (e) {
+        await _errorService.logError(
+          errorMessage: 'Failed to update bid status to rejected: $e',
+          module: 'Bidding Service',
+          severity: 'Medium',
+          extraInfo: {
+            'operation': 'Reject Bid - Update Status',
+            'bid_id': bidId,
+            'project_id': projectId,
+          },
+        );
+        rethrow;
+      }
+
+      // Send notification to contractor about rejection
+      try {
+        final projId = projectId ?? bidResponse['project_id'];
+        final projectResp = await _supabase
+            .from('Projects')
+            .select('type, contractee_id')
+            .eq('project_id', projId)
+            .single();
+        final projectType = projectResp['type'];
+        final contracteeId = projectResp['contractee_id'];
+
+        final notificationService = NotificationService();
+        await notificationService.createNotification(
+          receiverId: bidResponse['contractor_id'],
+          receiverType: 'contractor',
+          senderId: contracteeId,
+          senderType: 'contractee',
+          type: 'Bid Rejected',
+          message: reason != null && reason.isNotEmpty
+              ? 'Your bid for the $projectType project has been declined. Reason: $reason'
+              : 'Your bid for the $projectType project has been declined.',
+          information: {
+            'project_id': projId,
+            'reason': reason,
+            'status': 'rejected',
+          },
+        );
+      } catch (_) {}
 
       await _auditService.logAuditEvent(
         action: 'BID_REJECTED',
@@ -269,7 +364,7 @@ class BiddingService {
 
       await _supabase.from('Projects').update({
         'status': 'stopped',
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTimeHelper.getLocalTimeISOString(),
       }).eq('project_id', projectId);
 
       await _supabase

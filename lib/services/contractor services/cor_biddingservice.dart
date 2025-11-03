@@ -36,6 +36,7 @@ class CorBiddingService {
         throw Exception('This project is no longer accepting bids.');
       }
 
+
       await _supabase.from('Bids').upsert({
         'contractor_id': contractorId,
         'project_id': projectId,
@@ -337,11 +338,13 @@ class CorBiddingService {
 
   Future<bool> hasAlreadyBid(String projectId, String contractorId) async {
     try {
+      // Check for bids that are NOT stopped (stopped bids allow re-bidding)
       final response = await _supabase
           .from('Bids')
-          .select('bid_id')
+          .select('bid_id, status')
           .eq('project_id', projectId)
           .eq('contractor_id', contractorId)
+          .neq('status', 'stopped')
           .maybeSingle();
       
       return response != null;

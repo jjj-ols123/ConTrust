@@ -1,3 +1,4 @@
+import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 
@@ -21,7 +22,7 @@ class SuperAdminUserService {
         extraInfo: {
           'operation': 'Fetch Users By Role',
           'role': role,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to fetch users by role: ');
@@ -56,7 +57,7 @@ class SuperAdminUserService {
         severity: 'Medium',
         extraInfo: {
           'operation': 'Get User Statistics',
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to get user statistics: ');
@@ -78,7 +79,7 @@ class SuperAdminUserService {
           'operation': 'Update User Status',
           'users_id': userId,
           'new_status': status,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to update user status: ');
@@ -100,7 +101,7 @@ class SuperAdminUserService {
           'operation': 'Update User Verification',
           'users_id': userId,
           'verified': verified,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to update user verification: ');
@@ -121,7 +122,7 @@ class SuperAdminUserService {
         extraInfo: {
           'operation': 'Delete User',
           'users_id': userId,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to delete user: ');
@@ -145,7 +146,7 @@ class SuperAdminUserService {
         extraInfo: {
           'operation': 'Search Users',
           'query': query,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to search users: ');
@@ -169,7 +170,7 @@ class SuperAdminUserService {
         extraInfo: {
           'operation': 'Fetch Users By Status',
           'status': status,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to fetch users by status: ');

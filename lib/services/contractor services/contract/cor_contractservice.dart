@@ -4,6 +4,7 @@ import 'package:backend/services/both services/be_contract_service.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/superadmin%20services/auditlogs_service.dart';
 import 'package:backend/utils/be_contractsignature.dart';
+import 'package:backend/utils/be_datetime_helper.dart';
 import 'dart:typed_data';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -65,7 +66,7 @@ class ContractorContractService {
         'pdf_url': pdfPath,
         'field_values': {},
         'status': 'draft',
-        'created_at': DateTime.now().toIso8601String(),
+        'created_at': DateTimeHelper.getLocalTimeISOString(),
       });
       
       _auditService.logAuditEvent(

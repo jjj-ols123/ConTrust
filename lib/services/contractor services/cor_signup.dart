@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously_user_service.dart';, use_build_context_synchronously, use_build_context_synchronously, use_build_context_synchronously, use_build_context_synchronously, use_build_context_synchronously, use_build_context_synchronously
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
+import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
@@ -68,7 +69,7 @@ class SignUpContractor {
           extraInfo: {
             'operation': 'Sign Up Contractor',
             'email': email,
-            'timestamp': DateTime.now().toIso8601String(),
+            'timestamp': DateTimeHelper.getLocalTimeISOString(),
           },
         );
 
@@ -89,11 +90,12 @@ class SignUpContractor {
               'name': data?['firmName'] ?? 'Contractor Firm',
               'role': 'contractor',
               'status': 'active',
-              'created_at': DateTime.now().toIso8601String(),
-              'last_login': DateTime.now().toIso8601String(),
+              'created_at': DateTimeHelper.getLocalTimeISOString(),
+              'last_login': DateTimeHelper.getLocalTimeISOString(),
               'profile_image_url': data?['profilePhoto'] ?? 'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
               'phone_number': data?['contactNumber'] ?? '',
               'verified': false,
+              'address': data?['address'] ?? '',
             }, onConflict: 'users_id');
             insertSuccess = true;
           } catch (e) {
@@ -108,8 +110,9 @@ class SignUpContractor {
           'contractor_id': userId,
           'firm_name': data?['firmName'] ?? '',
           'contact_number': data?['contactNumber'],
-          'address': data?['address'] ?? '', 
-          'created_at': DateTime.now().toUtc().toIso8601String(),
+          'address': data?['address'] ?? '',
+          'specialization': data?['specialization'] ?? [], 
+          'created_at': DateTimeHelper.getLocalTimeISOString(),
           'profile_photo': data?['profilePhoto'] ?? 'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
         };
 
@@ -144,7 +147,7 @@ class SignUpContractor {
                 'users_id': userId,
                 'email': email,
                 'firm_name': firmName,
-                'timestamp': DateTime.now().toIso8601String(),
+                'timestamp': DateTimeHelper.getLocalTimeISOString(),
               },
             );
 
@@ -181,7 +184,7 @@ class SignUpContractor {
               'operation': 'Insert Contractor Data',
               'users_id': userId,
               'email': email,
-              'timestamp': DateTime.now().toIso8601String(),
+              'timestamp': DateTimeHelper.getLocalTimeISOString(),
             },
           );
           throw Exception("Error saving contractor data");
@@ -203,7 +206,7 @@ class SignUpContractor {
           await supabase.from('Verification').insert({
             'contractor_id': userId,
             'doc_url': url,
-            'uploaded_at': DateTime.now().toIso8601String(),
+            'uploaded_at': DateTimeHelper.getLocalTimeISOString(),
             'file_type': isImage ? 'image' : 'document', 
           });
         }
@@ -234,7 +237,7 @@ class SignUpContractor {
           'email': email,
           'user_type': userType,
           'users_id': signUpResponse?.user?.id,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
 
@@ -270,7 +273,7 @@ class SignUpContractor {
           'email': email,
           'user_type': userType,
           'users_id': signUpResponse?.user?.id,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       if (!context.mounted) return false;

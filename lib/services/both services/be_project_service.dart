@@ -6,6 +6,7 @@ import 'package:backend/services/both services/be_message_service.dart';
 import 'package:backend/services/superadmin services/auditlogs_service.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:backend/utils/be_constraint.dart';
+import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -117,7 +118,7 @@ class ProjectService {
             ...info,
             'status': 'deleted',
             'deleted_reason': 'Project has been deleted by the contractee',
-            'deleted_at': DateTime.now().toIso8601String(),
+            'deleted_at': DateTimeHelper.getLocalTimeISOString(),
             'delete_message': 'Project has been deleted by the contractee.'
           },
         }).eq('notification_id', notif['notification_id']);
@@ -134,7 +135,7 @@ class ProjectService {
             ...info,
             'status': 'deleted',
             'deleted_reason': 'Project has been deleted by the contractee',
-            'deleted_at': DateTime.now().toIso8601String(),
+            'deleted_at': DateTimeHelper.getLocalTimeISOString(),
             'delete_message': 'Project has been deleted by the contractee.'
           },
         }).eq('notification_id', notif['notification_id']);
@@ -198,13 +199,8 @@ class ProjectService {
 
       if (currentStatus == 'stopped') {
         updateData['status'] = 'pending';
-        updateData['created_at'] = DateTime.now().toIso8601String();
+        updateData['created_at'] = DateTimeHelper.getLocalTimeISOString();
 
-        await _supabase
-            .from('Bids')
-            .update({'status': 'rejected'})
-            .eq('project_id', projectId)
-            .eq('status', 'stopped');
       }
 
       await _supabase
@@ -270,13 +266,13 @@ class ProjectService {
                 ? 'The contractee has requested to cancel the project "$projectTitle". Reason: $reason'
                 : 'The contractee has requested to cancel the project "$projectTitle". Your approval is required.',
             'cancellation_requested_by': 'contractee',
-            'requested_at': DateTime.now().toIso8601String(),
+            'requested_at': DateTimeHelper.getLocalTimeISOString(),
             'requires_contractor_approval': true,
             'original_status': originalStatus,
             if (reason != null) 'cancellation_reason': reason,
           },
           'is_read': false,
-          'created_at': DateTime.now().toIso8601String(),
+          'created_at': DateTimeHelper.getLocalTimeISOString(),
         });
 
         await _auditService.logAuditEvent(
@@ -328,7 +324,7 @@ class ProjectService {
                 : (reason != null
                     ? 'Project has been cancelled by the contractee. Reason: $reason'
                     : 'Project has been cancelled by the contractee'),
-            'cancelled_at': DateTime.now().toIso8601String(),
+            'cancelled_at': DateTimeHelper.getLocalTimeISOString(),
             'cancel_message': contractorId != null
                 ? (reason != null
                     ? 'Project cancellation requested by contractee. Reason: $reason'
@@ -358,7 +354,7 @@ class ProjectService {
             'cancelled_reason': contractorId != null
                 ? 'Project cancellation requested by contractee'
                 : 'Project has been cancelled by the contractee',
-            'cancelled_at': DateTime.now().toIso8601String(),
+            'cancelled_at': DateTimeHelper.getLocalTimeISOString(),
             'cancel_message': contractorId != null
                 ? 'Project cancellation requested by contractee'
                 : 'Project has been cancelled by the contractee.'
@@ -429,10 +425,10 @@ class ProjectService {
             'message':
                 'The project "$projectTitle" has been cancelled by mutual agreement.',
             'cancelled_by': 'mutual_agreement',
-            'cancelled_at': DateTime.now().toIso8601String(),
+            'cancelled_at': DateTimeHelper.getLocalTimeISOString(),
           },
           'is_read': false,
-          'created_at': DateTime.now().toIso8601String(),
+          'created_at': DateTimeHelper.getLocalTimeISOString(),
         },
         {
           'receiver_id': contracteeId,
@@ -446,10 +442,10 @@ class ProjectService {
             'message':
                 'The project "$projectTitle" has been cancelled by mutual agreement.',
             'cancelled_by': 'mutual_agreement',
-            'cancelled_at': DateTime.now().toIso8601String(),
+            'cancelled_at': DateTimeHelper.getLocalTimeISOString(),
           },
           'is_read': false,
-          'created_at': DateTime.now().toIso8601String(),
+          'created_at': DateTimeHelper.getLocalTimeISOString(),
         },
       ]);
 
@@ -558,10 +554,10 @@ class ProjectService {
           'message':
               'The $decliningPartyRole has declined to cancel the project "$projectTitle". The project will continue.',
           'declined_by': decliningPartyRole,
-          'declined_at': DateTime.now().toIso8601String(),
+          'declined_at': DateTimeHelper.getLocalTimeISOString(),
         },
         'is_read': false,
-        'created_at': DateTime.now().toIso8601String(),
+        'created_at': DateTimeHelper.getLocalTimeISOString(),
       });
 
       await _auditService.logAuditEvent(
@@ -718,7 +714,7 @@ class ProjectService {
           'max_budget': maxBudget,
           'action': 'hire_request',
           'status': 'pending',
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
 
@@ -811,7 +807,7 @@ class ProjectService {
           'project_id': projectId,
           'action': 'cancel_request',
           'status': status,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
           'sender_name': senderName,
           'sender_photo': senderPhoto,
         },
@@ -898,7 +894,7 @@ class ProjectService {
       final currentInfo =
           Map<String, dynamic>.from(currentNotification['information'] ?? {});
       currentInfo['status'] = 'accepted';
-      currentInfo['updated_at'] = DateTime.now().toIso8601String();
+      currentInfo['updated_at'] = DateTimeHelper.getLocalTimeISOString();
 
       await _supabase.from('Notifications').update({
         'information': {
@@ -949,7 +945,7 @@ class ProjectService {
           'contractor_photo': contactorPhoto,
           'action': 'hire_accepted',
           'original_notification_id': notificationId,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
           'sender_name': contractorName,
           'sender_photo': contactorPhoto,
         },
@@ -996,7 +992,7 @@ class ProjectService {
         final info = Map<String, dynamic>.from(request['information'] ?? {});
         info['status'] = 'cancelled';
         info['cancelled_reason'] = 'Another contractor was selected';
-        info['cancelled_at'] = DateTime.now().toIso8601String();
+        info['cancelled_at'] = DateTimeHelper.getLocalTimeISOString();
 
         await _supabase.from('Notifications').update({
           'information': info,
@@ -1045,7 +1041,7 @@ class ProjectService {
       final currentInfo =
           Map<String, dynamic>.from(currentNotification['information'] ?? {});
       currentInfo['status'] = 'declined';
-      currentInfo['updated_at'] = DateTime.now().toIso8601String();
+      currentInfo['updated_at'] = DateTimeHelper.getLocalTimeISOString();
       
       if (reason != null &&
           reason.trim().isNotEmpty &&
@@ -1072,7 +1068,7 @@ class ProjectService {
         'contractor_photo': contractorPhoto,
         'action': 'hire_declined',
         'original_notification_id': notificationId,
-        'timestamp': DateTime.now().toIso8601String(),
+        'timestamp': DateTimeHelper.getLocalTimeISOString(),
         'sender_name': contractorName,
         'sender_photo': contractorPhoto,
         if (projectId != null) 'project_id': projectId,
@@ -1132,7 +1128,7 @@ class ProjectService {
         'project_id': projectId,
         'task': task,
         'done': done,
-        'created_at': DateTime.now().toIso8601String(),
+        'created_at': DateTimeHelper.getLocalTimeISOString(),
       });
 
       await _auditService.logAuditEvent(
@@ -1168,7 +1164,7 @@ class ProjectService {
         'project_id': projectId,
         'content': content,
         'author_id': authorId,
-        'created_at': DateTime.now().toIso8601String(),
+        'created_at': DateTimeHelper.getLocalTimeISOString(),
       });
 
       await _auditService.logAuditEvent(
@@ -1206,7 +1202,7 @@ class ProjectService {
         'project_id': projectId,
         'photo_url': photoUrl,
         'uploader_id': uploaderId,
-        'created_at': DateTime.now().toIso8601String(),
+        'created_at': DateTimeHelper.getLocalTimeISOString(),
       });
 
       await _auditService.logAuditEvent(
@@ -1254,7 +1250,7 @@ class ProjectService {
         'quantity': quantity,
         'unit_price': unit_price,
         if (notes != null) 'notes': notes,
-        'created_at': DateTime.now().toIso8601String(),
+        'created_at': DateTimeHelper.getLocalTimeISOString(),
       });
 
       await _auditService.logAuditEvent(
@@ -1285,9 +1281,14 @@ class ProjectService {
 
   Future<void> updateTaskStatus(String taskId, bool done) async {
     try {
+      final nowIsoLocal = DateTimeHelper.getLocalTimeISOString();
       await _supabase
           .from('ProjectTasks')
-          .update({'done': done}).eq('task_id', taskId);
+          .update({
+            'done': done,
+            'task_done': done ? nowIsoLocal : null,
+          })
+          .eq('task_id', taskId);
 
       await _auditService.logAuditEvent(
         action: 'TASK_STATUS_UPDATED',
@@ -1296,6 +1297,7 @@ class ProjectService {
         metadata: {
           'task_id': taskId,
           'done': done,
+          'task_done': done ? nowIsoLocal : null,
         },
       );
     } catch (e) {

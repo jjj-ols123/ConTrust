@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 import 'package:backend/services/superadmin%20services/errorlogs_service.dart';
+import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SuperAdminAuditService {
@@ -23,7 +24,7 @@ class SuperAdminAuditService {
         severity: 'Medium',
         extraInfo: {
           'operation': 'Fetch All Audit Logs',
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to fetch audit logs: ');
@@ -47,7 +48,7 @@ class SuperAdminAuditService {
         extraInfo: {
           'operation': 'Fetch Audit Logs by Action',
           'action': action,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to fetch audit logs by action: ');
@@ -71,7 +72,7 @@ class SuperAdminAuditService {
         extraInfo: {
           'operation': 'Fetch Recent Audit Logs',
           'limit': limit,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to fetch recent audit logs: ');
@@ -114,7 +115,7 @@ class SuperAdminAuditService {
         severity: 'Medium',
         extraInfo: {
           'operation': 'Get Audit Statistics',
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to get audit statistics: ');
@@ -148,7 +149,7 @@ class SuperAdminAuditService {
       'action': action,
       'details': detailsJson,
       'category': category ?? _deriveCategoryFromAction(action),
-      'timestamp': DateTime.now().toUtc().toIso8601String(),
+      'timestamp': DateTimeHelper.getLocalTimeISOString(),
     });
   } catch (e) {
     SuperAdminErrorService().logError(
@@ -158,7 +159,7 @@ class SuperAdminAuditService {
       extraInfo: {
         'operation': 'Log Audit Event',
         'action': action,
-        'timestamp': DateTime.now().toIso8601String(),
+        'timestamp': DateTimeHelper.getLocalTimeISOString(),
       },
     );
   }

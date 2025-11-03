@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 
+import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SuperAdminErrorService {
@@ -22,7 +23,7 @@ class SuperAdminErrorService {
         severity: 'Medium',
         extraInfo: {
           'operation': 'Fetch All Error Logs',
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to fetch error logs: ');
@@ -46,7 +47,7 @@ class SuperAdminErrorService {
         extraInfo: {
           'operation': 'Fetch Error Logs by User',
           'users_id': userId,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to fetch error logs by user: ');
@@ -70,7 +71,7 @@ class SuperAdminErrorService {
         extraInfo: {
           'operation': 'Fetch Error Logs by Severity',
           'severity': severity,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to fetch error logs by severity: ');
@@ -94,7 +95,7 @@ class SuperAdminErrorService {
         extraInfo: {
           'operation': 'Fetch Error Logs by Module',
           'module': module,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to fetch error logs by module: ');
@@ -117,7 +118,7 @@ class SuperAdminErrorService {
         severity: 'Medium',
         extraInfo: {
           'operation': 'Fetch Unresolved Error Logs',
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to fetch unresolved error logs: ');
@@ -141,7 +142,7 @@ class SuperAdminErrorService {
         extraInfo: {
           'operation': 'Fetch Recent Error Logs',
           'limit': limit,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to fetch recent error logs: ');
@@ -191,7 +192,7 @@ class SuperAdminErrorService {
         severity: 'High',
         extraInfo: {
           'operation': 'Fetch Error Statistics',
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to get error statistics: ');
@@ -226,7 +227,7 @@ class SuperAdminErrorService {
       'stack_trace': stackTrace,
       'module': module,
       'severity': severity,
-      'timestamp': DateTime.now().toIso8601String(),
+      'timestamp': DateTimeHelper.getLocalTimeISOString(),
       'resolved': false,
       'extra_info': safeExtraInfo != null ? jsonEncode(safeExtraInfo) : null,
     });
@@ -249,7 +250,7 @@ class SuperAdminErrorService {
         extraInfo: {
           'operation': 'Mark Error as Resolved',
           'error_id': errorId,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to mark error as resolved: ');
@@ -270,7 +271,7 @@ class SuperAdminErrorService {
         extraInfo: {
           'operation': 'Mark Error as Unresolved',
           'error_id': errorId,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
       throw Exception('Failed to mark error as unresolved: ');
