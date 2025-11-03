@@ -434,6 +434,10 @@ class LumpSumPDF {
             padding: const pw.EdgeInsets.all(8),
             child: pw.Text('Target Date', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
           ),
+          pw.Padding(
+            padding: const pw.EdgeInsets.all(8),
+            child: pw.Text('Payment Amount', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+          ),
         ],
       ),
     ];
@@ -442,8 +446,9 @@ class LumpSumPDF {
       String description = ContractStyle.getFieldValue(fieldValues, 'Milestone.$i.Description');
       String duration = ContractStyle.getFieldValue(fieldValues, 'Milestone.$i.Duration');
       String date = ContractStyle.getFieldValue(fieldValues, 'Milestone.$i.Date');
+      String amount = ContractStyle.getFieldValue(fieldValues, 'Milestone.$i.Amount');
       
-      if (description != '____________' || duration != '____________') {
+      if (description != '____________' || duration != '____________' || amount != '____________') {
         milestoneRows.add(
           pw.TableRow(
             children: [
@@ -462,6 +467,10 @@ class LumpSumPDF {
               pw.Padding(
                 padding: const pw.EdgeInsets.all(8),
                 child: pw.Text(date, style: const pw.TextStyle(fontSize: 9)),
+              ),
+              pw.Padding(
+                padding: const pw.EdgeInsets.all(8),
+                child: pw.Text(amount != '____________' ? '₱$amount' : '____________', style: const pw.TextStyle(fontSize: 9)),
               ),
             ],
           ),

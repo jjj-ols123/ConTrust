@@ -3,10 +3,49 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:backend/services/both services/be_payment_service.dart';
+import 'package:backend/models/be_milestone_payment_modal.dart';
 import 'package:backend/utils/be_snackbar.dart';
 
 class PaymentModal {
   static Future<void> show({
+    required BuildContext context,
+    required String projectId,
+    required String projectTitle,
+    required double amount,
+    required VoidCallback onPaymentSuccess,
+    double? customAmount,
+  }) async {
+    // Check if this is a milestone-based contract
+    final paymentService = PaymentService();
+    final isMilestone = await paymentService.isMilestoneContract(projectId);
+    
+    if (isMilestone) {
+      // Show milestone selection dialog first
+      final milestoneInfo = await paymentService.getMilestonePaymentInfo(projectId);
+      if (milestoneInfo != null) {
+        await MilestonePaymentModal.show(
+          context: context,
+          projectId: projectId,
+          projectTitle: projectTitle,
+          milestoneInfo: milestoneInfo,
+          onPaymentSuccess: onPaymentSuccess,
+        );
+        return;
+      }
+    }
+
+    // Show regular payment modal for non-milestone contracts
+    await _showRegularPaymentModal(
+      context: context,
+      projectId: projectId,
+      projectTitle: projectTitle,
+      amount: amount,
+      onPaymentSuccess: onPaymentSuccess,
+      customAmount: customAmount,
+    );
+  }
+
+  static Future<void> _showRegularPaymentModal({
     required BuildContext context,
     required String projectId,
     required String projectTitle,

@@ -131,9 +131,10 @@ class CreateContractService {
 
       for (int i = 1; i <= milestoneCount; i++) {
         fields.addAll([
-          ContractField(key: 'Milestone.$i.Description', label: 'Milestone Description', isRequired: i <= 3, maxLines: 2),
-          ContractField(key: 'Milestone.$i.Duration', label: 'Milestone Duration (days)', isRequired: i <= 3, inputType: TextInputType.number),
-          ContractField(key: 'Milestone.$i.Date', label: 'Milestone Target Date', isRequired: i <= 3),
+          ContractField(key: 'Milestone.$i.Description', label: 'Milestone $i Description', isRequired: i <= 3, maxLines: 2),
+          ContractField(key: 'Milestone.$i.Duration', label: 'Milestone $i Duration (days)', isRequired: i <= 3, inputType: TextInputType.number),
+          ContractField(key: 'Milestone.$i.Date', label: 'Milestone $i Target Date', isRequired: i <= 3),
+          ContractField(key: 'Milestone.$i.Amount', label: 'Milestone $i Payment Amount (₱)', isRequired: i <= 3, inputType: TextInputType.number),
         ]);
       }
 
@@ -497,6 +498,132 @@ class CreateContractService {
         },
       );
       return 4;
+    }
+  }
+
+  void calculateMilestonePayments(Map<String, TextEditingController> controllers, {int? milestoneCount}) {
+    try {
+      double totalContractPrice = 0.0;
+      
+      final totalPriceText = controllers['Payment.Total']?.text ?? '0';
+      try {
+        totalContractPrice = double.parse(totalPriceText.replaceAll(',', ''));
+      } catch (e) {
+        return; 
+      }
+      
+      if (totalContractPrice <= 0) return;
+      
+      int maxMilestones = milestoneCount ?? getMaxMilestoneCountFromControllers(controllers);
+      double totalMilestoneAmounts = 0.0;
+      List<double> milestoneAmounts = [];
+
+      for (int i = 1; i <= maxMilestones; i++) {
+        final amountText = controllers['Milestone.$i.Amount']?.text ?? '0';
+        try {
+          double amount = double.parse(amountText.replaceAll(',', ''));
+          milestoneAmounts.add(amount);
+          totalMilestoneAmounts += amount;
+        } catch (e) {
+          milestoneAmounts.add(0.0);
+        }
+      }
+      
+      if (totalMilestoneAmounts == 0) {
+        int activeMilestones = 0;
+        for (int i = 1; i <= maxMilestones; i++) {
+          final description = controllers['Milestone.$i.Description']?.text ?? '';
+          if (description.trim().isNotEmpty) {
+            activeMilestones++;
+          }
+        }
+        
+        if (activeMilestones > 0) {
+          double amountPerMilestone = totalContractPrice / activeMilestones;
+          for (int i = 1; i <= maxMilestones; i++) {
+            final description = controllers['Milestone.$i.Description']?.text ?? '';
+            if (description.trim().isNotEmpty) {
+              controllers['Milestone.$i.Amount']?.text = amountPerMilestone.toStringAsFixed(2);
+            }
+          }
+        }
+      }
+      
+    } catch (e) {
+      _errorService.logError(
+        errorMessage: 'Failed to calculate milestone payments: ',
+        module: 'Create Contract Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Calculate Milestone Payments',
+        },
+      );
+    }
+  }
+
+  Map<String, dynamic> validateMilestonePayments(Map<String, TextEditingController> controllers, {int? milestoneCount}) {
+    try {
+      double totalContractPrice = 0.0;
+      
+      final totalPriceText = controllers['Payment.Total']?.text ?? '0';
+      try {
+        totalContractPrice = double.parse(totalPriceText.replaceAll(',', ''));
+      } catch (e) {
+        return {'isValid': false, 'message': 'Invalid total contract price'};
+      }
+      
+      if (totalContractPrice <= 0) {
+        return {'isValid': false, 'message': 'Total contract price must be greater than 0'};
+      }
+      
+      int maxMilestones = milestoneCount ?? getMaxMilestoneCountFromControllers(controllers);
+      double totalMilestoneAmounts = 0.0;
+      int activeMilestones = 0;
+
+      for (int i = 1; i <= maxMilestones; i++) {
+        final description = controllers['Milestone.$i.Description']?.text ?? '';
+        final amountText = controllers['Milestone.$i.Amount']?.text ?? '0';
+        
+        if (description.trim().isNotEmpty) {
+          activeMilestones++;
+          try {
+            double amount = double.parse(amountText.replaceAll(',', ''));
+            if (amount < 0) {
+              return {'isValid': false, 'message': 'Milestone $i amount cannot be negative'};
+            }
+            totalMilestoneAmounts += amount;
+          } catch (e) {
+            return {'isValid': false, 'message': 'Invalid amount for milestone $i'};
+          }
+        }
+      }
+
+      double difference = (totalMilestoneAmounts - totalContractPrice).abs();
+      if (difference > 0.01) { 
+        return {
+          'isValid': false, 
+          'message': 'Total milestone amounts (₱${totalMilestoneAmounts.toStringAsFixed(2)}) must equal total contract price (₱${totalContractPrice.toStringAsFixed(2)})'
+        };
+      }
+      
+      return {
+        'isValid': true, 
+        'message': 'Milestone payments are valid',
+        'totalMilestoneAmounts': totalMilestoneAmounts,
+        'totalContractPrice': totalContractPrice,
+        'activeMilestones': activeMilestones
+      };
+      
+    } catch (e) {
+      _errorService.logError(
+        errorMessage: 'Failed to validate milestone payments: ',
+        module: 'Create Contract Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Validate Milestone Payments',
+        },
+      );
+      return {'isValid': false, 'message': 'Error validating milestone payments'};
     }
   }
 

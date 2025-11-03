@@ -118,6 +118,11 @@ class PaymentService {
       final fieldValues = contractData['field_values'] as Map<String, dynamic>? ?? {};
 
 
+      final milestonePaymentInfo = _detectMilestonePayments(contractType, fieldValues);
+      if (milestonePaymentInfo != null) {
+        return milestonePaymentInfo;
+      }
+
       if (contractType.contains('lump sum')) {
         final contractPrice = fieldValues['Project.ContractPrice'];
         if (contractPrice == null || contractPrice.toString().isEmpty) {
@@ -173,6 +178,103 @@ class PaymentService {
       );
       rethrow;
     }
+  }
+
+  /// Detects if a contract has milestone-based payments and returns payment structure
+  Map<String, dynamic>? _detectMilestonePayments(String contractType, Map<String, dynamic> fieldValues) {
+    // Check if contract type suggests milestone payments
+    final isMilestoneContract = contractType.contains('milestone') || 
+                               contractType.contains('phased') ||
+                               contractType.contains('progressive');
+
+    // Check if field values contain milestone payment information
+    final hasMilestoneFields = fieldValues.keys.any((key) => 
+        key.toLowerCase().contains('milestone') || 
+        key.toLowerCase().contains('payment.milestone') ||
+        key.toLowerCase().contains('phase'));
+
+    if (!isMilestoneContract && !hasMilestoneFields) {
+      return null;
+    }
+
+    // Extract milestone payment information
+    final milestones = <Map<String, dynamic>>[];
+    double totalContractAmount = 0.0;
+
+    // Look for total contract amount
+    final contractPriceKeys = ['Payment.Total', 'Project.ContractPrice', 'Total.Amount', 'Contract.TotalAmount'];
+    for (final key in contractPriceKeys) {
+      if (fieldValues.containsKey(key) && fieldValues[key] != null) {
+        try {
+          totalContractAmount = double.parse(fieldValues[key].toString());
+          break;
+        } catch (e) {
+          // 
+        }
+      }
+    }
+
+    for (int i = 1; i <= 10; i++) { 
+      final milestoneKeys = [
+        'Payment.Milestone$i',
+        'Milestone.$i.Amount',
+        'Milestone$i.Payment',
+        'Phase.$i.Amount',
+      ];
+
+      double? milestoneAmount;
+      String? description;
+      String? dueDate;
+
+      for (final key in milestoneKeys) {
+        if (fieldValues.containsKey(key) && fieldValues[key] != null) {
+          try {
+            milestoneAmount = double.parse(fieldValues[key].toString());
+            break;
+          } catch (e) {
+            // Continue to next key
+          }
+        }
+      }
+
+      // Look for description and due date
+      description = fieldValues['Milestone.$i.Description']?.toString() ?? 
+                   fieldValues['Phase.$i.Description']?.toString() ??
+                   'Milestone $i';
+
+      dueDate = fieldValues['Milestone.$i.Date']?.toString() ?? 
+               fieldValues['Phase.$i.Date']?.toString();
+
+      if (milestoneAmount != null && milestoneAmount > 0) {
+        milestones.add({
+          'milestone_number': i,
+          'amount': milestoneAmount,
+          'description': description,
+          'due_date': dueDate,
+          'status': 'pending',
+        });
+      }
+    }
+
+    if (milestones.isEmpty) {
+      return null;
+    }
+
+    // Calculate next due milestone
+    final nextMilestone = milestones.firstWhere(
+      (milestone) => milestone['status'] == 'pending',
+      orElse: () => milestones.first,
+    );
+
+    return {
+      'amount': nextMilestone['amount'],
+      'contract_type': 'milestone_based',
+      'payment_structure': 'milestone',
+      'total_contract_amount': totalContractAmount,
+      'milestones': milestones,
+      'current_milestone': nextMilestone,
+      'total_milestones': milestones.length,
+    };
   }
 
   Future<String> createPaymentMethod({
@@ -664,6 +766,164 @@ class PaymentService {
         'total_paid': 0.0,
         'payment_count': 0,
       };
+    }
+  }
+
+  Future<Map<String, dynamic>?> getMilestonePaymentInfo(String projectId) async {
+    try {
+      final projectData = await _supabase
+          .from('Projects')
+          .select('contract_id, bid_id, projectdata')
+          .eq('project_id', projectId)
+          .single();
+
+      if (projectData['contract_id'] == null) {
+        return null;
+      }
+
+      final paymentInfo = await _determinePaymentAmount(
+        projectId: projectId,
+        contractId: projectData['contract_id'],
+        bidId: projectData['bid_id'],
+      );
+
+      if (paymentInfo['payment_structure'] != 'milestone') {
+        return null; 
+      }
+
+      final projectdata = projectData['projectdata'] as Map<String, dynamic>? ?? {};
+      final payments = projectdata['payments'] as List<dynamic>? ?? [];
+      final milestones = List<Map<String, dynamic>>.from(paymentInfo['milestones'] ?? []);
+
+      for (var milestone in milestones) {
+        final milestoneNumber = milestone['milestone_number'];
+        final paidPayments = payments.where((payment) => 
+          payment['milestone_number'] == milestoneNumber).toList();
+        
+        if (paidPayments.isNotEmpty) {
+          milestone['status'] = 'paid';
+          milestone['paid_amount'] = paidPayments.fold<double>(0.0, 
+            (sum, payment) => sum + ((payment['amount'] as num?)?.toDouble() ?? 0.0));
+          milestone['payment_date'] = paidPayments.last['created_at'];
+        }
+      }
+
+      // Find next due milestone
+      final nextMilestone = milestones.firstWhere(
+        (milestone) => milestone['status'] == 'pending',
+        orElse: () => milestones.isNotEmpty ? milestones.last : {},
+      );
+
+      return {
+        'milestones': milestones,
+        'current_milestone': nextMilestone,
+        'total_milestones': milestones.length,
+        'completed_milestones': milestones.where((m) => m['status'] == 'paid').length,
+        'total_contract_amount': paymentInfo['total_contract_amount'],
+        'payment_structure': 'milestone',
+      };
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to get milestone payment info: $e',
+        module: 'Payment Service',
+        severity: 'Medium',
+        extraInfo: {'project_id': projectId},
+      );
+      return null;
+    }
+  }
+
+  Future<void> processMilestonePayment({
+    required String projectId,
+    required int milestoneNumber,
+    required String cardNumber,
+    required int expMonth,
+    required int expYear,
+    required String cvc,
+    String? cardholderName,
+    String? billingEmail,
+  }) async {
+    try {
+      final milestoneInfo = await getMilestonePaymentInfo(projectId);
+      if (milestoneInfo == null) {
+        throw Exception('Project does not have milestone-based payments');
+      }
+
+      final milestones = List<Map<String, dynamic>>.from(milestoneInfo['milestones']);
+      final targetMilestone = milestones.firstWhere(
+        (milestone) => milestone['milestone_number'] == milestoneNumber,
+        orElse: () => throw Exception('Milestone $milestoneNumber not found'),
+      );
+
+      if (targetMilestone['status'] == 'paid') {
+        throw Exception('Milestone $milestoneNumber has already been paid');
+      }
+
+      final amount = targetMilestone['amount'] as double;
+
+      await processPayment(
+        projectId: projectId,
+        cardNumber: cardNumber,
+        expMonth: expMonth,
+        expYear: expYear,
+        cvc: cvc,
+        cardholderName: cardholderName,
+        billingEmail: billingEmail,
+        customAmount: amount,
+      );
+
+      final projectData = await _supabase
+          .from('Projects')
+          .select('projectdata')
+          .eq('project_id', projectId)
+          .single();
+
+      final projectdata = Map<String, dynamic>.from(projectData['projectdata'] ?? {});
+      final payments = List<Map<String, dynamic>>.from(projectdata['payments'] ?? []);
+
+      if (payments.isNotEmpty) {
+        final lastPayment = payments.last;
+        lastPayment['milestone_number'] = milestoneNumber;
+        lastPayment['milestone_description'] = targetMilestone['description'];
+      }
+
+      await _supabase
+          .from('Projects')
+          .update({'projectdata': projectdata})
+          .eq('project_id', projectId);
+
+      await _auditService.logAuditEvent(
+        userId: _supabase.auth.currentUser?.id,
+        action: 'MILESTONE_PAYMENT_PROCESSED',
+        details: 'Milestone $milestoneNumber payment processed for project $projectId',
+        metadata: {
+          'project_id': projectId,
+          'milestone_number': milestoneNumber,
+          'amount': amount,
+          'description': targetMilestone['description'],
+        },
+      );
+
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to process milestone payment: $e',
+        module: 'Payment Service',
+        severity: 'High',
+        extraInfo: {
+          'project_id': projectId,
+          'milestone_number': milestoneNumber,
+        },
+      );
+      rethrow;
+    }
+  }
+
+  Future<bool> isMilestoneContract(String projectId) async {
+    try {
+      final milestoneInfo = await getMilestonePaymentInfo(projectId);
+      return milestoneInfo != null;
+    } catch (e) {
+      return false;
     }
   }
 }
