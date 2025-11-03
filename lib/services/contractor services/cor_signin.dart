@@ -179,16 +179,10 @@ class SignInGoogleContractor {
     try {
       final supabase = Supabase.instance.client;
       final encodedNext = Uri.encodeComponent('/dashboard');
-   
-      final redirect = kIsWeb
-          ? 'https://contractor.contrust-sjdm.com/auth/callback?next=$encodedNext'
-          : 'io.supabase.contrust://login-callback/dashboard';
 
-      print('🔐 OAuth Debug Info:');
-      print('   Current host: ${Uri.base.host}');
-      print('   Current URL: ${Uri.base}');
-      print('   Redirect URL: $redirect');
-      print('   Is Web: $kIsWeb');
+      final redirect = kIsWeb
+          ? '${Uri.base.origin}/auth/callback?next=$encodedNext'
+          : 'io.supabase.contrust://login-callback/dashboard';
       
       await supabase.auth.signInWithOAuth(
         OAuthProvider.google,
