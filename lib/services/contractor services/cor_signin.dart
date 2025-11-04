@@ -193,13 +193,11 @@ class SignInGoogleContractor {
     try {
       final supabase = Supabase.instance.client;
       
-      // Use the current origin (subdomain) dynamically for redirect URL
-      // This ensures the redirect goes to the correct subdomain instead of the main domain
+      final configuredBaseUrl = const String.fromEnvironment('APP_BASE_URL', defaultValue: '');
       String redirectUrl;
       
       if (kIsWeb) {
-        // For web: use current origin (subdomain) + callback path
-        final origin = Uri.base.origin; // This will be contractor.contrust-sjdm.com or contractee.contrust-sjdm.com
+        final origin = configuredBaseUrl.isNotEmpty ? configuredBaseUrl : Uri.base.origin;
         redirectUrl = '$origin/auth/callback?next=${Uri.encodeComponent('/dashboard')}';
       } else {
         // For mobile: use deep link
