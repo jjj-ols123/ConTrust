@@ -80,19 +80,73 @@ class _CreateContractPageState extends State<CreateContractPage>
     try {
       final fetchService = FetchService();
       
-      if (selectedTemplate != null && selectedTemplate!.containsKey('template_name') && !selectedTemplate!.containsKey('contract_type_id')) {
-        final templateName = selectedTemplate!['template_name'];
-        selectedContractType = templateName;
-        final templates = await fetchService.fetchContractTypes();
-        selectedTemplate = templates.firstWhere(
-          (t) => t['template_name'] == templateName,
-          orElse: () => <String, dynamic>{},
-        );
-        if (selectedTemplate!.isEmpty && mounted) {
-          ConTrustSnackBar.error(context, 'Template not found');
-        } else {
-          selectedContractType = selectedTemplate!['template_name'];
+      if (selectedTemplate != null && 
+          selectedTemplate!.containsKey('template_name')) {
+        final templateName = selectedTemplate!['template_name'] as String?;
+        
+        if (selectedTemplate!.containsKey('contract_type_id')) {
+          selectedContractType = templateName;
+        } else if (templateName != null && templateName.isNotEmpty) {
+          selectedContractType = templateName;
+          try {
+            final templates = await fetchService.fetchContractTypes();
+
+            Map<String, dynamic>? foundTemplate;
+            try {
+              foundTemplate = templates.firstWhere(
+                (t) => (t['template_name'] as String?)?.trim() == templateName.trim(),
+              );
+            } catch (e) {
+              try {
+                foundTemplate = templates.firstWhere(
+                  (t) => (t['template_name'] as String?)?.toLowerCase().trim() == templateName.toLowerCase().trim(),
+                );
+              } catch (e2) {
+                foundTemplate = null;
+              }
+            }
+            
+            if (foundTemplate != null && foundTemplate.isNotEmpty) {
+              selectedTemplate = foundTemplate;
+              selectedContractType = foundTemplate['template_name'] as String?;
+            } else {
+              if (mounted) {
+                ConTrustSnackBar.error(context, 'Template not found: $templateName');
+                setState(() {
+                  isLoading = false;
+                });
+                return;
+              }
+            }
+          } catch (e) {
+            if (mounted) {
+              ConTrustSnackBar.error(context, 'Error loading template: $templateName');
+              setState(() {
+                isLoading = false;
+              });
+              return;
+            }
+          }
         }
+      }
+      
+      // Validate that we have a valid template with at least a template_name
+      if (selectedTemplate == null || 
+          selectedTemplate!.isEmpty || 
+          !selectedTemplate!.containsKey('template_name') ||
+          (selectedTemplate!['template_name'] as String?)?.isEmpty == true) {
+        if (mounted) {
+          ConTrustSnackBar.error(context, 'No valid template selected. Please try again.');
+          setState(() {
+            isLoading = false;
+          });
+          return;
+        }
+      }
+      
+      // Ensure selectedContractType is set
+      if (selectedContractType == null || selectedContractType!.isEmpty) {
+        selectedContractType = selectedTemplate!['template_name'] as String?;
       }
       
       if (existingContract != null && existingContract!['title'] == null) {
@@ -100,26 +154,28 @@ class _CreateContractPageState extends State<CreateContractPage>
         final contract = await fetchService.fetchContractWithDetails(contractId);
         if (contract == null && mounted) {
           ConTrustSnackBar.error(context, 'Contract not found');
+          setState(() {
+            isLoading = false;
+          });
           return;
         }
         if (contract != null) {
           existingContract = contract;
           
           final contractType = contract['contract_type'] as Map<String, dynamic>?;
-          if (contractType != null) {
+          if (contractType != null && contractType.isNotEmpty) {
             selectedTemplate = contractType;
-            selectedContractType = contractType['template_name'];
+            selectedContractType = contractType['template_name'] as String?;
           }
           
-          titleController.text = contract['title'] ?? '';
-          initialProjectId = contract['project_id'];
+          titleController.text = contract['title'] as String? ?? '';
+          initialProjectId = contract['project_id'] as String?;
         }
       }
       
       await initializeFields();
       await checkForProject();
     } catch (e) {
-      debugPrint('Initialization error: $e');
       if (mounted) {
         ConTrustSnackBar.error(context, 'Failed to load contract data');
       }
@@ -138,14 +194,15 @@ class _CreateContractPageState extends State<CreateContractPage>
         await loadExistingContractFieldValues();
       }
       
-      if (selectedTemplate != null) {
+      if (selectedTemplate != null && selectedTemplate!.isNotEmpty) {
         await loadTemplateAndBuildFields();
       } else {
         buildDefaultFields();
       }
     } catch (e) {
-      debugPrint('Error initializing fields: $e');
-      buildDefaultFields();
+      if (mounted) {
+        buildDefaultFields();
+      }
     }
   }
 
@@ -164,7 +221,7 @@ class _CreateContractPageState extends State<CreateContractPage>
         });
       }
     } catch (e) {
-      debugPrint('Error checking for project: $e');
+      // Error checking for project - silently fail, user can select manually
     }
   }
 
@@ -179,21 +236,27 @@ class _CreateContractPageState extends State<CreateContractPage>
           contractorId: contractorId!,
         );
         if (fieldValues != null) {
-  
           widget.existingContract!['field_values'] = fieldValues;
         }
       }
     } catch (e) {
-      debugPrint('Error fetching contract field values');
+      // Error fetching contract field values - silently fail
     }
   }
 
   Future<void> loadTemplateAndBuildFields() async {
-    if (selectedTemplate == null) return;
+    if (selectedTemplate == null || selectedTemplate!.isEmpty) {
+      buildDefaultFields();
+      return;
+    }
 
     try {
-
-      final templateName = selectedTemplate!['template_name'] ?? '';
+      final templateName = selectedTemplate!['template_name'] as String? ?? '';
+      if (templateName.isEmpty) {
+        buildDefaultFields();
+        return;
+      }
+      
       final fields = service.getContractTypeSpecificFields(templateName);
 
       for (var controller in controllers.values) {
@@ -639,7 +702,8 @@ class _CreateContractPageState extends State<CreateContractPage>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green[600],
                   foregroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(50),
+                  minimumSize: const Size(0, 50),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),

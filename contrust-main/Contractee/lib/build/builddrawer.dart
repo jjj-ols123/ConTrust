@@ -272,7 +272,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
 
       final projectId = activeProjects.first['project_id'];
       if (widget.currentPage != ContracteePage.ongoing) {
-        navigateToPage('/ongoing', arguments: projectId);
+        context.go('/ongoing/$projectId');
       }
     } catch (e) {
       setState(() => _loadingOngoing = false);
@@ -299,7 +299,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
                 subtitle: Text(project['location'] ?? 'No location'),
                 onTap: () {
                   Navigator.pop(context);
-                  navigateToPage('/ongoing', arguments: project['project_id']);
+                  context.go('/ongoing/${project['project_id']}');
                 },
               );
             },

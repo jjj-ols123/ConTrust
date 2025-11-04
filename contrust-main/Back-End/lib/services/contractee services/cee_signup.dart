@@ -45,28 +45,32 @@ class SignUpContractee {
 
       if (userType == 'contractee') {
         final String userId = signUpResponse.user!.id;
-        await Future.delayed(const Duration(milliseconds: 1000));
+        final bool hasSession = signUpResponse.session != null;
         
-        bool insertSuccess = false;
-        for (int attempt = 0; attempt < 5 && !insertSuccess; attempt++) {
-          try {
-            await supabase.from('Users').upsert({
-              'users_id': userId,
-              'email': email,
-              'name': data?['full_name'] ?? 'User',
-              'role': 'contractee',
-              'status': 'active',
-              'created_at': DateTimeHelper.getLocalTimeISOString(),
-              'profile_image_url': data?['profilePhoto'] ?? 'assets/defaultpic.png',
-              'phone_number': data?['phone_number'] ?? '',
-              'verified': true,
-            }, onConflict: 'users_id');
-            insertSuccess = true;
-          } catch (e) {
-            if (attempt == 4) {
-              throw Exception('Failed to create user record: $e');
+        if (hasSession) {
+          await Future.delayed(const Duration(milliseconds: 1000));
+          
+          bool insertSuccess = false;
+          for (int attempt = 0; attempt < 5 && !insertSuccess; attempt++) {
+            try {
+              await supabase.from('Users').upsert({
+                'users_id': userId,
+                'email': email,
+                'name': data?['full_name'] ?? 'User',
+                'role': 'contractee',
+                'status': 'active',
+                'created_at': DateTimeHelper.getLocalTimeISOString(),
+                'profile_image_url': data?['profilePhoto'] ?? 'assets/defaultpic.png',
+                'phone_number': data?['phone_number'] ?? '',
+                'verified': true,
+              }, onConflict: 'users_id');
+              insertSuccess = true;
+            } catch (e) {
+              if (attempt == 4) {
+                throw Exception('Failed to create user record: $e');
+              }
+              await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
             }
-            await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
           }
         }
         

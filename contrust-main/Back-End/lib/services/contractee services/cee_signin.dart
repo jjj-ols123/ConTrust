@@ -193,8 +193,33 @@ class SignInGoogleContractee {
           .eq('contractee_id', user.id)
           .maybeSingle();
 
+      final existingUser = await supabase
+          .from('Users')
+          .select('users_id')
+          .eq('users_id', user.id)
+          .maybeSingle();
+
       if (existingContractee == null) {
         await setupContractee(context, user);
+      } else if (existingUser == null) {
+        final contracteeData = await supabase
+            .from('Contractee')
+            .select('full_name, phone_number, profile_photo')
+            .eq('contractee_id', user.id)
+            .single();
+        
+        await supabase.from('Users').upsert({
+          'users_id': user.id,
+          'email': user.email ?? '',
+          'name': contracteeData['full_name'] ?? 'User',
+          'role': 'contractee',
+          'status': 'active',
+          'created_at': DateTimeHelper.getLocalTimeISOString(),
+          'last_login': DateTimeHelper.getLocalTimeISOString(),
+          'profile_image_url': contracteeData['profile_photo'] ?? 'assets/defaultpic.png',
+          'phone_number': contracteeData['phone_number'] ?? '',
+          'verified': true,
+        }, onConflict: 'users_id');
       } else {
         final userType = user.userMetadata != null ? user.userMetadata!['user_type'] : null;
         if (userType == null || userType.toLowerCase() != 'contractee') {

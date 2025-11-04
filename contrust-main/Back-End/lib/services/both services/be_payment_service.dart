@@ -388,33 +388,57 @@ class PaymentService {
           .eq('project_id', projectId)
           .single();
 
-      if (projectData['bid_id'] == null) {
-        throw Exception('No bid associated with this project');
+      if (customAmount == null || customAmount <= 0) {
+        throw Exception('Payment amount must be specified. Please enter the amount you want to pay.');
       }
 
       String? email = billingEmail;
       if (email == null) {
         try {
-          final contracteeData = await _supabase
-              .from('Contractee')
-              .select('email')
-              .eq('contractee_id', projectData['contractee_id'])
-              .single();
-          email = contracteeData['email'] as String?;
+          final contracteeId = projectData['contractee_id'] as String?;
+          if (contracteeId != null) {
+            final contracteeData = await _supabase
+                .from('Contractee')
+                .select('email')
+                .eq('contractee_id', contracteeId)
+                .single();
+            email = contracteeData['email'] as String?;
+          }
         } catch (_) {
           email = 'payment@contrust.com';
         }
       }
 
-      final paymentInfo = await _determinePaymentAmount(
-        projectId: projectId,
-        contractId: projectData['contract_id'],
-        bidId: projectData['bid_id'],
-        customAmount: customAmount,
-      );
-
-      final amount = paymentInfo['amount'] as double;
-      final contractType = paymentInfo['contract_type'] as String;
+      final amount = customAmount;
+      
+      String contractType = 'manual';
+      String paymentStructure = 'single';
+      
+      final contractId = projectData['contract_id'] as String?;
+      if (contractId != null) {
+        try {
+          final contractData = await _supabase
+              .from('Contracts')
+              .select('contract_type_id')
+              .eq('contract_id', contractId)
+              .maybeSingle();
+          
+          if (contractData != null && contractData['contract_type_id'] != null) {
+            final contractTypeData = await _supabase
+                .from('ContractTypes')
+                .select('template_name')
+                .eq('contract_type_id', contractData['contract_type_id'])
+                .maybeSingle();
+            
+            if (contractTypeData != null) {
+              contractType = ((contractTypeData['template_name'] as String?)?.toLowerCase() ?? 'custom');
+            }
+          }
+        } catch (_) {
+          // Use default values if contract lookup fails
+        }
+      }
+      
       final projectTitle = projectData['title'] as String? ?? 'Untitled Project';
 
       final projectdata = projectData['projectdata'] as Map<String, dynamic>? ?? {};
@@ -459,7 +483,7 @@ class PaymentService {
           'date': DateTimeHelper.getLocalTimeISOString(),
           'reference': paymentIntentId,
           'contract_type': contractType,
-          'payment_structure': paymentInfo['payment_structure'],
+          'payment_structure': paymentStructure,
         });
         
 
@@ -474,7 +498,7 @@ class PaymentService {
         updatedProjectdata['last_payment_date'] = DateTimeHelper.getLocalTimeISOString();
         updatedProjectdata['last_payment_reference'] = paymentIntentId;
         updatedProjectdata['contract_type'] = contractType;
-        updatedProjectdata['payment_structure'] = paymentInfo['payment_structure'];
+        updatedProjectdata['payment_structure'] = paymentStructure;
         
    
         if (contractType == 'lump_sum') {
@@ -488,25 +512,30 @@ class PaymentService {
           'projectdata': updatedProjectdata,
         }).eq('project_id', projectId);
 
-        await _auditService.logAuditEvent(
-          userId: projectData['contractee_id'],
-          action: 'PAYMENT_COMPLETED',
-          details: 'Payment completed for project ($contractType)',
-          category: 'Payment',
-          metadata: {
-            'project_id': projectId,
-            'amount': amount,
-            'payment_reference': paymentIntentId,
-            'contract_type': contractType,
-            'payment_structure': paymentInfo['payment_structure'],
-          },
-        );
+        final contracteeId = projectData['contractee_id'] as String?;
+        final contractorId = projectData['contractor_id'] as String?;
+        
+        if (contracteeId != null) {
+          await _auditService.logAuditEvent(
+            userId: contracteeId,
+            action: 'PAYMENT_COMPLETED',
+            details: 'Payment completed for project ($contractType)',
+            category: 'Payment',
+            metadata: {
+              'project_id': projectId,
+              'amount': amount,
+              'payment_reference': paymentIntentId,
+              'contract_type': contractType,
+              'payment_structure': paymentStructure,
+            },
+          );
+        }
 
-        if (projectData['contractor_id'] != null) {
+        if (contractorId != null && contracteeId != null) {
           await _notificationService.createNotification(
-            receiverId: projectData['contractor_id'],
+            receiverId: contractorId,
             receiverType: 'contractor',
-            senderId: projectData['contractee_id'],
+            senderId: contracteeId,
             senderType: 'contractee',
             type: 'Payment Received',
             message: 'Payment of ₱${amount.toStringAsFixed(2)} has been received for "$projectTitle".',
@@ -615,30 +644,15 @@ class PaymentService {
 
   Future<Map<String, dynamic>> getPaymentInfo(String projectId) async {
     try {
-      final projectData = await _supabase
-          .from('Projects')
-          .select('contract_id, bid_id')
-          .eq('project_id', projectId)
-          .single();
-
-      final paymentInfo = await _determinePaymentAmount(
-        projectId: projectId,
-        contractId: projectData['contract_id'],
-        bidId: projectData['bid_id'],
-        customAmount: null,
-      );
-
-      return paymentInfo;
+      // Always return requires_custom_amount: true so contractee can specify the amount
+      // This removes dependency on bid_id
+      return {
+        'amount': null,
+        'contract_type': 'manual',
+        'payment_structure': 'manual',
+        'requires_custom_amount': true,
+      };
     } catch (e) {
-      if (e.toString().contains('require a custom payment amount')) {
-        return {
-          'amount': null,
-          'contract_type': 'variable',
-          'payment_structure': 'variable',
-          'requires_custom_amount': true,
-        };
-      }
-
       await _errorService.logError(
         errorMessage: 'Failed to get payment info: $e',
         module: 'Payment Service',
@@ -648,7 +662,13 @@ class PaymentService {
           'project_id': projectId,
         },
       );
-      rethrow;
+      // Still return requires_custom_amount even on error
+      return {
+        'amount': null,
+        'contract_type': 'manual',
+        'payment_structure': 'manual',
+        'requires_custom_amount': true,
+      };
     }
   }
 
@@ -774,14 +794,17 @@ class PaymentService {
           .eq('project_id', projectId)
           .single();
 
-      if (projectData['contract_id'] == null) {
+      final contractId = projectData['contract_id'] as String?;
+      final bidId = projectData['bid_id'] as String?;
+      
+      if (contractId == null || bidId == null) {
         return null;
       }
 
       final paymentInfo = await _determinePaymentAmount(
         projectId: projectId,
-        contractId: projectData['contract_id'],
-        bidId: projectData['bid_id'],
+        contractId: contractId,
+        bidId: bidId,
       );
 
       if (paymentInfo['payment_structure'] != 'milestone') {

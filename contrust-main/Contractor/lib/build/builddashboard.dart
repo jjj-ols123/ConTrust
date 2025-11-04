@@ -102,7 +102,12 @@ class DashboardBuildMethods {
         ],
       ),
       child: Padding(
-        padding: EdgeInsets.all(isTablet ? 28 : 20),
+        padding: EdgeInsets.only(
+          left: isTablet ? 28 : 20,
+          right: isTablet ? 28 : 20,
+          top: isTablet ? 28 : 20,
+          bottom: isTablet ? 12 : 8,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -693,10 +698,6 @@ class DashboardBuildMethods {
                 constraints: BoxConstraints(
                   minWidth: isMobile ? 28 : 32, 
                   minHeight: isMobile ? 28 : 32
-                ),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.blue.shade100,
-                  foregroundColor: Colors.blue.shade700,
                 ),
               ),
               Builder(
@@ -1365,13 +1366,13 @@ class DashboardBuildMethods {
     final projectId = project['project_id']?.toString() ?? '';
     
     Widget card = Card(
-      margin: const EdgeInsets.only(bottom: 20),
+      margin: const EdgeInsets.only(bottom: 0),
       elevation: 4,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [Colors.white, Colors.grey.shade50],

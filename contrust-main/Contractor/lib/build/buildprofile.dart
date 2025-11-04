@@ -1525,7 +1525,7 @@ class ProfileBuildMethods {
     sortedProjects.sort((a, b) {
       final statusA = (a['status'] ?? '').toString().toLowerCase();
       final statusB = (b['status'] ?? '').toString().toLowerCase();
-
+      
       bool isActiveA = statusA != 'completed' && statusA != 'cancelled';
       bool isActiveB = statusB != 'completed' && statusB != 'cancelled';
       
@@ -1825,10 +1825,10 @@ class ProfileBuildMethods {
                   transaction['payment_type'] ?? 'Payment',
                   style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                 ),
-                if (transaction['payment_date'] != null) ...[
+                if (transaction['date'] != null) ...[
                   const SizedBox(height: 4),
                   Text(
-                    getTimeAgo(DateTime.parse(transaction['payment_date'])),
+                    getTimeAgo(DateTime.parse(transaction['date'])),
                     style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
                   ),
                 ],

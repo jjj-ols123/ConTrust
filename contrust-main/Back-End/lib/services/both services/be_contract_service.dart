@@ -186,13 +186,24 @@ class ContractService {
 
       final existingApprovedContracts = await _supabase
           .from('Contracts')
-          .select('contract_id')
+          .select('contract_id, status')
           .eq('project_id', projectId)
           .neq('contract_id', contractId)
-          .inFilter('status', ['approved', 'active', 'signed', 'sent']);
+          .inFilter('status', ['approved', 'active', 'signed']);
 
       if (existingApprovedContracts.isNotEmpty) {
         throw Exception('Cannot send new contract: An approved contract already exists for this project.');
+      }
+
+      final existingSentContracts = await _supabase
+          .from('Contracts')
+          .select('contract_id')
+          .eq('project_id', projectId)
+          .neq('contract_id', contractId)
+          .eq('status', 'sent');
+
+      if (existingSentContracts.isNotEmpty) {
+        throw Exception('Cannot send new contract: There is already a contract sent and awaiting review for this project.');
       }
 
       final chatRoomData = await _supabase
@@ -321,10 +332,55 @@ class ContractService {
             .eq('contract_id', contractId)
             .single();
 
+        final projectId = contractData['project_id'] as String;
+
+        try {
+          final otherContracts = await _supabase
+              .from('Contracts')
+              .select('contract_id')
+              .eq('project_id', projectId)
+              .neq('contract_id', contractId)
+              .inFilter('status', ['draft', 'sent', 'pending']);
+
+          if (otherContracts.isNotEmpty) {
+            final otherContractIds = otherContracts
+                .map((c) => c['contract_id'] as String)
+                .toList();
+
+            await _supabase
+                .from('Contracts')
+                .update({
+                  'status': 'rejected',
+                  'updated_at': DateTimeHelper.getLocalTimeISOString(),
+                  'reviewed_at': DateTimeHelper.getLocalTimeISOString(),
+                })
+                .inFilter('contract_id', otherContractIds);
+
+            await _supabase
+                .from('Messages')
+                .update({'contract_status': 'rejected'})
+                .inFilter('contract_id', otherContractIds)
+                .eq('message_type', 'contract')
+                .inFilter('contract_status', ['sent', 'pending']);
+          }
+        } catch (e) {
+          await _errorService.logError(
+            errorMessage: 'Failed to reject other contracts: $e',
+            module: 'Contract Service',
+            severity: 'Medium',
+            extraInfo: {
+              'operation': 'Reject Other Contracts on Approval',
+              'approved_contract_id': contractId,
+              'project_id': projectId,
+            },
+          );
+          // Don't rethrow - continue with approval even if rejecting others fails
+        }
+
         await _supabase.from('Projects').update({
           'status': 'awaiting_signature',
           'contract_id': contractId,  
-        }).eq('project_id', contractData['project_id']);
+        }).eq('project_id', projectId);
 
       } else if (status == 'rejected') {
         final contractData = await _supabase

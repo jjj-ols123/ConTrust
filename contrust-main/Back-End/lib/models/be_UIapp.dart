@@ -883,7 +883,10 @@ class ProjectView extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
                         firmName,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
@@ -892,6 +895,20 @@ class ProjectView extends StatelessWidget {
                   ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
+                          ),
+                          if (infoMap['email'] != null && (infoMap['email'] as String).isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              infoMap['email'],
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                     if (isAccepted || status == 'accepted')

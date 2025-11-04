@@ -43,6 +43,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
   Map<String, dynamic>? _paymentSummary;
   final List<StreamSubscription> _subscriptions = [];
   Timer? _debounceTimer;
+  Future<List<List<Map<String, dynamic>>>>? _tabDataFuture;
 
   @override
   void initState() {
@@ -54,10 +55,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
   Future<void> _initializeData() async {
     await loadData();
     _getChatRoomId();
-    if (projectData != null) {
-      _checkChatPermission(projectData);
-      _loadContractorData(projectData);
-    }
+    // Note: _checkChatPermission and _loadContractorData are already called in loadData()
   }
 
   @override
@@ -81,7 +79,9 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
       _debounceTimer?.cancel();
       _debounceTimer = Timer(const Duration(milliseconds: 300), () {
         if (mounted) {
-          loadData();
+          setState(() {
+            _tabDataFuture = _getTabData();
+          });
         }
       });
     }
@@ -200,8 +200,20 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
       final isPaid = results[2] as bool;
       final paymentSummary = results[3] as Map<String, dynamic>;
       
+      if (data == null) {
+        debugPrint('Error: fetchProjectDetails returned null for projectId: ${widget.projectId}');
+        setState(() {
+          isLoading = false;
+          projectData = null;
+        });
+        if (mounted) {
+          ConTrustSnackBar.error(context, 'Project not found. Please check the project ID.');
+        }
+        return;
+      }
+      
       Map<String, dynamic>? contractData;
-      final contractId = data?['contract_id'];
+      final contractId = data['contract_id'];
       if (contractId != null) {
         try {
           final contract = await Supabase.instance.client
@@ -220,19 +232,23 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
         projectData = data;
         _contractData = contractData;
         _localTasks = tasks;
-        _localProgress = (data?['progress'] as num?)?.toDouble() ?? 0.0;
+        _localProgress = (data['progress'] as num?)?.toDouble() ?? 0.0;
         _isPaid = isPaid;
         _paymentSummary = paymentSummary;
         isLoading = false;
+        // Cache the tab data future to prevent unnecessary rebuilds
+        _tabDataFuture = _getTabData();
       });
       
       // Load dependent data after project data is loaded
-      if (data != null) {
         _checkChatPermission(data);
         _loadContractorData(data);
-      }
     } catch (e) {
-      setState(() => isLoading = false);
+      debugPrint('Error in loadData: $e');
+      setState(() {
+        isLoading = false;
+        projectData = null;
+      });
       if (mounted) {
         ConTrustSnackBar.error(context, 'Error loading project data. Please try again. $e');
       }
@@ -431,19 +447,6 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                               ),
                             );
                           },
-                        ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.amber.shade700,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text('Close'),
                   ),
                 ),
               ],
@@ -490,32 +493,16 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
   Future<void> _handlePayment() async {
     try {
       final project = projectData!;
-      final projectTitle = project['title'] ?? 'Untitled Project';
+      final projectTitle = (project['title'] as String?) ?? 'Untitled Project';
       
-      final paymentInfo = await _paymentService.getPaymentInfo(widget.projectId);
-      
-      final contractType = paymentInfo['contract_type'] as String?;
-      final requiresCustomAmount = paymentInfo['requires_custom_amount'] == true;
-      
-      double? customAmount;
-      double amount;
-      
-      if (requiresCustomAmount) {
-
-        customAmount = await _showAmountInputDialog(contractType);
+      final customAmount = await _showAmountInputDialog(null);
         if (customAmount == null) return;
-        amount = customAmount;
-      } else {
-  
-        amount = (paymentInfo['amount'] as num).toDouble();
-      }
-
   
       await PaymentModal.show(
         context: context,
         projectId: widget.projectId,
         projectTitle: projectTitle,
-        amount: amount,
+        amount: customAmount,
         customAmount: customAmount, 
         onPaymentSuccess: () {
           loadData();
@@ -529,9 +516,9 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
   Future<double?> _showAmountInputDialog(String? contractType) async {
     final controller = TextEditingController();
     String dialogTitle = 'Enter Payment Amount';
-    String dialogMessage = 'Please specify the payment amount for this project.';
+    String dialogMessage = 'Please enter the amount you want to pay for this project.';
     
-  
+    if (contractType != null) {
     if (contractType == 'time_and_materials') {
       dialogTitle = 'Time & Materials Payment';
       dialogMessage = 'Enter the payment amount based on hours worked and materials used.';
@@ -541,6 +528,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
     } else if (contractType == 'custom') {
       dialogTitle = 'Custom Contract Payment';
       dialogMessage = 'Enter the payment amount as agreed in the custom contract.';
+      }
     }
     
     return showDialog<double>(
@@ -700,7 +688,10 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
     }
     
     return Scaffold(
-      body: _buildResponsiveContent(),
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: SafeArea(
+        child: _buildResponsiveContent(),
+      ),
     );
   }
 
@@ -763,10 +754,35 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
         onViewPaymentHistory: _isPaid ? _showPaymentHistory : null,
         paymentButtonText: _paymentSummary?['payment_status'] == 'partial' ? 'Make Payment' : null,
         tabContent: FutureBuilder<List<List<Map<String, dynamic>>>>(
-          future: _getTabData(),
+          future: _tabDataFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator(color: Colors.amber));
+            }
+
+            if (snapshot.hasError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, color: Colors.red, size: 48),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error loading data',
+                      style: TextStyle(color: Colors.red.shade700),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _tabDataFuture = _getTabData();
+                        });
+                      },
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              );
             }
 
             final data = snapshot.data ?? [[], [], []];
@@ -819,15 +835,41 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
     final duration = project['duration'] as int?;
     final projectStatus = project['status'] ?? '';
 
-    return Column(
-      children: [
+    return CustomScrollView(
+      slivers: [
         CeeProfileBuildMethods.buildStickyHeader('Ongoing Project'),
-        Expanded(
+        SliverFillRemaining(
+          hasScrollBody: false,
           child: FutureBuilder<List<List<Map<String, dynamic>>>>(
-              future: _getTabData(),
+              future: _tabDataFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator(color: Colors.amber));
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline, color: Colors.red, size: 48),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Error loading data',
+                          style: TextStyle(color: Colors.red.shade700),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _tabDataFuture = _getTabData();
+                            });
+                          },
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  );
                 }
 
                 final data = snapshot.data ?? [[], [], []];

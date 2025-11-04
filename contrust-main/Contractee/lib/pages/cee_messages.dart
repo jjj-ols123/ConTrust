@@ -364,10 +364,7 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
                     if (projectStatus == 'awaiting_contract' || projectStatus == 'active') {
                       return ContractAgreementBanner(
                         chatRoomId: widget.chatRoomId,
-                        userRole: 'contractee', 
-                        onActiveProjectPressed: () {
-                          ConTrustSnackBar.info(context, 'Navigate to Ongoing Projects');
-                        },
+                        userRole: 'contractee',
                       );
                     }
                     return const SizedBox.shrink();

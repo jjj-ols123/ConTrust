@@ -14,6 +14,7 @@ import 'package:contractee/pages/cee_torprofile.dart';
 import 'package:contractee/pages/cee_notification.dart';
 import 'package:contractee/pages/cee_ai_assistant.dart';
 import 'package:contractee/build/builddrawer.dart';
+import 'package:backend/build/buildconfirmemail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
@@ -119,6 +120,15 @@ class _MyAppState extends State<MyApp> {
           pageBuilder: (context, state) => NoTransitionPage(
             child: const RegistrationPage(),
           ),
+        ),
+        GoRoute(
+          path: '/confirm-email',
+          pageBuilder: (context, state) {
+            final email = state.uri.queryParameters['email'];
+            return NoTransitionPage(
+              child: ConfirmEmailPage(email: email),
+            );
+          },
         ),
         GoRoute(
           path: '/chat/:contractorName',

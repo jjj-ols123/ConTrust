@@ -307,7 +307,7 @@ class HomePageBuilder {
     bool isPlaceholder = project['isPlaceholder'] == true;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 0),
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
       child: InkWell(
@@ -482,7 +482,7 @@ class HomePageBuilder {
               final screenWidth = MediaQuery.of(context).size.width;
               final isMobile = screenWidth < 600;
               return SizedBox(
-                height: isMobile ? 240 : 300,
+                height: isMobile ? 150 : 200,
                 child: ListView.builder(
                   padding: EdgeInsets.zero,
                   itemCount: bids.length,
@@ -588,20 +588,16 @@ class HomePageBuilder {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    onPressed: () => _showBidInfoDialog(context, bid),
-                    icon: Icon(Icons.info_outline, size: isMobile ? 18 : 20),
-                    tooltip: 'More Info',
-                    padding: EdgeInsets.all(isMobile ? 3 : 4),
-                    constraints: BoxConstraints(
-                      minWidth: isMobile ? 28 : 32, 
-                      minHeight: isMobile ? 28 : 32
-                    ),
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.blue.shade100,
-                      foregroundColor: Colors.blue.shade700,
-                    ),
-                  ),
+              IconButton(
+                onPressed: () => _showBidInfoDialog(context, bid),
+                icon: Icon(Icons.info_outline, size: isMobile ? 18 : 20),
+                tooltip: 'More Info',
+                padding: EdgeInsets.all(isMobile ? 3 : 4),
+                constraints: BoxConstraints(
+                  minWidth: isMobile ? 28 : 32, 
+                  minHeight: isMobile ? 28 : 32
+                ),
+              ),
                   if (isAccepted || isRejected) ...[
                     SizedBox(width: isMobile ? 3 : 4),
                     if (isAccepted)
@@ -1168,7 +1164,7 @@ class HomePageBuilder {
         }
 
         return SizedBox(
-          height: isMobile ? 240 : 300,
+          height: isMobile ? 150 : 200,
           child: ListView(
             padding: EdgeInsets.zero,
             children: items,
@@ -1274,10 +1270,6 @@ class HomePageBuilder {
                 constraints: BoxConstraints(
                   minWidth: isMobile ? 28 : 32, 
                   minHeight: isMobile ? 28 : 32
-                ),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.blue.shade100,
-                  foregroundColor: Colors.blue.shade700,
                 ),
               ),
               if (isAccepted || status == 'accepted') ...[
@@ -1664,7 +1656,12 @@ class HomePageBuilder {
         ],
       ),
       child: Padding(
-        padding: EdgeInsets.all(isTablet ? 28 : 20),
+        padding: EdgeInsets.only(
+          left: isTablet ? 28 : 20,
+          right: isTablet ? 28 : 20,
+          top: isTablet ? 28 : 20,
+          bottom: isTablet ? 12 : 8,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1825,14 +1822,31 @@ class HomePageBuilder {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Text(
-                          contractor['firm_name']?.toString() ?? "Contractor Name",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              contractor['firm_name']?.toString() ?? "Contractor Name",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (contractor['email'] != null && (contractor['email'] as String).isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                contractor['email'],
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ],
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -1975,7 +1989,6 @@ class HomePageBuilder {
       
       final supabase = Supabase.instance.client;
       
-      // First, fetch the project to get contractor_id
       final projectResponse = await supabase
           .from('Projects')
           .select('contractor_id')
@@ -1987,14 +2000,32 @@ class HomePageBuilder {
       final contractorId = projectResponse['contractor_id'] as String?;
       if (contractorId == null || contractorId.isEmpty) return null;
       
-      // Fetch contractor data
       final contractorResponse = await supabase
           .from('Contractor')
           .select('contractor_id, firm_name, specialization, bio, profile_photo, verified, rating')
           .eq('contractor_id', contractorId)
           .maybeSingle();
       
-      return contractorResponse != null ? Map<String, dynamic>.from(contractorResponse) : null;
+      if (contractorResponse == null) return null;
+      
+      String email = '';
+      try {
+        final userData = await supabase
+            .from('Users')
+            .select('email')
+            .eq('users_id', contractorId)
+            .maybeSingle();
+        if (userData != null) {
+          email = userData['email'] ?? '';
+        }
+      } catch (e) {
+        //
+      }
+      
+      final contractorData = Map<String, dynamic>.from(contractorResponse);
+      contractorData['email'] = email;
+      
+      return contractorData;
     } catch (e) {
       return null;
     }

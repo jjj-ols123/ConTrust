@@ -151,6 +151,9 @@ class BiddingUIBuildMethods {
       return const SizedBox.shrink();
     }
 
+    final displayBids = contractorBids.take(5).toList();
+    final hasMoreBids = contractorBids.length > 5;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
@@ -178,51 +181,138 @@ class BiddingUIBuildMethods {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
-                if (contractorBids.length > 3)
-                  Text(
-                    '${contractorBids.length} bids',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w500,
-                    ),
+                Text(
+                  '${contractorBids.length} bids',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
                   ),
+                ),
               ],
             ),
           ),
-          Container(
-            constraints: const BoxConstraints(maxHeight: 140),
-            child: contractorBids.length <= 3
-                ? ListView.separated(
+          SizedBox(
+            height: 140,
+            child: Row(
+              children: [
+                Expanded(
+                  child: ListView.separated(
                     scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    itemCount: contractorBids.length,
+                    itemCount: displayBids.length,
                     separatorBuilder: (context, index) => const SizedBox(width: 8),
                     itemBuilder: (context, index) {
                       return SizedBox(
                         width: 280,
-                        child: buildBidItem(contractorBids[index]),
+                        child: buildBidItem(displayBids[index]),
                       );
                     },
-                  )
-                : SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    child: Row(
-                      children: contractorBids.map((bid) {
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: SizedBox(
-                            width: 280,
-                            child: buildBidItem(bid),
+                  ),
+                ),
+                if (hasMoreBids) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: Center(
+                      child: TextButton(
+                        onPressed: () => _showAllBidsDialog(context, contractorBids),
+                        child: const Text(
+                          'SEE MORE',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
                           ),
-                        );
-                      }).toList(),
+                        ),
+                      ),
                     ),
                   ),
+                ],
+              ],
+            ),
           ),
           const SizedBox(height: 8),
         ],
+      ),
+    );
+  }
+
+  void _showAllBidsDialog(BuildContext context, List<Map<String, dynamic>> allBids) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 800, maxHeight: 600),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade700,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Icon(
+                        Icons.assignment,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
+                        'All Your Bids',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      icon: const Icon(Icons.close,
+                          color: Colors.white, size: 20),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: allBids.isEmpty
+                    ? const SizedBox(
+                        height: 400,
+                        child: Center(
+                          child: Text('No bids found'),
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: allBids.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          return buildBidItem(allBids[index]);
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

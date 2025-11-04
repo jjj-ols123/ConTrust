@@ -10,7 +10,6 @@ import 'package:backend/utils/be_contractformat.dart';
 import 'package:backend/contract_templates/TimeandMaterials.dart';
 import 'package:backend/contract_templates/CostPlus.dart';
 import 'package:backend/contract_templates/LumpSum.dart';
-import 'package:go_router/go_router.dart';
 
 class CreateContractBuild {
   static Widget buildHeader(BuildContext context, {required String title, required List<Widget> actions}) {
@@ -56,6 +55,7 @@ class CreateContractBuild {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                const Spacer(),
                 ...actions,
               ],
             ),
@@ -77,12 +77,12 @@ static Future<Map<String, dynamic>?> showSaveDialog(
     String? initialProjectId,
     Function(String?)? onProjectChanged,
   }) async {
-    String? selectedProjectId = initialProjectId;
     titleController ??= TextEditingController();
     
     return showDialog<Map<String, dynamic>>(
       context: context,
       builder: (BuildContext dialogContext) {
+        String? selectedProjectId = initialProjectId;
         return Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: Container(
@@ -133,7 +133,7 @@ static Future<Map<String, dynamic>?> showSaveDialog(
                         ),
                       ),
                       IconButton(
-                        onPressed: () => context.go('/contracttypes'),
+                        onPressed: () => Navigator.of(dialogContext).pop(),
                         icon: const Icon(Icons.close, color: Colors.white),
                       ),
                     ],
@@ -182,6 +182,7 @@ static Future<Map<String, dynamic>?> showSaveDialog(
                                 labelText: 'Select Project',
                                 border: OutlineInputBorder(),
                               ),
+                              value: selectedProjectId,
                               items: validProjects.map((project) => DropdownMenuItem<String>(
                                 value: project['project_id'],
                                 child: Text(project['title'] ?? 'No Title'),

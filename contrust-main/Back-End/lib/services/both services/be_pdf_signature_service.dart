@@ -197,11 +197,22 @@ class ContractPdfSignatureService {
             })
             .eq('contract_id', contractId);
 
-        await _supabase
+        final approvedMessage = await _supabase
             .from('Messages')
-            .update({'pdf_url': filePath})  
+            .select('msg_id')
             .eq('contract_id', contractId)
-            .inFilter('contract_status', ['approved', 'active']);  
+            .eq('message_type', 'contract')
+            .inFilter('contract_status', ['approved', 'active'])
+            .order('timestamp', ascending: false)
+            .limit(1)
+            .maybeSingle();
+
+        if (approvedMessage != null) {
+          await _supabase
+              .from('Messages')
+              .update({'signed_pdf_url': filePath})
+              .eq('msg_id', approvedMessage['msg_id']);
+        }
 
       } catch (dbError) {
 

@@ -63,9 +63,10 @@ class OngoingBuildMethods {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Builder(
               builder: (context) {
                 final screenWidth = MediaQuery.of(context).size.width;
@@ -137,6 +138,12 @@ class OngoingBuildMethods {
                                 ],
                               ),
                             ),
+                          if (isCustomContract && onEditCompletion != null)
+                            IconButton(
+                              onPressed: onEditCompletion,
+                              icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
+                              tooltip: 'Edit Completion Date',
+                            ),
                           if (onViewContract != null)
                             ElevatedButton.icon(
                               onPressed: onViewContract,
@@ -148,12 +155,6 @@ class OngoingBuildMethods {
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                               ),
-                            ),
-                          if (isCustomContract && onEditCompletion != null)
-                            IconButton(
-                              onPressed: onEditCompletion,
-                              icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
-                              tooltip: 'Edit Completion Date',
                             ),
                           if (onSwitchProject != null)
                             IconButton(
@@ -193,6 +194,18 @@ class OngoingBuildMethods {
                     ],
                   ),
                 ),
+                if (onViewContract != null)
+                  ElevatedButton.icon(
+                    onPressed: onViewContract,
+                    icon: const Icon(Icons.description),
+                    label: const Text('View Contract'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueGrey.shade600,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
                 if (isCustomContract && onEditCompletion != null)
                   IconButton(
                     onPressed: onEditCompletion,
@@ -223,18 +236,6 @@ class OngoingBuildMethods {
                         const SizedBox(width: 6),
                         Icon(Icons.visibility, size: 16, color: contractStatusColor ?? Colors.grey),
                       ],
-                    ),
-                  ),
-                if (onViewContract != null)
-                  ElevatedButton.icon(
-                    onPressed: onViewContract,
-                    icon: const Icon(Icons.description),
-                    label: const Text('View Contract'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueGrey.shade600,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
                 if (onSwitchProject != null)
@@ -338,7 +339,8 @@ class OngoingBuildMethods {
                 ),
               ],
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1426,9 +1428,9 @@ class OngoingBuildMethods {
     activities = activities.take(maxItems).toList();
 
     if (activities.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(20),
+      return Container(
+        padding: const EdgeInsets.all(20),
+        child: const Center(
           child: Text('No recent activity'),
         ),
       );
@@ -1585,21 +1587,24 @@ class OngoingBuildMethods {
       children: [
         Expanded(
           flex: 3,
-          child: buildProjectHeader(
-            projectTitle: projectTitle,
-            clientName: clientName,
-            address: address,
-            startDate: startDate,
-            estimatedCompletion: estimatedCompletion,
-            duration: duration,
-            isCustomContract: isCustomContract,
-            progress: progress,
-            contractStatusLabel: contractStatusLabel,
-            contractStatusColor: contractStatusColor,
-            onViewContract: onViewContract,
-            onRefresh: onRefresh,
-            onEditCompletion: onEditCompletion,
-            onSwitchProject: onSwitchProject,
+          child: SizedBox(
+            height: 320,
+            child: buildProjectHeader(
+              projectTitle: projectTitle,
+              clientName: clientName,
+              address: address,
+              startDate: startDate,
+              estimatedCompletion: estimatedCompletion,
+              duration: duration,
+              isCustomContract: isCustomContract,
+              progress: progress,
+              contractStatusLabel: contractStatusLabel,
+              contractStatusColor: contractStatusColor,
+              onViewContract: onViewContract,
+              onRefresh: onRefresh,
+              onEditCompletion: onEditCompletion,
+              onSwitchProject: onSwitchProject,
+            ),
           ),
         ),
         const SizedBox(width: 16),

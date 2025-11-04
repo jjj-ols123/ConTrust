@@ -1183,6 +1183,18 @@ class _BidsModalContentState extends State<_BidsModalContent> {
                                                 fontSize: 16,
                                               ),
                                             ),
+                                            if (contractor['email'] != null && (contractor['email'] as String).isNotEmpty) ...[
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                contractor['email'],
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey.shade600,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
                                             const SizedBox(height: 8),
                                             Container(
                                               padding: const EdgeInsets.symmetric(

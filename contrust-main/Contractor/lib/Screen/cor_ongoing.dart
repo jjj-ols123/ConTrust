@@ -485,10 +485,20 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
 
     final contractee =
         contract['contractee'] as Map<String, dynamic>? ?? <String, dynamic>{};
-    final clientName = fieldValues['Contractee.FirstName'] != null &&
-            fieldValues['Contractee.LastName'] != null
-        ? '${fieldValues['Contractee.FirstName']} ${fieldValues['Contractee.LastName']}'
-        : contractee['full_name'] ?? '';
+    
+    String clientName = '';
+    if (fieldValues['Contractee.FirstName'] != null &&
+        fieldValues['Contractee.LastName'] != null) {
+      clientName = '${fieldValues['Contractee.FirstName']} ${fieldValues['Contractee.LastName']}';
+    } else if (contractee['full_name'] != null && (contractee['full_name'] as String).isNotEmpty) {
+      clientName = contractee['full_name'] as String;
+    } else if (projectData != null) {
+      final project = projectData!['projectDetails'] as Map<String, dynamic>?;
+      if (project != null) {
+        clientName = project['full_name'] ?? '';
+      }
+    }
+    
     final estimateDate = fieldValues['Project.CompletionDate'] ?? '';
 
     return {
@@ -683,11 +693,17 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
       contractStatusColor = _contractStatusColor(status);
     }
 
+    // Get client name with proper fallback for custom contracts
+    final extractedClientName = contractInfo['clientName'];
+    final finalClientName = (extractedClientName != null && extractedClientName.toString().isNotEmpty)
+        ? extractedClientName.toString()
+        : clientName;
+
     return RefreshIndicator(
       onRefresh: () async => loadData(),
       child: OngoingBuildMethods.buildMobileLayout(
         projectTitle: projectTitle,
-        clientName: contractInfo['clientName'] ?? clientName,
+        clientName: finalClientName,
         address: address,
         startDate: startDate,
         estimatedCompletion: estimatedCompletion,
@@ -782,12 +798,18 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
       contractStatusColor = _contractStatusColor(status);
     }
 
+    // Get client name with proper fallback for custom contracts
+    final extractedClientName = contractInfo['clientName'];
+    final finalClientName = (extractedClientName != null && extractedClientName.toString().isNotEmpty)
+        ? extractedClientName.toString()
+        : clientName;
+
     return RefreshIndicator(
       onRefresh: () async => loadData(),
       child: OngoingBuildMethods.buildDesktopGridLayout(
         context: context,
         projectTitle: projectTitle,
-        clientName: contractInfo['clientName'] ?? clientName,
+        clientName: finalClientName,
         address: address,
         startDate: startDate,
         estimatedCompletion: estimatedCompletion,

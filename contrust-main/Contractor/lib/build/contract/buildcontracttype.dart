@@ -114,7 +114,7 @@ class ContractTypeBuild {
               contractorId: contractorId,
             );
           } else {
-            ContractTypeService.navigateToCreateContract(
+            await ContractTypeService.navigateToCreateContract(
               context: context,
               template: template,
               contractorId: contractorId,
@@ -334,9 +334,9 @@ class ContractTypeBuild {
           );
         },
       ),
-      onTap: () async {
+      onTap: () {
         final contractId = contract['contract_id'] as String;
-        await ContractTypeService.navigateToViewContract(
+        ContractTypeService.navigateToViewContract(
           context: context,
           contractId: contractId,
           contractorId: contractorId,
@@ -419,15 +419,17 @@ class ContractTypeBuild {
                   contractType: 'Custom',
                 );
 
-
-                Navigator.of(dialogContext, rootNavigator: true).pop();
-                Navigator.of(dialogContext).pop();
-              } catch (e) {
-                ConTrustSnackBar.error(dialogContext, 'Upload failed');
                 if (dialogContext.mounted) {
+                  Navigator.of(dialogContext, rootNavigator: true).pop();
+                }
+                if (context.mounted) {
+                  ConTrustSnackBar.success(context, 'Custom contract uploaded successfully!');
+                }
+              } catch (e) {
+                if (dialogContext.mounted) {
+                  ConTrustSnackBar.error(dialogContext, 'Upload failed: ${e.toString()}');
                   setState(() => isLoading = false);
                 }
-                setState(() => isLoading = false);
               }
             }
 

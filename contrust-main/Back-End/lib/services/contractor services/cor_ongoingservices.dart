@@ -89,6 +89,24 @@ class CorOngoingService {
         }
       }
       
+      if (projectDetails != null && projectDetails['full_name'] == null) {
+        final contracteeId = projectDetails['contractee_id'] as String?;
+        if (contracteeId != null) {
+          try {
+            final contracteeData = await _supabase
+                .from('Contractee')
+                .select('full_name')
+                .eq('contractee_id', contracteeId)
+                .maybeSingle();
+            if (contracteeData != null && contracteeData['full_name'] != null) {
+              projectDetails['full_name'] = contracteeData['full_name'];
+            }
+          } catch (_) {
+            // If fetch fails, continue without full_name
+          }
+        }
+      }
+      
       final reports = await _fetchService.fetchProjectReports(projectId);
       final photos = await _fetchService.fetchProjectPhotos(projectId);
       final costs = await _fetchService.fetchProjectCosts(projectId);

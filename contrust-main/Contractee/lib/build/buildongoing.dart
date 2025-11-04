@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
+import 'package:backend/utils/be_contractformat.dart';
 
 class CeeOngoingBuildMethods {
   static List<Map<String, dynamic>> _composeRecentItems({
@@ -85,32 +86,29 @@ class CeeOngoingBuildMethods {
               height: 180,
               child: recent.isEmpty
                   ? const Center(child: Text('No recent activity', style: TextStyle(color: Colors.grey)))
-                  : Scrollbar(
-                      thumbVisibility: true,
-                      child: ListView.separated(
-                        itemCount: recent.length,
-                        separatorBuilder: (_, __) => const Divider(height: 8),
-                        itemBuilder: (context, index) {
-                          final it = recent[index];
-                          final time = _timeAgo(it['timestamp']);
-                          return Row(
-                            children: [
-                              Icon(it['icon'] as IconData, color: it['color'] as Color, size: 16),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  it['label'] as String,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 12),
-                                ),
+                  : ListView.separated(
+                      itemCount: recent.length,
+                      separatorBuilder: (_, __) => const Divider(height: 8),
+                      itemBuilder: (context, index) {
+                        final it = recent[index];
+                        final time = _timeAgo(it['timestamp']);
+                        return Row(
+                          children: [
+                            Icon(it['icon'] as IconData, color: it['color'] as Color, size: 16),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                it['label'] as String,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 12),
                               ),
-                              const SizedBox(width: 8),
-                              Text(time, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-                            ],
-                          );
-                        },
-                      ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(time, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                          ],
+                        );
+                      },
                     ),
             ),
           ],
@@ -118,6 +116,154 @@ class CeeOngoingBuildMethods {
       ),
     );
   }
+  static Widget buildRecentActivityFeed({
+    required List<Map<String, dynamic>> tasks,
+    required List<Map<String, dynamic>> reports,
+    required List<Map<String, dynamic>> photos,
+    int maxItems = 5,
+  }) {
+    List<Map<String, dynamic>> activities = [];
+
+    for (var task in tasks) {
+      final createdAt = task['created_at'] ?? DateTime.now().toIso8601String();
+      final taskDone = task['task_done'];
+      final isDone = task['done'] == true;
+      
+      if (isDone && taskDone != null && taskDone.toString().isNotEmpty) {
+        activities.add({
+          'type': 'task_done',
+          'title': 'Task completed',
+          'description': task['task'] ?? 'Unknown task',
+          'timestamp': taskDone.toString(),
+          'icon': Icons.check_circle,
+        });
+      }
+      
+      // Always add task creation activity
+      activities.add({
+        'type': 'task_added',
+        'title': 'Task added',
+        'description': task['task'] ?? 'New task',
+        'timestamp': createdAt,
+        'icon': Icons.playlist_add,
+      });
+    }
+
+    for (var report in reports) {
+      activities.add({
+        'type': 'report',
+        'title': 'Progress report added',
+        'description': (report['content'] ?? '').length > 50 
+            ? '${(report['content'] ?? '').substring(0, 50)}...'
+            : report['content'] ?? 'No content',
+        'timestamp': report['created_at'] ?? DateTime.now().toIso8601String(),
+        'icon': Icons.description,
+      });
+    }
+
+    for (var photo in photos) {
+      activities.add({
+        'type': 'photo',
+        'title': 'Photo uploaded',
+        'description': photo['description'] ?? 'Project photo',
+        'timestamp': photo['created_at'] ?? DateTime.now().toIso8601String(),
+        'icon': Icons.photo_camera,
+      });
+    }
+
+    activities.sort((a, b) {
+      try {
+        final aTime = DateTime.parse(a['timestamp']);
+        final bTime = DateTime.parse(b['timestamp']);
+        return bTime.compareTo(aTime);
+      } catch (e) {
+        return 0;
+      }
+    });
+
+    activities = activities.take(maxItems).toList();
+
+    if (activities.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        child: const Center(
+          child: Text('No recent activity'),
+        ),
+      );
+    }
+
+    return Column(
+      children: activities.map((activity) => _buildActivityItem(activity)).toList(),
+    );
+  }
+
+  static Widget _buildActivityItem(Map<String, dynamic> activity) {
+    String timeAgo = _getTimeAgo(activity['timestamp']);
+    
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Colors.grey[300],
+          child: Icon(
+            activity['icon'],
+            color: Colors.grey[700],
+            size: 20,
+          ),
+        ),
+        title: Text(
+          activity['title'],
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              activity['description'],
+              style: const TextStyle(fontSize: 12),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              timeAgo,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey[600],
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        dense: true,
+      ),
+    );
+  }
+
+  static String _getTimeAgo(String timestamp) {
+    try {
+      final DateTime activityTime = DateTime.parse(timestamp);
+      final DateTime now = DateTime.now();
+      final Duration difference = now.difference(activityTime);
+
+      if (difference.inDays > 0) {
+        return '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes} minute${difference.inMinutes > 1 ? 's' : ''} ago';
+      } else {
+        return 'Just now';
+      }
+    } catch (e) {
+      return 'Unknown time';
+    }
+  }
+
   static Widget buildProjectHeaderWithActivity({
     required String projectTitle,
     required String clientName,
@@ -137,28 +283,29 @@ class CeeOngoingBuildMethods {
     VoidCallback? onViewPaymentHistory,
     String? paymentButtonText,
   }) {
-    final items = _composeRecentItems(tasks: tasks, reports: reports, photos: photos);
-    final recent = items.take(20).toList();
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           flex: 3,
-          child: buildProjectHeader(
-            projectTitle: projectTitle,
-            clientName: clientName,
-            address: address,
-            startDate: startDate,
-            estimatedCompletion: estimatedCompletion,
-            duration: duration,
-            progress: progress,
-            onRefresh: onRefresh,
-            onChat: onChat,
-            canChat: canChat,
-            onPayment: onPayment,
-            isPaid: isPaid,
-            onViewPaymentHistory: onViewPaymentHistory,
-            paymentButtonText: paymentButtonText,
+          child: SizedBox(
+            height: 320,
+            child: buildProjectHeader(
+              projectTitle: projectTitle,
+              clientName: clientName,
+              address: address,
+              startDate: startDate,
+              estimatedCompletion: estimatedCompletion,
+              duration: duration,
+              progress: progress,
+              onRefresh: onRefresh,
+              onChat: onChat,
+              canChat: canChat,
+              onPayment: onPayment,
+              isPaid: isPaid,
+              onViewPaymentHistory: onViewPaymentHistory,
+              paymentButtonText: paymentButtonText,
+            ),
           ),
         ),
         const SizedBox(width: 16),
@@ -168,54 +315,44 @@ class CeeOngoingBuildMethods {
             elevation: 3,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: SizedBox(
-              height: 560,
+              height: 320,
               child: Column(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.purple.shade50,
+                      color: Colors.grey.shade200,
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(12),
                         topRight: Radius.circular(12),
                       ),
                     ),
                     child: Row(
-                      children: const [
+                      children: [
                         Icon(Icons.timeline, color: Colors.grey, size: 20),
-                        SizedBox(width: 8),
-                        Text('Recent Activity', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Recent Activity',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.all(8),
-                      child: Scrollbar(
-                        thumbVisibility: true,
-                        child: ListView.separated(
-                          itemCount: recent.length,
-                          separatorBuilder: (_, __) => const Divider(height: 8),
-                          itemBuilder: (context, index) {
-                            final it = recent[index];
-                            final time = _timeAgo(it['timestamp']);
-                            return Row(
-                              children: [
-                                Icon(it['icon'] as IconData, color: it['color'] as Color, size: 16),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    it['label'] as String,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontSize: 12),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(time, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-                              ],
-                            );
-                          },
+                      child: SingleChildScrollView(
+                        child: buildRecentActivityFeed(
+                          tasks: tasks,
+                          reports: reports,
+                          photos: photos,
+                          maxItems: 20,
                         ),
                       ),
                     ),
@@ -297,103 +434,93 @@ class CeeOngoingBuildMethods {
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: SizedBox(
-        height: 560,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        height: 320,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Builder(
               builder: (context) {
                 final screenWidth = MediaQuery.of(context).size.width;
                 final isMobile = screenWidth < 600;
                 
                 if (isMobile) {
-                  return Column(
+                  return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.construction, color: Colors.orange, size: 28),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  projectTitle,
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                Text(
-                                  'Contractor: $clientName',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
+                      const Icon(Icons.construction, color: Colors.orange, size: 28),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              projectTitle,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            Text(
+                              'Contractor: $clientName',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (onPayment != null && !isPaid)
+                        ElevatedButton.icon(
+                          onPressed: onPayment,
+                          icon: const Icon(Icons.payment, size: 16),
+                          label: Text(paymentButtonText ?? 'Pay Now', style: const TextStyle(fontSize: 12)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(0, 50),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          if (onPayment != null && !isPaid)
-                            ElevatedButton.icon(
-                              onPressed: onPayment,
-                              icon: const Icon(Icons.payment, size: 16),
-                              label: Text(paymentButtonText ?? 'Pay Now', style: const TextStyle(fontSize: 12)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                foregroundColor: Colors.white,
-                                minimumSize: const Size.fromHeight(50),
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                        ),
+                      if (isPaid) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.green),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(Icons.check_circle, color: Colors.green, size: 16),
+                              SizedBox(width: 4),
+                              Text(
+                                'Paid',
+                                style: TextStyle(
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
                                 ),
                               ),
-                            ),
-                          if (isPaid) ...[
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.green.shade50,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.green),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: const [
-                                  Icon(Icons.check_circle, color: Colors.green, size: 16),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'Paid',
-                                    style: TextStyle(
-                                      color: Colors.green,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (onViewPaymentHistory != null) const SizedBox(width: 8),
-                            if (onViewPaymentHistory != null)
-                              IconButton(
-                                onPressed: onViewPaymentHistory,
-                                icon: const Icon(Icons.history, color: Colors.blue, size: 20),
-                                tooltip: 'View Payment History',
-                              ),
-                          ],
-                        ],
-                      ),
+                            ],
+                          ),
+                        ),
+                        if (onViewPaymentHistory != null) const SizedBox(width: 8),
+                        if (onViewPaymentHistory != null)
+                          IconButton(
+                            onPressed: onViewPaymentHistory,
+                            icon: const Icon(Icons.history, color: Colors.blue, size: 20),
+                            tooltip: 'View Payment History',
+                          ),
+                      ],
                     ],
                   );
                 } else {
@@ -432,7 +559,7 @@ class CeeOngoingBuildMethods {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
                             foregroundColor: Colors.white,
-                            minimumSize: const Size.fromHeight(50),
+                            minimumSize: const Size(0, 50),
                             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -495,16 +622,8 @@ class CeeOngoingBuildMethods {
                 const Icon(Icons.calendar_today, color: Colors.grey, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  'Started: ',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-                Text(
-                  startDate,
-                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                  'Started: ${ContractStyle.formatDate(startDate)}', 
+                  style: TextStyle(fontSize: 14, color: Colors.grey[700], fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -514,16 +633,8 @@ class CeeOngoingBuildMethods {
                 const Icon(Icons.schedule, color: Colors.grey, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  'Est. Completion: ',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-                Text(
-                  estimatedCompletion,
-                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                  'Est. Completion: ${ContractStyle.formatDate(estimatedCompletion)}', 
+                  style: TextStyle(fontSize: 14, color: Colors.grey[700], fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -546,7 +657,7 @@ class CeeOngoingBuildMethods {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const Spacer(),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

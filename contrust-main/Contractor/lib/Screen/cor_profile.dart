@@ -73,6 +73,7 @@ class _ContractorUserProfileScreenState
       }
     });
     _initializeStreams();
+    _loadInitialProjects();
     bioController = TextEditingController();
     contactController = TextEditingController();
     firmNameController = TextEditingController();
@@ -397,46 +398,45 @@ class _ContractorUserProfileScreenState
   }
 
   Widget _buildClientHistory() {
-    return StreamBuilder<List<Map<String, dynamic>>>(
-      stream: _completedProjectsStream,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(color: Colors.amber),
-          );
-        }
-
-        if (snapshot.hasError) {
-          return const Center(
-            child: Text('Error loading projects'),
-          );
-        }
-
-        return ProfileBuildMethods.buildClientHistory(
-          context: context,
-          filteredProjects: filteredProjects,
-          filteredTransactions: filteredTransactions,
-          projectSearchController: searchController,
-          transactionSearchController: transactionSearchController,
-          selectedProjectStatus: selectedProjectStatus,
-          selectedPaymentType: selectedPaymentType,
-          onProjectStatusChanged: (status) {
-            setState(() {
-              selectedProjectStatus = status;
-              _filterProjects();
-            });
-          },
-          onPaymentTypeChanged: (type) {
-            setState(() {
-              selectedPaymentType = type;
-              _filterTransactions();
-            });
-          },
-          onProjectTap: _showProjectDetails,
-          getTimeAgo: _getTimeAgo,
-        );
+    return ProfileBuildMethods.buildClientHistory(
+      context: context,
+      filteredProjects: filteredProjects,
+      filteredTransactions: filteredTransactions,
+      projectSearchController: searchController,
+      transactionSearchController: transactionSearchController,
+      selectedProjectStatus: selectedProjectStatus,
+      selectedPaymentType: selectedPaymentType,
+      onProjectStatusChanged: (status) {
+        setState(() {
+          selectedProjectStatus = status;
+          _filterProjects();
+        });
       },
+      onPaymentTypeChanged: (type) {
+        setState(() {
+          selectedPaymentType = type;
+          _filterTransactions();
+        });
+      },
+      onProjectTap: _showProjectDetails,
+      getTimeAgo: _getTimeAgo,
     );
+  }
+
+  Future<void> _loadInitialProjects() async {
+    try {
+      final response = await FetchService().fetchCompletedProjects();
+      if (mounted) {
+        setState(() {
+          completedProjects = response;
+          allProjects = response;
+          filteredProjects = response;
+          _applySearchFilter();
+        });
+      }
+    } catch (e) {
+      //  
+    }
   }
 
   Future<void> _loadTransactions() async {
@@ -449,7 +449,7 @@ class _ContractorUserProfileScreenState
         });
       }
     } catch (e) {
-      // Handle error silently or show snackbar
+        //
     }
   }
 
