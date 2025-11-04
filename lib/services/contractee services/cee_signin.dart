@@ -149,17 +149,12 @@ class SignInGoogleContractee {
     try {
       final supabase = Supabase.instance.client;
       
-      // Use the current origin (subdomain) dynamically for redirect URL
-      // This ensures the redirect goes to the correct subdomain instead of the main domain
-      final configuredBaseUrl = const String.fromEnvironment('APP_BASE_URL', defaultValue: '');
       String? redirectUrl;
       
       if (kIsWeb) {
-        // For web: use current origin (subdomain) + callback path
-        final origin = configuredBaseUrl.isNotEmpty ? configuredBaseUrl : Uri.base.origin; // Prefer configured base URL
+        final origin = Uri.base.origin;
         redirectUrl = '$origin/auth/callback';
       } else {
-        // For mobile: null means use default deep link
         redirectUrl = null;
       }
 
@@ -254,8 +249,27 @@ class SignInGoogleContractee {
           },
         );
 
+        try {
+          await supabase
+              .from('Users')
+              .update({
+                'verified': true,
+                'last_login': DateTimeHelper.getLocalTimeISOString(),
+              })
+              .eq('users_id', user.id);
+        } catch (e) {
+          await _errorService.logError(
+            errorMessage: 'Failed to update Users for contractee Google login: $e',
+            module: 'Contractee Google Sign-in',
+            severity: 'Low',
+            extraInfo: {
+              'operation': 'Update Users after Google login',
+              'users_id': user.id,
+            },
+          );
+        }
+
         if (context.mounted) {
-          // Navigation handled by auth listener in main.dart
         }
       }
     } catch (e) {
