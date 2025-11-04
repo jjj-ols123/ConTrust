@@ -36,7 +36,7 @@ class CreateContractService {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to check for single project: ',
+        errorMessage: 'Failed to check for single project: $e',
         module: 'Create Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -50,11 +50,10 @@ class CreateContractService {
 
   List<ContractField> getContractTypeSpecificFields(String contractType, {int itemCount = 3, int milestoneCount = 4}) {
     try {
-      final normalizedType = contractType.toLowerCase();
-      return getTemplateSpecificFields(normalizedType, itemCount: itemCount, milestoneCount: milestoneCount);
+      return getTemplateSpecificFields(contractType, itemCount: itemCount, milestoneCount: milestoneCount);
     } catch (e) {
       _errorService.logError(
-        errorMessage: 'Failed to get contract type specific fields:',
+        errorMessage: 'Failed to get contract type specific fields: $e',
         module: 'Create Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -68,17 +67,24 @@ class CreateContractService {
 
   List<ContractField> getTemplateSpecificFields(String contractType, {int itemCount = 3, int milestoneCount = 4}) {
     try {
-      if (contractType.contains('lump sum')) {
+      String norm(String s) => s
+          .toLowerCase()
+          .replaceAll('&', 'and')
+          .replaceAll(RegExp(r'[^a-z0-9]'), '');
+
+      final normalized = norm(contractType);
+
+      if (normalized.contains('lumpsum')) {
         return getLumpSumFieldsWithMilestones(milestoneCount);
-      } else if (contractType.contains('cost-plus') || contractType.contains('cost plus')) {
+      } else if (normalized.contains('costplus')) {
         return getCostPlusFields();
-      } else if (contractType.contains('time and materials')) {
+      } else if (normalized.contains('timeandmaterials') || normalized.contains('timeandmaterial')) {
         return getTimeAndMaterialsFieldsWithItems(itemCount);
       }
       return [];
     } catch (e) {
       _errorService.logError(
-        errorMessage: 'Failed to get template specific fields: ',
+        errorMessage: 'Failed to get template specific fields: $e',
         module: 'Create Contract Service',
         severity: 'Low',
         extraInfo: {

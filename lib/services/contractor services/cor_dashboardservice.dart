@@ -22,58 +22,93 @@ class CorDashboardService {
       final projects = await _fetchService.fetchContractorProjectInfo(contractorId);
 
       final completed = projects.where((p) => p['status'] == 'completed').length;
-      final activeStatuses = ['active', 'awaiting_contract', 'awaiting_agreement', 'pending', 'cancellation_requested_by_contractee, awaiting_signature'];
+      final activeStatuses = ['active', 'awaiting_contract', 'awaiting_agreement', 'pending', 'awaiting_signature', 'cancellation_requested_by_contractee'];
       final active = projects.where((p) => activeStatuses.contains(p['status'])).length;
       final ratingVal = contractorData?['rating'] ?? 0.0;
 
       final activeProjectList = projects.where((p) => activeStatuses.contains(p['status'])).toList();
       
-      for (var project in activeProjectList) {
-        if (project['project_id'] != null) {
-          try {
-            final contracteeInfo = await _fetchService.fetchContracteeFromProject(
-              project['project_id'].toString(),
-            );
-            if (contracteeInfo != null) {
-              project['contractee_name'] = contracteeInfo['full_name'];
-              project['contractee_photo'] = contracteeInfo['profile_photo'];
-              project['contractee_id'] = contracteeInfo['contractee_id'];
-            } else {
-              project['contractee_name'] = 'Unknown Client';
-              project['contractee_photo'] = null;
-            }
-          } catch (e) {
-            project['contractee_name'] = 'Unknown Client';
-            project['contractee_photo'] = null;
-          }
+      final contracteeIds = activeProjectList
+          .map((p) => p['contractee_id'] as String?)
+          .where((id) => id != null && id.isNotEmpty)
+          .toSet()
+          .toList();
+      
+      final Map<String, Map<String, dynamic>> contracteeInfoMap = {};
+      if (contracteeIds.isNotEmpty) {
+        try {
+          final contracteeData = await Supabase.instance.client
+              .from('Contractee')
+              .select('contractee_id, full_name, profile_photo')
+              .inFilter('contractee_id', contracteeIds);
           
-          if (project['status'] == 'cancellation_requested_by_contractee') {
-            try {
-              final supabase = Supabase.instance.client;
-              final cancellationNotification = await supabase
-                  .from('Notifications')
-                  .select('information')
-                  .eq('headline', 'Project Cancellation Request')
-                  .filter('information->>project_id', 'eq', project['project_id'].toString())
-                  .eq('receiver_id', contractorId)
-                  .order('created_at', ascending: false)
-                  .limit(1)
-                  .maybeSingle();
-
-              if (cancellationNotification != null) {
-                final info = cancellationNotification['information'] as Map<String, dynamic>? ?? {};
-                project['information'] = {
-                  'cancellation_reason': info['cancellation_reason'] ?? 'No reason provided',
-                  'message': info['message'] ?? '',
-                  'requested_at': info['requested_at'] ?? '',
-                };
-              }
-            } catch (e) {
-              project['information'] = {
-                'cancellation_reason': 'No reason provided',
-                'message': 'The contractee has requested to cancel this project.',
+          for (var contractee in contracteeData) {
+            contracteeInfoMap[contractee['contractee_id']] = {
+              'full_name': contractee['full_name'] ?? 'Unknown Client',
+              'profile_photo': contractee['profile_photo'],
+              'contractee_id': contractee['contractee_id'],
+            };
+          }
+        } catch (e) {
+          // Error fetching contractee data - will use defaults
+        }
+      }
+      
+      // Batch fetch cancellation notifications for all cancellation requests
+      final cancellationProjectIds = activeProjectList
+          .where((p) => p['status'] == 'cancellation_requested_by_contractee')
+          .map((p) => p['project_id'].toString())
+          .toList();
+      
+      final Map<String, Map<String, dynamic>> cancellationInfoMap = {};
+      if (cancellationProjectIds.isNotEmpty) {
+        try {
+          final supabase = Supabase.instance.client;
+          final notifications = await supabase
+              .from('Notifications')
+              .select('information')
+              .eq('headline', 'Project Cancellation Request')
+              .eq('receiver_id', contractorId)
+              .order('created_at', ascending: false);
+          
+          for (var notif in notifications) {
+            final info = notif['information'] as Map<String, dynamic>? ?? {};
+            final projectId = info['project_id']?.toString();
+            if (projectId != null && cancellationProjectIds.contains(projectId)) {
+              cancellationInfoMap[projectId] = {
+                'cancellation_reason': info['cancellation_reason'] ?? 'No reason provided',
+                'message': info['message'] ?? '',
+                'requested_at': info['requested_at'] ?? '',
               };
             }
+          }
+        } catch (e) {
+          // Error fetching notifications - will use defaults
+        }
+      }
+      
+      // Populate project data with batch-fetched contractee info
+      for (var project in activeProjectList) {
+        final contracteeId = project['contractee_id'] as String?;
+        if (contracteeId != null && contracteeInfoMap.containsKey(contracteeId)) {
+          final contracteeInfo = contracteeInfoMap[contracteeId]!;
+          project['contractee_name'] = contracteeInfo['full_name'];
+          project['contractee_photo'] = contracteeInfo['profile_photo'];
+          project['contractee_id'] = contracteeInfo['contractee_id'];
+        } else {
+          project['contractee_name'] = 'Unknown Client';
+          project['contractee_photo'] = null;
+        }
+        
+        if (project['status'] == 'cancellation_requested_by_contractee') {
+          final projectId = project['project_id'].toString();
+          if (cancellationInfoMap.containsKey(projectId)) {
+            project['information'] = cancellationInfoMap[projectId];
+          } else {
+            project['information'] = {
+              'cancellation_reason': 'No reason provided',
+              'message': 'The contractee has requested to cancel this project.',
+            };
           }
         }
       }
@@ -81,14 +116,41 @@ class CorDashboardService {
       final totalEarnings = completed * 50000.0;
       final totalClients = projects.map((p) => p['contractee_id']).toSet().length;
 
+      // Batch fetch tasks for all active projects
       List<Map<String, dynamic>> localTasks = [];
-      for (final project in activeProjectList) {
-        final tasks = await _fetchService.fetchProjectTasks(project['project_id']);
-        for (final task in tasks) {
-          localTasks.add({
-            ...task,
-            'project_title': project['title'] ?? 'Project',
-          });
+      if (activeProjectList.isNotEmpty) {
+        final projectIds = activeProjectList
+            .map((p) => p['project_id'].toString())
+            .toList();
+        
+        try {
+          final allTasks = await Supabase.instance.client
+              .from('ProjectTasks')
+              .select('task_id, project_id, task_name, status, created_at, completed_at')
+              .inFilter('project_id', projectIds)
+              .order('created_at', ascending: false);
+          
+          final Map<String, List<Map<String, dynamic>>> tasksByProject = {};
+          for (var task in allTasks) {
+            final projId = task['project_id'].toString();
+            if (!tasksByProject.containsKey(projId)) {
+              tasksByProject[projId] = [];
+            }
+            tasksByProject[projId]!.add(task);
+          }
+          
+          for (final project in activeProjectList) {
+            final projectId = project['project_id'].toString();
+            final projectTasks = tasksByProject[projectId] ?? [];
+            for (final task in projectTasks) {
+              localTasks.add({
+                ...task,
+                'project_title': project['title'] ?? 'Project',
+              });
+            }
+          }
+        } catch (e) {
+          // Error fetching tasks - localTasks remains empty
         }
       }
 
@@ -106,7 +168,7 @@ class CorDashboardService {
       };
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to load dashboard data: ',
+        errorMessage: 'Failed to load dashboard data: $e',
         module: 'Contractor Dashboard Service',
         severity: 'Medium',
         extraInfo: {
@@ -126,7 +188,8 @@ class CorDashboardService {
     try {
       final projectStatus = project['status']?.toString().toLowerCase();
       
-      if (projectStatus != 'active') {
+      final allowedStatuses = ['active'];
+      if (!allowedStatuses.contains(projectStatus)) {
         if (context.mounted) {
           ConTrustSnackBar.warning(context, 
             'Project is not active yet. Current status: ${ProjectStatus().getStatusLabel(projectStatus)}');
@@ -157,7 +220,7 @@ class CorDashboardService {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to navigate to project: ',
+        errorMessage: 'Failed to navigate to project: $e',
         module: 'Contractor Dashboard Service',
         severity: 'Low',
         extraInfo: {
@@ -185,33 +248,42 @@ class CorDashboardService {
           .filter('information->>status', 'eq', 'pending')
           .order('created_at', ascending: false);
 
-      // Fetch user emails for each notification
-      for (var notification in notifications) {
-        final senderId = notification['sender_id'];
-        if (senderId != null) {
-          try {
-            final userResponse = await Supabase.instance.client
-                .from('Users')
-                .select('email')
-                .eq('id', senderId)
-                .single();
-            
-            // Add email to the information object
-            final info = Map<String, dynamic>.from(notification['information'] ?? {});
-            info['email'] = userResponse['email'];
-            notification['information'] = info;
-          } catch (e) {
-            // If user not found, keep existing info without email
-            await _errorService.logError(
-              errorMessage: 'Error fetching user email: $e',
-              module: 'Contractor Dashboard Service',
-              severity: 'Low',
-              extraInfo: {
-                'operation': 'Fetch User Email',
-                'sender_id': senderId,
-              },
-            );
+      final senderIds = notifications
+          .map((n) => n['sender_id'] as String?)
+          .whereType<String>()
+          .toSet()
+          .toList();
+      
+      final Map<String, String> emailMap = {};
+      if (senderIds.isNotEmpty) {
+        try {
+          final users = await Supabase.instance.client
+              .from('Users')
+              .select('users_id, email')
+              .inFilter('users_id', senderIds);
+          
+          for (var user in users) {
+            emailMap[user['users_id']] = user['email'] ?? '';
           }
+        } catch (e) {
+          await _errorService.logError(
+            errorMessage: 'Error batch fetching user emails: $e',
+            module: 'Contractor Dashboard Service',
+            severity: 'Low',
+            extraInfo: {
+              'operation': 'Batch Fetch User Emails',
+              'sender_ids': senderIds,
+            },
+          );
+        }
+      }
+      
+      for (var notification in notifications) {
+        final senderId = notification['sender_id'] as String?;
+        if (senderId != null && emailMap.containsKey(senderId)) {
+          final info = Map<String, dynamic>.from(notification['information'] ?? {});
+          info['email'] = emailMap[senderId];
+          notification['information'] = info;
         }
       }
 
@@ -385,17 +457,6 @@ class CorDashboardService {
           })
           .eq('notification_id', notificationId);
 
-      // When hiring request is declined, keep project status as 'pending' 
-      // so contractee can hire other contractors
-      final projectId = currentInfo['project_id'];
-      if (projectId != null) {
-        await Supabase.instance.client
-            .from('Projects')
-            .update({
-              'status': 'pending',
-            })
-            .eq('project_id', projectId);
-      }
 
       if (context.mounted) {
         ConTrustSnackBar.success(context, 'Hiring request declined.');

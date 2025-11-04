@@ -74,7 +74,7 @@ class ContractService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to save contract: ',
+        errorMessage: 'Failed to save contract: $e',
         module: 'Contract Service',
         severity: 'High',
         extraInfo: {
@@ -156,7 +156,7 @@ class ContractService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to update contract:',
+        errorMessage: 'Failed to update contract: $e',
         module: 'Contract Service',
         severity: 'High',
         extraInfo: {
@@ -274,7 +274,7 @@ class ContractService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to delete contract: ',
+        errorMessage: 'Failed to delete contract: $e',
         module: 'Contract Service',
         severity: 'Medium',
         extraInfo: {
@@ -374,7 +374,7 @@ class ContractService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to update contract status:',
+        errorMessage: 'Failed to update contract status: $e',
         module: 'Contract Service',
         severity: 'High',
         extraInfo: {
@@ -413,7 +413,7 @@ class ContractService {
       return await query.single();
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to get contract by ID: ',
+        errorMessage: 'Failed to get contract by ID: $e',
         module: 'Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -634,7 +634,7 @@ class ContractService {
       };
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to sign contract: ',
+        errorMessage: 'Failed to sign contract: $e',
         module: 'Contract Service',
         severity: 'High',
         extraInfo: {
@@ -676,7 +676,7 @@ class ContractService {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to verify signature: ',
+        errorMessage: 'Failed to verify signature: $e',
         module: 'Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -715,7 +715,7 @@ class ContractService {
       return signedUrl;
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to get signature URL: ',
+        errorMessage: 'Failed to get signature URL: $e',
         module: 'Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -813,7 +813,7 @@ class ContractService {
       };
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to download contract PDF: ',
+        errorMessage: 'Failed to download contract PDF: $e',
         module: 'Contract Service',
         severity: 'Medium',
         extraInfo: {
@@ -864,7 +864,7 @@ class ContractService {
       return signedUrl;
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to get contract PDF preview URL: ',
+        errorMessage: 'Failed to get contract PDF preview URL: $e',
         module: 'Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -943,7 +943,7 @@ class ContractService {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to validate contract PDF: ',
+        errorMessage: 'Failed to validate contract PDF: $e',
         module: 'Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -1011,7 +1011,7 @@ class ContractService {
       };
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to download multiple contracts: ',
+        errorMessage: 'Failed to download multiple contracts: $e',
         module: 'Contract Service',
         severity: 'Medium',
         extraInfo: {

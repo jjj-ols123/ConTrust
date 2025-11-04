@@ -826,7 +826,8 @@ class ProjectView extends StatelessWidget {
     if (value == 'update' && onUpdateProject != null) {
       onUpdateProject!(projectId);
     } else if (value == 'cancel' && onCancelProject != null) {
-      if (project['contractor_id'] == null) {
+      final contractorId = project['contractor_id'];
+      if (contractorId == null || contractorId.toString().isEmpty) {
         onCancelProject!(projectId, '');
         return;
       }
@@ -842,6 +843,7 @@ class ProjectView extends StatelessWidget {
     
     return showDialog<String>(
       context: context,
+      barrierDismissible: false,
       builder: (BuildContext context) => Center(
         child: Material(
           color: Colors.transparent,
@@ -1106,13 +1108,72 @@ class ProjectView extends StatelessWidget {
                                   if (snapshot.connectionState == ConnectionState.waiting) {
                                     return ViewContractBuild.buildLoadingState();
                                   }
-                                  if (!snapshot.hasData || (snapshot.data?.isEmpty ?? true)) {
-                                    return ViewContractBuild.buildPdfViewer(
-                                      pdfUrl: null,
-                                      onDownload: () => _downloadContract(liveData),
+                                  
+                                  if (snapshot.hasError) {
+                                    return Container(
                                       height: 400,
+                                      padding: const EdgeInsets.all(20),
+                                      child: Center(
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+                                            const SizedBox(height: 16),
+                                            Text(
+                                              'Failed to load contract PDF',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.grey.shade700,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              'Please try again or contact support',
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                color: Colors.grey.shade600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     );
                                   }
+                                  
+                                  if (!snapshot.hasData || (snapshot.data?.isEmpty ?? true)) {
+                                    return Container(
+                                      height: 400,
+                                      padding: const EdgeInsets.all(20),
+                                      child: Center(
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.description_outlined, size: 48, color: Colors.grey.shade300),
+                                            const SizedBox(height: 16),
+                                            Text(
+                                              'Contract PDF not available',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.grey.shade700,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              'The contract PDF may not have been generated yet',
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                color: Colors.grey.shade600,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  
                                   return ViewContractBuild.buildPdfViewer(
                                     pdfUrl: snapshot.data,
                                     onDownload: () => _downloadContract(liveData),

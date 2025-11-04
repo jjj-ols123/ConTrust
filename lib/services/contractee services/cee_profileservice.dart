@@ -52,20 +52,37 @@ class CeeProfileService {
           .inFilter('status', ['ongoing', 'pending', 'awaiting_contract', 'awaiting_agreement'])
           .order('start_date', ascending: false);
 
-      List<Map<String, dynamic>> projectHistoryWithNames = [];
-      for (var project in completedProjects) {
-        if (project['contractor_id'] != null) {
+      final allProjects = [...completedProjects, ...ongoingProjects];
+      final contractorIds = allProjects
+          .map((p) => p['contractor_id'] as String?)
+          .where((id) => id != null && id.isNotEmpty)
+          .toSet()
+          .toList();
+      
+      final Map<String, String> contractorNamesMap = {};
+      if (contractorIds.isNotEmpty) {
+        try {
           final contractorData = await Supabase.instance.client
               .from('Contractor')
-              .select('firm_name')
-              .eq('contractor_id', project['contractor_id'])
-              .single();
-              
-          if (contractorData.isNotEmpty) {
-            project['contractor_name'] = contractorData['firm_name'];
-          } else {
-            project['contractor_name'] = 'Unknown Contractor';
+              .select('contractor_id, firm_name')
+              .inFilter('contractor_id', contractorIds);
+          
+          for (var contractor in contractorData) {
+            contractorNamesMap[contractor['contractor_id']] = 
+                contractor['firm_name'] ?? 'Unknown Contractor';
           }
+        } catch (e) {
+          // Error fetching contractor data - will use defaults
+        }
+      }
+      
+      List<Map<String, dynamic>> projectHistoryWithNames = [];
+      for (var project in completedProjects) {
+        final contractorId = project['contractor_id'] as String?;
+        if (contractorId != null && contractorNamesMap.containsKey(contractorId)) {
+          project['contractor_name'] = contractorNamesMap[contractorId]!;
+        } else if (contractorId != null) {
+          project['contractor_name'] = 'Unknown Contractor';
         } else {
           project['contractor_name'] = 'No Contractor Assigned';
         }
@@ -74,18 +91,11 @@ class CeeProfileService {
 
       List<Map<String, dynamic>> ongoingProjectsWithNames = [];
       for (var project in ongoingProjects) {
-        if (project['contractor_id'] != null) {
-          final contractorData = await Supabase.instance.client
-              .from('Contractor')
-              .select('firm_name')
-              .eq('contractor_id', project['contractor_id'])
-              .single();
-              
-          if (contractorData.isNotEmpty) {
-            project['contractor_name'] = contractorData['firm_name'];
-          } else {
-            project['contractor_name'] = 'Unknown Contractor';
-          }
+        final contractorId = project['contractor_id'] as String?;
+        if (contractorId != null && contractorNamesMap.containsKey(contractorId)) {
+          project['contractor_name'] = contractorNamesMap[contractorId]!;
+        } else if (contractorId != null) {
+          project['contractor_name'] = 'Unknown Contractor';
         } else {
           project['contractor_name'] = 'No Contractor Assigned';
         }
@@ -240,22 +250,42 @@ class CeeProfileService {
           .eq('contractee_id', contracteeId)
           .order('created_at', ascending: false);
 
+      final contractorIds = ratingsData
+          .map((r) => r['contractor_id'] as String?)
+          .where((id) => id != null && id.isNotEmpty)
+          .toSet()
+          .toList();
+      
+      final Map<String, Map<String, dynamic>> contractorInfoMap = {};
+      if (contractorIds.isNotEmpty) {
+        try {
+          final contractorData = await Supabase.instance.client
+              .from('Contractor')
+              .select('contractor_id, firm_name, profile_photo')
+              .inFilter('contractor_id', contractorIds);
+          
+          for (var contractor in contractorData) {
+            contractorInfoMap[contractor['contractor_id']] = {
+              'firm_name': contractor['firm_name'] ?? 'Unknown Contractor',
+              'profile_photo': contractor['profile_photo'],
+            };
+          }
+        } catch (e) {
+          //
+        }
+      }
+      
       List<Map<String, dynamic>> reviewsWithNames = [];
       for (var rating in ratingsData) {
-        final contractorData = await Supabase.instance.client
-            .from('Contractor')
-            .select('firm_name, profile_photo')
-            .eq('contractor_id', rating['contractor_id'])
-            .maybeSingle();
-
-        if (contractorData != null) {
-          rating['contractor_name'] = contractorData['firm_name'];
-          rating['contractor_photo'] = contractorData['profile_photo'];
+        final contractorId = rating['contractor_id'] as String?;
+        if (contractorId != null && contractorInfoMap.containsKey(contractorId)) {
+          final contractorInfo = contractorInfoMap[contractorId]!;
+          rating['contractor_name'] = contractorInfo['firm_name'];
+          rating['contractor_photo'] = contractorInfo['profile_photo'];
         } else {
           rating['contractor_name'] = 'Unknown Contractor';
           rating['contractor_photo'] = null;
         }
-
         reviewsWithNames.add(rating);
       }
 

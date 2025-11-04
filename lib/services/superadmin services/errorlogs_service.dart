@@ -18,7 +18,7 @@ class SuperAdminErrorService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch all error logs:',
+        errorMessage: 'Failed to fetch all error logs: $e',
         module: 'Error Logs Service',
         severity: 'Medium',
         extraInfo: {
@@ -26,7 +26,7 @@ class SuperAdminErrorService {
           'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
-      throw Exception('Failed to fetch error logs: ');
+      throw Exception('Failed to fetch error logs: $e');
     }
   }
 
@@ -41,7 +41,7 @@ class SuperAdminErrorService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch error logs by user: ',
+        errorMessage: 'Failed to fetch error logs by user: $e',
         module: 'Error Logs Service',
         severity: 'Medium',
         extraInfo: {
@@ -50,7 +50,7 @@ class SuperAdminErrorService {
           'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
-      throw Exception('Failed to fetch error logs by user: ');
+      throw Exception('Failed to fetch error logs by user: $e');
     }
   }
 
@@ -187,7 +187,7 @@ class SuperAdminErrorService {
       };
     } catch (e) {
       SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch error statistics:',
+        errorMessage: 'Failed to fetch error statistics: $e',
         module: 'Error Logs Service',
         severity: 'High',
         extraInfo: {
@@ -195,7 +195,7 @@ class SuperAdminErrorService {
           'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
-      throw Exception('Failed to get error statistics: ');
+      throw Exception('Failed to get error statistics: $e');
     }
   }
 

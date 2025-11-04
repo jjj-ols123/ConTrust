@@ -21,7 +21,7 @@ class SuperAdminProjectService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch all projects: ',
+        errorMessage: 'Failed to fetch all projects: $e',
         module: 'Super Admin Projects',
         severity: 'Medium',
         extraInfo: {
@@ -29,24 +29,30 @@ class SuperAdminProjectService {
           'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
-      throw Exception('Failed to fetch projects: ');
+      throw Exception('Failed to fetch projects: $e');
     }
   }
 
   Future<Map<String, int>> getProjectStatistics() async {
     try {
-      final totalProjects = await _supabase.from('Projects').select('project_id').then((res) => res.length);
+      final allProjects = await _supabase
+          .from('Projects')
+          .select('status')
+          .limit(10000);
 
-      final statusCounts = <String, int>{};
-      final statuses = ['active', 'completed', 'pending', 'cancelled'];
+      final totalProjects = allProjects.length;
+      final statusCounts = <String, int>{
+        'active': 0,
+        'completed': 0,
+        'pending': 0,
+        'cancelled': 0,
+      };
 
-      for (final status in statuses) {
-        final count = await _supabase
-            .from('Projects')
-            .select('project_id')
-            .eq('status', status)
-            .then((res) => res.length);
-        statusCounts[status] = count;
+      for (final project in allProjects) {
+        final status = project['status'] as String?;
+        if (status != null && statusCounts.containsKey(status)) {
+          statusCounts[status] = (statusCounts[status] ?? 0) + 1;
+        }
       }
 
       return {
@@ -58,7 +64,7 @@ class SuperAdminProjectService {
       };
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to get project statistics: ',
+        errorMessage: 'Failed to get project statistics: $e',
         module: 'Super Admin Projects',
         severity: 'Medium',
         extraInfo: {
@@ -66,7 +72,7 @@ class SuperAdminProjectService {
           'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
-      throw Exception('Failed to get project statistics: ');
+      throw Exception('Failed to get project statistics: $e');
     }
   }
 
@@ -78,7 +84,7 @@ class SuperAdminProjectService {
           .eq('project_id', projectId);
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to update project status: ',
+        errorMessage: 'Failed to update project status: $e',
         module: 'Super Admin Projects',
         severity: 'Medium',
         extraInfo: {
@@ -88,7 +94,7 @@ class SuperAdminProjectService {
           'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
-      throw Exception('Failed to update project status: ');
+      throw Exception('Failed to update project status: $e');
     }
   }
 
@@ -107,7 +113,7 @@ class SuperAdminProjectService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch projects by status: ',
+        errorMessage: 'Failed to fetch projects by status: $e',
         module: 'Super Admin Projects',
         severity: 'Medium',
         extraInfo: {
@@ -116,7 +122,7 @@ class SuperAdminProjectService {
           'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
-      throw Exception('Failed to fetch projects by status: ');
+      throw Exception('Failed to fetch projects by status: $e');
     }
   }
 
@@ -135,7 +141,7 @@ class SuperAdminProjectService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch projects by contractor: ',
+        errorMessage: 'Failed to fetch projects by contractor: $e',
         module: 'Super Admin Projects',
         severity: 'Medium',
         extraInfo: {
@@ -144,7 +150,7 @@ class SuperAdminProjectService {
           'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
-      throw Exception('Failed to fetch projects by contractor: ');
+      throw Exception('Failed to fetch projects by contractor: $e');
     }
   }
 
@@ -163,7 +169,7 @@ class SuperAdminProjectService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch projects by contractee: ',
+        errorMessage: 'Failed to fetch projects by contractee: $e',
         module: 'Super Admin Projects',
         severity: 'Medium',
         extraInfo: {
@@ -172,7 +178,7 @@ class SuperAdminProjectService {
           'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
-      throw Exception('Failed to fetch projects by contractee: ');
+      throw Exception('Failed to fetch projects by contractee: $e');
     }
   }
 }

@@ -6,7 +6,6 @@ import 'package:backend/build/buildmessagesdesign.dart';
 import 'package:backend/services/both%20services/be_fetchservice.dart';
 import 'package:backend/services/both%20services/be_project_service.dart';
 import 'package:backend/services/both%20services/be_message_service.dart';
-import 'package:backend/utils/be_constraint.dart';
 import 'package:backend/utils/be_status.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -207,62 +206,48 @@ class MessageUIBuildMethods {
                     final isSelected =
                         chatRoomId == chat['chatroom_id'];
 
-                    return FutureBuilder<bool>(
-                      future: functionConstraint(
-                        userRole == 'contractor'
-                            ? chat['contractor_id']
-                            : chat['contractor_id'],
-                        userRole == 'contractor'
-                            ? chat['contractee_id']
-                            : chat['contractee_id'],
-                      ),
-                      builder: (context, constraintSnapshot) {
-                        final canChat = constraintSnapshot.data ?? false;
+                    return FutureBuilder<Map<String, dynamic>?>(
+                      future: loadUserData(otherUserId),
+                      builder: (context, userSnapshot) {
+                        final userName = userSnapshot.data?[
+                                userRole == 'contractor'
+                                    ? 'full_name'
+                                    : 'firm_name'] ??
+                            (userRole == 'contractor'
+                                ? 'Client'
+                                : 'Contractor');
+                        final userProfile =
+                            userSnapshot.data?['profile_photo'];
+                        final lastMessage =
+                            chat['last_message'] ?? 'No messages yet';
+                        final lastTime = chat['last_message_time'] != null &&
+                                screenWidth > 1000
+                            ? DateTime.tryParse(chat['last_message_time'])
+                            : null;
 
                         return FutureBuilder<Map<String, dynamic>?>(
-                          future: loadUserData(otherUserId),
-                          builder: (context, userSnapshot) {
-                            final userName = userSnapshot.data?[
-                                    userRole == 'contractor'
-                                        ? 'full_name'
-                                        : 'firm_name'] ??
-                                (userRole == 'contractor'
-                                    ? 'Client'
-                                    : 'Contractor');
-                            final userProfile =
-                                userSnapshot.data?['profile_photo'];
-                            final lastMessage =
-                                chat['last_message'] ?? 'No messages yet';
-                            final lastTime = chat['last_message_time'] != null &&
-                                    screenWidth > 1000
-                                ? DateTime.tryParse(chat['last_message_time'])
-                                : null;
-
-                            return FutureBuilder<Map<String, dynamic>?>(
-                              future: FetchService().fetchProjectDetailsByChatRoom(chat['chatroom_id']),
-                              builder: (context, projectSnapshot) {
-                                final project = projectSnapshot.data;
-                                final projectTitle = project?['title'] ?? '';
-                                final projectStatus = project?['status'] ?? '';
-                                
-                                return buildChatListItem(
-                                  chat: chat,
-                                  userName: userName,
-                                  userProfile: userProfile,
-                                  projectTitle: projectTitle,
-                                  projectStatus: projectStatus,
-                                  lastMessage: lastMessage,
-                                  lastTime: lastTime,
-                                  isSelected: isSelected,
-                                  canChat: canChat,
-                                  otherUserId: otherUserId,
-                                );
-                              },
+                          future: FetchService().fetchProjectDetailsByChatRoom(chat['chatroom_id']),
+                          builder: (context, projectSnapshot) {
+                            final project = projectSnapshot.data;
+                            final projectTitle = project?['title'] ?? '';
+                            final projectStatus = project?['status'] ?? '';
+                            
+                            return buildChatListItem(
+                              chat: chat,
+                              userName: userName,
+                              userProfile: userProfile,
+                              projectTitle: projectTitle,
+                              projectStatus: projectStatus,
+                              lastMessage: lastMessage,
+                              lastTime: lastTime,
+                              isSelected: isSelected,
+                              canChat: true,
+                              otherUserId: otherUserId,
                             );
                           },
                         );
-                        },
-                      );
+                      },
+                    );
                     },
                   );
                   },
@@ -300,9 +285,7 @@ class MessageUIBuildMethods {
           decoration: BoxDecoration(
             color: isSelected
                 ? accentColor.withOpacity(0.05)
-                : (canChat
-                    ? Colors.transparent
-                    : Colors.grey.shade50),
+                : Colors.transparent,
             border: isSelected
                 ? Border(
                     right: BorderSide(
@@ -327,12 +310,6 @@ class MessageUIBuildMethods {
                         'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
                   ),
                 ),
-                if (!canChat)
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: buildConstraintIcon(),
-                  ),
                 if (hasUnread)
                   Positioned(
                     right: 0,
@@ -366,7 +343,7 @@ class MessageUIBuildMethods {
                 fontWeight: isSelected || hasUnread
                     ? FontWeight.bold
                     : FontWeight.w600,
-                color: canChat ? Colors.black : Colors.grey,
+                color: Colors.black,
                 fontSize: subtitleFontSize + 1,
               ),
               overflow: TextOverflow.ellipsis,
@@ -382,7 +359,7 @@ class MessageUIBuildMethods {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: canChat ? Colors.blue.shade700 : Colors.grey.shade400,
+                            color: Colors.blue.shade700,
                             fontSize: subtitleFontSize - 2,
                             fontWeight: FontWeight.w500,
                           ),
@@ -394,9 +371,7 @@ class MessageUIBuildMethods {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: canChat
-                              ? (hasUnread ? Colors.black87 : Colors.grey.shade600)
-                              : Colors.grey.shade400,
+                          color: hasUnread ? Colors.black87 : Colors.grey.shade600,
                           fontSize: subtitleFontSize - 1,
                           fontWeight: hasUnread ? FontWeight.w500 : FontWeight.normal,
                         ),
@@ -413,30 +388,18 @@ class MessageUIBuildMethods {
                     "${lastTime.hour.toString().padLeft(2, '0')}:${lastTime.minute.toString().padLeft(2, '0')}",
                     style: TextStyle(
                       fontSize: subtitleFontSize - 2,
-                      color: canChat
-                          ? Colors.grey
-                          : Colors.grey.shade400,
+                      color: Colors.grey,
                     ),
-                  ),
-                if (!canChat) SizedBox(height: isMobile ? 2 : 4),
-                if (!canChat)
-                  Icon(
-                    Icons.lock,
-                    size: isDesktop ? 16 : 14,
-                    color: Colors.grey.shade400,
                   ),
               ],
             ),
-            enabled: canChat,
             onTap: () {
-              if (canChat) {
-                onSelectChat(
-                  chat['chatroom_id'],
-                  otherUserId,
-                  userName,
-                  userProfile,
-                );
-              }
+              onSelectChat(
+                chat['chatroom_id'],
+                otherUserId,
+                userName,
+                userProfile,
+              );
             },
           ),
         );
@@ -1112,21 +1075,6 @@ class MessageUIBuildMethods {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget buildConstraintIcon() {
-    return Container(
-      padding: EdgeInsets.all(isMobile ? 1 : 2),
-      decoration: const BoxDecoration(
-        color: Colors.red,
-        shape: BoxShape.circle,
-      ),
-      child: Icon(
-        Icons.block,
-        color: Colors.white,
-        size: isMobile ? 10 : 12,
       ),
     );
   }

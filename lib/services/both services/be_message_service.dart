@@ -48,7 +48,7 @@ class MessageService {
       return response['chatroom_id'] as String?;
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to create chat room: ',
+        errorMessage: 'Failed to create chat room: $e',
         module: 'UI Message',
         severity: 'High',
         extraInfo: {

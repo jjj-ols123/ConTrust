@@ -1,6 +1,5 @@
 import 'package:backend/services/both services/be_bidding_service.dart';
 import 'package:backend/services/both services/be_user_service.dart';
-import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_notification_service.dart';
 import 'package:backend/services/superadmin services/auditlogs_service.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
@@ -12,7 +11,6 @@ class CorBiddingService {
   final _supabase = Supabase.instance.client;
   final _biddingService = BiddingService();
   final _userService = UserService();
-  final _fetchService = FetchService();
   final SuperAdminAuditService _auditService = SuperAdminAuditService();
   final SuperAdminErrorService _errorService = SuperAdminErrorService();
 
@@ -37,7 +35,26 @@ class CorBiddingService {
       }
 
 
-      await _supabase.from('Bids').upsert({
+      final existingBid = await _supabase
+          .from('Bids')
+          .select('bid_id, status')
+          .eq('project_id', projectId)
+          .eq('contractor_id', contractorId)
+          .neq('status', 'stopped')
+          .maybeSingle();
+      
+      if (existingBid != null) {
+        final bidStatus = existingBid['status'] as String?;
+        if (bidStatus == 'rejected') {
+          throw Exception('You cannot bid on the same project after your bid has been rejected.');
+        } else if (bidStatus == 'accepted') {
+          throw Exception('You have already been accepted for this project. You cannot submit another bid.');
+        } else {
+          throw Exception('You have already submitted a bid for this project. You cannot submit another bid.');
+        }
+      }
+
+      await _supabase.from('Bids').insert({
         'contractor_id': contractorId,
         'project_id': projectId,
         'bid_amount': bidAmount,
@@ -98,7 +115,7 @@ class CorBiddingService {
         }
       } catch (e) {
         await _errorService.logError(
-          errorMessage: 'Failed to send notification after posting bid: ',
+          errorMessage: 'Failed to send notification after posting bid: $e',
           module: 'Contractor Bidding Service',
           severity: 'Medium',
           extraInfo: {
@@ -117,7 +134,7 @@ class CorBiddingService {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to post bid: ',
+        errorMessage: 'Failed to post bid: $e',
         module: 'Contractor Bidding Service',
         severity: 'High',
         extraInfo: {
@@ -129,6 +146,13 @@ class CorBiddingService {
       if (context.mounted) {
         if (e is PostgrestException && e.code == '23505') {
           ConTrustSnackBar.warning(context, 'You can only submit one bid per project.');
+        } else if (e is Exception) {
+          // Show the specific error message from the exception
+          String errorMessage = e.toString();
+          if (errorMessage.startsWith('Exception: ')) {
+            errorMessage = errorMessage.substring(12); // Remove "Exception: " prefix
+          }
+          ConTrustSnackBar.warning(context, errorMessage);
         } else {
           ConTrustSnackBar.bidError(context, 'Error posting bid');
         }
@@ -169,7 +193,7 @@ class CorBiddingService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to get contractor bids: ',
+        errorMessage: 'Failed to get contractor bids: $e',
         module: 'Contractor Bidding Service',
         severity: 'Medium',
         extraInfo: {
@@ -205,7 +229,7 @@ class CorBiddingService {
       };
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to load bidding data: ',
+        errorMessage: 'Failed to load bidding data: $e',
         module: 'Contractor Bidding Service',
         severity: 'Medium',
         extraInfo: {
@@ -229,7 +253,7 @@ class CorBiddingService {
       return await _userService.getContractorId();
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to load contractor ID: ',
+        errorMessage: 'Failed to load contractor ID: $e',
         module: 'Contractor Bidding Service',
         severity: 'Low',
         extraInfo: {
@@ -258,39 +282,32 @@ class CorBiddingService {
       }
 
       final projectsData = List<Map<String, dynamic>>.from(response);
+      
+      final contracteeIds = projectsData
+          .map((p) => p['contractee_id'] as String?)
+          .where((id) => id != null && id.isNotEmpty)
+          .toSet()
+          .toList();
+      
       final contracteeInfoMap = <String, Map<String, dynamic>>{};
-
-      for (final project in projectsData) {
+      
+      if (contracteeIds.isNotEmpty) {
         try {
-          final contracteeId = project['contractee_id'];
+          final contracteeData = await _supabase
+              .from('Contractee')
+              .select('contractee_id, full_name, profile_photo')
+              .inFilter('contractee_id', contracteeIds);
           
-          if (contracteeId != null && !contracteeInfoMap.containsKey(contracteeId)) {
-            try {
-              final contracteeData = await _fetchService.fetchContracteeData(contracteeId);
-              
-              if (contracteeData != null) {
-                contracteeInfoMap[contracteeId] = {
-                  'full_name': contracteeData['full_name'] ?? 'Unknown',
-                  'profile_photo': contracteeData['profile_photo'],
-                  'contractee_id': contracteeData['contractee_id'],
-                };
-              } else {
-                contracteeInfoMap[contracteeId] = {
-                  'full_name': 'Unknown Contractee',
-                  'profile_photo': null,
-                  'contractee_id': contracteeId,
-                };
-              }
-            } catch (fetchError) {
-              await _errorService.logError(
-                errorMessage: 'Failed to fetch contractee data: $fetchError',
-                module: 'Contractor Bidding Service',
-                severity: 'Low',
-                extraInfo: {
-                  'operation': 'Load Projects - Fetch Contractee Data',
-                  'contractee_id': contracteeId,
-                },
-              );
+          for (var contractee in contracteeData) {
+            contracteeInfoMap[contractee['contractee_id']] = {
+              'full_name': contractee['full_name'] ?? 'Unknown Contractee',
+              'profile_photo': contractee['profile_photo'],
+              'contractee_id': contractee['contractee_id'],
+            };
+          }
+          
+          for (final contracteeId in contracteeIds) {
+            if (contracteeId != null && !contracteeInfoMap.containsKey(contracteeId)) {
               contracteeInfoMap[contracteeId] = {
                 'full_name': 'Unknown Contractee',
                 'profile_photo': null,
@@ -298,8 +315,24 @@ class CorBiddingService {
               };
             }
           }
-        } catch (e) {
-          continue;
+        } catch (fetchError) {
+          await _errorService.logError(
+            errorMessage: 'Failed to batch fetch contractee data: $fetchError',
+            module: 'Contractor Bidding Service',
+            severity: 'Low',
+            extraInfo: {
+              'operation': 'Load Projects - Batch Fetch Contractee Data',
+            },
+          );
+          for (final contracteeId in contracteeIds) {
+            if (contracteeId != null) {
+              contracteeInfoMap[contracteeId] = {
+                'full_name': 'Unknown Contractee',
+                'profile_photo': null,
+                'contractee_id': contracteeId,
+              };
+            }
+          }
         }
       }
 
@@ -309,7 +342,7 @@ class CorBiddingService {
       };
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to load projects: ',
+        errorMessage: 'Failed to load projects: $e',
         module: 'Contractor Bidding Service',
         severity: 'Medium',
         extraInfo: {
@@ -338,7 +371,7 @@ class CorBiddingService {
 
   Future<bool> hasAlreadyBid(String projectId, String contractorId) async {
     try {
-      // Check for bids that are NOT stopped (stopped bids allow re-bidding)
+      // Check for any existing bid (including rejected) - only stopped bids allow re-bidding
       final response = await _supabase
           .from('Bids')
           .select('bid_id, status')

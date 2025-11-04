@@ -33,21 +33,35 @@ class CorProfileService {
           .eq('contractor_id', contractorId)
           .order('created_at', ascending: false);
           
+      final contracteeIds = ratingsData
+          .map((r) => r['contractee_id'] as String?)
+          .where((id) => id != null && id.isNotEmpty)
+          .toSet()
+          .toList();
+      
+      final Map<String, String> contracteeNamesMap = {};
+      if (contracteeIds.isNotEmpty) {
+        try {
+          final contracteeData = await Supabase.instance.client
+              .from('Contractee')
+              .select('contractee_id, full_name')
+              .inFilter('contractee_id', contracteeIds);
+          
+          for (var contractee in contracteeData) {
+            contracteeNamesMap[contractee['contractee_id']] = 
+                contractee['full_name'] ?? 'Anonymous Client';
+          }
+        } catch (e) {
+          // Error fetching contractee data - will use defaults
+        }
+      }
+      
       List<Map<String, dynamic>> reviewsWithNames = [];
       for (var rating in ratingsData) {
-        final contracteeData = await Supabase.instance.client
-            .from('Contractee')
-            .select('full_name')
-            .eq('contractee_id', rating['contractee_id'])
-            .single();
-            
-        if (contracteeData.isNotEmpty) {
-          rating['client_name'] = contracteeData['full_name'];
-        } else {
-          rating['client_name'] = 'Anonymous Client';
-        }
-
-        
+        final contracteeId = rating['contractee_id'] as String?;
+        rating['client_name'] = contracteeId != null && contracteeNamesMap.containsKey(contracteeId)
+            ? contracteeNamesMap[contracteeId]!
+            : 'Anonymous Client';
         reviewsWithNames.add(rating);
       }
 

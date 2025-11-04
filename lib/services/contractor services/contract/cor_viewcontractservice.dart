@@ -18,7 +18,7 @@ class ViewContractService {
       return await ContractService.getContractById(contractId, contractorId: contractorId);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to load contract: ',
+        errorMessage: 'Failed to load contract: $e',
         module: 'View Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -27,7 +27,7 @@ class ViewContractService {
           'contractor_id': contractorId,
         },
       );
-      throw Exception('Error loading contract:');
+      throw Exception('Error loading contract: $e');
     }
   }
 
@@ -63,7 +63,7 @@ class ViewContractService {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to download contract: ',
+        errorMessage: 'Failed to download contract: $e',
         module: 'View Contract Service',
         severity: 'Medium',
         extraInfo: {
@@ -89,7 +89,7 @@ class ViewContractService {
       );
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to sign contract: ',
+        errorMessage: 'Failed to sign contract: $e',
         module: 'View Contract Service',
         severity: 'High',
         extraInfo: {
@@ -110,7 +110,7 @@ class ViewContractService {
       return signedUrl;
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to get signed URL: ',
+        errorMessage: 'Failed to get signed URL: $e',
         module: 'View Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -130,7 +130,7 @@ class ViewContractService {
       return signedUrl;
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to get signed contract URL: ',
+        errorMessage: 'Failed to get signed contract URL: $e',
         module: 'View Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -159,7 +159,7 @@ class ViewContractService {
       return pdfUrl;
     } catch (e) {
       _errorService.logError(
-        errorMessage: 'Failed to get PDF URL: ',
+        errorMessage: 'Failed to get PDF URL: $e',
         module: 'View Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -181,36 +181,61 @@ class ViewContractService {
               .createSignedUrl(signedPdfUrl, 60 * 60 * 24);
           return signedUrl;
         } catch (e) {
-          return null;
+          await _errorService.logError(
+            errorMessage: 'Failed to create signed URL for signed PDF: $e',
+            module: 'View Contract Service',
+            severity: 'Medium',
+            extraInfo: {
+              'operation': 'Get PDF Signed URL',
+              'signed_pdf_url': signedPdfUrl,
+            },
+          );
+          // Try to fall back to regular PDF
         }
       }
       
       final pdfPath = getPdfUrl(contractData);
       
       if (pdfPath == null) {
+        await _errorService.logError(
+          errorMessage: 'No PDF path found in contract data',
+          module: 'View Contract Service',
+          severity: 'Medium',
+          extraInfo: {
+            'operation': 'Get PDF Signed URL',
+            'contract_id': contractData['contract_id'],
+          },
+        );
         return null;
       }
       
       try {
-        final fileExists = await checkFileExists(pdfPath);
-        if (!fileExists) {
-          return null;
-        }
-        
+        // Try to create signed URL directly - if file doesn't exist, createSignedUrl will throw
         final signedUrl = await Supabase.instance.client.storage
             .from('contracts')
             .createSignedUrl(pdfPath, 60 * 60 * 24); 
         return signedUrl;
       } catch (e) {
+        await _errorService.logError(
+          errorMessage: 'Failed to create signed URL for PDF: $e',
+          module: 'View Contract Service',
+          severity: 'Medium',
+          extraInfo: {
+            'operation': 'Get PDF Signed URL',
+            'pdf_path': pdfPath,
+            'contract_id': contractData['contract_id'],
+          },
+        );
         return null;
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to get PDF signed URL:',
+        errorMessage: 'Failed to get PDF signed URL: $e',
         module: 'View Contract Service',
-        severity: 'Low',
+        severity: 'Medium',
         extraInfo: {
           'operation': 'Get PDF Signed URL',
+          'contract_id': contractData['contract_id'],
         },
       );
       return null;
@@ -226,7 +251,7 @@ class ViewContractService {
       return response.any((file) => file.name == filePath.split('/').last);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to check file exists: ',
+        errorMessage: 'Failed to check file exists: $e',
         module: 'View Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -245,7 +270,7 @@ class ViewContractService {
       return status != null && status != 'signed';
     } catch (e) {
       _errorService.logError(
-        errorMessage: 'Failed to check if can sign contract: ',
+        errorMessage: 'Failed to check if can sign contract: $e',
         module: 'View Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -262,7 +287,7 @@ class ViewContractService {
       return 'Contract_${title?.replaceAll(' ', '_') ?? 'Document'}.pdf';
     } catch (e) {
       _errorService.logError(
-        errorMessage: 'Failed to generate file name:',
+        errorMessage: 'Failed to generate file name: $e',
         module: 'View Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -278,7 +303,7 @@ class ViewContractService {
       return signatureBytes != null && signatureBytes.isNotEmpty;
     } catch (e) {
       _errorService.logError(
-        errorMessage: 'Failed to check signature validity: ',
+        errorMessage: 'Failed to check signature validity: $e',
         module: 'View Contract Service',
         severity: 'Low',
         extraInfo: {
@@ -322,7 +347,7 @@ class ViewContractService {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to handle download: ',
+        errorMessage: 'Failed to handle download: $e',
         module: 'View Contract Service',
         severity: 'Medium',
         extraInfo: {
@@ -363,7 +388,7 @@ class ViewContractService {
       }
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to handle signature: ',
+        errorMessage: 'Failed to handle signature: $e',
         module: 'View Contract Service',
         severity: 'High',
         extraInfo: {
