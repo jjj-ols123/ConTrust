@@ -299,7 +299,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeInOut,
                             width: isDesktop ? 850 : double.infinity,
-                            padding: const EdgeInsets.all(24),
+                            padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.95),
                               borderRadius: BorderRadius.circular(25),
@@ -400,10 +400,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
     final hasUppercase = _pwHasUpper;
     final hasNumber = _pwHasNumber;
     final hasSpecialChar = _pwHasSpecial;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final bool isDesktop = screenWidth >= 900;
-    final bool isTablet = screenWidth >= 600 && screenWidth < 900;
-    final bool isMobile = screenWidth < 600;
 
     Widget checkRow(String label, bool ok) {
       return Row(
@@ -411,14 +407,14 @@ class _RegistrationPageState extends State<RegistrationPage> {
         children: [
           Icon(
             ok ? Icons.check_circle : Icons.cancel,
-            size: 16,
+            size: 14,
             color: ok ? Colors.green : Colors.red,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               color: ok ? Colors.green : Colors.red,
             ),
           ),
@@ -429,34 +425,34 @@ class _RegistrationPageState extends State<RegistrationPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Icon(Icons.person_add, size: 60, color: Colors.amber),
-        const SizedBox(height: 15),
+        const Icon(Icons.person_add, size: 45, color: Colors.amber),
+        const SizedBox(height: 10),
         const Text(
           'Create Account',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: 28,
+            fontSize: 26,
             fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         const Text(
           'Fill the details below to register',
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.grey, fontSize: 16),
+          style: TextStyle(color: Colors.grey, fontSize: 14),
         ),
-        const SizedBox(height: 30),
+        const SizedBox(height: 20),
         TextField(
           controller: _fNameController,
           decoration: inputStyle('First Name', Icons.person),
         ),
-        const SizedBox(height: 15),
+        const SizedBox(height: 12),
         TextField(
           controller: _lNameController,
           decoration: inputStyle('Last Name', Icons.person_outline),
         ),
-        const SizedBox(height: 15),
+        const SizedBox(height: 12),
         TextField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
@@ -468,12 +464,12 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 : const Icon(Icons.cancel, color: Colors.red),
           ),
         ),
-        const SizedBox(height: 15),
+        const SizedBox(height: 12),
         TextField(
           controller: _addressController,
           decoration: inputStyle('Address', Icons.home_outlined),
         ),
-        const SizedBox(height: 15),
+        const SizedBox(height: 12),
         TextField(
           controller: _phoneController,
           keyboardType: TextInputType.phone,
@@ -492,7 +488,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
             helperText: 'Enter mobile number',
           ),
         ),
-        const SizedBox(height: 15),
+        const SizedBox(height: 12),
         TextFormField(
           controller: _passwordController,
           obscureText: !_passwordVisible,
@@ -514,28 +510,24 @@ class _RegistrationPageState extends State<RegistrationPage> {
             ),
           ),
         ),
+        const SizedBox(height: 6),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Password must contain:',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-            ),
-            const SizedBox(height: 8),
             Wrap(
-              spacing: 12,
-              runSpacing: 6,
+              spacing: 10,
+              runSpacing: 4,
               children: [
-                checkRow('Minimum 6 characters', hasMinLength),
-                checkRow('Maximum 15 characters', hasMaxLength),
-                checkRow('At least one uppercase letter', hasUppercase),
-                checkRow('At least one number', hasNumber),
-                checkRow('At least one special character', hasSpecialChar),
+                checkRow('Min 6 chars', hasMinLength),
+                checkRow('Max 15 chars', hasMaxLength),
+                checkRow('Uppercase', hasUppercase),
+                checkRow('Number', hasNumber),
+                checkRow('Special char', hasSpecialChar),
               ],
             ),
           ],
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 12),
         TextFormField(
           controller: _confirmPasswordController,
           obscureText: !_confirmPasswordVisible,
@@ -556,7 +548,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
             ),
           ),
         ),
-        const SizedBox(height: 25),
+        const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -574,7 +566,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 children: [
                   const Text(
                     "I agree to the ",
-                    style: TextStyle(fontSize: 13, color: Colors.grey),
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   InkWell(
                     onTap: () => _showPolicyTabs(context),
@@ -584,6 +576,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                         color: Colors.amber.shade600,
                         fontWeight: FontWeight.bold,
                         decoration: TextDecoration.underline,
+                        fontSize: 12,
                       ),
                     ),
                   ),
@@ -592,12 +585,12 @@ class _RegistrationPageState extends State<RegistrationPage> {
             ),
           ],
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
         ElevatedButton(
           onPressed: _isSigningUp ? null : _handleSignUp,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.amber,
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -615,12 +608,12 @@ class _RegistrationPageState extends State<RegistrationPage> {
                   "Sign Up",
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 18,
+                    fontSize: 17,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 12),
         InkWell(
           onTap: () {
             context.go('/login');
@@ -628,7 +621,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
           child: Text.rich(
             TextSpan(
               text: "Already have an account? ",
-              style: const TextStyle(color: Colors.grey, fontSize: 16),
+              style: const TextStyle(color: Colors.grey, fontSize: 14),
               children: [
                 TextSpan(
                   text: "Login",
@@ -643,7 +636,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
             textAlign: TextAlign.center,
           ),
         ),
-                _buildFooter(context, isDesktop, isTablet, isMobile),
       ],
     );
   }
@@ -843,69 +835,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
           color: Colors.black.withOpacity(0.8),
           fontWeight: FontWeight.w400,
         ),
-      ),
-    );
-  }
-
-  Widget _buildFooter(BuildContext context, bool isDesktop, bool isTablet, bool isMobile) {
-    final double horizontalPadding = isDesktop ? 80 : (isTablet ? 40 : 20);
-    final double verticalPadding = 10;
-    final double logoFontSize = isMobile ? 20 : 24;
-    final double logoHeight = isMobile ? 20 : 24;
-    final double logoWidth = isMobile ? 3 : 4;
-    
-    return Container(
-    width: double.infinity,
-      padding: EdgeInsets.symmetric(
-        horizontal: horizontalPadding,
-        vertical: verticalPadding,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1a1a1a),
-        border: Border(
-          top: BorderSide(
-            color: Colors.white.withOpacity(0.1),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: logoWidth,
-                height: logoHeight,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFA726),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              SizedBox(width: isMobile ? 8 : 10),
-              Text(
-                'ConTrust',
-                style: TextStyle(
-                  fontSize: logoFontSize,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 10),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 0),
-            child: Text(
-              'Building trust in construction, one contract at a time.',
-              style: TextStyle(
-                fontSize: isMobile ? 13 : 14,
-                color: Colors.white.withOpacity(0.7),
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ],
       ),
     );
   }

@@ -584,20 +584,19 @@ class ContractTypeBuild {
       final dateString = dateTimeString.toString();
       DateTime dateTime;
       
-      if (dateString.endsWith('Z') || dateString.contains('+')) {
+      if (dateString.endsWith('Z') || dateString.contains('+') || (dateString.length > 19 && (dateString[19] == '+' || dateString[19] == '-'))) {
         dateTime = DateTime.parse(dateString);
       } else {
         dateTime = DateTime.parse('${dateString}Z');
       }
-      
-      DateTime localDateTime = dateTime.toLocal();
+
+      final localDateTime = dateTime.toLocal();
       return DateFormat('MMM dd, yyyy • hh:mm a').format(localDateTime);
     } catch (e) {
       return dateTimeString.toString();
     }
   }
 
-  // Helpers: contract status label/color used in list items
   static Color _getContractStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'draft':

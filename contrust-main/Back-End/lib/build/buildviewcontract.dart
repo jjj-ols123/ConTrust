@@ -5,6 +5,10 @@ import 'package:flutter/foundation.dart';
 import 'package:backend/services/contractor services/contract/cor_viewcontractservice.dart';
 import 'dart:html' as html;
 import 'dart:ui_web' as ui_web;
+import 'dart:typed_data';
+import 'package:signature/signature.dart';
+import 'package:backend/utils/be_contractsignature.dart';
+import 'package:backend/utils/be_snackbar.dart';
 
 class ViewContractBuild {
   static Widget buildHeader(
@@ -606,6 +610,9 @@ class ViewContractBuild {
   static Widget buildEnhancedSignaturesSection(
     Map<String, dynamic>? contractData, {
     VoidCallback? onRefresh,
+    String? currentUserId,
+    BuildContext? context,
+    String? contractStatus,
   }) {
     final contractorSigned = contractData?['contractor_signature_url'] != null &&
         (contractData!['contractor_signature_url'] as String).isNotEmpty;
@@ -614,6 +621,9 @@ class ViewContractBuild {
     final bothSigned = contractorSigned && contracteeSigned;
     final signedPdfUrl = contractData?['signed_pdf_url'] as String?;
     final hasSignedPdf = signedPdfUrl != null && signedPdfUrl.isNotEmpty;
+    
+    final status = contractStatus ?? contractData?['status'] as String? ?? '';
+    final canSign = contractData != null ? _canUserSign(contractData, currentUserId, status) : false;
 
     return Card(
       elevation: 2,
@@ -698,10 +708,44 @@ class ViewContractBuild {
                 ),
               ],
             ),
+            
+            if (context != null && currentUserId != null && contractData != null && canSign) ...[
+              const SizedBox(height: 20),
+              _buildSignaturePad(
+                contractData,
+                currentUserId,
+                context,
+                canSign,
+                onRefresh ?? () {},
+              ),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  static bool _canUserSign(Map<String, dynamic> contractData, String? currentUserId, String? status) {
+    if (currentUserId == null) return false;
+
+    final contractStatus = status ?? contractData['status'] as String?;
+    final isContractee = contractData['contractee_id'] == currentUserId;
+    final isContractor = contractData['contractor_id'] == currentUserId;
+
+    if (contractStatus == 'awaiting_signature' || contractStatus == 'approved') {
+      if (isContractee) {
+        final contracteeSignatureUrl = contractData['contractee_signature_url'] as String?;
+        final contracteeSigned = contracteeSignatureUrl != null && contracteeSignatureUrl.isNotEmpty;
+        return !contracteeSigned;
+      }
+      if (isContractor) {
+        final contractorSignatureUrl = contractData['contractor_signature_url'] as String?;
+        final contractorSigned = contractorSignatureUrl != null && contractorSignatureUrl.isNotEmpty;
+        return !contractorSigned;
+      }
+    }
+
+    return false;
   }
 
   static Widget buildCompactSignatureSection({
@@ -848,6 +892,419 @@ class ViewContractBuild {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  static Widget _buildSignaturePad(
+    Map<String, dynamic> contractData,
+    String? currentUserId,
+    BuildContext context,
+    bool enabled,
+    VoidCallback onRefresh,
+  ) {
+    final signatureController = SignatureController(
+      penStrokeWidth: 3,
+      penColor: Colors.black,
+    );
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(isMobile ? 12 : 16),
+      decoration: BoxDecoration(
+        color: enabled ? Colors.blue[50] : Colors.grey[50],
+        border: Border.all(color: enabled ? Colors.blue[300]! : Colors.grey[300]!),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'Digital Signature',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: isMobile ? 14 : 16,
+              color: enabled ? Colors.black : Colors.grey[600],
+            ),
+          ),
+          SizedBox(height: isMobile ? 8 : 12),
+          Container(
+            width: double.infinity,
+            height: isMobile ? 120 : 150,
+            decoration: BoxDecoration(
+              color: enabled ? Colors.white : Colors.grey[100],
+              border: Border.all(color: enabled ? Colors.grey[300]! : Colors.grey[400]!),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: enabled
+                ? Signature(
+                    controller: signatureController,
+                    backgroundColor: Colors.white,
+                  )
+                : Container(
+                    color: Colors.grey[100],
+                  ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            enabled
+                ? (isMobile 
+                    ? 'Draw or upload your signature' 
+                    : 'Draw your signature above using your mouse, stylus, or finger')
+                : 'Signature pad is currently disabled',
+            style: TextStyle(
+              fontSize: isMobile ? 11 : 12,
+              color: Colors.grey[600],
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: isMobile ? 8 : 12),
+          if (isMobile)
+            Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: enabled
+                        ? () {
+                            signatureController.clear();
+                          }
+                        : null,
+                    icon: const Icon(Icons.clear, size: 18),
+                    label: const Text('Clear Signature'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: enabled ? Colors.grey[600] : Colors.grey[400],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: enabled
+                        ? () async {
+                            final signatureBytes = await _pickSignatureImage(context);
+                            if (signatureBytes != null) {
+                              _showSignatureDialog(context, contractData,
+                                  currentUserId, signatureBytes, onRefresh);
+                            }
+                          }
+                        : null,
+                    icon: const Icon(Icons.upload, size: 18),
+                    label: const Text('Upload Image'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: enabled ? Colors.orange[600] : Colors.grey[400],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: enabled
+                        ? () async {
+                            final signature = await signatureController.toPngBytes();
+                            if (signature == null || signature.isEmpty) {
+                              ConTrustSnackBar.error(
+                                  context, 'Please provide a signature');
+                              return;
+                            }
+                            _showSignatureDialog(context, contractData,
+                                currentUserId, signature, onRefresh);
+                          }
+                        : null,
+                    icon: const Icon(Icons.check, size: 18),
+                    label: const Text('Sign Contract'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: enabled ? Colors.green[600] : Colors.grey[400],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          if (!isMobile)
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: enabled
+                        ? () {
+                            signatureController.clear();
+                          }
+                        : null,
+                    icon: const Icon(Icons.clear),
+                    label: const Text('Clear'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: enabled ? Colors.grey[600] : Colors.grey[400],
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: enabled
+                        ? () async {
+                            final signatureBytes = await _pickSignatureImage(context);
+                            if (signatureBytes != null) {
+                              _showSignatureDialog(context, contractData,
+                                  currentUserId, signatureBytes, onRefresh);
+                            }
+                          }
+                        : null,
+                    icon: const Icon(Icons.upload),
+                    label: const Text('Upload'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: enabled ? Colors.orange[600] : Colors.grey[400],
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: enabled
+                        ? () async {
+                            final signature = await signatureController.toPngBytes();
+                            if (signature == null || signature.isEmpty) {
+                              ConTrustSnackBar.error(
+                                  context, 'Please provide a signature');
+                              return;
+                            }
+                            _showSignatureDialog(context, contractData,
+                                currentUserId, signature, onRefresh);
+                          }
+                        : null,
+                    icon: const Icon(Icons.check),
+                    label: const Text('Sign Contract'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: enabled ? Colors.green[600] : Colors.grey[400],
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  static Future<Uint8List?> _pickSignatureImage(BuildContext context) async {
+    try {
+      final input = html.FileUploadInputElement()..accept = 'image/*';
+      input.click();
+
+      await input.onChange.first;
+      
+      if (input.files == null || input.files!.isEmpty) {
+        return null; 
+      }
+      
+      final file = input.files!.first;
+
+      final reader = html.FileReader();
+      reader.readAsArrayBuffer(file);
+      await reader.onLoad.first;
+      
+      final result = reader.result;
+      if (result is Uint8List) {
+        return result;
+      } else if (result is ByteBuffer) {
+        return Uint8List.view(result);
+      } else {
+        throw Exception('Unexpected file reader result type: ${result.runtimeType}');
+      }
+    } catch (e) {
+      ConTrustSnackBar.error(
+          context, 'Failed to pick signature image $e');
+      return null;
+    }
+  }
+
+  static void _showSignatureDialog(
+    BuildContext context,
+    Map<String, dynamic> contractData,
+    String? currentUserId,
+    Uint8List signatureBytes,
+    VoidCallback onRefresh,
+  ) {
+    if (currentUserId == null) return;
+
+    final contractId = contractData['contract_id'] as String;
+    final isContractee = contractData['contractee_id'] == currentUserId;
+    final isContractor = contractData['contractor_id'] == currentUserId;
+
+    if (!isContractee && !isContractor) {
+      ConTrustSnackBar.error(
+          context, 'You are not authorized to sign this contract');
+      return;
+    }
+
+    bool isUploading = false;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 500),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.white, Colors.grey.shade50],
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade700,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          Icons.draw,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Confirm Signature',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: isUploading ? null : () => Navigator.of(dialogContext).pop(),
+                        icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'You are signing this contract. This action cannot be undone.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 14),
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              onPressed: isUploading ? null : () => Navigator.of(dialogContext).pop(),
+                              child: const Text('Cancel'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: isUploading ? null : () async {
+                                setState(() {
+                                  isUploading = true;
+                                });
+
+                                try {
+                                  final userType = isContractee ? 'contractee' : 'contractor';
+
+                                  await SignatureCompletionHandler.signContractWithPdfGeneration(
+                                    contractId: contractId,
+                                    userId: currentUserId,
+                                    signatureBytes: signatureBytes,
+                                    userType: userType,
+                                  );
+
+                                  Navigator.of(dialogContext).pop();
+                                  onRefresh();
+                                  
+                                } catch (e) {
+                                  ConTrustSnackBar.error(context, 'Failed to sign contract: $e');
+                                  setState(() {
+                                    isUploading = false;
+                                  });
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isUploading ? Colors.grey : Colors.green[600],
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                              ),
+                              child: isUploading 
+                                ? Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: const [
+                                      SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        ),
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text('Uploading...'),
+                                    ],
+                                  )
+                                : const Text('Confirm & Sign'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

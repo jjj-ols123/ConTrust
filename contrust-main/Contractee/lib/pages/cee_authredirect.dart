@@ -24,22 +24,40 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
   Future<void> _handleAuthRedirect() async {
     try {
       final supabase = Supabase.instance.client;
-      var session = supabase.auth.currentSession;
       
+      Session? session;
+      try {
+        final response = await supabase.auth.getSessionFromUrl(Uri.base);
+        session = response.session;
+      } catch (e) {
+        // If getSessionFromUrl fails, try to get current session
+        debugPrint('getSessionFromUrl failed, trying current session: $e');
+        session = supabase.auth.currentSession;
+      }
+
+      // If no session from URL, wait a bit and try current session
+      if (session == null) {
+        await Future.delayed(const Duration(seconds: 1));
+        session = supabase.auth.currentSession;
+      }
+
+      // If still no session, wait a bit more (for async auth state changes)
       if (session == null) {
         await Future.delayed(const Duration(seconds: 2));
         session = supabase.auth.currentSession;
-        if (session == null) {
-          if (mounted && !_hasRedirected) {
-            _hasRedirected = true;
-            context.go('/');
-          }
-          return;
-        }
       }
-      
+
+      if (session == null) {
+        if (mounted && !_hasRedirected) {
+          _hasRedirected = true;
+          context.go('/login');
+        }
+        return;
+      }
+
       final user = session.user;
 
+      // Handle sign-in process
       final signInService = SignInGoogleContractee();
       await signInService.handleSignIn(context, user);
 
@@ -47,17 +65,24 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
         return;
       }
 
-      session = supabase.auth.currentSession;
-      if (session == null) {
+      // Refresh session after sign-in handling
+      var refreshedSession = supabase.auth.currentSession;
+      if (refreshedSession == null) {
+        await Future.delayed(const Duration(seconds: 1));
+        refreshedSession = supabase.auth.currentSession;
+      }
+
+      if (refreshedSession == null) {
         if (mounted && !_hasRedirected) {
           _hasRedirected = true;
-          context.go('/');
+          context.go('/login');
         }
         return;
       }
 
-      final currentUser = session.user;
+      final currentUser = refreshedSession.user;
 
+      // Check both Contractee and Contractor tables to determine user type
       final userDataResults = await Future.wait([
         supabase
             .from('Contractee')
@@ -77,18 +102,21 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
       if (mounted && !_hasRedirected) {
         _hasRedirected = true;
         if (contracteeData != null) {
+          // User is a contractee, redirect to home
           context.go('/home');
         } else if (contractorData != null) {
+          // User is a contractor, redirect to dashboard
           context.go('/dashboard');
         } else {
-          context.go('/');
+          // User not found in either table, redirect to login
+          context.go('/login');
         }
       }
     } catch (e) {
-      debugPrint('Error in auth redirect: $e');
+      debugPrint('Error in contractee auth redirect: $e');
       if (mounted && !_hasRedirected) {
         _hasRedirected = true;
-        context.go('/');
+        context.go('/login');
       }
     }
   }

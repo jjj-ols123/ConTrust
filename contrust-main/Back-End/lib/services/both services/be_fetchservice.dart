@@ -219,7 +219,7 @@ class FetchService {
       final response = await _supabase
           .from('Projects')
           .select(
-            'project_id, type, title, description, duration, min_budget, max_budget, created_at, status, start_date, location',
+            'project_id, type, title, description, duration, min_budget, max_budget, created_at, status, start_date, location, projectdata',
           )
           .eq('contractee_id', userId)
           .neq('status', 'cancelled')

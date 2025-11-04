@@ -5,6 +5,8 @@ import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_project_service.dart';
 import 'package:backend/utils/be_status.dart';
 import 'package:backend/utils/be_snackbar.dart';
+import 'package:backend/build/buildviewcontract.dart';
+import 'package:backend/services/contractor services/contract/cor_viewcontractservice.dart';
 import 'package:contractor/build/builddashboardtabs.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -130,7 +132,7 @@ class DashboardBuildMethods {
   }
 
   Widget buildCurrentContracteeContainer([Map<String, dynamic>? project]) {
-    final contracteeData = project ?? _getContracteeToShow();
+    final projectId = project?['project_id']?.toString() ?? '';
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
 
@@ -156,7 +158,7 @@ class DashboardBuildMethods {
               children: [
                 Icon(
                   Icons.person,
-                  color: Colors.blue.shade700,
+                  color: Colors.amber[700],
                   size: isTablet ? 24 : 20,
                 ),
                 SizedBox(width: isTablet ? 12 : 8),
@@ -170,7 +172,61 @@ class DashboardBuildMethods {
               ],
             ),
             SizedBox(height: isTablet ? 16 : 12),
-            buildContracteeInfo(contracteeData),
+            FutureBuilder<Map<String, dynamic>?>(
+              future: _fetchCurrentContractee(projectId),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator(color: Colors.amber));
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Error loading contractee',
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                    ),
+                  );
+                }
+
+                final contractee = snapshot.data;
+                
+                if (contractee == null) {
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.person_off_outlined,
+                          size: 40,
+                          color: Colors.grey.shade400,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'No contractee assigned',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'A contractee will appear here.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return buildContracteeInfo(contractee);
+              },
+            ),
           ],
         ),
       ),
@@ -181,80 +237,59 @@ class DashboardBuildMethods {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
+        color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.shade200),
+        border: Border.all(color: Colors.grey.shade300),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: Colors.blue.shade100,
-                backgroundImage:
-                    project['contractee_photo'] != null &&
-                            project['contractee_photo'].toString().isNotEmpty
-                        ? NetworkImage(project['contractee_photo'])
-                        : null,
-                child:
-                    project['contractee_photo'] == null ||
-                            project['contractee_photo'].toString().isEmpty
-                        ? Icon(
-                          Icons.person,
-                          color: Colors.blue.shade700,
-                          size: 20,
-                        )
-                        : null,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      project['contractee_name']?.toString() ?? "Client Name",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      project['title']?.toString() ?? 'No Project Title',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 12,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: Colors.grey.shade200,
+            backgroundImage:
+                project['contractee_photo'] != null &&
+                        project['contractee_photo'].toString().isNotEmpty
+                    ? NetworkImage(project['contractee_photo'])
+                    : null,
+            child:
+                project['contractee_photo'] == null ||
+                        project['contractee_photo'].toString().isEmpty
+                    ? Icon(
+                      Icons.person,
+                      color: Colors.grey.shade600,
+                      size: 20,
+                    )
+                    : null,
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: status.getStatusColor(project['status']).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  status.getStatusLabel(project['status']),
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: status.getStatusColor(project['status']),
-                  ),
-                ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              project['full_name']?.toString() ?? "Client Name",
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
               ),
-            ],
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            onPressed: () {
+              // Navigate to chat history
+              final router = GoRouter.of(context);
+              router.go('/chathistory');
+            },
+            icon: Icon(
+              Icons.message,
+              color: Colors.amber[700],
+              size: 24,
+            ),
+            tooltip: 'Open Chat History',
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.amber.shade50,
+              padding: const EdgeInsets.all(8),
+            ),
           ),
         ],
       ),
@@ -418,28 +453,28 @@ class DashboardBuildMethods {
               if (hiringRequests.isEmpty) {
                 return Container(
                   width: double.infinity,
-                  padding: EdgeInsets.symmetric(vertical: 32),
+                  padding: const EdgeInsets.symmetric(vertical: 24),
                   child: Column(
                     children: [
                       Icon(
                         Icons.inbox_outlined,
-                        size: 48,
+                        size: 40,
                         color: Colors.grey.shade400,
                       ),
-                      SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       Text(
                         'No hiring requests at the moment',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 14,
                           color: Colors.grey.shade600,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         'New opportunities will appear here',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 12,
                           color: Colors.grey.shade500,
                         ),
                       ),
@@ -448,10 +483,16 @@ class DashboardBuildMethods {
                 );
               }
 
-              return Column(
-                children: hiringRequests.map((notification) {
-                  return _buildCompactHiringCard(notification);
-                }).toList(),
+              return SizedBox(
+                height: isMobile ? 240 : 300,
+                child: ListView.builder(
+                  padding: EdgeInsets.zero,
+                  itemCount: hiringRequests.length,
+                  itemBuilder: (context, index) {
+                    final notification = hiringRequests[index];
+                    return _buildCompactHiringCard(notification);
+                  },
+                ),
               );
             },
           ),
@@ -637,17 +678,7 @@ class DashboardBuildMethods {
                     color: Colors.grey.shade600,
                   ),
                 ),
-                SizedBox(height: 2),
-                Text(
-                  info['project_description'] ?? 'No description available',
-                  style: TextStyle(
-                    fontSize: isMobile ? 10 : 11,
-                    color: Colors.grey.shade500,
-                    fontStyle: FontStyle.italic,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                
               ],
             ),
           ),
@@ -668,42 +699,76 @@ class DashboardBuildMethods {
                   foregroundColor: Colors.blue.shade700,
                 ),
               ),
-              SizedBox(width: isMobile ? 3 : 4),
-              IconButton(
-                onPressed: () => dashboardservice.handleDeclineHiring(
-                  context: context,
-                  notificationId: notificationId,
-                ),
-                icon: Icon(Icons.close, size: isMobile ? 16 : 18),
-                tooltip: 'Decline',
-                padding: EdgeInsets.all(isMobile ? 3 : 4),
-                constraints: BoxConstraints(
-                  minWidth: isMobile ? 28 : 32, 
-                  minHeight: isMobile ? 28 : 32
-                ),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.red.shade100,
-                  foregroundColor: Colors.red.shade700,
-                ),
-              ),
-              SizedBox(width: isMobile ? 3 : 4),
-              IconButton(
-                onPressed: () => dashboardservice.handleAcceptHiring(
-                  context: context,
-                  notificationId: notificationId,
-                  info: info,
-                ),
-                icon: Icon(Icons.check, size: isMobile ? 16 : 18),
-                tooltip: 'Accept',
-                padding: EdgeInsets.all(isMobile ? 3 : 4),
-                constraints: BoxConstraints(
-                  minWidth: isMobile ? 28 : 32, 
-                  minHeight: isMobile ? 28 : 32
-                ),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.green.shade100,
-                  foregroundColor: Colors.green.shade700,
-                ),
+              Builder(
+                builder: (context) {
+                  final status = (info['status'] as String? ?? 'pending').toLowerCase();
+                  final isRejected = status == 'rejected' || status == 'declined' || status == 'cancelled';
+                  final isAccepted = status == 'accepted';
+                  if (isRejected || isAccepted) {
+                    return Row(
+                      children: [
+                        SizedBox(width: isMobile ? 3 : 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: isAccepted ? Colors.green.shade600 : Colors.red.shade600,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            isAccepted ? 'ACCEPTED' : 'REJECTED',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+                  // Pending: show Decline and Accept
+                  return Row(
+                    children: [
+                      SizedBox(width: isMobile ? 3 : 4),
+                      IconButton(
+                        onPressed: () => dashboardservice.handleDeclineHiring(
+                          context: context,
+                          notificationId: notificationId,
+                        ),
+                        icon: Icon(Icons.close, size: isMobile ? 16 : 18),
+                        tooltip: 'Decline',
+                        padding: EdgeInsets.all(isMobile ? 3 : 4),
+                        constraints: BoxConstraints(
+                          minWidth: isMobile ? 28 : 32, 
+                          minHeight: isMobile ? 28 : 32
+                        ),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.red.shade100,
+                          foregroundColor: Colors.red.shade700,
+                        ),
+                      ),
+                      SizedBox(width: isMobile ? 3 : 4),
+                      IconButton(
+                        onPressed: () => dashboardservice.handleAcceptHiring(
+                          context: context,
+                          notificationId: notificationId,
+                          info: info,
+                        ),
+                        icon: Icon(Icons.check, size: isMobile ? 16 : 18),
+                        tooltip: 'Accept',
+                        padding: EdgeInsets.all(isMobile ? 3 : 4),
+                        constraints: BoxConstraints(
+                          minWidth: isMobile ? 28 : 32, 
+                          minHeight: isMobile ? 28 : 32
+                        ),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.green.shade100,
+                          foregroundColor: Colors.green.shade700,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
@@ -1283,21 +1348,6 @@ class DashboardBuildMethods {
     return recentActivities;
   }
 
-  Map<String, dynamic> _getContracteeToShow() {
-    if (recentActivities.isEmpty) {
-      return _getPlaceholderContractee();
-    }
-    return recentActivities.first;
-  }
-
-  Map<String, dynamic> _getPlaceholderContractee() {
-    return {
-      'contractee_name': 'No Contractee',
-      'contractee_photo': null,
-      'title': 'No Active Project',
-      'status': 'inactive',
-    };
-  }
 
   Map<String, dynamic> _getPlaceholderProject() {
     return {
@@ -1312,7 +1362,6 @@ class DashboardBuildMethods {
   }
 
   Widget projectView(BuildContext context, Map<String, dynamic> project) {
-    bool isPlaceholder = project['isPlaceholder'] == true;
     final projectId = project['project_id']?.toString() ?? '';
     
     Widget card = Card(
@@ -1321,39 +1370,35 @@ class DashboardBuildMethods {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      child: InkWell(
-        onTap: isPlaceholder ? null : () => _navigateToProjectPage(context, project),
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.white, Colors.grey.shade50],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, Colors.grey.shade50],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildProjectHeader(context, project),
-              
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildProjectHeader(context, project),
+            
+            const SizedBox(height: 16),
+            _buildProjectDetails(project),
+            
+            const SizedBox(height: 16),
+            _buildProjectDescription(project),
+            
+            if (project['status'] == 'cancellation_requested_by_contractee') ...[
               const SizedBox(height: 16),
-              _buildProjectDetails(project),
-              
-              const SizedBox(height: 16),
-              _buildProjectDescription(project),
-              
-              if (project['status'] == 'cancellation_requested_by_contractee') ...[
-                const SizedBox(height: 16),
-                _buildCancellationRequestCard(
-                  project['information']?['cancellation_reason'] ?? 'No reason provided', 
-                  projectId
-                ),
-              ],
+              _buildCancellationRequestCard(
+                project['information']?['cancellation_reason'] ?? 'No reason provided', 
+                projectId
+              ),
             ],
-          ),
+          ],
         ),
       ),
     );
@@ -1646,27 +1691,33 @@ class DashboardBuildMethods {
             statusText = 'Contract Draft';
         }
 
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: borderColor, width: 1.5),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 16, color: textColor),
-              const SizedBox(width: 4),
-              Text(
-                statusText,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: textColor,
-                  fontWeight: FontWeight.w600,
+        return InkWell(
+          onTap: () => _showContractDialog(context, latestContract['contract_id'] as String),
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: borderColor, width: 1.5),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 16, color: textColor),
+                const SizedBox(width: 4),
+                Text(
+                  statusText,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: textColor,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 6),
+                Icon(Icons.visibility, size: 14, color: textColor),
+              ],
+            ),
           ),
         );
       },
@@ -1718,133 +1769,6 @@ class DashboardBuildMethods {
         return Icons.edit;
       default:
         return Icons.help;
-    }
-  }
-  
-  void _navigateToProjectPage(BuildContext context, Map<String, dynamic> project) async {
-    final projectStatus = project['status']?.toString().toLowerCase();
-    final projectId = project['project_id']?.toString();
-    final projectTitle = project['title']?.toString();
-    
-    if (projectId == null) {
-      ConTrustSnackBar.error(context, 'Invalid project ID');
-      return;
-    }
-    
-    if (projectTitle == null || projectTitle.isEmpty) {
-      ConTrustSnackBar.error(context, 'Invalid project title');
-      return;
-    }
-    
-    final allowedStatuses = ['active'];
-    if (!allowedStatuses.contains(projectStatus)) {
-      ConTrustSnackBar.info(context, 
-        'Only active projects can be viewed in the Project Management page. Current status: ${status.getStatusLabel(projectStatus)}');
-      return;
-    }
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 400),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Colors.white, Colors.grey.shade50],
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.amber.shade700,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.work_outline,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'View Project Management',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      icon: const Icon(Icons.close, color: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'Do you want to go to Project Management Page?',
-                      style: TextStyle(fontSize: 14),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextButton(
-                            onPressed: () => Navigator.of(context).pop(false),
-                            child: const Text('Cancel'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () => Navigator.of(context).pop(true),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green[600],
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                            ),
-                            child: const Text('Confirm'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    if (confirmed == true && context.mounted) {
-      context.push('/project-management/$projectId');
     }
   }
 
@@ -2007,6 +1931,182 @@ class DashboardBuildMethods {
       if (context.mounted) {
         ConTrustSnackBar.error(context, 'Error processing cancellation response: $e');
       }
+    }
+  }
+
+  Future<void> _showContractDialog(BuildContext context, String contractId) async {
+    try {
+      final contractor = Supabase.instance.client.auth.currentUser?.id ?? '';
+      Map<String, dynamic> contractData = await ViewContractService.loadContract(contractId, contractorId: contractor);
+      
+      if (!context.mounted) return;
+      
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (dialogContext) {
+          Map<String, dynamic> liveData = contractData;
+          return StatefulBuilder(
+            builder: (context, setState) {
+              return Center(
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 900, maxHeight: 700),
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.black, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 20,
+                        spreadRadius: 1,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade700,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(20),
+                            topRight: Radius.circular(20),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.description, color: Colors.white, size: 24),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                liveData['title'] ?? 'Contract Details',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.of(dialogContext).pop(),
+                              icon: const Icon(Icons.close, color: Colors.white, size: 24),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Flexible(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              FutureBuilder<String?>(
+                                future: ViewContractService.getPdfSignedUrl(liveData),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState == ConnectionState.waiting) {
+                                    return ViewContractBuild.buildLoadingState();
+                                  }
+                                  if (!snapshot.hasData || (snapshot.data?.isEmpty ?? true)) {
+                                    return ViewContractBuild.buildPdfViewer(
+                                      pdfUrl: null,
+                                      onDownload: () => ViewContractService.handleDownload(
+                                        contractData: liveData,
+                                        context: context,
+                                      ),
+                                      height: 400,
+                                    );
+                                  }
+                                  return ViewContractBuild.buildPdfViewer(
+                                    pdfUrl: snapshot.data,
+                                    onDownload: () => ViewContractService.handleDownload(
+                                      contractData: liveData,
+                                      context: context,
+                                    ),
+                                    height: 400,
+                                    isSignedContract: (liveData['signed_pdf_url'] as String?)?.isNotEmpty == true,
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 20),
+                              ViewContractBuild.buildEnhancedSignaturesSection(
+                                liveData,
+                                onRefresh: () async {
+                                  try {
+                                    final updatedData = await ViewContractService.loadContract(contractId, contractorId: contractor);
+                                    setState(() {
+                                      liveData = updatedData;
+                                    });
+                                  } catch (e) {
+                                    if (dialogContext.mounted) {
+                                      ConTrustSnackBar.error(dialogContext, 'Failed to refresh: $e');
+                                    }
+                                  }
+                                },
+                                currentUserId: Supabase.instance.client.auth.currentUser?.id,
+                                context: dialogContext,
+                                contractStatus: liveData['status'] as String?,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+            },
+          );
+        },
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ConTrustSnackBar.error(context, 'Error loading contract: $e');
+      }
+    }
+  }
+
+  Future<Map<String, dynamic>?> _fetchCurrentContractee(String projectId) async {
+    try {
+      if (projectId.isEmpty) return null;
+      
+      final supabase = Supabase.instance.client;
+      
+      // First, fetch the project to get contractee_id
+      final projectResponse = await supabase
+          .from('Projects')
+          .select('contractee_id')
+          .eq('project_id', projectId)
+          .maybeSingle();
+      
+      if (projectResponse == null) return null;
+      
+      final contracteeId = projectResponse['contractee_id'] as String?;
+      if (contracteeId == null || contracteeId.isEmpty) return null;
+      
+      // Fetch contractee data
+      final contracteeResponse = await supabase
+          .from('Contractee')
+          .select('contractee_id, full_name, profile_photo')
+          .eq('contractee_id', contracteeId)
+          .maybeSingle();
+      
+      if (contracteeResponse == null) return null;
+      
+      // Return contractee data in the format expected by buildContracteeInfo
+      return {
+        'contractee_id': contracteeResponse['contractee_id'],
+        'full_name': contracteeResponse['full_name'],
+        'contractee_photo': contracteeResponse['profile_photo'],
+      };
+    } catch (e) {
+      return null;
     }
   }
 }

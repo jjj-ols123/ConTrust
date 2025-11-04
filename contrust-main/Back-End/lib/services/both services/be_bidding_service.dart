@@ -338,7 +338,7 @@ class BiddingService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to get bids for project: ',
+        errorMessage: 'Failed to get bids for project: $e ',
         module: 'Bidding Service',
         severity: 'Medium',
         extraInfo: {

@@ -2,8 +2,10 @@
 
 import 'package:backend/models/be_UIapp.dart';
 import 'package:backend/services/both services/be_bidding_service.dart';
+import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomePageBuilder {
@@ -19,10 +21,14 @@ class HomePageBuilder {
     final isMobile = screenWidth < 600;
     
     return Container(
-      padding: EdgeInsets.all(isMobile ? 12 : 20),
+      padding: EdgeInsets.all(isMobile ? 12 : 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.grey.shade300,
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),
@@ -37,15 +43,15 @@ class HomePageBuilder {
         children: [
           Row(
             children: [
-              Icon(Icons.analytics, color: Colors.amber[700], size: isMobile ? 20 : 24),
+              Icon(Icons.bar_chart, color: Colors.amber, size: isMobile ? 20 : 24),
               SizedBox(width: isMobile ? 6 : 8),
               Expanded(
                 child: Text(
-                  "Platform Statistics",
+                  "Statistics",
                   style: TextStyle(
-                    fontSize: isMobile ? 16 : 20,
+                    fontSize: isMobile ? 16 : 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: Colors.grey[800],
                   ),
                 ),
               ),
@@ -80,36 +86,48 @@ class HomePageBuilder {
                   ),
                 ],
               )
-            : Row(
+            : Column(
                 children: [
-                  Expanded(
-                    child: _buildStatCard(
-                      "Active Projects",
-                      "${projects.where((p) => p['status'] == 'active').length}",
-                      Icons.work,
-                      Colors.black,
-                      isMobile,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard(
+                          "Active Projects",
+                          "${projects.where((p) => p['status'] == 'active').length}",
+                          Icons.work,
+                          Colors.black,
+                          isMobile,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildStatCard(
+                          "Pending Projects",
+                          "${projects.where((p) => p['status'] == 'pending').length}",
+                          Icons.pending,
+                          Colors.black,
+                          isMobile,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildStatCard(
-                      "Pending Projects",
-                      "${projects.where((p) => p['status'] == 'pending').length}",
-                      Icons.pending,
-                      Colors.black,
-                      isMobile,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildStatCard(
-                      "Completed",
-                      "${projects.where((p) => p['status'] == 'ended').length}",
-                      Icons.check_circle,
-                      Colors.black,
-                      isMobile,
-                    ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard(
+                          "Completed",
+                          "${projects.where((p) => p['status'] == 'ended').length}",
+                          Icons.check_circle,
+                          Colors.black,
+                          isMobile,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: SizedBox.shrink(),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -186,7 +204,7 @@ class HomePageBuilder {
     VoidCallback? onPostProject,
   }) {
     return Container(
-      padding: const EdgeInsets.all(40),
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [Colors.white],
@@ -201,29 +219,28 @@ class HomePageBuilder {
         children: [
           Icon(
             Icons.construction_outlined,
-            size: 80,
+            size: 56,
             color: Colors.amber[700],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Text(
             "No Projects Yet",
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Text(
             "Start your construction journey by posting your first project and connecting with skilled contractors.",
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 14,
               color: Colors.grey[700],
-              height: 1.5,
+              height: 1.4,
             ),
           ),
-          const SizedBox(height: 20),
         ],
       ),
     );
@@ -231,13 +248,17 @@ class HomePageBuilder {
 
   static Map<String, dynamic> getPlaceholderProject() {
     return {
-      'title': 'No Projects Yet',
-      'description': 'You have no active projects at the moment. Start by posting your first project.',
+      'title': 'No Active Projects',
+      'description': 'You have no active projects at the moment.',
       'type': 'N/A',
-      'contractee_name': 'You',
+      'contractee_name': 'No Contractee',
       'contractee_photo': null,
       'status': 'inactive',
       'isPlaceholder': true,
+      'min_budget': 0,
+      'max_budget': 0,
+      'location': null,
+      'start_date': null,
     };
   }
 
@@ -391,47 +412,7 @@ class HomePageBuilder {
     String? projectStatus,
     Set<String>? bidsLoading, 
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.grey.shade300,
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.gavel,
-                color: Colors.amber.shade700,
-                size: 24,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Project Bids',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[800],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          
-          FutureBuilder<List<Map<String, dynamic>>>(
+    return FutureBuilder<List<Map<String, dynamic>>>(
             future: BiddingService().getBidsForProject(projectId),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -442,33 +423,54 @@ class HomePageBuilder {
                 return const Center(child: Text('Error loading bids'));
               }
 
-              final bids = snapshot.data ?? [];
+              final bids = List<Map<String, dynamic>>.from(snapshot.data ?? []);
+              bids.sort((a, b) {
+                String sa = (a['status'] ?? 'pending').toString().toLowerCase();
+                String sb = (b['status'] ?? 'pending').toString().toLowerCase();
+                int rank(String s) {
+                  switch (s) {
+                    case 'accepted':
+                      return 0;
+                    case 'pending':
+                      return 1;
+                    case 'rejected':
+                      return 2;
+                    default:
+                      return 3;
+                  }
+                }
+                final r = rank(sa).compareTo(rank(sb));
+                if (r != 0) return r;
+                final na = (a['bid_amount'] is num) ? (a['bid_amount'] as num).toDouble() : 0.0;
+                final nb = (b['bid_amount'] is num) ? (b['bid_amount'] as num).toDouble() : 0.0;
+                return nb.compareTo(na);
+              });
 
               if (bids.isEmpty) {
                 return Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 32),
+                  padding: const EdgeInsets.symmetric(vertical: 24),
                   child: Column(
                     children: [
                       Icon(
                         Icons.inbox_outlined,
-                        size: 48,
+                        size: 40,
                         color: Colors.grey.shade400,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       Text(
                         'No bids received yet',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 14,
                           color: Colors.grey.shade600,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         'Bids from contractors will appear here',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 12,
                           color: Colors.grey.shade500,
                         ),
                       ),
@@ -477,25 +479,30 @@ class HomePageBuilder {
                 );
               }
 
-              return Column(
-                children: bids.map((bid) {
-                  final bidKey = '$projectId-${bid['bid_id']}';
-                  final isLoading = bidsLoading?.contains(bidKey) ?? false;
-                  return _buildCompactBidCard(
-                    context: context,
-                    bid: bid,
-                    onAccept: () => acceptBidding(projectId, bid['bid_id']),
-                    onReject: (String? reason) => rejectBidding(projectId, bid['bid_id'], reason: reason),
-                    projectStatus: projectStatus,
-                    isLoading: isLoading,
-                  );
-                }).toList(),
+              final screenWidth = MediaQuery.of(context).size.width;
+              final isMobile = screenWidth < 600;
+              return SizedBox(
+                height: isMobile ? 240 : 300,
+                child: ListView.builder(
+                  padding: EdgeInsets.zero,
+                  itemCount: bids.length,
+                  itemBuilder: (context, index) {
+                    final bid = bids[index];
+                    final bidKey = '$projectId-${bid['bid_id']}';
+                    final isLoading = bidsLoading?.contains(bidKey) ?? false;
+                    return _buildCompactBidCard(
+                      context: context,
+                      bid: bid,
+                      onAccept: () => acceptBidding(projectId, bid['bid_id']),
+                      onReject: (String? reason) => rejectBidding(projectId, bid['bid_id'], reason: reason),
+                      projectStatus: projectStatus,
+                      isLoading: isLoading,
+                    );
+                  },
+                ),
               );
             },
-          ),
-        ],
-      ),
-    );
+          );
   }
 
   static Widget _buildCompactBidCard({
@@ -520,20 +527,34 @@ class HomePageBuilder {
           margin: const EdgeInsets.only(bottom: 8),
           padding: EdgeInsets.all(isMobile ? 10 : 12),
           decoration: BoxDecoration(
-            color: isAccepted ? Colors.green.shade50 : Colors.white,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: isAccepted ? Colors.green.shade300 : Colors.grey.shade300,
-              width: isAccepted ? 2 : 1,
+              color: Colors.grey.shade300,
+              width: 1,
             ),
           ),
           child: Row(
             children: [
               CircleAvatar(
                 radius: isMobile ? 18 : 20,
-                backgroundImage: contractor?['profile_photo'] != null && contractor!['profile_photo'].isNotEmpty
-                    ? NetworkImage(contractor['profile_photo'])
-                    : const NetworkImage(profileUrl),
+                child: ClipOval(
+                  child: Image.network(
+                    contractor != null && contractor['profile_photo'] != null && contractor['profile_photo'].toString().isNotEmpty
+                        ? contractor['profile_photo']
+                        : profileUrl,
+                    width: (isMobile ? 18 : 20) * 2,
+                    height: (isMobile ? 18 : 20) * 2,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(
+                        Icons.person,
+                        size: isMobile ? 18 : 20,
+                        color: Colors.grey.shade400,
+                      );
+                    },
+                  ),
+                ),
               ),
               SizedBox(width: isMobile ? 10 : 12),
               
@@ -541,103 +562,119 @@ class HomePageBuilder {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            contractor?['firm_name'] ?? 'Unknown Contractor',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: isMobile ? 13 : 14,
-                              color: Colors.grey.shade800,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (isAccepted)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.green.shade600,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Text(
-                              'ACCEPTED',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
                     Text(
-                      '₱${bid['bid_amount']?.toString() ?? '0'}',
+                      bid['project_title'] ?? 'Bid for Project',
                       style: TextStyle(
-                        fontSize: isMobile ? 15 : 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green.shade700,
+                        fontWeight: FontWeight.w600,
+                        fontSize: isMobile ? 13 : 14,
+                        color: Colors.grey.shade800,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'by ${contractor?['firm_name'] ?? 'Unknown Contractor'}',
+                      style: TextStyle(
+                        fontSize: isMobile ? 11 : 12,
+                        color: Colors.grey.shade600,
                       ),
                     ),
-                    if (bid['description'] != null && bid['description'].isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        bid['description'],
-                        style: TextStyle(
-                          fontSize: isMobile ? 10 : 11,
-                          color: Colors.grey.shade500,
-                          fontStyle: FontStyle.italic,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ],
+                    
+                  ],  
                 ),
               ),
               
-              if (canAccept || canReject) ...[
-                const SizedBox(width: 8),
-                if (canReject)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                   IconButton(
-                    onPressed: isLoading ? null : () {
-                      _showRejectBidDialog(context, bid, (String? reason) => onReject(reason));
-                    },
-                    icon: Icon(Icons.close, size: isMobile ? 16 : 18),
-                    tooltip: 'Reject Bid',
+                    onPressed: () => _showBidInfoDialog(context, bid),
+                    icon: Icon(Icons.info_outline, size: isMobile ? 18 : 20),
+                    tooltip: 'More Info',
                     padding: EdgeInsets.all(isMobile ? 3 : 4),
                     constraints: BoxConstraints(
                       minWidth: isMobile ? 28 : 32, 
                       minHeight: isMobile ? 28 : 32
                     ),
                     style: IconButton.styleFrom(
-                      backgroundColor: Colors.red.shade100,
-                      foregroundColor: Colors.red.shade700,
+                      backgroundColor: Colors.blue.shade100,
+                      foregroundColor: Colors.blue.shade700,
                     ),
                   ),
-                if (canAccept) ...[
-                  if (canReject) const SizedBox(width: 4),
-                  IconButton(
-                    onPressed: isLoading ? null : () {
-                      _showAcceptBidDialog(context, bid, onAccept);
-                    },
-                    icon: Icon(Icons.check, size: isMobile ? 16 : 18),
-                    tooltip: 'Accept Bid',
-                    padding: EdgeInsets.all(isMobile ? 3 : 4),
-                    constraints: BoxConstraints(
-                      minWidth: isMobile ? 28 : 32, 
-                      minHeight: isMobile ? 28 : 32
+                  if (isAccepted || isRejected) ...[
+                    SizedBox(width: isMobile ? 3 : 4),
+                    if (isAccepted)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade600,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'ACCEPTED',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade600,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'REJECTED',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ]
+                  else if (canAccept || canReject) ...[
+                    SizedBox(width: isMobile ? 3 : 4),
+                    IconButton(
+                      onPressed: isLoading ? null : () {
+                        _showRejectBidDialog(context, bid, (String? reason) => onReject(reason));
+                      },
+                      icon: Icon(Icons.close, size: isMobile ? 16 : 18),
+                      tooltip: 'Decline',
+                      padding: EdgeInsets.all(isMobile ? 3 : 4),
+                      constraints: BoxConstraints(
+                        minWidth: isMobile ? 28 : 32, 
+                        minHeight: isMobile ? 28 : 32
+                      ),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.red.shade100,
+                        foregroundColor: Colors.red.shade700,
+                      ),
                     ),
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.green.shade100,
-                      foregroundColor: Colors.green.shade700,
+                    SizedBox(width: isMobile ? 3 : 4),
+                    IconButton(
+                      onPressed: isLoading ? null : () {
+                        _showAcceptBidDialog(context, bid, onAccept);
+                      },
+                      icon: Icon(Icons.check, size: isMobile ? 16 : 18),
+                      tooltip: 'Accept',
+                      padding: EdgeInsets.all(isMobile ? 3 : 4),
+                      constraints: BoxConstraints(
+                        minWidth: isMobile ? 28 : 32, 
+                        minHeight: isMobile ? 28 : 32
+                      ),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.green.shade100,
+                        foregroundColor: Colors.green.shade700,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
-              ],
+              ),
             ],
           ),
         ),
@@ -656,6 +693,199 @@ class HomePageBuilder {
             ),
           ),
       ],
+    );
+  }
+
+  static void _showBidInfoDialog(BuildContext context, Map<String, dynamic> bid) {
+    final contractor = bid['contractor'] as Map<String, dynamic>?;
+    final info = {
+      'project_title': bid['project_title'] ?? 'Bid for Project',
+      'firm_name': contractor?['firm_name'] ?? 'Unknown Contractor',
+      'profile_photo': contractor?['profile_photo'],
+      'email': contractor?['email'],
+      'bid_amount': bid['bid_amount']?.toString() ?? '0',
+      'description': bid['description'] ?? 'No description provided',
+      'status': bid['status'] ?? 'pending',
+    };
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 500),
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.black, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 20,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade700,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Icon(
+                            Icons.info_outline,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text(
+                            "Bid Details",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 16),
+                          
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 30,
+                                child: ClipOval(
+                                  child: Image.network(
+                                    info['profile_photo'] != null && info['profile_photo'].toString().isNotEmpty
+                                        ? info['profile_photo']
+                                        : profileUrl,
+                                    width: 60,
+                                    height: 60,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Icon(
+                                        Icons.person,
+                                        size: 30,
+                                        color: Colors.grey.shade400,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      info['firm_name'] ?? 'Unknown Contractor',
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      info['email'] ?? 'No email provided',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          
+                          const SizedBox(height: 24),
+                          
+                          _buildDetailField('Project Title', info['project_title'] ?? 'Bid for Project'),
+                          _buildDetailField('Bid Amount', '₱${info['bid_amount']}'),
+                          _buildDetailField('Description', info['description'] ?? 'No description provided'),
+                          _buildDetailField('Status', (info['status'] as String).toUpperCase()),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  static Widget _buildDetailField(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade800,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -750,7 +980,6 @@ class HomePageBuilder {
     Map<String, dynamic> bid,
     void Function(String? reason) onReject,
   ) {
-    final contractor = bid['contractor'] as Map<String, dynamic>?;
     final reasonController = TextEditingController();
     
     showDialog(
@@ -770,32 +999,6 @@ class HomePageBuilder {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text('Are you sure you want to reject this bid?'),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Contractor: ${contractor?['firm_name'] ?? 'Unknown'}',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Bid Amount: ₱${bid['bid_amount']?.toString() ?? '0'}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green.shade700,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               const SizedBox(height: 16),
               const Text(
                 'Reason for rejection (optional)',
@@ -845,6 +1048,446 @@ class HomePageBuilder {
     );
   }
 
+  static Widget buildHiringRequestsContainer({
+    required BuildContext context,
+    required String projectId,
+  }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: FetchService().fetchHiringRequestsForProject(projectId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: Colors.amber));
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Text(
+              'Error loading hiring requests',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+            ),
+          );
+        }
+
+        final requests = snapshot.data ?? [];
+
+        if (requests.isEmpty) {
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.inbox_outlined,
+                  size: 40,
+                  color: Colors.grey.shade400,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'No hiring requests sent yet',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Hiring requests sent to contractors will appear here',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+
+        final acceptedRequest = requests.firstWhere(
+          (r) {
+            final info = r['information'];
+            if (info is Map) {
+              return info['status'] == 'accepted';
+            }
+            return false;
+          },
+          orElse: () => <String, dynamic>{},
+        );
+
+        final pendingRequests = requests.where((r) {
+          final info = r['information'];
+          if (info is Map) {
+            return info['status'] == 'pending';
+          }
+          return false;
+        }).toList();
+
+        final rejectedRequests = requests.where((r) {
+          final info = r['information'];
+          if (info is Map) {
+            final s = (info['status'] ?? 'pending').toString().toLowerCase();
+            return s == 'rejected' || s == 'declined' || s == 'cancelled';
+          }
+          return false;
+        }).toList();
+
+        final items = <Widget>[];
+        if (acceptedRequest.isNotEmpty) {
+          items.add(_buildHiringRequestCard(
+            context: context,
+            request: acceptedRequest,
+            isAccepted: true,
+            isMobile: isMobile,
+          ));
+          if (pendingRequests.isNotEmpty || rejectedRequests.isNotEmpty) {
+            items.add(const SizedBox(height: 8));
+          }
+        }
+        for (final request in pendingRequests) {
+          items.add(_buildHiringRequestCard(
+            context: context,
+            request: request,
+            isAccepted: false,
+            isMobile: isMobile,
+          ));
+        }
+        if (rejectedRequests.isNotEmpty && (acceptedRequest.isNotEmpty || pendingRequests.isNotEmpty)) {
+          items.add(const SizedBox(height: 8));
+        }
+        for (final request in rejectedRequests) {
+          items.add(_buildHiringRequestCard(
+            context: context,
+            request: request,
+            isAccepted: false,
+            isMobile: isMobile,
+          ));
+        }
+
+        return SizedBox(
+          height: isMobile ? 240 : 300,
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: items,
+          ),
+        );
+      },
+    );
+  }
+
+  static Widget _buildHiringRequestCard({
+    required BuildContext context,
+    required Map<String, dynamic> request,
+    required bool isAccepted,
+    required bool isMobile,
+  }) {
+    final info = request['information'];
+    Map<String, dynamic> infoMap = {};
+    
+    if (info is Map) {
+      infoMap = Map<String, dynamic>.from(info);
+    } else if (info is String) {
+      try {
+        infoMap = Map<String, dynamic>.from(
+          Map<String, dynamic>.from({}),
+        );
+      } catch (_) {}
+    }
+
+    final firmName = infoMap['firm_name'] ?? 'Unknown Contractor';
+    final status = (infoMap['status'] ?? 'pending').toString().toLowerCase();
+    final isRejected = status == 'rejected' || status == 'declined' || status == 'cancelled';
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.all(isMobile ? 10 : 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.grey.shade300,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: isMobile ? 18 : 20,
+            child: ClipOval(
+              child: Image.network(
+                infoMap['profile_photo'] != null && infoMap['profile_photo'].toString().isNotEmpty
+                    ? infoMap['profile_photo']
+                    : profileUrl,
+                width: (isMobile ? 18 : 20) * 2,
+                height: (isMobile ? 18 : 20) * 2,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Icon(
+                    Icons.person,
+                    size: isMobile ? 18 : 20,
+                    color: Colors.grey.shade400,
+                  );
+                },
+              ),
+            ),
+          ),
+          SizedBox(width: isMobile ? 10 : 12),
+          
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  infoMap['project_title'] ?? 'Hiring Request',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: isMobile ? 13 : 14,
+                    color: Colors.grey.shade800,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'to $firmName',
+                  style: TextStyle(
+                    fontSize: isMobile ? 11 : 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                
+              ],
+            ),
+          ),
+          
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                onPressed: () => _showHiringRequestInfoDialog(context, request),
+                icon: Icon(Icons.info_outline, size: isMobile ? 18 : 20),
+                tooltip: 'More Info',
+                padding: EdgeInsets.all(isMobile ? 3 : 4),
+                constraints: BoxConstraints(
+                  minWidth: isMobile ? 28 : 32, 
+                  minHeight: isMobile ? 28 : 32
+                ),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.blue.shade100,
+                  foregroundColor: Colors.blue.shade700,
+                ),
+              ),
+              if (isAccepted || status == 'accepted') ...[
+                SizedBox(width: isMobile ? 3 : 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade600,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'ACCEPTED',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ]
+              else if (isRejected) ...[
+                SizedBox(width: isMobile ? 3 : 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade600,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'REJECTED',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  static void _showHiringRequestInfoDialog(BuildContext context, Map<String, dynamic> request) {
+    final info = request['information'];
+    Map<String, dynamic> infoMap = {};
+    
+    if (info is Map) {
+      infoMap = Map<String, dynamic>.from(info);
+    }
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 500),
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.black, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 20,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade700,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Icon(
+                            Icons.info_outline,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text(
+                            "Project Details",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 16),
+                          
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 30,
+                                child: ClipOval(
+                                  child: Image.network(
+                                    infoMap['profile_photo'] != null && infoMap['profile_photo'].toString().isNotEmpty
+                                        ? infoMap['profile_photo']
+                                        : profileUrl,
+                                    width: 60,
+                                    height: 60,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Icon(
+                                        Icons.person,
+                                        size: 30,
+                                        color: Colors.grey.shade400,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      infoMap['full_name'] ?? 'Unknown Client',
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      infoMap['email'] ?? 'No email provided',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          
+                          const SizedBox(height: 24),
+                          
+                          _buildDetailField('Project Title', infoMap['project_title'] ?? 'Untitled Project'),
+                          _buildDetailField('Project Type', infoMap['project_type'] ?? 'Not specified'),
+                          _buildDetailField('Location', infoMap['project_location'] ?? 'Not specified'),
+                          _buildDetailField('Description', infoMap['project_description'] ?? 'No description provided'),
+                          
+                          if (infoMap['min_budget'] != null && infoMap['max_budget'] != null)
+                            _buildDetailField('Budget Range', '₱${infoMap['min_budget']} - ₱${infoMap['max_budget']}')
+                          else if (infoMap['project_budget'] != null)
+                            _buildDetailField('Budget', '₱${infoMap['project_budget']}')
+                          else
+                            _buildDetailField('Budget', 'Not specified'),
+                          
+                          if (infoMap['start_date'] != null)
+                            _buildDetailField('Preferred Start Date', infoMap['start_date'].toString().split(' ')[0]),
+                          
+                          if (infoMap['additional_info'] != null && infoMap['additional_info'].isNotEmpty)
+                            _buildDetailField('Additional Information', infoMap['additional_info']),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   static Widget buildContractorsSection({
     required BuildContext context,
@@ -855,8 +1498,11 @@ class HomePageBuilder {
     required Function(int) onSelect,
     required String profileUrl,
   }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+    
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isMobile ? 16 : 20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -874,23 +1520,25 @@ class HomePageBuilder {
         children: [
           Row(
             children: [
-              Icon(Icons.business, color: Colors.amber[700], size: 24),
+              Icon(Icons.business, color: Colors.amber[700], size: isMobile ? 20 : 24),
               const SizedBox(width: 8),
-              const Text(
-                "Suggested Contractor Firms",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
+              Expanded(
+                child: Text(
+                  "Suggested Contractor Firms",
+                  style: TextStyle(
+                    fontSize: isMobile ? 18 : 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Center(
             child: SizedBox(
               width: MediaQuery.of(context).size.width * 0.90,
-              height: 50,
+              height: 45,
               child: TextField(
                 controller: searchController,
                 decoration: InputDecoration(
@@ -899,7 +1547,7 @@ class HomePageBuilder {
                   filled: true,
                   fillColor: Colors.grey.shade200,
                   contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 14),
+                      horizontal: 20, vertical: 12),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -916,52 +1564,78 @@ class HomePageBuilder {
               ),
             ),
           ),
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 280,
-            child: isLoading
-                ? const Center(child: CircularProgressIndicator(color: Colors.amber))
-                : filteredContractors.isEmpty
-                    ? buildNoContractorsPlaceholder(searchController)
-                    : ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: filteredContractors.length,
-                        itemBuilder: (context, index) {
-                          final contractor = filteredContractors[index];
-                          final profilePhoto = contractor['profile_photo'];
-                          final profileImage =
-                              (profilePhoto == null || profilePhoto.isEmpty)
-                                  ? profileUrl
-                                  : profilePhoto;
-                          final isSelected = selectedIndex == index;
-                          return GestureDetector(
-                            onTap: () {
-                              onSelect(index);
-                            },
-                            child: Container(
-                              width: 200,
-                              height: 250,
-                              margin:
-                                  const EdgeInsets.symmetric(horizontal: 10),
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: isSelected
-                                      ? const Color.fromARGB(255, 99, 98, 98)
-                                      : Colors.transparent,
-                                  width: 2,
+          const SizedBox(height: 8),
+          Column(
+            children: [
+              SizedBox(
+                height: isMobile ? 240 : 260,
+                child: isLoading
+                    ? const Center(child: CircularProgressIndicator(color: Colors.amber))
+                    : filteredContractors.isEmpty
+                        ? buildNoContractorsPlaceholder(searchController)
+                        : ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: filteredContractors.length > 5 ? 5 : filteredContractors.length,
+                            itemBuilder: (context, index) {
+                              final contractor = filteredContractors[index];
+                              final profilePhoto = contractor['profile_photo'];
+                              final profileImage =
+                                  (profilePhoto == null || profilePhoto.isEmpty)
+                                      ? profileUrl
+                                      : profilePhoto;
+                              final isSelected = selectedIndex == index;
+                              return GestureDetector(
+                                onTap: () {
+                                  onSelect(index);
+                                },
+                                child: Container(
+                                  width: 200,
+                                  margin:
+                                      const EdgeInsets.symmetric(horizontal: 10),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? const Color.fromARGB(255, 99, 98, 98)
+                                          : Colors.transparent,
+                                      width: 2,
+                                    ),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: ContractorsView(
+                                    id: contractor['contractor_id'] ?? '',
+                                    name: contractor['firm_name'] ?? 'Unknown',
+                                    profileImage: profileImage,
+                                    rating: (contractor['rating'] ?? 0.0).toDouble(),
+                                  ),
                                 ),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: ContractorsView(
-                                id: contractor['contractor_id'] ?? '',
-                                name: contractor['firm_name'] ?? 'Unknown',
-                                profileImage: profileImage,
-                                rating: (contractor['rating'] ?? 0.0).toDouble(),
-                              ),
-                            ),
-                          );
-                        },
+                              );
+                            },
+                          ),
+              ),
+              if (filteredContractors.length > 5)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Center(
+                    child: TextButton(
+                      onPressed: () => _showAllContractorsDialog(
+                        context: context,
+                        contractors: filteredContractors,
+                        selectedIndex: selectedIndex,
+                        onSelect: onSelect,
+                        profileUrl: profileUrl,
                       ),
+                      child: Text(
+                        'See More',
+                        style: TextStyle(
+                          color: Colors.amber[700],
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),
@@ -1029,5 +1703,300 @@ class HomePageBuilder {
         ),
       ),
     );
+  }
+
+  static Widget buildCurrentContractorContainer({
+    required BuildContext context,
+    required String projectId,
+  }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(isTablet ? 24 : 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.person,
+                  color: Colors.amber[700],
+                  size: isTablet ? 24 : 20,
+                ),
+                SizedBox(width: isTablet ? 12 : 8),
+                Text(
+                  'Current Contractor',
+                  style: TextStyle(
+                    fontSize: isTablet ? 18 : 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: isTablet ? 16 : 12),
+            FutureBuilder<Map<String, dynamic>?>(
+              future: _fetchCurrentContractor(projectId),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator(color: Colors.amber));
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Error loading contractor',
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                    ),
+                  );
+                }
+
+                final contractor = snapshot.data;
+                
+                if (contractor == null) {
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.person_off_outlined,
+                          size: 40,
+                          color: Colors.grey.shade400,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'No contractor assigned',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'A contractor will appear here.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor: Colors.grey.shade200,
+                        backgroundImage: contractor['profile_photo'] != null && contractor['profile_photo'].toString().isNotEmpty
+                            ? NetworkImage(contractor['profile_photo'])
+                            : null,
+                        child: contractor['profile_photo'] == null || contractor['profile_photo'].toString().isEmpty
+                            ? Icon(
+                                Icons.person,
+                                color: Colors.grey.shade600,
+                                size: 20,
+                              )
+                            : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          contractor['firm_name']?.toString() ?? "Contractor Name",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        onPressed: () async {
+                          // Navigate to chat history
+                          final router = GoRouter.of(context);
+                          router.go('/chathistory');
+                        },
+                        icon: Icon(
+                          Icons.message,
+                          color: Colors.amber[700],
+                          size: 24,
+                        ),
+                        tooltip: 'Open Chat History',
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.amber.shade50,
+                          padding: const EdgeInsets.all(8),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static void _showAllContractorsDialog({
+    required BuildContext context,
+    required List<Map<String, dynamic>> contractors,
+    required int selectedIndex,
+    required Function(int) onSelect,
+    required String profileUrl,
+  }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+    
+    showDialog(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        insetPadding: EdgeInsets.all(isMobile ? 16 : 40),
+        child: Container(
+          width: isMobile ? double.infinity : screenWidth * 0.8,
+          height: isMobile ? MediaQuery.of(context).size.height * 0.8 : MediaQuery.of(context).size.height * 0.85,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.amber[700],
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.business, color: Colors.white, size: isMobile ? 24 : 28),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'All Contractor Firms',
+                        style: TextStyle(
+                          fontSize: isMobile ? 20 : 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      icon: const Icon(Icons.close, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+              // Scrollable content
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: contractors.length,
+                    itemBuilder: (context, index) {
+                      final contractor = contractors[index];
+                      final profilePhoto = contractor['profile_photo'];
+                      final profileImage =
+                          (profilePhoto == null || profilePhoto.isEmpty)
+                              ? profileUrl
+                              : profilePhoto;
+                      final isSelected = selectedIndex == index;
+                      return GestureDetector(
+                        onTap: () {
+                          onSelect(index);
+                          Navigator.of(dialogContext).pop();
+                        },
+                        child: Container(
+                          width: 220,
+                          margin: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: isSelected
+                                  ? const Color.fromARGB(255, 99, 98, 98)
+                                  : Colors.transparent,
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: ContractorsView(
+                            id: contractor['contractor_id'] ?? '',
+                            name: contractor['firm_name'] ?? 'Unknown',
+                            profileImage: profileImage,
+                            rating: (contractor['rating'] ?? 0.0).toDouble(),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static Future<Map<String, dynamic>?> _fetchCurrentContractor(String projectId) async {
+    try {
+      if (projectId.isEmpty) return null;
+      
+      final supabase = Supabase.instance.client;
+      
+      // First, fetch the project to get contractor_id
+      final projectResponse = await supabase
+          .from('Projects')
+          .select('contractor_id')
+          .eq('project_id', projectId)
+          .maybeSingle();
+      
+      if (projectResponse == null) return null;
+      
+      final contractorId = projectResponse['contractor_id'] as String?;
+      if (contractorId == null || contractorId.isEmpty) return null;
+      
+      // Fetch contractor data
+      final contractorResponse = await supabase
+          .from('Contractor')
+          .select('contractor_id, firm_name, specialization, bio, profile_photo, verified, rating')
+          .eq('contractor_id', contractorId)
+          .maybeSingle();
+      
+      return contractorResponse != null ? Map<String, dynamic>.from(contractorResponse) : null;
+    } catch (e) {
+      return null;
+    }
   }
 }

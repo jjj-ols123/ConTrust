@@ -918,7 +918,12 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                             },
                           ),
                           const SizedBox(height: 20),
-                          ViewContractBuild.buildEnhancedSignaturesSection(contractData),
+                          ViewContractBuild.buildEnhancedSignaturesSection(
+                            contractData,
+                            currentUserId: Supabase.instance.client.auth.currentUser?.id,
+                            context: dialogContext,
+                            contractStatus: contractData['status'] as String?,
+                          ),
                         ],
                       ),
                     ),

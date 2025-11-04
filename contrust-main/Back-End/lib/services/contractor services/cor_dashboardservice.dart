@@ -5,7 +5,6 @@ import 'package:backend/services/both services/be_message_service.dart';
 import 'package:backend/services/both services/be_notification_service.dart';
 import 'package:backend/utils/be_status.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -245,7 +244,7 @@ class CorDashboardService {
           ''')
           .eq('headline', 'Hiring Request')
           .eq('receiver_id', currentUserId)
-          .filter('information->>status', 'eq', 'pending')
+          .inFilter('information->>status', ['pending', 'accepted', 'rejected', 'declined', 'cancelled'])
           .order('created_at', ascending: false);
 
       final senderIds = notifications
@@ -286,6 +285,31 @@ class CorDashboardService {
           notification['information'] = info;
         }
       }
+
+      // Sort: accepted first, then pending, then rejected/declined (by created_at descending within groups)
+      notifications.sort((a, b) {
+        String sa = (a['information']?['status'] ?? 'pending').toString().toLowerCase();
+        String sb = (b['information']?['status'] ?? 'pending').toString().toLowerCase();
+        int rank(String s) {
+          switch (s) {
+            case 'accepted':
+              return 0;
+            case 'pending':
+              return 1;
+            case 'rejected':
+            case 'declined':
+            case 'cancelled':
+              return 2;
+            default:
+              return 3;
+          }
+        }
+        final r = rank(sa).compareTo(rank(sb));
+        if (r != 0) return r;
+        final ta = DateTime.tryParse(a['created_at']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final tb = DateTime.tryParse(b['created_at']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return tb.compareTo(ta);
+      });
 
       return List<Map<String, dynamic>>.from(notifications);
     } catch (e) {
@@ -490,9 +514,11 @@ class CorDashboardService {
 
       for (final request in otherRequests) {
         final info = Map<String, dynamic>.from(request['information'] ?? {});
-        info['status'] = 'cancelled';
-        info['cancelled_reason'] = 'Another contractor was selected';
-        info['cancelled_at'] = DateTimeHelper.getLocalTimeISOString();
+        // Set other requests as rejected so they remain visible to both parties
+        info['status'] = 'rejected';
+        // Clean up any previously used cancelled fields if present
+        info.remove('cancelled_reason');
+        info.remove('cancelled_at');
 
         await Supabase.instance.client.from('Notifications').update({
           'information': info,

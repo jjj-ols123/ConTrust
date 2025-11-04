@@ -26,6 +26,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
   String? contractorId;
   Map<String, dynamic>? selectedProject;
   List<Map<String, dynamic>> contractorBids = [];
+  bool _isLoadingData = true;
 
   Stream<List<Map<String, dynamic>>>? _biddingStream;
 
@@ -36,6 +37,9 @@ class _BiddingScreenState extends State<BiddingScreen> {
   }
 
   void _initializeStream() {
+    setState(() {
+      _isLoadingData = true;
+    });
     _biddingStream = FetchService().streamBiddingProjects();
   }
 
@@ -52,13 +56,20 @@ class _BiddingScreenState extends State<BiddingScreen> {
           contracteeInfo = data['contracteeInfo'];
           highestBids = data['highestBids'];
           contractorBids = data['contractorBids'];
+          _isLoadingData = false;
         });
       } else {
+        setState(() {
+          _isLoadingData = false;
+        });
         if (mounted) {
           ConTrustSnackBar.error(context, data['error'] ?? 'Error loading data');
         }
       }
     } catch (e) {
+      setState(() {
+        _isLoadingData = false;
+      });
       if (mounted) {
         ConTrustSnackBar.error(context, 'Error loading data: $e');
       }
@@ -120,11 +131,45 @@ class _BiddingScreenState extends State<BiddingScreen> {
               child: CircularProgressIndicator(color: Colors.amber),
             );
           }
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              _loadBiddingData(snapshot.data!);
+
+          if (_isLoadingData && snapshot.hasData) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && _isLoadingData) {
+                _loadBiddingData(snapshot.data!);
+              }
+            });
+
+            return const Center(
+              child: CircularProgressIndicator(color: Colors.amber),
+            );
+          }
+
+          if (!_isLoadingData && snapshot.hasData) {
+            final streamProjectIds = snapshot.data!.map((p) => p['project_id']?.toString()).toSet();
+            final currentProjectIds = projects.map((p) => p['project_id']?.toString()).toSet();
+            
+            if (projects.isNotEmpty && 
+                (currentProjectIds.length != streamProjectIds.length ||
+                 !currentProjectIds.containsAll(streamProjectIds))) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  setState(() {
+                    _isLoadingData = true;
+                  });
+                  _loadBiddingData(snapshot.data!);
+                }
+              });
+            } else if (projects.isEmpty && snapshot.data!.isNotEmpty) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  setState(() {
+                    _isLoadingData = true;
+                  });
+                  _loadBiddingData(snapshot.data!);
+                }
+              });
             }
-          });
+          }
 
           final builder = BiddingUIBuildMethods(
             context: context,

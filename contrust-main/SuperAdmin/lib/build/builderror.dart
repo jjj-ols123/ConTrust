@@ -214,7 +214,7 @@ class ErrorLogsTableState extends State<ErrorLogsTable> {
       });
 
       final results = await Future.wait([
-        _errorService.getRecentErrorLogs(limit: 1000),
+        _errorService.getRecentErrorLogs(limit: 500), 
         _errorService.getErrorStatistics(),
       ]);
 
@@ -262,7 +262,7 @@ class ErrorLogsTableState extends State<ErrorLogsTable> {
 
   Future<void> _refreshErrorLogs() async {
     try {
-      final logs = await _errorService.getRecentErrorLogs(limit: 1000);
+      final logs = await _errorService.getRecentErrorLogs(limit: 500); // Reduced refresh load
       setState(() {
         _allLogs = logs;
         _filteredLogs = List.from(_allLogs);
@@ -270,7 +270,7 @@ class ErrorLogsTableState extends State<ErrorLogsTable> {
       });
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to refresh error logs: ',
+        errorMessage: 'Failed to refresh error logs: $e',
         module: 'Super Admin Error Logs',
         severity: 'Medium',
         extraInfo: {

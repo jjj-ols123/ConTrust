@@ -219,7 +219,7 @@ class AuditLogsTableState extends State<AuditLogsTable> {
       });
 
       final results = await Future.wait([
-        _auditService.getRecentAuditLogs(limit: 1000),
+        _auditService.getRecentAuditLogs(limit: 500), 
         _auditService.getAuditStatistics(),
       ]);
 
@@ -268,7 +268,7 @@ class AuditLogsTableState extends State<AuditLogsTable> {
 
   Future<void> _refreshAuditLogs() async {
     try {
-      final logs = await _auditService.getRecentAuditLogs(limit: 1000);
+      final logs = await _auditService.getRecentAuditLogs(limit: 500); // Reduced refresh load
       setState(() {
         _allLogs = logs;
         _filteredLogs = List.from(_allLogs);
@@ -276,7 +276,7 @@ class AuditLogsTableState extends State<AuditLogsTable> {
       });
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to refresh audit logs: ',
+        errorMessage: 'Failed to refresh audit logs: $e',
         module: 'Super Admin Audit Logs',
         severity: 'Medium',
         extraInfo: {

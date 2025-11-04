@@ -126,7 +126,8 @@
         "cupertino_icons",
         "flutter",
         "flutter_web_plugins",
-        "supabase_flutter"
+        "supabase_flutter",
+        "url_launcher"
       ],
       "devDependencies": [
         "flutter_lints",
