@@ -20,6 +20,7 @@ class _WebsiteStartPageState extends State<WebsiteStartPage> {
   @override
   void initState() {
     super.initState();
+    _enforceRedirectGuard();
   }
 
   @override
@@ -49,6 +50,47 @@ class _WebsiteStartPageState extends State<WebsiteStartPage> {
         ),
       ),
     );
+  }
+
+  void _rememberAndRedirect(String role) {
+    try {
+      html.window.localStorage['preferredSubdomain'] = role;
+      final String base = role == 'contractor'
+          ? 'https://contractor.contrust-sjdm.com'
+          : 'https://contractee.contrust-sjdm.com';
+      final String path = role == 'contractor' ? '/' : '/login';
+      html.window.location.replace('$base$path');
+    } catch (e) {
+      ConTrustSnackBar.error(context, 'Navigation error: $e');
+    }
+  }
+
+  void _forwardOAuthIfPresent(String role) {
+    final search = html.window.location.search ?? '';
+    if (search.contains('code=') || search.contains('access_token=')) {
+      final String base = role == 'contractor'
+          ? 'https://contractor.contrust-sjdm.com'
+          : 'https://contractee.contrust-sjdm.com';
+      html.window.location.replace('$base/auth/callback$search');
+    }
+  }
+
+  void _enforceRedirectGuard() {
+    try {
+      final String? role = html.window.localStorage['preferredSubdomain'];
+      final String normalized = (role ?? '').toLowerCase();
+      if (normalized == 'contractor' || normalized == 'contractee') {
+        _forwardOAuthIfPresent(normalized);
+        // If no OAuth params, keep users on their chosen subdomain
+        final String base = normalized == 'contractor'
+            ? 'https://contractor.contrust-sjdm.com'
+            : 'https://contractee.contrust-sjdm.com';
+        final String path = normalized == 'contractor' ? '/' : '/login';
+        html.window.location.replace('$base$path');
+      }
+    } catch (_) {
+      // Non-fatal: stay on landing if guard fails
+    }
   }
 
   Widget _buildNavigationBar(BuildContext context, bool isDesktop, bool isTablet, bool isMobile) {
@@ -400,11 +442,7 @@ class _WebsiteStartPageState extends State<WebsiteStartPage> {
           'Browse contractors, view contracts, and monitor your projects seamlessly.',
       buttonText: 'Get Started',
       onPressed: () {
-        try {
-          html.window.location.href = 'https://contractee.contrust-sjdm.com';
-        } catch (e) {
-          ConTrustSnackBar.error(context, 'Error navigating to Contractee: $e');
-        }
+        _rememberAndRedirect('contractee');
       },
     );
   }
@@ -418,11 +456,7 @@ class _WebsiteStartPageState extends State<WebsiteStartPage> {
           'Sign in to bid for projects, manage contracts, and track your ongoing work.',
       buttonText: 'Get Started',
       onPressed: () {
-        try {
-          html.window.location.href = 'https://contractor.contrust-sjdm.com';
-        } catch (e) {
-          ConTrustSnackBar.error(context, 'Error navigating to Contractor: $e');
-        }
+        _rememberAndRedirect('contractor');
       },
     );
   }
