@@ -12,12 +12,10 @@ import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/utils/be_contractsignature.dart';
 import 'package:backend/build/buildviewcontract.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
-import 'package:contractee/build/builddrawer.dart'
-    show ContracteeShell, ContracteePage;
-import 'package:contractee/pages/cee_ongoing.dart' show CeeOngoingProjectScreen;
 import 'package:backend/services/superadmin services/auditlogs_service.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:signature/signature.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -426,16 +424,8 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
                 projectId = activeProjects.first['project_id'];
               }
 
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ContracteeShell(
-                    currentPage: ContracteePage.ongoing,
-                    contracteeId: supabase.auth.currentUser?.id ?? '',
-                    child: CeeOngoingProjectScreen(projectId: projectId),
-                  ),
-                ),
-              );
+              if (!mounted) return;
+              context.go('/ongoing/$projectId');
             } catch (e) {
               await _errorService.logError(
                 errorMessage: 'Failed to navigate to ongoing project: $e',
@@ -454,7 +444,34 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
             }
           };
         } else {
-          onPressed = widget.onActiveProjectPressed;
+          onPressed = () async {
+            try {
+              final projectId = await ProjectService().getProjectId(widget.chatRoomId);
+              if (projectId == null) {
+                if (mounted) {
+                  ConTrustSnackBar.error(context, 'Project not found');
+                }
+                return;
+              }
+              
+              if (!mounted) return;
+              context.go('/project-management/$projectId');
+            } catch (e) {
+              await _errorService.logError(
+                errorMessage: 'Failed to navigate to project management: $e',
+                module: 'Contract Agreement Banner',
+                severity: 'Medium',
+                extraInfo: {
+                  'operation': 'Go to Project Management',
+                  'chat_room_id': widget.chatRoomId,
+                  'user_role': widget.userRole,
+                },
+              );
+              if (mounted) {
+                ConTrustSnackBar.error(context, 'Error navigating to project management');
+              }
+            }
+          };
         }
         bannerColor = Colors.green[50]!;
     }
@@ -463,7 +480,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
         widget.userRole == 'contractor') {
       bannerText = "The contractee has requested to cancel this project. Please check your project dashboard to approve or reject this request.";
       buttonText = "Check Dashboard";
-      onPressed = null; // Remove action buttons - handle in dashboard
+      onPressed = null;
       bannerColor = Colors.orange[50]!;
     } else if (projectStatus == 'cancellation_requested_by_contractee' &&
         widget.userRole == 'contractee') {
@@ -980,7 +997,7 @@ class UIMessage {
                                               },
                                               icon: const Icon(Icons.download, size: 16),
                                               label: Text(
-                                                _hasSignedPdf(data)
+                                                _hasSignedPdf(data, messageData)
                                                     ? 'Download Signed Contract'
                                                     : 'Download Contract',
                                                 style: const TextStyle(fontSize: 12),
@@ -1026,7 +1043,7 @@ class UIMessage {
                                               context, messageData);
                                         },
                                         icon: const Icon(Icons.download),
-                                        label: Text(_hasSignedPdf(data)
+                                        label: Text(_hasSignedPdf(data, messageData)
                                             ? 'Download Signed Contract'
                                             : 'Download Contract'),
                                         style: ElevatedButton.styleFrom(
@@ -1115,14 +1132,14 @@ class UIMessage {
                                               ),
                                               const SizedBox(height: 8),
                                               Text(
-                                                'Signed PDF available: ${_hasSignedPdf(data)}',
+                                                'Signed PDF available: ${_hasSignedPdf(data, messageData)}',
                                                 style: TextStyle(
                                                     color: Colors.grey[600],
                                                     fontSize: 12),
                                               ),
-                                              if (_hasSignedPdf(data))
+                                              if (_hasSignedPdf(data, messageData))
                                                 Text(
-                                                  'Signed PDF path: ${data['signed_pdf_url']}',
+                                                  'Signed PDF path: ${messageData?['signed_pdf_url'] ?? data['signed_pdf_url']}',
                                                   style: TextStyle(
                                                       color: Colors.grey[600],
                                                       fontSize: 12),
@@ -1161,11 +1178,11 @@ class UIMessage {
                                     pdfUrl: snapshot.data,
                                     onDownload: () async {
                                       await _downloadContract(
-                                          data, context);
+                                          data, context, messageData);
                                     },
                                     height: 500,
                                     isSignedContract:
-                                        _hasSignedPdf(data),
+                                        _hasSignedPdf(data, messageData),
                                   );
                                 },
                               ),
@@ -1432,22 +1449,53 @@ class UIMessage {
     }
   }
 
-  static bool _hasSignedPdf(Map<String, dynamic> contractData) {
+  static bool _hasSignedPdf(Map<String, dynamic> contractData, [Map<String, dynamic>? messageData]) {
+    // Check message's signed_pdf_url first (for approved messages)
+    if (messageData != null) {
+      final messageSignedPdfUrl = messageData['signed_pdf_url'] as String?;
+      if (messageSignedPdfUrl != null && messageSignedPdfUrl.isNotEmpty) {
+        return true;
+      }
+    }
+    // Fall back to contract's signed_pdf_url
     final signedPdfUrl = contractData['signed_pdf_url'] as String?;
     return signedPdfUrl != null && signedPdfUrl.isNotEmpty;
   }
 
   static Future<String?> _getPdfUrl(Map<String, dynamic> contractData,
       [Map<String, dynamic>? messageData]) async {
+    // Priority 1: Check message's signed_pdf_url (for approved messages)
     if (messageData != null) {
+      final messageSignedPdfUrl = messageData['signed_pdf_url'] as String?;
+      if (messageSignedPdfUrl != null && messageSignedPdfUrl.isNotEmpty) {
+        try {
+          final signedUrl = await Supabase.instance.client.storage
+              .from('contracts')
+              .createSignedUrl(messageSignedPdfUrl, 60 * 60 * 24);
+          return signedUrl;
+        } catch (e) {
+          // If signed PDF fails, fall through to message's pdf_url
+        }
+      }
+      
+      // Priority 2: Check message's pdf_url (original sent PDF)
       final messagePdfUrl = messageData['pdf_url'] as String?;
       if (messagePdfUrl != null && messagePdfUrl.isNotEmpty) {
         if (messagePdfUrl.startsWith('http')) {
           return messagePdfUrl;
         }
-        return await ViewContractService.getSignedContractUrl(messagePdfUrl);
+        try {
+          final signedUrl = await Supabase.instance.client.storage
+              .from('contracts')
+              .createSignedUrl(messagePdfUrl, 60 * 60 * 24);
+          return signedUrl;
+        } catch (e) {
+          // Fall through to contract's PDF
+        }
       }
     }
+    
+    // Priority 3: Fall back to contract's signed PDF or regular PDF
     return await ViewContractService.getPdfSignedUrl(contractData);
   }
 
@@ -1456,6 +1504,28 @@ class UIMessage {
       [Map<String, dynamic>? messageData]) async {
     try {
       if (messageData != null) {
+        final messageSignedPdfUrl = messageData['signed_pdf_url'] as String?;
+        if (messageSignedPdfUrl != null && messageSignedPdfUrl.isNotEmpty) {
+          try {
+            final pdfBytes = await Supabase.instance.client.storage
+                .from('contracts')
+                .download(messageSignedPdfUrl);
+            
+            final fileName =
+                'Signed_Contract_${contractData['title']?.replaceAll(' ', '_') ?? 'Document'}.pdf';
+            await ContractPdfService.saveToDevice(
+                Uint8List.fromList(pdfBytes), fileName);
+            
+            if (context.mounted) {
+              ConTrustSnackBar.downloadSuccess(
+                  context, 'Signed contract downloaded successfully');
+            }
+            return;
+          } catch (e) {
+            //
+          }
+        }
+        
         final messagePdfUrl = messageData['pdf_url'] as String?;
         if (messagePdfUrl != null && messagePdfUrl.isNotEmpty) {
           Uint8List pdfBytes;
@@ -1483,7 +1553,8 @@ class UIMessage {
         }
       }
 
-      if (_hasSignedPdf(contractData)) {
+      // Priority 3: Fall back to contract's signed PDF or regular PDF
+      if (_hasSignedPdf(contractData, messageData)) {
         final signedPdfUrl = contractData['signed_pdf_url'] as String?;
         final pdfBytes = await Supabase.instance.client.storage
             .from('contracts')

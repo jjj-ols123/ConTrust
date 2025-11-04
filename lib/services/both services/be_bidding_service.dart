@@ -335,7 +335,48 @@ class BiddingService {
           .eq('project_id', projectId)
           .order('bid_amount', ascending: false);
 
-      return List<Map<String, dynamic>>.from(response);
+      final bids = List<Map<String, dynamic>>.from(response);
+      final contractorIds = bids
+          .map((b) => b['contractor_id'] as String?)
+          .whereType<String>()
+          .toSet()
+          .toList();
+      
+      final Map<String, String> emailMap = {};
+      if (contractorIds.isNotEmpty) {
+        try {
+          final users = await _supabase
+              .from('Users')
+              .select('users_id, email')
+              .inFilter('users_id', contractorIds);
+          
+          for (var user in users) {
+            emailMap[user['users_id']] = user['email'] ?? '';
+          }
+        } catch (e) {
+          await _errorService.logError(
+            errorMessage: 'Error batch fetching contractor emails: $e',
+            module: 'Bidding Service',
+            severity: 'Low',
+            extraInfo: {
+              'operation': 'Batch Fetch Contractor Emails',
+              'contractor_ids': contractorIds,
+            },
+          );
+        }
+      }
+      
+      // Add email to each bid
+      for (var bid in bids) {
+        final contractorId = bid['contractor_id'] as String?;
+        if (contractorId != null && emailMap.containsKey(contractorId)) {
+          final contractor = bid['contractor'] as Map<String, dynamic>? ?? {};
+          contractor['email'] = emailMap[contractorId];
+          bid['contractor'] = contractor;
+        }
+      }
+      
+      return bids;
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Failed to get bids for project: $e ',

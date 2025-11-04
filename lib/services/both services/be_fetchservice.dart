@@ -903,11 +903,53 @@ class FetchService {
     try {
       final response = await _supabase
           .from('Notifications')
-          .select('receiver_id, information, headline')
+          .select('receiver_id, sender_id, information, headline')
           .eq('headline', 'Hiring Request')
           .filter('information->>project_id', 'eq', projectId);
 
-      return List<Map<String, dynamic>>.from(response);
+      final requests = List<Map<String, dynamic>>.from(response);
+
+      final contracteeIds = requests
+          .map((r) => r['sender_id'] as String?)
+          .whereType<String>()
+          .toSet()
+          .toList();
+      
+      final Map<String, String> emailMap = {};
+      if (contracteeIds.isNotEmpty) {
+        try {
+          final users = await _supabase
+              .from('Users')
+              .select('users_id, email')
+              .inFilter('users_id', contracteeIds);
+          
+          for (var user in users) {
+            emailMap[user['users_id']] = user['email'] ?? '';
+          }
+        } catch (e) {
+          await _errorService.logError(
+            errorMessage: 'Error batch fetching contractee emails: $e',
+            module: 'Fetch Service',
+            severity: 'Low',
+            extraInfo: {
+              'operation': 'Batch Fetch Contractee Emails for Hiring Requests',
+              'contractee_ids': contracteeIds,
+            },
+          );
+        }
+      }
+      
+      // Add email to each request's information
+      for (var request in requests) {
+        final senderId = request['sender_id'] as String?;
+        if (senderId != null && emailMap.containsKey(senderId)) {
+          final info = Map<String, dynamic>.from(request['information'] ?? {});
+          info['email'] = emailMap[senderId];
+          request['information'] = info;
+        }
+      }
+      
+      return requests;
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Failed to fetch hiring requests for project: ',
