@@ -151,33 +151,52 @@ class SuperAdminErrorService {
 
   Future<Map<String, dynamic>> getErrorStatistics() async {
     try {
-      final totalLogs = await _supabase.from('ErrorLogs').select('error_id').then((res) => res.length);
 
-      final severities = await _supabase
+      final recentLogs = await _supabase
           .from('ErrorLogs')
-          .select('severity')
-          .then((res) => res.map((log) => log['severity']).toList());
+          .select('error_id')
+          .order('timestamp', ascending: false)
+          .limit(1000); 
+      
+      final totalLogs = recentLogs.length < 1000 
+          ? recentLogs.length 
+          : recentLogs.length; 
 
-      final severityCounts = <String, int>{};
-      for (var severity in severities.where((s) => s != null)) {
-        severityCounts[severity!] = (severityCounts[severity] ?? 0) + 1;
-      }
-
-      final modules = await _supabase
-          .from('ErrorLogs')
-          .select('module')
-          .then((res) => res.map((log) => log['module']).toList());
-
-      final moduleCounts = <String, int>{};
-      for (var module in modules.where((m) => m != null)) {
-        moduleCounts[module!] = (moduleCounts[module] ?? 0) + 1;
-      }
-
-      final unresolvedCount = await _supabase
+      final unresolvedLogs = await _supabase
           .from('ErrorLogs')
           .select('error_id')
           .eq('resolved', false)
-          .then((res) => res.length);
+          .order('timestamp', ascending: false)
+          .limit(1000);
+      final unresolvedCount = unresolvedLogs.length;
+
+      final severityResponse = await _supabase
+          .from('ErrorLogs')
+          .select('severity')
+          .order('timestamp', ascending: false)
+          .limit(5000); 
+
+      final severityCounts = <String, int>{};
+      for (var log in severityResponse) {
+        final severity = log['severity']?.toString();
+        if (severity != null && severity.isNotEmpty) {
+          severityCounts[severity] = (severityCounts[severity] ?? 0) + 1;
+        }
+      }
+
+      final moduleResponse = await _supabase
+          .from('ErrorLogs')
+          .select('module')
+          .order('timestamp', ascending: false)
+          .limit(5000); // Reasonable limit for aggregation
+
+      final moduleCounts = <String, int>{};
+      for (var log in moduleResponse) {
+        final module = log['module']?.toString();
+        if (module != null && module.isNotEmpty) {
+          moduleCounts[module] = (moduleCounts[module] ?? 0) + 1;
+        }
+      }
 
       return {
         'total_logs': totalLogs,

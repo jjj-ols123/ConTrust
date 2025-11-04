@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:backend/services/contractee services/cee_checkuser.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ContractorsView extends StatelessWidget {
   final String id;
@@ -32,7 +33,6 @@ class ContractorsView extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(right: 12),
       width: 180,
-      height: 250,
       child: Card(
         elevation: 6,
         shape: RoundedRectangleBorder(
@@ -41,13 +41,14 @@ class ContractorsView extends StatelessWidget {
         shadowColor: Colors.amber.shade200,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
           children: [
             ClipRRect(
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(16)),
               child: Image.network(
                 (profileImage.isNotEmpty) ? profileImage : profileUrl,
-                height: 160,
+                height: 140,
                 fit: BoxFit.cover,
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
@@ -56,7 +57,7 @@ class ContractorsView extends StatelessWidget {
                 errorBuilder: (context, error, stackTrace) {
                   return Image.network(
                     profileUrl,
-                    height: 160,
+                    height: 140,
                     fit: BoxFit.cover,
                   );
                 },
@@ -65,52 +66,57 @@ class ContractorsView extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     name,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 18,
+                      fontSize: 16,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: List.generate(5, (index) {
                       if (index < rating.floor()) {
-                        return Icon(Icons.star, color: Colors.amber, size: 20);
+                        return Icon(Icons.star, color: Colors.amber, size: 18);
                       } else if (index < rating.ceil() && rating % 1 != 0) {
-                        return Icon(Icons.star_half, color: Colors.amber, size: 20);
+                        return Icon(Icons.star_half, color: Colors.amber, size: 18);
                       } else {
-                        return Icon(Icons.star_border, color: Colors.grey, size: 20);
+                        return Icon(Icons.star_border, color: Colors.grey, size: 18);
                       }
                     }),
                   ),
-                  const SizedBox(height: 8),
-                 ElevatedButton(
-                    onPressed: () {
-                      CheckUserLogin.isLoggedIn(
-                        context: context,
-                  onAuthenticated: () async {
-                    if (!context.mounted) return;
-                    final encodedName = Uri.encodeComponent(name);
-                    context.go('/contractor/$encodedName');
-                  },
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.amber[700],
-                      foregroundColor: Colors.black,
-                      minimumSize: const Size.fromHeight(36),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  const SizedBox(height: 6),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        CheckUserLogin.isLoggedIn(
+                          context: context,
+                          onAuthenticated: () async {
+                            if (!context.mounted) return;
+                            final encodedName = Uri.encodeComponent(name);
+                            context.go('/contractor/$encodedName');
+                          },
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber[700],
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 4,
                       ),
-                      elevation: 4,
+                      child: const Text("View", style: TextStyle(fontSize: 14)),
                     ),
-                    child: const Text("View"),
                   ),
                 ],
               ),
@@ -150,7 +156,9 @@ class ProjectView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isHiringRequest = duration == 0;
+    final projectData = project['projectdata'] as Map<String, dynamic>?;
+    final hiringType = projectData?['hiring_type'] ?? 'bidding';
+    final isHiringRequest = duration == 0 || hiringType == 'direct_hire';
     final status = ProjectStatus();
 
     return Card(
@@ -191,8 +199,6 @@ class ProjectView extends StatelessWidget {
                   if (!isHiringRequest && project['status'] == 'pending')
                     _buildBiddingInfo(),
                   
-                  if (isHiringRequest)
-                    _buildHiringInfo(),
                 ],
               ),
             ),
@@ -339,39 +345,51 @@ class ProjectView extends StatelessWidget {
     );
   }
 
+  Widget _buildNoContractLabel() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.description_outlined, size: 16, color: Colors.grey.shade600),
+          const SizedBox(width: 4),
+          Text(
+            'No Contract',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildContractButton(BuildContext context) {
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: FetchService().streamContractsForProject(projectId),
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.description_outlined, size: 16, color: Colors.grey.shade600),
-                const SizedBox(width: 4),
-                Text(
-                  'No Contract',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          );
-  }
+          return _buildNoContractLabel();
+        }
 
-  final contracts = snapshot.data!;
-  final latestContract = contracts.first;
+        final contracts = snapshot.data!;
+        final latestContract = contracts.first;
         final status = latestContract['status'] as String? ?? 'draft';
+        
+        final currentUser = Supabase.instance.client.auth.currentUser;
+        final userType = currentUser?.userMetadata?['user_type']?.toString();
+        final isContractee = userType == 'contractee';
+        
+        if (isContractee && status.toLowerCase() == 'draft') {
+          return _buildNoContractLabel();
+        }
         
         Color borderColor;
         Color backgroundColor;
@@ -441,6 +459,8 @@ class ProjectView extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
+                const SizedBox(width: 6),
+                Icon(Icons.visibility, size: 14, color: textColor),
               ],
             ),
           ),
@@ -669,104 +689,260 @@ class ProjectView extends StatelessWidget {
   }
 
   Widget _buildHiringInfo() {
-
-  if (project['status'] != 'pending') {
-    return const SizedBox.shrink();
-  }
-
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: FetchService().fetchHiringRequestsForProject(projectId),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const CircularProgressIndicator.adaptive();
-        }
-
-        final requests = snapshot.data!;
-        final accepted = requests.firstWhere(
-          (r) => r['information']?['status'] == 'accepted',
-          orElse: () => {},
-        );
-
-        if (accepted.isNotEmpty) {
-          return _buildContractorCard(
-            icon: Icons.verified,
-            color: Colors.green,
-            title: 'Accepted Contractor',
-            subtitle: accepted['information']?['firm_name'] ?? 'Unknown',
-          );
-        }
-
-        final pendingRequests = requests.where(
-          (r) => r['information']?['status'] == 'pending'
-        ).toList();
-
-        if (pendingRequests.isNotEmpty) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.grey.shade300,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
+              Icon(
+                Icons.person_add,
+                color: Colors.amber.shade700,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
               Text(
-                'Hiring Requests Sent:',
+                'Hiring Requests Sent To',
                 style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade700,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
                 ),
               ),
-              const SizedBox(height: 8),
-              ...pendingRequests.map((request) => _buildContractorCard(
-                icon: Icons.pending,
-                color: Colors.orange,
-                title: request['information']?['firm_name'] ?? 'Unknown',
-                subtitle: 'Pending Response',
-              )),
             ],
+          ),
+          const SizedBox(height: 16),
+          FutureBuilder<List<Map<String, dynamic>>>(
+      future: FetchService().fetchHiringRequestsForProject(projectId),
+      builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator(color: Colors.amber));
+        }
+
+              if (snapshot.hasError) {
+                return Center(
+                  child: Text(
+                    'Error loading hiring requests',
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                  ),
           );
         }
 
-        return _buildContractorCard(
-          icon: Icons.info,
-          color: Colors.grey,
-          title: 'No hiring requests sent',
-          subtitle: 'Send requests to contractors',
+              final requests = snapshot.data ?? [];
+
+              if (requests.isEmpty) {
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Column(
+            children: [
+                      Icon(
+                        Icons.person_off_outlined,
+                        size: 40,
+                        color: Colors.grey.shade400,
+                      ),
+                      const SizedBox(height: 8),
+              Text(
+                        'No hiring requests sent yet',
+                style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                ),
+              ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Hiring requests sent to contractors will appear here',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              // Separate accepted and pending requests
+              final acceptedRequest = requests.firstWhere(
+                (r) {
+                  final info = r['information'];
+                  if (info is Map) {
+                    return info['status'] == 'accepted';
+                  }
+                  return false;
+                },
+                orElse: () => <String, dynamic>{},
+              );
+
+              final pendingRequests = requests.where((r) {
+                final info = r['information'];
+                if (info is Map) {
+                  return info['status'] == 'pending';
+                }
+                return false;
+              }).toList();
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (acceptedRequest.isNotEmpty) ...[
+                    _buildHiringRequestCardForProjectView(
+                      context: context,
+                      request: acceptedRequest,
+                      isAccepted: true,
+                    ),
+                    if (pendingRequests.isNotEmpty) const SizedBox(height: 12),
+                  ],
+                  ...pendingRequests.map((request) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _buildHiringRequestCardForProjectView(
+                      context: context,
+                      request: request,
+                      isAccepted: false,
+                    ),
+                  )),
+                ],
         );
       },
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildContractorCard({
-    required IconData icon,
-    required Color color,
-    required String title,
-    required String subtitle,
+  Widget _buildHiringRequestCardForProjectView({
+    required BuildContext context,
+    required Map<String, dynamic> request,
+    required bool isAccepted,
   }) {
+    final info = request['information'];
+    Map<String, dynamic> infoMap = {};
+    
+    if (info is Map) {
+      infoMap = Map<String, dynamic>.from(info);
+    }
+
+    final firmName = infoMap['firm_name'] ?? 'Unknown Contractor';
+    final status = infoMap['status'] ?? 'pending';
+    
+    Color statusColor;
+    IconData statusIcon;
+    String statusText;
+    
+    if (isAccepted || status == 'accepted') {
+      statusColor = Colors.green;
+      statusIcon = Icons.check_circle;
+      statusText = 'ACCEPTED';
+    } else if (status == 'rejected') {
+      statusColor = Colors.red;
+      statusIcon = Icons.cancel;
+      statusText = 'REJECTED';
+    } else {
+      statusColor = Colors.orange;
+      statusIcon = Icons.pending;
+      statusText = 'PENDING';
+    }
+
     return Container(
       padding: const EdgeInsets.all(12),
-      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.2)),
+        color: isAccepted ? Colors.green.shade50 : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isAccepted ? Colors.green.shade300 : Colors.grey.shade300,
+          width: isAccepted ? 2 : 1,
+        ),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: color),
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: statusColor.withOpacity(0.1),
+            child: Icon(
+              statusIcon,
+              color: statusColor,
+              size: 20,
+            ),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        firmName,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: color,
+                          fontSize: 14,
+                          color: Colors.grey.shade800,
                   ),
-                ),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: color.withOpacity(0.8),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isAccepted || status == 'accepted')
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade600,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          statusText,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )
+                    else if (status == 'rejected')
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade600,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          statusText,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade600,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          statusText,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
                   ),
+                      ),
+                  ],
                 ),
               ],
             ),
@@ -775,6 +951,7 @@ class ProjectView extends StatelessWidget {
       ),
     );
   }
+
 
   String _formatBudget(bool isHiringRequest) {
     if (isHiringRequest) {
@@ -998,7 +1175,9 @@ class ProjectView extends StatelessWidget {
           child: Material(
             color: Colors.transparent,
             child: Container(
-              constraints: const BoxConstraints(maxWidth: 900, maxHeight: 700),
+              width: MediaQuery.of(dialogContext).size.width * 1.2,
+              constraints: const BoxConstraints(maxWidth: 900),
+              height: MediaQuery.of(dialogContext).size.height * 0.9,
               margin: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -1061,6 +1240,8 @@ class ProjectView extends StatelessWidget {
                       initialData: contractData,
                       builder: (context, contractSnap) {
                         final liveData = contractSnap.data ?? contractData;
+                        return StatefulBuilder(
+                          builder: (context, setState) {
                         return SingleChildScrollView(
                           padding: const EdgeInsets.all(20),
                           child: Column(
@@ -1186,10 +1367,17 @@ class ProjectView extends StatelessWidget {
                               
                               ViewContractBuild.buildEnhancedSignaturesSection(
                                 liveData,
-                                onRefresh: () => Navigator.of(dialogContext).pop(),
+                                    onRefresh: () {
+                                      setState(() {});
+                                    },
+                                    currentUserId: Supabase.instance.client.auth.currentUser?.id,
+                                    context: dialogContext,
+                                    contractStatus: liveData['status'] as String?,
                               ),
                             ],
                           ),
+                            );
+                          },
                         );
                       },
                     ),
@@ -1218,12 +1406,12 @@ class ProjectView extends StatelessWidget {
       case 'approved':
       case 'active':
       case 'signed':
+      case 'awaiting_signature':
         badgeColor = Colors.green;
         icon = Icons.verified;
-        displayText = 'Approved';
+        displayText = 'Contract Approved';
         break;
       case 'sent':
-      case 'awaiting_signature':
         badgeColor = Colors.orange;
         icon = Icons.pending;
         displayText = 'Pending Review';
@@ -1288,14 +1476,14 @@ class ProjectView extends StatelessWidget {
             _buildInfoRow(
               'Created',
               DateFormat('MMM dd, yyyy').format(
-                DateTime.parse(contractData['created_at']),
+                DateTime.parse(contractData['created_at']).toLocal(),
               ),
             ),
           if (contractData['updated_at'] != null)
             _buildInfoRow(
               'Last Updated',
               DateFormat('MMM dd, yyyy').format(
-                DateTime.parse(contractData['updated_at']),
+                DateTime.parse(contractData['updated_at']).toLocal(),
               ),
             ),
           _buildInfoRow('Status', _formatContractStatus(contractData['status'] as String? ?? 'draft')),

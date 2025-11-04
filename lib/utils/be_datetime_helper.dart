@@ -1,11 +1,11 @@
 
 class DateTimeHelper {
   static String getLocalTimeISOString() {
-    return DateTime.now().toLocal().toIso8601String();
+    return DateTime.now().toUtc().toIso8601String();
   }
   
   static String toLocalISOString(DateTime dateTime) {
-    return dateTime.toLocal().toIso8601String();
+    return dateTime.toUtc().toIso8601String();
   }
 
   static DateTime getLocalTime() {

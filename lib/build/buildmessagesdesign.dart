@@ -1204,14 +1204,16 @@ class UIMessage {
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 16),
-                                      _buildSignaturePad(
-                                          data,
-                                          currentUserId,
-                                          context,
-                                          _canUserSign(data,
-                                              currentUserId, displayStatus),
-                                          onRefresh),
+                                      if (_canUserSign(data, currentUserId, displayStatus)) ...[
+                                        const SizedBox(height: 16),
+                                        _buildSignaturePad(
+                                            data,
+                                            currentUserId,
+                                            context,
+                                            _canUserSign(data,
+                                                currentUserId, displayStatus),
+                                            onRefresh),
+                                      ],
                                     ],
                                   ),
                                 ),
@@ -1357,18 +1359,15 @@ class UIMessage {
     final isContractee = contractData['contractee_id'] == currentUserId;
     final isContractor = contractData['contractor_id'] == currentUserId;
 
-    if (contractStatus == 'approved' ||
-        contractStatus == 'awaiting_signature') {
+    if (contractStatus == 'awaiting_signature' || contractStatus == 'approved') {
       if (isContractee) {
-        final contracteeSigned =
-            contractData['contractee_signature_url'] != null &&
-                (contractData['contractee_signature_url'] as String).isNotEmpty;
+        final contracteeSignatureUrl = contractData['contractee_signature_url'] as String?;
+        final contracteeSigned = contracteeSignatureUrl != null && contracteeSignatureUrl.isNotEmpty;
         return !contracteeSigned;
       }
       if (isContractor) {
-        final contractorSigned =
-            contractData['contractor_signature_url'] != null &&
-                (contractData['contractor_signature_url'] as String).isNotEmpty;
+        final contractorSignatureUrl = contractData['contractor_signature_url'] as String?;
+        final contractorSigned = contractorSignatureUrl != null && contractorSignatureUrl.isNotEmpty;
         return !contractorSigned;
       }
     }

@@ -14,10 +14,12 @@ class VerifyService {
           .or('verified.eq.false,verified.is.null')
           .order('created_at', ascending: false);
       
-      if ((response as List).isNotEmpty) {
-      }
+      final filtered = (response as List).where((contractor) {
+        final verified = contractor['verified'];
+        return verified == null || verified == false;
+      }).toList();
       
-      return List<Map<String, dynamic>>.from(response);
+      return List<Map<String, dynamic>>.from(filtered);
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Failed to fetch unverified contractors: $e',

@@ -55,52 +55,69 @@ class SuperAdminAuditService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getRecentAuditLogs({int limit = 50}) async {
+  Future<List<Map<String, dynamic>>> getRecentAuditLogs({int limit = 50, int offset = 0}) async {
     try {
       final response = await _supabase
           .from('AuditLogs')
           .select('id, users_id, action, details, category, timestamp')
           .order('timestamp', ascending: false)
-          .limit(limit);
+          .range(offset, offset + limit - 1);
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch recent audit logs: ',
+        errorMessage: 'Failed to fetch recent audit logs: $e',
         module: 'Audit Logs Service',
         severity: 'Medium',
         extraInfo: {
           'operation': 'Fetch Recent Audit Logs',
           'limit': limit,
+          'offset': offset,
           'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
-      throw Exception('Failed to fetch recent audit logs: ');
+      throw Exception('Failed to fetch recent audit logs: $e');
     }
   }
 
   Future<Map<String, dynamic>> getAuditStatistics() async {
     try {
-      final totalLogs = await _supabase.from('AuditLogs').select('id').then((res) => res.length);
+      final recentLogs = await _supabase
+          .from('AuditLogs')
+          .select('id')
+          .order('timestamp', ascending: false)
+          .limit(1000); 
+      
+      final totalLogs = recentLogs.length < 1000 
+          ? recentLogs.length 
+          : recentLogs.length; 
 
-      final categories = await _supabase
+      final categoryResponse = await _supabase
           .from('AuditLogs')
           .select('category')
-          .then((res) => res.map((log) => log['category']).toList());
-
+          .order('timestamp', ascending: false)
+          .limit(5000); 
+      
       final categoryCounts = <String, int>{};
-      for (var category in categories.where((c) => c != null)) {
-        categoryCounts[category!] = (categoryCounts[category] ?? 0) + 1;
+      for (var log in categoryResponse) {
+        final category = log['category']?.toString();
+        if (category != null && category.isNotEmpty) {
+          categoryCounts[category] = (categoryCounts[category] ?? 0) + 1;
+        }
       }
 
-      final actions = await _supabase
+      final actionResponse = await _supabase
           .from('AuditLogs')
           .select('action')
-          .then((res) => res.map((log) => log['action']).toList());
+          .order('timestamp', ascending: false)
+          .limit(5000);
 
       final actionCounts = <String, int>{};
-      for (var action in actions.where((a) => a != null)) {
-        actionCounts[action!] = (actionCounts[action] ?? 0) + 1;
+      for (var log in actionResponse) {
+        final action = log['action']?.toString();
+        if (action != null && action.isNotEmpty) {
+          actionCounts[action] = (actionCounts[action] ?? 0) + 1;
+        }
       }
 
       return {
@@ -110,7 +127,7 @@ class SuperAdminAuditService {
       };
     } catch (e) {
       SuperAdminErrorService().logError(
-        errorMessage: 'Failed to get audit statistics: ',
+        errorMessage: 'Failed to get audit statistics: $e',
         module: 'Audit Logs Service',
         severity: 'Medium',
         extraInfo: {
@@ -118,7 +135,7 @@ class SuperAdminAuditService {
           'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
-      throw Exception('Failed to get audit statistics: ');
+      throw Exception('Failed to get audit statistics: $e');
     }
   }
 
