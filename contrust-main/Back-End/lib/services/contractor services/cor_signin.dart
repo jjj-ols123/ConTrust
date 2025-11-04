@@ -166,7 +166,7 @@ class SignInContractor {
           if (m.contains('invalid login') || m.contains('invalid') || m.contains('credentials')) {
             message = 'Invalid email or password.';
           } else if (m.contains('email not confirmed') || m.contains('not confirmed') || m.contains('verify')) {
-            message = 'Please verify your email before logging in.';
+            message = 'Your account is not yet verified. Please try again later.';
           } else if (m.contains('rate') && m.contains('limit')) {
             message = 'Too many attempts. Please try again later.';
           } else {

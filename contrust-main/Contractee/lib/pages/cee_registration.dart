@@ -193,7 +193,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Account created! Please check your email for verification.',
+                    'Account created! You can now log in.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 12,

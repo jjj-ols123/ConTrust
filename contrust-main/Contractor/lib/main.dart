@@ -16,7 +16,6 @@ import 'package:contractor/Screen/cor_notification.dart';
 import 'package:contractor/Screen/cor_viewcontract.dart';
 import 'package:contractor/Screen/cor_product.dart';
 import 'package:contractor/build/builddrawer.dart';
-import 'package:backend/build/buildconfirmemail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -96,15 +95,7 @@ class _MyAppState extends State<MyApp> {
             child: const RegisterScreen(),
           ),
         ),
-        GoRoute(
-          path: '/confirm-email',
-          pageBuilder: (context, state) {
-            final email = state.uri.queryParameters['email'];
-            return NoTransitionPage(
-              child: ConfirmEmailPage(email: email),
-            );
-          },
-        ),
+        
         ShellRoute(
           pageBuilder: (context, state, child) {
             return NoTransitionPage(

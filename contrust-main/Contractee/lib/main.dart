@@ -14,7 +14,6 @@ import 'package:contractee/pages/cee_torprofile.dart';
 import 'package:contractee/pages/cee_notification.dart';
 import 'package:contractee/pages/cee_ai_assistant.dart';
 import 'package:contractee/build/builddrawer.dart';
-import 'package:backend/build/buildconfirmemail.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
@@ -121,15 +120,7 @@ class _MyAppState extends State<MyApp> {
             child: const RegistrationPage(),
           ),
         ),
-        GoRoute(
-          path: '/confirm-email',
-          pageBuilder: (context, state) {
-            final email = state.uri.queryParameters['email'];
-            return NoTransitionPage(
-              child: ConfirmEmailPage(email: email),
-            );
-          },
-        ),
+        
         GoRoute(
           path: '/chat/:contractorName',
           pageBuilder: (context, state) {
@@ -398,33 +389,8 @@ class _MyAppState extends State<MyApp> {
             return null;
           }
 
-          final user = session.user;
-          if (user != null) {
-            try {
-              final resp = await Supabase.instance.client
-                  .from('Users')
-                  .select('verified, role')
-                  .eq('users_id', user.id)
-                  .maybeSingle();
-
-              final verified = resp != null && (resp['verified'] == true);
-              final role = resp != null ? resp['role'] : null;
-
-              if (verified && role == 'contractee') {
-                if (location == '/login' || location == '/welcome' || location == '/auth/callback') {
-                  return '/home';
-                }
-              } else {
-                if (location != '/login' && location != '/welcome' && location != '/auth/callback') {
-                  return '/login';
-                }
-              }
-            } catch (e) {
-              debugPrint('Error checking user verification in redirect: $e');
-              if (location != '/login' && location != '/welcome' && location != '/auth/callback') {
-                return '/login';
-              }
-            }
+          if (location == '/login' || location == '/welcome' || location == '/auth/callback') {
+            return '/home';
           }
         }
 

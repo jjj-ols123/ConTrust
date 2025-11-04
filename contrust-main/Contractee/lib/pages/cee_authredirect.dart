@@ -82,33 +82,17 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
 
       final currentUser = refreshedSession.user;
 
-      // Check both Contractee and Contractor tables to determine user type
-      final userDataResults = await Future.wait([
-        supabase
-            .from('Contractee')
-            .select()
-            .eq('contractee_id', currentUser.id)
-            .maybeSingle(),
-        supabase
-            .from('Contractor')
-            .select()
-            .eq('contractor_id', currentUser.id)
-            .maybeSingle(),
-      ]);
-
-      final contracteeData = userDataResults[0];
-      final contractorData = userDataResults[1];
+      final contracteeData = await supabase
+          .from('Contractee')
+          .select()
+          .eq('contractee_id', currentUser.id)
+          .maybeSingle();
 
       if (mounted && !_hasRedirected) {
         _hasRedirected = true;
         if (contracteeData != null) {
-          // User is a contractee, redirect to home
           context.go('/home');
-        } else if (contractorData != null) {
-          // User is a contractor, redirect to dashboard
-          context.go('/dashboard');
         } else {
-          // User not found in either table, redirect to login
           context.go('/login');
         }
       }
