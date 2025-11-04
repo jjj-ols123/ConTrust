@@ -1,7 +1,6 @@
 // ignore_for_file: non_constant_identifier_names, use_build_context_synchronously, unnecessary_type_check, deprecated_member_use, depend_on_referenced_packages, unused_local_variable, dead_code, curly_braces_in_flow_control_structures
 
 import 'package:backend/services/both services/be_bidding_service.dart';
-import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_project_service.dart';
 import 'package:backend/services/both services/be_realtime_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
@@ -68,8 +67,42 @@ class _ProjectDialogState extends State<ProjectDialog> {
   final TextEditingController _startDateController = TextEditingController();
   final TextEditingController _customTypeController = TextEditingController();
   
-  List<String> _availableSpecializations = [];
-  bool _isLoadingSpecializations = true;
+  static const List<String> _availableSpecializations = [
+    'General Construction',
+    'Residential Construction',
+    'Commercial Construction',
+    'Interior Design',
+    'Exterior Design',
+    'Architecture',
+    'Electrical Work',
+    'Plumbing',
+    'HVAC (Heating, Ventilation, Air Conditioning)',
+    'Roofing',
+    'Flooring',
+    'Painting',
+    'Landscaping',
+    'Kitchen Renovation',
+    'Bathroom Renovation',
+    'Structural Engineering',
+    'Civil Engineering',
+    'Project Management',
+    'Home Improvement',
+    'Maintenance & Repair',
+    'Concrete Work',
+    'Masonry',
+    'Carpentry',
+    'Welding',
+    'Flooring Installation',
+    'Wall Finishing',
+    'Window Installation',
+    'Door Installation',
+    'Tile Work',
+    'Drywall',
+    'Insulation',
+    'Solar Installation',
+    'Smart Home Integration',
+  ];
+  
   bool _showCustomTypeField = false;
 
   @override
@@ -85,38 +118,15 @@ class _ProjectDialogState extends State<ProjectDialog> {
       }
     }
     
-    _loadSpecializations();
-    
     // Check if current type is custom
     if (widget.constructionTypeController.text.isNotEmpty) {
       final currentType = widget.constructionTypeController.text;
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await _loadSpecializations();
-        if (mounted && !_availableSpecializations.contains(currentType) && 
-            currentType.toLowerCase() != 'other') {
-          setState(() {
-            _showCustomTypeField = true;
-            _customTypeController.text = currentType;
-            widget.constructionTypeController.text = 'Other';
-          });
-        }
-      });
-    }
-  }
-  
-  Future<void> _loadSpecializations() async {
-    try {
-      final specializations = await FetchService().fetchAllContractorSpecializations();
-      if (mounted) {
+      if (!_availableSpecializations.contains(currentType) && 
+          currentType.toLowerCase() != 'other') {
         setState(() {
-          _availableSpecializations = specializations;
-          _isLoadingSpecializations = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoadingSpecializations = false;
+          _showCustomTypeField = true;
+          _customTypeController.text = currentType;
+          widget.constructionTypeController.text = 'Other';
         });
       }
     }
@@ -158,9 +168,16 @@ class _ProjectDialogState extends State<ProjectDialog> {
 
       if (!isValid) return;
 
-      // Determine the final project type (use custom if "Other" is selected)
       String finalProjectType;
       if (widget.constructionTypeController.text.trim().toLowerCase() == 'other') {
+        if (_customTypeController.text.trim().isEmpty) {
+          setState(() => _isLoading = false);
+          ConTrustSnackBar.error(
+            widget.parentContext,
+            'Please enter a construction type when "Other" is selected.',
+          );
+          return;
+        }
         finalProjectType = toProperCase(_customTypeController.text.trim());
       } else {
         finalProjectType = widget.constructionTypeController.text.trim();
@@ -205,6 +222,281 @@ class _ProjectDialogState extends State<ProjectDialog> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Widget _buildTwoColumnDropdown() {
+    final selectedValue = widget.constructionTypeController.text.isNotEmpty &&
+            (_availableSpecializations.contains(widget.constructionTypeController.text) ||
+             widget.constructionTypeController.text.toLowerCase() == 'other')
+        ? widget.constructionTypeController.text
+        : null;
+
+    return InkWell(
+      onTap: () async {
+        final result = await showDialog<String>(
+          context: context,
+          builder: (context) => Dialog(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 600, maxHeight: 500),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      const Text(
+                        'Select Construction Type',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                          childAspectRatio: 3,
+                        ),
+                        itemCount: _availableSpecializations.length + 1,
+                        itemBuilder: (context, index) {
+                          if (index == _availableSpecializations.length) {
+                            // "Other" option
+                            final isSelected = selectedValue?.toLowerCase() == 'other';
+                            return InkWell(
+                              onTap: () => Navigator.pop(context, 'Other'),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: isSelected ? Colors.amber.shade100 : Colors.grey.shade100,
+                                  border: Border.all(
+                                    color: isSelected ? Colors.amber.shade700 : Colors.grey.shade300,
+                                    width: isSelected ? 2 : 1,
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'Other',
+                                    style: TextStyle(
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                      color: isSelected ? Colors.amber.shade900 : Colors.black87,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                          final spec = _availableSpecializations[index];
+                          final isSelected = selectedValue == spec;
+                          return InkWell(
+                            onTap: () => Navigator.pop(context, spec),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: isSelected ? Colors.amber.shade100 : Colors.grey.shade100,
+                                border: Border.all(
+                                  color: isSelected ? Colors.amber.shade700 : Colors.grey.shade300,
+                                  width: isSelected ? 2 : 1,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  child: Text(
+                                    spec,
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                      color: isSelected ? Colors.amber.shade900 : Colors.black87,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        if (result != null && mounted) {
+          setState(() {
+            widget.constructionTypeController.text = result;
+            _showCustomTypeField = (result.toLowerCase() == 'other');
+            if (!_showCustomTypeField) {
+              _customTypeController.clear();
+            }
+          });
+        }
+      },
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: 'Select construction type',
+          border: const OutlineInputBorder(),
+          suffixIcon: const Icon(Icons.arrow_drop_down),
+        ),
+        child: Text(
+          selectedValue ?? 'Select construction type',
+          style: TextStyle(
+            color: selectedValue != null ? Colors.black87 : Colors.grey.shade600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  static Widget _buildTwoColumnDropdownForHire({
+    required BuildContext context,
+    required String? selectedValue,
+    required List<String> availableSpecializations,
+    required Function(String) onSelected,
+  }) {
+    return InkWell(
+      onTap: () async {
+        final result = await showDialog<String>(
+          context: context,
+          builder: (context) => Dialog(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 600, maxHeight: 500),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      const Text(
+                        'Select Construction Type',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                          childAspectRatio: 3,
+                        ),
+                        itemCount: availableSpecializations.length + 1,
+                        itemBuilder: (context, index) {
+                          if (index == availableSpecializations.length) {
+                            // "Other" option
+                            final isSelected = selectedValue?.toLowerCase() == 'other';
+                            return InkWell(
+                              onTap: () => Navigator.pop(context, 'Other'),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: isSelected ? Colors.amber.shade100 : Colors.grey.shade100,
+                                  border: Border.all(
+                                    color: isSelected ? Colors.amber.shade700 : Colors.grey.shade300,
+                                    width: isSelected ? 2 : 1,
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'Other',
+                                    style: TextStyle(
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                      color: isSelected ? Colors.amber.shade900 : Colors.black87,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                          final spec = availableSpecializations[index];
+                          final isSelected = selectedValue == spec;
+                          return InkWell(
+                            onTap: () => Navigator.pop(context, spec),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: isSelected ? Colors.amber.shade100 : Colors.grey.shade100,
+                                border: Border.all(
+                                  color: isSelected ? Colors.amber.shade700 : Colors.grey.shade300,
+                                  width: isSelected ? 2 : 1,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  child: Text(
+                                    spec,
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                      color: isSelected ? Colors.amber.shade900 : Colors.black87,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        if (result != null) {
+          onSelected(result);
+        }
+      },
+      child: InputDecorator(
+        decoration: const InputDecoration(
+          labelText: 'Select construction type',
+          border: OutlineInputBorder(),
+          suffixIcon: Icon(Icons.arrow_drop_down),
+        ),
+        child: Text(
+          selectedValue ?? 'Select construction type',
+          style: TextStyle(
+            color: selectedValue != null ? Colors.black87 : Colors.grey.shade600,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -305,66 +597,33 @@ class _ProjectDialogState extends State<ProjectDialog> {
                         const SizedBox(height: 16),
                         _buildLabeledField(
                             label: 'Type of Construction',
-                            child: _isLoadingSpecializations
-                                ? const Center(
-                                    child: Padding(
-                                      padding: EdgeInsets.all(16.0),
-                                      child: CircularProgressIndicator(),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildTwoColumnDropdown(),
+                                if (_showCustomTypeField) ...[
+                                  const SizedBox(height: 16),
+                                  TextFormField(
+                                    controller: _customTypeController,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Enter custom construction type',
+                                      hintText: 'e.g., Kitchen Renovation',
+                                      border: OutlineInputBorder(),
+                                      prefixIcon: Icon(Icons.edit),
                                     ),
-                                  )
-                                : Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      DropdownButtonFormField<String>(
-                                        value: widget.constructionTypeController.text.isNotEmpty &&
-                                                (_availableSpecializations.contains(widget.constructionTypeController.text) ||
-                                                 widget.constructionTypeController.text.toLowerCase() == 'other')
-                                            ? widget.constructionTypeController.text
-                                            : null,
-                                        items: [
-                                          ..._availableSpecializations.map((t) => DropdownMenuItem(
-                                              value: t, child: Text(t))),
-                                          const DropdownMenuItem(
-                                              value: 'Other', child: Text('Other')),
-                                        ],
-                                        onChanged: (val) {
-                                          setState(() {
-                                            widget.constructionTypeController.text = val ?? '';
-                                            _showCustomTypeField = (val?.toLowerCase() == 'other');
-                                            if (!_showCustomTypeField) {
-                                              _customTypeController.clear();
-                                            }
-                                          });
-                                        },
-                                        decoration: const InputDecoration(
-                                            labelText: 'Select construction type',
-                                            border: OutlineInputBorder()),
-                                        validator: (v) => (v == null || v.isEmpty)
-                                            ? 'Please select a type'
-                                            : null,
-                                      ),
-                                      if (_showCustomTypeField) ...[
-                                        const SizedBox(height: 16),
-                                        TextFormField(
-                                          controller: _customTypeController,
-                                          decoration: const InputDecoration(
-                                            labelText: 'Enter custom construction type',
-                                            hintText: 'e.g., Kitchen Renovation',
-                                            border: OutlineInputBorder(),
-                                            prefixIcon: Icon(Icons.edit),
-                                          ),
-                                          textCapitalization: TextCapitalization.words,
-                                          validator: (v) {
-                                            if (_showCustomTypeField &&
-                                                (v == null || v.trim().isEmpty)) {
-                                              return 'Please enter a construction type';
-                                            }
-                                            return null;
-                                          },
-                                        ),
-                                      ],
-                                    ],
-                                  )),
+                                    textCapitalization: TextCapitalization.words,
+                                    validator: (v) {
+                                      if (_showCustomTypeField &&
+                                          (v == null || v.trim().isEmpty)) {
+                                        return 'Please enter a construction type';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
                         const SizedBox(height: 16),
                         _buildLabeledField(
                             label: 'Estimated Budget Range',
@@ -1304,12 +1563,8 @@ class _BidsModalContentState extends State<_BidsModalContent> {
                                                     setState(() {
                                                       acceptedBidId = bid['bid_id'];
                                                     });
-                                                    _refreshBids();
                                                     if (mounted) {
                                                       ConTrustSnackBar.success(context, 'Bid accepted successfully!');
-                                                    }
-                                                    if (widget.onRefresh != null) {
-                                                      widget.onRefresh!();
                                                     }
                                                   } catch (e) {
                                                     if (mounted) {
@@ -1384,10 +1639,15 @@ class HireModal {
     TextEditingController maxBudgetController = TextEditingController();
     DateTime? selectedStartDate;
 
-    final existingProjectWithContractor =
-        await hasExistingProjectWithContractor(contracteeId, contractorId);
-    final pendingProject = await hasPendingProject(contracteeId);
-    final pendingHireRequest = await hasPendingHireRequest(contracteeId, contractorId);
+    final checkResults = await Future.wait([
+      hasExistingProjectWithContractor(contracteeId, contractorId),
+      hasPendingProject(contracteeId),
+      hasPendingHireRequest(contracteeId, contractorId),
+    ]);
+    
+    final existingProjectWithContractor = checkResults[0];
+    final pendingProject = checkResults[1];
+    final pendingHireRequest = checkResults[2];
 
     if (existingProjectWithContractor != null) {
       titleController.text = existingProjectWithContractor['title'] ?? '';
@@ -1401,7 +1661,9 @@ class HireModal {
       if (existingProjectWithContractor['start_date'] != null) {
         try {
           selectedStartDate = DateTime.parse(existingProjectWithContractor['start_date']);
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('Error parsing start date from existing project: $e');
+        }
       }
     } else if (pendingHireRequest != null) {
       titleController.text = pendingHireRequest['title'] ?? '';
@@ -1415,7 +1677,9 @@ class HireModal {
       if (pendingHireRequest['start_date'] != null) {
         try {
           selectedStartDate = DateTime.parse(pendingHireRequest['start_date']);
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('Error parsing start date from pending hire request: $e');
+        }
       }
     } else if (pendingProject != null) {
       titleController.text = pendingProject['title'] ?? '';
@@ -1429,15 +1693,17 @@ class HireModal {
       if (pendingProject['start_date'] != null) {
         try {
           selectedStartDate = DateTime.parse(pendingProject['start_date']);
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('Error parsing start date from pending project: $e');
+        }
       }
     }
 
     final formKey = GlobalKey<FormState>();
     bool isLoading = false;
     
-    // Fetch specializations once before showing dialog
-    final availableSpecializations = await FetchService().fetchAllContractorSpecializations();
+    // Use predefined specializations list
+    const availableSpecializations = _ProjectDialogState._availableSpecializations;
 
     final result = await showDialog<bool>(
       context: context,
@@ -1623,71 +1889,58 @@ class HireModal {
                                 const SizedBox(height: 16),
                                 _buildLabeledField(
                                   label: 'Type of Construction',
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      DropdownButtonFormField<String>(
-                                        value: typeController.text.isNotEmpty &&
-                                                (availableSpecializations.contains(typeController.text) ||
-                                                 typeController.text.toLowerCase() == 'other')
-                                            ? typeController.text
-                                            : null,
-                                        items: [
-                                          ...availableSpecializations.map((type) => DropdownMenuItem(
-                                                value: type,
-                                                child: Text(type),
-                                              )),
-                                          const DropdownMenuItem(
-                                              value: 'Other', child: Text('Other')),
-                                        ],
-                                        onChanged: hasAutoFilledProject 
-                                          ? null
-                                          : (value) {
-                                              setDialogState(() {
-                                                typeController.text = value ?? '';
-                                                if (value?.toLowerCase() != 'other') {
-                                                  customTypeController.clear();
-                                                }
-                                              });
-                                            },
-                                        decoration: InputDecoration(
-                                          labelText: hasAutoFilledProject
-                                            ? 'Construction type'
-                                            : 'Select construction type',
-                                          border: const OutlineInputBorder(),
-                                          filled: hasAutoFilledProject,
-                                          fillColor: hasAutoFilledProject 
-                                            ? Colors.grey.shade100 
-                                            : null,
-                                        ),
-                                        validator: (value) =>
-                                            (value == null || value.isEmpty)
-                                                ? 'Please select a type'
-                                                : null,
-                                      ),
-                                      if (showCustomField) ...[
-                                        const SizedBox(height: 16),
-                                        TextFormField(
-                                          controller: customTypeController,
-                                          decoration: const InputDecoration(
-                                            labelText: 'Enter custom construction type',
-                                            hintText: 'e.g., Kitchen Renovation',
-                                            border: OutlineInputBorder(),
-                                            prefixIcon: Icon(Icons.edit),
+                                  child: hasAutoFilledProject
+                                      ? TextFormField(
+                                          controller: TextEditingController(text: typeController.text),
+                                          enabled: false,
+                                          decoration: InputDecoration(
+                                            labelText: 'Construction type',
+                                            border: const OutlineInputBorder(),
+                                            filled: true,
+                                            fillColor: Colors.grey.shade100,
                                           ),
-                                          textCapitalization: TextCapitalization.words,
-                                          validator: (value) {
-                                            if (showCustomField &&
-                                                (value == null || value.trim().isEmpty)) {
-                                              return 'Please enter a construction type';
-                                            }
-                                            return null;
+                                        )
+                                      : _ProjectDialogState._buildTwoColumnDropdownForHire(
+                                          context: context,
+                                          selectedValue: typeController.text.isNotEmpty &&
+                                                  (availableSpecializations.contains(typeController.text) ||
+                                                   typeController.text.toLowerCase() == 'other')
+                                              ? typeController.text
+                                              : null,
+                                          availableSpecializations: availableSpecializations,
+                                          onSelected: (value) {
+                                            setDialogState(() {
+                                              typeController.text = value;
+                                              if (value.toLowerCase() != 'other') {
+                                                customTypeController.clear();
+                                              }
+                                            });
                                           },
                                         ),
-                                      ],
-                                    ],
-                                  ),
                                 ),
+                                if (!hasAutoFilledProject && showCustomField) ...[
+                                  const SizedBox(height: 16),
+                                  _buildLabeledField(
+                                    label: 'Custom Construction Type',
+                                    child: TextFormField(
+                                      controller: customTypeController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Enter custom construction type',
+                                        hintText: 'e.g., Kitchen Renovation',
+                                        border: OutlineInputBorder(),
+                                        prefixIcon: Icon(Icons.edit),
+                                      ),
+                                      textCapitalization: TextCapitalization.words,
+                                      validator: (value) {
+                                        if (showCustomField &&
+                                            (value == null || value.trim().isEmpty)) {
+                                          return 'Please enter a construction type';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                ],
                                 const SizedBox(height: 16),
                                 _buildLabeledField(
                                   label: 'Location',
@@ -1904,6 +2157,17 @@ class HireModal {
                                       if (!(formKey.currentState?.validate() ??
                                           false)) {
                                         return;
+                                      }
+
+                                      // Validate custom type if "Other" is selected
+                                      if (typeController.text.trim().toLowerCase() == 'other') {
+                                        if (customTypeController.text.trim().isEmpty) {
+                                          ConTrustSnackBar.error(
+                                            context,
+                                            'Please enter a construction type when "Other" is selected.',
+                                          );
+                                          return;
+                                        }
                                       }
 
                                       setDialogState(() => isLoading = true);

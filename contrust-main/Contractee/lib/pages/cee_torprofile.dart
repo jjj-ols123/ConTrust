@@ -107,36 +107,10 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
           });
           await _checkPendingHireRequest();
         } else {
-          setState(() {
-            firmName = "Failed to load contractor";
-            bio = "No bio available";
-            contactNumber = "No contact number";
-            specialization = "No specialization";
-            address = "";
-            rating = 0.0;
-            profileImage = profileUrl;
-            pastProjects = [];
-            completedProjectsCount = 0;
-            allRatings = [];
-            totalReviews = 0;
-            isLoading = false;
-          });
+          _setFailedToLoadState();
         }
       } else {
-        setState(() {
-          firmName = "Failed to load contractor";
-          bio = "No bio available";
-          contactNumber = "No contact number";
-          specialization = "No specialization";
-          address = "";
-          rating = 0.0;
-          profileImage = profileUrl;
-          pastProjects = [];
-          completedProjectsCount = 0;
-          allRatings = [];
-          totalReviews = 0;
-          isLoading = false;
-        });
+        _setFailedToLoadState();
       }
     } catch (e) {
       if (mounted) {
@@ -144,6 +118,23 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
       }
       setState(() => isLoading = false);
     }
+  }
+
+  void _setFailedToLoadState() {
+    setState(() {
+      firmName = "Failed to load contractor";
+      bio = "No bio available";
+      contactNumber = "No contact number";
+      specialization = "No specialization";
+      address = "";
+      rating = 0.0;
+      profileImage = profileUrl;
+      pastProjects = [];
+      completedProjectsCount = 0;
+      allRatings = [];
+      totalReviews = 0;
+      isLoading = false;
+    });
   }
 
   Future<void> _checkAgreementWithContractor() async {

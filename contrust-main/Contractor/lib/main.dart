@@ -23,6 +23,8 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/utils/be_status.dart';
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -300,7 +302,63 @@ class _MyAppState extends State<MyApp> {
                       final session = Supabase.instance.client.auth.currentSession;
                       final projectId = state.pathParameters['projectId'];
                       if (session != null && projectId != null && projectId.isNotEmpty) {
-                        return CorOngoingProjectScreen(projectId: projectId);
+                        return FutureBuilder<Map<String, dynamic>?>(
+                          future: FetchService().fetchProjectDetails(projectId),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return const Scaffold(
+                                body: Center(child: CircularProgressIndicator(color: Colors.amber)),
+                              );
+                            }
+                            if (snapshot.hasError || !snapshot.hasData) {
+                              return Scaffold(
+                                body: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        snapshot.hasError ? 'Error loading project' : 'Project not found',
+                                        style: const TextStyle(fontSize: 16),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }
+                            final project = snapshot.data!;
+                            final contractorId = project['contractor_id']?.toString();
+                            if (contractorId != session.user.id) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                context.go('/dashboard');
+                              });
+                              return const Scaffold(
+                                body: Center(child: CircularProgressIndicator(color: Colors.amber)),
+                              );
+                            }
+                            final status = project['status']?.toString().toLowerCase();
+                            final allowedStatuses = ['active'];
+                            if (!allowedStatuses.contains(status)) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Only active projects can be viewed. Current status: ${ProjectStatus().getStatusLabel(status)}',
+                                    ),
+                                    backgroundColor: Colors.orange,
+                                    duration: const Duration(seconds: 3),
+                                  ),
+                                );
+                                context.go('/dashboard');
+                              });
+                              return const Scaffold(
+                                body: Center(child: CircularProgressIndicator(color: Colors.amber)),
+                              );
+                            }
+                            return CorOngoingProjectScreen(projectId: projectId);
+                          },
+                        );
                       }
                       return const ToLoginScreen();
                     },

@@ -221,6 +221,10 @@ class _RegistrationPageState extends State<RegistrationPage> {
           }
         });
       }
+    } catch (e) {
+      if (mounted) {
+        ConTrustSnackBar.error(context, 'Registration failed: ${e.toString()}');
+      }
     } finally {
       if (mounted) setState(() => _isSigningUp = false);
     }

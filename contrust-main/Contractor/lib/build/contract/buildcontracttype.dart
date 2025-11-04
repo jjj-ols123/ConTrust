@@ -195,10 +195,7 @@ class ContractTypeBuild {
           key: contractListKey,
           stream: FetchService().streamCreatedContracts(contractorId),
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator(color: Colors.amber));
-            }
-            if (!snapshot.hasData) {
+            if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
               return const Center(child: CircularProgressIndicator(color: Colors.amber));
             }
             final contracts = snapshot.data!;

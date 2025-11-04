@@ -10,7 +10,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class BiddingUIBuildMethods {
   BiddingUIBuildMethods({
     required this.context,
-    required this.isLoading,
     required this.projects,
     required this.highestBids,
     required this.onRefresh,
@@ -25,7 +24,6 @@ class BiddingUIBuildMethods {
   }) ;
 
   final BuildContext context;
-  final bool isLoading;
   final List<Map<String, dynamic>> projects;
   final Map<String, double> highestBids;
   final VoidCallback onRefresh;
@@ -355,9 +353,7 @@ class BiddingUIBuildMethods {
 
   Widget buildProjectGrid() {
     final screenWidth = MediaQuery.of(context).size.width;
-    return isLoading
-        ? const Center(child: CircularProgressIndicator(color: Colors.amber))
-        : projects.isEmpty
+    return projects.isEmpty
         ? const Center(child: Text("No projects available"))
         : GridView.builder(
           padding: const EdgeInsets.all(16),
@@ -1081,9 +1077,18 @@ class BiddingUIBuildMethods {
                         project['duration'],
                       ),
                       builder: (ctx, snap) {
-                        if (!snap.hasData) {
+                        if (snap.connectionState == ConnectionState.waiting && !snap.hasData) {
                           return const Text(
                             'Loading...',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF85929E),
+                            ),
+                          );
+                        }
+                        if (!snap.hasData) {
+                          return const Text(
+                            'Calculating...',
                             style: TextStyle(
                               fontSize: 13,
                               color: Color(0xFF85929E),

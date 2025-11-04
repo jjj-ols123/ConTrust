@@ -1,4 +1,5 @@
 // ignore_for_file: use_build_context_synchronously, avoid_print, deprecated_member_use
+import 'dart:async';
 import 'package:backend/services/contractor services/cor_dashboardservice.dart';
 import 'package:backend/services/both services/be_realtime_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
@@ -57,7 +58,9 @@ class _DashboardUIState extends State<DashboardUI>
   List<Map<String, dynamic>> recentActivities = [];
   List<Map<String, dynamic>> localTasks = [];
   double totalEarnings = 0.0;
-  int totalClients = 0;  late AnimationController _fadeController;
+  int totalClients = 0;
+  Timer? _debounceTimer;
+  late AnimationController _fadeController;
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -87,6 +90,7 @@ class _DashboardUIState extends State<DashboardUI>
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     if (widget.contractorId != null) {
       realtimeService.unsubscribeFromUserChannels(widget.contractorId!);
     }
@@ -131,25 +135,29 @@ class _DashboardUIState extends State<DashboardUI>
   Future<void> _setupRealtimeSubscriptions() async {
     if (widget.contractorId == null) return;
 
+    // Debounced load function to prevent multiple rapid calls
+    void debouncedFetchData() {
+      _debounceTimer?.cancel();
+      _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          fetchDashboardData();
+        }
+      });
+    }
+
     realtimeService.subscribeToNotifications(
       userId: widget.contractorId!,
-      onUpdate: () {
-        if (mounted) fetchDashboardData();
-      },
+      onUpdate: debouncedFetchData,
     );
 
     realtimeService.subscribeToContractorProjects(
       userId: widget.contractorId!,
-      onUpdate: () {
-        if (mounted) fetchDashboardData();
-      },
+      onUpdate: debouncedFetchData,
     );
 
     realtimeService.subscribeToContractorBids(
       userId: widget.contractorId!,
-      onUpdate: () {
-        if (mounted) fetchDashboardData();
-      },
+      onUpdate: debouncedFetchData,
     );
   }
 

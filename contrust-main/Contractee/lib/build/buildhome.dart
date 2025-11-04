@@ -387,6 +387,7 @@ class HomePageBuilder {
     required BuildContext context,
     required String projectId,
     required Future<void> Function(String projectId, String bidId) acceptBidding,
+    required Future<void> Function(String projectId, String bidId, {String? reason}) rejectBidding,
     String? projectStatus,
     Set<String>? bidsLoading, 
   }) {
@@ -484,6 +485,7 @@ class HomePageBuilder {
                     context: context,
                     bid: bid,
                     onAccept: () => acceptBidding(projectId, bid['bid_id']),
+                    onReject: (String? reason) => rejectBidding(projectId, bid['bid_id'], reason: reason),
                     projectStatus: projectStatus,
                     isLoading: isLoading,
                   );
@@ -500,6 +502,7 @@ class HomePageBuilder {
     required BuildContext context,
     required Map<String, dynamic> bid,
     required VoidCallback onAccept,
+    required void Function(String? reason) onReject,
     String? projectStatus,
     bool isLoading = false,
   }) {
@@ -507,7 +510,9 @@ class HomePageBuilder {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
     final isAccepted = bid['status'] == 'accepted';
-    final canAccept = projectStatus == 'pending' && !isAccepted;
+    final isRejected = bid['status'] == 'rejected';
+    final canAccept = projectStatus == 'pending' && !isAccepted && !isRejected;
+    final canReject = projectStatus == 'pending' && !isAccepted && !isRejected;
     
     return Stack(
       children: [
@@ -594,24 +599,44 @@ class HomePageBuilder {
                 ),
               ),
               
-              if (canAccept) ...[
+              if (canAccept || canReject) ...[
                 const SizedBox(width: 8),
-                IconButton(
-                  onPressed: isLoading ? null : () {
-                    _showAcceptBidDialog(context, bid, onAccept);
-                  },
-                  icon: Icon(Icons.check, size: isMobile ? 16 : 18),
-                  tooltip: 'Accept Bid',
-                  padding: EdgeInsets.all(isMobile ? 3 : 4),
-                  constraints: BoxConstraints(
-                    minWidth: isMobile ? 28 : 32, 
-                    minHeight: isMobile ? 28 : 32
+                if (canReject)
+                  IconButton(
+                    onPressed: isLoading ? null : () {
+                      _showRejectBidDialog(context, bid, (String? reason) => onReject(reason));
+                    },
+                    icon: Icon(Icons.close, size: isMobile ? 16 : 18),
+                    tooltip: 'Reject Bid',
+                    padding: EdgeInsets.all(isMobile ? 3 : 4),
+                    constraints: BoxConstraints(
+                      minWidth: isMobile ? 28 : 32, 
+                      minHeight: isMobile ? 28 : 32
+                    ),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.red.shade100,
+                      foregroundColor: Colors.red.shade700,
+                    ),
                   ),
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.green.shade100,
-                    foregroundColor: Colors.green.shade700,
+                if (canAccept) ...[
+                  if (canReject) const SizedBox(width: 4),
+                  IconButton(
+                    onPressed: isLoading ? null : () {
+                      _showAcceptBidDialog(context, bid, onAccept);
+                    },
+                    icon: Icon(Icons.check, size: isMobile ? 16 : 18),
+                    tooltip: 'Accept Bid',
+                    padding: EdgeInsets.all(isMobile ? 3 : 4),
+                    constraints: BoxConstraints(
+                      minWidth: isMobile ? 28 : 32, 
+                      minHeight: isMobile ? 28 : 32
+                    ),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.green.shade100,
+                      foregroundColor: Colors.green.shade700,
+                    ),
                   ),
-                ),
+                ],
               ],
             ],
           ),
@@ -713,6 +738,106 @@ class HomePageBuilder {
                 foregroundColor: Colors.white,
               ),
               child: const Text('Accept Bid'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  static void _showRejectBidDialog(
+    BuildContext context,
+    Map<String, dynamic> bid,
+    void Function(String? reason) onReject,
+  ) {
+    final contractor = bid['contractor'] as Map<String, dynamic>?;
+    final reasonController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(Icons.cancel, color: Colors.red.shade600),
+              const SizedBox(width: 12),
+              const Text('Reject Bid'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Are you sure you want to reject this bid?'),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Contractor: ${contractor?['firm_name'] ?? 'Unknown'}',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Bid Amount: ₱${bid['bid_amount']?.toString() ?? '0'}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green.shade700,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Reason for rejection (optional)',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: reasonController,
+                decoration: const InputDecoration(
+                  hintText: 'Enter reason...',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'The contractor will be notified about this rejection.',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final reason = reasonController.text.trim().isEmpty 
+                    ? null 
+                    : reasonController.text.trim();
+                Navigator.of(dialogContext).pop();
+                onReject(reason);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade600,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Reject Bid'),
             ),
           ],
         );

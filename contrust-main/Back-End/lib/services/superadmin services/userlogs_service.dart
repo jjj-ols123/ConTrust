@@ -16,7 +16,7 @@ class SuperAdminUserService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await SuperAdminErrorService().logError(
-        errorMessage: 'Failed to fetch users by role: ',
+        errorMessage: 'Failed to fetch users by role: $e',
         module: 'Super Admin Users',
         severity: 'Medium',
         extraInfo: {
@@ -25,7 +25,7 @@ class SuperAdminUserService {
           'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
-      throw Exception('Failed to fetch users by role: ');
+      throw Exception('Failed to fetch users by role: $e');
     }
   }
 

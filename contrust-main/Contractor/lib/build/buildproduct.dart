@@ -7,7 +7,6 @@ import 'package:backend/services/contractor services/cor_productservice.dart';
 class ProductBuildMethods {
   static Widget buildProductUI({
     required BuildContext context,
-    required bool isLoading,
     required String search,
     required Function(String) onSearchChanged,
     required List<Map<String, dynamic>> projects,
@@ -31,11 +30,7 @@ class ProductBuildMethods {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       body:
-          isLoading
-              ? const Center(
-                child: CircularProgressIndicator(color: Colors.amber),
-              )
-              : Padding(
+          Padding(
                 padding: EdgeInsets.all(isDesktop ? 24 : 16),
                 child: width > 800
                     ? Row(

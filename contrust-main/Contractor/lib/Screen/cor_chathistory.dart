@@ -26,6 +26,10 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
   final ScrollController scrollController = ScrollController();
   late Future<String?> projectStatus;
   bool isSending = false;
+  
+  // Cache for contractee data and unread counts to avoid N+1 queries
+  final Map<String, Map<String, dynamic>> _contracteeDataCache = {};
+  final Map<String, int> _unreadCountCache = {};
 
   @override
   void initState() {
@@ -110,9 +114,35 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
     });
   }
 
-  Future<Map<String, dynamic>?> _loadContracteeData(
-      String contracteeId) async {
-    return await MessageService().fetchContracteeData(contracteeId);
+  Future<void> _prefetchChatData(List<Map<String, dynamic>> chats, String userId) async {
+    final contracteeIds = chats.map((chat) => chat['contractee_id'] as String).toSet().toList();
+    final chatRoomIds = chats.map((chat) => chat['chatroom_id'] as String).toList();
+
+    final futures = contracteeIds.map((id) => 
+      MessageService().fetchContracteeData(id).then((data) => MapEntry(id, data))
+    );
+    final contracteeResults = await Future.wait(futures);
+    
+
+    for (final entry in contracteeResults) {
+      if (entry.value != null) {
+        _contracteeDataCache[entry.key] = entry.value!;
+      }
+    }
+
+    final unreadFutures = chatRoomIds.map((chatRoomId) =>
+      MessageService().getUnreadMessageCount(chatRoomId: chatRoomId, userId: userId)
+        .then((count) => MapEntry(chatRoomId, count))
+    );
+    final unreadResults = await Future.wait(unreadFutures);
+ 
+    for (final entry in unreadResults) {
+      _unreadCountCache[entry.key] = entry.value;
+    }
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   String formatTime(DateTime? time) {
@@ -208,6 +238,11 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
 
                     final chats = snapshot.data ?? [];
 
+                    // Pre-fetch all contractee data and unread counts in batch
+                    if (chats.isNotEmpty && contractorId != null) {
+                      _prefetchChatData(chats, contractorId!);
+                    }
+
                     if (chats.isEmpty) {
                       return const Center(
                         child: Column(
@@ -245,31 +280,25 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
                       itemBuilder: (context, index) {
                         final chat = chats[index];
                         final contracteeId = chat['contractee_id'] as String;
+                        final chatRoomId = chat['chatroom_id'] as String;
 
-                        return FutureBuilder<Map<String, dynamic>?>(
-                          future: _loadContracteeData(contracteeId),
-                          builder: (context, contracteeSnap) {
-                            final contracteeName = contracteeSnap.data != null
-                                ? contracteeSnap.data!['full_name'] ?? 'Contractee'
-                                : 'Contractee';
-                            final contracteeProfile = contracteeSnap.data?['profile_photo'];
-                            final lastMessage = chat['last_message'] ?? '';
-                            final lastTime = chat['last_message_time'] != null
-                                ? DateTime.tryParse(chat['last_message_time'])
-                                : null;
+                        // Use cached data instead of FutureBuilder
+                        final contracteeData = _contracteeDataCache[contracteeId];
+                        final contracteeName = contracteeData != null
+                            ? contracteeData['full_name'] ?? 'Contractee'
+                            : 'Contractee';
+                        final contracteeProfile = contracteeData?['profile_photo'];
+                        final lastMessage = chat['last_message'] ?? '';
+                        final lastTime = chat['last_message_time'] != null
+                            ? DateTime.tryParse(chat['last_message_time'])
+                            : null;
+                        final unreadCount = _unreadCountCache[chatRoomId] ?? 0;
+                        final hasUnread = unreadCount > 0;
 
-                            return FutureBuilder<int>(
-                              future: MessageService().getUnreadMessageCount(
-                                chatRoomId: chat['chatroom_id'],
-                                userId: contractorId!,
-                              ),
-                              builder: (context, unreadSnap) {
-                                final unreadCount = unreadSnap.data ?? 0;
-                                final hasUnread = unreadCount > 0;
-
-                                return Card(
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  child: InkWell(
+                        return Card(
+                          key: ValueKey(chatRoomId),
+                          margin: const EdgeInsets.only(bottom: 12),
+                          child: InkWell(
                                     onTap: () {
                                       context.go('/chat/${Uri.encodeComponent(contracteeName)}', extra: {
                                         'chatRoomId': chat['chatroom_id'],
@@ -365,10 +394,6 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
                                     ),
                                   ),
                                 );
-                              },
-                            );
-                          },
-                        );
                       },
                     );
                   },

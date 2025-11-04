@@ -1,4 +1,5 @@
 // ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously, deprecated_member_use
+import 'dart:async';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/contractor services/cor_profileservice.dart';
 import 'package:flutter/material.dart';
@@ -53,6 +54,7 @@ class _ContractorUserProfileScreenState
   late TextEditingController transactionSearchController;
 
   Stream<List<Map<String, dynamic>>>? _completedProjectsStream;
+  StreamSubscription<List<Map<String, dynamic>>>? _streamSubscription;
 
   List<Map<String, dynamic>> allRatings = [];
   Map<int, int> ratingDistribution = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
@@ -83,11 +85,23 @@ class _ContractorUserProfileScreenState
   }
 
   void _initializeStreams() {
+    _streamSubscription?.cancel();
     _completedProjectsStream = FetchService().streamCompletedProjects();
+    _streamSubscription = _completedProjectsStream?.listen((data) {
+      if (mounted) {
+        setState(() {
+          completedProjects = data;
+          allProjects = data;
+          filteredProjects = data;
+          _applySearchFilter();
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
+    _streamSubscription?.cancel();
     bioController.dispose();
     contactController.dispose();
     firmNameController.dispose();
@@ -397,18 +411,6 @@ class _ContractorUserProfileScreenState
             child: Text('Error loading projects'),
           );
         }
-
-        final projectsData = snapshot.data ?? [];
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            setState(() {
-              completedProjects = projectsData;
-              allProjects = projectsData;
-              filteredProjects = projectsData;
-              _applySearchFilter();
-            });
-          }
-        });
 
         return ProfileBuildMethods.buildClientHistory(
           context: context,

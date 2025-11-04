@@ -432,8 +432,6 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
           profileImage = newImageUrl;
           isUploadingPhoto = false;
         });
-
-        await loadContracteeData();
       } else {
         setState(() => isUploadingPhoto = false);
       }

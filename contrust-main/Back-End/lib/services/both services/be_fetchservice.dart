@@ -69,7 +69,7 @@ class FetchService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch contractors: ',
+        errorMessage: 'Failed to fetch contractors: $e',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -90,7 +90,7 @@ class FetchService {
       return response?['chatroom_id'];
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to fetch chat room ID: ',
+        errorMessage: 'Failed to fetch chat room ID: $e',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {
@@ -240,34 +240,25 @@ class FetchService {
 
   Future<String?> fetchProjectStatus(String chatRoomId) async {
     try {
-      final chatRoomResponse = await _supabase
+      final response = await _supabase
           .from('ChatRoom')
-          .select('project_id')
+          .select('''
+            project_id,
+            project:Projects(status)
+          ''')
           .eq('chatroom_id', chatRoomId)
           .maybeSingle();
 
-      if (chatRoomResponse == null) {
+      if (response == null) {
         return null;
       }
 
-      final projectId = chatRoomResponse['project_id'];
-
-      if (projectId == null) {
+      final project = response['project'];
+      if (project == null) {
         return null;
       }
 
-      final projectResponse = await _supabase
-          .from('Projects')
-          .select('status')
-          .eq('project_id', projectId)
-          .maybeSingle();
-
-      if (projectResponse == null) {
-        return null;
-      }
-
-      final status = projectResponse['status'];
-
+      final status = project['status'] as String?;
       return status;
     } catch (e) {
       await _errorService.logError(
@@ -611,30 +602,48 @@ class FetchService {
           .eq('contractor_id', contractorId)
           .order('created_at', ascending: false)
           .asyncMap((List<Map<String, dynamic>> contracts) async {
-            // Fetch project information for each contract
             final enrichedContracts = <Map<String, dynamic>>[];
+            
+            if (contracts.isEmpty) {
+              return enrichedContracts;
+            }
+            
+            final projectIds = contracts
+                .map((c) => c['project_id'] as String?)
+                .where((id) => id != null && id.isNotEmpty)
+                .toSet()
+                .toList();
+            
+            final Map<String, Map<String, dynamic>> projectInfoMap = {};
+            if (projectIds.isNotEmpty) {
+              try {
+                final projects = await _supabase
+                    .from('Projects')
+                    .select('project_id, type, description, title')
+                    .inFilter('project_id', projectIds);
+                
+                for (var project in projects) {
+                  projectInfoMap[project['project_id']] = {
+                    'type': project['type'],
+                    'description': project['description'],
+                    'title': project['title'],
+                  };
+                }
+              } catch (e) {
+                // If batch fetch fails, projectInfoMap remains empty
+              }
+            }
             
             for (final contract in contracts) {
               final projectId = contract['project_id'] as String?;
-              Map<String, dynamic>? projectInfo;
+              final enrichedContract = Map<String, dynamic>.from(contract);
               
-              if (projectId != null) {
-                try {
-                  final projectResponse = await _supabase
-                      .from('Projects')
-                      .select('type, description, title')
-                      .eq('project_id', projectId)
-                      .maybeSingle();
-                  projectInfo = projectResponse;
-                } catch (e) {
-                  // If project fetch fails, continue without project info
-                  projectInfo = null;
-                }
+              if (projectId != null && projectInfoMap.containsKey(projectId)) {
+                enrichedContract['project'] = projectInfoMap[projectId];
+              } else {
+                enrichedContract['project'] = null;
               }
               
-              // Add project info to contract
-              final enrichedContract = Map<String, dynamic>.from(contract);
-              enrichedContract['project'] = projectInfo;
               enrichedContracts.add(enrichedContract);
             }
             
@@ -677,25 +686,40 @@ class FetchService {
           .asyncMap((List<Map<String, dynamic>> projects) async {
             final enrichedProjects = <Map<String, dynamic>>[];
             
+            final contracteeIds = projects
+                .map((p) => p['contractee_id'] as String?)
+                .where((id) => id != null && id.isNotEmpty)
+                .toSet()
+                .toList();
+            
+            final Map<String, Map<String, dynamic>> contracteeInfoMap = {};
+            if (contracteeIds.isNotEmpty) {
+              try {
+                final contractees = await _supabase
+                    .from('Contractee')
+                    .select('contractee_id, full_name')
+                    .inFilter('contractee_id', contracteeIds);
+                
+                for (var contractee in contractees) {
+                  contracteeInfoMap[contractee['contractee_id']] = {
+                    'full_name': contractee['full_name'],
+                  };
+                }
+              } catch (e) {
+                // If batch fetch fails, contracteeInfoMap remains empty
+              }
+            }
+            
             for (final project in projects) {
               final contracteeId = project['contractee_id'] as String?;
-              Map<String, dynamic>? contracteeInfo;
+              final enrichedProject = Map<String, dynamic>.from(project);
               
-              if (contracteeId != null) {
-                try {
-                  final contracteeResponse = await _supabase
-                      .from('Contractee')
-                      .select('full_name')
-                      .eq('contractee_id', contracteeId)
-                      .maybeSingle();
-                  contracteeInfo = contracteeResponse;
-                } catch (e) {
-                  contracteeInfo = null;
-                }
+              if (contracteeId != null && contracteeInfoMap.containsKey(contracteeId)) {
+                enrichedProject['contractee'] = contracteeInfoMap[contracteeId];
+              } else {
+                enrichedProject['contractee'] = null;
               }
               
-              final enrichedProject = Map<String, dynamic>.from(project);
-              enrichedProject['contractee'] = contracteeInfo;
               enrichedProjects.add(enrichedProject);
             }
             
@@ -703,7 +727,7 @@ class FetchService {
           });
     } catch (e) {
       _errorService.logError(
-        errorMessage: 'Failed to stream completed projects: ',
+        errorMessage: 'Failed to stream completed projects: $e',
         module: 'Fetch Service',
         severity: 'Low',
         extraInfo: {

@@ -304,16 +304,34 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: contractMessages.length,
-          itemBuilder: (context, index) {
-            final contractMsg = contractMessages[index];
-            return FutureBuilder<Map<String, dynamic>?>(
-              future: ContractService.getContractById(contractMsg['contract_id']),
-              builder: (context, contractSnapshot) {
-                if (!contractSnapshot.hasData || contractSnapshot.data == null) {
+        final contractIds = contractMessages
+            .map((msg) => msg['contract_id'] as String?)
+            .whereType<String>()
+            .toSet()
+            .toList();
+        
+        return FutureBuilder<Map<String, Map<String, dynamic>>>(
+          future: _batchFetchContracts(contractIds),
+          builder: (context, contractsSnapshot) {
+            if (!contractsSnapshot.hasData) {
+              return const Center(
+                child: CircularProgressIndicator(color: Colors.amber),
+              );
+            }
+            
+            final contractsCache = contractsSnapshot.data!;
+            
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: contractMessages.length,
+              itemBuilder: (context, index) {
+                final contractMsg = contractMessages[index];
+                final contractId = contractMsg['contract_id'] as String?;
+                final contract = contractId != null ? contractsCache[contractId] : null;
+                
+                if (contract == null) {
                   return Container(
+                    key: ValueKey('contract_${contractMsg['msg_id']}'),
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -326,21 +344,22 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
                         Icon(Icons.description, color: Colors.grey, size: 20),
                         SizedBox(width: 12),
                         Text(
-                          'Loading contract...',
+                          'Contract not found',
                           style: TextStyle(color: Colors.grey),
                         ),
                       ],
                     ),
                   );
                 }
-
-                final contract = contractSnapshot.data!;
+                
+                // Use cached contract data
                 final messageStatus = contractMsg['contract_status']?.toString();
                 final displayStatus = messageStatus ?? contract['status']?.toString() ?? 'Unknown';
                 final statusColor = _getContractStatusColor(displayStatus);
                 final statusLabel = _getContractStatusLabel(displayStatus);
 
                 return Container(
+                  key: ValueKey('contract_$contractId'),
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -432,6 +451,25 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
         );
       },
     );
+  }
+
+  Future<Map<String, Map<String, dynamic>>> _batchFetchContracts(List<String> contractIds) async {
+    if (contractIds.isEmpty) return {};
+    
+    final futures = contractIds.map((id) =>
+      ContractService.getContractById(id).then((contract) => MapEntry(id, contract))
+    );
+    
+    final results = await Future.wait(futures);
+    final Map<String, Map<String, dynamic>> contractsMap = {};
+    
+    for (final entry in results) {
+      if (entry.value != null) {
+        contractsMap[entry.key] = entry.value;
+      }
+    }
+    
+    return contractsMap;
   }
 
   Color _getContractStatusColor(String status) {
@@ -658,12 +696,13 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
                 child: Icon(Icons.person, color: Colors.amber, size: 20),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Loading...',
-                style: TextStyle(
+              Text(
+                _contracteeName ?? widget.contracteeName,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                 ),
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -672,14 +711,7 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SizedBox(
-                width: 40,
-                height: 40,
-                child: CircularProgressIndicator(
-                  color: Colors.amber,
-                  strokeWidth: 3,
-                ),
-              ),
+              const CircularProgressIndicator(color: Colors.amber),
               const SizedBox(height: 16),
               Text(
                 'Loading conversation...',
@@ -695,6 +727,10 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
       );
     }
     
+    return _buildMessageContent();
+  }
+
+  Widget _buildMessageContent() {
     final messageUIBuilder = MessageUIBuildMethods(
       context: context,
       supabase: supabase,

@@ -82,6 +82,7 @@ class _CreateContractPageState extends State<CreateContractPage>
       
       if (selectedTemplate != null && selectedTemplate!.containsKey('template_name') && !selectedTemplate!.containsKey('contract_type_id')) {
         final templateName = selectedTemplate!['template_name'];
+        selectedContractType = templateName;
         final templates = await fetchService.fetchContractTypes();
         selectedTemplate = templates.firstWhere(
           (t) => t['template_name'] == templateName,
@@ -89,9 +90,9 @@ class _CreateContractPageState extends State<CreateContractPage>
         );
         if (selectedTemplate!.isEmpty && mounted) {
           ConTrustSnackBar.error(context, 'Template not found');
-          return;
+        } else {
+          selectedContractType = selectedTemplate!['template_name'];
         }
-        selectedContractType = selectedTemplate!['template_name'];
       }
       
       if (existingContract != null && existingContract!['title'] == null) {
@@ -660,7 +661,8 @@ class _CreateContractPageState extends State<CreateContractPage>
             },
           ),
 
-          Expanded(
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.72,
             child: ContractTabsBuild.buildTabBarView(
               tabController: tabController,
               templatePreview: ContractTabsBuild.buildTemplatePreview(

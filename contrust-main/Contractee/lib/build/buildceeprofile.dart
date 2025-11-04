@@ -114,6 +114,44 @@ class CeeProfileBuildMethods {
     );
   }
 
+  static Widget buildStickyHeader(String title) {
+    return SliverAppBar(
+      pinned: true,
+      floating: false,
+      snap: false,
+      elevation: 0,
+      backgroundColor: const Color(0xFFFFF9E6),
+      surfaceTintColor: Colors.transparent,
+      automaticallyImplyLeading: false,
+      toolbarHeight: 60,
+      flexibleSpace: Container(
+        height: 60,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF9E6),     
+          border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.handyman_rounded, color: const Color(0xFFFFB300), size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   static Widget buildMainContent(String selectedTab, Function buildAboutContent, Function buildHistoryContent) {
     switch (selectedTab) {
       case 'About':

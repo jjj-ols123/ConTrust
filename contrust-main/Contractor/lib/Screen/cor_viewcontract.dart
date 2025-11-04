@@ -158,57 +158,68 @@ class _ContractorViewContractPageState extends State<ContractorViewContractPage>
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        ViewContractBuild.buildHeader(
-          context, 
-          _getContractTitle(), 
-          onDownload: downloadContract,
-            downloadButtonText: _getDownloadButtonText(),
-          ),
-          Expanded(
-            child: isLoading
-                ? ViewContractBuild.buildLoadingState()
-                : errorMessage != null
-                    ? ViewContractBuild.buildErrorState(errorMessage!, loadContract)
-                    : SingleChildScrollView(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            FutureBuilder<String?>(
-                              future: _getPdfUrlWithSignedPriority(),
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState == ConnectionState.waiting) {
-                                  return Card(
-                                    child: SizedBox(
-                                      height: 400,
-                                      child: const Center(
-                                        child: CircularProgressIndicator(color: Colors.amber),
-                                      ),
-                                    ),
-                                  );
-                                }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Column(
+          children: [
+            ViewContractBuild.buildHeader(
+              context, 
+              _getContractTitle(), 
+              onDownload: downloadContract,
+              downloadButtonText: _getDownloadButtonText(),
+            ),
+            Expanded(
+              child: isLoading
+                  ? ViewContractBuild.buildLoadingState()
+                  : errorMessage != null
+                      ? ViewContractBuild.buildErrorState(errorMessage!, loadContract)
+                      : SingleChildScrollView(
+                          padding: const EdgeInsets.all(24),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: constraints.maxHeight > 0 
+                                  ? constraints.maxHeight - 100 
+                                  : 0,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                FutureBuilder<String?>(
+                                  future: _getPdfUrlWithSignedPriority(),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.connectionState == ConnectionState.waiting) {
+                                      return Card(
+                                        child: SizedBox(
+                                          height: 400,
+                                          child: const Center(
+                                            child: CircularProgressIndicator(color: Colors.amber),
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                    
+                                    return ViewContractBuild.buildPdfViewer(
+                                      pdfUrl: snapshot.data,
+                                      onDownload: downloadContract,
+                                      height: 600,
+                                      isSignedContract: contractData?['signed_pdf_url'] != null && 
+                                                       (contractData!['signed_pdf_url'] as String).isNotEmpty,
+                                    );
+                                  },
+                                ),            
+                                const SizedBox(height: 24),
                                 
-                                return ViewContractBuild.buildPdfViewer(
-                                  pdfUrl: snapshot.data,
-                                  onDownload: downloadContract,
-                                  height: 600,
-                                  isSignedContract: contractData?['signed_pdf_url'] != null && 
-                                                   (contractData!['signed_pdf_url'] as String).isNotEmpty,
-                                );
-                              },
-                            ),            
-                            const SizedBox(height: 24),
-                            
-                            ViewContractBuild.buildEnhancedSignaturesSection(contractData),
-                          ],
+                                ViewContractBuild.buildEnhancedSignaturesSection(contractData),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
-          ),
-        ],
-      );
-    }
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   void dispose() {

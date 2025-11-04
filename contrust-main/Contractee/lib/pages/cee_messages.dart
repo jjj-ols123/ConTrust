@@ -238,14 +238,15 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
                 child: Icon(Icons.person, color: Colors.amber[700], size: 24),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Loading...',
-                  style: TextStyle(
+                  widget.contractorName,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
                     fontSize: 18,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -255,14 +256,7 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SizedBox(
-                width: 40,
-                height: 40,
-                child: CircularProgressIndicator(
-                  strokeWidth: 3,
-                  color: Colors.amber,
-                ),
-              ),
+              const CircularProgressIndicator(color: Colors.amber),
               const SizedBox(height: 16),
               Text(
                 'Loading conversation...',
@@ -278,6 +272,11 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
       );
     }
     
+    return _buildMessageContent();
+  }
+
+  Widget _buildMessageContent() {
+    final screenWidth = MediaQuery.of(context).size.width;
     final messageUIBuilder = MessageUIBuildMethods(
       context: context,
       supabase: supabase,
@@ -334,10 +333,11 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
         ),
       ),
       body: screenWidth > 1200 
-        ? Column(
-            children: [
-              CeeProfileBuildMethods.buildHeader(context, 'Messages'),
-              Expanded(
+        ? CustomScrollView(
+            slivers: [
+              CeeProfileBuildMethods.buildStickyHeader('Messages'),
+              SliverFillRemaining(
+                hasScrollBody: false,
                 child: Row(
                   children: [
                     messageUIBuilder.buildChatHistoryUI(),
@@ -350,14 +350,14 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
           )
         : Column(
             children: [
-              CeeProfileBuildMethods.buildHeader(context, 'Messages'),
+              CeeProfileBuildMethods.buildStickyHeader('Messages'),
               FutureBuilder<String?>(
                 future: _projectStatus,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator(color: Colors.amber));
+                    return const SizedBox(height: 60, child: Center(child: CircularProgressIndicator(color: Colors.amber, strokeWidth: 2)));
                   } else if (snapshot.hasError) {
-                    return Center(child: Text('Error loading status'));
+                    return const SizedBox.shrink();
                   } else {
                     final projectStatus = snapshot.data ?? 'pending';
 
@@ -370,8 +370,8 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
                         },
                       );
                     }
+                    return const SizedBox.shrink();
                   }
-                  return Container();
                 },
               ),
               Expanded(

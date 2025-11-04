@@ -23,7 +23,6 @@ class _BiddingScreenState extends State<BiddingScreen> {
   List<Map<String, dynamic>> projects = [];
   Map<String, double> highestBids = {};
   Map<String, Map<String, dynamic>> contracteeInfo = {};
-  bool isLoading = true;
   String? contractorId;
   Map<String, dynamic>? selectedProject;
   List<Map<String, dynamic>> contractorBids = [];
@@ -53,18 +52,15 @@ class _BiddingScreenState extends State<BiddingScreen> {
           contracteeInfo = data['contracteeInfo'];
           highestBids = data['highestBids'];
           contractorBids = data['contractorBids'];
-          isLoading = false;
         });
       } else {
         if (mounted) {
           ConTrustSnackBar.error(context, data['error'] ?? 'Error loading data');
         }
-        setState(() => isLoading = false);
       }
     } catch (e) {
       if (mounted) {
         ConTrustSnackBar.error(context, 'Error loading data: $e');
-        setState(() => isLoading = false);
       }
     }
   }
@@ -132,7 +128,6 @@ class _BiddingScreenState extends State<BiddingScreen> {
 
           final builder = BiddingUIBuildMethods(
             context: context,
-            isLoading: isLoading,
             projects: projects,
             highestBids: highestBids,
             onRefresh: () {

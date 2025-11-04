@@ -181,6 +181,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    if (_selectedSpecializations.isEmpty) {
+      ConTrustSnackBar.error(
+        context,
+        'Please select at least one specialization.',
+      );
+      return;
+    }
+
     setState(() => _isSigningUp = true);
     app.setRegistrationState(true);
 
@@ -411,13 +419,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   child: Stack(
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(top: 100),
+                        padding: const EdgeInsets.only(top: 60),
                         child: Center(
                           child: SingleChildScrollView(
-                            padding: const EdgeInsets.all(20),
+                            padding: const EdgeInsets.all(16),
                             child: Container(
                               width: isPhone ? screenWidth * 0.9 : 700,
-                              padding: const EdgeInsets.all(28),
+                              padding: const EdgeInsets.all(20),
                               margin: const EdgeInsets.symmetric(horizontal: 20),
                               decoration: BoxDecoration(
                                 color: Colors.white,
@@ -482,11 +490,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     BuildContext context,
     VoidCallback onUpdate,
   ) async {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final bool isDesktop = screenWidth >= 900;
-    final bool isTablet = screenWidth >= 600 && screenWidth < 900;
-    final bool isMobile = screenWidth < 600;
-    
+
     showDialog(
       context: context,
       builder:
@@ -735,7 +739,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                   ),
-                _buildFooter(context, isDesktop, isTablet, isMobile),
                 ],
               ),
             ),
@@ -779,33 +782,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
       children: [
         Column(
           children: [
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             Text(
               'Join ConTrust',
               style: TextStyle(
-                fontSize: 28,
+                fontSize: 26,
                 fontWeight: FontWeight.bold,
                 color: Colors.grey.shade800,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             const Text(
               'Register as a Contractor',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
+              style: TextStyle(color: Colors.grey, fontSize: 15),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               'Be a part of our community and start your journey with us today!',
               style: TextStyle(
                 color: Colors.amber.shade600,
-                fontSize: 12,
+                fontSize: 11,
                 fontStyle: FontStyle.italic,
               ),
               textAlign: TextAlign.center,
             ),
           ],
         ),
-        const SizedBox(height: 30),
+        const SizedBox(height: 20),
         TextFormField(
           controller: firmNameController,
           decoration: InputDecoration(
@@ -836,7 +839,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             });
           },
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 12),
         TextFormField(
           controller: addressController,
           decoration: InputDecoration(
@@ -850,7 +853,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 12),
         // Specialization Field
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -862,7 +865,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 });
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(12),
@@ -896,10 +899,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             // Selected Specializations Chips
             if (_selectedSpecializations.isNotEmpty) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                spacing: 6,
+                runSpacing: 6,
                 children: _selectedSpecializations.map((spec) {
                   return Chip(
                     label: Text(spec),
@@ -917,9 +920,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ],
             // Dropdown List
             if (_showSpecializationDropdown) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Container(
-                constraints: const BoxConstraints(maxHeight: 250),
+                constraints: const BoxConstraints(maxHeight: 200),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
@@ -967,7 +970,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ],
           ],
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 12),
 
         isPhone
             ? Column(
@@ -998,7 +1001,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     }
                   },
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 12),
                 TextFormField(
                   controller: emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -1078,7 +1081,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ],
             ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 12),
 
         TextFormField(
           controller: passwordController,
@@ -1102,15 +1105,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Text(
           'Password requirements:',
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         Wrap(
-          spacing: 12,
-          runSpacing: 6,
+          spacing: 10,
+          runSpacing: 4,
           children: [
             checkRow('Minimum 6 characters', hasMinLength),
             checkRow('Maximum 15 characters', hasMaxLength),
@@ -1120,7 +1123,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ],
         ),
 
-        const SizedBox(height: 18),
+        const SizedBox(height: 12),
         TextFormField(
           controller: confirmPasswordController,
           obscureText: !_confirmPasswordVisible,
@@ -1147,7 +1150,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
 
-        const SizedBox(height: 25),
+        const SizedBox(height: 16),
         isPhone
             ? Column(
               children: [
@@ -1179,7 +1182,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -1189,7 +1192,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green.shade600,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -1208,7 +1211,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             : const Text(
                               'Sign Up',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 15,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
@@ -1230,7 +1233,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.amber.shade600,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -1239,7 +1242,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: Text(
                       _isUploadingVerification ? 'Uploading...' : 'Verify ID',
                       style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 15,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -1255,7 +1258,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green.shade600,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -1274,7 +1277,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             : const Text(
                               'Sign Up',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 15,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
@@ -1283,7 +1286,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ],
             ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -1301,7 +1304,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 children: [
                   const Text(
                     "I agree to the ",
-                    style: TextStyle(fontSize: 13, color: Colors.grey),
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   InkWell(
                     onTap: () => _showPolicyTabs(context),
@@ -1311,6 +1314,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         color: Colors.amber.shade600,
                         fontWeight: FontWeight.bold,
                         decoration: TextDecoration.underline,
+                        fontSize: 12,
                       ),
                     ),
                   ),
@@ -1319,7 +1323,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 12),
         InkWell(
           onTap: () {
             if (Navigator.canPop(context)) {
@@ -1588,44 +1592,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           color: Colors.black.withOpacity(0.8),
           fontWeight: FontWeight.w400,
         ),
-      ),
-    );
-  }
-
-  Widget _buildFooter(BuildContext context, bool isDesktop, bool isTablet, bool isMobile) {
-    final double horizontalPadding = isDesktop ? 80 : (isTablet ? 40 : 20);
-    final double verticalPadding = 10;
-    
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(
-        horizontal: horizontalPadding,
-        vertical: verticalPadding,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1a1a1a),
-        border: Border(
-          top: BorderSide(
-            color: Colors.white.withOpacity(0.1),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Column(
-        children: [
-          SizedBox(height: 10),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 0),
-            child: Text(
-              'Building trust in construction, one contract at a time.',
-              style: TextStyle(
-                fontSize: isMobile ? 13 : 14,
-                color: Colors.white.withOpacity(0.7),
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ],
       ),
     );
   }

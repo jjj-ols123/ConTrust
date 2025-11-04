@@ -346,20 +346,15 @@ class RealtimeSubscriptionService {
           event: PostgresChangeEvent.all,
           schema: 'public',
           table: 'Contracts',
-          callback: (payload) async {
-            // Check if user is involved in this contract
-            final contractId = payload.newRecord['contract_id'] ?? payload.oldRecord['contract_id'];
-            if (contractId != null) {
-              final contract = await _supabase
-                  .from('Contracts')
-                  .select('contractee_id, contractor_id')
-                  .eq('contract_id', contractId)
-                  .maybeSingle();
-              
-              if (contract != null && 
-                  (contract['contractee_id'] == userId || contract['contractor_id'] == userId)) {
-                onUpdate();
-              }
+          callback: (payload) {
+            final newRecord = payload.newRecord;
+            final oldRecord = payload.oldRecord;
+            
+            final contracteeId = newRecord['contractee_id'] ?? oldRecord['contractee_id'];
+            final contractorId = newRecord['contractor_id'] ?? oldRecord['contractor_id'];
+            
+            if (contracteeId == userId || contractorId == userId) {
+              onUpdate();
             }
           },
         )
@@ -369,13 +364,11 @@ class RealtimeSubscriptionService {
     return channel;
   }
 
-  /// Unsubscribe from a specific channel
   void unsubscribeFromChannel(String channelKey) {
     _channels[channelKey]?.unsubscribe();
     _channels.remove(channelKey);
   }
 
-  /// Unsubscribe from all channels for a specific user
   void unsubscribeFromUserChannels(String userId) {
     final userChannels = _channels.keys.where((key) => key.contains(userId)).toList();
     for (final channelKey in userChannels) {
@@ -384,15 +377,13 @@ class RealtimeSubscriptionService {
     }
   }
 
-  /// Unsubscribe from all channels
   void unsubscribeFromAllChannels() {
     for (final channel in _channels.values) {
       channel.unsubscribe();
     }
     _channels.clear();
   }
-
-  /// Get all active channel keys
+  
   List<String> getActiveChannels() {
     return _channels.keys.toList();
   }

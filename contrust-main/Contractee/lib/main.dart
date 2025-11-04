@@ -162,9 +162,6 @@ class _MyAppState extends State<MyApp> {
                     case '/home':
                       currentPage = ContracteePage.home;
                       break;
-                    case '/ongoing':
-                      currentPage = ContracteePage.ongoing;
-                      break;
                     case '/profile':
                       currentPage = ContracteePage.profile;
                       break;
@@ -181,7 +178,11 @@ class _MyAppState extends State<MyApp> {
                       currentPage = ContracteePage.aiAssistant;
                       break;
                     default:
-                      currentPage = ContracteePage.home;
+                      if (location.startsWith('/ongoing')) {
+                        currentPage = ContracteePage.ongoing;
+                      } else {
+                        currentPage = ContracteePage.home;
+                      }
                   }
 
                   return ContracteeShell(
@@ -211,14 +212,14 @@ class _MyAppState extends State<MyApp> {
               },
             ),
             GoRoute(
-              path: '/ongoing',
+              path: '/ongoing/:projectId',
               pageBuilder: (context, state) {
                 return NoTransitionPage(
                   child: Builder(
                     builder: (context) {
                       final session = Supabase.instance.client.auth.currentSession;
-                      final projectId = state.extra as String?;
-                      if (session != null && projectId != null) {
+                      final projectId = state.pathParameters['projectId'];
+                      if (session != null && projectId != null && projectId.isNotEmpty) {
                         return CeeOngoingProjectScreen(projectId: projectId);
                       }
                       return const LoginPage();
@@ -268,22 +269,6 @@ class _MyAppState extends State<MyApp> {
                       final session = Supabase.instance.client.auth.currentSession;
                       if (session != null) {
                         return const ContracteeNotificationPage();
-                      }
-                      return const LoginPage();
-                    },
-                  ),
-                );
-              },
-            ),
-            GoRoute(
-              path: '/messages',
-              pageBuilder: (context, state) {
-                return NoTransitionPage(
-                  child: Builder(
-                    builder: (context) {
-                      final session = Supabase.instance.client.auth.currentSession;
-                      if (session != null) {
-                        return ContracteeChatHistoryPage();
                       }
                       return const LoginPage();
                     },
@@ -424,7 +409,8 @@ class _MyAppState extends State<MyApp> {
                   return '/login';
                 }
               }
-            } catch (_) {
+            } catch (e) {
+              debugPrint('Error checking user verification in redirect: $e');
               if (location != '/login' && location != '/welcome' && location != '/auth/callback') {
                 return '/login';
               }

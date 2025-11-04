@@ -35,12 +35,12 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   Map<String, dynamic>? projectData;
   List<Map<String, dynamic>> _localTasks = [];
   double _localProgress = 0.0;
-  bool isLoading = true;
   String? contractorId;
   Stream<Map<String, dynamic>>? _projectStream;
   final List<StreamSubscription> _subscriptions = [];
   StreamController<Map<String, dynamic>>? _controller;
   final Map<String, String?> _photoUrlCache = {};
+  Timer? _debounceTimer;
 
   @override
   void initState() {
@@ -57,55 +57,57 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     _emitAggregatedData();
   }
 
+  void _debouncedEmitAggregatedData() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      _emitAggregatedData();
+    });
+  }
+
   void _attachRealtimeListeners() {
     final supabase = Supabase.instance.client;
-    // Projects stream (status/progress/fields)
+    
     _subscriptions.add(
       supabase
           .from('Projects')
           .stream(primaryKey: ['project_id'])
           .eq('project_id', widget.projectId)
-          .listen((_) => _emitAggregatedData()),
+          .listen((_) => _debouncedEmitAggregatedData()),
     );
-    // Tasks
     _subscriptions.add(
       supabase
           .from('ProjectTasks')
           .stream(primaryKey: ['task_id'])
           .eq('project_id', widget.projectId)
-          .listen((_) => _emitAggregatedData()),
+          .listen((_) => _debouncedEmitAggregatedData()),
     );
-    // Reports
     _subscriptions.add(
       supabase
           .from('ProjectReports')
           .stream(primaryKey: ['report_id'])
           .eq('project_id', widget.projectId)
-          .listen((_) => _emitAggregatedData()),
+          .listen((_) => _debouncedEmitAggregatedData()),
     );
-    // Photos
     _subscriptions.add(
       supabase
           .from('ProjectPhotos')
           .stream(primaryKey: ['photo_id'])
           .eq('project_id', widget.projectId)
-          .listen((_) => _emitAggregatedData()),
+          .listen((_) => _debouncedEmitAggregatedData()),
     );
-    // Materials/Costs
     _subscriptions.add(
       supabase
           .from('ProjectMaterials')
           .stream(primaryKey: ['material_id'])
           .eq('project_id', widget.projectId)
-          .listen((_) => _emitAggregatedData()),
+          .listen((_) => _debouncedEmitAggregatedData()),
     );
-    // Contracts (e.g., signatures)
     _subscriptions.add(
       supabase
           .from('Contracts')
           .stream(primaryKey: ['contract_id'])
           .eq('project_id', widget.projectId)
-          .listen((_) => _emitAggregatedData()),
+          .listen((_) => _debouncedEmitAggregatedData()),
     );
   }
 
@@ -126,7 +128,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
         _controller!.add(data);
       }
     } catch (e) {
-      // Optionally report error; keep stream alive
+      //
     }
   }
 
@@ -140,7 +142,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
       final activeProjects = await FetchService().fetchContractorActiveProjects(contractorId!);
 
       if (activeProjects.isEmpty) {
-        ConTrustSnackBar.error(context, 'No active projects found!');
+        ConTrustSnackBar.info(context, 'No active projects found. You can only switch between active projects.');
         return;
       }
 
@@ -274,8 +276,6 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
 
   void loadData() async {
   try {
-    setState(() => isLoading = true);
-
     contractorId ??= Supabase.instance.client.auth.currentUser?.id;
 
     final data = await ongoingService.loadProjectData(
@@ -291,14 +291,10 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
       data['contracts'] = [];
     }
 
-    setState(() {
-      projectData = data;
-      _localTasks = List<Map<String, dynamic>>.from(data['tasks'] ?? []);
-      _localProgress = (data['progress'] as num?)?.toDouble() ?? 0.0;
-      isLoading = false;
-    });
+    if (!(_controller?.isClosed ?? true)) {
+      _controller!.add(data);
+    }
   } catch (e) {
-    setState(() => isLoading = false);
     if (mounted) {
       ConTrustSnackBar.error(
           context, 'Error loading project data. Please try again. $e');
@@ -323,7 +319,6 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
           context: context,
           onSuccess: () {
             reportController.clear();
-            loadData();
           },
         );
       },
@@ -340,7 +335,6 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
             task: task,
             context: context,
             onSuccess: () {
-              loadData();
             },
           );
         }
@@ -352,7 +346,8 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     await ongoingService.uploadPhoto(
       projectId: widget.projectId,
       context: context,
-      onSuccess: loadData,
+      onSuccess: () {
+      },
     );
   }
 
@@ -417,7 +412,8 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     await ongoingService.deleteTask(
       taskId: taskId,
       context: context,
-      onSuccess: loadData,
+      onSuccess: () {
+      },
     );
   }
 
@@ -425,12 +421,12 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     await ongoingService.deleteReport(
       reportId: reportId,
       context: context,
-      onSuccess: loadData,
+      onSuccess: () {
+      },
     );
   }
 
   Future<void> deletePhoto(String photoId) async {
-    // Find and remove from cache
     final photo = projectData?['photos']?.firstWhere(
       (p) => p['photo_id']?.toString() == photoId,
       orElse: () => null,
@@ -442,7 +438,8 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     await ongoingService.deletePhoto(
       photoId: photoId,
       context: context,
-      onSuccess: loadData,
+      onSuccess: () {
+      },
     );
   }
 
@@ -450,7 +447,8 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     await ongoingService.deleteCost(
       materialId: materialId,
       context: context,
-      onSuccess: loadData,
+      onSuccess: () {
+      },
     );
   }
 
@@ -532,7 +530,9 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
           projectId: widget.projectId,
           estimatedCompletion: selectedDate,
           context: context,
-          onSuccess: loadData,
+          onSuccess: () {
+        // Don't call loadData() manually - debounced realtime subscriptions will handle it
+      },
         );
       },
     );
@@ -606,7 +606,6 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
           projectData = snapshot.data;
           _localTasks = List<Map<String, dynamic>>.from(projectData!['tasks'] ?? []);
           _localProgress = (projectData!['progress'] as num?)?.toDouble() ?? 0.0;
-          isLoading = false;
 
           return _buildResponsiveContent();
         },
@@ -615,6 +614,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   }
 
   void _disposeRealtime() {
+    _debounceTimer?.cancel();
     for (final sub in _subscriptions) {
       sub.cancel();
     }

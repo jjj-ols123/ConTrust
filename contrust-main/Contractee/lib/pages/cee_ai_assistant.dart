@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
+import 'package:contractee/build/buildceeprofile.dart';
 
 import 'dart:html' as html;
 import 'dart:ui_web' as ui_web;
@@ -305,78 +306,61 @@ Page resource error:
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       body: SafeArea(
-        child: Column(
-          children: [
-            // Custom App Bar - No URL shown
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  bottom: BorderSide(
-                    color: Colors.grey.shade200,
-                    width: 1.0,
-                  ),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 2,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
-              ),
-              child: Row(
+        child: CustomScrollView(
+          slivers: [
+            CeeProfileBuildMethods.buildStickyHeader('AI Assistant'),
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Column(
                 children: [
-                  Icon(
-                    Icons.palette,
-                    size: 24,
-                    color: Colors.amber.shade700,
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'Wall Color Filter',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1F2937),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (_isLoading)
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.amber.shade700),
+                            ),
+                          ),
+                        if (_isLoading) const SizedBox(width: 12),
+                        if (_isLoading)
+                          const Text(
+                            'Loading AI Assistant...',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF6B7280),
+                            ),
+                          ),
+                        const Spacer(),
+                        IconButton(
+                          onPressed: _refreshPage,
+                          icon: Icon(
+                            Icons.refresh,
+                            color: Colors.amber.shade700,
+                          ),
+                          tooltip: 'Refresh',
+                        ),
+                      ],
                     ),
                   ),
-                  const Spacer(),
-                  if (_isLoading)
-                    SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.amber.shade700),
-                      ),
-                    ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    onPressed: _refreshPage,
-                    icon: Icon(
-                      Icons.refresh,
-                      color: Colors.amber.shade700,
-                    ),
-                    tooltip: 'Refresh',
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
+                  Expanded(
               child: _hasError 
                   ? _buildErrorWidget()
                   : kIsWeb 
                       ? _buildWebIframe()
                       : (_controller == null
                           ? _buildErrorWidget()
-                          : Stack(
-                              children: [
-                                WebViewWidget(controller: _controller!),
-                                if (_isLoading) _buildLoadingWidget(),
-                              ],
-                            )),
+                          : _isLoading 
+                              ? _buildLoadingWidget()
+                              : WebViewWidget(controller: _controller!)),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -396,7 +380,7 @@ Page resource error:
             ),
             const SizedBox(height: 16),
             const Text(
-              'Loading Wall Color Filter...',
+              'Loading AI Assistant...',
               style: TextStyle(
                 fontSize: 16,
                 color: Color(0xFF6B7280),

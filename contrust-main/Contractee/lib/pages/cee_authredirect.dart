@@ -58,17 +58,21 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
 
       final currentUser = session.user;
 
-      final contracteeData = await supabase
-          .from('Contractee')
-          .select()
-          .eq('contractee_id', currentUser.id)
-          .maybeSingle();
+      final userDataResults = await Future.wait([
+        supabase
+            .from('Contractee')
+            .select()
+            .eq('contractee_id', currentUser.id)
+            .maybeSingle(),
+        supabase
+            .from('Contractor')
+            .select()
+            .eq('contractor_id', currentUser.id)
+            .maybeSingle(),
+      ]);
 
-      final contractorData = await supabase
-          .from('Contractor')
-          .select()
-          .eq('contractor_id', currentUser.id)
-          .maybeSingle();
+      final contracteeData = userDataResults[0];
+      final contractorData = userDataResults[1];
 
       if (mounted && !_hasRedirected) {
         _hasRedirected = true;
@@ -81,6 +85,7 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
         }
       }
     } catch (e) {
+      debugPrint('Error in auth redirect: $e');
       if (mounted && !_hasRedirected) {
         _hasRedirected = true;
         context.go('/');

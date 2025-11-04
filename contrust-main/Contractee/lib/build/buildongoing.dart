@@ -1,5 +1,4 @@
 // ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 
 class CeeOngoingBuildMethods {
@@ -15,7 +14,6 @@ class CeeOngoingBuildMethods {
       final done = t['done'] == true;
       final taskDone = t['task_done'];
       
-      // If task is done and has task_done timestamp, use that; otherwise use created_at
       final timestamp = (done && taskDone != null && taskDone.toString().isNotEmpty) 
           ? taskDone.toString() 
           : createdAt;
@@ -51,7 +49,8 @@ class CeeOngoingBuildMethods {
         final aT = DateTime.parse(a['timestamp']).toLocal();
         final bT = DateTime.parse(b['timestamp']).toLocal();
         return bT.compareTo(aT);
-      } catch (_) {
+      } catch (e) {
+        debugPrint('Error parsing timestamp in recent items sort: $e');
         return 0;
       }
     });
@@ -1362,6 +1361,24 @@ class CeeOngoingBuildMethods {
         return FutureBuilder<String?>(
           future: createSignedUrl(photo['photo_url']),
           builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  color: Colors.grey[200],
+                ),
+                child: const Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.amber,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                ),
+              );
+            }
             return GestureDetector(
               onTap: onViewPhoto != null ? () => onViewPhoto(photo) : null,
               child: Container(

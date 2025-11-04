@@ -351,32 +351,34 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
 
     try {
       await UserService().signOut();
-      if (mounted) {
-        context.go('/login');
-      }
 
-       await _auditService.logAuditEvent(
+      await _auditService.logAuditEvent(
         userId: widget.contracteeId,
-        action: 'LOGOUT_ATTEMPT',
-        details: 'Contractee logout failed due to error',
+        action: 'LOGOUT_SUCCESS',
+        details: 'Contractee logged out successfully',
         category: 'User',
         metadata: {
           'user_type': 'contractee',
         },
       );
 
-    } catch (e) {
       if (mounted) {
-        await _errorService.logError(
-          errorMessage: 'Logout failed',
-          module: 'Logout Button Drawer', 
-          severity: 'Medium', 
-          extraInfo: { 
-            'operation': 'Logout attempt',
-            'error_id': widget.contracteeId,
-            'timestamp': DateTime.now().toIso8601String(),
-          },
-        );
+        context.go('/login');
+      }
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Logout failed: $e',
+        module: 'Logout Button Drawer', 
+        severity: 'Medium', 
+        extraInfo: { 
+          'operation': 'Logout attempt',
+          'error_id': widget.contracteeId,
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+      
+      if (mounted) {
+        ConTrustSnackBar.error(context, 'Logout failed. Please try again.');
       }
     }
   }

@@ -35,8 +35,6 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
   String? contractorId;
   String? projectId;
 
-  bool isLoading = true;
-
   Stream<List<Map<String, dynamic>>>? _materialsStream;
   Stream<List<Map<String, dynamic>>>? _projectsStream;
 
@@ -56,7 +54,6 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
   }
 
   Future<void> _initializeData() async {
-    setState(() => isLoading = true);
     try {
       await fetchContractorId();
       if (contractorId != null) {
@@ -65,7 +62,6 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
     } catch (e) {
       ConTrustSnackBar.error(context, 'Error initializing data');
     } finally {
-      setState(() => isLoading = false);
     }
   }
 
@@ -123,6 +119,88 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
     return materials.fold<double>(
       0.0,
       (sum, it) => sum + ((it['total'] as num?)?.toDouble() ?? 0.0),
+    );
+  }
+
+  Widget _buildCombinedStreams() {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: _materialsStream,
+      builder: (context, materialsSnapshot) {
+        return StreamBuilder<List<Map<String, dynamic>>>(
+          stream: _projectsStream,
+          builder: (context, projectsSnapshot) {
+            if ((materialsSnapshot.connectionState == ConnectionState.waiting && !materialsSnapshot.hasData) ||
+                (projectsSnapshot.connectionState == ConnectionState.waiting && !projectsSnapshot.hasData)) {
+              return const Center(child: CircularProgressIndicator(color: Colors.amber));
+            }
+
+            if (materialsSnapshot.hasError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error loading materials',
+                      style: TextStyle(fontSize: 16, color: Colors.red.shade600),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      materialsSnapshot.error.toString(),
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            if (projectsSnapshot.hasError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error loading projects',
+                      style: TextStyle(fontSize: 16, color: Colors.red.shade600),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      projectsSnapshot.error.toString(),
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            if (materialsSnapshot.hasData) {
+              _processMaterialsData(materialsSnapshot.data!);
+            }
+
+            if (projectsSnapshot.hasData) {
+              projects.clear();
+              projects.addAll(projectsSnapshot.data!);
+            }
+
+            return ProductBuildMethods.buildProductUI(
+              context: context,
+              search: search,
+              onSearchChanged: (value) => setState(() => search = value),
+              projects: projects,
+              filteredCatalog: filteredCatalog,
+              projectMaterials: projectMaterials,
+              getProjectTotal: getProjectTotal,
+              openMaterialDialog: openMaterialDialog,
+              contractorId: contractorId,
+            );
+          },
+        );
+      },
     );
   }
 
@@ -215,88 +293,9 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
             ),
           ),
           Expanded(
-            child: isLoading || contractorId == null
+            child: contractorId == null
                 ? const Center(child: CircularProgressIndicator(color: Colors.amber))
-                : StreamBuilder<List<Map<String, dynamic>>>(
-                    stream: _materialsStream,
-                    builder: (context, materialsSnapshot) {
-                      return StreamBuilder<List<Map<String, dynamic>>>(
-                        stream: _projectsStream,
-                        builder: (context, projectsSnapshot) {
-                          if (materialsSnapshot.connectionState == ConnectionState.waiting ||
-                              projectsSnapshot.connectionState == ConnectionState.waiting) {
-                            return const Center(child: CircularProgressIndicator(color: Colors.amber));
-                          }
-
-                          if (materialsSnapshot.hasError) {
-                            return Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'Error loading materials',
-                                    style: TextStyle(fontSize: 16, color: Colors.red.shade600),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    materialsSnapshot.error.toString(),
-                                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-
-                          if (projectsSnapshot.hasError) {
-                            return Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'Error loading projects',
-                                    style: TextStyle(fontSize: 16, color: Colors.red.shade600),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    projectsSnapshot.error.toString(),
-                                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-
-                          if (materialsSnapshot.hasData) {
-                            _processMaterialsData(materialsSnapshot.data!);
-                          }
-
-                          if (projectsSnapshot.hasData) {
-                            projects.clear();
-                            projects.addAll(projectsSnapshot.data!);
-                          }
-
-                          return ProductBuildMethods.buildProductUI(
-                            context: context,
-                            isLoading: false,
-                            search: search,
-                            onSearchChanged: (value) => setState(() => search = value),
-                            projects: projects,
-                            filteredCatalog: filteredCatalog,
-                            projectMaterials: projectMaterials,
-                            getProjectTotal: getProjectTotal,
-                            openMaterialDialog: openMaterialDialog,
-                            contractorId: contractorId,
-                          );
-                        },
-                      );
-                    },
-                  ),
+                : _buildCombinedStreams(),
           ),
         ],
       ),

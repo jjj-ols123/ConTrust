@@ -58,7 +58,7 @@ class _LoginPageState extends State<LoginPage> {
       );
     } catch (e) {
       if (mounted) {
-        ConTrustSnackBar.error(context, 'An unexpected error occurred');
+        ConTrustSnackBar.error(context, 'Login failed: ${e.toString()}');
       }
     } finally {
       if (mounted) setState(() => _isLoggingIn = false);

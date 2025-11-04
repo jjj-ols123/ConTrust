@@ -698,6 +698,7 @@ class OngoingBuildMethods {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        const SizedBox(width: 12),
                         IconButton(
                           icon: const Icon(Icons.delete_outline, size: 20),
                           onPressed: () => onDelete(report['report_id']),
@@ -731,9 +732,12 @@ class OngoingBuildMethods {
           'Posted: ${DateTime.parse(report['created_at']).toLocal().toString().split('.')[0]}',
           style: TextStyle(fontSize: 12, color: Colors.grey[600]),
         ),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete_outline),
-          onPressed: () => onDelete(report['report_id']),
+        trailing: Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () => onDelete(report['report_id']),
+          ),
         ),
             );
           }
@@ -792,6 +796,7 @@ class OngoingBuildMethods {
                       ],
                     ),
                   ),
+                  const SizedBox(width: 12),
                   IconButton(
                     icon: const Icon(Icons.delete_outline, size: 20),
                     onPressed: () => onDelete(task['task_id']),
@@ -826,9 +831,12 @@ class OngoingBuildMethods {
         checkColor: Colors.amber[700],
         controlAffinity: ListTileControlAffinity.leading,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-        secondary: IconButton(
-          icon: const Icon(Icons.delete_outline),
-          onPressed: () => onDelete(task['task_id']),
+        secondary: Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () => onDelete(task['task_id']),
+          ),
         ),
             );
           }
@@ -2098,6 +2106,7 @@ class OngoingBuildMethods {
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(Icons.delete_outline, size: 16),
                 onPressed: () => onDeleteTask(task['task_id']),
@@ -2145,6 +2154,7 @@ class OngoingBuildMethods {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.delete_outline, size: 16),
                   onPressed: () => onDeleteReport(report['report_id']),

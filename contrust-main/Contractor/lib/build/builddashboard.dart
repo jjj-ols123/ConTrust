@@ -1568,6 +1568,9 @@ class DashboardBuildMethods {
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: FetchService().streamContractsForProject(projectId),
       builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator(color: Colors.amber));
+        }
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -1733,9 +1736,10 @@ class DashboardBuildMethods {
       return;
     }
     
-    if (projectStatus != 'active') {
-      ConTrustSnackBar.warning(context, 
-        'Project is not active yet. Current status: ${status.getStatusLabel(projectStatus)}');
+    final allowedStatuses = ['active'];
+    if (!allowedStatuses.contains(projectStatus)) {
+      ConTrustSnackBar.info(context, 
+        'Only active projects can be viewed in the Project Management page. Current status: ${status.getStatusLabel(projectStatus)}');
       return;
     }
 
