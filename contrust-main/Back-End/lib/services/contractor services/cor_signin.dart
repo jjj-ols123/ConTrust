@@ -193,11 +193,10 @@ class SignInGoogleContractor {
     try {
       final supabase = Supabase.instance.client;
       
-      final configuredBaseUrl = const String.fromEnvironment('APP_BASE_URL', defaultValue: '');
       String redirectUrl;
       
       if (kIsWeb) {
-        final origin = configuredBaseUrl.isNotEmpty ? configuredBaseUrl : Uri.base.origin;
+        final origin = Uri.base.origin;
         redirectUrl = '$origin/auth/callback?next=${Uri.encodeComponent('/dashboard')}';
       } else {
         // For mobile: use deep link
@@ -263,34 +262,27 @@ class SignInGoogleContractor {
 
         final userRow = await supabase
             .from('Users')
-            .select('verified')
+            .select('users_id, verified')
             .eq('users_id', user.id)
             .maybeSingle();
 
-        bool verified = false;
-        if (userRow != null && userRow['verified'] != null && userRow['verified'] is bool) {
-          verified = userRow['verified'] as bool;
-        }
-
-        if (!verified) {
-          await supabase.auth.signOut();
-          await _auditService.logAuditEvent(
-            userId: user.id,
-            action: 'USER_LOGIN_FAILED',
-            details: 'Contractor Google login blocked - account not verified',
-            metadata: {
-              'user_type': 'contractor',
-              'email': user.email,
-              'login_method': 'google_oauth',
-              'failure_reason': 'account_not_verified',
-            },
-          );
-          ConTrustSnackBar.show(
-            context,
-            'Please wait for your account to be verified to login',
-            type: SnackBarType.info,
-          );
-          return;
+        if (userRow == null) {
+          await supabase.from('Users').upsert({
+            'users_id': user.id,
+            'email': user.email,
+            'name': user.userMetadata?['full_name'] ?? 'Contractor Firm',
+            'role': 'contractor',
+            'status': 'active',
+            'last_login': DateTimeHelper.getLocalTimeISOString(),
+            'profile_image_url': user.userMetadata?['avatar_url'],
+            'phone_number': '',
+            'verified': true,
+          }, onConflict: 'users_id');
+        } else if (userRow['verified'] != true) {
+          await supabase
+              .from('Users')
+              .update({'verified': true, 'last_login': DateTimeHelper.getLocalTimeISOString()})
+              .eq('users_id', user.id);
         }
 
         await _auditService.logAuditEvent(
@@ -351,7 +343,7 @@ class SignInGoogleContractor {
             'last_login': DateTimeHelper.getLocalTimeISOString(),
             'profile_image_url': user.userMetadata?['avatar_url'],
             'phone_number': '',
-            'verified': false,
+            'verified': true,
           }, onConflict: 'users_id');
           insertSuccess = true;
         } catch (e) {
