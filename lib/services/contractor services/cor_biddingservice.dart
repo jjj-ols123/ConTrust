@@ -279,7 +279,7 @@ class CorBiddingService {
       final response = await _supabase
           .from('Projects')
           .select(
-            'project_id, title, type, description, location, duration, min_budget, max_budget, created_at, contractee_id',
+            'project_id, title, type, description, location, duration, min_budget, max_budget, created_at, contractee_id, photo_url',
           )
           .eq('status', 'pending')
           .neq('duration', 0);

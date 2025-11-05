@@ -324,6 +324,7 @@ class SignInGoogleContractee {
         'name': user.userMetadata?['full_name'] ?? 'User',
         'role': 'contractee',
         'status': 'active',
+        'created_at': DateTimeHelper.getLocalTimeISOString(),
         'last_login': DateTimeHelper.getLocalTimeISOString(),
         'profile_image_url': profilePhoto ?? 'assets/defaultpic.png',
         'phone_number': '',

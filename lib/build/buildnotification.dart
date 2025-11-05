@@ -26,6 +26,20 @@ String formatTimeAgo(String? timestamp) {
   }
 }
 
+String formatLocalTime(String? timestamp) {
+  if (timestamp == null || timestamp.isEmpty) return '';
+  try {
+    final dt = DateTime.parse(timestamp).toLocal();
+    int hour = dt.hour % 12;
+    if (hour == 0) hour = 12;
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final period = dt.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $period';
+  } catch (_) {
+    return formatTimeAgo(timestamp);
+  }
+}
+
 class NotificationUIBuildMethods {
   NotificationUIBuildMethods({
     required this.context,
@@ -334,15 +348,7 @@ class NotificationUIBuildMethods {
         final notificationMessage =
             info['message'] ?? notification['message'] ?? '';
         final createdAt = notification['created_at']?.toString();
-        String? timeDisplay;
-        if (createdAt != null) {
-          try {
-            final dt = DateTime.parse(createdAt).toLocal();
-            timeDisplay = '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-          } catch (_) {
-            timeDisplay = formatTimeAgo(createdAt);
-          }
-        }
+        final timeDisplay = formatLocalTime(createdAt);
 
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -387,7 +393,7 @@ class NotificationUIBuildMethods {
                                   ),
                                 ),
                               ),
-                              if (timeDisplay != null)
+                              if (timeDisplay.isNotEmpty)
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
@@ -1284,15 +1290,7 @@ class _GroupedNotificationCardState extends State<_GroupedNotificationCard> {
         final senderPhoto = userInfo['senderPhoto'] ?? '';
         final notificationMessage =
             info['message'] ?? notification['message'] ?? '';
-        String? timeDisplay;
-        if (createdAt != null) {
-          try {
-            final dt = DateTime.parse(createdAt).toLocal();
-            timeDisplay = '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-          } catch (_) {
-            timeDisplay = formatTimeAgo(createdAt);
-          }
-        }
+        final timeDisplay = formatLocalTime(createdAt);
 
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1339,7 +1337,7 @@ class _GroupedNotificationCardState extends State<_GroupedNotificationCard> {
                                 ),
                               ),
                             ),
-                            if (timeDisplay != null)
+                            if (timeDisplay.isNotEmpty)
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                                 decoration: BoxDecoration(

@@ -306,8 +306,9 @@ class MessageUIBuildMethods {
                 CircleAvatar(
                   radius: avatarRadius,
                   backgroundImage: NetworkImage(
-                    userProfile ??
-                        'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
+                    (userProfile != null && userProfile.isNotEmpty)
+                        ? userProfile
+                        : 'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
                   ),
                 ),
                 if (hasUnread)
