@@ -253,6 +253,7 @@ class CreateContractBuildMethods {
     required this.projectData,
     required this.onProjectChanged,
     this.selectedTemplate,
+    this.selectedContractTypeName,
     this.onContractTypeChanged,
     this.onItemCountChanged,
     this.onMilestoneCountChanged,
@@ -269,6 +270,7 @@ class CreateContractBuildMethods {
   final Map<String, dynamic>? projectData;
   final void Function(String?) onProjectChanged;
   final Map<String, dynamic>? selectedTemplate;
+  final String? selectedContractTypeName;
   final void Function(Map<String, dynamic>?)? onContractTypeChanged;
   final void Function(int)? onItemCountChanged;
   final void Function(int)? onMilestoneCountChanged;
@@ -1361,16 +1363,17 @@ class CreateContractBuildMethods {
   }
 
   Widget buildPreview() {
-    final String contractType = (selectedTemplate?['template_name'] as String?) ?? '';
+    final String contractType = (selectedTemplate?['template_name'] as String?) ?? (selectedContractTypeName ?? '');
 
     bool shouldShowItemRow(int rowNumber) {
-      final nameKey = 'Item.$rowNumber.Description';
+      final descKey = 'Item.$rowNumber.Description';
       final quantityKey = 'Item.$rowNumber.Quantity';
-      final priceKey = 'Item.$rowNumber.UnitRate';
+      // Support both UnitRate (legacy) and Price (current)
+      final priceKey1 = 'Item.$rowNumber.UnitRate';
+      final priceKey2 = 'Item.$rowNumber.Price';
 
-      return (controllers.containsKey(nameKey) && controllers[nameKey]!.text.trim().isNotEmpty) ||
-             (controllers.containsKey(quantityKey) && controllers[quantityKey]!.text.trim().isNotEmpty) ||
-             (controllers.containsKey(priceKey) && controllers[priceKey]!.text.trim().isNotEmpty);
+      bool has(String key) => controllers.containsKey(key) && controllers[key]!.text.trim().isNotEmpty;
+      return has(descKey) || has(quantityKey) || has(priceKey1) || has(priceKey2);
     }
     ContractStyle.setItemRowVisibilityChecker((int rowNum) => shouldShowItemRow(rowNum));
     

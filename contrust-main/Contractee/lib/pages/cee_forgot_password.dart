@@ -1,8 +1,10 @@
 // ignore_for_file: file_names, use_build_context_synchronously, deprecated_member_use
 import 'package:flutter/material.dart';
-import 'package:backend/services/both%20services/be_user_service.dart';
+import 'package:flutter/foundation.dart';
+// Removed UserService dependency; we call the Edge Function directly.
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:html' as html show window;
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -13,9 +15,12 @@ class ForgotPasswordScreen extends StatefulWidget {
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final TextEditingController _emailController = TextEditingController();
-  final UserService _userService = UserService();
+  final TextEditingController _newPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
   bool _isSendingReset = false;
   bool _emailSent = false;
+  bool _isRecoveryMode = false;
+  bool _isLoading = false;
 
   bool isValidEmail(String email) {
     return RegExp(r'^[^@]+@gmail\.com$').hasMatch(email);
@@ -42,10 +47,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     setState(() => _isSendingReset = true);
 
     try {
-      await _userService.resetPassword(
-        email,
-        redirectTo: 'https://contractee.contrust-sjdm.com/auth/reset-password',
+      final supabase = Supabase.instance.client;
+      final response = await supabase.functions.invoke(
+        'send-password-reset-email',
+        body: {
+          'email': email,
+          'redirectTo': 'https://www.contractee.contrust-sjdm.com/auth/reset-password',
+          'userType': 'contractee',
+        },
       );
+
+      if (response.status != 200) {
+        final data = response.data;
+        final message = data?['error'] ?? data?['message'] ?? 'Failed to send password reset email';
+        throw Exception(message);
+      }
 
       if (!mounted) return;
 
@@ -94,8 +110,158 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    debugPrint('[ForgotPassword] Screen initialized');
+    debugPrint('[ForgotPassword] Current URL: ${Uri.base}');
+    if (kIsWeb) {
+      try {
+        debugPrint('[ForgotPassword] Window location: ${html.window.location.href}');
+        debugPrint('[ForgotPassword] Window hash: ${html.window.location.hash}');
+      } catch (e) {
+        debugPrint('[ForgotPassword] Error getting window location: $e');
+      }
+    }
+    _initRecovery();
+  }
+
+  Future<void> _initRecovery() async {
+    setState(() => _isLoading = true);
+    
+    String hash = '';
+    if (kIsWeb) {
+      try {
+        hash = html.window.location.hash;
+        if (hash.startsWith('#')) {
+          hash = hash.substring(1); 
+        }
+      } catch (_) {
+        final uri = Uri.base;
+        hash = uri.fragment;
+      }
+    } else {
+      final uri = Uri.base;
+      hash = uri.fragment;
+    }
+    if (hash.isNotEmpty) {
+      debugPrint('[ForgotPassword] Parsing hash parameters');
+      final params = Uri.splitQueryString(hash);
+      final error = params['error'];
+      final errorCode = params['error_code'];
+      final errorDescription = params['error_description'];
+      debugPrint('[ForgotPassword] Error: $error, ErrorCode: $errorCode, Description: $errorDescription');
+      
+      if (error != null || errorCode != null) {
+        String errorMessage = 'Password reset link error.';
+        if (errorCode == 'otp_expired') {
+          errorMessage = 'This password reset link has expired. Please request a new one.';
+        } else if (error == 'access_denied') {
+          errorMessage = 'Access denied. The reset link may be invalid or expired.';
+        } else if (errorDescription != null) {
+          errorMessage = Uri.decodeComponent(errorDescription.replaceAll('+', ' '));
+        }
+        
+        debugPrint('[ForgotPassword] Showing error message: $errorMessage');
+        if (mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ConTrustSnackBar.error(context, errorMessage);
+          });
+        }
+        setState(() {
+          _isRecoveryMode = false;
+          _isLoading = false;
+        });
+        return;
+      }
+    }
+    
+    try {
+      // Get the full URL including hash for web
+      Uri url;
+      if (kIsWeb) {
+        try {
+          url = Uri.parse(html.window.location.href);
+        } catch (_) {
+          url = Uri.base;
+        }
+      } else {
+        url = Uri.base;
+      }
+      await Supabase.instance.client.auth.getSessionFromUrl(url, storeSession: true);
+      setState(() {
+        _isRecoveryMode = true;
+      });
+    } catch (e) {
+      String errorMessage = 'Unable to process password reset link.';
+      if (e is AuthException) {
+        if (e.message.toLowerCase().contains('expired') || e.message.toLowerCase().contains('invalid')) {
+          errorMessage = 'This password reset link has expired or is invalid. Please request a new one.';
+        } else {
+          errorMessage = e.message;
+        }
+      }
+      
+      if (mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ConTrustSnackBar.error(context, errorMessage);
+        });
+      }
+      
+      setState(() {
+        _isRecoveryMode = false;
+      });
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleUpdatePassword() async {
+    final newPw = _newPasswordController.text.trim();
+    final confirmPw = _confirmPasswordController.text.trim();
+
+    if (newPw.isEmpty || confirmPw.isEmpty) {
+      ConTrustSnackBar.error(context, 'Please enter and confirm your new password');
+      return;
+    }
+    if (newPw != confirmPw) {
+      ConTrustSnackBar.error(context, 'Passwords do not match');
+      return;
+    }
+    if (newPw.length < 6 || newPw.length > 15) {
+      ConTrustSnackBar.error(context, 'Password must be 6-15 characters long');
+      return;
+    }
+
+    final hasUpper = newPw.contains(RegExp(r'[A-Z]'));
+    final hasNum = newPw.contains(RegExp(r'[0-9]'));
+    final hasSpecial = newPw.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+    if (!hasUpper || !hasNum || !hasSpecial) {
+      ConTrustSnackBar.error(context, 'Password must include uppercase, number and special character');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      await Supabase.instance.client.auth.updateUser(UserAttributes(password: newPw));
+      ConTrustSnackBar.success(context, 'Password updated. Please sign in.');
+      await Supabase.instance.client.auth.signOut();
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } on AuthException catch (e) {
+      ConTrustSnackBar.error(context, e.message);
+    } catch (_) {
+      ConTrustSnackBar.error(context, 'Failed to update password');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -207,7 +373,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             ),
                           ],
                         ),
-                        child: _emailSent ? _buildEmailSentContent() : _buildResetForm(),
+                        child: _isLoading
+                            ? const Center(child: CircularProgressIndicator(color: Colors.amber))
+                            : _isRecoveryMode
+                                ? _buildRecoveryForm()
+                                : (_emailSent ? _buildEmailSentContent() : _buildResetForm()),
                       ),
                     ),
                   ),
@@ -429,6 +599,103 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           },
           child: Text(
             'Send to a different email',
+            style: TextStyle(
+              color: Colors.amber.shade700,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecoveryForm() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 20),
+        Container(
+          alignment: Alignment.center,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.amber.shade50,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.lock_outline,
+            size: 48,
+            color: Colors.amber.shade700,
+          ),
+        ),
+        const SizedBox(height: 24),
+        const Text(
+          'Set New Password',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1a1a1a),
+          ),
+        ),
+        const SizedBox(height: 24),
+        TextFormField(
+          controller: _newPasswordController,
+          obscureText: true,
+          decoration: InputDecoration(
+            labelText: 'New Password',
+            prefixIcon: const Icon(Icons.lock_outline),
+            filled: true,
+            fillColor: Colors.grey.shade100,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _confirmPasswordController,
+          obscureText: true,
+          decoration: InputDecoration(
+            labelText: 'Confirm Password',
+            prefixIcon: const Icon(Icons.lock_outline),
+            filled: true,
+            fillColor: Colors.grey.shade100,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _handleUpdatePassword,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber.shade700,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 4,
+            ),
+            child: const Text(
+              'Update Password',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(
+            'Back',
             style: TextStyle(
               color: Colors.amber.shade700,
               fontWeight: FontWeight.w600,

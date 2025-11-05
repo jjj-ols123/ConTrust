@@ -34,6 +34,9 @@ class _CreateContractPageState extends State<CreateContractPage>
 
   int _previewRefreshTick = 0;
   bool isPreparingPreview = false;
+  late final bool isEditMode;
+  late int formTabIndex;
+  late int previewTabIndex;
 
   final Map<String, TextEditingController> controllers = {};
   final formKey = GlobalKey<FormState>();
@@ -54,11 +57,15 @@ class _CreateContractPageState extends State<CreateContractPage>
   @override
   void initState() {
     super.initState();
-    tabController = TabController(length: 3, vsync: this);
+    isEditMode = widget.existingContract != null;
+    final showTemplate = !isEditMode;
+    tabController = TabController(length: showTemplate ? 3 : 2, vsync: this);
+    formTabIndex = showTemplate ? 1 : 0;
+    previewTabIndex = showTemplate ? 2 : 1;
     tabController.addListener(() {
       if (mounted) {
         setState(() {});
-        if (tabController.index != 2 && isPreparingPreview) {
+        if (tabController.index != previewTabIndex && isPreparingPreview) {
           setState(() {
             isPreparingPreview = false;
           });
@@ -151,7 +158,11 @@ class _CreateContractPageState extends State<CreateContractPage>
       if (existingContract != null && (selectedTemplate == null || selectedTemplate!.isEmpty)) {
         try {
           final contractId = existingContract!['contract_id'];
-          final contract = await fetchService.fetchContractWithDetails(contractId, contractorId: contractorId);
+          Map<String, dynamic>? contract = await fetchService.fetchContractWithDetails(
+            contractId,
+            contractorId: contractorId,
+          );
+          contract ??= await fetchService.fetchContractWithDetails(contractId);
           if (contract != null) {
             existingContract = contract;
             final contractType = contract['contract_type'] as Map<String, dynamic>?;
@@ -169,7 +180,8 @@ class _CreateContractPageState extends State<CreateContractPage>
 
       if (existingContract != null && existingContract!['title'] == null) {
         final contractId = existingContract!['contract_id'];
-        final contract = await fetchService.fetchContractWithDetails(contractId, contractorId: contractorId);
+        Map<String, dynamic>? contract = await fetchService.fetchContractWithDetails(contractId, contractorId: contractorId);
+        contract ??= await fetchService.fetchContractWithDetails(contractId);
         if (contract == null && mounted) {
           ConTrustSnackBar.error(context, 'Contract not found');
           setState(() {
@@ -489,7 +501,7 @@ class _CreateContractPageState extends State<CreateContractPage>
 
   Future<void> saveContract() async {
 
-    if (tabController.index == 1 && !formKey.currentState!.validate()) {
+    if (tabController.index == formTabIndex && !formKey.currentState!.validate()) {
       ConTrustSnackBar.error(context, 'Please fill in all required fields');
       return;
     }
@@ -592,7 +604,7 @@ class _CreateContractPageState extends State<CreateContractPage>
       }
 
       await Future.delayed(const Duration(milliseconds: 500));
-      if (mounted && tabController.index == 2) {
+      if (mounted && tabController.index == previewTabIndex) {
         setState(() {
           _previewRefreshTick++;
         });
@@ -661,6 +673,7 @@ class _CreateContractPageState extends State<CreateContractPage>
       initialProjectId: initialProjectId,
       projectData: projectData,
       selectedTemplate: selectedTemplate,
+      selectedContractTypeName: selectedContractType,
       onProjectChanged: (String? projectId) async {
         if (projectId != null) {
           setState(() {
@@ -741,6 +754,7 @@ class _CreateContractPageState extends State<CreateContractPage>
             onBeforeFinalPreview: () async {
               await prepareFinalPreview();
             },
+            showTemplate: !isEditMode,
           ),
 
           SizedBox(
@@ -755,9 +769,10 @@ class _CreateContractPageState extends State<CreateContractPage>
                   ? buildPreviewLoadingIndicator()
                   : KeyedSubtree(
                       key: ValueKey(_previewRefreshTick),
-                    child: buildHelper.buildPreview(),
+                      child: buildHelper.buildPreview(),
                     ),
               canViewFinalPreview: canViewFinalPreview,
+              showTemplate: !isEditMode,
             ),
           ),
         ],

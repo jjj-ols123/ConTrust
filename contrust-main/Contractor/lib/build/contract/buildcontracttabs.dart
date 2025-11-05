@@ -8,6 +8,7 @@ class ContractTabsBuild {
     required TabController tabController,
     required bool canViewFinalPreview,
     VoidCallback? onBeforeFinalPreview,
+    bool showTemplate = true,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -20,6 +21,7 @@ class ContractTabsBuild {
         builder: (context, constraints) {
           final isMobile = constraints.maxWidth < 600;
           
+          final previewIndex = showTemplate ? 2 : 1;
           return TabBar(
             controller: tabController,
             labelColor: Colors.amber.shade700,
@@ -40,22 +42,30 @@ class ContractTabsBuild {
               ),
             ),
             onTap: (index) {
-              if (index == 2 && canViewFinalPreview) {
+              final prevIndex = tabController.index;
+              if (index == previewIndex && !canViewFinalPreview) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  tabController.animateTo(prevIndex);
+                });
+                return;
+              }
+              if (index == previewIndex) {
                 onBeforeFinalPreview?.call();
               }
             },
             tabs: [
-              Tab(
-                height: isMobile ? 60 : 70,
-                icon: Icon(Icons.description, size: isMobile ? 18 : 24),
-                child: Text(
-                  isMobile ? "Template" : "Template Preview",
-                  style: TextStyle(
-                    fontSize: isMobile ? 11 : 14,
-                    fontWeight: FontWeight.w500,
+              if (showTemplate)
+                Tab(
+                  height: isMobile ? 60 : 70,
+                  icon: Icon(Icons.description, size: isMobile ? 18 : 24),
+                  child: Text(
+                    isMobile ? "Template" : "Template Preview",
+                    style: TextStyle(
+                      fontSize: isMobile ? 11 : 14,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-              ),
               Tab(
                 height: isMobile ? 60 : 70,
                 icon: Icon(Icons.edit, size: isMobile ? 18 : 24),
@@ -92,21 +102,24 @@ class ContractTabsBuild {
 
   static Widget buildTabBarView({
     required TabController tabController,
-    required Widget templatePreview,
+    required Widget? templatePreview,
     required Widget contractForm,
     required Widget finalPreview,
     required bool canViewFinalPreview,
+    bool showTemplate = true,
   }) {
+    final children = <Widget>[
+      if (showTemplate) (templatePreview ?? const SizedBox.shrink()),
+      contractForm,
+      canViewFinalPreview ? finalPreview : buildDisabledPreview(),
+    ];
+    if (!showTemplate) {
+      children.removeAt(0); // remove template slot when hidden
+    }
     return TabBarView(
       controller: tabController,
       physics: canViewFinalPreview ? null : const NeverScrollableScrollPhysics(),
-      children: [
-        templatePreview,
-        contractForm,
-        canViewFinalPreview
-            ? finalPreview
-            : buildDisabledPreview(),
-      ],
+      children: children,
     );
   }
 

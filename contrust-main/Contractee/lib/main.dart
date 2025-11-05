@@ -5,6 +5,7 @@ import 'package:contractee/pages/cee_authredirect.dart';
 import 'package:contractee/pages/cee_home.dart';
 import 'package:contractee/pages/cee_welcome.dart';
 import 'package:contractee/pages/cee_login.dart';
+import 'package:contractee/pages/cee_forgot_password.dart';
 import 'package:contractee/pages/cee_ongoing.dart';
 import 'package:contractee/pages/cee_profile.dart';
 import 'package:contractee/pages/cee_chathistory.dart';
@@ -113,6 +114,12 @@ class _MyAppState extends State<MyApp> {
           path: '/auth/callback',
           pageBuilder: (context, state) => NoTransitionPage(
             child: const AuthRedirectPage(),
+          ),
+        ),
+        GoRoute(
+          path: '/auth/reset-password',
+          pageBuilder: (context, state) => NoTransitionPage(
+            child: const ForgotPasswordScreen(),
           ),
         ),
         GoRoute(
@@ -396,14 +403,17 @@ class _MyAppState extends State<MyApp> {
         ),
       ],
       redirect: (context, state) async {
+        final location = state.matchedLocation.isEmpty ? state.uri.path : state.matchedLocation;
         final session = Supabase.instance.client.auth.currentSession;
-        final location = state.matchedLocation;
+
+        final prefs = await SharedPreferences.getInstance();
+        final isFirstOpen = prefs.getBool('isFirstOpen') ?? true;
 
         if (session == null) {
-          if (!widget.isFirstOpen && location == '/welcome') {
+          if (!isFirstOpen && location == '/welcome') {
             return '/login';
           }
-          if (location != '/login' && location != '/welcome' && location != '/auth/callback' && location != '/register') {
+          if (location != '/login' && location != '/welcome' && location != '/auth/callback' && location != '/auth/reset-password' && location != '/register') {
             return '/login';
           }
         } else {

@@ -19,7 +19,7 @@ class ContractTypeService {
     try {
       final templateName = template['template_name'] ?? '';   
       final encodedName = Uri.encodeComponent(templateName);
-      context.go('/createcontract/template/$encodedName', extra: {
+      context.go('/createcontract?mode=template&identifier=$encodedName', extra: {
         'template': template,
         'contractType': templateName,
         'contractorId': contractorId,
@@ -84,7 +84,7 @@ class ContractTypeService {
       }
 
       final contractId = contract['contract_id'];
-      context.go('/createcontract/contract/$contractId', extra: {
+      context.go('/editcontract/$contractId', extra: {
         'template': contractType,
         'contractType': contractType['template_name'] ?? '',
         'existingContract': contract,

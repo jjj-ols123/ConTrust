@@ -68,7 +68,21 @@ class MessageService {
           .select('full_name, profile_photo')
           .eq('contractee_id', contracteeId)
           .single();
-      return Map<String, dynamic>.from(response);
+      final data = Map<String, dynamic>.from(response);
+      
+      if ((data['profile_photo'] == null || (data['profile_photo'] as String).isEmpty) && 
+          _supabase.auth.currentUser?.id == contracteeId) {
+        final currentUser = _supabase.auth.currentUser;
+        if (currentUser != null) {
+          final googlePhoto = currentUser.userMetadata?['avatar_url'] ?? 
+                             currentUser.userMetadata?['picture'];
+          if (googlePhoto != null && googlePhoto.toString().isNotEmpty) {
+            data['profile_photo'] = googlePhoto.toString();
+          }
+        }
+      }
+      
+      return data;
     } catch (e) {
       await SuperAdminErrorService().logError(
         errorMessage: 'Failed to fetch contractee data: $e',
@@ -90,7 +104,22 @@ class MessageService {
           .select('firm_name, profile_photo')
           .eq('contractor_id', contractorId)
           .single();
-      return Map<String, dynamic>.from(response);
+      final data = Map<String, dynamic>.from(response);
+      
+      // Fallback: If profile_photo is missing/empty and this is the current user, try auth metadata (for Google sign-in)
+      if ((data['profile_photo'] == null || (data['profile_photo'] as String).isEmpty) && 
+          _supabase.auth.currentUser?.id == contractorId) {
+        final currentUser = _supabase.auth.currentUser;
+        if (currentUser != null) {
+          final googlePhoto = currentUser.userMetadata?['avatar_url'] ?? 
+                             currentUser.userMetadata?['picture'];
+          if (googlePhoto != null && googlePhoto.toString().isNotEmpty) {
+            data['profile_photo'] = googlePhoto.toString();
+          }
+        }
+      }
+      
+      return data;
     } catch (e) {
       await SuperAdminErrorService().logError(
         errorMessage: 'Failed to fetch contractor data: $e',

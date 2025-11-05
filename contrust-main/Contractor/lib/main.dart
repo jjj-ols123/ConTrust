@@ -6,6 +6,7 @@ import 'package:contractor/Screen/cor_profile.dart';
 import 'package:contractor/Screen/cor_registration.dart';
 import 'package:contractor/Screen/cor_startup.dart';
 import 'package:contractor/Screen/cor_authredirect.dart';
+import 'package:contractor/Screen/cor_forgot_password.dart';
 import 'package:contractor/Screen/cor_bidding.dart';
 import 'package:contractor/Screen/cor_chathistory.dart';
 import 'package:contractor/Screen/cor_contracttype.dart';
@@ -15,6 +16,7 @@ import 'package:contractor/Screen/cor_ongoing.dart';
 import 'package:contractor/Screen/cor_notification.dart';
 import 'package:contractor/Screen/cor_viewcontract.dart';
 import 'package:contractor/Screen/cor_product.dart';
+import 'package:contractor/Screen/cor_editcontract.dart';
 import 'package:contractor/build/builddrawer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -91,6 +93,12 @@ class _MyAppState extends State<MyApp> {
           ),
         ),
         GoRoute(
+          path: '/auth/reset-password',
+          pageBuilder: (context, state) => NoTransitionPage(
+            child: const ForgotPasswordScreen(),
+          ),
+        ),
+        GoRoute(
           path: '/register',
           pageBuilder: (context, state) => NoTransitionPage(
             child: const RegisterScreen(),
@@ -151,7 +159,9 @@ class _MyAppState extends State<MyApp> {
                       } else if (location.startsWith('/materials')) {
                         currentPage = ContractorPage.materials;
                       } else if (location.startsWith('/viewcontract')) {
-                        currentPage = ContractorPage.contractTypes;
+                        currentPage = ContractorPage.createContract;
+                      } else if (location.startsWith('/editcontract')) {
+                        currentPage = ContractorPage.createContract;
                       } else {
                         currentPage = ContractorPage.dashboard;
                       }
@@ -211,6 +221,138 @@ class _MyAppState extends State<MyApp> {
                         return ContractType(contractorId: session.user.id);
                       }
                       return const ToLoginScreen();
+                    },
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/createcontract',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      if (session != null) {
+                        final mode = state.uri.queryParameters['mode'];
+                        final identifier = state.uri.queryParameters['identifier'];
+                        final extraData = state.extra as Map<String, dynamic>?;
+                        final contractorId = extraData?['contractorId'] ?? session.user.id;
+                        final contractType = extraData?['contractType'];
+
+                        Map<String, dynamic>? template;
+                        Map<String, dynamic>? existingContract;
+
+                        if (mode == 'template' && (identifier ?? '').isNotEmpty) {
+                          final decodedName = Uri.decodeComponent(identifier!);
+                          template = extraData?['template'];
+                          template ??= {'template_name': decodedName};
+                        } else if (mode == 'contract' && (identifier ?? '').isNotEmpty) {
+                          existingContract = extraData?['existingContract'];
+                          existingContract ??= {'contract_id': identifier};
+                        }
+
+                        // If template deep link, verify contractor before allowing creation
+                        if (mode == 'template' && existingContract == null) {
+                          return FutureBuilder<Map<String, dynamic>?>(
+                            future: FetchService().fetchContractorData(contractorId),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                return const Scaffold(
+                                  body: Center(
+                                    child: CircularProgressIndicator(color: Color(0xFFFFB300)),
+                                  ),
+                                );
+                              }
+                              final contractorData = snapshot.data;
+                              final isVerified = contractorData?['verified'] == true;
+                              if (!isVerified) {
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  context.go('/contracttypes');
+                                  ConTrustSnackBar.warning(
+                                    context,
+                                    'Your account needs to be verified before you can create contracts. Please complete your verification.',
+                                  );
+                                });
+                                return const Scaffold(
+                                  body: Center(
+                                    child: CircularProgressIndicator(color: Color(0xFFFFB300)),
+                                  ),
+                                );
+                              }
+
+                              return CreateContractPage(
+                                contractorId: contractorId,
+                                contractType: contractType,
+                                template: template,
+                                existingContract: existingContract,
+                              );
+                            },
+                          );
+                        }
+
+                        return CreateContractPage(
+                          contractorId: contractorId,
+                          contractType: contractType,
+                          template: template,
+                          existingContract: existingContract,
+                        );
+                      }
+                      return const ToLoginScreen();
+                    },
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/editcontract',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      if (session == null) return const ToLoginScreen();
+                      final id = state.uri.queryParameters['contractId'];
+                      final extra = state.extra as Map<String, dynamic>?;
+                      if (id == null || id.isEmpty) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) => context.go('/contracttypes'));
+                        return const Scaffold(
+                          body: Center(child: CircularProgressIndicator(color: Color(0xFFFFB300))),
+                        );
+                      }
+                      return CorEditContractScreen(
+                        contractId: id,
+                        initialContract: extra?['existingContract'] as Map<String, dynamic>?,
+                        initialTemplate: extra?['template'] as Map<String, dynamic>?,
+                        initialContractTypeName: extra?['contractType'] as String?,
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/editcontract/:contractId',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      if (session == null) return const ToLoginScreen();
+                      final id = state.pathParameters['contractId'];
+                      final extra = state.extra as Map<String, dynamic>?;
+                      if (id == null || id.isEmpty) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) => context.go('/contracttypes'));
+                        return const Scaffold(
+                          body: Center(child: CircularProgressIndicator(color: Color(0xFFFFB300))),
+                        );
+                      }
+                      return CorEditContractScreen(
+                        contractId: id,
+                        initialContract: extra?['existingContract'] as Map<String, dynamic>?,
+                        initialTemplate: extra?['template'] as Map<String, dynamic>?,
+                        initialContractTypeName: extra?['contractType'] as String?,
+                      );
                     },
                   ),
                 );
@@ -454,9 +596,54 @@ class _MyAppState extends State<MyApp> {
                     builder: (context) {
                       final session = Supabase.instance.client.auth.currentSession;
                       final args = state.extra as Map<String, dynamic>?;
-                      final contractId = args?['contractId'] as String?;
-                      final contractorId = args?['contractorId'] as String? ?? session?.user.id;
+                      final contractId =
+                          state.uri.queryParameters['contractId'] ?? args?['contractId'] as String?;
+                      final contractorId =
+                          state.uri.queryParameters['contractorId'] ?? (args?['contractorId'] as String?) ?? session?.user.id;
                       if (session != null && contractId != null && contractorId != null) {
+                        return ContractorViewContractPage(
+                          contractId: contractId,
+                          contractorId: contractorId,
+                        );
+                      }
+                      return const ToLoginScreen();
+                    },
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/viewcontract/:contractId',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      final contractId = state.pathParameters['contractId'];
+                      final contractorId = state.uri.queryParameters['contractorId'] ?? session?.user.id;
+                      if (session != null && contractId != null && contractId.isNotEmpty && contractorId != null) {
+                        return ContractorViewContractPage(
+                          contractId: contractId,
+                          contractorId: contractorId,
+                        );
+                      }
+                      return const ToLoginScreen();
+                    },
+                  ),
+                );
+              },
+            ),
+            // Support path-parameter deep links with contractor: /viewcontract/:contractId/:contractorId
+            GoRoute(
+              path: '/viewcontract/:contractId/:contractorId',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      final contractId = state.pathParameters['contractId'];
+                      final contractorId = state.pathParameters['contractorId'] ?? session?.user.id;
+                      if (session != null && contractId != null && contractId.isNotEmpty && contractorId != null) {
                         return ContractorViewContractPage(
                           contractId: contractId,
                           contractorId: contractorId,
@@ -635,12 +822,13 @@ class _MyAppState extends State<MyApp> {
           ),
         ),
       ],
-      redirect: (context, state) async {
-        final session = Supabase.instance.client.auth.currentSession;
-        final location = state.matchedLocation;
+      redirect: (context, state) {
+        final location = state.matchedLocation.isEmpty ? state.uri.path : state.matchedLocation;
+        
+        Session? session = Supabase.instance.client.auth.currentSession;
 
         if (session == null) {
-          if (location != '/logincontractor' && location != '/auth/callback' && location != '/register') {
+          if (location != '/logincontractor' && location != '/auth/callback' && location != '/auth/reset-password' && location != '/register') {
             return '/logincontractor';
           }
           return null;
