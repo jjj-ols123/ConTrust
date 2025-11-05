@@ -25,6 +25,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/utils/be_status.dart';
+import 'package:backend/utils/be_snackbar.dart';
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -75,10 +76,10 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     _router = GoRouter(
       navigatorKey: appNavigatorKey,
-      initialLocation: '/',
+      initialLocation: '/logincontractor',
       routes: [
         GoRoute(
-          path: '/',
+          path: '/logincontractor',
           pageBuilder: (context, state) => NoTransitionPage(
             child: const ToLoginScreen(),
           ),
@@ -230,6 +231,46 @@ class _MyAppState extends State<MyApp> {
                             body: Center(
                               child: CircularProgressIndicator(color: Color(0xFFFFB300)),
                             ),
+                          );
+                        }
+                        
+                        // Check if contractor is verified (only for new templates, not editing existing contracts)
+                        if (mode == 'template' && existingContract == null) {
+                          return FutureBuilder<Map<String, dynamic>?>(
+                            future: FetchService().fetchContractorData(contractorId),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                return const Scaffold(
+                                  body: Center(
+                                    child: CircularProgressIndicator(color: Color(0xFFFFB300)),
+                                  ),
+                                );
+                              }
+                              final contractorData = snapshot.data;
+                              final isVerified = contractorData?['verified'] == true;
+                              
+                              if (!isVerified) {
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  context.go('/contracttypes');
+                                  ConTrustSnackBar.warning(
+                                    context,
+                                    'Your account needs to be verified before you can create contracts. Please complete your verification.',
+                                  );
+                                });
+                                return const Scaffold(
+                                  body: Center(
+                                    child: CircularProgressIndicator(color: Color(0xFFFFB300)),
+                                  ),
+                                );
+                              }
+                              
+                              return CreateContractPage(
+                                contractorId: contractorId,
+                                contractType: contractType,
+                                template: template,
+                                existingContract: existingContract,
+                              );
+                            },
                           );
                         }
                         
@@ -476,6 +517,46 @@ class _MyAppState extends State<MyApp> {
                         existingContract = {'contract_id': identifier};
                       }
 
+                      // Check if contractor is verified (only for new templates, not editing existing contracts)
+                      if (mode == 'template' && existingContract == null) {
+                        return FutureBuilder<Map<String, dynamic>?>(
+                          future: FetchService().fetchContractorData(session.user.id),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return const Scaffold(
+                                body: Center(
+                                  child: CircularProgressIndicator(color: Color(0xFFFFB300)),
+                                ),
+                              );
+                            }
+                            final contractorData = snapshot.data;
+                            final isVerified = contractorData?['verified'] == true;
+                            
+                            if (!isVerified) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                context.go('/contracttypes');
+                                ConTrustSnackBar.warning(
+                                  context,
+                                  'Your account needs to be verified before you can create contracts. Please complete your verification.',
+                                );
+                              });
+                              return const Scaffold(
+                                body: Center(
+                                  child: CircularProgressIndicator(color: Color(0xFFFFB300)),
+                                ),
+                              );
+                            }
+                            
+                            return CreateContractPage(
+                              contractorId: session.user.id,
+                              contractType: null,
+                              template: template,
+                              existingContract: existingContract,
+                            );
+                          },
+                        );
+                      }
+
                       return CreateContractPage(
                         contractorId: session.user.id,
                         contractType: null,
@@ -542,41 +623,22 @@ class _MyAppState extends State<MyApp> {
         final location = state.matchedLocation;
 
         if (session == null) {
-          if (location != '/' && location != '/auth/callback' && location != '/register') {
-            return '/';
+          if (location != '/logincontractor' && location != '/auth/callback' && location != '/register') {
+            return '/logincontractor';
           }
-        } else {
-          if (_isRegistering || _preventAuthNavigation) {
-            return null;
-          }
+          return null;
+        }
 
-          final user = session.user;
-          if (user != null) {
-            try {
-              final resp = await Supabase.instance.client
-                  .from('Users')
-                  .select('verified, role')
-                  .eq('users_id', user.id)
-                  .maybeSingle();
+        if (_isRegistering || _preventAuthNavigation) {
+          return null;
+        }
 
-              final verified = resp != null && (resp['verified'] == true);
-              final role = resp != null ? resp['role'] : null;
+        if (location == '/auth/callback') {
+          return null;
+        }
 
-              if (verified && role == 'contractor') {
-                if (location == '/' || location == '/auth/callback') {
-                  return '/dashboard';
-                }
-              } else {
-                if (location != '/' && location != '/auth/callback') {
-                  return '/';
-                }
-              }
-            } catch (_) {
-              if (location != '/' && location != '/auth/callback') {
-                return '/';
-              }
-            }
-          }
+        if (location == '/logincontractor') {
+          return '/dashboard';
         }
 
         return null;

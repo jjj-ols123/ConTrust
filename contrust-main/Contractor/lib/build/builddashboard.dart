@@ -45,6 +45,79 @@ class DashboardBuildMethods {
   bool get isTablet => screenWidth >= 700 && screenWidth < 1200;
   bool get isMobile => screenWidth < 700;
 
+  Widget _buildVerificationBanner() {
+    return FutureBuilder<bool>(
+      future: _checkVerificationStatus(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox.shrink();
+        }
+        
+        final isVerified = snapshot.data ?? false;
+        if (isVerified) {
+          return const SizedBox.shrink();
+        }
+
+        return Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 20),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.orange.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.orange.shade200),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline, color: Colors.orange.shade700),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Account Pending Verification',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange.shade900,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Your account is being reviewed. Some features are disabled until verification is complete.',
+                      style: TextStyle(
+                        color: Colors.orange.shade800,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<bool> _checkVerificationStatus() async {
+    try {
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session == null) return false;
+
+      final resp = await Supabase.instance.client
+          .from('Users')
+          .select('verified')
+          .eq('users_id', session.user.id)
+          .maybeSingle();
+
+      return resp != null && (resp['verified'] == true);
+    } catch (e) {
+      return false;
+    }
+  }
+
   Widget buildDesktopProjectsAndTasks() {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,6 +127,8 @@ class DashboardBuildMethods {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
+              _buildVerificationBanner(),
+              const SizedBox(height: 20),
               buildWelcomeCard(),
               const SizedBox(height: 20),
               buildTabbedProjectView(),
@@ -1349,7 +1424,144 @@ class DashboardBuildMethods {
     return recentActivities;
   }
 
-
+  Future<void> _showContractDialog(BuildContext context, String contractId) async {
+    try {
+      final contractor = Supabase.instance.client.auth.currentUser?.id ?? '';
+      Map<String, dynamic> contractData = await ViewContractService.loadContract(contractId, contractorId: contractor);
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (dialogContext) {
+          Map<String, dynamic> liveData = contractData;
+          return StatefulBuilder(
+            builder: (context, setState) {
+              return Center(
+                child: Material(
+                  color: Colors.transparent,
+                  child: Container(
+                    constraints: BoxConstraints(
+                      maxWidth: 900,
+                      maxHeight: MediaQuery.of(dialogContext).size.height * 0.85,
+                    ),
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.black, width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 20,
+                          spreadRadius: 1,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.shade700,
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(20),
+                              topRight: Radius.circular(20),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.description, color: Colors.white, size: 24),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  liveData['title'] ?? 'Contract Details',
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () => Navigator.of(dialogContext).pop(),
+                                icon: const Icon(Icons.close, color: Colors.white, size: 24),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Flexible(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                FutureBuilder<String?>(
+                                  future: ViewContractService.getPdfSignedUrl(liveData),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.connectionState == ConnectionState.waiting) {
+                                      return ViewContractBuild.buildLoadingState();
+                                    }
+                                    if (!snapshot.hasData || (snapshot.data?.isEmpty ?? true)) {
+                                      return ViewContractBuild.buildPdfViewer(
+                                        pdfUrl: null,
+                                        onDownload: () => ViewContractService.handleDownload(
+                                          contractData: liveData,
+                                          context: context,
+                                        ),
+                                        height: 400,
+                                      );
+                                    }
+                                    return ViewContractBuild.buildPdfViewer(
+                                      pdfUrl: snapshot.data,
+                                      onDownload: () => ViewContractService.handleDownload(
+                                        contractData: liveData,
+                                        context: context,
+                                      ),
+                                      height: 400,
+                                      isSignedContract: (liveData['signed_pdf_url'] as String?)?.isNotEmpty == true,
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 20),
+                                ViewContractBuild.buildEnhancedSignaturesSection(
+                                  liveData,
+                                  onRefresh: () async {
+                                    try {
+                                      final updatedData = await ViewContractService.loadContract(contractId, contractorId: contractor);
+                                      setState(() {
+                                        liveData = updatedData;
+                                      });
+                                    } catch (e) {
+                                      if (dialogContext.mounted) {
+                                        ConTrustSnackBar.error(dialogContext, 'Failed to refresh: $e');
+                                      }
+                                    }
+                                  },
+                                  currentUserId: Supabase.instance.client.auth.currentUser?.id,
+                                  context: dialogContext,
+                                  contractStatus: liveData['status'] as String?,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ConTrustSnackBar.error(context, 'Error loading contract: $e');
+      }
+    }
+  }
   Map<String, dynamic> _getPlaceholderProject() {
     return {
       'title': 'No Active Projects',
@@ -1502,19 +1714,10 @@ class DashboardBuildMethods {
 
     return Column(
       children: [
-        for (int i = 0; i < details.length; i += 2)
+        for (int i = 0; i < details.length; i++)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: details[i]),
-                if (i + 1 < details.length)
-                  const SizedBox(width: 16),
-                if (i + 1 < details.length)
-                  Expanded(child: details[i + 1]),
-              ],
-            ),
+            child: details[i],
           ),
       ],
     );
@@ -1935,143 +2138,6 @@ class DashboardBuildMethods {
     }
   }
 
-  Future<void> _showContractDialog(BuildContext context, String contractId) async {
-    try {
-      final contractor = Supabase.instance.client.auth.currentUser?.id ?? '';
-      Map<String, dynamic> contractData = await ViewContractService.loadContract(contractId, contractorId: contractor);
-      
-      if (!context.mounted) return;
-      
-      showDialog(
-        context: context,
-        barrierDismissible: true,
-        builder: (dialogContext) {
-          Map<String, dynamic> liveData = contractData;
-          return StatefulBuilder(
-            builder: (context, setState) {
-              return Center(
-              child: Material(
-                color: Colors.transparent,
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 900, maxHeight: 700),
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.black, width: 1.5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
-                        blurRadius: 20,
-                        spreadRadius: 1,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.shade700,
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(20),
-                            topRight: Radius.circular(20),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.description, color: Colors.white, size: 24),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                liveData['title'] ?? 'Contract Details',
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () => Navigator.of(dialogContext).pop(),
-                              icon: const Icon(Icons.close, color: Colors.white, size: 24),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Flexible(
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              FutureBuilder<String?>(
-                                future: ViewContractService.getPdfSignedUrl(liveData),
-                                builder: (context, snapshot) {
-                                  if (snapshot.connectionState == ConnectionState.waiting) {
-                                    return ViewContractBuild.buildLoadingState();
-                                  }
-                                  if (!snapshot.hasData || (snapshot.data?.isEmpty ?? true)) {
-                                    return ViewContractBuild.buildPdfViewer(
-                                      pdfUrl: null,
-                                      onDownload: () => ViewContractService.handleDownload(
-                                        contractData: liveData,
-                                        context: context,
-                                      ),
-                                      height: 400,
-                                    );
-                                  }
-                                  return ViewContractBuild.buildPdfViewer(
-                                    pdfUrl: snapshot.data,
-                                    onDownload: () => ViewContractService.handleDownload(
-                                      contractData: liveData,
-                                      context: context,
-                                    ),
-                                    height: 400,
-                                    isSignedContract: (liveData['signed_pdf_url'] as String?)?.isNotEmpty == true,
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 20),
-                              ViewContractBuild.buildEnhancedSignaturesSection(
-                                liveData,
-                                onRefresh: () async {
-                                  try {
-                                    final updatedData = await ViewContractService.loadContract(contractId, contractorId: contractor);
-                                    setState(() {
-                                      liveData = updatedData;
-                                    });
-                                  } catch (e) {
-                                    if (dialogContext.mounted) {
-                                      ConTrustSnackBar.error(dialogContext, 'Failed to refresh: $e');
-                                    }
-                                  }
-                                },
-                                currentUserId: Supabase.instance.client.auth.currentUser?.id,
-                                context: dialogContext,
-                                contractStatus: liveData['status'] as String?,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-            },
-          );
-        },
-      );
-    } catch (e) {
-      if (context.mounted) {
-        ConTrustSnackBar.error(context, 'Error loading contract: $e');
-      }
-    }
-  }
 
   Future<Map<String, dynamic>?> _fetchCurrentContractee(String projectId) async {
     try {

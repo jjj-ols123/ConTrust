@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 class _ProjectStatusHelper {
@@ -87,69 +88,13 @@ class _ProjectStatusHelper {
 
 class CeeProfileBuildMethods {
   static Widget buildHeader(BuildContext context, String title) {
-    return Container(
-      height: 60,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF9E6),     
-        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.handyman_rounded, color: const Color(0xFFFFB300), size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
+    // Removed page header bar
+    return const SizedBox.shrink();
   }
 
   static Widget buildStickyHeader(String title) {
-    return SliverAppBar(
-      pinned: true,
-      floating: false,
-      snap: false,
-      elevation: 0,
-      backgroundColor: const Color(0xFFFFF9E6),
-      surfaceTintColor: Colors.transparent,
-      automaticallyImplyLeading: false,
-      toolbarHeight: 60,
-      flexibleSpace: Container(
-        height: 60,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFF9E6),     
-          border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.handyman_rounded, color: const Color(0xFFFFB300), size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    // Removed header bar
+    return const SliverToBoxAdapter(child: SizedBox.shrink());
   }
 
   static Widget buildMainContent(String selectedTab, Function buildAboutContent, Function buildHistoryContent) {
@@ -265,7 +210,11 @@ class CeeProfileBuildMethods {
             child: buildMobileNavigation(selectedTab, onTabChanged),
           ),
           const SizedBox(height: 16),
-          mainContent,
+          Expanded(
+            child: SingleChildScrollView(
+              child: mainContent,
+            ),
+          ),
         ],
       ),
     );
@@ -540,6 +489,20 @@ class CeeProfileBuildMethods {
           if (isEditing)
             TextField(
               controller: controller,
+              keyboardType: label == 'Contact Number' ? TextInputType.phone : TextInputType.text,
+              inputFormatters: label == 'Contact Number' 
+                ? [LengthLimitingTextInputFormatter(13)]
+                : null,
+              onChanged: label == 'Contact Number' 
+                ? (value) {
+                    if (!value.startsWith('+63')) {
+                      controller.value = TextEditingValue(
+                        text: '+63',
+                        selection: TextSelection.collapsed(offset: 3),
+                      );
+                    }
+                  }
+                : null,
               decoration: InputDecoration(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 border: OutlineInputBorder(
@@ -550,6 +513,7 @@ class CeeProfileBuildMethods {
                   borderRadius: BorderRadius.circular(6),
                   borderSide: BorderSide(color: Colors.amber.shade700, width: 2),
                 ),
+                helperText: label == 'Contact Number' ? 'Enter mobile number' : null,
               ),
               style: const TextStyle(fontSize: 14, color: Color(0xFF1F2937)),
             )
@@ -617,9 +581,12 @@ class CeeProfileBuildMethods {
     required Function(Map<String, dynamic>) onProjectTap,
     required Function getTimeAgo,
   }) {
+    debugPrint('buildHistory: Called');
+    debugPrint('buildHistory: Projects=${filteredProjects.length}, Transactions=${filteredTransactions.length}, Reviews=${reviews.length}');
     return LayoutBuilder(
       builder: (context, constraints) {
         final isDesktop = constraints.maxWidth > 900;
+        debugPrint('buildHistory: isDesktop=$isDesktop, width=${constraints.maxWidth}, height=${constraints.maxHeight}');
         
         if (isDesktop) {
           return Row(
@@ -654,41 +621,20 @@ class CeeProfileBuildMethods {
             ],
           );
         } else {
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                SizedBox(
-                  width: constraints.maxWidth,
-                  child: _buildProjectsSection(
-                    context: context,
-                    filteredProjects: filteredProjects,
-                    projectSearchController: projectSearchController,
-                    selectedProjectStatus: selectedProjectStatus,
-                    onProjectStatusChanged: onProjectStatusChanged,
-                    onProjectTap: onProjectTap,
-                    getTimeAgo: getTimeAgo,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                SizedBox(
-                  width: constraints.maxWidth,
-                  child: _buildTransactionsSection(
-                    context: context,
-                    filteredTransactions: filteredTransactions,
-                    transactionSearchController: transactionSearchController,
-                    selectedPaymentType: selectedPaymentType,
-                    onPaymentTypeChanged: onPaymentTypeChanged,
-                    getTimeAgo: getTimeAgo,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                SizedBox(
-                  width: constraints.maxWidth,
-                  child: _buildReviewsSection(context: context, reviews: reviews),
-                ),
-              ],
-            ),
+          return _buildMobileHistoryWithIndicator(
+            context: context,
+            constraints: constraints,
+            filteredProjects: filteredProjects,
+            projectSearchController: projectSearchController,
+            selectedProjectStatus: selectedProjectStatus,
+            onProjectStatusChanged: onProjectStatusChanged,
+            onProjectTap: onProjectTap,
+            filteredTransactions: filteredTransactions,
+            transactionSearchController: transactionSearchController,
+            selectedPaymentType: selectedPaymentType,
+            onPaymentTypeChanged: onPaymentTypeChanged,
+            reviews: reviews,
+            getTimeAgo: getTimeAgo,
           );
         }
       },
@@ -704,6 +650,7 @@ class CeeProfileBuildMethods {
     required Function(Map<String, dynamic>) onProjectTap,
     required Function getTimeAgo,
   }) {
+    debugPrint('_buildProjectsSection: Building with ${filteredProjects.length} projects');
     // Sort projects: non-completed/cancelled on top
     final sortedProjects = List<Map<String, dynamic>>.from(filteredProjects);
     sortedProjects.sort((a, b) {
@@ -804,6 +751,110 @@ class CeeProfileBuildMethods {
     );
   }
 
+  static Widget _buildProjectsSectionWithFixedHeader({
+    required BuildContext context,
+    required List<Map<String, dynamic>> filteredProjects,
+    required TextEditingController projectSearchController,
+    required String selectedProjectStatus,
+    required Function(String) onProjectStatusChanged,
+    required Function(Map<String, dynamic>) onProjectTap,
+    required Function getTimeAgo,
+  }) {
+    final sortedProjects = List<Map<String, dynamic>>.from(filteredProjects);
+    sortedProjects.sort((a, b) {
+      final statusA = (a['status'] ?? '').toString().toLowerCase();
+      final statusB = (b['status'] ?? '').toString().toLowerCase();
+      bool isActiveA = statusA != 'completed' && statusA != 'cancelled';
+      bool isActiveB = statusB != 'completed' && statusB != 'cancelled';
+      if (isActiveA && !isActiveB) return -1;
+      if (!isActiveA && isActiveB) return 1;
+      final dateA = DateTime.tryParse(a['created_at'] ?? '') ?? DateTime.now();
+      final dateB = DateTime.tryParse(b['created_at'] ?? '') ?? DateTime.now();
+      return dateB.compareTo(dateA);
+    });
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Fixed Header
+          Row(
+            children: [
+              Icon(Icons.folder_open, color: Colors.amber.shade700, size: 22),
+              const SizedBox(width: 12),
+              const Text(
+                'Project History',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: projectSearchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search projects...',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.amber.shade700, width: 2),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              DropdownButton<String>(
+                value: selectedProjectStatus,
+                items: ['All', 'Active', 'Completed', 'Cancelled', 'Pending']
+                    .map((status) => DropdownMenuItem(value: status, child: Text(status, style: const TextStyle(fontSize: 13))))
+                    .toList(),
+                onChanged: (value) => onProjectStatusChanged(value ?? 'All'),
+                underline: Container(),
+                icon: const Icon(Icons.filter_list, size: 20),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Scrollable Content
+          Expanded(
+            child: sortedProjects.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.inbox_outlined, size: 50, color: Colors.grey.shade300),
+                        const SizedBox(height: 12),
+                        Text('No projects found', style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    itemCount: sortedProjects.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final project = sortedProjects[index];
+                      return _buildProjectHistoryCard(project, onProjectTap, getTimeAgo);
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
   static Widget _buildTransactionsSection({
     required BuildContext context,
     required List<Map<String, dynamic>> filteredTransactions,
@@ -812,6 +863,7 @@ class CeeProfileBuildMethods {
     required Function(String) onPaymentTypeChanged,
     required Function getTimeAgo,
   }) {
+    debugPrint('_buildTransactionsSection: Building with ${filteredTransactions.length} transactions');
     return Container(
       height: 600,
       padding: const EdgeInsets.all(20),
@@ -867,6 +919,96 @@ class CeeProfileBuildMethods {
             ],
           ),
           const SizedBox(height: 16),
+          Expanded(
+            child: filteredTransactions.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.receipt_long_outlined, size: 50, color: Colors.grey.shade300),
+                        const SizedBox(height: 12),
+                        Text('No transactions found', style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    itemCount: filteredTransactions.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final transaction = filteredTransactions[index];
+                      return _buildTransactionCard(transaction, getTimeAgo);
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _buildTransactionsSectionWithFixedHeader({
+    required BuildContext context,
+    required List<Map<String, dynamic>> filteredTransactions,
+    required TextEditingController transactionSearchController,
+    required String selectedPaymentType,
+    required Function(String) onPaymentTypeChanged,
+    required Function getTimeAgo,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Fixed Header
+          Row(
+            children: [
+              Icon(Icons.payment, color: Colors.amber.shade700, size: 22),
+              const SizedBox(width: 12),
+              const Text(
+                'Payment History',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: transactionSearchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search transactions...',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.amber.shade700, width: 2),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              DropdownButton<String>(
+                value: selectedPaymentType,
+                items: ['All', 'Deposit', 'Final', 'Milestone']
+                    .map((type) => DropdownMenuItem(value: type, child: Text(type, style: const TextStyle(fontSize: 13))))
+                    .toList(),
+                onChanged: (value) => onPaymentTypeChanged(value ?? 'All'),
+                underline: Container(),
+                icon: const Icon(Icons.filter_list, size: 20),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Scrollable Content
           Expanded(
             child: filteredTransactions.isEmpty
                 ? Center(
@@ -1248,6 +1390,173 @@ class CeeProfileBuildMethods {
     );
   }
 
+  static Widget _buildReviewsSectionWithFixedHeader({
+    required BuildContext context,
+    required List<Map<String, dynamic>> reviews,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Fixed Header
+          Row(
+            children: [
+              Icon(Icons.star_border, color: Colors.amber.shade700, size: 22),
+              const SizedBox(width: 12),
+              const Text(
+                'Review History',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Reviews you\'ve given to contractors',
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          ),
+          const SizedBox(height: 16),
+          // Scrollable Content
+          Expanded(
+            child: reviews.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.rate_review_outlined, size: 50, color: Colors.grey.shade300),
+                        const SizedBox(height: 12),
+                        Text('No reviews yet', style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    itemCount: reviews.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final review = reviews[index];
+                      return _buildReviewCard(review);
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _buildMobileHistoryWithIndicator({
+    required BuildContext context,
+    required BoxConstraints constraints,
+    required List<Map<String, dynamic>> filteredProjects,
+    required TextEditingController projectSearchController,
+    required String selectedProjectStatus,
+    required Function(String) onProjectStatusChanged,
+    required Function(Map<String, dynamic>) onProjectTap,
+    required List<Map<String, dynamic>> filteredTransactions,
+    required TextEditingController transactionSearchController,
+    required String selectedPaymentType,
+    required Function(String) onPaymentTypeChanged,
+    required List<Map<String, dynamic>> reviews,
+    required Function getTimeAgo,
+  }) {
+    debugPrint('_buildMobileHistoryWithIndicator: Building mobile history with indicator');
+    debugPrint('Constraints: width=${constraints.maxWidth}, height=${constraints.maxHeight}');
+    debugPrint('Filtered projects count: ${filteredProjects.length}');
+    debugPrint('Filtered transactions count: ${filteredTransactions.length}');
+    debugPrint('Reviews count: ${reviews.length}');
+    
+    final PageController pageController = PageController();
+    debugPrint('PageController created');
+    
+    final screenHeight = MediaQuery.of(context).size.height;
+    final availableHeight = screenHeight * 0.5;
+    debugPrint('Screen height: $screenHeight, Available height for PageView: $availableHeight');
+    
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          height: availableHeight,
+          child: PageView(
+            controller: pageController,
+            children: [
+              Builder(
+                builder: (context) {
+                  debugPrint('Building Projects Section in PageView');
+                  return _buildProjectsSectionWithFixedHeader(
+                    context: context,
+                    filteredProjects: filteredProjects,
+                    projectSearchController: projectSearchController,
+                    selectedProjectStatus: selectedProjectStatus,
+                    onProjectStatusChanged: onProjectStatusChanged,
+                    onProjectTap: onProjectTap,
+                    getTimeAgo: getTimeAgo,
+                  );
+                },
+              ),
+              Builder(
+                builder: (context) {
+                  debugPrint('Building Transactions Section in PageView');
+                  return _buildTransactionsSectionWithFixedHeader(
+                    context: context,
+                    filteredTransactions: filteredTransactions,
+                    transactionSearchController: transactionSearchController,
+                    selectedPaymentType: selectedPaymentType,
+                    onPaymentTypeChanged: onPaymentTypeChanged,
+                    getTimeAgo: getTimeAgo,
+                  );
+                },
+              ),
+              Builder(
+                builder: (context) {
+                  debugPrint('Building Reviews Section in PageView');
+                  return _buildReviewsSectionWithFixedHeader(context: context, reviews: reviews);
+                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildHistoryPageIndicator(pageController),
+      ],
+    );
+  }
+
+  static Widget _buildHistoryPageIndicator(PageController pageController) {
+    return AnimatedBuilder(
+      animation: pageController,
+      builder: (context, child) {
+        if (!pageController.hasClients) {
+          return const SizedBox.shrink();
+        }
+        
+        final currentPage = pageController.page ?? 0;
+        final page = currentPage.round();
+        
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(3, (index) {
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: page == index
+                    ? Colors.amber.shade700
+                    : Colors.grey.shade300,
+              ),
+            );
+          }),
+        );
+      },
+    );
+  }
+
   static Widget buildProjectDetailsDialog(
     BuildContext context,
     Map<String, dynamic> project,
@@ -1272,6 +1581,7 @@ class CeeProfileBuildMethods {
             ],
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Header matching ProjectModal
               Container(
@@ -1318,12 +1628,12 @@ class CeeProfileBuildMethods {
                 ),
               ),
               // Content area
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+              SingleChildScrollView(
+                padding: const EdgeInsets.only(top: 24, left: 24, right: 24, bottom: 0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                       // Status badge at the top
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -1363,7 +1673,6 @@ class CeeProfileBuildMethods {
                     ],
                   ),
                 ),
-              ),
             ],
           ),
         ),
@@ -1466,6 +1775,7 @@ class CeeProfileBuildMethods {
 
   static Widget _buildDescriptionSection(Map<String, dynamic> project) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
@@ -1479,18 +1789,21 @@ class CeeProfileBuildMethods {
         const SizedBox(height: 8),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 0),
           decoration: BoxDecoration(
             color: Colors.grey.shade50,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.grey.shade200),
           ),
-          child: Text(
-            project['description'] ?? 'No description provided',
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF1F2937),
-              height: 1.4,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Text(
+              project['description'] ?? 'No description provided',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF1F2937),
+                height: 1.4,
+              ),
             ),
           ),
         ),

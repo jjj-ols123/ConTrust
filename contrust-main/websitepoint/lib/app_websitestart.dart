@@ -20,7 +20,9 @@ class _WebsiteStartPageState extends State<WebsiteStartPage> {
   @override
   void initState() {
     super.initState();
-    _enforceRedirectGuard();
+    if (kIsWeb) {
+      _enforceRedirectGuard();
+    }
   }
 
   @override
@@ -53,6 +55,10 @@ class _WebsiteStartPageState extends State<WebsiteStartPage> {
   }
 
   void _rememberAndRedirect(String role) {
+    if (!kIsWeb) {
+      // This method should only be called on web
+      return;
+    }
     try {
       html.window.localStorage['preferredSubdomain'] = role;
       final String base = role == 'contractor'
@@ -66,6 +72,9 @@ class _WebsiteStartPageState extends State<WebsiteStartPage> {
   }
 
   void _forwardOAuthIfPresent(String role) {
+    if (!kIsWeb) {
+      return;
+    }
     final search = html.window.location.search ?? '';
     if (search.contains('code=') || search.contains('access_token=')) {
       final String base = role == 'contractor'
@@ -76,6 +85,9 @@ class _WebsiteStartPageState extends State<WebsiteStartPage> {
   }
 
   void _enforceRedirectGuard() {
+    if (!kIsWeb) {
+      return;
+    }
     try {
       final String? role = html.window.localStorage['preferredSubdomain'];
       final String normalized = (role ?? '').toLowerCase();

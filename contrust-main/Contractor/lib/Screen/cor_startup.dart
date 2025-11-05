@@ -19,10 +19,17 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoggingIn = false;
   bool _passwordVisible = false; 
+  final AssetImage _bgImage = const AssetImage('assets/images/bgloginscreen.jpg');
 
   @override
   void initState() {
     super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    precacheImage(_bgImage, context);
   }
 
   @override
@@ -82,7 +89,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
           children: [
             Positioned.fill(
               child: Image(
-                image: const AssetImage('assets/images/bgloginscreen.jpg'),
+                image: _bgImage,
                 fit: BoxFit.cover,
               ),
             ),

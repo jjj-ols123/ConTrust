@@ -299,7 +299,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
           if (!mounted) return;
 
-          context.go('/');
+          context.go('/logincontractor');
         });
       }
     } finally {
@@ -451,7 +451,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   if (Navigator.canPop(context)) {
                     Navigator.pop(context);
                   } else {
-                    context.go('/');
+                    context.go('/logincontractor');
                   }
                 },
                 child: Container(
@@ -1329,7 +1329,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
             } else {
-              context.go('/');
+              context.go('/logincontractor');
             }
           },
           child: Text.rich(

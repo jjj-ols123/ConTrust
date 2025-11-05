@@ -273,6 +273,9 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
       final projectId = activeProjects.first['project_id'];
       if (widget.currentPage != ContracteePage.ongoing) {
         context.go('/ongoing/$projectId');
+        if (Scaffold.of(context).isDrawerOpen) {
+          Navigator.of(context).pop();
+        }
       }
     } catch (e) {
       setState(() => _loadingOngoing = false);
@@ -298,8 +301,12 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
                 title: Text(project['title'] ?? 'Untitled Project'),
                 subtitle: Text(project['location'] ?? 'No location'),
                 onTap: () {
-                  Navigator.pop(context);
+                  Navigator.pop(context); // Close dialog
                   context.go('/ongoing/${project['project_id']}');
+                  // Close drawer after navigation (only if drawer is open)
+                  if (Scaffold.of(context).isDrawerOpen) {
+                    Navigator.of(context).pop();
+                  }
                 },
               );
             },
@@ -320,6 +327,10 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
       context.go(routeName, extra: arguments);
     } else {
       context.go(routeName);
+    }
+    // Close drawer after navigation (only if drawer is open)
+    if (Scaffold.of(context).isDrawerOpen) {
+      Navigator.of(context).pop();
     }
   }
 

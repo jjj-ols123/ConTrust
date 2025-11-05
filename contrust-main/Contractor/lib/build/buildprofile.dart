@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:backend/utils/be_status.dart';
 
 class ProfileBuildMethods {
@@ -797,30 +798,7 @@ class ProfileBuildMethods {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  if (specialization.isEmpty || specialization == "No specialization")
-                    Text(
-                      'No specialization',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade600,
-                      ),
-                    )
-                  else
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: specialization.split(", ").map((spec) {
-                        if (spec.trim().isEmpty) return const SizedBox.shrink();
-                        return Chip(
-                          label: Text(
-                            spec.trim(),
-                            style: const TextStyle(fontSize: 13),
-                          ),
-                          backgroundColor: Colors.amber.shade100,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                        );
-                      }).toList(),
-                    ),
+                  _buildSpecializationDisplay(specialization),
                 ],
               ),
             ),
@@ -1395,7 +1373,21 @@ class ProfileBuildMethods {
           if (isEditing)
             TextField(
               controller: controller,
+              keyboardType: title == 'Contact Information' ? TextInputType.phone : TextInputType.text,
               maxLines: title == 'Bio' ? 3 : 1,
+              inputFormatters: title == 'Contact Information' 
+                ? [LengthLimitingTextInputFormatter(13)]
+                : null,
+              onChanged: title == 'Contact Information' 
+                ? (value) {
+                    if (!value.startsWith('+63')) {
+                      controller.text = '+63';
+                      controller.selection = TextSelection.fromPosition(
+                        TextPosition(offset: controller.text.length),
+                      );
+                    }
+                  }
+                : null,
               decoration: InputDecoration(
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -1476,36 +1468,19 @@ class ProfileBuildMethods {
             ],
           );
         } else {
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                SizedBox(
-                  width: constraints.maxWidth,
-                  child: _buildClientsSection(
-                    context: context,
-                    filteredProjects: filteredProjects,
-                    projectSearchController: projectSearchController,
-                    selectedProjectStatus: selectedProjectStatus,
-                    onProjectStatusChanged: onProjectStatusChanged,
-                    onProjectTap: onProjectTap,
-                    getTimeAgo: getTimeAgo,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                SizedBox(
-                  width: constraints.maxWidth,
-                  child: _buildTransactionsSection(
-                    context: context,
-                    filteredTransactions: filteredTransactions,
-                    transactionSearchController: transactionSearchController,
-                    selectedPaymentType: selectedPaymentType,
-                    onPaymentTypeChanged: onPaymentTypeChanged,
-                    getTimeAgo: getTimeAgo,
-                  ),
-                ),
-              ],
-            ),
+          return _buildMobileHistoryWithIndicator(
+            context: context,
+            constraints: constraints,
+            filteredProjects: filteredProjects,
+            projectSearchController: projectSearchController,
+            selectedProjectStatus: selectedProjectStatus,
+            onProjectStatusChanged: onProjectStatusChanged,
+            onProjectTap: onProjectTap,
+            filteredTransactions: filteredTransactions,
+            transactionSearchController: transactionSearchController,
+            selectedPaymentType: selectedPaymentType,
+            onPaymentTypeChanged: onPaymentTypeChanged,
+            getTimeAgo: getTimeAgo,
           );
         }
       },
@@ -1707,6 +1682,278 @@ class ProfileBuildMethods {
     );
   }
 
+  static Widget _buildClientsSectionWithFixedHeader({
+    required BuildContext context,
+    required List<Map<String, dynamic>> filteredProjects,
+    required TextEditingController projectSearchController,
+    required String selectedProjectStatus,
+    required Function(String) onProjectStatusChanged,
+    required Function(Map<String, dynamic>) onProjectTap,
+    required Function getTimeAgo,
+  }) {
+    final sortedProjects = List<Map<String, dynamic>>.from(filteredProjects);
+    sortedProjects.sort((a, b) {
+      final statusA = (a['status'] ?? '').toString().toLowerCase();
+      final statusB = (b['status'] ?? '').toString().toLowerCase();
+      bool isActiveA = statusA != 'completed' && statusA != 'cancelled';
+      bool isActiveB = statusB != 'completed' && statusB != 'cancelled';
+      if (isActiveA && !isActiveB) return -1;
+      if (!isActiveA && isActiveB) return 1;
+      final dateA = DateTime.tryParse(a['created_at'] ?? '') ?? DateTime.now();
+      final dateB = DateTime.tryParse(b['created_at'] ?? '') ?? DateTime.now();
+      return dateB.compareTo(dateA);
+    });
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.folder_open, color: Colors.amber.shade700, size: 22),
+              const SizedBox(width: 12),
+              const Text(
+                'Client History',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: projectSearchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search clients...',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.amber.shade700, width: 2),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              DropdownButton<String>(
+                value: selectedProjectStatus,
+                items: ['All', 'Active', 'Completed', 'Cancelled', 'Pending']
+                    .map((status) => DropdownMenuItem(value: status, child: Text(status, style: const TextStyle(fontSize: 13))))
+                    .toList(),
+                onChanged: (value) => onProjectStatusChanged(value ?? 'All'),
+                underline: Container(),
+                icon: const Icon(Icons.filter_list, size: 20),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: sortedProjects.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.inbox_outlined, size: 50, color: Colors.grey.shade300),
+                        const SizedBox(height: 12),
+                        Text('No clients found', style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    itemCount: sortedProjects.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final project = sortedProjects[index];
+                      return _buildClientHistoryCard(project, onProjectTap, getTimeAgo);
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _buildTransactionsSectionWithFixedHeader({
+    required BuildContext context,
+    required List<Map<String, dynamic>> filteredTransactions,
+    required TextEditingController transactionSearchController,
+    required String selectedPaymentType,
+    required Function(String) onPaymentTypeChanged,
+    required Function getTimeAgo,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.payment, color: Colors.amber.shade700, size: 22),
+              const SizedBox(width: 12),
+              const Text(
+                'Transaction History',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: transactionSearchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search transactions...',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.amber.shade700, width: 2),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              DropdownButton<String>(
+                value: selectedPaymentType,
+                items: ['All', 'Deposit', 'Final', 'Milestone']
+                    .map((type) => DropdownMenuItem(value: type, child: Text(type, style: const TextStyle(fontSize: 13))))
+                    .toList(),
+                onChanged: (value) => onPaymentTypeChanged(value ?? 'All'),
+                underline: Container(),
+                icon: const Icon(Icons.filter_list, size: 20),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: filteredTransactions.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.receipt_long_outlined, size: 50, color: Colors.grey.shade300),
+                        const SizedBox(height: 12),
+                        Text('No transactions found', style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    itemCount: filteredTransactions.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final transaction = filteredTransactions[index];
+                      return _buildTransactionCard(transaction, getTimeAgo);
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _buildMobileHistoryWithIndicator({
+    required BuildContext context,
+    required BoxConstraints constraints,
+    required List<Map<String, dynamic>> filteredProjects,
+    required TextEditingController projectSearchController,
+    required String selectedProjectStatus,
+    required Function(String) onProjectStatusChanged,
+    required Function(Map<String, dynamic>) onProjectTap,
+    required List<Map<String, dynamic>> filteredTransactions,
+    required TextEditingController transactionSearchController,
+    required String selectedPaymentType,
+    required Function(String) onPaymentTypeChanged,
+    required Function getTimeAgo,
+  }) {
+    final PageController pageController = PageController();
+    final screenHeight = MediaQuery.of(context).size.height;
+    final availableHeight = screenHeight * 0.5;
+    const pageCount = 2;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          height: availableHeight,
+          child: PageView(
+            controller: pageController,
+            children: [
+              _buildClientsSectionWithFixedHeader(
+                context: context,
+                filteredProjects: filteredProjects,
+                projectSearchController: projectSearchController,
+                selectedProjectStatus: selectedProjectStatus,
+                onProjectStatusChanged: onProjectStatusChanged,
+                onProjectTap: onProjectTap,
+                getTimeAgo: getTimeAgo,
+              ),
+              _buildTransactionsSectionWithFixedHeader(
+                context: context,
+                filteredTransactions: filteredTransactions,
+                transactionSearchController: transactionSearchController,
+                selectedPaymentType: selectedPaymentType,
+                onPaymentTypeChanged: onPaymentTypeChanged,
+                getTimeAgo: getTimeAgo,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildHistoryPageIndicator(pageController, pageCount),
+      ],
+    );
+  }
+
+  static Widget _buildHistoryPageIndicator(PageController pageController, int pageCount) {
+    return AnimatedBuilder(
+      animation: pageController,
+      builder: (context, child) {
+        if (!pageController.hasClients) {
+          return const SizedBox.shrink();
+        }
+
+        final currentPage = pageController.page ?? 0;
+        final page = currentPage.round();
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(pageCount, (index) {
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: page == index ? Colors.amber.shade700 : Colors.grey.shade300,
+              ),
+            );
+          }),
+        );
+      },
+    );
+  }
+
   static Widget _buildClientHistoryCard(
     Map<String, dynamic> project,
     Function(Map<String, dynamic>) onProjectTap,
@@ -1876,6 +2123,49 @@ class ProfileBuildMethods {
 
   static String _getStatusLabel(String? status) {
     return ProjectStatus().getStatusLabel(status);
+  }
+
+  static Widget _buildSpecializationDisplay(String specialization) {
+    // Handle specialization the same way as in cor_profile.dart
+    // If empty or "No specialization", show text
+    if (specialization.isEmpty || specialization == "No specialization") {
+      return Text(
+        'No specialization',
+        style: TextStyle(
+          fontSize: 14,
+          color: Colors.grey.shade600,
+        ),
+      );
+    }
+    
+    // Split by comma and create chips
+    // This matches the logic in cor_profile.dart where List is joined with ", "
+    final specs = specialization.split(", ").where((spec) => spec.trim().isNotEmpty).toList();
+    
+    if (specs.isEmpty) {
+      return Text(
+        'No specialization',
+        style: TextStyle(
+          fontSize: 14,
+          color: Colors.grey.shade600,
+        ),
+      );
+    }
+    
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: specs.map((spec) {
+        return Chip(
+          label: Text(
+            spec.trim(),
+            style: const TextStyle(fontSize: 13),
+          ),
+          backgroundColor: Colors.amber.shade100,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+        );
+      }).toList(),
+    );
   }
 
   static void showPhotoDialog(BuildContext context, Map<String, dynamic> photo) {

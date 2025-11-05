@@ -389,7 +389,7 @@ class _MyAppState extends State<MyApp> {
             return null;
           }
 
-          if (location == '/login' || location == '/welcome' || location == '/auth/callback') {
+          if (location == '/login' || location == '/welcome') {
             return '/home';
           }
         }

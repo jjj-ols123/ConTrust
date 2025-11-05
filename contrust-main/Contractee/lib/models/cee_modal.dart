@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:image_picker/image_picker.dart';
 
 String toProperCase(String text) {
   if (text.isEmpty) return text;
@@ -66,6 +67,9 @@ class _ProjectDialogState extends State<ProjectDialog> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _startDateController = TextEditingController();
   final TextEditingController _customTypeController = TextEditingController();
+  Uint8List? _selectedPhoto;
+  String? _photoUrl;
+  bool _isUploadingPhoto = false;
   
   static const List<String> _availableSpecializations = [
     'General Construction',
@@ -134,6 +138,69 @@ class _ProjectDialogState extends State<ProjectDialog> {
 
   bool _isLoading = false;
 
+  Future<void> _pickPhoto() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null) {
+        final bytes = await pickedFile.readAsBytes();
+        setState(() {
+          _selectedPhoto = bytes;
+          _photoUrl = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ConTrustSnackBar.error(context, 'Failed to pick image: $e');
+      }
+    }
+  }
+
+  Future<String?> _uploadPhoto() async {
+    if (_selectedPhoto == null) return null;
+
+    setState(() => _isUploadingPhoto = true);
+    try {
+      final supabase = Supabase.instance.client;
+      final fileName = '${widget.contracteeId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final storagePath = 'contractee/photo_url/$fileName';
+
+      await supabase.storage
+          .from('projectphotos')
+          .uploadBinary(
+            storagePath,
+            _selectedPhoto!,
+            fileOptions: const FileOptions(
+              upsert: true,
+              contentType: 'image/jpeg',
+            ),
+          );
+
+      final publicUrl = supabase.storage
+          .from('projectphotos')
+          .getPublicUrl(storagePath);
+
+      setState(() {
+        _photoUrl = publicUrl;
+        _isUploadingPhoto = false;
+      });
+
+      return publicUrl;
+    } catch (e) {
+      setState(() => _isUploadingPhoto = false);
+      if (mounted) {
+        ConTrustSnackBar.error(context, 'Failed to upload photo: $e');
+      }
+      return null;
+    }
+  }
+
   Future<void> _selectStartDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -183,6 +250,11 @@ class _ProjectDialogState extends State<ProjectDialog> {
         finalProjectType = widget.constructionTypeController.text.trim();
       }
       
+      String? uploadedPhotoUrl = _photoUrl;
+      if (_selectedPhoto != null && _photoUrl == null) {
+        uploadedPhotoUrl = await _uploadPhoto();
+      }
+
       if (widget.isUpdate && widget.projectId != null) {
         await ProjectService().updateProject(
           projectId: widget.projectId!,
@@ -194,6 +266,7 @@ class _ProjectDialogState extends State<ProjectDialog> {
           maxBudget: double.tryParse(widget.maxBudgetController.text.trim()),
           duration: int.tryParse(widget.bidTimeController.text.trim()) ?? 7,
           startDate: startdate_format,
+          photoUrl: uploadedPhotoUrl,
         );
       } else {
         await ProjectService().postProject(
@@ -207,6 +280,7 @@ class _ProjectDialogState extends State<ProjectDialog> {
           duration: widget.bidTimeController.text.trim(),
           startDate: startdate_format,
           context: widget.parentContext,
+          photoUrl: uploadedPhotoUrl,
         );
       }
 
@@ -721,6 +795,69 @@ class _ProjectDialogState extends State<ProjectDialog> {
                                     (v == null || v.trim().isEmpty)
                                         ? 'Please describe your project'
                                         : null)),
+                        const SizedBox(height: 16),
+                        _buildLabeledField(
+                          label: 'Project Photo (Optional)',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (_selectedPhoto != null || _photoUrl != null)
+                                Container(
+                                  height: 150,
+                                  width: double.infinity,
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.grey.shade300),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: _selectedPhoto != null
+                                        ? Image.memory(
+                                            _selectedPhoto!,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : _photoUrl != null
+                                            ? Image.network(
+                                                _photoUrl!,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (context, error, stackTrace) {
+                                                  return const Icon(Icons.image, size: 50);
+                                                },
+                                              )
+                                            : const SizedBox(),
+                                  ),
+                                ),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      onPressed: _isUploadingPhoto ? null : _pickPhoto,
+                                      icon: const Icon(Icons.photo_library),
+                                      label: Text(_selectedPhoto != null ? 'Change Photo' : 'Select Photo'),
+                                      style: OutlinedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                      ),
+                                    ),
+                                  ),
+                                  if (_selectedPhoto != null || _photoUrl != null) ...[
+                                    const SizedBox(width: 8),
+                                    IconButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          _selectedPhoto = null;
+                                          _photoUrl = null;
+                                        });
+                                      },
+                                      icon: const Icon(Icons.delete_outline),
+                                      color: Colors.red,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
                         const SizedBox(height: 16),
                         if (!widget.isUpdate ||
                             (widget.isUpdate &&
@@ -1713,9 +1850,71 @@ class HireModal {
 
     final formKey = GlobalKey<FormState>();
     bool isLoading = false;
+    Uint8List? selectedPhoto;
+    String? photoUrl;
+    bool isUploadingPhoto = false;
     
     // Use predefined specializations list
     const availableSpecializations = _ProjectDialogState._availableSpecializations;
+
+    Future<String?> uploadPhoto() async {
+      if (selectedPhoto == null) return null;
+
+      isUploadingPhoto = true;
+      try {
+        final supabase = Supabase.instance.client;
+        final fileName = '${contracteeId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final storagePath = 'contractee/photo_url/$fileName';
+
+        await supabase.storage
+            .from('projectphotos')
+            .uploadBinary(
+              storagePath,
+              selectedPhoto!,
+              fileOptions: const FileOptions(
+                upsert: true,
+                contentType: 'image/jpeg',
+              ),
+            );
+
+        final publicUrl = supabase.storage
+            .from('projectphotos')
+            .getPublicUrl(storagePath);
+
+        isUploadingPhoto = false;
+        return publicUrl;
+      } catch (e) {
+        isUploadingPhoto = false;
+        if (context.mounted) {
+          ConTrustSnackBar.error(context, 'Failed to upload photo: $e');
+        }
+        return null;
+      }
+    }
+
+    Future<void> pickPhoto(StateSetter setDialogState) async {
+      try {
+        final ImagePicker picker = ImagePicker();
+        final XFile? pickedFile = await picker.pickImage(
+          source: ImageSource.gallery,
+          maxWidth: 1920,
+          maxHeight: 1080,
+          imageQuality: 85,
+        );
+
+        if (pickedFile != null) {
+          final bytes = await pickedFile.readAsBytes();
+          setDialogState(() {
+            selectedPhoto = bytes;
+            photoUrl = null;
+          });
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ConTrustSnackBar.error(context, 'Failed to pick image: $e');
+        }
+      }
+    }
 
     final result = await showDialog<bool>(
       context: context,
@@ -2080,6 +2279,69 @@ class HireModal {
                                 ),
                                 const SizedBox(height: 16),
                                 _buildLabeledField(
+                                  label: 'Project Photo (Optional)',
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      if (selectedPhoto != null || photoUrl != null)
+                                        Container(
+                                          height: 150,
+                                          width: double.infinity,
+                                          margin: const EdgeInsets.only(bottom: 8),
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(color: Colors.grey.shade300),
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(8),
+                                            child: selectedPhoto != null
+                                                ? Image.memory(
+                                                    selectedPhoto!,
+                                                    fit: BoxFit.cover,
+                                                  )
+                                                : photoUrl != null
+                                                    ? Image.network(
+                                                        photoUrl!,
+                                                        fit: BoxFit.cover,
+                                                        errorBuilder: (context, error, stackTrace) {
+                                                          return const Icon(Icons.image, size: 50);
+                                                        },
+                                                      )
+                                                    : const SizedBox(),
+                                          ),
+                                        ),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: OutlinedButton.icon(
+                                              onPressed: isUploadingPhoto ? null : () => pickPhoto(setDialogState),
+                                              icon: const Icon(Icons.photo_library),
+                                              label: Text(selectedPhoto != null ? 'Change Photo' : 'Select Photo'),
+                                              style: OutlinedButton.styleFrom(
+                                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                              ),
+                                            ),
+                                          ),
+                                          if (selectedPhoto != null || photoUrl != null) ...[
+                                            const SizedBox(width: 8),
+                                            IconButton(
+                                              onPressed: () {
+                                                setDialogState(() {
+                                                  selectedPhoto = null;
+                                                  photoUrl = null;
+                                                });
+                                              },
+                                              icon: const Icon(Icons.delete_outline),
+                                              color: Colors.red,
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                _buildLabeledField(
                                   label: 'Start Date',
                                   child: FormField<DateTime>(
                                     validator: (value) {
@@ -2193,6 +2455,11 @@ class HireModal {
                                           finalProjectType = typeController.text.trim();
                                         }
                                         
+                                        String? uploadedPhotoUrl = photoUrl;
+                                        if (selectedPhoto != null && photoUrl == null) {
+                                          uploadedPhotoUrl = await uploadPhoto();
+                                        }
+
                                         await ProjectService().notifyContractor(
                                           contracteeId: contracteeId,
                                           contractorId: contractorId,
@@ -2207,6 +2474,7 @@ class HireModal {
                                           maxBudget:
                                               maxBudgetController.text.trim(),
                                           startDate: selectedStartDate,
+                                          photoUrl: uploadedPhotoUrl,
                                         );
 
                                         Navigator.pop(context, true);

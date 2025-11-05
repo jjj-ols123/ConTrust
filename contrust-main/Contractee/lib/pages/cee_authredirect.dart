@@ -23,12 +23,14 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
 
   Future<void> _handleAuthRedirect() async {
     try {
+      debugPrint('[AuthRedirect Contractee] handling OAuth redirect...');
       final supabase = Supabase.instance.client;
       
       Session? session;
       try {
-        final response = await supabase.auth.getSessionFromUrl(Uri.base);
+        final response = await supabase.auth.getSessionFromUrl(Uri.base, storeSession: true);
         session = response.session;
+        debugPrint('[AuthRedirect Contractee] getSessionFromUrl succeeded');
       } catch (e) {
         // If getSessionFromUrl fails, try to get current session
         debugPrint('getSessionFromUrl failed, trying current session: $e');
@@ -50,16 +52,20 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
       if (session == null) {
         if (mounted && !_hasRedirected) {
           _hasRedirected = true;
+          debugPrint('[AuthRedirect Contractee] no session -> /login');
           context.go('/login');
         }
         return;
       }
 
       final user = session.user;
+      debugPrint('[AuthRedirect Contractee] session user: ${user.id}');
 
       // Handle sign-in process
       final signInService = SignInGoogleContractee();
+      debugPrint('[AuthRedirect Contractee] calling handleSignIn...');
       await signInService.handleSignIn(context, user);
+      debugPrint('[AuthRedirect Contractee] handleSignIn finished');
 
       if (!mounted || _hasRedirected) {
         return;
@@ -75,6 +81,7 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
       if (refreshedSession == null) {
         if (mounted && !_hasRedirected) {
           _hasRedirected = true;
+          debugPrint('[AuthRedirect Contractee] no refreshed session -> /login');
           context.go('/login');
         }
         return;
@@ -87,12 +94,15 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
           .select()
           .eq('contractee_id', currentUser.id)
           .maybeSingle();
+      debugPrint('[AuthRedirect Contractee] contractee row exists: ${contracteeData != null}');
 
       if (mounted && !_hasRedirected) {
         _hasRedirected = true;
         if (contracteeData != null) {
+          debugPrint('[AuthRedirect Contractee] navigate -> /home');
           context.go('/home');
         } else {
+          debugPrint('[AuthRedirect Contractee] navigate -> /login');
           context.go('/login');
         }
       }

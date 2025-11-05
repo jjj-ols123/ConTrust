@@ -19,6 +19,7 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   bool _isLoggingIn = false;
   bool _passwordVisible = false;
+  final AssetImage _bgImage = const AssetImage('assets/bgloginscreen.jpg');
 
   bool isValidEmail(String email) {
     return RegExp(r'^[^@]+@gmail\.com$').hasMatch(email);
@@ -66,6 +67,12 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    precacheImage(_bgImage, context);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final isSmallScreen = screenSize.width < 600;
@@ -81,7 +88,7 @@ class _LoginPageState extends State<LoginPage> {
           children: [
             Positioned.fill(
               child: Image(
-                image: const AssetImage('assets/bgloginscreen.jpg'),
+                image: _bgImage,
                 fit: BoxFit.cover,
               ),
             ),

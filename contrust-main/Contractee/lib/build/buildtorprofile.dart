@@ -673,20 +673,24 @@ class TorProfileBuildMethods {
     required double userRating,
     required VoidCallback onRate,
   }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+        
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(isMobile ? 12 : 16),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+                blurRadius: isMobile ? 6 : 10,
             offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(32),
+            padding: EdgeInsets.all(isMobile ? 16 : 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -695,27 +699,81 @@ class TorProfileBuildMethods {
                 Icon(
                   Icons.star_rate,
                   color: Colors.amber.shade700,
-                  size: 28,
+                      size: isMobile ? 24 : 28,
                 ),
-                const SizedBox(width: 16),
-                const Text(
+                    SizedBox(width: isMobile ? 12 : 16),
+                    Expanded(
+                      child: Text(
                   'Reviews & Ratings',
                   style: TextStyle(
-                    fontSize: 24,
+                          fontSize: isMobile ? 20 : 24,
                     fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 32),
+                SizedBox(height: isMobile ? 20 : 32),
             Container(
-              padding: const EdgeInsets.all(24),
+                  padding: EdgeInsets.all(isMobile ? 16 : 24),
               decoration: BoxDecoration(
                 color: Colors.amber.shade50,
-                borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(isMobile ? 8 : 12),
                 border: Border.all(color: Colors.amber.shade200),
               ),
-              child: Row(
+                  child: isMobile 
+                    ? Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Column(
+                                children: [
+                                  Text(
+                                    rating.toStringAsFixed(1),
+                                    style: TextStyle(
+                                      fontSize: isMobile ? 36 : 48,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF2D3748),
+                                    ),
+                                  ),
+                                  Row(
+                                    children: List.generate(5, (index) {
+                                      if (index < rating.floor()) {
+                                        return Icon(Icons.star, color: Colors.amber, size: isMobile ? 20 : 24);
+                                      } else if (index < rating.ceil() && rating % 1 != 0) {
+                                        return Icon(Icons.star_half, color: Colors.amber, size: isMobile ? 20 : 24);
+                                      } else {
+                                        return Icon(Icons.star_border, color: Colors.grey, size: isMobile ? 20 : 24);
+                                      }
+                                    }),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Based on $totalReviews ${totalReviews == 1 ? 'review' : 'reviews'}',
+                                    style: TextStyle(
+                                      fontSize: isMobile ? 11 : 12,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Column(
+                            children: [
+                              buildRatingBar('5 Stars', getRatingPercentage(5), Colors.green),
+                              buildRatingBar('4 Stars', getRatingPercentage(4), Colors.lightGreen),
+                              buildRatingBar('3 Stars', getRatingPercentage(3), Colors.yellow),
+                              buildRatingBar('2 Stars', getRatingPercentage(2), Colors.orange),
+                              buildRatingBar('1 Star', getRatingPercentage(1), Colors.red),
+                            ],
+                          ),
+                        ],
+                      )
+                    : Row(
                 children: [
                   Column(
                     children: [
@@ -763,7 +821,7 @@ class TorProfileBuildMethods {
                 ],
               ),
             ),
-            const SizedBox(height: 32),
+                SizedBox(height: isMobile ? 20 : 32),
             if (canRate) ...[
               Container(
                 padding: const EdgeInsets.all(16),
@@ -833,28 +891,28 @@ class TorProfileBuildMethods {
             if (totalReviews == 0)
               Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 20),
+                      padding: EdgeInsets.symmetric(vertical: isMobile ? 40 : 60, horizontal: 20),
                   child: Column(
                     children: [
                       Icon(
                         Icons.rate_review_outlined,
-                        size: 64,
+                            size: isMobile ? 48 : 64,
                         color: Colors.grey.shade400,
                       ),
-                      const SizedBox(height: 16),
+                          SizedBox(height: isMobile ? 12 : 16),
                       Text(
                         'No Reviews Yet',
                         style: TextStyle(
-                          fontSize: 20,
+                              fontSize: isMobile ? 18 : 20,
                           fontWeight: FontWeight.w600,
                           color: Colors.grey.shade600,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                          SizedBox(height: isMobile ? 6 : 8),
                       Text(
                         'Complete projects to start receiving reviews from clients',
                         style: TextStyle(
-                          fontSize: 14,
+                              fontSize: isMobile ? 12 : 14,
                           color: Colors.grey.shade500,
                         ),
                         textAlign: TextAlign.center,
@@ -889,28 +947,34 @@ class TorProfileBuildMethods {
           ],
         ),
       ),
+        );
+      },
     );
   }
 
   static Widget buildRatingBar(String label, double percentage, Color color) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+        
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+          padding: EdgeInsets.symmetric(vertical: isMobile ? 3 : 4),
       child: Row(
         children: [
           SizedBox(
-            width: 60,
+                width: isMobile ? 50 : 60,
             child: Text(
               label,
-              style: const TextStyle(fontSize: 12),
+                  style: TextStyle(fontSize: isMobile ? 11 : 12),
             ),
           ),
-          const SizedBox(width: 8),
+              SizedBox(width: isMobile ? 6 : 8),
           Expanded(
             child: Container(
-              height: 8,
+                  height: isMobile ? 6 : 8,
               decoration: BoxDecoration(
                 color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(isMobile ? 3 : 4),
               ),
               child: FractionallySizedBox(
                 alignment: Alignment.centerLeft,
@@ -918,29 +982,35 @@ class TorProfileBuildMethods {
                 child: Container(
                   decoration: BoxDecoration(
                     color: color,
-                    borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(isMobile ? 3 : 4),
                   ),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 8),
+              SizedBox(width: isMobile ? 6 : 8),
           Text(
             '${(percentage * 100).toInt()}%',
-            style: const TextStyle(fontSize: 12),
+                style: TextStyle(fontSize: isMobile ? 11 : 12),
           ),
         ],
       ),
+        );
+      },
     );
   }
 
   static Widget buildReviews(String clientName, String review, double rating, String projectName, String timeAgo) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+        
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
+          margin: EdgeInsets.only(bottom: isMobile ? 12 : 16),
+          padding: EdgeInsets.all(isMobile ? 16 : 20),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(isMobile ? 8 : 12),
         border: Border.all(color: Colors.grey.shade200),
       ),
       child: Column(
@@ -949,32 +1019,34 @@ class TorProfileBuildMethods {
           Row(
             children: [
               CircleAvatar(
-                radius: 20,
+                    radius: isMobile ? 18 : 20,
                 backgroundColor: Colors.amber.shade100,
                 child: Text(
                   clientName[0],
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.amber.shade700,
+                        fontSize: isMobile ? 14 : 16,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+                  SizedBox(width: isMobile ? 10 : 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       clientName,
-                      style: const TextStyle(
+                          style: TextStyle(
                         fontWeight: FontWeight.w600,
-                        fontSize: 14,
+                            fontSize: isMobile ? 13 : 14,
                       ),
+                          overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       projectName,
                       style: TextStyle(
-                        fontSize: 12,
+                            fontSize: isMobile ? 11 : 12,
                         color: Colors.grey.shade600,
                       ),
                     ),
@@ -989,14 +1061,14 @@ class TorProfileBuildMethods {
                       return Icon(
                         index < rating ? Icons.star : Icons.star_border,
                         color: Colors.amber,
-                        size: 16,
+                            size: isMobile ? 14 : 16,
                       );
                     }),
                   ),
                   Text(
                     timeAgo,
                     style: TextStyle(
-                      fontSize: 11,
+                          fontSize: isMobile ? 10 : 11,
                       color: Colors.grey.shade500,
                     ),
                   ),
@@ -1004,16 +1076,18 @@ class TorProfileBuildMethods {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+              SizedBox(height: isMobile ? 8 : 12),
           Text(
             review,
-            style: const TextStyle(
-              fontSize: 14,
+                style: TextStyle(
+                  fontSize: isMobile ? 13 : 14,
               height: 1.4,
             ),
           ),
         ],
       ),
+        );
+      },
     );
   }
 
@@ -1050,10 +1124,9 @@ class TorProfileBuildMethods {
   }
 
   static Widget buildMobileNavigation(String selectedTab, Function(String) onTabChanged) {
-    final tabs = ['Portfolio', 'About', 'Reviews', 'History']; 
-
+    final tabs = ['Portfolio', 'About', 'Reviews'];
+    
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -1066,25 +1139,53 @@ class TorProfileBuildMethods {
         ],
       ),
       child: Row(
-        children: tabs.map((tab) {
+        children: tabs.asMap().entries.map((entry) {
+          final index = entry.key;
+          final tab = entry.value;
           final isActive = selectedTab == tab;
+          final isFirst = index == 0;
+          final isLast = index == tabs.length - 1;
+          
           return Expanded(
-            child: InkWell(
-              onTap: () => onTabChanged(tab),
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  color: isActive ? Colors.amber.shade50 : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => onTabChanged(tab),
+                borderRadius: BorderRadius.only(
+                  topLeft: isFirst ? const Radius.circular(12) : Radius.zero,
+                  bottomLeft: isFirst ? const Radius.circular(12) : Radius.zero,
+                  topRight: isLast ? const Radius.circular(12) : Radius.zero,
+                  bottomRight: isLast ? const Radius.circular(12) : Radius.zero,
                 ),
-                child: Text(
-                  tab,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                    color: isActive ? Colors.amber.shade700 : Colors.grey.shade600,
+                child: Ink(
+                  decoration: BoxDecoration(
+                    color: isActive ? Colors.amber.shade50 : Colors.transparent,
+                    borderRadius: BorderRadius.only(
+                      topLeft: isFirst ? const Radius.circular(12) : Radius.zero,
+                      bottomLeft: isFirst ? const Radius.circular(12) : Radius.zero,
+                      topRight: isLast ? const Radius.circular(12) : Radius.zero,
+                      bottomRight: isLast ? const Radius.circular(12) : Radius.zero,
+                    ),
+                    border: isActive 
+                        ? Border.all(color: Colors.amber.shade300, width: 2)
+                        : null,
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+                    child: Center(
+                      child: Text(
+                        tab,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                          color: isActive ? Colors.amber.shade700 : Colors.grey.shade600,
+                          height: 1.2,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),

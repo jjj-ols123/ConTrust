@@ -535,12 +535,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
                             profileUrl: HomePageBuilder.profileUrl,
                           ),
                           const SizedBox(height: 20),
-                          HomePageBuilder.buildStatsSection(
-                            context: context,
-                            projects: projects,
-                            contractors: contractors,
-                          ),
-                          const SizedBox(height: 20),
                           HomePageBuilder.buildActiveProjectsContainer(
                             context: context,
                             onPostProject: _postProject,
@@ -655,57 +649,25 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
                           else
                             Column(
                               children: [
-                                Container(
-                                  margin: const EdgeInsets.only(bottom: 16),
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.grey.withOpacity(0.1),
-                                        spreadRadius: 1,
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Icon(Icons.format_list_bulleted, color: Colors.amber[700], size: 20),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              "Bids for Your Projects",
-                                              style: const TextStyle(
-                                                fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                                color: Colors.black,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                            ),
-                                            const SizedBox(height: 12),
-                                      HomePageBuilder.buildBidsContainer(
-                                        context: context,
-                                        projectId: '',
-                                        acceptBidding: _loadAcceptBidding,
-                                        rejectBidding: _loadRejectBidding,
-                                        projectStatus: null,
-                                      ),
-                                    ],
-                                  ),
+                                HomePageBuilder.buildHiringBidsEmptyStateContainer(
+                                  context: context,
+                                  projects: projects,
+                                  acceptBidding: _loadAcceptBidding,
+                                  rejectBidding: _loadRejectBidding,
                                 ),
+                                const SizedBox(height: 16),
                                 HomePageBuilder.buildCurrentContractorContainer(
                                   context: context,
                                   projectId: '',
                                 ),
                               ],
                             ),
+                          const SizedBox(height: 20),
+                          HomePageBuilder.buildStatsSection(
+                            context: context,
+                            projects: projects,
+                            contractors: contractors,
+                          ),
                         ],
                       )
                     : Row(
@@ -786,123 +748,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
                                   contractors: contractors,
                                 ),
                                 const SizedBox(height: 20),
-                                Container(
-                                  padding: const EdgeInsets.all(20),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.grey.withOpacity(0.1),
-                                        spreadRadius: 1,
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Builder(
-                                        builder: (context) {
-                                          if (projects.isEmpty) {
-                                            return Container(
-                                              width: double.infinity,
-                                              padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-                                              child: Column(
-                                                mainAxisAlignment: MainAxisAlignment.center,
-                                                children: [
-                                                  Icon(
-                                                    Icons.folder_open_outlined,
-                                                    size: 64,
-                                                    color: Colors.grey.shade400,
-                                                  ),
-                                                  const SizedBox(height: 16),
-                                                  Text(
-                                                    'No Projects Yet',
-                                                    style: TextStyle(
-                                                      fontSize: 18,
-                                                      fontWeight: FontWeight.bold,
-                                                      color: Colors.grey.shade700,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                  Text(
-                                                    'Create your first project to get started',
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                      color: Colors.grey.shade600,
-                                                    ),
-                                                    textAlign: TextAlign.center,
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                          }
-                                          
-                                          Map<String, dynamic>? activeProject;
-                                          final realProjects = projects.where((p) => p['isPlaceholder'] != true).toList();
-                                          if (realProjects.isNotEmpty) {
-                                            try {
-                                              activeProject = realProjects.firstWhere(
-                                                (p) => ['active', 'awaiting_contract', 'awaiting_agreement', 'awaiting_signature', 'pending'].contains(p['status']?.toString().toLowerCase()),
-                                              );
-                                            } catch (e) {
-                                              activeProject = realProjects.first;
-                                            }
-                                          }
-                                          
-                                          final projectData = activeProject?['projectdata'] as Map<String, dynamic>?;
-                                          final hiringType = projectData?['hiring_type'] ?? 'bidding'; 
-                                          final isDirectHire = hiringType == 'direct_hire';
-                                          
-                                          final projectId = activeProject?['project_id']?.toString() ?? '';
-                                          final projectTitle = activeProject?['title'] ?? 'Untitled Project';
-                                          
-                                          return Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  Icon(
-                                                    isDirectHire ? Icons.person_add : Icons.format_list_bulleted,
-                                                    color: Colors.amber[700],
-                                                    size: 20,
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Expanded(
-                                                    child: Text(
-                                                      isDirectHire 
-                                                          ? "Hiring Request Sent To"
-                                                          : "Bids for $projectTitle",
-                                                      style: const TextStyle(
-                                                        fontSize: 16,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: Colors.black,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 12),
-                                              isDirectHire
-                                                  ? HomePageBuilder.buildHiringRequestsContainer(
-                                                      context: context,
-                                                      projectId: projectId,
-                                                    )
-                                                  : HomePageBuilder.buildBidsContainer(
-                                                      context: context,
-                                                      projectId: projectId,
-                                                      acceptBidding: _loadAcceptBidding,
-                                                      rejectBidding: _loadRejectBidding,
-                                                      projectStatus: activeProject?['status'],
-                                                    ),
-                                            ],
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
+                                HomePageBuilder.buildHiringBidsEmptyStateContainer(
+                                  context: context,
+                                  projects: projects,
+                                  acceptBidding: _loadAcceptBidding,
+                                  rejectBidding: _loadRejectBidding,
                                 ),
                                 const SizedBox(height: 20),
                                 if (projects.isNotEmpty)

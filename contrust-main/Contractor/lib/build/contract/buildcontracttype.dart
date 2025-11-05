@@ -10,32 +10,20 @@ import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 
 class ContractTypeBuild {
+  static Future<Map<String, dynamic>> _fetchContractData(String contractorId) async {
+    final results = await Future.wait([
+      FetchService().fetchContractTypes(),
+      FetchService().fetchContractorData(contractorId),
+    ]);
+    return {
+      'contractTypes': results[0] as List<Map<String, dynamic>>,
+      'contractorData': results[1] as Map<String, dynamic>?,
+    };
+  }
+
   static Widget buildHeader(BuildContext context) {
-    return Container(
-      height: 60,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.amber.shade50,
-        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.handyman_rounded, color: Colors.amber, size: 20),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Text(
-              'Choose your Contract',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
+    // Removed page header bar
+    return const SizedBox.shrink();
   }
 
   static Widget buildTypeCarousel({
@@ -43,22 +31,26 @@ class ContractTypeBuild {
   }) {
     return SizedBox(
       height: 220,
-      child: FutureBuilder<List<Map<String, dynamic>>>(
-        future: FetchService().fetchContractTypes(),
+      child: FutureBuilder<Map<String, dynamic>>(
+        future: _fetchContractData(contractorId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator(color: Colors.amber,));
           }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          if (!snapshot.hasData) {
             return const Center(
               child: Text('No contract types available.'),
             );
           }
-          final contractTypes = snapshot.data!;
+          final contractTypes = snapshot.data!['contractTypes'] as List<Map<String, dynamic>>;
+          final contractorData = snapshot.data!['contractorData'] as Map<String, dynamic>?;
+          final isVerified = contractorData?['verified'] == true;
+          
           return buildContractTypesList(
             context: context,
             contractTypes: contractTypes,
             contractorId: contractorId,
+            isVerified: isVerified,
           );
         },
       ),
@@ -69,6 +61,7 @@ class ContractTypeBuild {
     required BuildContext context,
     required List<Map<String, dynamic>> contractTypes,
     required String contractorId,
+    required bool isVerified,
   }) {
     return ScrollConfiguration(
       behavior: const MaterialScrollBehavior().copyWith(
@@ -89,6 +82,7 @@ class ContractTypeBuild {
             context: context,
             template: template,
             contractorId: contractorId,
+            isVerified: isVerified,
           );
         },
       ),
@@ -99,6 +93,7 @@ class ContractTypeBuild {
     required BuildContext context,
     required Map<String, dynamic> template,
     required String contractorId,
+    required bool isVerified,
   }) {
     final templateName = template['template_name'] ?? '';
     final isUploadOption = templateName.toLowerCase().contains('upload') || templateName.toLowerCase().contains('custom'); 
@@ -107,7 +102,7 @@ class ContractTypeBuild {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
-        onTap: () async {
+        onTap: isVerified ? () async {
           if (isUploadOption) {
             await showUploadContractDialog(
               context: context,
@@ -120,6 +115,11 @@ class ContractTypeBuild {
               contractorId: contractorId,
             );
           }
+        } : () {
+          ConTrustSnackBar.warning(
+            context,
+            'Your account needs to be verified before you can create contracts. Please complete your verification.',
+          );
         },
         child: Container(
           width: 200,
@@ -134,7 +134,10 @@ class ContractTypeBuild {
                 offset: const Offset(0, 8),
               ),
             ],
-            border: Border.all(color: Colors.amber[100]!, width: 1.2),
+            border: Border.all(
+              color: Colors.amber[100]!,
+              width: 1.2,
+            ),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 22),
@@ -142,7 +145,11 @@ class ContractTypeBuild {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Icon(Icons.description_outlined, size: 38, color: Colors.amber[700]),
+                Icon(
+                  Icons.description_outlined,
+                  size: 38,
+                  color: Colors.amber[700],
+                ),
                 const SizedBox(height: 18),
                 Text(
                   template['template_name'] ?? '',
@@ -350,6 +357,19 @@ class ContractTypeBuild {
     required String contractorId,
   }) async {
     final fetchService = FetchService();
+    
+    // Check if contractor is verified
+    final contractorData = await fetchService.fetchContractorData(contractorId);
+    final isVerified = contractorData?['verified'] == true;
+    
+    if (!isVerified) {
+      ConTrustSnackBar.warning(
+        context,
+        'Your account needs to be verified before you can create contracts. Please complete your verification.',
+      );
+      return;
+    }
+    
     final projects = await fetchService.fetchContractorProjectInfo(contractorId);
     final filteredProjects = projects.where((p) {
       final status = p['status'] as String?;

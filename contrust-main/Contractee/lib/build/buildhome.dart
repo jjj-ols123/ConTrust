@@ -372,33 +372,12 @@ class HomePageBuilder {
 
   static Widget buildNoContractorsPlaceholder(TextEditingController searchController) {
   return Center(
-    child: Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.all(40),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(color: Colors.grey.shade300, width: 1),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            "No contractors yet",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey.shade700,
-            ),
-          ),
-        ],
+    child: Text(
+      "No contractors yet",
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: 16,
+        color: Colors.grey.shade700,
       ),
     ),
   );
@@ -1044,6 +1023,147 @@ class HomePageBuilder {
     );
   }
 
+  static Widget buildHiringBidsEmptyStateContainer({
+    required BuildContext context,
+    required List<Map<String, dynamic>> projects,
+    required Future<void> Function(String projectId, String bidId) acceptBidding,
+    required Future<void> Function(String projectId, String bidId, {String? reason}) rejectBidding,
+  }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 700;
+
+    // Filter out placeholder projects
+    final realProjects = projects.where((p) => p['isPlaceholder'] != true).toList();
+
+    // If no projects, show generic empty state
+    if (realProjects.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(isMobile ? 16 : 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: isMobile ? 24 : 32),
+          child: Column(
+            children: [
+              Icon(
+                Icons.folder_open_outlined,
+                size: isMobile ? 48 : 64,
+                color: Colors.grey.shade400,
+              ),
+              SizedBox(height: isMobile ? 12 : 16),
+              Text(
+                'No Projects Yet',
+                style: TextStyle(
+                  fontSize: isMobile ? 16 : 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+              SizedBox(height: isMobile ? 6 : 8),
+              Text(
+                'Create your first project to get started',
+                style: TextStyle(
+                  fontSize: isMobile ? 12 : 14,
+                  color: Colors.grey.shade600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Find active/pending projects to determine hiring type
+    Map<String, dynamic>? activeProject;
+    try {
+      activeProject = realProjects.firstWhere(
+        (p) => ['active', 'awaiting_contract', 'awaiting_agreement', 'awaiting_signature', 'pending']
+            .contains(p['status']?.toString().toLowerCase()),
+      );
+    } catch (e) {
+      // If no active/pending, use the first project
+      if (realProjects.isNotEmpty) {
+        activeProject = realProjects.first;
+      }
+    }
+
+    // Get hiring type from project data
+    final projectData = activeProject?['projectdata'] as Map<String, dynamic>?;
+    final hiringType = projectData?['hiring_type'] ?? 'bidding';
+    final isDirectHire = hiringType == 'direct_hire';
+    final projectId = activeProject?['project_id']?.toString() ?? '';
+
+    // Build the appropriate container based on hiring type
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(isMobile ? 16 : 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isDirectHire ? Icons.person_add : Icons.format_list_bulleted,
+                color: Colors.amber[700],
+                size: isMobile ? 18 : 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  isDirectHire 
+                      ? "Hiring Request Sent To"
+                      : "Bids for Your Projects",
+                  style: TextStyle(
+                    fontSize: isMobile ? 14 : 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          isDirectHire
+              ? buildHiringRequestsContainer(
+                  context: context,
+                  projectId: projectId,
+                )
+              : buildBidsContainer(
+                  context: context,
+                  projectId: projectId.isNotEmpty ? projectId : '',
+                  acceptBidding: acceptBidding,
+                  rejectBidding: rejectBidding,
+                  projectStatus: activeProject?['status'],
+                ),
+        ],
+      ),
+    );
+  }
+
   static Widget buildHiringRequestsContainer({
     required BuildContext context,
     required String projectId,
@@ -1527,31 +1647,29 @@ class HomePageBuilder {
             ],
           ),
           const SizedBox(height: 12),
-          Center(
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width * 0.90,
-              height: 45,
-              child: TextField(
-                controller: searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search contractors...',
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: Colors.grey.shade200,
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 12),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey, width: 1.5),
-                    borderRadius: BorderRadius.circular(12.0),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.amber, width: 2.0),
-                    borderRadius: BorderRadius.circular(12.0),
-                  ),
+          SizedBox(
+            width: double.infinity,
+            height: 45,
+            child: TextField(
+              controller: searchController,
+              decoration: InputDecoration(
+                hintText: 'Search contractors...',
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.grey.shade200,
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey, width: 1.5),
+                  borderRadius: BorderRadius.circular(12.0),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.amber, width: 2.0),
+                  borderRadius: BorderRadius.circular(12.0),
                 ),
               ),
             ),
@@ -1560,7 +1678,7 @@ class HomePageBuilder {
           Column(
             children: [
               SizedBox(
-                height: isMobile ? 240 : 260,
+                height: isMobile ? 200 : 260,
                 child: isLoading
                     ? const Center(child: CircularProgressIndicator(color: Colors.amber))
                     : filteredContractors.isEmpty
@@ -1581,9 +1699,10 @@ class HomePageBuilder {
                                   onSelect(index);
                                 },
                                 child: Container(
-                                  width: 200,
-                                  margin:
-                                      const EdgeInsets.symmetric(horizontal: 10),
+                                  width: isMobile ? 160 : 200,
+                                  margin: EdgeInsets.symmetric(
+                                    horizontal: isMobile ? 6 : 10,
+                                  ),
                                   decoration: BoxDecoration(
                                     border: Border.all(
                                       color: isSelected
@@ -1598,6 +1717,7 @@ class HomePageBuilder {
                                     name: contractor['firm_name'] ?? 'Unknown',
                                     profileImage: profileImage,
                                     rating: (contractor['rating'] ?? 0.0).toDouble(),
+                                    isMobile: isMobile,
                                   ),
                                 ),
                               );
@@ -1953,8 +2073,10 @@ class HomePageBuilder {
                           Navigator.of(dialogContext).pop();
                         },
                         child: Container(
-                          width: 220,
-                          margin: const EdgeInsets.symmetric(horizontal: 12),
+                          width: isMobile ? 160 : 220,
+                          margin: EdgeInsets.symmetric(
+                            horizontal: isMobile ? 8 : 12,
+                          ),
                           decoration: BoxDecoration(
                             border: Border.all(
                               color: isSelected
@@ -1969,6 +2091,7 @@ class HomePageBuilder {
                             name: contractor['firm_name'] ?? 'Unknown',
                             profileImage: profileImage,
                             rating: (contractor['rating'] ?? 0.0).toDouble(),
+                            isMobile: isMobile,
                           ),
                         ),
                       );

@@ -4,6 +4,7 @@ import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import '../build/buildbidding.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class BiddingScreen extends StatefulWidget {
   const BiddingScreen({super.key, required String contractorId});
@@ -30,10 +31,47 @@ class _BiddingScreenState extends State<BiddingScreen> {
 
   Stream<List<Map<String, dynamic>>>? _biddingStream;
 
+  bool _isVerified = false;
+  bool _isCheckingVerification = true;
+
   @override
   void initState() {
     super.initState();
+    _checkVerificationStatus();
     _initializeStream();
+  }
+
+  Future<void> _checkVerificationStatus() async {
+    try {
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session == null) {
+        setState(() {
+          _isVerified = false;
+          _isCheckingVerification = false;
+        });
+        return;
+      }
+
+      final resp = await Supabase.instance.client
+          .from('Users')
+          .select('verified')
+          .eq('users_id', session.user.id)
+          .maybeSingle();
+
+      if (mounted) {
+        setState(() {
+          _isVerified = resp != null && (resp['verified'] == true);
+          _isCheckingVerification = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isVerified = false;
+          _isCheckingVerification = false;
+        });
+      }
+    }
   }
 
   void _initializeStream() {
@@ -81,9 +119,12 @@ class _BiddingScreenState extends State<BiddingScreen> {
     if (!mounted) return const SizedBox.shrink();
     
     return Scaffold(
-      body: StreamBuilder<List<Map<String, dynamic>>>(
-        stream: _biddingStream,
-        builder: (context, snapshot) {
+      body: Column(
+        children: [
+          Expanded(
+            child: StreamBuilder<List<Map<String, dynamic>>>(
+              stream: _biddingStream,
+              builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
               child: CircularProgressIndicator(color: Colors.amber),
@@ -194,9 +235,13 @@ class _BiddingScreenState extends State<BiddingScreen> {
                 });
               }
             },
+            isVerified: _isVerified,
           );
           return builder.buildBiddingUI();
         },
+      ),
+          ),
+        ],
       ),
     );
   }

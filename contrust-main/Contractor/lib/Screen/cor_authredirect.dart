@@ -18,28 +18,32 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
   @override
   void initState() {
     super.initState();
-    _handleRedirect();
+    _handleAuthRedirect();
   }
 
-  Future<void> _handleRedirect() async {
-    final next = Uri.base.queryParameters['next'] ?? '/dashboard';
+  Future<void> _handleAuthRedirect() async {
     try {
+      debugPrint('[AuthRedirect Contractor] handling OAuth redirect...');
       final supabase = Supabase.instance.client;
       
       Session? session;
       try {
-        final response = await supabase.auth.getSessionFromUrl(Uri.base);
+        final response = await supabase.auth.getSessionFromUrl(Uri.base, storeSession: true);
         session = response.session;
+        debugPrint('[AuthRedirect Contractor] getSessionFromUrl succeeded');
       } catch (e) {
+        // If getSessionFromUrl fails, try to get current session
         debugPrint('getSessionFromUrl failed, trying current session: $e');
         session = supabase.auth.currentSession;
       }
 
+      // If no session from URL, wait a bit and try current session
       if (session == null) {
         await Future.delayed(const Duration(seconds: 1));
         session = supabase.auth.currentSession;
       }
 
+      // If still no session, wait a bit more (for async auth state changes)
       if (session == null) {
         await Future.delayed(const Duration(seconds: 2));
         session = supabase.auth.currentSession;
@@ -48,20 +52,26 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
       if (session == null) {
         if (mounted && !_hasRedirected) {
           _hasRedirected = true;
-          context.go('/');
+          debugPrint('[AuthRedirect Contractor] no session -> /logincontractor');
+          context.go('/logincontractor');
         }
         return;
       }
 
       final user = session.user;
+      debugPrint('[AuthRedirect Contractor] session user: ${user.id}');
 
+      // Handle sign-in process
       final signInService = SignInGoogleContractor();
+      debugPrint('[AuthRedirect Contractor] calling handleSignIn...');
       await signInService.handleSignIn(context, user);
+      debugPrint('[AuthRedirect Contractor] handleSignIn finished');
 
       if (!mounted || _hasRedirected) {
         return;
       }
 
+      // Refresh session after sign-in handling
       var refreshedSession = supabase.auth.currentSession;
       if (refreshedSession == null) {
         await Future.delayed(const Duration(seconds: 1));
@@ -71,7 +81,8 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
       if (refreshedSession == null) {
         if (mounted && !_hasRedirected) {
           _hasRedirected = true;
-          context.go('/');
+          debugPrint('[AuthRedirect Contractor] no refreshed session -> /logincontractor');
+          context.go('/logincontractor');
         }
         return;
       }
@@ -83,20 +94,23 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
           .select()
           .eq('contractor_id', currentUser.id)
           .maybeSingle();
+      debugPrint('[AuthRedirect Contractor] contractor row exists: ${contractorData != null}');
 
       if (mounted && !_hasRedirected) {
         _hasRedirected = true;
         if (contractorData != null) {
-          context.go(next);
+          debugPrint('[AuthRedirect Contractor] navigate -> /dashboard');
+          context.go('/dashboard');
         } else {
-          context.go('/');
+          debugPrint('[AuthRedirect Contractor] navigate -> /logincontractor');
+          context.go('/logincontractor');
         }
       }
     } catch (e) {
       debugPrint('Error in contractor auth redirect: $e');
       if (mounted && !_hasRedirected) {
         _hasRedirected = true;
-        context.go('/');
+        context.go('/logincontractor');
       }
     }
   }
@@ -105,7 +119,7 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
   Widget build(BuildContext context) {
     return const Scaffold(
       body: Center(
-        child: CircularProgressIndicator(color: Colors.amber),
+        child: CircularProgressIndicator(color: Colors.amber),  
       ),
     );
   }

@@ -23,7 +23,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final session = Supabase.instance.client.auth.currentSession;
       if (session == null || session.user.id.isEmpty) {
-        context.go('/');
+        context.go('/logincontractor');
       }
     });
   }
@@ -188,12 +188,14 @@ class _DashboardUIState extends State<DashboardUI>
           opacity: _fadeAnimation,
           child: SlideTransition(
             position: _slideAnimation,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (isDesktop)
-                  buildDesktopProjectsAndTasks()
-                else ...[
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (isDesktop)
+                    buildDesktopProjectsAndTasks()
+                  else ...[
+                  _buildVerificationBanner(),
+                  const SizedBox(height: 20),
                   buildWelcomeCard(),
                   const SizedBox(height: 20),
                   buildStatsGrid(),
@@ -209,6 +211,79 @@ class _DashboardUIState extends State<DashboardUI>
         ),
       ),
     );
+  }
+
+  Widget _buildVerificationBanner() {
+    return FutureBuilder<bool>(
+      future: _checkVerificationStatus(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox.shrink();
+        }
+        
+        final isVerified = snapshot.data ?? false;
+        if (isVerified) {
+          return const SizedBox.shrink();
+        }
+
+        return Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 20),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.orange.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.orange.shade200),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline, color: Colors.orange.shade700),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Account Pending Verification',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange.shade900,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Your account is being reviewed. Some features are disabled until verification is complete.',
+                      style: TextStyle(
+                        color: Colors.orange.shade800,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<bool> _checkVerificationStatus() async {
+    try {
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session == null) return false;
+
+      final resp = await Supabase.instance.client
+          .from('Users')
+          .select('verified')
+          .eq('users_id', session.user.id)
+          .maybeSingle();
+
+      return resp != null && (resp['verified'] == true);
+    } catch (e) {
+      return false;
+    }
   }
 
   Widget buildWelcomeCard() {

@@ -208,7 +208,15 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
 
   void _updateControllers() {
     fullNameController.text = fullName;
-    contactController.text = contactNumber;
+    if (contactNumber.isNotEmpty && !contactNumber.startsWith('+63')) {
+      String digitsOnly = contactNumber.replaceAll(RegExp(r'\D'), '');
+      if (digitsOnly.startsWith('0')) {
+        digitsOnly = digitsOnly.substring(1);
+      }
+      contactController.text = '+63$digitsOnly';
+    } else {
+      contactController.text = contactNumber.isNotEmpty ? contactNumber : '+63';
+    }
     addressController.text = address;
   }
 
@@ -229,22 +237,20 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
             children: [
               CeeProfileBuildMethods.buildHeader(context, 'My Profile'),
               Expanded(
-                child: SingleChildScrollView(
-                  child: CeeProfileBuildMethods.buildMobileLayout(
-                    fullName: fullName,
-                    profileImage: profileImage,
-                    profileUrl: profileUrl,
-                    completedProjectsCount: completedProjectsCount,
-                    ongoingProjectsCount: ongoingProjectsCount,
-                    selectedTab: selectedTab,
-                    onTabChanged: (String tab) {
-                      setState(() {
-                        selectedTab = tab;
-                      });
-                    },
-                    mainContent: _buildMainContent(),
-                    onUploadPhoto: isUploadingPhoto ? null : _uploadProfilePhoto,
-                  ),
+                child: CeeProfileBuildMethods.buildMobileLayout(
+                  fullName: fullName,
+                  profileImage: profileImage,
+                  profileUrl: profileUrl,
+                  completedProjectsCount: completedProjectsCount,
+                  ongoingProjectsCount: ongoingProjectsCount,
+                  selectedTab: selectedTab,
+                  onTabChanged: (String tab) {
+                    setState(() {
+                      selectedTab = tab;
+                    });
+                  },
+                  mainContent: _buildMainContent(),
+                  onUploadPhoto: isUploadingPhoto ? null : _uploadProfilePhoto,
                 ),
               ),
             ],
@@ -374,7 +380,28 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
           break;
         case 'contact':
           isEditingContact = !isEditingContact;
-          if (!isEditingContact) contactController.text = contactNumber;
+          if (!isEditingContact) {
+            // Reset to original value
+            if (contactNumber.isNotEmpty && !contactNumber.startsWith('+63')) {
+              String digitsOnly = contactNumber.replaceAll(RegExp(r'\D'), '');
+              if (digitsOnly.startsWith('0')) {
+                digitsOnly = digitsOnly.substring(1);
+              }
+              contactController.text = '+63$digitsOnly';
+            } else {
+              contactController.text = contactNumber.isNotEmpty ? contactNumber : '+63';
+            }
+          } else {
+            // When starting to edit, ensure it starts with +63
+            if (!contactController.text.startsWith('+63')) {
+              String currentText = contactController.text;
+              String digitsOnly = currentText.replaceAll(RegExp(r'\D'), '');
+              if (digitsOnly.startsWith('0')) {
+                digitsOnly = digitsOnly.substring(1);
+              }
+              contactController.text = '+63$digitsOnly';
+            }
+          }
           break;
         case 'address':
           isEditingAddress = !isEditingAddress;
@@ -384,11 +411,26 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
     });
   }
 
+  String _formatPhone(String phone) {
+    if (phone.startsWith('+63')) {
+      return phone;
+    }
+    
+    String digitsOnly = phone.replaceAll(RegExp(r'\D'), '');
+    if (digitsOnly.startsWith('0')) {
+      digitsOnly = digitsOnly.substring(1);
+    }
+    return '+63$digitsOnly';
+  }
+
   Future<void> _saveField(String fieldType, String newValue) async {
+    // Format phone number if it's the contact field
+    final formattedValue = fieldType == 'contact' ? _formatPhone(newValue) : newValue;
+    
     await CeeProfileService().handleSaveField(
       contracteeId: widget.contracteeId,
       fieldType: fieldType,
-      newValue: newValue,
+      newValue: formattedValue,
       context: context,
       onSuccess: () {
         setState(() {
@@ -398,7 +440,7 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
               isEditingFullName = false;
               break;
             case 'contact':
-              contactNumber = newValue;
+              contactNumber = formattedValue;
               isEditingContact = false;
               break;
             case 'address':

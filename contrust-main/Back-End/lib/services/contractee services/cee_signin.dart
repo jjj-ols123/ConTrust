@@ -155,13 +155,16 @@ class SignInGoogleContractee {
         final origin = Uri.base.origin;
         redirectUrl = '$origin/auth/callback';
       } else {
-        redirectUrl = null;
+        redirectUrl = 'io.supabase.contrust://login-callback/home';
       }
 
       await supabase.auth.signInWithOAuth(
         OAuthProvider.google,
         redirectTo: redirectUrl,
         authScreenLaunchMode: LaunchMode.platformDefault,
+        queryParams: {
+          'prompt': 'select_account',
+        },
       );
     } catch (e) {
       await _errorService.logError(
@@ -182,6 +185,7 @@ class SignInGoogleContractee {
   Future<void> handleSignIn(BuildContext context, User user) async {
     try {
       final supabase = Supabase.instance.client;
+      debugPrint('[Google Contractee] handleSignIn start for ${user.id}');
 
       final existingContractee = await supabase
           .from('Contractee')
@@ -195,9 +199,13 @@ class SignInGoogleContractee {
           .eq('users_id', user.id)
           .maybeSingle();
 
+      debugPrint('[Google Contractee] existingContractee: ${existingContractee != null}, existingUser: ${existingUser != null}');
+
       if (existingContractee == null) {
+        debugPrint('[Google Contractee] creating new Contractee + Users rows');
         await setupContractee(context, user);
       } else if (existingUser == null) {
+        debugPrint('[Google Contractee] Users missing; upserting from Contractee data');
         final contracteeData = await supabase
             .from('Contractee')
             .select('full_name, phone_number, profile_photo')
@@ -217,6 +225,7 @@ class SignInGoogleContractee {
           'verified': true,
         }, onConflict: 'users_id');
       } else {
+        debugPrint('[Google Contractee] Both rows exist; updating verified/last_login');
         final userType = user.userMetadata != null ? user.userMetadata!['user_type'] : null;
         if (userType == null || userType.toLowerCase() != 'contractee') {
           await _auditService.logAuditEvent(
@@ -293,13 +302,18 @@ class SignInGoogleContractee {
     try {
       final supabase = Supabase.instance.client;
 
+      String? profilePhoto = user.userMetadata?['avatar_url'] ?? 
+                            user.userMetadata?['picture'];
+      
+      debugPrint('[Google Contractee] Profile photo sources - avatar_url: ${user.userMetadata?['avatar_url']}, picture: ${user.userMetadata?['picture']}, final: $profilePhoto');
+
       await supabase.auth.updateUser(
         UserAttributes(
           data: {
             'user_type': 'contractee',
             'full_name': user.userMetadata?['full_name'] ?? 'User',
             'email': user.email,
-            'profile_photo': user.userMetadata?['avatar_url'],
+            'profile_photo': profilePhoto,
           },
         ),
       );
@@ -311,7 +325,7 @@ class SignInGoogleContractee {
         'role': 'contractee',
         'status': 'active',
         'last_login': DateTimeHelper.getLocalTimeISOString(),
-        'profile_image_url': user.userMetadata?['avatar_url'] ?? 'assets/defaultpic.png',
+        'profile_image_url': profilePhoto ?? 'assets/defaultpic.png',
         'phone_number': '',
         'verified': true,
       }, onConflict: 'users_id');
@@ -319,7 +333,7 @@ class SignInGoogleContractee {
       await supabase.from('Contractee').insert({
         'contractee_id': user.id,
         'full_name': user.userMetadata?['full_name'] ?? 'User',
-        'profile_photo': user.userMetadata?['avatar_url'] ?? 'assets/defaultpic.png',
+        'profile_photo': profilePhoto ?? 'assets/defaultpic.png',
         'created_at': DateTimeHelper.getLocalTimeISOString(),
       });
 

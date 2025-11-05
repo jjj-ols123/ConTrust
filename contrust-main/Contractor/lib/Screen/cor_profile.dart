@@ -169,7 +169,18 @@ class _ContractorUserProfileScreenState
 
   void _updateControllers() {
     bioController.text = bio;
-    contactController.text = contactNumber;
+    if (contactNumber.isNotEmpty && !contactNumber.startsWith('+63')) {
+      String digitsOnly = contactNumber.replaceAll(RegExp(r'\D'), '');
+      if (digitsOnly.startsWith('0')) {
+        digitsOnly = digitsOnly.substring(1);
+      }
+      if (!digitsOnly.startsWith('63')) {
+        digitsOnly = '63$digitsOnly';
+      }
+      contactController.text = '+63${digitsOnly.substring(2)}';
+    } else {
+      contactController.text = contactNumber.isNotEmpty ? contactNumber : '+63';
+    }
     firmNameController.text = firmName;
     addressController.text = address;
   }
@@ -223,36 +234,6 @@ class _ContractorUserProfileScreenState
       backgroundColor: Color(0xFFF8F9FA),
       body: Column(
         children: [
-          Container(
-            height: 60,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 8,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.amber.shade50,
-              border: Border(
-                bottom: BorderSide(color: Colors.grey.shade200),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.person_outline, color: Colors.amber, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Profile',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
           Expanded(
             child: RefreshIndicator(
               onRefresh: loadContractorData,
@@ -509,7 +490,34 @@ class _ContractorUserProfileScreenState
           break;
         case 'contact':
           isEditingContact = !isEditingContact;
-          if (!isEditingContact) contactController.text = contactNumber;
+          if (!isEditingContact) {
+            // Reset to original value
+            if (contactNumber.isNotEmpty && !contactNumber.startsWith('+63')) {
+              String digitsOnly = contactNumber.replaceAll(RegExp(r'\D'), '');
+              if (digitsOnly.startsWith('0')) {
+                digitsOnly = digitsOnly.substring(1);
+              }
+              if (!digitsOnly.startsWith('63')) {
+                digitsOnly = '63$digitsOnly';
+              }
+              contactController.text = '+63${digitsOnly.substring(2)}';
+            } else {
+              contactController.text = contactNumber.isNotEmpty ? contactNumber : '+63';
+            }
+          } else {
+            // When starting to edit, ensure it starts with +63
+            if (!contactController.text.startsWith('+63')) {
+              String currentText = contactController.text;
+              String digitsOnly = currentText.replaceAll(RegExp(r'\D'), '');
+              if (digitsOnly.startsWith('0')) {
+                digitsOnly = digitsOnly.substring(1);
+              }
+              if (!digitsOnly.startsWith('63')) {
+                digitsOnly = '63$digitsOnly';
+              }
+              contactController.text = '+63${digitsOnly.substring(2)}';
+            }
+          }
           break;
         case 'firmName':
           isEditingFirmName = !isEditingFirmName;
@@ -523,11 +531,28 @@ class _ContractorUserProfileScreenState
     });
   }
 
+  String _formatPhone(String phone) {
+    String digitsOnly = phone.replaceAll(RegExp(r'[^\d]'), '');
+
+    if (digitsOnly.startsWith('0')) {
+      digitsOnly = digitsOnly.substring(1);
+    }
+
+    if (!digitsOnly.startsWith('63')) {
+      digitsOnly = '63$digitsOnly';
+    }
+
+    return '+63${digitsOnly.substring(2)}';
+  }
+
   Future<void> _saveField(String fieldType, String newValue) async {
+    // Format phone number if it's the contact field
+    final formattedValue = fieldType == 'contact' ? _formatPhone(newValue) : newValue;
+    
     await CorProfileService().handleSaveField(
       contractorId: widget.contractorId,
       fieldType: fieldType,
-      newValue: newValue,
+      newValue: formattedValue,
       context: context,
       onSuccess: () {
         setState(() {
@@ -537,7 +562,7 @@ class _ContractorUserProfileScreenState
               isEditingBio = false;
               break;
             case 'contact':
-              contactNumber = newValue;
+              contactNumber = formattedValue;
               isEditingContact = false;
               break;
             case 'firmName':

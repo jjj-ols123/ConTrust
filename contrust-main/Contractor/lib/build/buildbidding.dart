@@ -21,7 +21,10 @@ class BiddingUIBuildMethods {
     required this.onProjectSelected, 
     required this.bidController,
     required this.messageController,
+    this.isVerified = true,
   }) ;
+
+  final bool isVerified;
 
   final BuildContext context;
   final List<Map<String, dynamic>> projects;
@@ -45,31 +48,7 @@ class BiddingUIBuildMethods {
       padding: const EdgeInsets.all(0),
       child: Column(
         children: [
-          Container(
-            height: 60,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.amber.shade50,
-              border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.handyman_rounded, color: Colors.amber, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Project Biddings',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // header removed
           buildContractorBidsOverview(),
           Padding(
             padding: const EdgeInsets.all(16),
@@ -238,6 +217,8 @@ class BiddingUIBuildMethods {
   }
 
   void _showAllBidsDialog(BuildContext context, List<Map<String, dynamic>> allBids) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final maxDialogHeight = screenHeight * 0.85;
     showDialog(
       context: context,
       builder: (dialogContext) => Dialog(
@@ -245,7 +226,7 @@ class BiddingUIBuildMethods {
           borderRadius: BorderRadius.circular(20),
         ),
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 800, maxHeight: 600),
+          constraints: BoxConstraints(maxWidth: 800, maxHeight: maxDialogHeight),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -345,9 +326,7 @@ class BiddingUIBuildMethods {
     }
 
     return InkWell(
-      onTap: () {
-        // Optional: Navigate to project or show details
-      },
+      onTap: () {},
       borderRadius: BorderRadius.circular(8),
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -452,12 +431,10 @@ class BiddingUIBuildMethods {
             crossAxisCount:
                 screenWidth > 1200
                     ? 3
-                    : screenWidth > 800
-                    ? 2
-                    : 1,
+                    : 2,
             crossAxisSpacing: 15,
             mainAxisSpacing: 15,
-            childAspectRatio: screenWidth > 1200 ? 1.3 : 1.7,
+            childAspectRatio: screenWidth > 1200 ? 1.3 : 0.7,
           ),
           itemBuilder: (ctx, index) {
             final project = projects[index];
@@ -709,7 +686,16 @@ class BiddingUIBuildMethods {
     );
   }
 
-  Widget buildBidInput() {
+  Widget buildBidInput({BuildContext? dialogContext, Map<String, dynamic>? project}) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 700;
+    
+    if (isMobile) {
+      return buildBidInputMobile(dialogContext: dialogContext, project: project);
+    }
+    
+    final projectToUse = project ?? selectedProject;
+     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -768,13 +754,15 @@ class BiddingUIBuildMethods {
             ),
             onPressed: () async {
               final user = Supabase.instance.client.auth.currentUser?.id;
-              if (user == null || selectedProject!['contractee_id'] == null) {
+              
+              if (user == null || projectToUse == null || projectToUse['contractee_id'] == null) {
                 ConTrustSnackBar.error(context, 'Missing IDs');
                 return;
               }
+              
               final already = await hasAlreadyBid(
                 user,
-                selectedProject!['project_id'].toString(),
+                projectToUse['project_id'].toString(),
               );
               if (already) {
                 ConTrustSnackBar.warning(context, 'You have already placed a bid on this project.');
@@ -789,17 +777,22 @@ class BiddingUIBuildMethods {
               )) {
                 return;
               }
-              await _service.postBid(
-                contractorId: user,
-                projectId: selectedProject!['project_id'].toString(),
-                bidAmount: bidAmount,
-                message: message,
-                context: context,
-              );
-              bidController.clear();
-              messageController.clear();
-              onProjectSelected(null);
-              onRefresh();
+              
+              try {
+                await _service.postBid(
+                  contractorId: user,
+                  projectId: projectToUse['project_id'].toString(),
+                  bidAmount: bidAmount,
+                  message: message,
+                  context: context,
+                );
+                bidController.clear();
+                messageController.clear();
+                onProjectSelected(null);
+                onRefresh();
+              } catch (e) {
+                // Error handled by service
+              }
             },
             child: const Text(
               'Submit Bid',
@@ -811,253 +804,428 @@ class BiddingUIBuildMethods {
     );
   }
 
+  Widget buildBidInputMobile({BuildContext? dialogContext, Map<String, dynamic>? project}) {
+    final projectToUse = project ?? selectedProject;
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 8),
+          const Text(
+                    'Submit Your Bid',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+          const SizedBox(height: 12),
+                        TextField(
+                          controller: bidController,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          decoration: const InputDecoration(
+              labelText: 'Bid Amount',
+                            prefixText: '₱',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+            'Message',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: messageController,
+                          maxLines: 3,
+                          decoration: const InputDecoration(
+              labelText: 'Message to the contractee on what you can offer!',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () async {
+                            final user = Supabase.instance.client.auth.currentUser?.id;
+                            
+                            if (user == null || projectToUse == null || projectToUse['contractee_id'] == null) {
+                              ConTrustSnackBar.error(context, 'Missing IDs');
+                              return;
+                            }
+                            
+                            final already = await hasAlreadyBid(
+                              user,
+                              projectToUse['project_id'].toString(),
+                            );
+                            if (already) {
+                              ConTrustSnackBar.warning(context, 'You have already placed a bid on this project.');
+                              return;
+                            }
+                            final bidAmount = int.tryParse(bidController.text.trim()) ?? 0;
+                            final message = messageController.text.trim();
+                    if (bidAmount <= 0) {
+                      ConTrustSnackBar.warning(context, 'Enter a bid amount greater than 0');
+                      return;
+                    }
+                            
+                            if (!validateBidRequest(
+                              context,
+                              bidController.text.trim(),
+                              message,
+                            )) {
+                              return;
+                            }
+                            
+                            try {
+                              await _service.postBid(
+                                contractorId: user,
+                                projectId: projectToUse['project_id'].toString(),
+                                bidAmount: bidAmount,
+                                message: message,
+                                context: context,
+                              );
+                              bidController.clear();
+                              messageController.clear();
+                              onProjectSelected(null);
+                              onRefresh();
+                            } catch (e) {
+                              final dialogCtx = dialogContext;
+                              if (dialogCtx != null) {
+                                String errorMessage = e.toString();
+                                if (errorMessage.startsWith('Exception: ')) {
+                          errorMessage = errorMessage.substring(11);
+                                }
+                                
+                                Navigator.pop(dialogCtx);
+                                
+                                Future.delayed(const Duration(milliseconds: 300), () {
+                                  if (context.mounted) {
+                                    bidController.clear();
+                                    messageController.clear();
+                                    ConTrustSnackBar.warning(context, errorMessage);
+                                  }
+                                });
+                                return;
+                              }
+                            }
+                          },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFFB300),
+                              foregroundColor: Colors.black,
+                              minimumSize: const Size.fromHeight(50),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text('Submit Bid'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void showDetails(Map<String, dynamic> project) {
     showDialog(
       barrierDismissible: true,
       context: context,
-      builder:
-          (ctx) => Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
+      builder: (ctx) => Center(
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: 500,
+              maxHeight: MediaQuery.of(ctx).size.height * 0.85,
             ),
-            elevation: 16,
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 500, maxHeight: 700),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Colors.white, Colors.amber.shade50],
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.black, width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 20,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 8),
                 ),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade700,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
                   ),
-                ],
-              ),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close, color: Colors.grey),
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.grey.shade100,
-                          padding: const EdgeInsets.all(8),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          Icons.description,
+                          color: Colors.white,
+                          size: 18,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      height: 140,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          project['title'] ?? 'Project Details',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
-                        ],
+                        ),
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Image.asset('assets/images/kitchen.jpg', fit: BoxFit.cover),
+                      IconButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      project['title'] ?? 'Untitled',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 22,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      project['type'] ?? 'Project',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        color: Color(0xFF2C3E50),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      project['description'] ?? '',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFF5D6D7E),
-                        height: 1.6,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.amber.shade200),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.amber.shade100,
-                            ),
-                            child: ClipOval(
-                              child:
-                                  contracteeInfo[project['contractee_id']]?['profile_photo'] !=
-                                          null
-                                      ? Image.network(
-                                        contracteeInfo[project['contractee_id']]!['profile_photo'],
-                                        width: 40,
-                                        height: 40,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (
-                                          context,
-                                          error,
-                                          stackTrace,
-                                        ) {
-                                          return Image.asset(
-                                            'assets/images/defaultpic.png',
-                                            width: 40,
-                                            height: 40,
-                                            fit: BoxFit.cover,
-                                          );
-                                        },
-                                      )
-                                      : Image.asset(
-                                        'assets/images/defaultpic.png',
-                                        width: 40,
-                                        height: 40,
-                                        fit: BoxFit.cover,
-                                      ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Posted by',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF7D7D7D),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  contracteeInfo[project['contractee_id']]?['full_name'] ??
-                                      'Unknown Contractee',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF2C3E50),
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade200),
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'Location:',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              Text(
-                                '${project['location']}',
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'Minimum Budget:',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              Text(
-                                '₱${project['min_budget']}',
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'Maximum Budget:',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              Text(
-                                '₱${project['max_budget']}',
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    buildBidInput(),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            )
-          )
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                height: 140,
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: project['photo_url'] != null && project['photo_url'].toString().isNotEmpty
+                                      ? Image.network(
+                                          project['photo_url'].toString(),
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Image.asset('assets/images/kitchen.jpg', fit: BoxFit.cover);
+                                          },
+                                        )
+                                      : Image.asset('assets/images/kitchen.jpg', fit: BoxFit.cover),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                project['type'] ?? 'Project',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  color: Color(0xFF2C3E50),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                project['description'] ?? '',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Color(0xFF5D6D7E),
+                                  height: 1.6,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.shade50,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.amber.shade200),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.amber.shade100,
+                                      ),
+                                      child: ClipOval(
+                                        child:
+                                            contracteeInfo[project['contractee_id']]?['profile_photo'] !=
+                                                    null
+                                                ? Image.network(
+                                                  contracteeInfo[project['contractee_id']]!['profile_photo'],
+                                                  width: 40,
+                                                  height: 40,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (
+                                                    context,
+                                                    error,
+                                                    stackTrace,
+                                                  ) {
+                                                    return Image.asset(
+                                                      'assets/images/defaultpic.png',
+                                                      width: 40,
+                                                      height: 40,
+                                                      fit: BoxFit.cover,
+                                                    );
+                                                  },
+                                                )
+                                                : Image.asset(
+                                                  'assets/images/defaultpic.png',
+                                                  width: 40,
+                                                  height: 40,
+                                                  fit: BoxFit.cover,
+                                                ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'Posted by',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Color(0xFF7D7D7D),
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            contracteeInfo[project['contractee_id']]?['full_name'] ??
+                                                'Unknown Contractee',
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF2C3E50),
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.grey.shade200),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text(
+                                          'Location:',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${project['location']}',
+                                          style: const TextStyle(
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text(
+                                          'Minimum Budget:',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        Text(
+                                          '₱${project['min_budget']}',
+                                          style: const TextStyle(
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text(
+                                          'Maximum Budget:',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        Text(
+                                          '₱${project['max_budget']}',
+                                          style: const TextStyle(
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                            ],
+                          ),
+                        ),
+                        buildBidInput(dialogContext: ctx, project: project),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1098,12 +1266,27 @@ class BiddingUIBuildMethods {
           Expanded(
             child: Stack(
               children: [
-                Image.asset(
-                  'assets/images/kitchen.jpg',
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
-                ),
+                project['photo_url'] != null && project['photo_url'].toString().isNotEmpty
+                    ? Image.network(
+                        project['photo_url'].toString(),
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Image.asset(
+                            'assets/images/kitchen.jpg',
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                          );
+                        },
+                      )
+                    : Image.asset(
+                        'assets/images/kitchen.jpg',
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                      ),
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
