@@ -71,7 +71,60 @@ class UserService {
     return await _supabase.auth.signInAnonymously();
   }
 
-  Future<Map<String, dynamic>?> getUserProfile(String userId) async {
+  Future<bool> changePassword({
+    required String newPassword,
+    String? oldPassword,
+  }) async {
+    try {
+      if (newPassword.length < 6) {
+        throw Exception('Password must be at least 6 characters long');
+      }
+      
+      if (newPassword.length > 15) {
+        throw Exception('Password must be no more than 15 characters long');
+      }
+
+      final hasUppercase = newPassword.contains(RegExp(r'[A-Z]'));
+      final hasNumber = newPassword.contains(RegExp(r'[0-9]'));
+      final hasSpecialChar = newPassword.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+
+      if (!hasUppercase || !hasNumber || !hasSpecialChar) {
+        throw Exception('Password must include uppercase, number and special character');
+      }
+
+      final response = await _supabase.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+
+      return response.user != null;
+    } catch (e) {
+      rethrow;
+    }
+  }
+  Future<void> resetPassword(String email, {String? redirectTo}) async {
+    try {
+      final response = await _supabase.functions.invoke(
+        'send-password-reset-email',
+        body: {
+          'email': email,
+          'redirectTo': redirectTo ?? 'https://contrust-sjdm.com/auth/reset-password',
+        },
+      );
+
+      if (response.status != 200) {
+        final errorData = response.data;
+        final errorMessage = errorData?['error'] ?? errorData?['message'] ?? 'Failed to send password reset email';
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      if (e.toString().contains('No user found')) {
+        throw Exception('No account found with this email address');
+      }
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getUserProfile(String userId) async { 
     final response = await _supabase
         .rpc('get_auth_user', params: {'user_id': userId}).single();
     return response;
@@ -182,7 +235,7 @@ class UserService {
           'email': email,
         };
       } else {
-        // Fetch email from Users table
+
         String email = '';
         try {
           final userData = await _supabase
