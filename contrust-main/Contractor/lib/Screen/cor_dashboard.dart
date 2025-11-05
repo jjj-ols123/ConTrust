@@ -179,6 +179,22 @@ class _DashboardUIState extends State<DashboardUI>
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth > 1200;
 
+    if (isDesktop) {
+      return RefreshIndicator(
+        onRefresh: fetchDashboardData,
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: SlideTransition(
+              position: _slideAnimation,
+              child: buildDesktopProjectsAndTasks(),
+            ),
+          ),
+        ),
+      );
+    }
+
     return RefreshIndicator(
       onRefresh: fetchDashboardData,
       child: SingleChildScrollView(
@@ -188,22 +204,18 @@ class _DashboardUIState extends State<DashboardUI>
           opacity: _fadeAnimation,
           child: SlideTransition(
             position: _slideAnimation,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (isDesktop)
-                    buildDesktopProjectsAndTasks()
-                  else ...[
-                  _buildVerificationBanner(),
-                  const SizedBox(height: 20),
-                  buildWelcomeCard(),
-                  const SizedBox(height: 20),
-                  buildStatsGrid(),
-                  const SizedBox(height: 20),
-                  buildHiringRequestContainer(),
-                  const SizedBox(height: 20),
-                  buildMobileProjectsAndTasks(),
-                ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildVerificationBanner(),
+                const SizedBox(height: 20),
+                buildWelcomeCard(),
+                const SizedBox(height: 20),
+                buildStatsGrid(),
+                const SizedBox(height: 20),
+                buildHiringRequestContainer(),
+                const SizedBox(height: 20),
+                buildMobileProjectsAndTasks(),
                 const SizedBox(height: 40),
               ],
             ),

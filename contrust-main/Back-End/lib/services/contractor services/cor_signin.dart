@@ -367,6 +367,7 @@ class SignInGoogleContractor {
         'name': user.userMetadata?['full_name'] ?? 'Contractor Firm',
         'role': 'contractor',
         'status': 'active',
+        'created_at': DateTimeHelper.getLocalTimeISOString(),
         'last_login': DateTimeHelper.getLocalTimeISOString(),
         'profile_image_url': profilePhoto ?? 'assets/defaultpic.png',
         'phone_number': '',

@@ -803,15 +803,31 @@ class FetchService {
           .from('Projects')
           .stream(primaryKey: ['project_id'])
           .map((List<Map<String, dynamic>> projects) {
-            // Filter projects that are open for bidding
-            return projects.where((project) => 
+            final filtered = projects.where((project) => 
               project['status'] == 'pending' ||
               project['status'] == 'open'
-            ).toList()..sort((a, b) {
+            ).toList();
+
+            final withPhotoUrls = filtered.map((p) {
+              final project = Map<String, dynamic>.from(p);
+              final dynamic raw = project['photo_url'];
+              if (raw is String && raw.isNotEmpty && !raw.startsWith('http')) {
+                try {
+                  project['photo_url'] = _supabase.storage
+                      .from('projectphotos')
+                      .getPublicUrl(raw);
+                } catch (_) {}
+              }
+              return project;
+            }).toList();
+
+            withPhotoUrls.sort((a, b) {
               final dateA = DateTime.tryParse(a['created_at'] ?? '') ?? DateTime(1970);
               final dateB = DateTime.tryParse(b['created_at'] ?? '') ?? DateTime(1970);
               return dateB.compareTo(dateA);
             });
+
+            return withPhotoUrls;
           });
     } catch (e) {
       _errorService.logError(
@@ -872,7 +888,7 @@ class FetchService {
     try {
       final query = _supabase
           .from('Contracts')
-          .select('contract_id, contractor_id, contractee_id, project_id, status, title, pdf_url, created_at, updated_at')
+          .select('contract_id, contractor_id, contractee_id, project_id, status, title, pdf_url, created_at, updated_at, field_values')
           .eq('contract_id', contractId);
       
       if (contractorId != null) {

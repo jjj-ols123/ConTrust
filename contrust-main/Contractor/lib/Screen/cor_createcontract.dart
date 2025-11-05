@@ -130,11 +130,11 @@ class _CreateContractPageState extends State<CreateContractPage>
         }
       }
       
-      // Validate that we have a valid template with at least a template_name
-      if (selectedTemplate == null || 
-          selectedTemplate!.isEmpty || 
-          !selectedTemplate!.containsKey('template_name') ||
-          (selectedTemplate!['template_name'] as String?)?.isEmpty == true) {
+      if ((selectedTemplate == null || 
+           selectedTemplate!.isEmpty || 
+           !selectedTemplate!.containsKey('template_name') ||
+           (selectedTemplate!['template_name'] as String?)?.isEmpty == true) &&
+          existingContract == null) {
         if (mounted) {
           ConTrustSnackBar.error(context, 'No valid template selected. Please try again.');
           setState(() {
@@ -144,14 +144,32 @@ class _CreateContractPageState extends State<CreateContractPage>
         }
       }
       
-      // Ensure selectedContractType is set
       if (selectedContractType == null || selectedContractType!.isEmpty) {
         selectedContractType = selectedTemplate!['template_name'] as String?;
       }
       
+      if (existingContract != null && (selectedTemplate == null || selectedTemplate!.isEmpty)) {
+        try {
+          final contractId = existingContract!['contract_id'];
+          final contract = await fetchService.fetchContractWithDetails(contractId, contractorId: contractorId);
+          if (contract != null) {
+            existingContract = contract;
+            final contractType = contract['contract_type'] as Map<String, dynamic>?;
+            if (contractType != null && contractType.isNotEmpty) {
+              selectedTemplate = contractType;
+              selectedContractType = contractType['template_name'] as String?;
+            }
+            titleController.text = contract['title'] as String? ?? titleController.text;
+            initialProjectId = contract['project_id'] as String? ?? initialProjectId;
+          }
+        } catch (_) {
+          // Ignore, fallback to existing values
+        }
+      }
+
       if (existingContract != null && existingContract!['title'] == null) {
         final contractId = existingContract!['contract_id'];
-        final contract = await fetchService.fetchContractWithDetails(contractId);
+        final contract = await fetchService.fetchContractWithDetails(contractId, contractorId: contractorId);
         if (contract == null && mounted) {
           ConTrustSnackBar.error(context, 'Contract not found');
           setState(() {
@@ -730,7 +748,7 @@ class _CreateContractPageState extends State<CreateContractPage>
             child: ContractTabsBuild.buildTabBarView(
               tabController: tabController,
               templatePreview: ContractTabsBuild.buildTemplatePreview(
-                selectedTemplate?['template_name'],
+                selectedContractType ?? selectedTemplate?['template_name'],
               ),
               contractForm: buildHelper.buildForm(),
               finalPreview: isPreparingPreview

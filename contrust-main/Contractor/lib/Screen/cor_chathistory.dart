@@ -27,9 +27,12 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
   late Future<String?> projectStatus;
   bool isSending = false;
   
-  // Cache for contractee data and unread counts to avoid N+1 queries
   final Map<String, Map<String, dynamic>> _contracteeDataCache = {};
   final Map<String, int> _unreadCountCache = {};
+
+  Future<void>? batchFuture;
+  String? _batchKey;
+  List<Map<String, dynamic>> _lastChatsSnapshot = const [];
 
   @override
   void initState() {
@@ -145,6 +148,11 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
     }
   }
 
+  String _computeBatchKey(List<Map<String, dynamic>> chats) {
+    final parts = chats.map((c) => '${c['chatroom_id']}:${c['last_message_time'] ?? ''}').join('|');
+    return parts;
+  }
+
   String formatTime(DateTime? time) {
     if (time == null) return '';
     return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
@@ -191,31 +199,7 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
           )
         : Column(
             children: [
-              Container(
-                height: 60,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.amber.shade50,
-                  border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.chat_bubble_outline, color: Colors.amber, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Chat History',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              const SizedBox.shrink(),
               Expanded(
                 child: StreamBuilder<List<Map<String, dynamic>>>(
                   stream: supabase
@@ -224,24 +208,23 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
                       .eq('contractor_id', contractorId!)
                       .order('last_message_time', ascending: false),
                   builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(
-                        child: CircularProgressIndicator(color: Colors.amber),
-                      );
-                    }
-
                     if (snapshot.hasError) {
                       return Center(
                         child: Text('Error: ${snapshot.error}'),
                       );
                     }
 
-                    final chats = snapshot.data ?? [];
-
-                    // Pre-fetch all contractee data and unread counts in batch
-                    if (chats.isNotEmpty && contractorId != null) {
-                      _prefetchChatData(chats, contractorId!);
+                    final incomingChats = snapshot.data ?? [];
+                    final newKey = _computeBatchKey(incomingChats);
+                    if (incomingChats.isNotEmpty && contractorId != null && newKey != _batchKey) {
+                      _batchKey = newKey;
+                      _lastChatsSnapshot = incomingChats;
+                      batchFuture = _prefetchChatData(incomingChats, contractorId!);
                     }
+
+                    final chats = (snapshot.connectionState == ConnectionState.waiting && _lastChatsSnapshot.isNotEmpty)
+                        ? _lastChatsSnapshot
+                        : incomingChats;
 
                     if (chats.isEmpty) {
                       return const Center(
@@ -282,7 +265,6 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
                         final contracteeId = chat['contractee_id'] as String;
                         final chatRoomId = chat['chatroom_id'] as String;
 
-                        // Use cached data instead of FutureBuilder
                         final contracteeData = _contracteeDataCache[contracteeId];
                         final contracteeName = contracteeData != null
                             ? contracteeData['full_name'] ?? 'Contractee'
@@ -317,12 +299,11 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
                                               CircleAvatar(
                                                 radius: 24,
                                                 backgroundColor: Colors.amber[100],
-                                                backgroundImage: contracteeProfile != null
-                                                    ? NetworkImage(contracteeProfile)
-                                                    : NetworkImage('https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png'),
-                                                child: contracteeProfile == null
-                                                    ? null
-                                                    : null,
+                                                backgroundImage: NetworkImage(
+                                                  (contracteeProfile != null && contracteeProfile.isNotEmpty)
+                                                      ? contracteeProfile
+                                                      : 'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
+                                                ),
                                               ),
                                               if (hasUnread)
                                                 Positioned(

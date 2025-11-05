@@ -1317,7 +1317,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ? () => _handleSignUp()
                             : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green.shade600,
+                      backgroundColor: Colors.amber.shade700,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -1383,7 +1383,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ? () => _handleSignUp()
                             : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green.shade600,
+                      backgroundColor: Colors.amber.shade700,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),

@@ -480,7 +480,7 @@ class ProjectView extends StatelessWidget {
 
   Widget _buildProjectDetails(BuildContext context, bool isHiringRequest) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 700;
+    final isWideScreen = screenWidth > 1200;
     
     final details = [
       _buildDetailItem(
@@ -512,20 +512,8 @@ class ProjectView extends StatelessWidget {
         ),
     ];
 
-    // If mobile, show all labels in one column
-    if (isMobile) {
-      return Column(
-        children: [
-          for (int i = 0; i < details.length; i++)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: details[i],
-            ),
-        ],
-      );
-    }
-
-    // Desktop: show labels in two columns
+    // If screen width > 1200, show labels in two columns
+    if (isWideScreen) {
     return Column(
       children: [
         for (int i = 0; i < details.length; i += 2)
@@ -541,6 +529,18 @@ class ProjectView extends StatelessWidget {
                   Expanded(child: details[i + 1]),
               ],
             ),
+            ),
+        ],
+      );
+    }
+
+    // Otherwise, show all labels in one column
+    return Column(
+      children: [
+        for (int i = 0; i < details.length; i++)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: details[i],
           ),
       ],
     );

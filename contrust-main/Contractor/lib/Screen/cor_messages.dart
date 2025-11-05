@@ -766,9 +766,13 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
              CircleAvatar(
                radius: 16,
                backgroundColor: Colors.white,
-               backgroundImage: (_contracteeProfile ?? widget.contracteeProfile) != null
-                   ? NetworkImage(_contracteeProfile ?? widget.contracteeProfile!)
-                   : const NetworkImage(profileUrl),
+               backgroundImage: NetworkImage(
+                 ((_contracteeProfile != null && _contracteeProfile!.isNotEmpty)
+                        ? _contracteeProfile!
+                        : (widget.contracteeProfile != null && widget.contracteeProfile!.isNotEmpty)
+                            ? widget.contracteeProfile!
+                            : profileUrl),
+               ),
              ),
              const SizedBox(width: 12),
              Expanded(

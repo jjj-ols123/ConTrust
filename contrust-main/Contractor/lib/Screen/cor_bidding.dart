@@ -5,6 +5,7 @@ import 'package:backend/utils/be_snackbar.dart';
 import '../build/buildbidding.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:backend/services/both services/be_realtime_service.dart';
 
 class BiddingScreen extends StatefulWidget {
   const BiddingScreen({super.key, required String contractorId});
@@ -16,6 +17,7 @@ class BiddingScreen extends StatefulWidget {
 class _BiddingScreenState extends State<BiddingScreen> {
   final _biddingService = CorBiddingService();
   final Set<String> finalizedProjects = {};
+  final RealtimeSubscriptionService realtimeService = RealtimeSubscriptionService();
 
   // Preserve inputs across rebuilds
   final TextEditingController bidController = TextEditingController();
@@ -30,9 +32,10 @@ class _BiddingScreenState extends State<BiddingScreen> {
   bool _isLoadingData = true;
 
   Stream<List<Map<String, dynamic>>>? _biddingStream;
+  RealtimeChannel? _contractorBidsChannel;
+  RealtimeChannel? _allBidsChannel;
 
   bool _isVerified = false;
-  bool _isCheckingVerification = true;
 
   @override
   void initState() {
@@ -47,7 +50,6 @@ class _BiddingScreenState extends State<BiddingScreen> {
       if (session == null) {
         setState(() {
           _isVerified = false;
-          _isCheckingVerification = false;
         });
         return;
       }
@@ -61,14 +63,12 @@ class _BiddingScreenState extends State<BiddingScreen> {
       if (mounted) {
         setState(() {
           _isVerified = resp != null && (resp['verified'] == true);
-          _isCheckingVerification = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _isVerified = false;
-          _isCheckingVerification = false;
+          _isVerified = false;  
         });
       }
     }
@@ -79,6 +79,42 @@ class _BiddingScreenState extends State<BiddingScreen> {
       _isLoadingData = true;
     });
     _biddingStream = FetchService().streamBiddingProjects();
+  }
+
+  void _ensureRealtimeForBids() {
+    final String? uid = contractorId;
+    if (uid != null && _contractorBidsChannel == null) {
+      _contractorBidsChannel = realtimeService.subscribeToContractorBids(
+        userId: uid,
+        onUpdate: () async {
+          try {
+            final bids = await _biddingService.getContractorBids(uid);
+            if (!mounted) return;
+            setState(() {
+              contractorBids = bids;
+            });
+          } catch (_) {}
+        },
+      );
+    }
+
+    _allBidsChannel ??= Supabase.instance.client
+          .channel('bids_all')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'Bids',
+            callback: (payload) async {
+              try {
+                final hb = await _biddingService.loadHighestBids();
+                if (!mounted) return;
+                setState(() {
+                  highestBids = hb;
+                });
+              } catch (_) {}
+            },
+          )
+          .subscribe();
   }
 
   Future<void> _loadBiddingData(List<Map<String, dynamic>> streamProjects) async {
@@ -96,6 +132,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
           contractorBids = data['contractorBids'];
           _isLoadingData = false;
         });
+        _ensureRealtimeForBids();
       } else {
         setState(() {
           _isLoadingData = false;
@@ -212,6 +249,16 @@ class _BiddingScreenState extends State<BiddingScreen> {
             }
           }
 
+          // Keep selected project in sync with latest stream data
+          Map<String, dynamic>? currentSelected;
+          if (selectedProject != null) {
+            final selId = selectedProject!['project_id']?.toString();
+            currentSelected = projects.firstWhere(
+              (p) => p['project_id']?.toString() == selId,
+              orElse: () => selectedProject!,
+            );
+          }
+
           final builder = BiddingUIBuildMethods(
             context: context,
             projects: projects,
@@ -223,7 +270,7 @@ class _BiddingScreenState extends State<BiddingScreen> {
             },
             hasAlreadyBid: _biddingService.hasAlreadyBid,
             finalizedProjects: finalizedProjects,
-            selectedProject: selectedProject,
+            selectedProject: currentSelected,
             contracteeInfo: contracteeInfo,
             contractorBids: contractorBids,
             bidController: bidController,
@@ -250,6 +297,12 @@ class _BiddingScreenState extends State<BiddingScreen> {
   void dispose() {
     bidController.dispose();
     messageController.dispose();
+    try {
+      if (contractorId != null) {
+        realtimeService.unsubscribeFromUserChannels(contractorId!);
+      }
+      _allBidsChannel?.unsubscribe();
+    } catch (_) {}
     super.dispose();
   }
 }

@@ -542,22 +542,14 @@ class HomePageBuilder {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      bid['project_title'] ?? 'Bid for Project',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: isMobile ? 13 : 14,
-                        color: Colors.grey.shade800,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    SizedBox(height: 2),
-                    Text(
                       'by ${contractor?['firm_name'] ?? 'Unknown Contractor'}',
                       style: TextStyle(
-                        fontSize: isMobile ? 11 : 12,
-                        color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w600,
+                    fontSize: isMobile ? 13 : 14,
+                    color: Colors.grey.shade800,
                       ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                     ),
                     
                   ],  
@@ -679,7 +671,7 @@ class HomePageBuilder {
       'profile_photo': contractor?['profile_photo'],
       'email': contractor?['email'],
       'bid_amount': bid['bid_amount']?.toString() ?? '0',
-      'description': bid['description'] ?? 'No description provided',
+      'message': bid['message'] ?? 'No description provided',
       'status': bid['status'] ?? 'pending',
     };
     
@@ -811,9 +803,8 @@ class HomePageBuilder {
                           
                           const SizedBox(height: 24),
                           
-                          _buildDetailField('Project Title', info['project_title'] ?? 'Bid for Project'),
                           _buildDetailField('Bid Amount', '₱${info['bid_amount']}'),
-                          _buildDetailField('Description', info['description'] ?? 'No description provided'),
+                          _buildDetailField('Contractor Message', info['message'] ?? 'No description provided'),
                           _buildDetailField('Status', (info['status'] as String).toUpperCase()),
                         ],
                       ),
@@ -869,7 +860,6 @@ class HomePageBuilder {
     Map<String, dynamic> bid,
     VoidCallback onAccept,
   ) {
-    final contractor = bid['contractor'] as Map<String, dynamic>?;
     
     showDialog(
       context: context,
@@ -888,39 +878,6 @@ class HomePageBuilder {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text('Are you sure you want to accept this bid?'),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Contractor: ${contractor?['firm_name'] ?? 'Unknown'}',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Bid Amount: ₱${bid['bid_amount']?.toString() ?? '0'}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green.shade700,
-                        fontSize: 16,
-                      ),
-                    ),
-                    if (bid['description'] != null && bid['description'].isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        'Description: ${bid['description']}',
-                        style: TextStyle(color: Colors.grey.shade600),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
               const SizedBox(height: 16),
               Text(
                 'This action cannot be undone. The contractor will be notified and the project will proceed.',

@@ -32,6 +32,10 @@ class _ContracteeChatHistoryPageState
   late Future<String?> projectStatus;
   bool isSending = false;
 
+  Future<Map<String, dynamic>>? _batchFuture;
+  Map<String, dynamic>? _lastBatchData;
+  String? _batchKey;
+
 
   @override
   void initState() {
@@ -201,6 +205,32 @@ class _ContracteeChatHistoryPageState
     return DateFormat('hh:mm a').format(time);
   }
 
+  String _computeBatchKey(List<Map<String, dynamic>> chatRooms) {
+    final buffer = StringBuffer();
+    for (final chat in chatRooms) {
+      final id = chat['chatroom_id']?.toString() ?? '';
+      final ts = chat['last_message_time']?.toString() ?? '';
+      buffer.write(id);
+      buffer.write('|');
+      buffer.write(ts);
+      buffer.write(';');
+    }
+    return buffer.toString();
+  }
+
+  Future<Map<String, dynamic>> _ensureBatchFuture(
+      List<Map<String, dynamic>> chatRooms, String contracteeId) {
+    final newKey = _computeBatchKey(chatRooms);
+    if (_batchFuture == null || _batchKey != newKey) {
+      _batchKey = newKey;
+      _batchFuture = _loadBatchData(chatRooms, contracteeId).then((data) {
+        _lastBatchData = data;
+        return data;
+      });
+    }
+    return _batchFuture!;
+  }
+
   Future<Map<String, dynamic>> _loadBatchData(
       List<Map<String, dynamic>> chatRooms, String contracteeId) async {
     final contractorIds = chatRooms
@@ -288,15 +318,21 @@ class _ContracteeChatHistoryPageState
                 );
               }
               
-              // Batch fetch all data for all chat rooms
+              // Batch fetch all data for all chat rooms with caching to avoid flicker
               return FutureBuilder<Map<String, dynamic>>(
-                future: _loadBatchData(chatRooms, contracteeId!),
+                future: _ensureBatchFuture(chatRooms, contracteeId!),
                 builder: (context, batchSnap) {
+                  Map<String, dynamic> batchData;
                   if (batchSnap.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator(color: Colors.amber));
+                    // Show last good data while updating to avoid flicker
+                    if (_lastBatchData != null) {
+                      batchData = _lastBatchData!;
+                    } else {
+                      return const Center(child: CircularProgressIndicator(color: Colors.amber));
+                    }
+                  } else {
+                    batchData = batchSnap.data ?? _lastBatchData ?? {};
                   }
-                  
-                  final batchData = batchSnap.data ?? {};
                   final contractorDataCache = batchData['contractors'] as Map<String, Map<String, dynamic>>? ?? {};
                   final chatPermissionsCache = batchData['permissions'] as Map<String, bool>? ?? {};
                   final unreadCountsCache = batchData['unreadCounts'] as Map<String, int>? ?? {};

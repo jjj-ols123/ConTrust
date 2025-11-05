@@ -39,6 +39,12 @@ class BiddingUIBuildMethods {
   final List<Map<String, dynamic>> contractorBids;
   final TextEditingController bidController;
   final TextEditingController messageController;
+  final ValueNotifier<String> searchQuery = ValueNotifier<String>('');
+  // Filters
+  final ValueNotifier<String> filterType = ValueNotifier<String>('');
+  final ValueNotifier<String> filterLocation = ValueNotifier<String>('');
+  final ValueNotifier<String> minBudgetText = ValueNotifier<String>('');
+  final ValueNotifier<String> maxBudgetText = ValueNotifier<String>('');
 
   Widget buildBiddingUI() {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -81,15 +87,52 @@ class BiddingUIBuildMethods {
                     ),
                     child: Row(
                       children: [
-                        Icon(
+                        PopupMenuButton<String>(
+                          icon: Icon(
                           Icons.filter_list,
                           color: Colors.amber[700],
                           size: 20,
+                          ),
+                          tooltip: 'Filters',
+                          onSelected: (value) async {
+                            if (value == 'type') {
+                              await _openTypePicker();
+                            } else if (value == 'location') {
+                              await _openLocationPicker();
+                            } else if (value == 'budget') {
+                              await _openBudgetDialog();
+                            } else if (value == 'clear') {
+                              filterType.value = '';
+                              filterLocation.value = '';
+                              minBudgetText.value = '';
+                              maxBudgetText.value = '';
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            const PopupMenuItem<String>(
+                              value: 'type',
+                              child: Text('Filter by Type'),
+                            ),
+                            const PopupMenuItem<String>(
+                              value: 'location',
+                              child: Text('Filter by Location'),
+                            ),
+                            const PopupMenuItem<String>(
+                              value: 'budget',
+                              child: Text('Filter by Budget'),
+                            ),
+                            const PopupMenuDivider(),
+                            const PopupMenuItem<String>(
+                              value: 'clear',
+                              child: Text('Clear Filters'),
+                            ),
+                          ],
                         ),
                         const SizedBox(width: 8),
-                        const Expanded(
+                        Expanded(
                           child: TextField(
-                            decoration: InputDecoration(
+                            onChanged: (value) => searchQuery.value = value.trim().toLowerCase(),
+                            decoration: const InputDecoration(
                               hintText: "Search projects...",
                               hintStyle: TextStyle(color: Colors.grey),
                               border: InputBorder.none,
@@ -109,7 +152,10 @@ class BiddingUIBuildMethods {
                 isLargeScreen
                     ? Row(
                       children: [
-                        Expanded(flex: 2, child: buildProjectGrid()),
+                        Expanded(
+                          flex: 2,
+                          child: buildProjectGrid(),
+                        ),
                         Container(
                           width: 1,
                           color: Colors.grey.shade300,
@@ -125,11 +171,66 @@ class BiddingUIBuildMethods {
     );
   }
 
-  Widget buildContractorBidsOverview() {
-    if (contractorBids.isEmpty) {
-      return const SizedBox.shrink();
-    }
+  void _showFullPhoto(String url) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        final size = MediaQuery.of(dialogContext).size;
+        final double maxWidth = size.width * 0.9;
+        final double maxHeight = size.height * 0.85;
 
+        return Dialog(
+          insetPadding: const EdgeInsets.all(16),
+          backgroundColor: Colors.transparent,
+          child: Stack(
+            children: [
+              Container(
+                constraints: BoxConstraints(
+                  maxWidth: maxWidth,
+                  maxHeight: maxHeight,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Center(
+                    child: InteractiveViewer(
+                      minScale: 0.5,
+                      maxScale: 5.0,
+                      child: Image.network(
+                        url,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Image.asset('assets/images/kitchen.jpg', fit: BoxFit.contain);
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: IconButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black54,
+                  ),
+                  tooltip: 'Close',
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget buildContractorBidsOverview() {
     final displayBids = contractorBids.take(5).toList();
     final hasMoreBids = contractorBids.length > 5;
 
@@ -159,21 +260,26 @@ class BiddingUIBuildMethods {
                   'Your Bids',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-                const Spacer(),
-                Text(
-                  '${contractorBids.length} bids',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
               ],
             ),
           ),
           SizedBox(
             height: 140,
+            child: contractorBids.isEmpty
+                ? Center(
             child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.inbox_outlined, color: Colors.grey.shade500),
+                        const SizedBox(width: 8),
+                        Text(
+                          'No bids yet',
+                          style: TextStyle(color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
+                  )
+                : Row(
               children: [
                 Expanded(
                   child: ListView.separated(
@@ -422,22 +528,76 @@ class BiddingUIBuildMethods {
 
   Widget buildProjectGrid() {
     final screenWidth = MediaQuery.of(context).size.width;
-    return projects.isEmpty
-        ? const Center(child: Text("No projects available"))
-        : GridView.builder(
+    return ValueListenableBuilder<String>(
+      valueListenable: searchQuery,
+      builder: (context, query, _) {
+        return ValueListenableBuilder<String>(
+          valueListenable: filterType,
+          builder: (context, typeFilter, _) {
+            return ValueListenableBuilder<String>(
+              valueListenable: filterLocation,
+              builder: (context, locationFilter, _) {
+                return ValueListenableBuilder<String>(
+                  valueListenable: minBudgetText,
+                  builder: (context, minBudgetStr, _) {
+                    return ValueListenableBuilder<String>(
+                      valueListenable: maxBudgetText,
+                      builder: (context, maxBudgetStr, _) {
+                        final List<Map<String, dynamic>> source = projects;
+                        final String q = query;
+                        final String t = typeFilter.trim().toLowerCase();
+                        final String loc = locationFilter.trim().toLowerCase();
+                        final double? minF = double.tryParse(minBudgetStr.trim());
+                        final double? maxF = double.tryParse(maxBudgetStr.trim());
+
+                        List<Map<String, dynamic>> filtered = source.where((p) {
+                          // Title filter
+                          final String title = (p['title']?.toString() ?? '').toLowerCase();
+                          if (q.isNotEmpty && !title.contains(q)) return false;
+
+                          // Type filter (exact match)
+                          if (t.isNotEmpty) {
+                            final String pt = (p['type']?.toString() ?? '').toLowerCase();
+                            if (pt != t) return false;
+                          }
+
+                          // Location filter (exact match)
+                          if (loc.isNotEmpty) {
+                            final String ploc = (p['location']?.toString() ?? '').toLowerCase();
+                            if (ploc != loc) return false;
+                          }
+
+                          // Budget filter: ensure overlap with filter range
+                          final double? pMin = _parseBudget(p['min_budget']);
+                          final double? pMax = _parseBudget(p['max_budget']);
+
+                          if (minF != null) {
+                            // project max must be >= filter min
+                            if (pMax != null && pMax < minF) return false;
+                          }
+                          if (maxF != null) {
+                            // project min must be <= filter max
+                            if (pMin != null && pMin > maxF) return false;
+                          }
+
+                          return true;
+                        }).toList();
+
+                        if (filtered.isEmpty) {
+                          return const Center(child: Text("No projects available"));
+                        }
+
+                        return GridView.builder(
           padding: const EdgeInsets.all(16),
-          itemCount: projects.length,
+                          itemCount: filtered.length,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount:
-                screenWidth > 1200
-                    ? 3
-                    : 2,
+                            crossAxisCount: screenWidth > 1200 ? 3 : 1,
             crossAxisSpacing: 15,
             mainAxisSpacing: 15,
-            childAspectRatio: screenWidth > 1200 ? 1.3 : 0.7,
+                            childAspectRatio: screenWidth > 1200 ? 1.3 : 1.6,
           ),
           itemBuilder: (ctx, index) {
-            final project = projects[index];
+                            final project = filtered[index];
             final screenWidth = MediaQuery.of(context).size.width;
             final isLargeScreen = screenWidth > 1000;
 
@@ -455,14 +615,146 @@ class BiddingUIBuildMethods {
                 }
               },
               child: buildProjectCard(project),
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            );
+          },
             );
           },
         );
   }
 
+  double? _parseBudget(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return double.tryParse(value.toString());
+  }
+
+  Future<void> _openTypePicker() async {
+    final List<String> types = _getTypes();
+    final String? chosen = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Select Type'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, ''),
+            child: const Text('All Types'),
+          ),
+          ...types.map((t) => SimpleDialogOption(
+                onPressed: () => Navigator.pop(ctx, t),
+                child: Text(t),
+              )),
+        ],
+      ),
+    );
+    if (chosen != null) {
+      filterType.value = chosen.trim();
+    }
+  }
+
+  Future<void> _openLocationPicker() async {
+    final List<String> locations = _getLocations();
+    final String? chosen = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Select Location'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, ''),
+            child: const Text('All Locations'),
+          ),
+          ...locations.map((l) => SimpleDialogOption(
+                onPressed: () => Navigator.pop(ctx, l),
+                child: Text(l),
+              )),
+        ],
+      ),
+    );
+    if (chosen != null) {
+      filterLocation.value = chosen.trim();
+    }
+  }
+
+  Future<void> _openBudgetDialog() async {
+    final TextEditingController minCtrl = TextEditingController(text: minBudgetText.value);
+    final TextEditingController maxCtrl = TextEditingController(text: maxBudgetText.value);
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Filter by Budget'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: minCtrl,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: const InputDecoration(
+                labelText: 'Min Budget',
+                prefixText: '₱',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: maxCtrl,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: const InputDecoration(
+                labelText: 'Max Budget',
+                prefixText: '₱',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Apply'),
+          ),
+        ],
+      ),
+    );
+    if (result == true) {
+      minBudgetText.value = minCtrl.text.trim();
+      maxBudgetText.value = maxCtrl.text.trim();
+    }
+  }
+
+  List<String> _getTypes() {
+    final set = <String>{};
+    for (final p in projects) {
+      final t = (p['type']?.toString() ?? '').trim();
+      if (t.isNotEmpty) set.add(t);
+    }
+    final list = set.toList()..sort();
+    return list;
+  }
+
+  List<String> _getLocations() {
+    final set = <String>{};
+    for (final p in projects) {
+      final l = (p['location']?.toString() ?? '').trim();
+      if (l.isNotEmpty) set.add(l);
+    }
+    final list = set.toList()..sort();
+    return list;
+  }
+
   Widget buildProjectDetails() {
     return Container(
-      margin: const EdgeInsets.only(left: 16),
+      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -524,15 +816,39 @@ class BiddingUIBuildMethods {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        child: selectedProject!['photo_url'] != null && selectedProject!['photo_url'].toString().isNotEmpty
+                        child: Builder(
+                          builder: (context) {
+                            final String photoUrl = selectedProject!['photo_url']?.toString() ?? '';
+                            final Widget imageWidget = photoUrl.isNotEmpty
                             ? Image.network(
-                                selectedProject!['photo_url'].toString(),
+                                    photoUrl,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
                                   return Image.asset('assets/images/kitchen.jpg', fit: BoxFit.cover);
                                 },
                               )
-                            : Image.asset('assets/images/kitchen.jpg', fit: BoxFit.cover),
+                                : Image.asset('assets/images/kitchen.jpg', fit: BoxFit.cover);
+
+                            return Stack(
+                              children: [
+                                Positioned.fill(child: imageWidget),
+                                if (photoUrl.isNotEmpty)
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: IconButton(
+                                      onPressed: () => _showFullPhoto(photoUrl),
+                                      icon: const Icon(Icons.info_outline, color: Colors.white),
+                                      tooltip: 'View photo',
+                                      style: IconButton.styleFrom(
+                                        backgroundColor: Colors.black54,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -736,6 +1052,7 @@ class BiddingUIBuildMethods {
         ),
         const SizedBox(height: 16),
         TextField(
+          enabled: isVerified,
           controller: bidController,
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -744,7 +1061,7 @@ class BiddingUIBuildMethods {
             prefixText: '₱',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: isVerified ? Colors.white : Colors.grey.shade200,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 12,
@@ -753,13 +1070,14 @@ class BiddingUIBuildMethods {
         ),
         const SizedBox(height: 16),
         TextField(
+          enabled: isVerified,
           controller: messageController,
           maxLines: 3,
           decoration: InputDecoration(
             labelText: 'Message to the contractee on what you can offer!',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: isVerified ? Colors.white : Colors.grey.shade200,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 12,
@@ -771,7 +1089,7 @@ class BiddingUIBuildMethods {
           width: double.infinity,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.amber[600],
+              backgroundColor: isVerified ? Colors.amber[600] : Colors.grey.shade400,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
@@ -779,7 +1097,7 @@ class BiddingUIBuildMethods {
               ),
               elevation: 3,
             ),
-            onPressed: () async {
+            onPressed: isVerified ? () async {
               final user = Supabase.instance.client.auth.currentUser?.id;
               
               if (user == null || projectToUse == null || projectToUse['contractee_id'] == null) {
@@ -816,11 +1134,10 @@ class BiddingUIBuildMethods {
                 bidController.clear();
                 messageController.clear();
                 onProjectSelected(null);
-                onRefresh();
               } catch (e) {
                 // Error handled by service
               }
-            },
+            } : null,
             child: const Text(
               'Submit Bid',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -849,13 +1166,16 @@ class BiddingUIBuildMethods {
                   ),
           const SizedBox(height: 12),
                         TextField(
+                          enabled: isVerified,
                           controller: bidController,
                           keyboardType: TextInputType.number,
                           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
               labelText: 'Bid Amount',
                             prefixText: '₱',
-                            border: OutlineInputBorder(),
+                            border: const OutlineInputBorder(),
+                            filled: true,
+                            fillColor: isVerified ? Colors.white : Colors.grey.shade200,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -868,18 +1188,29 @@ class BiddingUIBuildMethods {
                         ),
                         const SizedBox(height: 8),
                         TextField(
+                          enabled: isVerified,
                           controller: messageController,
                           maxLines: 3,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
               labelText: 'Message to the contractee on what you can offer!',
-                            border: OutlineInputBorder(),
+                            border: const OutlineInputBorder(),
+                            filled: true,
+                            fillColor: isVerified ? Colors.white : Colors.grey.shade200,
                           ),
                         ),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: () async {
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isVerified ? const Color(0xFFFFB300) : Colors.grey.shade400,
+                              foregroundColor: Colors.black,
+                              minimumSize: const Size.fromHeight(50),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            onPressed: isVerified ? () async {
                             final user = Supabase.instance.client.auth.currentUser?.id;
                             
                             if (user == null || projectToUse == null || projectToUse['contractee_id'] == null) {
@@ -921,7 +1252,6 @@ class BiddingUIBuildMethods {
                               bidController.clear();
                               messageController.clear();
                               onProjectSelected(null);
-                              onRefresh();
                             } catch (e) {
                               final dialogCtx = dialogContext;
                               if (dialogCtx != null) {
@@ -942,15 +1272,7 @@ class BiddingUIBuildMethods {
                                 return;
                               }
                             }
-                          },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFFB300),
-                              foregroundColor: Colors.black,
-                              minimumSize: const Size.fromHeight(50),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
+                          } : null,
                             child: const Text('Submit Bid'),
             ),
           ),
@@ -1062,15 +1384,39 @@ class BiddingUIBuildMethods {
                                   ),
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(16),
-                                    child: project['photo_url'] != null && project['photo_url'].toString().isNotEmpty
+                                    child: Builder(
+                                      builder: (context) {
+                                        final String photoUrl = project['photo_url']?.toString() ?? '';
+                                        final Widget imageWidget = photoUrl.isNotEmpty
                                         ? Image.network(
-                                            project['photo_url'].toString(),
+                                                photoUrl,
                                             fit: BoxFit.cover,
                                             errorBuilder: (context, error, stackTrace) {
                                               return Image.asset('assets/images/kitchen.jpg', fit: BoxFit.cover);
                                             },
                                           )
-                                        : Image.asset('assets/images/kitchen.jpg', fit: BoxFit.cover),
+                                            : Image.asset('assets/images/kitchen.jpg', fit: BoxFit.cover);
+
+                                        return Stack(
+                                          children: [
+                                            Positioned.fill(child: imageWidget),
+                                            if (photoUrl.isNotEmpty)
+                                              Positioned(
+                                                top: 8,
+                                                right: 8,
+                                                child: IconButton(
+                                                  onPressed: () => _showFullPhoto(photoUrl),
+                                                  icon: const Icon(Icons.info_outline, color: Colors.white),
+                                                  tooltip: 'View photo',
+                                                  style: IconButton.styleFrom(
+                                                    backgroundColor: Colors.black54,
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
+                                        );
+                                      },
+                                    ),
                                   ),
                                 ),
                               const SizedBox(height: 16),

@@ -2,7 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:backend/utils/be_status.dart';
-import '../Screen/cor_change_password.dart';
+import 'package:backend/services/both services/be_user_service.dart';
+import 'package:backend/utils/be_snackbar.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileBuildMethods {
   static Widget buildMainContent(String selectedTab, Function buildPortfolioContent, Function buildAboutContent, Function buildReviewsContent, Function buildClientHistoryContent) {
@@ -689,17 +691,21 @@ class ProfileBuildMethods {
     required bool isEditingBio,
     required bool isEditingContact,
     required bool isEditingAddress,
+    required bool isEditingSpecialization,
     required TextEditingController firmNameController,
     required TextEditingController bioController,
     required TextEditingController contactController,
+    required TextEditingController specializationController,
     required TextEditingController addressController,
     required VoidCallback toggleEditFirmName,
     required VoidCallback toggleEditBio,
     required VoidCallback toggleEditContact,
+    required VoidCallback toggleEditSpecialization,
     required VoidCallback toggleEditAddress,
     required VoidCallback saveFirmName,
     required VoidCallback saveBio,
     required VoidCallback saveContact,
+    required VoidCallback saveSpecialization,
     required VoidCallback saveAddress,
     required String contractorId,
   }) {
@@ -784,7 +790,7 @@ class ProfileBuildMethods {
             ),
             const SizedBox(height: 24),
             
-            // Specialization Section - Display as chips from JSONB
+            // Specialization Section - editable with chips view when not editing
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -807,10 +813,185 @@ class ProfileBuildMethods {
                           color: Colors.black87,
                         ),
                       ),
+                      const Spacer(),
+                      if (isEditingSpecialization) ...[
+                        InkWell(
+                          onTap: toggleEditSpecialization,
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            child: Icon(Icons.close, size: 16, color: Colors.grey.shade600),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: saveSpecialization,
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            child: Icon(Icons.check, size: 16, color: Colors.grey.shade600),
+                          ),
+                        ),
+                      ] else ...[
+                        InkWell(
+                          onTap: toggleEditSpecialization,
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            child: Icon(Icons.edit, size: 16, color: Colors.grey.shade600),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 12),
-                  _buildSpecializationDisplay(specialization),
+                  if (isEditingSpecialization)
+                    StatefulBuilder(
+                      builder: (context, setLocalState) {
+                        final List<String> availableSpecializations = [
+                          'General Construction',
+                          'Residential Construction',
+                          'Commercial Construction',
+                          'Interior Design',
+                          'Exterior Design',
+                          'Architecture',
+                          'Electrical Work',
+                          'Plumbing',
+                          'HVAC (Heating, Ventilation, Air Conditioning)',
+                          'Roofing',
+                          'Flooring',
+                          'Painting',
+                          'Landscaping',
+                          'Kitchen Renovation',
+                          'Bathroom Renovation',
+                          'Structural Engineering',
+                          'Civil Engineering',
+                          'Project Management',
+                          'Home Improvement',
+                          'Maintenance & Repair',
+                          'Concrete Work',
+                          'Masonry',
+                          'Carpentry',
+                          'Welding',
+                          'Flooring Installation',
+                          'Wall Finishing',
+                          'Window Installation',
+                          'Door Installation',
+                          'Tile Work',
+                          'Drywall',
+                          'Insulation',
+                          'Solar Installation',
+                          'Smart Home Integration',
+                        ];
+
+                        List<String> selected = specializationController.text.isNotEmpty
+                            ? specializationController.text.split(', ').where((s) => s.trim().isNotEmpty).toList()
+                            : <String>[];
+                        void updateController() {
+                          specializationController.text = selected.join(', ');
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.work_outline, color: Colors.grey),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      selected.isEmpty
+                                          ? 'Select Specializations'
+                                          : '${selected.length} specialization(s) selected',
+                                      style: TextStyle(
+                                        color: selected.isEmpty ? Colors.grey.shade600 : Colors.black87,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (selected.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: selected.map((spec) {
+                                  return Chip(
+                                    label: Text(spec),
+                                    backgroundColor: Colors.amber.shade100,
+                                    deleteIcon: const Icon(Icons.close, size: 16),
+                                    onDeleted: () {
+                                      setLocalState(() {
+                                        selected.remove(spec);
+                                        updateController();
+                                      });
+                                    },
+                                    labelStyle: const TextStyle(fontSize: 13),
+                                  );
+                                }).toList(),
+                              ),
+                            ],
+                            const SizedBox(height: 6),
+                            Container(
+                                constraints: const BoxConstraints(maxHeight: 200),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.grey.shade300),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: ListView.builder(
+                                  shrinkWrap: true,
+                                  itemCount: availableSpecializations.length,
+                                  itemBuilder: (context, index) {
+                                    final spec = availableSpecializations[index];
+                                    final isSelected = selected.contains(spec);
+                                    return ListTile(
+                                      dense: true,
+                                      title: Text(
+                                        spec,
+                                        style: TextStyle(
+                                          color: isSelected ? Colors.amber.shade700 : Colors.black87,
+                                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                        ),
+                                      ),
+                                      trailing: isSelected
+                                          ? Icon(Icons.check_circle, color: Colors.amber.shade700, size: 18)
+                                          : const Icon(Icons.circle_outlined, size: 18),
+                                      onTap: () {
+                                        setLocalState(() {
+                                          if (isSelected) {
+                                            selected.remove(spec);
+                                          } else {
+                                            selected.add(spec);
+                                          }
+                                          updateController();
+                                        });
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                    )
+                  else
+                    _buildSpecializationDisplay(specialization),
                 ],
               ),
             ),
@@ -2286,6 +2467,146 @@ class ProfileBuildMethods {
   }
 
   static Widget _buildPasswordField(BuildContext context) {
+    return _PasswordFieldWidget();
+  }
+}
+
+class _PasswordFieldWidget extends StatefulWidget {
+  @override
+  State<_PasswordFieldWidget> createState() => _PasswordFieldWidgetState();
+}
+
+class _PasswordFieldWidgetState extends State<_PasswordFieldWidget> {
+  bool _isEditingPassword = false;
+  bool _currentPasswordVisible = false;
+  bool _newPasswordVisible = false;
+  bool _confirmPasswordVisible = false;
+  bool _isChangingPassword = false;
+  
+  final TextEditingController _currentPasswordController = TextEditingController();
+  final TextEditingController _newPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+  final UserService _userService = UserService();
+
+  @override
+  void dispose() {
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleChangePassword() async {
+    FocusScope.of(context).unfocus();
+
+    final currentPassword = _currentPasswordController.text;
+    final newPassword = _newPasswordController.text;
+    final confirmPassword = _confirmPasswordController.text;
+
+    if (currentPassword.isEmpty) {
+      ConTrustSnackBar.error(context, 'Please enter your current password');
+      return;
+    }
+
+    if (newPassword.isEmpty) {
+      ConTrustSnackBar.error(context, 'Please enter a new password');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      ConTrustSnackBar.error(context, 'New password must be at least 6 characters long');
+      return;
+    }
+
+    if (newPassword.length > 15) {
+      ConTrustSnackBar.error(context, 'New password must be no more than 15 characters long');
+      return;
+    }
+
+    final hasUppercase = newPassword.contains(RegExp(r'[A-Z]'));
+    final hasNumber = newPassword.contains(RegExp(r'[0-9]'));
+    final hasSpecialChar = newPassword.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+
+    if (!hasUppercase || !hasNumber || !hasSpecialChar) {
+      ConTrustSnackBar.error(
+        context,
+        'New password must include uppercase, number and special character',
+      );
+      return;
+    }
+
+    if (newPassword != confirmPassword) {
+      ConTrustSnackBar.error(context, 'New passwords do not match');
+      return;
+    }
+
+    if (currentPassword == newPassword) {
+      ConTrustSnackBar.error(
+        context,
+        'New password must be different from current password',
+      );
+      return;
+    }
+
+    try {
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser?.email == null) {
+        ConTrustSnackBar.error(context, 'User not authenticated');
+        return;
+      }
+
+      await Supabase.instance.client.auth.signInWithPassword(
+        email: currentUser!.email!,
+        password: currentPassword,
+      );
+
+      setState(() => _isChangingPassword = true);
+
+      final success = await _userService.changePassword(
+        newPassword: newPassword,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        ConTrustSnackBar.success(
+          context,
+          'Password changed successfully!',
+        );
+
+        _currentPasswordController.clear();
+        _newPasswordController.clear();
+        _confirmPasswordController.clear();
+
+        setState(() {
+          _isEditingPassword = false;
+          _isChangingPassword = false;
+        });
+      } else {
+        ConTrustSnackBar.error(context, 'Failed to change password. Please try again.');
+        setState(() => _isChangingPassword = false);
+      }
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      setState(() => _isChangingPassword = false);
+      if (e.message.toLowerCase().contains('invalid') ||
+          e.message.toLowerCase().contains('password')) {
+        ConTrustSnackBar.error(context, 'Current password is incorrect');
+      } else {
+        ConTrustSnackBar.error(context, 'Error: ${e.message}');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isChangingPassword = false);
+      ConTrustSnackBar.error(
+        context,
+        'Failed to change password: ${e.toString()}',
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -2311,20 +2632,26 @@ class ProfileBuildMethods {
               const Spacer(),
               InkWell(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ChangePasswordScreen(),
-                    ),
-                  );
+                  setState(() {
+                    _isEditingPassword = !_isEditingPassword;
+                    if (!_isEditingPassword) {
+                      _currentPasswordController.clear();
+                      _newPasswordController.clear();
+                      _confirmPasswordController.clear();
+                    }
+                  });
                 },
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.edit_outlined, size: 18, color: Colors.amber.shade700),
+                    Icon(
+                      _isEditingPassword ? Icons.close : Icons.edit_outlined,
+                      size: 18,
+                      color: Colors.amber.shade700,
+                    ),
                     const SizedBox(width: 4),
                     Text(
-                      'Change',
+                      _isEditingPassword ? 'Cancel' : 'Change',
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.amber.shade700,
@@ -2336,14 +2663,121 @@ class ProfileBuildMethods {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          const Text(
-            '••••••••',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.black87,
+          if (!_isEditingPassword) ...[
+            const SizedBox(height: 12),
+            const Text(
+              '••••••••',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.black87,
+              ),
             ),
-          ),
+          ],
+          if (_isEditingPassword) ...[
+            const SizedBox(height: 16),
+            TextField(
+              controller: _currentPasswordController,
+              obscureText: !_currentPasswordVisible,
+              enabled: !_isChangingPassword,
+              decoration: InputDecoration(
+                labelText: 'Current Password',
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _currentPasswordVisible
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                  ),
+                  onPressed: () => setState(() => _currentPasswordVisible = !_currentPasswordVisible),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _newPasswordController,
+              obscureText: !_newPasswordVisible,
+              enabled: !_isChangingPassword,
+              decoration: InputDecoration(
+                labelText: 'New Password',
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _newPasswordVisible
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                  ),
+                  onPressed: () => setState(() => _newPasswordVisible = !_newPasswordVisible),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _confirmPasswordController,
+              obscureText: !_confirmPasswordVisible,
+              enabled: !_isChangingPassword,
+              decoration: InputDecoration(
+                labelText: 'Confirm Password',
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _confirmPasswordVisible
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                  ),
+                  onPressed: () => setState(() => _confirmPasswordVisible = !_confirmPasswordVisible),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isChangingPassword ? null : _handleChangePassword,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber.shade700,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: _isChangingPassword
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text(
+                        'Change Password',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ),
+            ),
+          ],
         ],
       ),
     );

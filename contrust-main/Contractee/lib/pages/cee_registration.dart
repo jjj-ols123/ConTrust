@@ -3,6 +3,8 @@
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/utils/be_validation.dart';
 import 'package:backend/services/contractee services/cee_signup.dart';
+import 'package:backend/services/both services/be_otp_service.dart';
+import 'package:contractee/pages/cee_otp_verification.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -42,6 +44,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
   final FocusNode _passwordFocusNode = FocusNode();
   bool _isPasswordFocused = false;
   bool _isEmailFocused = false;
+  bool _emailVerified = false;
 
   @override
   void initState() {
@@ -152,6 +155,58 @@ class _RegistrationPageState extends State<RegistrationPage> {
       return;
     }
 
+    if (!_emailVerified) {
+      setState(() => _isSigningUp = true);
+      try {
+        await OtpService().sendOtp(
+          email: _emailController.text,
+          userType: 'contractee',
+        );
+
+        if (!mounted) return;
+
+        setState(() => _isSigningUp = false);
+
+        final verified = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OtpVerificationScreen(
+              email: _emailController.text,
+              userType: 'contractee',
+              registrationData: {
+                'user_type': 'contractee',
+                'full_name': _fullName,
+                'phone_number': _formatPhone(_phoneController.text),
+                'address': _addressController.text,
+                'profilePhoto': _profilePhoto,
+              },
+            ),
+          ),
+        );
+
+        if (!mounted) return;
+
+        if (verified == true) {
+          setState(() => _emailVerified = true);
+          await _completeSignUp();
+        } else {
+          return;
+        }
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _isSigningUp = false);
+        ConTrustSnackBar.error(
+          context,
+          'Failed to send OTP: ${e.toString()}',
+        );
+        return;
+      }
+    } else {
+      await _completeSignUp();
+    }
+  }
+
+  Future<void> _completeSignUp() async {
     setState(() => _isSigningUp = true);
     try {
       final signUpContractee = SignUpContractee();
@@ -179,62 +234,60 @@ class _RegistrationPageState extends State<RegistrationPage> {
 
       if (success && mounted) {
         ScaffoldMessenger.of(context).clearSnackBars();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Container(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-              child: Column(
+
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) {
+            Future.delayed(const Duration(seconds: 2), () {
+              if (dialogContext.mounted) {
+                Navigator.pop(dialogContext);
+              }
+            });
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              backgroundColor: Colors.white,
+              elevation: 12,
+              contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+              title: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.green.withOpacity(0.1),
-                        ),
-                        padding: const EdgeInsets.all(8),
-                        child: const Icon(
-                          Icons.check_circle,
-                          color: Colors.green,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Success',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: Colors.green,
-                        ),
-                      ),
-                    ],
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.green.withOpacity(0.1),
+                    ),
+                    padding: const EdgeInsets.all(12),
+                    child: const Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 40,
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Account created! You can now log in.',
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Success',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.black87,
-                      height: 1.3,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: Colors.green,
                     ),
                   ),
                 ],
               ),
-            ),
-            backgroundColor: Colors.white,
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            margin: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width * 0.1, vertical: 20),
-            elevation: 8,
-          ),
+              content: const Text(
+                'Account created! You can now log in.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.black87,
+                  height: 1.3,
+                ),
+              ),
+            );
+          },
         );
 
         Future.delayed(const Duration(seconds: 2), () {
@@ -696,7 +749,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
         ElevatedButton(
           onPressed: _isSigningUp ? null : _handleSignUp,
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.amber,
+            backgroundColor: Colors.amber.shade700,
             padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -708,7 +761,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.amber,
+                    color: Colors.white,
                   ),
                 )
               : const Text(
@@ -733,7 +786,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 TextSpan(
                   text: "Login",
                   style: TextStyle(
-                    color: Colors.teal.shade600,
+                    color: Colors.amber.shade700,
                     fontWeight: FontWeight.bold,
                     decoration: TextDecoration.underline,
                   ),

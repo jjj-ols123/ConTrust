@@ -40,11 +40,13 @@ class _ContractorUserProfileScreenState
   bool isEditingContact = false;
   bool isEditingFirmName = false;
   bool isEditingAddress = false;
+  bool isEditingSpecialization = false;
   
   late TextEditingController bioController;
   late TextEditingController contactController;
   late TextEditingController firmNameController;
   late TextEditingController addressController;
+  late TextEditingController specializationController;
 
   List<Map<String, dynamic>> completedProjects = [];
   List<Map<String, dynamic>> filteredProjects = [];
@@ -79,6 +81,7 @@ class _ContractorUserProfileScreenState
     contactController = TextEditingController();
     firmNameController = TextEditingController();
     addressController = TextEditingController();
+    specializationController = TextEditingController();
     searchController = TextEditingController();
     transactionSearchController = TextEditingController();
     searchController.addListener(_onSearchChanged);
@@ -108,6 +111,7 @@ class _ContractorUserProfileScreenState
     contactController.dispose();
     firmNameController.dispose();
     addressController.dispose();
+    specializationController.dispose();
     searchController.removeListener(_onSearchChanged);
     transactionSearchController.removeListener(_filterTransactions);
     searchController.dispose();
@@ -185,6 +189,7 @@ class _ContractorUserProfileScreenState
     }
     firmNameController.text = firmName;
     addressController.text = address;
+    specializationController.text = specialization;
   }
 
   void _onSearchChanged() {
@@ -353,17 +358,21 @@ class _ContractorUserProfileScreenState
       isEditingBio: isEditingBio,
       isEditingContact: isEditingContact,
       isEditingAddress: isEditingAddress,
+      isEditingSpecialization: isEditingSpecialization,
       firmNameController: firmNameController,
       bioController: bioController,
       contactController: contactController,
+      specializationController: specializationController,
       addressController: addressController,
       toggleEditFirmName: () => _toggleEdit('firmName'),
       toggleEditBio: () => _toggleEdit('bio'),
       toggleEditContact: () => _toggleEdit('contact'),
+      toggleEditSpecialization: () => _toggleEdit('specialization'),
       toggleEditAddress: () => _toggleEdit('address'),
       saveFirmName: () => _saveField('firmName', firmNameController.text),
       saveBio: () => _saveField('bio', bioController.text),
       saveContact: () => _saveField('contact', contactController.text),
+      saveSpecialization: () => _saveField('specialization', specializationController.text),
       saveAddress: () => _saveField('address', addressController.text),
       contractorId: widget.contractorId,
     );
@@ -530,6 +539,10 @@ class _ContractorUserProfileScreenState
           isEditingAddress = !isEditingAddress;
           if (!isEditingAddress) addressController.text = address;
           break;
+        case 'specialization':
+          isEditingSpecialization = !isEditingSpecialization;
+          if (!isEditingSpecialization) specializationController.text = specialization;
+          break;
       }
     });
   }
@@ -575,6 +588,10 @@ class _ContractorUserProfileScreenState
             case 'address':
               address = newValue;
               isEditingAddress = false;
+              break;
+            case 'specialization':
+              specialization = newValue;
+              isEditingSpecialization = false;
               break;
           }
         });

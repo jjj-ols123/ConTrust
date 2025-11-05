@@ -7,6 +7,11 @@ import 'package:backend/services/superadmin%20services/auditlogs_service.dart';
 import 'package:backend/services/superadmin%20services/errorlogs_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
+import 'package:contractee/pages/cee_home.dart';
+import 'package:contractee/pages/cee_chathistory.dart';
+import 'package:contractee/pages/cee_ai_assistant.dart';
+import 'package:contractee/pages/cee_profile.dart';
+import 'package:contractee/pages/cee_notification.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -20,7 +25,7 @@ enum ContracteePage {
   aiAssistant
 }
 
-class ContracteeShell extends StatelessWidget {
+class ContracteeShell extends StatefulWidget {
   final ContracteePage currentPage;
   final String? contracteeId;
   final Widget child;
@@ -34,8 +39,46 @@ class ContracteeShell extends StatelessWidget {
     this.contentPadding,
   });
 
+  @override
+  State<ContracteeShell> createState() => _ContracteeShellState();
+}
+
+class _ContracteeShellState extends State<ContracteeShell> {
+  late final List<Widget> _persistentPages;
+
+  @override
+  void initState() {
+    super.initState();
+    _persistentPages = [
+      const HomePage(),
+      const ContracteeChatHistoryPage(),
+      const ContracteeNotificationPage(),
+      const AiAssistantPage(),
+      CeeProfilePage(contracteeId: widget.contracteeId ?? ''),
+    ];
+  }
+
+  int _indexFor(ContracteePage page) {
+    switch (page) {
+      case ContracteePage.home:
+        return 0;
+      case ContracteePage.messages:
+        return 1;
+      case ContracteePage.notifications:
+        return 2;
+      case ContracteePage.aiAssistant:
+        return 3;
+      case ContracteePage.profile:
+        return 4;
+      case ContracteePage.ongoing:
+        return 0; // not used for stack
+      case ContracteePage.chatHistory:
+        return 1;
+    }
+  }
+
   String title() {
-    switch (currentPage) {
+    switch (widget.currentPage) {
       case ContracteePage.home:
         return 'Home';
       case ContracteePage.ongoing:
@@ -125,8 +168,8 @@ class ContracteeShell extends StatelessWidget {
                 ),
                 Expanded(
                   child: SideDashboardDrawer(
-                    contracteeId: contracteeId,
-                    currentPage: currentPage,
+                    contracteeId: widget.contracteeId,
+                    currentPage: widget.currentPage,
                   ),
                 ),
               ],
@@ -191,8 +234,8 @@ class ContracteeShell extends StatelessWidget {
                     ),
                     Expanded(
                       child: SideDashboardDrawer(
-                        contracteeId: contracteeId,
-                        currentPage: currentPage,
+                        contracteeId: widget.contracteeId,
+                        currentPage: widget.currentPage,
                       ),
                     ),
                   ],
@@ -200,8 +243,13 @@ class ContracteeShell extends StatelessWidget {
               ),
             Expanded(
               child: Padding(
-                padding: contentPadding ?? EdgeInsets.zero,
-                child: child,
+                padding: widget.contentPadding ?? EdgeInsets.zero,
+                child: widget.currentPage == ContracteePage.ongoing
+                    ? widget.child
+                    : IndexedStack(
+                        index: _indexFor(widget.currentPage),
+                        children: _persistentPages,
+                      ),
               ),
             ),
           ],

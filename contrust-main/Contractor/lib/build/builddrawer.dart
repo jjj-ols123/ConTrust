@@ -7,6 +7,11 @@ import 'package:backend/services/superadmin%20services/auditlogs_service.dart';
 import 'package:backend/services/superadmin%20services/errorlogs_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
+import 'package:contractor/Screen/cor_dashboard.dart';
+import 'package:contractor/Screen/cor_chathistory.dart';
+import 'package:contractor/Screen/cor_contracttype.dart';
+import 'package:contractor/Screen/cor_bidding.dart';
+import 'package:contractor/Screen/cor_profile.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -22,7 +27,7 @@ enum ContractorPage {
   materials,
 }
 
-class ContractorShell extends StatelessWidget {
+class ContractorShell extends StatefulWidget {
   final ContractorPage currentPage;
   final String contractorId;
   final Widget child;
@@ -36,8 +41,47 @@ class ContractorShell extends StatelessWidget {
     this.contentPadding,
   });
 
+  @override
+  State<ContractorShell> createState() => _ContractorShellState();
+}
+
+class _ContractorShellState extends State<ContractorShell> {
+  late final List<Widget> _persistentPages;
+
+  @override
+  void initState() {
+    super.initState();
+    _persistentPages = [
+      DashboardScreen(contractorId: widget.contractorId),
+      const ContractorChatHistoryPage(),
+      ContractType(contractorId: widget.contractorId),
+      BiddingScreen(contractorId: widget.contractorId),
+      ContractorUserProfileScreen(contractorId: widget.contractorId),
+    ];
+  }
+
+  int _indexFor(ContractorPage page) {
+    switch (page) {
+      case ContractorPage.dashboard:
+        return 0;
+      case ContractorPage.messages:
+        return 1;
+      case ContractorPage.contractTypes:
+        return 2;
+      case ContractorPage.bidding:
+        return 3;
+      case ContractorPage.profile:
+        return 4;
+      case ContractorPage.createContract:
+      case ContractorPage.chatHistory:
+      case ContractorPage.projectManagement:
+      case ContractorPage.materials:
+        return 0;
+    }
+  }
+
   String title() {
-    switch (currentPage) {
+    switch (widget.currentPage) {
       case ContractorPage.dashboard:
         return 'Dashboard';
       case ContractorPage.messages:
@@ -76,7 +120,7 @@ class ContractorShell extends StatelessWidget {
             ? IconButton(
                 icon: const Icon(Icons.home, color: Colors.white),
                 onPressed: () {
-                  if (currentPage != ContractorPage.dashboard) {
+                  if (widget.currentPage != ContractorPage.dashboard) {
                     context.go('/dashboard');
                   }
                 },
@@ -145,8 +189,8 @@ class ContractorShell extends StatelessWidget {
                   ),
                   Expanded(
                     child: SideDashboardDrawer(
-                      contractorId: contractorId,
-                      currentPage: currentPage,
+                      contractorId: widget.contractorId,
+                      currentPage: widget.currentPage,
                     ),
                   ),
                 ],
@@ -157,8 +201,19 @@ class ContractorShell extends StatelessWidget {
             child: Container(
               color: const Color(0xFFF8F9FA), 
               child: Padding(
-                padding: contentPadding ?? EdgeInsets.zero,
-                child: child,
+                padding: widget.contentPadding ?? EdgeInsets.zero,
+                child: {
+                  ContractorPage.dashboard,
+                  ContractorPage.messages,
+                  ContractorPage.contractTypes,
+                  ContractorPage.bidding,
+                  ContractorPage.profile,
+                }.contains(widget.currentPage)
+                    ? IndexedStack(
+                        index: _indexFor(widget.currentPage),
+                        children: _persistentPages,
+                      )
+                    : widget.child,
               ),
             ),
                 ),
@@ -167,8 +222,8 @@ class ContractorShell extends StatelessWidget {
           ),
           if (!isDesktop)
             ModernBottomNavigationBar(
-              contractorId: contractorId,
-              currentPage: currentPage,
+          contractorId: widget.contractorId,
+          currentPage: widget.currentPage,
           ),
         ],
       ),

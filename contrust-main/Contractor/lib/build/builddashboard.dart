@@ -122,17 +122,24 @@ class DashboardBuildMethods {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Flexible(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildVerificationBanner(),
-              const SizedBox(height: 20),
-              buildWelcomeCard(),
-              const SizedBox(height: 20),
-              buildTabbedProjectView(),
-            ],
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildVerificationBanner(),
+                    const SizedBox(height: 20),
+                    buildWelcomeCard(),
+                    const SizedBox(height: 20),
+                    buildTabbedProjectView(),
+                  ],
+                ),
+              );
+            },
           ),
         ),
         const SizedBox(width: 20),
@@ -1688,6 +1695,9 @@ class DashboardBuildMethods {
   }
 
   Widget _buildProjectDetails(Map<String, dynamic> project) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWideScreen = screenWidth > 1200;
+    
     final details = [
       _buildDetailItem(
         icon: Icons.attach_money,
@@ -1712,6 +1722,29 @@ class DashboardBuildMethods {
         ),
     ];
 
+    // If screen width > 1200, show labels in two columns
+    if (isWideScreen) {
+      return Column(
+        children: [
+          for (int i = 0; i < details.length; i += 2)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: details[i]),
+                  if (i + 1 < details.length)
+                    const SizedBox(width: 16),
+                  if (i + 1 < details.length)
+                    Expanded(child: details[i + 1]),
+                ],
+              ),
+            ),
+        ],
+      );
+    }
+
+    // Otherwise, show all labels in one column
     return Column(
       children: [
         for (int i = 0; i < details.length; i++)

@@ -254,101 +254,107 @@ class ContractTypeBuild {
     final project = contract['project'] as Map<String, dynamic>?;
     final projectName = project?['title'] ?? 'Unknown Project';
     
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      leading: CircleAvatar(
-        backgroundColor: Colors.amber[100],
-        child: Icon(Icons.assignment_turned_in, color: Colors.amber[700]),
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
       ),
-      title: Row(
-        children: [
-          Expanded(
-            child: Text(
-              contract['title'] ?? 'Untitled Contract',
-              style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          // Contract status pill
-          if ((contract['status'] as String?) != null) ...[
-            Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: _getContractStatusColor((contract['status'] as String?) ?? 'unknown').withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _getContractStatusColor((contract['status'] as String?) ?? 'unknown').withOpacity(0.6)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.circle, size: 10, color: _getContractStatusColor((contract['status'] as String?) ?? 'unknown')),
-                  const SizedBox(width: 6),
-                  Text(
-                    _getContractStatusLabel((contract['status'] as String?) ?? 'Unknown'),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: _getContractStatusColor((contract['status'] as String?) ?? 'unknown').withOpacity(0.9),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 11,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ],
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue.shade200),
-            ),
-            child: Row(
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        leading: CircleAvatar(
+          backgroundColor: Colors.amber[100],
+          child: Icon(Icons.assignment_turned_in, color: Colors.amber[700]),
+        ),
+        title: Text(
+          contract['title'] ?? 'Untitled Contract',
+          style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(
+          formatDateTime(contract['created_at']),
+          style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[700]),
+        ),
+        trailing: Builder(
+          builder: (buttonContext) {
+            return Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.construction, size: 12, color: Colors.blue.shade700),
-                const SizedBox(width: 4),
-                Text(
-                  projectName,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: Colors.blue.shade700,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 11,
+                if ((contract['status'] as String?) != null)
+                  Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _getContractStatusColor((contract['status'] as String?) ?? 'unknown').withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _getContractStatusColor((contract['status'] as String?) ?? 'unknown').withOpacity(0.6)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.circle, size: 10, color: _getContractStatusColor((contract['status'] as String?) ?? 'unknown')),
+                        const SizedBox(width: 6),
+                        Text(
+                          _getContractStatusLabel((contract['status'] as String?) ?? 'Unknown'),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: _getContractStatusColor((contract['status'] as String?) ?? 'unknown').withOpacity(0.9),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
-                  overflow: TextOverflow.ellipsis,
+                Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.construction, size: 12, color: Colors.blue.shade700),
+                      const SizedBox(width: 4),
+                      Text(
+                        projectName,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.blue.shade700,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 11,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.more_vert),
+                  onPressed: () {
+                    ContractTypeService.showContractMenu(
+                      context: buttonContext,
+                      contract: contract,
+                      contractorId: contractorId,
+                    );
+                  },
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-      subtitle: Text(
-        formatDateTime(contract['created_at']),
-        style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[700]),
-      ),
-      trailing: Builder(
-        builder: (buttonContext) {
-          return IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () {
-              ContractTypeService.showContractMenu(
-                context: buttonContext,
-                contract: contract,
-                contractorId: contractorId,
-              );
-            },
+            );
+          },
+        ),
+        onTap: () {
+          final contractId = contract['contract_id'] as String;
+          ContractTypeService.navigateToViewContract(
+            context: context,
+            contractId: contractId,
+            contractorId: contractorId,
           );
         },
       ),
-      onTap: () {
-        final contractId = contract['contract_id'] as String;
-        ContractTypeService.navigateToViewContract(
-          context: context,
-          contractId: contractId,
-          contractorId: contractorId,
-        );
-      },
     );
   }
 

@@ -107,11 +107,27 @@ class _MyAppState extends State<MyApp> {
                     return const ToLoginScreen();
                   }
 
-                  final contractorId = session.user.id;
+                  final currentUser = Supabase.instance.client.auth.currentUser;
+                  final userType = (currentUser?.userMetadata?['user_type']?.toString() ?? '').toLowerCase();
+                      if (userType != 'contractor') {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          ConTrustSnackBar.warning(
+                            context,
+                            'Please log in with a contractor account.',
+                          );
+                          Supabase.instance.client.auth.signOut();
+                          context.go('/logincontractor');
+                        });
+                        return const Scaffold(
+                          body: Center(child: CircularProgressIndicator(color: Color(0xFFFFB300))),
+                        );
+                      }
 
-                  final location = state.matchedLocation;
-                  ContractorPage currentPage;
-                  switch (location) {
+                      final contractorId = session.user.id;
+
+                      final location = state.matchedLocation;
+                      ContractorPage currentPage;
+                      switch (location) {
                     case '/dashboard':
                       currentPage = ContractorPage.dashboard;
                       break;
@@ -139,13 +155,14 @@ class _MyAppState extends State<MyApp> {
                       } else {
                         currentPage = ContractorPage.dashboard;
                       }
-                  }
+                      }
 
-                  return ContractorShell(
-                    currentPage: currentPage,
-                    contractorId: contractorId,
-                    child: child,
-                  );
+                      return ContractorShell(
+                        key: ValueKey(currentPage),
+                        currentPage: currentPage,
+                        contractorId: contractorId,
+                        child: child,
+                      );
                 },
               ),
             );

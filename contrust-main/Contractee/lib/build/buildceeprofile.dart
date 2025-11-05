@@ -2,7 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import '../pages/cee_change_password.dart';
+import 'package:backend/services/both services/be_user_service.dart';
+import 'package:backend/utils/be_snackbar.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class _ProjectStatusHelper {
   static String getStatusLabel(String? status) {
@@ -484,7 +486,7 @@ class CeeProfileBuildMethods {
               else
                 InkWell(
                   onTap: onEdit,
-                  child: Icon(Icons.edit_outlined, size: 18, color: Colors.amber.shade700),
+                  child: Icon(Icons.edit_outlined, size: 18, color: Colors.grey.shade600),
                 ),
             ],
           ),
@@ -574,64 +576,7 @@ class CeeProfileBuildMethods {
   }
 
   static Widget _buildPasswordField() {
-    return Builder(
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade50,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey.shade200, width: 1),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.lock_outline, size: 18, color: Colors.grey.shade600),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Password',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade600),
-                  ),
-                  const Spacer(),
-                  InkWell(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ChangePasswordScreen(),
-                        ),
-                      );
-                    },
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.edit_outlined, size: 18, color: Colors.amber.shade700),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Change',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.amber.shade700,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                '••••••••',
-                style: const TextStyle(fontSize: 14, color: Color(0xFF1F2937)),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+    return _CeePasswordFieldWidget();
   }
 
   static Widget buildHistory({
@@ -708,6 +653,207 @@ class CeeProfileBuildMethods {
     );
   }
 
+  static Widget buildNavigation(String title, bool isActive, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isActive ? Colors.amber.shade50 : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                color: isActive ? Colors.amber.shade800 : const Color(0xFF4B5563),
+              ),
+            ),
+            const Spacer(),
+            if (isActive)
+              Icon(Icons.chevron_right, size: 20, color: Colors.amber.shade700),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget buildMobileNavigation(String selectedTab, Function(String) onTabChanged) {
+    final tabs = ['About', 'History'];
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
+      ),
+      child: Row(
+        children: tabs.asMap().entries.map((entry) {
+          final index = entry.key;
+          final tab = entry.value;
+          final isActive = selectedTab == tab;
+          final isFirst = index == 0;
+          final isLast = index == tabs.length - 1;
+          
+          return Expanded(
+            child: InkWell(
+              onTap: () => onTabChanged(tab),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: isActive ? Colors.amber.shade700 : Colors.transparent,
+                  borderRadius: BorderRadius.only(
+                    topLeft: isFirst ? const Radius.circular(8) : Radius.zero,
+                    bottomLeft: isFirst ? const Radius.circular(8) : Radius.zero,
+                    topRight: isLast ? const Radius.circular(8) : Radius.zero,
+                    bottomRight: isLast ? const Radius.circular(8) : Radius.zero,
+                  ),
+                ),
+                child: Text(
+                  tab,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                    color: isActive ? Colors.white : const Color(0xFF4B5563),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  static Widget buildProjectDetailsDialog(
+    BuildContext context,
+    Map<String, dynamic> project,
+    Function getTimeAgo,
+  ) {
+    return Center(
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 700, maxHeight: 600),
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 20,
+                spreadRadius: 1,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header matching ProjectModal
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade700,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Icon(
+                        Icons.folder_open,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        project['title'] ?? 'Project Details',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => context.pop(),
+                      icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ),
+              // Content area
+              SingleChildScrollView(
+                padding: const EdgeInsets.only(top: 24, left: 24, right: 24, bottom: 0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                      // Status badge at the top
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _ProjectStatusHelper.getStatusColor(project['status']).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: _ProjectStatusHelper.getStatusColor(project['status']).withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _ProjectStatusHelper.getStatusIcon(project['status']),
+                              size: 14,
+                              color: _ProjectStatusHelper.getStatusColor(project['status']),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              _ProjectStatusHelper.getStatusLabel(project['status']),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: _ProjectStatusHelper.getStatusColor(project['status']),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      _buildProjectDetailsSection(project, getTimeAgo),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Description section
+                      _buildDescriptionSection(project),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper methods for buildHistory
   static Widget _buildProjectsSection({
     required BuildContext context,
     required List<Map<String, dynamic>> filteredProjects,
@@ -1381,82 +1527,6 @@ class CeeProfileBuildMethods {
     );
   }
 
-  static Widget buildNavigation(String title, bool isActive, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isActive ? Colors.amber.shade50 : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-                color: isActive ? Colors.amber.shade800 : const Color(0xFF4B5563),
-              ),
-            ),
-            const Spacer(),
-            if (isActive)
-              Icon(Icons.chevron_right, size: 20, color: Colors.amber.shade700),
-          ],
-        ),
-      ),
-    );
-  }
-
-  static Widget buildMobileNavigation(String selectedTab, Function(String) onTabChanged) {
-    final tabs = ['About', 'History'];
-    
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300, width: 1),
-      ),
-      child: Row(
-        children: tabs.asMap().entries.map((entry) {
-          final index = entry.key;
-          final tab = entry.value;
-          final isActive = selectedTab == tab;
-          final isFirst = index == 0;
-          final isLast = index == tabs.length - 1;
-          
-          return Expanded(
-            child: InkWell(
-              onTap: () => onTabChanged(tab),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: isActive ? Colors.amber.shade700 : Colors.transparent,
-                  borderRadius: BorderRadius.only(
-                    topLeft: isFirst ? const Radius.circular(8) : Radius.zero,
-                    bottomLeft: isFirst ? const Radius.circular(8) : Radius.zero,
-                    topRight: isLast ? const Radius.circular(8) : Radius.zero,
-                    bottomRight: isLast ? const Radius.circular(8) : Radius.zero,
-                  ),
-                ),
-                child: Text(
-                  tab,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-                    color: isActive ? Colors.white : const Color(0xFF4B5563),
-                  ),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
   static Widget _buildReviewsSectionWithFixedHeader({
     required BuildContext context,
     required List<Map<String, dynamic>> reviews,
@@ -1552,7 +1622,7 @@ class CeeProfileBuildMethods {
             controller: pageController,
             children: [
               Builder(
-                builder: (context) {
+      builder: (context) {
                   debugPrint('Building Projects Section in PageView');
                   return _buildProjectsSectionWithFixedHeader(
                     context: context,
@@ -1621,129 +1691,6 @@ class CeeProfileBuildMethods {
           }),
         );
       },
-    );
-  }
-
-  static Widget buildProjectDetailsDialog(
-    BuildContext context,
-    Map<String, dynamic> project,
-    Function getTimeAgo,
-  ) {
-    return Center(
-      child: Material(
-        color: Colors.transparent,
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 700, maxHeight: 600),
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.15),
-                blurRadius: 20,
-                spreadRadius: 1,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header matching ProjectModal
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.amber.shade700,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Icon(
-                        Icons.folder_open,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        project['title'] ?? 'Project Details',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => context.pop(),
-                      icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
-                ),
-              ),
-              // Content area
-              SingleChildScrollView(
-                padding: const EdgeInsets.only(top: 24, left: 24, right: 24, bottom: 0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                      // Status badge at the top
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: _ProjectStatusHelper.getStatusColor(project['status']).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: _ProjectStatusHelper.getStatusColor(project['status']).withOpacity(0.3)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _ProjectStatusHelper.getStatusIcon(project['status']),
-                              size: 14,
-                              color: _ProjectStatusHelper.getStatusColor(project['status']),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              _ProjectStatusHelper.getStatusLabel(project['status']),
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: _ProjectStatusHelper.getStatusColor(project['status']),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      
-                      _buildProjectDetailsSection(project, getTimeAgo),
-                      
-                      const SizedBox(height: 24),
-                      
-                      // Description section
-                      _buildDescriptionSection(project),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
@@ -1905,5 +1852,311 @@ class CeeProfileBuildMethods {
     } catch (e) {
       return dateString;
     }
+  }
+}
+
+class _CeePasswordFieldWidget extends StatefulWidget {
+  @override
+  State<_CeePasswordFieldWidget> createState() => _CeePasswordFieldWidgetState();
+}
+
+class _CeePasswordFieldWidgetState extends State<_CeePasswordFieldWidget> {
+  bool _isEditingPassword = false;
+  bool _currentPasswordVisible = false;
+  bool _newPasswordVisible = false;
+  bool _confirmPasswordVisible = false;
+  bool _isChangingPassword = false;
+  
+  final TextEditingController _currentPasswordController = TextEditingController();
+  final TextEditingController _newPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+  final UserService _userService = UserService();
+
+  @override
+  void dispose() {
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleChangePassword() async {
+    FocusScope.of(context).unfocus();
+
+    final currentPassword = _currentPasswordController.text;
+    final newPassword = _newPasswordController.text;
+    final confirmPassword = _confirmPasswordController.text;
+
+    if (currentPassword.isEmpty) {
+      ConTrustSnackBar.error(context, 'Please enter your current password');
+      return;
+    }
+
+    if (newPassword.isEmpty) {
+      ConTrustSnackBar.error(context, 'Please enter a new password');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      ConTrustSnackBar.error(context, 'New password must be at least 6 characters long');
+      return;
+    }
+
+    if (newPassword.length > 15) {
+      ConTrustSnackBar.error(context, 'New password must be no more than 15 characters long');
+      return;
+    }
+
+    final hasUppercase = newPassword.contains(RegExp(r'[A-Z]'));
+    final hasNumber = newPassword.contains(RegExp(r'[0-9]'));
+    final hasSpecialChar = newPassword.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+
+    if (!hasUppercase || !hasNumber || !hasSpecialChar) {
+      ConTrustSnackBar.error(
+        context,
+        'New password must include uppercase, number and special character',
+      );
+      return;
+    }
+
+    if (newPassword != confirmPassword) {
+      ConTrustSnackBar.error(context, 'New passwords do not match');
+      return;
+    }
+
+    if (currentPassword == newPassword) {
+      ConTrustSnackBar.error(
+        context,
+        'New password must be different from current password',
+      );
+      return;
+    }
+
+    try {
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser?.email == null) {
+        ConTrustSnackBar.error(context, 'User not authenticated');
+        return;
+      }
+
+      await Supabase.instance.client.auth.signInWithPassword(
+        email: currentUser!.email!,
+        password: currentPassword,
+      );
+
+      setState(() => _isChangingPassword = true);
+
+      final success = await _userService.changePassword(
+        newPassword: newPassword,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        ConTrustSnackBar.success(
+          context,
+          'Password changed successfully!',
+        );
+
+        _currentPasswordController.clear();
+        _newPasswordController.clear();
+        _confirmPasswordController.clear();
+
+        setState(() {
+          _isEditingPassword = false;
+          _isChangingPassword = false;
+        });
+      } else {
+        ConTrustSnackBar.error(context, 'Failed to change password. Please try again.');
+        setState(() => _isChangingPassword = false);
+      }
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      setState(() => _isChangingPassword = false);
+      if (e.message.toLowerCase().contains('invalid') ||
+          e.message.toLowerCase().contains('password')) {
+        ConTrustSnackBar.error(context, 'Current password is incorrect');
+      } else {
+        ConTrustSnackBar.error(context, 'Error: ${e.message}');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isChangingPassword = false);
+      ConTrustSnackBar.error(
+        context,
+        'Failed to change password: ${e.toString()}',
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.shade200, width: 1),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.lock_outline, size: 18, color: Colors.grey.shade600),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Password',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade600),
+                  ),
+                  const Spacer(),
+                  InkWell(
+                    onTap: () {
+                  setState(() {
+                    _isEditingPassword = !_isEditingPassword;
+                    if (!_isEditingPassword) {
+                      _currentPasswordController.clear();
+                      _newPasswordController.clear();
+                      _confirmPasswordController.clear();
+                    }
+                  });
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                    Icon(
+                      _isEditingPassword ? Icons.close : Icons.edit_outlined,
+                      size: 18,
+                      color: Colors.amber.shade700,
+                    ),
+                        const SizedBox(width: 4),
+                        Text(
+                      _isEditingPassword ? 'Cancel' : 'Change',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.amber.shade700,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+          if (!_isEditingPassword) ...[
+              const SizedBox(height: 12),
+              Text(
+                '••••••••',
+                style: const TextStyle(fontSize: 14, color: Color(0xFF1F2937)),
+              ),
+          ],
+          if (_isEditingPassword) ...[
+            const SizedBox(height: 16),
+            TextField(
+              controller: _currentPasswordController,
+              obscureText: !_currentPasswordVisible,
+              enabled: !_isChangingPassword,
+              decoration: InputDecoration(
+                labelText: 'Current Password',
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _currentPasswordVisible
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                  ),
+                  onPressed: () => setState(() => _currentPasswordVisible = !_currentPasswordVisible),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _newPasswordController,
+              obscureText: !_newPasswordVisible,
+              enabled: !_isChangingPassword,
+              decoration: InputDecoration(
+                labelText: 'New Password',
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _newPasswordVisible
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                  ),
+                  onPressed: () => setState(() => _newPasswordVisible = !_newPasswordVisible),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _confirmPasswordController,
+              obscureText: !_confirmPasswordVisible,
+              enabled: !_isChangingPassword,
+              decoration: InputDecoration(
+                labelText: 'Confirm Password',
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _confirmPasswordVisible
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                  ),
+                  onPressed: () => setState(() => _confirmPasswordVisible = !_confirmPasswordVisible),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isChangingPassword ? null : _handleChangePassword,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber.shade700,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: _isChangingPassword
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text(
+                        'Change Password',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }

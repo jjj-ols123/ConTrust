@@ -169,7 +169,7 @@ class _ProjectDialogState extends State<ProjectDialog> {
     try {
       final supabase = Supabase.instance.client;
       final fileName = '${widget.contracteeId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final storagePath = 'contractee/photo_url/$fileName';
+      final storagePath = 'contractee/${widget.contracteeId}/$fileName';
 
       await supabase.storage
           .from('projectphotos')
@@ -1864,7 +1864,7 @@ class HireModal {
       try {
         final supabase = Supabase.instance.client;
         final fileName = '${contracteeId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        final storagePath = 'contractee/photo_url/$fileName';
+        final storagePath = 'contractee/$contracteeId/$fileName';
 
         await supabase.storage
             .from('projectphotos')

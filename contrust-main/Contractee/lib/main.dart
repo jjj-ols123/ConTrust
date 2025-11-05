@@ -20,6 +20,7 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
@@ -155,11 +156,27 @@ class _MyAppState extends State<MyApp> {
                     return const LoginPage();
                   }
 
-                  final contracteeId = session.user.id;
+                  final currentUser = Supabase.instance.client.auth.currentUser;
+                  final userType = (currentUser?.userMetadata?['user_type']?.toString() ?? '').toLowerCase();
+                      if (userType != 'contractee') {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          ConTrustSnackBar.warning(
+                            context,
+                            'Please log in with a contractee account.',
+                          );
+                          Supabase.instance.client.auth.signOut();
+                          context.go('/login');
+                        });
+                        return const Scaffold(
+                          body: Center(child: CircularProgressIndicator(color: Color(0xFFFFB300))),
+                        );
+                      }
 
-                  final location = state.matchedLocation;
-                  ContracteePage currentPage;
-                  switch (location) {
+                      final contracteeId = session.user.id;
+
+                      final location = state.matchedLocation;
+                      ContracteePage currentPage;
+                      switch (location) {
                     case '/home':
                       currentPage = ContracteePage.home;
                       break;
@@ -181,16 +198,18 @@ class _MyAppState extends State<MyApp> {
                     default:
                       if (location.startsWith('/ongoing')) {
                         currentPage = ContracteePage.ongoing;
+                      } else if (location.startsWith('/contractor')) {
+                        currentPage = ContracteePage.ongoing;
                       } else {
                         currentPage = ContracteePage.home;
                       }
-                  }
+                      }
 
-                  return ContracteeShell(
-                    currentPage: currentPage,
-                    contracteeId: contracteeId,
-                    child: child,
-                  );
+                      return ContracteeShell(
+                        currentPage: currentPage,
+                        contracteeId: contracteeId,
+                        child: child,
+                      );
                 },
               ),
             );

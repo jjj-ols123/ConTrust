@@ -357,7 +357,7 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
           builder: (dialogContext) => CeeProfileBuildMethods.buildProjectDetailsDialog(
             dialogContext,
             projectDetails,
-            _getTimeAgo, // Fixed: was getTimeAgo, now _getTimeAgo
+            _getTimeAgo, 
           ),
         );
       }

@@ -50,7 +50,7 @@ class _WelcomePageState extends State<WelcomePage> with TickerProviderStateMixin
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isFirstOpen', false);
     if (mounted) {
-      context.go('/login');
+      context.replace('/login');
     }
   }
 
