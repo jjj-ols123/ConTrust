@@ -197,7 +197,8 @@ class SignInGoogleContractor {
       
       if (kIsWeb) {
         final origin = Uri.base.origin;
-        redirectUrl = '$origin/auth/callback';
+        String normalizedOrigin = origin.replaceFirst(RegExp(r'^https?://www\.'), 'https://');
+        redirectUrl = '$normalizedOrigin/auth/callback';
       } else {
         redirectUrl = 'io.supabase.contrust://login-callback/dashboard';
       }
@@ -303,6 +304,25 @@ class SignInGoogleContractor {
         );
 
         try {
+          String? googlePhoto = user.userMetadata?['avatar_url'] ?? 
+                               user.userMetadata?['picture'];
+          
+          if (googlePhoto != null && googlePhoto.toString().isNotEmpty) {
+            await supabase
+                .from('Contractor')
+                .update({
+                  'profile_photo': googlePhoto.toString(),
+                })
+                .eq('contractor_id', user.id);
+            
+            await supabase
+                .from('Users')
+                .update({
+                  'profile_image_url': googlePhoto.toString(),
+                })
+                .eq('users_id', user.id);
+          }
+          
           await supabase
               .from('Users')
               .update({

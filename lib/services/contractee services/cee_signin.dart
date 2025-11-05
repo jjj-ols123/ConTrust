@@ -259,6 +259,25 @@ class SignInGoogleContractee {
         );
 
         try {
+          String? googlePhoto = user.userMetadata?['avatar_url'] ?? 
+                               user.userMetadata?['picture'];
+          
+          if (googlePhoto != null && googlePhoto.toString().isNotEmpty) {
+            await supabase
+                .from('Contractee')
+                .update({
+                  'profile_photo': googlePhoto.toString(),
+                })
+                .eq('contractee_id', user.id);
+            
+            await supabase
+                .from('Users')
+                .update({
+                  'profile_image_url': googlePhoto.toString(),
+                })
+                .eq('users_id', user.id);
+          }
+          
           await supabase
               .from('Users')
               .update({

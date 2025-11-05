@@ -117,7 +117,7 @@ class UserService {
         throw Exception(errorMessage);
       }
     } catch (e) {
-      if (e.toString().contains('No user found')) {
+      if (e.toString().toLowerCase().contains('no user')) {
         throw Exception('No account found with this email address');
       }
       rethrow;
