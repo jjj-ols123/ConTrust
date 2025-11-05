@@ -6,6 +6,7 @@ import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:backend/services/contractee services/cee_signin.dart';
+import 'cee_forgot_password.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -80,6 +81,7 @@ class _LoginPageState extends State<LoginPage> {
     final bool isDesktop = screenWidth >= 900;
     final bool isTablet = screenWidth >= 600 && screenWidth < 900;
     final bool isMobile = screenWidth < 600;
+    final bool isPhone = screenWidth < 600;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -136,14 +138,19 @@ class _LoginPageState extends State<LoginPage> {
                 Expanded(
                   child: Center(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isMobile ? 16 : 20,
+                        vertical: isMobile ? 8 : 20,
+                      ),
                       child: Container(
-                        width: 400,
-                        padding: const EdgeInsets.all(28),
-                        margin: const EdgeInsets.symmetric(horizontal: 20),
+                        width: isPhone ? screenWidth * 0.9 : 600,
+                        padding: EdgeInsets.all(isMobile ? 20 : 28),
+                        margin: EdgeInsets.symmetric(
+                          horizontal: isMobile ? 10 : 20,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(50),
+                          borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.08),
@@ -167,34 +174,45 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildLoginForm(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Column(
           children: [
-            Icon(Icons.lock_outline, size: 64, color: Colors.amber.shade400),
-            const SizedBox(height: 12),
+            Icon(
+              Icons.business,
+              size: isMobile ? 60 : 80,
+              color: Colors.amber.shade400,
+            ),
+            SizedBox(height: isMobile ? 10 : 16),
             Text(
               'Welcome Back',
               style: TextStyle(
-                fontSize: 28,
+                fontSize: isMobile ? 24 : 28,
                 fontWeight: FontWeight.bold,
                 color: Colors.grey.shade800,
               ),
             ),
-            const SizedBox(height: 6),
-            const Text(
-              'Login to your account',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
+            SizedBox(height: isMobile ? 4 : 6),
+            Text(
+              'Be a part of our community and start your journey with us today!',
+              style: TextStyle(
+                color: Colors.amber.shade600,
+                fontSize: isMobile ? 11 : 12,
+                fontStyle: FontStyle.italic,
+              ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
-        const SizedBox(height: 30),
+        SizedBox(height: isMobile ? 20 : 30),
         TextFormField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
           decoration: InputDecoration(
-            labelText: 'Email',
+            labelText: 'Email Address',
             prefixIcon: const Icon(Icons.email_outlined),
             filled: true,
             fillColor: Colors.grey.shade100,
@@ -204,7 +222,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
-        const SizedBox(height: 18),
+        SizedBox(height: isMobile ? 12 : 18),
         TextFormField(
           controller: _passwordController,
           keyboardType: TextInputType.visiblePassword,
@@ -226,16 +244,17 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
-        const SizedBox(height: 25),
+        SizedBox(height: isMobile ? 18 : 25),
         ElevatedButton(
           onPressed: _isLoggingIn ? null : _handleLogin,
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.amber.shade400,
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            backgroundColor: Colors.amber.shade700,
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32), 
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
             elevation: 4,
+            minimumSize: const Size(double.infinity, 50),
           ),
           child: _isLoggingIn
               ? const SizedBox(
@@ -248,10 +267,14 @@ class _LoginPageState extends State<LoginPage> {
                 )
               : const Text(
                   'Login',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: isMobile ? 12 : 20),
         Row(
           children: [
             Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
@@ -265,7 +288,7 @@ class _LoginPageState extends State<LoginPage> {
             Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
           ],
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: isMobile ? 12 : 20),
         InkWell(
           onTap: () {
             SignInGoogleContractee().signInGoogle(context);
@@ -290,7 +313,25 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
-        const SizedBox(height: 25),
+        SizedBox(height: isMobile ? 12 : 20),
+        TextButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ForgotPasswordScreen(),
+              ),
+            );
+          },
+          child: Text(
+            'Forgot Password?',
+            style: TextStyle(
+              color: Colors.amber.shade700,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        SizedBox(height: isMobile ? 6 : 10),
         InkWell(
           onTap: () {
             context.go('/register');
@@ -303,7 +344,7 @@ class _LoginPageState extends State<LoginPage> {
                 TextSpan(
                   text: "Sign up",
                   style: TextStyle(
-                    color: Colors.teal.shade600,
+                    color: Colors.amber.shade700,
                     fontWeight: FontWeight.bold,
                     decoration: TextDecoration.underline,
                   ),

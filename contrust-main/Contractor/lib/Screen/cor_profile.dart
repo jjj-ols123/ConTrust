@@ -22,6 +22,7 @@ class _ContractorUserProfileScreenState
   String contactNumber = "Loading...";
   String specialization = "Loading...";
   String address = "Loading...";
+  String email = "";
   double rating = 0.0;
   List<String> pastProjects = [];
   String? profileImage;
@@ -141,6 +142,7 @@ class _ContractorUserProfileScreenState
               specialization = "No specialization";
             }
             address = contractorData['address'] ?? "No address provided";
+            email = contractorData['email'] ?? "";
             rating = contractorData['rating']?.toDouble() ?? 0.0;
             profileImage = contractorData['profile_photo'];
             pastProjects = List<String>.from(
@@ -346,6 +348,7 @@ class _ContractorUserProfileScreenState
       contactNumber: contactNumber,
       specialization: specialization,
       address: address,
+      email: email,
       isEditingFirmName: isEditingFirmName,
       isEditingBio: isEditingBio,
       isEditingContact: isEditingContact,

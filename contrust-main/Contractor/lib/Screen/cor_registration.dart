@@ -2,6 +2,7 @@
 import 'package:backend/utils/be_validation.dart';
 import 'package:backend/services/contractor services/cor_signup.dart';
 import 'package:backend/utils/be_snackbar.dart';
+import 'package:backend/services/both%20services/be_otp_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,6 +12,7 @@ import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:contractor/main.dart' as app;
+import 'cor_otp_verification.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -89,6 +91,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isAgreed = false;
   bool _isCheckingFirmName = false;
   String? _firmNameError;
+  bool _emailVerified = false;
+  final OtpService _otpService = OtpService();
+  final FocusNode _emailFocusNode = FocusNode();
+  final FocusNode _passwordFocusNode = FocusNode();
+  bool _isPasswordFocused = false;
+  bool _isEmailFocused = false;
 
   Future<void> _checkFirmNameAvailability(String firmName) async {
     if (firmName.trim().isEmpty) {
@@ -189,6 +197,61 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    if (!_emailVerified) {
+      setState(() => _isSigningUp = true);
+      
+      try {
+        await _otpService.sendOtp(
+          email: emailController.text,
+          userType: 'contractor',
+        );
+
+        if (!mounted) return;
+
+        setState(() => _isSigningUp = false);
+
+        final verified = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OtpVerificationScreen(
+              email: emailController.text,
+              userType: 'contractor',
+              registrationData: {
+                'user_type': "contractor",
+                'firmName': firmNameController.text,
+                'contactNumber': _formatPhone(contactNumberController.text),
+                'address': addressController.text,
+                'specialization': _selectedSpecializations,
+                'verificationFiles': _verificationFiles,
+                'profilePhoto': _profilePhoto,
+              },
+            ),
+          ),
+        );
+
+        if (!mounted) return;
+
+        if (verified == true) {
+          setState(() => _emailVerified = true);
+          await _completeSignUp();
+        } else {
+          return;
+        }
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _isSigningUp = false);
+        ConTrustSnackBar.error(
+          context,
+          'Failed to send OTP: ${e.toString()}',
+        );
+        return;
+      }
+    } else {
+      await _completeSignUp();
+    }
+  }
+
+  Future<void> _completeSignUp() async {
     setState(() => _isSigningUp = true);
     app.setRegistrationState(true);
 
@@ -204,7 +267,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           'firmName': firmNameController.text,
           'contactNumber': _formatPhone(contactNumberController.text),
           'address': addressController.text,
-          'specialization': _selectedSpecializations, // JSONB array
+          'specialization': _selectedSpecializations, 
           'verificationFiles': _verificationFiles,
           'profilePhoto': _profilePhoto,
         },
@@ -227,14 +290,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
         app.setPreventAuthNavigation(true);
         
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Container(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Column(
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) {
+            Future.delayed(const Duration(seconds: 2), () {
+              if (dialogContext.mounted) {
+                Navigator.pop(dialogContext);
+              }
+            });
+            
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              backgroundColor: Colors.white,
+              elevation: 12,
+              contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+              title: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
@@ -242,47 +313,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           shape: BoxShape.circle,
                           color: Colors.green.withOpacity(0.1),
                         ),
-                        padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(12),
                         child: const Icon(
                           Icons.check_circle,
                           color: Colors.green,
-                          size: 24,
+                      size: 40,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                       const Text(
                         'Success',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                      fontSize: 18,
                           color: Colors.green,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
+              content: const Text(
                     'Account created! Please wait for verification.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 12,
+                  fontSize: 15,
                       color: Colors.black87,
                       height: 1.3,
                     ),
                   ),
-                ],
-              ),
-            ),
-            backgroundColor: Colors.white,
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            margin: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width * 0.1, vertical: 20),
-            elevation: 8,
-          ),
+            );
+          },
         );
 
         Future.delayed(const Duration(seconds: 2), () async {
@@ -291,7 +351,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             await Supabase.instance.client.auth.signOut();
             await Future.delayed(const Duration(milliseconds: 500));
           } catch (e) {
-            // Ignore sign out errors
+            //
           }
 
           app.setRegistrationState(false);
@@ -324,6 +384,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final e = emailController.text.trim();
     setState(() {
       _isEmailGmail = RegExp(r'^[^@]+@gmail\.com$').hasMatch(e);
+      if (_emailVerified) {
+        _emailVerified = false;
+      }
     });
   }
 
@@ -336,6 +399,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
     passwordController.addListener(_validatePassword);
     emailController.addListener(_validateEmail);
+    
+    _emailFocusNode.addListener(() {
+      setState(() {
+        _isEmailFocused = _emailFocusNode.hasFocus;
+      });
+    });
+    
+    _passwordFocusNode.addListener(() {
+      setState(() {
+        _isPasswordFocused = _passwordFocusNode.hasFocus;
+      });
+    });
   }
 
   String _formatPhone(String phone) {
@@ -391,9 +466,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ],
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  child: Stack(
                     children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
                       Container(
                         width: isSmallScreen ? 4 : 6,
                         height: isSmallScreen ? 28 : 32,
@@ -410,6 +487,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           fontWeight: FontWeight.w900,
                           color: const Color(0xFF1a1a1a),
                           letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
+                      ),
+                      Positioned(
+                        left: 20,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: InkWell(
+                            onTap: () {
+                              if (Navigator.canPop(context)) {
+                                Navigator.pop(context);
+                              } else {
+                                context.go('/logincontractor');
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.9),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.arrow_back,
+                                color: Colors.grey,
+                                size: 24,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -443,45 +557,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
                       ),
-            Positioned(
-              top: 50,
-              left: 30,
-              child: InkWell(
-                onTap: () {
-                  if (Navigator.canPop(context)) {
-                    Navigator.pop(context);
-                  } else {
-                    context.go('/logincontractor');
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
                     ],
                   ),
-                  child: const Icon(
-                    Icons.arrow_back,
-                    color: Colors.grey,
-                    size: 24,
-                  ),
                 ),
-              ),
+              ],
             ),
           ],
         ),
-      ),
-              ]
-            ),
-          ]
-        )
       ),
     );
   }
@@ -854,7 +936,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        // Specialization Field
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -897,7 +978,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
             ),
-            // Selected Specializations Chips
             if (_selectedSpecializations.isNotEmpty) ...[
               const SizedBox(height: 8),
               Wrap(
@@ -918,7 +998,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 }).toList(),
               ),
             ],
-            // Dropdown List
             if (_showSpecializationDropdown) ...[
               const SizedBox(height: 6),
               Container(
@@ -988,7 +1067,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       borderSide: BorderSide.none,
                     ),
                   ),
-                  inputFormatters: [LengthLimitingTextInputFormatter(13)],
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(13),
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
+                  ],
                   onChanged: (value) {
                     if (!value.startsWith('+63')) {
                       contactNumberController.text = '+63';
@@ -1004,17 +1086,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: emailController,
+                  focusNode: _emailFocusNode,
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
                     labelText: 'Email Address (Gmail only)',
                     prefixIcon: const Icon(Icons.email_outlined),
-                    suffixIcon:
-                        _isEmailGmail
+                    suffixIcon: _isEmailFocused
+                        ? (_isEmailGmail
                             ? const Icon(
                               Icons.check_circle,
                               color: Colors.green,
                             )
-                            : const Icon(Icons.cancel, color: Colors.red),
+                            : const Icon(Icons.cancel, color: Colors.red))
+                        : null,
                     filled: true,
                     fillColor: Colors.grey.shade100,
                     border: OutlineInputBorder(
@@ -1041,7 +1125,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         borderSide: BorderSide.none,
                       ),
                     ),
-                    inputFormatters: [LengthLimitingTextInputFormatter(13)],
+                    inputFormatters: [
+                      LengthLimitingTextInputFormatter(13),
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
+                    ],
                     onChanged: (value) {
                       if (!value.startsWith('+63')) {
                         contactNumberController.text = '+63';
@@ -1059,17 +1146,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Expanded(
                   child: TextFormField(
                     controller: emailController,
+                    focusNode: _emailFocusNode,
                     keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
                       labelText: 'Email Address (Gmail only)',
                       prefixIcon: const Icon(Icons.email_outlined),
-                      suffixIcon:
-                          _isEmailGmail
+                      suffixIcon: _isEmailFocused
+                          ? (_isEmailGmail
                               ? const Icon(
                                 Icons.check_circle,
                                 color: Colors.green,
                               )
-                              : const Icon(Icons.cancel, color: Colors.red),
+                              : const Icon(Icons.cancel, color: Colors.red))
+                          : null,
                       filled: true,
                       fillColor: Colors.grey.shade100,
                       border: OutlineInputBorder(
@@ -1085,6 +1174,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
         TextFormField(
           controller: passwordController,
+          focusNode: _passwordFocusNode,
           obscureText: !_passwordVisible,
           maxLength: 15,
           decoration: InputDecoration(
@@ -1105,23 +1195,59 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 6),
-        Text(
-          'Password requirements:',
-          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+        if (_isPasswordFocused) ...[
+          const SizedBox(height: 12),
+          Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
         ),
-        const SizedBox(height: 4),
-        Wrap(
-          spacing: 10,
-          runSpacing: 4,
+              child: isPhone
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             checkRow('Minimum 6 characters', hasMinLength),
+                        const SizedBox(height: 6),
             checkRow('Maximum 15 characters', hasMaxLength),
-            checkRow('At least one uppercase letter', hasUppercase),
+                        const SizedBox(height: 6),
+                        checkRow('At least one uppercase', hasUppercase),
+                        const SizedBox(height: 6),
             checkRow('At least one number', hasNumber),
+                        const SizedBox(height: 6),
             checkRow('At least one special character', hasSpecialChar),
           ],
-        ),
+                    )
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            checkRow('Minimum 6 characters', hasMinLength),
+                            const SizedBox(width: 16),
+                            checkRow('Maximum 15 characters', hasMaxLength),
+                            const SizedBox(width: 16),
+                            checkRow('At least one uppercase', hasUppercase),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            checkRow('At least one number', hasNumber),
+                            const SizedBox(width: 16),
+                            checkRow('At least one special character', hasSpecialChar),
+                          ],
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ],
 
         const SizedBox(height: 12),
         TextFormField(
@@ -1358,6 +1484,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void dispose() {
     passwordController.removeListener(_validatePassword);
     emailController.removeListener(_validateEmail);
+    
+    _emailFocusNode.removeListener(() {});
+    _passwordFocusNode.removeListener(() {});
+    _emailFocusNode.dispose();
+    _passwordFocusNode.dispose();
 
     firmNameController.dispose();
     contactNumberController.dispose();

@@ -381,6 +381,9 @@ class _MyAppState extends State<MyApp> {
         final location = state.matchedLocation;
 
         if (session == null) {
+          if (!widget.isFirstOpen && location == '/welcome') {
+            return '/login';
+          }
           if (location != '/login' && location != '/welcome' && location != '/auth/callback' && location != '/register') {
             return '/login';
           }

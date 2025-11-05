@@ -667,7 +667,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
                             context: context,
                             projects: projects,
                             contractors: contractors,
-                          ),
+                            ),
                         ],
                       )
                     : Row(

@@ -37,18 +37,9 @@ class BuildProjects {
                   'Project Statistics',
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.black),
                 ),
-                const Spacer(),
-                _buildAutoRefreshBadge(),
-                const SizedBox(width: 8),
-                if (onRefresh != null)
-                  IconButton(
-                    onPressed: onRefresh,
-                    icon: Icon(Icons.refresh_outlined, color: Colors.grey.shade600),
-                    tooltip: 'Refresh Statistics',
-                  ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
@@ -56,30 +47,34 @@ class BuildProjects {
                     'Total Projects',
                     total.toString(),
                     Icons.work_outlined,
+                    Colors.grey,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
                   child: _buildStatItem(
                     'Active',
                     stats['active']?.toString() ?? '0',
                     Icons.trending_up_outlined,
+                    Colors.grey,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
                   child: _buildStatItem(
                     'Completed',
                     stats['completed']?.toString() ?? '0',
                     Icons.check_circle_outlined,
+                    Colors.grey,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
                   child: _buildStatItem(
                     'Pending',
                     stats['pending']?.toString() ?? '0',
                     Icons.pending_outlined,
+                    Colors.grey,
                   ),
                 ),
               ],
@@ -90,71 +85,33 @@ class BuildProjects {
     );
   }
 
-  static Widget _buildStatItem(String label, String value, IconData icon) {
+  static Widget _buildStatItem(String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300, width: 1),
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade200,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: Colors.grey.shade700, size: 22),
-          ),
-          const SizedBox(height: 12),
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 28,
+            style: TextStyle(
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.black,
-              height: 1,
             ),
           ),
-          const SizedBox(height: 6),
           Text(
             label,
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey.shade700,
-              fontWeight: FontWeight.w500,
+              color: Colors.black,
             ),
             textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-
-  static Widget _buildAutoRefreshBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: Colors.green.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.green.shade200, width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.autorenew, size: 12, color: Colors.green.shade700),
-          const SizedBox(width: 4),
-          Text(
-            '10s',
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.green.shade700,
-              fontWeight: FontWeight.w600,
-            ),
           ),
         ],
       ),
@@ -168,7 +125,10 @@ class BuildProjects {
       color: Colors.white,
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 700;
+            return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -176,10 +136,11 @@ class BuildProjects {
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.black),
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
+            if (isNarrow)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
                     decoration: InputDecoration(
                       labelText: 'Search',
                       hintText: 'Search by title, contractor, or contractee...',
@@ -193,33 +154,87 @@ class BuildProjects {
                     ),
                     onChanged: (value) => state.filterProjects(value),
                   ),
-                ),
-                const SizedBox(width: 12),
-                DropdownButton<String>(
-                  value: state.selectedStatus,
-                  dropdownColor: Colors.white,
-                  hint: const Text('Status', style: TextStyle(color: Colors.black)),
-                  items: ['All', 'active', 'completed', 'pending', 'cancelled']
-                      .map((status) => DropdownMenuItem(
-                            value: status,
-                            child: Text(status == 'All' ? 'All Status' : status.toUpperCase(), style: const TextStyle(color: Colors.black)),
-                          ))
-                      .toList(),
-                  onChanged: (value) => state.filterByStatus(value!),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: state.clearFilters,
-                  icon: const Icon(Icons.clear_outlined),
-                  label: const Text('Clear'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey,
-                    foregroundColor: Colors.white,
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: state.selectedStatus,
+                          dropdownColor: Colors.white,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            labelText: 'Status',
+                          ),
+                          items: ['All', 'active', 'completed', 'pending', 'cancelled']
+                              .map((status) => DropdownMenuItem(
+                                    value: status,
+                                    child: Text(status == 'All' ? 'All Status' : status.toUpperCase(), style: const TextStyle(color: Colors.black)),
+                                  ))
+                              .toList(),
+                          onChanged: (value) => state.filterByStatus(value!),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton.icon(
+                        onPressed: state.clearFilters,
+                        icon: const Icon(Icons.clear_outlined),
+                        label: const Text('Clear'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
+                ],
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      decoration: InputDecoration(
+                        labelText: 'Search',
+                        hintText: 'Search by title, contractor, or contractee...',
+                        prefixIcon: const Icon(Icons.search_outlined, color: Colors.grey),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        labelStyle: const TextStyle(color: Colors.black),
+                        hintStyle: const TextStyle(color: Colors.grey),
+                      ),
+                      onChanged: (value) => state.filterProjects(value),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  DropdownButton<String>(
+                    value: state.selectedStatus,
+                    dropdownColor: Colors.white,
+                    hint: const Text('Status', style: TextStyle(color: Colors.black)),
+                    items: ['All', 'active', 'completed', 'pending', 'cancelled']
+                        .map((status) => DropdownMenuItem(
+                              value: status,
+                              child: Text(status == 'All' ? 'All Status' : status.toUpperCase(), style: const TextStyle(color: Colors.black)),
+                            ))
+                        .toList(),
+                    onChanged: (value) => state.filterByStatus(value!),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: state.clearFilters,
+                    icon: const Icon(Icons.clear_outlined),
+                    label: const Text('Clear'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
           ],
+            );
+          },
         ),
       ),
     );

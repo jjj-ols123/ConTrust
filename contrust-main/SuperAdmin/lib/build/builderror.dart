@@ -113,7 +113,10 @@ class BuildError {
       color: Colors.white,
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 820;
+            return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -121,10 +124,11 @@ class BuildError {
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.black),
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
+            if (isNarrow)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
                     decoration: InputDecoration(
                       labelText: 'Search',
                       hintText: 'Search by error message, module, or user...',
@@ -138,44 +142,109 @@ class BuildError {
                     ),
                     onChanged: (value) => state.filterLogs(value),
                   ),
-                ),
-                const SizedBox(width: 12),
-                DropdownButton<String>(
-                  value: state.selectedSeverity,
-                  hint: const Text('Severity', style: TextStyle(color: Colors.black)),
-                  items: ['All', 'low', 'medium', 'high', 'critical']
-                      .map((severity) => DropdownMenuItem(
-                            value: severity,
-                            child: Text(severity == 'All' ? 'All Severities' : severity.toUpperCase(), style: const TextStyle(color: Colors.black)),
-                          ))
-                      .toList(),
-                  onChanged: (value) => state.filterBySeverity(value!),
-                ),
-                const SizedBox(width: 12),
-                DropdownButton<String>(
-                  value: state.selectedStatus,
-                  hint: const Text('Status', style: TextStyle(color: Colors.black)),
-                  items: ['All', 'resolved', 'unresolved']
-                      .map((status) => DropdownMenuItem(
-                            value: status,
-                            child: Text(status == 'All' ? 'All Status' : status.toUpperCase(), style: const TextStyle(color: Colors.black)),
-                          ))
-                      .toList(),
-                  onChanged: (value) => state.filterByStatus(value!),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: state.clearFilters,
-                  icon: const Icon(Icons.clear_outlined),
-                  label: const Text('Clear'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey,
-                    foregroundColor: Colors.white,
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: state.selectedSeverity,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Severity',
+                    ),
+                    items: ['All', 'low', 'medium', 'high', 'critical']
+                        .map((severity) => DropdownMenuItem(
+                              value: severity,
+                              child: Text(severity == 'All' ? 'All Severities' : severity.toUpperCase(), style: const TextStyle(color: Colors.black)),
+                            ))
+                        .toList(),
+                    onChanged: (value) => state.filterBySeverity(value!),
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: state.selectedStatus,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Status',
+                    ),
+                    items: ['All', 'resolved', 'unresolved']
+                        .map((status) => DropdownMenuItem(
+                              value: status,
+                              child: Text(status == 'All' ? 'All Status' : status.toUpperCase(), style: const TextStyle(color: Colors.black)),
+                            ))
+                        .toList(),
+                    onChanged: (value) => state.filterByStatus(value!),
+                  ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ElevatedButton.icon(
+                      onPressed: state.clearFilters,
+                      icon: const Icon(Icons.clear_outlined),
+                      label: const Text('Clear'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      decoration: InputDecoration(
+                        labelText: 'Search',
+                        hintText: 'Search by error message, module, or user...',
+                        prefixIcon: const Icon(Icons.search_outlined, color: Colors.grey),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        labelStyle: const TextStyle(color: Colors.black),
+                        hintStyle: const TextStyle(color: Colors.grey),
+                      ),
+                      onChanged: (value) => state.filterLogs(value),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  DropdownButton<String>(
+                    value: state.selectedSeverity,
+                    hint: const Text('Severity', style: TextStyle(color: Colors.black)),
+                    items: ['All', 'low', 'medium', 'high', 'critical']
+                        .map((severity) => DropdownMenuItem(
+                              value: severity,
+                              child: Text(severity == 'All' ? 'All Severities' : severity.toUpperCase(), style: const TextStyle(color: Colors.black)),
+                            ))
+                        .toList(),
+                    onChanged: (value) => state.filterBySeverity(value!),
+                  ),
+                  const SizedBox(width: 12),
+                  DropdownButton<String>(
+                    value: state.selectedStatus,
+                    hint: const Text('Status', style: TextStyle(color: Colors.black)),
+                    items: ['All', 'resolved', 'unresolved']
+                        .map((status) => DropdownMenuItem(
+                              value: status,
+                              child: Text(status == 'All' ? 'All Status' : status.toUpperCase(), style: const TextStyle(color: Colors.black)),
+                            ))
+                        .toList(),
+                    onChanged: (value) => state.filterByStatus(value!),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: state.clearFilters,
+                    icon: const Icon(Icons.clear_outlined),
+                    label: const Text('Clear'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
           ],
+            );
+          },
         ),
       ),
     );

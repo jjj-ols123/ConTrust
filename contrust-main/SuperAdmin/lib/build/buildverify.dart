@@ -21,63 +21,125 @@ class BuildVerifyMethods {
         side: BorderSide(color: Colors.grey.shade200, width: 1),
       ),
       child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppTheme.iconSecondary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(Icons.verified_user_outlined, color: AppTheme.iconSecondary, size: 28),
-              ),
-              const SizedBox(width: 16),
-              const Expanded(
-                child: Text(
-                  'Pending Verifications',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.headerText),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                decoration: BoxDecoration(
-                  color: AppTheme.buttonSecondary,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.buttonSecondary.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+        padding: const EdgeInsets.all(20),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 600;
+            if (isNarrow) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.iconSecondary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(Icons.verified_user_outlined, color: AppTheme.iconSecondary, size: 28),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Pending Verifications',
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.headerText),
+                        ),
+                      ),
+                      if (onRefresh != null)
+                        IconButton(
+                          onPressed: onRefresh,
+                          icon: Icon(Icons.refresh_outlined, color: AppTheme.iconSecondary),
+                          tooltip: 'Refresh',
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.buttonSecondary,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.buttonSecondary.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: Text(
-                  '$totalUnverified',
-                  style: const TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    child: Text(
+                      '$totalUnverified',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              if (onRefresh != null)
+                ],
+              );
+            }
+
+            return Row(
+              children: [
                 Container(
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade300, width: 1),
+                    color: AppTheme.iconSecondary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: IconButton(
-                    onPressed: onRefresh,
-                    icon: Icon(Icons.refresh_outlined, color: AppTheme.iconSecondary),
-                    tooltip: 'Refresh',
+                  child: Icon(Icons.verified_user_outlined, color: AppTheme.iconSecondary, size: 28),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Text(
+                    'Pending Verifications',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.headerText),
                   ),
                 ),
-            ],
-          ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.buttonSecondary,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.buttonSecondary.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    '$totalUnverified',
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                if (onRefresh != null)
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade300, width: 1),
+                    ),
+                    child: IconButton(
+                      onPressed: onRefresh,
+                      icon: Icon(Icons.refresh_outlined, color: AppTheme.iconSecondary),
+                      tooltip: 'Refresh',
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
+      ),
     );
   }
 
@@ -296,14 +358,25 @@ class BuildVerifyMethods {
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: GridView.builder(
-                shrinkWrap: true,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 0.8,
-                ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final width = constraints.maxWidth;
+                  int crossAxisCount;
+                  if (width >= 1200) {
+                    crossAxisCount = 3;
+                  } else if (width >= 800) {
+                    crossAxisCount = 2;
+                  } else {
+                    crossAxisCount = 1;
+                  }
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: width >= 1200 ? 1.0 : width >= 800 ? 0.9 : 0.8,
+                    ),
                 itemCount: docs.length,
                 itemBuilder: (context, index) {
                   final doc = docs[index];
@@ -512,6 +585,8 @@ class BuildVerifyMethods {
                         ),
                       );
                     },
+                  );
+                },
                   );
                 },
               ),

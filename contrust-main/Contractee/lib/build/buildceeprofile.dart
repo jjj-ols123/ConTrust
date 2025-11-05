@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import '../pages/cee_change_password.dart';
 
 class _ProjectStatusHelper {
   static String getStatusLabel(String? status) {
@@ -402,6 +403,8 @@ class CeeProfileBuildMethods {
             Icons.email_outlined,
           ),
           const SizedBox(height: 16),
+          _buildPasswordField(),
+          const SizedBox(height: 16),
           _buildInfoField(
             'Full Name',
             fullName,
@@ -491,7 +494,10 @@ class CeeProfileBuildMethods {
               controller: controller,
               keyboardType: label == 'Contact Number' ? TextInputType.phone : TextInputType.text,
               inputFormatters: label == 'Contact Number' 
-                ? [LengthLimitingTextInputFormatter(13)]
+                ? [
+                    LengthLimitingTextInputFormatter(13),
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
+                  ]
                 : null,
               onChanged: label == 'Contact Number' 
                 ? (value) {
@@ -564,6 +570,67 @@ class CeeProfileBuildMethods {
           ),
         ],
       ),
+    );
+  }
+
+  static Widget _buildPasswordField() {
+    return Builder(
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.shade200, width: 1),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.lock_outline, size: 18, color: Colors.grey.shade600),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Password',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade600),
+                  ),
+                  const Spacer(),
+                  InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ChangePasswordScreen(),
+                        ),
+                      );
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.edit_outlined, size: 18, color: Colors.amber.shade700),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Change',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.amber.shade700,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '••••••••',
+                style: const TextStyle(fontSize: 14, color: Color(0xFF1F2937)),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

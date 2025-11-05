@@ -237,20 +237,20 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
             children: [
               CeeProfileBuildMethods.buildHeader(context, 'My Profile'),
               Expanded(
-                child: CeeProfileBuildMethods.buildMobileLayout(
-                  fullName: fullName,
-                  profileImage: profileImage,
-                  profileUrl: profileUrl,
-                  completedProjectsCount: completedProjectsCount,
-                  ongoingProjectsCount: ongoingProjectsCount,
-                  selectedTab: selectedTab,
-                  onTabChanged: (String tab) {
-                    setState(() {
-                      selectedTab = tab;
-                    });
-                  },
-                  mainContent: _buildMainContent(),
-                  onUploadPhoto: isUploadingPhoto ? null : _uploadProfilePhoto,
+                  child: CeeProfileBuildMethods.buildMobileLayout(
+                    fullName: fullName,
+                    profileImage: profileImage,
+                    profileUrl: profileUrl,
+                    completedProjectsCount: completedProjectsCount,
+                    ongoingProjectsCount: ongoingProjectsCount,
+                    selectedTab: selectedTab,
+                    onTabChanged: (String tab) {
+                      setState(() {
+                        selectedTab = tab;
+                      });
+                    },
+                    mainContent: _buildMainContent(),
+                    onUploadPhoto: isUploadingPhoto ? null : _uploadProfilePhoto,
                 ),
               ),
             ],

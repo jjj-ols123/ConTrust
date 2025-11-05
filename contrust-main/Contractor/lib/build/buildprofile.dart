@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:backend/utils/be_status.dart';
+import '../Screen/cor_change_password.dart';
 
 class ProfileBuildMethods {
   static Widget buildMainContent(String selectedTab, Function buildPortfolioContent, Function buildAboutContent, Function buildReviewsContent, Function buildClientHistoryContent) {
@@ -683,6 +684,7 @@ class ProfileBuildMethods {
     required String contactNumber,
     required String specialization,
     required String address,
+    required String email,
     required bool isEditingFirmName,
     required bool isEditingBio,
     required bool isEditingContact,
@@ -738,6 +740,16 @@ class ProfileBuildMethods {
               ],
             ),
             const SizedBox(height: 32),
+            
+            _buildReadOnlyField(
+              'Email',
+              email.isEmpty ? 'No email provided' : email,
+              Icons.email_outlined,
+            ),
+            const SizedBox(height: 24),
+            
+            _buildPasswordField(context),
+            const SizedBox(height: 24),
             
             buildContractorInfo(
               'Firm Name',
@@ -1376,7 +1388,10 @@ class ProfileBuildMethods {
               keyboardType: title == 'Contact Information' ? TextInputType.phone : TextInputType.text,
               maxLines: title == 'Bio' ? 3 : 1,
               inputFormatters: title == 'Contact Information' 
-                ? [LengthLimitingTextInputFormatter(13)]
+                ? [
+                    LengthLimitingTextInputFormatter(13),
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
+                  ]
                 : null,
               onChanged: title == 'Contact Information' 
                 ? (value) {
@@ -2223,6 +2238,114 @@ class ProfileBuildMethods {
           ),
         );
       },
+    );
+  }
+
+  static Widget _buildReadOnlyField(
+    String label,
+    String value,
+    IconData icon,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.black, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: Colors.grey.shade800, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const Spacer(),
+              Icon(Icons.lock_outline, size: 16, color: Colors.grey.shade400),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.black87,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _buildPasswordField(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.black, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.lock_outline, color: Colors.grey.shade800, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Password',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const Spacer(),
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ChangePasswordScreen(),
+                    ),
+                  );
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.edit_outlined, size: 18, color: Colors.amber.shade700),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Change',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.amber.shade700,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            '••••••••',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.black87,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

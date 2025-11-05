@@ -6,6 +6,7 @@ import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/services/contractor services/cor_signin.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'cor_forgot_password.dart';
 
 class ToLoginScreen extends StatefulWidget {
   const ToLoginScreen({super.key});
@@ -135,28 +136,30 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
                   ),
                 ),
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 100),
-                    child: Center(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(20),
-                        child: Container(
-                          width: isPhone ? screenWidth * 0.8 : 600,
-                          padding: const EdgeInsets.all(28),
-                          margin: const EdgeInsets.symmetric(horizontal: 20),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.08),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: _buildLoginForm(context),
+                  child: Center(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isMobile ? 16 : 20,
+                        vertical: isMobile ? 8 : 20,
+                      ),
+                      child: Container(
+                        width: isPhone ? screenWidth * 0.9 : 600,
+                        padding: EdgeInsets.all(isMobile ? 20 : 28),
+                        margin: EdgeInsets.symmetric(
+                          horizontal: isMobile ? 10 : 20,
                         ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: _buildLoginForm(context),
                       ),
                     ),
                   ),
@@ -171,34 +174,40 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
   }
 
 Widget _buildLoginForm(BuildContext context) {
+  final isMobile = MediaQuery.of(context).size.width < 600;
   return Column(
     crossAxisAlignment: CrossAxisAlignment.center,
+    mainAxisSize: MainAxisSize.min,
     children: [
       Column(
         children: [
-          Icon(Icons.business, size: 80, color: Colors.amber.shade400),
-          const SizedBox(height: 16),
+          Icon(
+            Icons.business,
+            size: isMobile ? 60 : 80,
+            color: Colors.amber.shade400,
+          ),
+          SizedBox(height: isMobile ? 10 : 16),
           Text(
             'Welcome Back',
             style: TextStyle(
-              fontSize: 28,
+              fontSize: isMobile ? 24 : 28,
               fontWeight: FontWeight.bold,
               color: Colors.grey.shade800,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: isMobile ? 4 : 6),
           Text(
             'Be a part of our community and start your journey with us today!',
             style: TextStyle(
               color: Colors.amber.shade600,
-              fontSize: 12,
+              fontSize: isMobile ? 11 : 12,
               fontStyle: FontStyle.italic,
             ),
             textAlign: TextAlign.center,
           ),
         ],
       ),
-      const SizedBox(height: 30),
+      SizedBox(height: isMobile ? 20 : 30),
       TextFormField(
         controller: _emailController,
         keyboardType: TextInputType.emailAddress,
@@ -213,7 +222,7 @@ Widget _buildLoginForm(BuildContext context) {
           ),
         ),
       ),
-      const SizedBox(height: 18),
+      SizedBox(height: isMobile ? 12 : 18),
       TextFormField(
         controller: _passwordController,
         keyboardType: TextInputType.visiblePassword,
@@ -235,7 +244,7 @@ Widget _buildLoginForm(BuildContext context) {
           ),
         ),
       ),
-      const SizedBox(height: 25),
+      SizedBox(height: isMobile ? 18 : 25),
       ElevatedButton(
         onPressed: _isLoggingIn ? null : _handleLogin,
         style: ElevatedButton.styleFrom(
@@ -265,7 +274,7 @@ Widget _buildLoginForm(BuildContext context) {
                 ),
               ),
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: isMobile ? 12 : 20),
       Row(
         children: [
           Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
@@ -279,7 +288,7 @@ Widget _buildLoginForm(BuildContext context) {
           Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
         ],
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: isMobile ? 12 : 20),
       InkWell(
         onTap: () {
           SignInGoogleContractor().signInGoogle(context);
@@ -304,9 +313,16 @@ Widget _buildLoginForm(BuildContext context) {
           ),
         ),
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: isMobile ? 12 : 20),
       TextButton(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ForgotPasswordScreen(),
+            ),
+          );
+        },
         child: Text(
           'Forgot Password?',
           style: TextStyle(
@@ -315,7 +331,7 @@ Widget _buildLoginForm(BuildContext context) {
           ),
         ),
       ),
-      const SizedBox(height: 10),
+      SizedBox(height: isMobile ? 6 : 10),
       InkWell(
         onTap: () {
           context.go('/register');

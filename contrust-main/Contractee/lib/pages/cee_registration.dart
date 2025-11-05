@@ -38,6 +38,10 @@ class _RegistrationPageState extends State<RegistrationPage> {
   bool _pwHasSpecial = false;
   bool _isEmailGmail = false;
   bool _isAgreed = false;
+  final FocusNode _emailFocusNode = FocusNode();
+  final FocusNode _passwordFocusNode = FocusNode();
+  bool _isPasswordFocused = false;
+  bool _isEmailFocused = false;
 
   @override
   void initState() {
@@ -45,12 +49,30 @@ class _RegistrationPageState extends State<RegistrationPage> {
     _phoneController.selection = TextSelection.collapsed(offset: 3);
     _passwordController.addListener(_validatePassword);
     _emailController.addListener(_validateEmail);
+    
+    _emailFocusNode.addListener(() {
+      setState(() {
+        _isEmailFocused = _emailFocusNode.hasFocus;
+      });
+    });
+    
+    _passwordFocusNode.addListener(() {
+      setState(() {
+        _isPasswordFocused = _passwordFocusNode.hasFocus;
+      });
+    });
   }
 
   @override
   void dispose() {
     _passwordController.removeListener(_validatePassword);
     _emailController.removeListener(_validateEmail);
+    
+    _emailFocusNode.removeListener(() {});
+    _passwordFocusNode.removeListener(() {});
+    _emailFocusNode.dispose();
+    _passwordFocusNode.dispose();
+    
     _fNameController.dispose();
     _lNameController.dispose();
     _emailController.dispose();
@@ -263,9 +285,11 @@ class _RegistrationPageState extends State<RegistrationPage> {
                       ),
                     ],
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  child: Stack(
                     children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
                       Container(
                         width: isSmallScreen ? 4 : 6,
                         height: isSmallScreen ? 28 : 32,
@@ -282,6 +306,43 @@ class _RegistrationPageState extends State<RegistrationPage> {
                           fontWeight: FontWeight.w900,
                           color: const Color(0xFF1a1a1a),
                           letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
+                      ),
+                      Positioned(
+                        left: 20,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: InkWell(
+                            onTap: () {
+                              if (Navigator.canPop(context)) {
+                                Navigator.pop(context);
+                              } else {
+                                context.go('/login');
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.9),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.arrow_back,
+                                color: Colors.grey,
+                                size: 24,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -384,6 +445,9 @@ class _RegistrationPageState extends State<RegistrationPage> {
   }
 
   Widget _buildRegistrationForm(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    bool isPhone = screenWidth < 600;
+    
     InputDecoration inputStyle(String label, IconData icon, {Widget? suffix}) {
       return InputDecoration(
         labelText: label,
@@ -407,14 +471,14 @@ class _RegistrationPageState extends State<RegistrationPage> {
         children: [
           Icon(
             ok ? Icons.check_circle : Icons.cancel,
-            size: 14,
+            size: 16,
             color: ok ? Colors.green : Colors.red,
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 8),
           Text(
             label,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 12,
               color: ok ? Colors.green : Colors.red,
             ),
           ),
@@ -455,13 +519,16 @@ class _RegistrationPageState extends State<RegistrationPage> {
         const SizedBox(height: 12),
         TextField(
           controller: _emailController,
+          focusNode: _emailFocusNode,
           keyboardType: TextInputType.emailAddress,
           decoration: inputStyle(
             'Email (Gmail only)', 
             Icons.email_outlined,
-            suffix: _isEmailGmail
-                ? const Icon(Icons.check_circle, color: Colors.green)
-                : const Icon(Icons.cancel, color: Colors.red),
+            suffix: _isEmailFocused
+                ? (_isEmailGmail
+                    ? const Icon(Icons.check_circle, color: Colors.green)
+                    : const Icon(Icons.cancel, color: Colors.red))
+                : null,
           ),
         ),
         const SizedBox(height: 12),
@@ -475,6 +542,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
           keyboardType: TextInputType.phone,
           inputFormatters: [
             LengthLimitingTextInputFormatter(13),
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
           ],
           onChanged: (value) {
             if (!value.startsWith('+63')) {
@@ -491,6 +559,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
         const SizedBox(height: 12),
         TextFormField(
           controller: _passwordController,
+          focusNode: _passwordFocusNode,
           obscureText: !_passwordVisible,
           maxLength: 15,
           decoration: InputDecoration(
@@ -510,23 +579,61 @@ class _RegistrationPageState extends State<RegistrationPage> {
             ),
           ),
         ),
-        const SizedBox(height: 6),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Wrap(
-              spacing: 10,
-              runSpacing: 4,
-              children: [
-                checkRow('Min 6 chars', hasMinLength),
-                checkRow('Max 15 chars', hasMaxLength),
-                checkRow('Uppercase', hasUppercase),
-                checkRow('Number', hasNumber),
-                checkRow('Special char', hasSpecialChar),
-              ],
+        if (_isPasswordFocused) ...[
+          const SizedBox(height: 12),
+          Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: isPhone
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        checkRow('Minimum 6 characters', hasMinLength),
+                        const SizedBox(height: 6),
+                        checkRow('Maximum 15 characters', hasMaxLength),
+                        const SizedBox(height: 6),
+                        checkRow('At least one uppercase', hasUppercase),
+                        const SizedBox(height: 6),
+                        checkRow('At least one number', hasNumber),
+                        const SizedBox(height: 6),
+                        checkRow('At least one special character', hasSpecialChar),
+                      ],
+                    )
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Top row: 3 requirements
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            checkRow('Minimum 6 characters', hasMinLength),
+                            const SizedBox(width: 16),
+                            checkRow('Maximum 15 characters', hasMaxLength),
+                            const SizedBox(width: 16),
+                            checkRow('At least one uppercase', hasUppercase),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        // Bottom row: 2 requirements
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            checkRow('At least one number', hasNumber),
+                            const SizedBox(width: 16),
+                            checkRow('At least one special character', hasSpecialChar),
+                          ],
+                        ),
+                      ],
+                    ),
             ),
-          ],
-        ),
+          ),
+        ],
         const SizedBox(height: 12),
         TextFormField(
           controller: _confirmPasswordController,

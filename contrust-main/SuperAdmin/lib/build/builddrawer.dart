@@ -56,6 +56,7 @@ class SuperAdminShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= 1000;
+    final isMobile = screenWidth < 700;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -65,6 +66,15 @@ class SuperAdminShell extends StatelessWidget {
         centerTitle: true,
         elevation: 4,
         automaticallyImplyLeading: false,
+        leading: isMobile
+            ? Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu, color: Colors.white),
+                  tooltip: 'Menu',
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+              )
+            : null,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
@@ -84,85 +94,7 @@ class SuperAdminShell extends StatelessWidget {
           ),
         ],
       ),
-      drawer: !isDesktop ? Builder(
-        builder: (context) => Theme(
-          data: Theme.of(context).copyWith(
-            drawerTheme: const DrawerThemeData(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
-              ),
-            ),
-          ),
-          child: Drawer(
-            elevation: 0,
-            child: Column(
-              children: [
-                Container(
-                  width: 280,
-                  decoration: BoxDecoration(
-                    color: Colors.deepPurple[500],
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(2, 0),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border(
-                            bottom: BorderSide(
-                              color: Colors.grey.shade200,
-                              width: 1,
-                            ),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.deepPurple.shade600,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.admin_panel_settings,
-                                color: Colors.white,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            const Expanded(
-                              child: Text(
-                                'SuperAdmin',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF2D3748),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: SideDashboardDrawer(
-                          currentPage: currentPage,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ) : null,
+      drawer: !isDesktop ? const MobileSuperAdminDrawerContainer() : null,
       body: Row(
         children: [
           if (isDesktop)
@@ -388,29 +320,33 @@ class _SidebarItem extends StatelessWidget {
   final String label;
   final bool active;
   final VoidCallback? onTap;
+  final Color? activeColorBase;
 
   const _SidebarItem({
     required this.icon,
     required this.label,
     required this.active,
     required this.onTap,
+    this.activeColorBase,
   });
 
   @override
   Widget build(BuildContext context) {
-    final color = active ? Colors.deepPurple.shade700 : Colors.grey.shade700;
+    final Color base = activeColorBase ?? Colors.deepPurple;
+    final Color textColor = active ? base : Colors.grey.shade700;
+    final Color bgColor = active ? base.withOpacity(0.15) : Colors.transparent;
     return InkWell(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: active ? Colors.deepPurple.shade100 : Colors.transparent,
+          color: bgColor,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           children: [
-            Icon(icon, color: color, size: 20),
+            Icon(icon, color: textColor, size: 20),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
@@ -418,14 +354,172 @@ class _SidebarItem extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                  color: color,
+                  color: textColor,
                 ),
               ),
             ),
-            if (active) Icon(Icons.chevron_right, color: color, size: 18),
+            if (active) Icon(Icons.chevron_right, color: textColor, size: 18),
           ],
         ),
       ),
+    );
+  }
+}
+
+class MobileSuperAdminDrawerContainer extends StatelessWidget {
+  const MobileSuperAdminDrawerContainer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Builder(
+      builder: (context) => Theme(
+        data: Theme.of(context).copyWith(
+          drawerTheme: const DrawerThemeData(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.zero,
+            ),
+          ),
+        ),
+        child: Drawer(
+          backgroundColor: Colors.white,
+          child: SafeArea(
+            child: _MobileSuperAdminDrawerContent(),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MobileSuperAdminDrawerContent extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(
+              bottom: BorderSide(color: Colors.grey.shade200, width: 1),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.deepPurple.shade50,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.admin_panel_settings, color: Colors.deepPurple.shade700, size: 24),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ConTrust',
+                      style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w700),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'SuperAdmin',
+                      style: TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            children: const [
+              _MobileDrawerNavItem(page: SuperAdminPage.dashboard, icon: Icons.dashboard_outlined, label: 'Dashboard'),
+              _MobileDrawerNavItem(page: SuperAdminPage.users, icon: Icons.people_outlined, label: 'Users'),
+              _MobileDrawerNavItem(page: SuperAdminPage.projects, icon: Icons.work_outline, label: 'Projects'),
+              _MobileDrawerNavItem(page: SuperAdminPage.verify, icon: Icons.verified_user_outlined, label: 'Verify Contractors'),
+              _MobileDrawerNavItem(page: SuperAdminPage.auditLogs, icon: Icons.history_outlined, label: 'Audit Logs'),
+              _MobileDrawerNavItem(page: SuperAdminPage.errorLogs, icon: Icons.error_outline, label: 'Error Logs'),
+            ],
+          ),
+        ),
+        // Removed bottom logout button for mobile drawer
+      ],
+    );
+  }
+}
+
+class _MobileDrawerNavItem extends StatelessWidget {
+  final SuperAdminPage page;
+  final IconData icon;
+  final String label;
+  const _MobileDrawerNavItem({required this.page, required this.icon, required this.label});
+
+  void _navigate(BuildContext context, Widget pageWidget) {
+    Navigator.pop(context); // close drawer first
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => pageWidget,
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // We cannot access current page easily here; keep a neutral style
+    return _SidebarItem(
+      icon: icon,
+      label: label,
+      active: false,
+      activeColorBase: Colors.deepPurple,
+      onTap: () {
+        switch (page) {
+          case SuperAdminPage.dashboard:
+            _navigate(
+              context,
+              const SuperAdminShell(currentPage: SuperAdminPage.dashboard, child: SuperAdminDashboard()),
+            );
+            break;
+          case SuperAdminPage.users:
+            _navigate(
+              context,
+              SuperAdminShell(currentPage: SuperAdminPage.users, child: UsersPage()),
+            );
+            break;
+          case SuperAdminPage.projects:
+            _navigate(
+              context,
+              SuperAdminShell(currentPage: SuperAdminPage.projects, child: ProjectsManagementPage()),
+            );
+            break;
+          case SuperAdminPage.verify:
+            _navigate(
+              context,
+              const SuperAdminShell(currentPage: SuperAdminPage.verify, child: VerifyPage()),
+            );
+            break;
+          case SuperAdminPage.auditLogs:
+            _navigate(
+              context,
+              const SuperAdminShell(currentPage: SuperAdminPage.auditLogs, child: Auditlogs()),
+            );
+            break;
+          case SuperAdminPage.errorLogs:
+            _navigate(
+              context,
+              const SuperAdminShell(currentPage: SuperAdminPage.errorLogs, child: ErrorLogs()),
+            );
+            break;
+        }
+      },
     );
   }
 }

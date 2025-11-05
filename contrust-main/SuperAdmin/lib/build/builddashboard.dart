@@ -92,106 +92,96 @@ class BuildDashboard {
   }
 
   static Widget buildAlertsCard(List<Map<String, dynamic>> systemAlerts) {
-    if (systemAlerts.isEmpty) return const SizedBox.shrink();
-
-    return Card(
-      elevation: 4,
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.warning_outlined, color: Colors.grey, size: 28),
-                const SizedBox(width: 8),
-                Text(
-                  'System Alerts (${systemAlerts.length})',
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500, color: Colors.black),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            ...systemAlerts.take(3).map((alert) => buildAlertItem(alert)),
-            if (systemAlerts.length > 3)
-              Text(
-                '... and ${systemAlerts.length - 3} more alerts',
-                style: TextStyle(color: Colors.grey[600], fontStyle: FontStyle.italic),
-              ),
-          ],
-        ),
-      ),
-    );
+    return const SizedBox.shrink();
   }
 
   static Widget buildAlertItem(Map<String, dynamic> alert) {
-    final severity = alert['severity'] ?? 'low';
-    final severityColor = severity == 'high' ? Colors.red :
-                         severity == 'medium' ? Colors.orange : Colors.yellow;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(Icons.warning_outlined, color: severityColor, size: 16),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  alert['message'] ?? alert['error_message'] ?? 'Unknown alert',
-                  style: const TextStyle(fontSize: 14, color: Colors.black),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (alert['module'] != null)
-                  Text(
-                    alert['module'],
-                    style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    return const SizedBox.shrink();
   }
 
   static Widget buildMetricsGrid(BuildContext context, Map<String, dynamic> systemStats, Map<String, dynamic> systemHealth) {
-    return GridView.count(
-      crossAxisCount: 4,
-      crossAxisSpacing: 13,
-      mainAxisSpacing: 16,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      children: [
-        buildMetricCard(
-          'Total Users',
-          systemStats['users']?['total']?.toString() ?? '0',
-          Icons.people_outlined,
-          Colors.grey,
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+
+    final totalUsers = systemStats['users']?['total']?.toString() ?? '0';
+    final activeProjects = systemStats['projects']?['active']?.toString() ?? '0';
+    final allProjects = systemStats['projects']?['total']?.toString() ?? '0';
+    final status = systemHealth['overall_status']?.toString() ?? 'unknown';
+    final statusText = status.toUpperCase();
+    final statusColor = _getStatusColor(status);
+
+    return Container(
+      padding: EdgeInsets.all(isMobile ? 12 : 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.grey.shade300,
+          width: 1,
         ),
-        buildMetricCard(
-          'Active Projects',
-          systemStats['projects']?['active']?.toString() ?? '0',
-          Icons.work_outlined,
-          Colors.grey,
-        ),
-        buildMetricCard(
-          'All Projects',
-          systemStats['projects']?['total']?.toString() ?? '0',
-          Icons.work_outline,
-          Colors.grey,
-        ),
-        buildMetricCard(
-          'System Status',
-          systemHealth['overall_status']?.toString().toUpperCase() ?? 'UNKNOWN',
-          Icons.health_and_safety_outlined,
-          _getStatusColor(systemHealth['overall_status'] ?? 'unknown'),
-        ),
-      ],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.bar_chart, size: isMobile ? 20 : 24),
+              SizedBox(width: isMobile ? 6 : 8),
+              Expanded(
+                child: Text(
+                  'Statistics',
+                  style: TextStyle(
+                    fontSize: isMobile ? 16 : 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: isMobile ? 12 : 16),
+          if (isMobile)
+            Column(
+              children: [
+                _buildDashboardStatCard('Total Users', totalUsers, Icons.people_outlined, Colors.black, isMobile),
+                const SizedBox(height: 10),
+                _buildDashboardStatCard('Active Projects', activeProjects, Icons.work, Colors.black, isMobile),
+                const SizedBox(height: 10),
+                _buildDashboardStatCard('All Projects', allProjects, Icons.work_outline, Colors.black, isMobile),
+                const SizedBox(height: 10),
+                _buildDashboardStatCard('System Status', statusText, Icons.health_and_safety_outlined, statusColor, isMobile),
+              ],
+            )
+          else
+            Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(child: _buildDashboardStatCard('Total Users', totalUsers, Icons.people_outlined, Colors.black, isMobile)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildDashboardStatCard('Active Projects', activeProjects, Icons.work, Colors.black, isMobile)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(child: _buildDashboardStatCard('All Projects', allProjects, Icons.work_outline, Colors.black, isMobile)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildDashboardStatCard('System Status', statusText, Icons.health_and_safety_outlined, statusColor, isMobile)),
+                  ],
+                ),
+              ],
+            ),
+        ],
+      ),
     );
   }
 
@@ -223,6 +213,68 @@ class BuildDashboard {
           ],
         ),
       ),
+    );
+  }
+
+  static Widget _buildDashboardStatCard(String title, String value, IconData icon, Color color, bool isMobile) {
+    return Container(
+      width: isMobile ? double.infinity : null,
+      padding: EdgeInsets.all(isMobile ? 12 : 13),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: isMobile
+          ? Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(icon, color: color, size: 22),
+                    const SizedBox(width: 10),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+              ],
+            )
+          : Column(
+              children: [
+                Icon(icon, color: color, size: 24),
+                const SizedBox(height: 8),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
     );
   }
 
@@ -315,6 +367,35 @@ class BuildDashboard {
     Map<String, dynamic> dashboardData,
     {Map<String, dynamic>? performanceData}
   ) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = screenWidth >= 1000;
+
+    if (!isWide) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 8),
+            buildMetricsGrid(context, systemStats, systemHealth),
+            const SizedBox(height: 24),
+            buildSystemHealthCard(context, systemHealth),
+            const SizedBox(height: 24),
+            // Recent Activity stacked below on narrow screens
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                border: Border(top: BorderSide(color: Colors.grey.shade300)),
+              ),
+              padding: const EdgeInsets.only(top: 16),
+              child: buildRecentActivitySection(context, dashboardData),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Row(
       children: [
         Expanded(
@@ -340,7 +421,7 @@ class BuildDashboard {
                 //   buildPerformanceMetricsCard(performanceData),
                 // if (performanceData != null)
                 //   const SizedBox(height: 24),
-                buildAlertsCard(systemAlerts),
+                // System Alerts removed
               ],
             ),
           ),
@@ -361,24 +442,100 @@ class BuildDashboard {
   }
 
   static Widget buildRecentActivitySection(BuildContext context, Map<String, dynamic> dashboardData) {
+
+    final recentUsers = (dashboardData['recent_users'] as List? ?? []).cast<Map<String, dynamic>>();
+    final recentProjects = (dashboardData['recent_projects'] as List? ?? []).cast<Map<String, dynamic>>();
+    final recentLogs = (dashboardData['recent_audit_logs'] as List? ?? []).cast<Map<String, dynamic>>();
+
+    final controller = PageController(viewportFraction: 0.92);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Recent Activity',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.black),
+        AnimatedBuilder(
+          animation: controller,
+          builder: (context, _) {
+            final current = controller.hasClients && controller.page != null ? controller.page!.round() : 0;
+            return Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.update, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Recent Activity',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Previous',
+                    onPressed: current > 0
+                        ? () => controller.animateToPage(
+                              current - 1,
+                              duration: const Duration(milliseconds: 250),
+                              curve: Curves.easeInOut,
+                            )
+                        : null,
+                    icon: const Icon(Icons.chevron_left),
+                  ),
+                  IconButton(
+                    tooltip: 'Next',
+                    onPressed: current < 2
+                        ? () => controller.animateToPage(
+                              current + 1,
+                              duration: const Duration(milliseconds: 250),
+                              curve: Curves.easeInOut,
+                            )
+                        : null,
+                    icon: const Icon(Icons.chevron_right),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
         const SizedBox(height: 16),
-        Column(
-          children: [
-            buildRecentUsersCard((dashboardData['recent_users'] as List? ?? []).cast<Map<String, dynamic>>()),
-            const SizedBox(height: 16),
-            buildRecentProjectsCard((dashboardData['recent_projects'] as List? ?? []).cast<Map<String, dynamic>>()),
-            const SizedBox(height: 16),
-            buildRecentAuditLogsCard(
-              (dashboardData['recent_audit_logs'] as List? ?? []).cast<Map<String, dynamic>>(),
-            ),
-          ],
+        SizedBox(
+          height: 260,
+          child: PageView(
+            controller: controller,
+            children: [
+              buildRecentUsersCard(recentUsers),
+              buildRecentProjectsCard(recentProjects),
+              buildRecentAuditLogsCard(recentLogs),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Center(
+          child: AnimatedBuilder(
+            animation: controller,
+            builder: (context, _) {
+              final page = controller.hasClients && controller.page != null ? controller.page!.round() : 0;
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(3, (index) {
+                  final isActive = index == page;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: isActive ? 10 : 8,
+                    height: isActive ? 10 : 8,
+                    decoration: BoxDecoration(
+                      color: isActive ? Colors.black87 : Colors.grey.shade400,
+                      shape: BoxShape.circle,
+                    ),
+                  );
+                }),
+              );
+            },
+          ),
         ),
       ],
     );
@@ -397,7 +554,7 @@ class BuildDashboard {
               children: [
                 const Icon(Icons.people_outlined, color: Colors.grey),
                 const SizedBox(width: 8),
-                const Text('Recent Users', style: TextStyle(color: Colors.black)),
+                const Text('Recent Users', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w700)),
               ],
             ),
             const SizedBox(height: 8),
@@ -424,7 +581,7 @@ class BuildDashboard {
               children: [
                 const Icon(Icons.work_outlined, color: Colors.grey),
                 const SizedBox(width: 8),
-                const Text('Recent Projects', style: TextStyle(color: Colors.black)),
+                const Text('Recent Projects', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w700)),
               ],
             ),
             const SizedBox(height: 8),
@@ -451,7 +608,7 @@ class BuildDashboard {
               children: [
                 const Icon(Icons.history_outlined, color: Colors.grey),
                 const SizedBox(width: 8),
-                const Text('Recent Audit Logs', style: TextStyle(color: Colors.black)),
+                const Text('Recent Audit Logs', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w700)),
               ],
             ),
             const SizedBox(height: 8),

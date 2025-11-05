@@ -43,7 +43,7 @@ class BuildUser {
                     'All Users',
                     stats['total']?.toString() ?? '0',
                     Icons.group_outlined,
-                    Colors.transparent,
+                    Colors.grey,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -53,7 +53,7 @@ class BuildUser {
                     'Contractors',
                     stats['contractors']?.toString() ?? '0',
                     Icons.business_outlined,
-                    Colors.transparent,
+                    Colors.grey,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -63,7 +63,7 @@ class BuildUser {
                     'Contractees',
                     stats['contractees']?.toString() ?? '0',
                     Icons.person_outlined,
-                    Colors.transparent,
+                    Colors.grey,
                   ),
                 ),
               ],
@@ -76,31 +76,29 @@ class BuildUser {
 
   static Widget _buildStatItem(BuildContext context, String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white, // keep background white (no extra colors)
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300), // visible grey border for each item
+        border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: Colors.black54, size: 20),
-          const SizedBox(height: 8),
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
           ),
-          const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: Colors.black54,
+              color: Colors.black,
             ),
             textAlign: TextAlign.center,
           ),

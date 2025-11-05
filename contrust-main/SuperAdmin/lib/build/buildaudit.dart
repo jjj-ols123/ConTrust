@@ -118,7 +118,10 @@ class BuildAudit {
       color: Colors.white,
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 900;
+            return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -126,10 +129,11 @@ class BuildAudit {
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.black),
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
+            if (isNarrow)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
                     decoration: InputDecoration(
                       labelText: 'Search',
                       hintText: 'Search by action, user, or details...',
@@ -143,44 +147,109 @@ class BuildAudit {
                     ),
                     onChanged: (value) => state.filterLogs(value),
                   ),
-                ),
-                const SizedBox(width: 12),
-                DropdownButton<String>(
-                  value: state.selectedCategory,
-                  hint: const Text('Category', style: TextStyle(color: Colors.black)),
-                  items: ['All', 'admin', 'user', 'system', 'security', 'error']
-                      .map((category) => DropdownMenuItem(
-                            value: category,
-                            child: Text(category == 'All' ? 'All Categories' : category.toUpperCase(), style: const TextStyle(color: Colors.black)),
-                          ))
-                      .toList(),
-                  onChanged: (value) => state.filterByCategory(value!),
-                ),
-                const SizedBox(width: 12),
-                DropdownButton<String>(
-                  value: state.selectedAction,
-                  hint: const Text('Action', style: TextStyle(color: Colors.black)),
-                  items: ['All', 'login', 'logout', 'create', 'update', 'delete', 'view']
-                      .map((action) => DropdownMenuItem(
-                            value: action,
-                            child: Text(action == 'All' ? 'All Actions' : action.toUpperCase(), style: const TextStyle(color: Colors.black)),
-                          ))
-                      .toList(),
-                  onChanged: (value) => state.filterByAction(value!),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: state.clearFilters,
-                  icon: const Icon(Icons.clear_outlined),
-                  label: const Text('Clear'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey,
-                    foregroundColor: Colors.white,
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: state.selectedCategory,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Category',
+                    ),
+                    items: ['All', 'admin', 'user', 'system', 'security', 'error']
+                        .map((category) => DropdownMenuItem(
+                              value: category,
+                              child: Text(category == 'All' ? 'All Categories' : category.toUpperCase(), style: const TextStyle(color: Colors.black)),
+                            ))
+                        .toList(),
+                    onChanged: (value) => state.filterByCategory(value!),
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: state.selectedAction,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Action',
+                    ),
+                    items: ['All', 'login', 'logout', 'create', 'update', 'delete', 'view']
+                        .map((action) => DropdownMenuItem(
+                              value: action,
+                              child: Text(action == 'All' ? 'All Actions' : action.toUpperCase(), style: const TextStyle(color: Colors.black)),
+                            ))
+                        .toList(),
+                    onChanged: (value) => state.filterByAction(value!),
+                  ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ElevatedButton.icon(
+                      onPressed: state.clearFilters,
+                      icon: const Icon(Icons.clear_outlined),
+                      label: const Text('Clear'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      decoration: InputDecoration(
+                        labelText: 'Search',
+                        hintText: 'Search by action, user, or details...',
+                        prefixIcon: const Icon(Icons.search_outlined, color: Colors.grey),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        labelStyle: const TextStyle(color: Colors.black),
+                        hintStyle: const TextStyle(color: Colors.grey),
+                      ),
+                      onChanged: (value) => state.filterLogs(value),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  DropdownButton<String>(
+                    value: state.selectedCategory,
+                    hint: const Text('Category', style: TextStyle(color: Colors.black)),
+                    items: ['All', 'admin', 'user', 'system', 'security', 'error']
+                        .map((category) => DropdownMenuItem(
+                              value: category,
+                              child: Text(category == 'All' ? 'All Categories' : category.toUpperCase(), style: const TextStyle(color: Colors.black)),
+                            ))
+                        .toList(),
+                    onChanged: (value) => state.filterByCategory(value!),
+                  ),
+                  const SizedBox(width: 12),
+                  DropdownButton<String>(
+                    value: state.selectedAction,
+                    hint: const Text('Action', style: TextStyle(color: Colors.black)),
+                    items: ['All', 'login', 'logout', 'create', 'update', 'delete', 'view']
+                        .map((action) => DropdownMenuItem(
+                              value: action,
+                              child: Text(action == 'All' ? 'All Actions' : action.toUpperCase(), style: const TextStyle(color: Colors.black)),
+                            ))
+                        .toList(),
+                    onChanged: (value) => state.filterByAction(value!),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: state.clearFilters,
+                    icon: const Icon(Icons.clear_outlined),
+                    label: const Text('Clear'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
           ],
+            );
+          },
         ),
       ),
     );
@@ -426,32 +495,43 @@ class AuditLogsTableState extends State<AuditLogsTable> {
                             ],
                           ),
                         )
-                      : SingleChildScrollView(
-                          child: DataTable(
-                            columns: const [
-                              DataColumn(label: Text('Timestamp', style: TextStyle(color: Colors.black))),
-                              DataColumn(label: Text('User ID', style: TextStyle(color: Colors.black))),
-                              DataColumn(label: Text('Action', style: TextStyle(color: Colors.black))),
-                              DataColumn(label: Text('Category', style: TextStyle(color: Colors.black))),
-                              DataColumn(label: Text('Details', style: TextStyle(color: Colors.black))),
-                            ],
-                            rows: _filteredLogs.map((log) => DataRow(
-                              cells: [
-                                DataCell(Text(formatTimestamp(log['timestamp']), style: const TextStyle(color: Colors.black))),
-                                DataCell(Text(log['users_id']?.toString() ?? 'N/A', style: const TextStyle(color: Colors.black))),
-                                DataCell(_buildActionChip(log['action']?.toString() ?? 'unknown')),
-                                DataCell(_buildCategoryChip(log['category']?.toString() ?? 'unknown')),
-                                DataCell(
-                                  Text(
-                                    _formatDetails(log['details']),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(color: Colors.black),
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            return SingleChildScrollView(
+                              scrollDirection: Axis.vertical,
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                                  child: DataTable(
+                                    columns: const [
+                                      DataColumn(label: Text('Timestamp', style: TextStyle(color: Colors.black))),
+                                      DataColumn(label: Text('User ID', style: TextStyle(color: Colors.black))),
+                                      DataColumn(label: Text('Action', style: TextStyle(color: Colors.black))),
+                                      DataColumn(label: Text('Category', style: TextStyle(color: Colors.black))),
+                                      DataColumn(label: Text('Details', style: TextStyle(color: Colors.black))),
+                                    ],
+                                    rows: _filteredLogs.map((log) => DataRow(
+                                      cells: [
+                                        DataCell(Text(formatTimestamp(log['timestamp']), style: const TextStyle(color: Colors.black))),
+                                        DataCell(Text(log['users_id']?.toString() ?? 'N/A', style: const TextStyle(color: Colors.black))),
+                                        DataCell(_buildActionChip(log['action']?.toString() ?? 'unknown')),
+                                        DataCell(_buildCategoryChip(log['category']?.toString() ?? 'unknown')),
+                                        DataCell(
+                                          Text(
+                                            _formatDetails(log['details']),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(color: Colors.black),
+                                          ),
+                                        ),
+                                      ],
+                                    )).toList(),
                                   ),
                                 ),
-                              ],
-                            )).toList(),
-                          ),
+                              ),
+                            );
+                          },
                         ),
                 ),
               ],
