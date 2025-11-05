@@ -251,7 +251,7 @@ class CorOngoingService {
 
         if (userId != null) {
           final fileName = '${projectId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-          final storagePath = '$userId/$fileName';
+          final storagePath = 'contractor/file/$fileName';
 
           await _supabase.storage
               .from('projectphotos')

@@ -193,20 +193,22 @@ class SignInGoogleContractor {
     try {
       final supabase = Supabase.instance.client;
       
-      String redirectUrl;
+      String? redirectUrl;
       
       if (kIsWeb) {
         final origin = Uri.base.origin;
-        redirectUrl = '$origin/auth/callback?next=${Uri.encodeComponent('/dashboard')}';
+        redirectUrl = '$origin/auth/callback';
       } else {
-        // For mobile: use deep link
         redirectUrl = 'io.supabase.contrust://login-callback/dashboard';
       }
-      
+
       await supabase.auth.signInWithOAuth(
         OAuthProvider.google,
         redirectTo: redirectUrl,
         authScreenLaunchMode: LaunchMode.platformDefault,
+        queryParams: {
+          'prompt': 'select_account',
+        },
       );
     } catch (e) {
       await _errorService.logError(
@@ -218,17 +220,16 @@ class SignInGoogleContractor {
           'timestamp': DateTimeHelper.getLocalTimeISOString(),
         },
       );
-      
       if (context.mounted) {
         ConTrustSnackBar.error(context, 'Google sign-in failed: $e');
       }
-      rethrow;
     }
   }
 
   Future<void> handleSignIn(BuildContext context, User user) async {
     try {
       final supabase = Supabase.instance.client;
+      debugPrint('[Google Contractor] handleSignIn start for ${user.id}');
 
       final existingContractor = await supabase
           .from('Contractor')
@@ -236,9 +237,39 @@ class SignInGoogleContractor {
           .eq('contractor_id', user.id)
           .maybeSingle();
 
+      final existingUser = await supabase
+          .from('Users')
+          .select('users_id')
+          .eq('users_id', user.id)
+          .maybeSingle();
+
+      debugPrint('[Google Contractor] existingContractor: ${existingContractor != null}, existingUser: ${existingUser != null}');
+
       if (existingContractor == null) {
+        debugPrint('[Google Contractor] creating new Contractor + Users rows');
         await setupContractor(context, user);
+      } else if (existingUser == null) {
+        debugPrint('[Google Contractor] Users missing; upserting from Contractor data');
+        final contractorData = await supabase
+            .from('Contractor')
+            .select('firm_name, contact_number, profile_photo')
+            .eq('contractor_id', user.id)
+            .single();
+        
+        await supabase.from('Users').upsert({
+          'users_id': user.id,
+          'email': user.email ?? '',
+          'name': contractorData['firm_name'] ?? 'Contractor Firm',
+          'role': 'contractor',
+          'status': 'active',
+          'created_at': DateTimeHelper.getLocalTimeISOString(),
+          'last_login': DateTimeHelper.getLocalTimeISOString(),
+          'profile_image_url': contractorData['profile_photo'] ?? 'assets/defaultpic.png',
+          'phone_number': contractorData['contact_number'] ?? '',
+          'verified': false,
+        }, onConflict: 'users_id');
       } else {
+        debugPrint('[Google Contractor] Both rows exist; updating verified/last_login');
         final userType = user.userMetadata != null ? user.userMetadata!['user_type'] : null;
         if (userType == null || userType.toLowerCase() != 'contractor') {
           await _auditService.logAuditEvent(
@@ -260,31 +291,6 @@ class SignInGoogleContractor {
           return;
         }
 
-        final userRow = await supabase
-            .from('Users')
-            .select('users_id, verified')
-            .eq('users_id', user.id)
-            .maybeSingle();
-
-        if (userRow == null) {
-          await supabase.from('Users').upsert({
-            'users_id': user.id,
-            'email': user.email,
-            'name': user.userMetadata?['full_name'] ?? 'Contractor Firm',
-            'role': 'contractor',
-            'status': 'active',
-            'last_login': DateTimeHelper.getLocalTimeISOString(),
-            'profile_image_url': user.userMetadata?['avatar_url'],
-            'phone_number': '',
-            'verified': true,
-          }, onConflict: 'users_id');
-        } else if (userRow['verified'] != true) {
-          await supabase
-              .from('Users')
-              .update({'verified': true, 'last_login': DateTimeHelper.getLocalTimeISOString()})
-              .eq('users_id', user.id);
-        }
-
         await _auditService.logAuditEvent(
           userId: user.id,
           action: 'USER_LOGIN',
@@ -295,6 +301,28 @@ class SignInGoogleContractor {
             'login_method': 'google_oauth',
           },
         );
+
+        try {
+          await supabase
+              .from('Users')
+              .update({
+                'last_login': DateTimeHelper.getLocalTimeISOString(),
+              })
+              .eq('users_id', user.id);
+        } catch (e) {
+          await _errorService.logError(
+            errorMessage: 'Failed to update Users for contractor Google login: $e',
+            module: 'Contractor Google Sign-in',
+            severity: 'Low',
+            extraInfo: {
+              'operation': 'Update Users after Google login',
+              'users_id': user.id,
+            },
+          );
+        }
+
+        if (context.mounted) {
+        }
       }
     } catch (e) {
       await _errorService.logError(
@@ -317,49 +345,38 @@ class SignInGoogleContractor {
     try {
       final supabase = Supabase.instance.client;
 
+      String? profilePhoto = user.userMetadata?['avatar_url'] ?? 
+                            user.userMetadata?['picture'];
+      
+      debugPrint('[Google Contractor] Profile photo sources - avatar_url: ${user.userMetadata?['avatar_url']}, picture: ${user.userMetadata?['picture']}, final: $profilePhoto');
+
       await supabase.auth.updateUser(
         UserAttributes(
           data: {
             'user_type': 'contractor',
             'firm_name': user.userMetadata?['full_name'] ?? 'Contractor Firm',
             'email': user.email,
-            'profile_photo': user.userMetadata?['avatar_url'],
+            'profile_photo': profilePhoto,
           },
         ),
       );
 
-      await Future.delayed(const Duration(milliseconds: 1000));
-      
-      bool insertSuccess = false;
-      for (int attempt = 0; attempt < 5 && !insertSuccess; attempt++) {
-        try {
-          await supabase.from('Users').upsert({
-            'users_id': user.id,
-            'email': user.email,
-            'name': user.userMetadata?['full_name'] ?? 'Contractor Firm',
-            'role': 'contractor',
-            'status': 'active',
-            'created_at': DateTimeHelper.getLocalTimeISOString(),
-            'last_login': DateTimeHelper.getLocalTimeISOString(),
-            'profile_image_url': user.userMetadata?['avatar_url'],
-            'phone_number': '',
-            'verified': true,
-          }, onConflict: 'users_id');
-          insertSuccess = true;
-        } catch (e) {
-          if (attempt == 4) {
-            throw Exception('Failed to create user record: $e');
-          }
-          await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
-        }
-      }
+      await supabase.from('Users').upsert({
+        'users_id': user.id,
+        'email': user.email,
+        'name': user.userMetadata?['full_name'] ?? 'Contractor Firm',
+        'role': 'contractor',
+        'status': 'active',
+        'last_login': DateTimeHelper.getLocalTimeISOString(),
+        'profile_image_url': profilePhoto ?? 'assets/defaultpic.png',
+        'phone_number': '',
+        'verified': false,
+      }, onConflict: 'users_id');
 
       await supabase.from('Contractor').insert({
         'contractor_id': user.id,
         'firm_name': user.userMetadata?['full_name'] ?? 'Contractor Firm',
-        'profile_photo': user.userMetadata?['avatar_url'],
-        'contact_number': '',
-        'rating': 0.0,
+        'profile_photo': profilePhoto ?? 'assets/defaultpic.png',
         'created_at': DateTimeHelper.getLocalTimeISOString(),
       });
 
@@ -375,8 +392,11 @@ class SignInGoogleContractor {
         },
       );
 
-      ConTrustSnackBar.success(
-          context, 'Welcome! Your contractor account has been created.');
+      ConTrustSnackBar.show(
+        context,
+        'Account created! Your account is pending verification. Some features will be limited until approved.',
+        type: SnackBarType.info,
+      );
 
     } catch (e) {
       await _auditService.logAuditEvent(
@@ -393,7 +413,7 @@ class SignInGoogleContractor {
       await _errorService.logError(
         errorMessage: 'Contractor setup failed during Google sign-in: $e',
         module: 'Contractor Google Sign-in',
-        severity: 'Medium',
+        severity: 'High',
         extraInfo: {
           'operation': 'Setup Contractor Google',
           'users_id': user.id,

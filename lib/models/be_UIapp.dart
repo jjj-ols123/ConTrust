@@ -16,6 +16,7 @@ class ContractorsView extends StatelessWidget {
   final String name;
   final String profileImage;
   final double rating;
+  final bool isMobile;
 
   static const String profileUrl =
       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
@@ -26,103 +27,111 @@ class ContractorsView extends StatelessWidget {
     required this.name,
     required this.profileImage,
     required this.rating,
+    this.isMobile = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(right: 12),
-      width: 180,
-      child: Card(
-        elevation: 6,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        shadowColor: Colors.amber.shade200,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(16)),
-              child: Image.network(
-                (profileImage.isNotEmpty) ? profileImage : profileUrl,
-                height: 140,
-                fit: BoxFit.cover,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return const Center(child: CircularProgressIndicator(color: Colors.amber));
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  return Image.network(
-                    profileUrl,
-                    height: 140,
-                    fit: BoxFit.cover,
-                  );
-                },
-              ),
+    return Card(
+      elevation: 6,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      shadowColor: Colors.amber.shade200,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ClipRRect(
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(16)),
+            child: Image.network(
+              (profileImage.isNotEmpty) ? profileImage : profileUrl,
+              height: isMobile ? 90 : 140,
+              fit: BoxFit.cover,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return const Center(child: CircularProgressIndicator(color: Colors.amber));
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return Image.network(
+                  profileUrl,
+                  height: isMobile ? 90 : 140,
+                  fit: BoxFit.cover,
+                );
+              },
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    name,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 8 : 12,
+              vertical: isMobile ? 6 : 8,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  name,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: isMobile ? 12 : 16,
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: List.generate(5, (index) {
-                      if (index < rating.floor()) {
-                        return Icon(Icons.star, color: Colors.amber, size: 18);
-                      } else if (index < rating.ceil() && rating % 1 != 0) {
-                        return Icon(Icons.star_half, color: Colors.amber, size: 18);
-                      } else {
-                        return Icon(Icons.star_border, color: Colors.grey, size: 18);
-                      }
-                    }),
-                  ),
-                  const SizedBox(height: 6),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        CheckUserLogin.isLoggedIn(
-                          context: context,
-                          onAuthenticated: () async {
-                            if (!context.mounted) return;
-                            final encodedName = Uri.encodeComponent(name);
-                            context.go('/contractor/$encodedName');
-                          },
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.amber[700],
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 4,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: isMobile ? 2 : 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(5, (index) {
+                    final starSize = isMobile ? 14.0 : 18.0;
+                    if (index < rating.floor()) {
+                      return Icon(Icons.star, color: Colors.amber, size: starSize);
+                    } else if (index < rating.ceil() && rating % 1 != 0) {
+                      return Icon(Icons.star_half, color: Colors.amber, size: starSize);
+                    } else {
+                      return Icon(Icons.star_border, color: Colors.grey, size: starSize);
+                    }
+                  }),
+                ),
+                SizedBox(height: isMobile ? 4 : 6),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      CheckUserLogin.isLoggedIn(
+                        context: context,
+                        onAuthenticated: () async {
+                          if (!context.mounted) return;
+                          final encodedName = Uri.encodeComponent(name);
+                          context.go('/contractor/$encodedName');
+                        },
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber[700],
+                      foregroundColor: Colors.black,
+                      padding: EdgeInsets.symmetric(
+                        vertical: isMobile ? 4 : 10,
+                        horizontal: isMobile ? 8 : 16,
                       ),
-                      child: const Text("View", style: TextStyle(fontSize: 14)),
+                      minimumSize: Size(0, isMobile ? 32 : 40),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 4,
+                    ),
+                    child: Text(
+                      "View",
+                      style: TextStyle(fontSize: isMobile ? 11 : 14),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -188,7 +197,7 @@ class ProjectView extends StatelessWidget {
                   _buildHeader(context, status),
                   
                   const SizedBox(height: 16),
-                  _buildProjectDetails(isHiringRequest),
+                  _buildProjectDetails(context, isHiringRequest),
                   
                   const SizedBox(height: 16),
 
@@ -469,7 +478,10 @@ class ProjectView extends StatelessWidget {
     );
   }
 
-  Widget _buildProjectDetails(bool isHiringRequest) {
+  Widget _buildProjectDetails(BuildContext context, bool isHiringRequest) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 700;
+    
     final details = [
       _buildDetailItem(
         icon: Icons.attach_money,
@@ -500,6 +512,20 @@ class ProjectView extends StatelessWidget {
         ),
     ];
 
+    // If mobile, show all labels in one column
+    if (isMobile) {
+      return Column(
+        children: [
+          for (int i = 0; i < details.length; i++)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: details[i],
+            ),
+        ],
+      );
+    }
+
+    // Desktop: show labels in two columns
     return Column(
       children: [
         for (int i = 0; i < details.length; i += 2)

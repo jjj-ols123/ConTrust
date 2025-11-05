@@ -22,6 +22,16 @@ class CorBiddingService {
     required BuildContext context,
   }) async {
     try {
+      final userResponse = await _supabase
+          .from('Users')
+          .select('verified')
+          .eq('users_id', contractorId)
+          .maybeSingle();
+
+      if (userResponse == null || userResponse['verified'] != true) {
+        throw Exception('Account must be verified before you can submit bids. Please wait for approval.');
+      }
+
       await _userService.checkContractorId(contractorId);
 
       final projectResponse = await _supabase
@@ -150,7 +160,7 @@ class CorBiddingService {
           // Show the specific error message from the exception
           String errorMessage = e.toString();
           if (errorMessage.startsWith('Exception: ')) {
-            errorMessage = errorMessage.substring(12); // Remove "Exception: " prefix
+            errorMessage = errorMessage.substring(11); 
           }
           ConTrustSnackBar.warning(context, errorMessage);
         } else {

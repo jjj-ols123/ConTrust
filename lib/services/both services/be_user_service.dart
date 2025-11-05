@@ -173,12 +173,12 @@ class UserService {
         return {
           'firm_name': response['firm_name'] ?? "No firm name",
           'bio': response['bio'] ?? "No bio available",
-          'rating': (response['rating'] ?? 4.5).toDouble(),
+          'rating': (response['rating'] ?? 0.0).toDouble(),
           'profile_photo': response['profile_photo'] ?? 'defaultpic.png',
           'past_projects': List<String>.from(response['past_projects'] ?? []),
           'contact_number': response['contact_number'] ?? "No contact number",
           'specialization': response['specialization'] ?? "No specialization",
-          'address': response['address'] ?? "",
+          'address': response['address'] ?? "No address provided",
           'email': email,
         };
       } else {

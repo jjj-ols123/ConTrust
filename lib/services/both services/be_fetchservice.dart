@@ -11,7 +11,8 @@ class FetchService {
     try {
       final query = _supabase
           .from('Contractor')
-          .select('contractor_id, firm_name, profile_photo, bio, rating, specialization');
+          .select('contractor_id, firm_name, profile_photo, bio, rating, specialization')
+          .eq('verified', true);
       
       if (projectType != null && projectType.isNotEmpty) {
         final response = await query;

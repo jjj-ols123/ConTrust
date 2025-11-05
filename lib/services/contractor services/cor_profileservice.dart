@@ -174,6 +174,32 @@ class CorProfileService {
     setUploading(true);
 
     try {
+      try {
+        final userRow = await Supabase.instance.client
+            .from('Users')
+            .select('verified')
+            .eq('users_id', contractorId)
+            .maybeSingle();
+        final isVerified = userRow != null && (userRow['verified'] == true);
+        if (!isVerified) {
+          if (context.mounted) {
+            ConTrustSnackBar.warning(
+              context,
+              'Your account must be verified before you can upload project photos. Please wait for approval.',
+            );
+          }
+          return;
+        }
+      } catch (_) {
+        if (context.mounted) {
+          ConTrustSnackBar.warning(
+            context,
+            'Your account must be verified before you can upload project photos. Please wait for approval.',
+          );
+        }
+        return;
+      }
+
       Uint8List? imageBytes = await UserService().pickImage();
 
       if (imageBytes != null) {

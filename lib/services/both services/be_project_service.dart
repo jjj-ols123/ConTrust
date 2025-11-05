@@ -31,6 +31,7 @@ class ProjectService {
     required String duration,
     required DateTime startDate,
     required BuildContext context,
+    String? photoUrl,
   }) async {
     try {
       await _userService.checkContracteeId(contracteeId);
@@ -61,6 +62,7 @@ class ProjectService {
         'status': 'pending',
         'duration': duration,
         'start_date': startDate.toIso8601String(),
+        'photo_url': photoUrl,
         'projectdata': {
           'hiring_type': 'bidding',
           'created_via': 'project_posting',
@@ -174,6 +176,7 @@ class ProjectService {
     required double? maxBudget,
     required int duration,
     DateTime? startDate,
+    String? photoUrl,
   }) async {
     try {
       final projectData = await _supabase
@@ -195,6 +198,10 @@ class ProjectService {
 
       if (startDate != null) {
         updateData['start_date'] = startDate.toIso8601String();
+      }
+
+      if (photoUrl != null) {
+        updateData['photo_url'] = photoUrl;
       }
 
       if (currentStatus == 'stopped') {
@@ -595,6 +602,7 @@ class ProjectService {
     String? minBudget,
     String? maxBudget,
     DateTime? startDate,
+    String? photoUrl,
   }) async {
     try {
       final existingHireRequest = await FetchService()
@@ -652,8 +660,18 @@ class ProjectService {
             ...(existingProjectData ?? {}),
           };
 
-          await _supabase.from('Projects').update({
+          final updateData = <String, dynamic>{
             'projectdata': updatedProjectData,
+          };
+
+          if (photoUrl != null) {
+            updateData['photo_url'] = photoUrl;
+          }
+
+          await _supabase.from('Projects').update(updateData).eq('project_id', projectId);
+        } else if (photoUrl != null) {
+          await _supabase.from('Projects').update({
+            'photo_url': photoUrl,
           }).eq('project_id', projectId);
         }
       } else {
@@ -668,6 +686,7 @@ class ProjectService {
           'min_budget': minBudget != null ? double.tryParse(minBudget) : null,
           'max_budget': maxBudget != null ? double.tryParse(maxBudget) : null,
           'start_date': startDate?.toIso8601String(),
+          'photo_url': photoUrl,
           'projectdata': {
             'hiring_type': 'direct_hire',
             'created_via': 'hire_request',
