@@ -33,10 +33,26 @@ class SignatureCompletionHandler {
           userType: userType,
         );
 
-        await Supabase.instance.client
-            .from('Contracts')
-            .update({'signed_pdf_url': contractData['pdf_url']})
-            .eq('contract_id', contractId);
+        await Future.delayed(const Duration(milliseconds: 500));
+        
+        final updatedContractData = await ContractService.getContractById(contractId);
+        
+        final contractorSigned = updatedContractData['contractor_signature_url'] != null &&
+            (updatedContractData['contractor_signature_url'] as String).isNotEmpty;
+        final contracteeSigned = updatedContractData['contractee_signature_url'] != null &&
+            (updatedContractData['contractee_signature_url'] as String).isNotEmpty;
+        
+        if (contractorSigned && contracteeSigned) {
+          final hasSignedPdf = updatedContractData['signed_pdf_url'] != null && 
+               (updatedContractData['signed_pdf_url'] as String).isNotEmpty;
+          
+          if (!hasSignedPdf) {
+            await Supabase.instance.client
+                .from('Contracts')
+                .update({'signed_pdf_url': updatedContractData['pdf_url']})
+                .eq('contract_id', contractId);
+          }
+        }
         return;  
       }
 

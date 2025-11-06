@@ -8,6 +8,7 @@ import 'package:backend/services/both%20services/be_fetchservice.dart';
 import 'package:backend/services/superadmin%20services/errorlogs_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 // Shared helper to format timestamps as relative time
 String formatTimeAgo(String? timestamp) {
@@ -1483,7 +1484,7 @@ class _GroupedNotificationCardState extends State<_GroupedNotificationCard> {
 Future<void> _showProjectDetailsDialog(BuildContext context, Map<String, dynamic> info) {
   return showDialog(
     context: context,
-    builder: (BuildContext context) => AlertDialog(
+    builder: (BuildContext dialogContext) => AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Row(
         children: [
@@ -1497,6 +1498,10 @@ Future<void> _showProjectDetailsDialog(BuildContext context, Map<String, dynamic
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (info['photo_url'] != null && info['photo_url'].toString().isNotEmpty) ...[
+              _buildProjectPhoto(dialogContext, info['photo_url']),
+              const SizedBox(height: 16),
+            ],
             _buildDetailRow('Title:', info['project_title'] ?? 'N/A'),
             _buildDetailRow('Type:', info['project_type'] ?? 'N/A'),
             _buildDetailRow('Location:', info['project_location'] ?? 'N/A'),
@@ -1517,6 +1522,170 @@ Future<void> _showProjectDetailsDialog(BuildContext context, Map<String, dynamic
           child: const Text('Close'),
         ),
       ],
+    ),
+  );
+}
+
+String _getProjectPhotoUrl(dynamic photoUrl) {
+  if (photoUrl == null || photoUrl.toString().isEmpty) {
+    return '';
+  }
+  final raw = photoUrl.toString();
+  if (raw.startsWith('data:') || raw.startsWith('http')) {
+    return raw;
+  }
+  try {
+    return Supabase.instance.client.storage
+        .from('projectphotos')
+        .getPublicUrl(raw);
+  } catch (_) {
+    return raw;
+  }
+}
+
+void _showFullPhotoDialog(BuildContext context, String url) {
+  showDialog(
+    context: context,
+    barrierDismissible: true,
+    builder: (dialogContext) {
+      final size = MediaQuery.of(dialogContext).size;
+      final double maxWidth = size.width * 0.75;
+      final double maxHeight = size.height * 0.7;
+
+      return Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        backgroundColor: Colors.transparent,
+        child: Stack(
+          children: [
+            Container(
+              constraints: BoxConstraints(
+                maxWidth: maxWidth,
+                maxHeight: maxHeight,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Center(
+                  child: InteractiveViewer(
+                    minScale: 0.5,
+                    maxScale: 5.0,
+                    child: Image.network(
+                      url,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.image_not_supported,
+                                size: 48,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Failed to load image',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: IconButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                icon: const Icon(Icons.close, color: Colors.white),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black54,
+                ),
+                tooltip: 'Close',
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+Widget _buildProjectPhoto(BuildContext context, dynamic photoUrl) {
+  final photoUrlString = _getProjectPhotoUrl(photoUrl);
+  if (photoUrlString.isEmpty) {
+    return const SizedBox.shrink();
+  }
+  
+  return GestureDetector(
+    onTap: () => _showFullPhotoDialog(context, photoUrlString),
+    child: Container(
+      width: double.infinity,
+      height: 180,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(7),
+            child: Image.network(
+              photoUrlString,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: Colors.grey.shade100,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.image_not_supported,
+                          size: 32,
+                          color: Colors.grey.shade400,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Failed to load image',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Icon(
+                Icons.zoom_in,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+          ),
+        ],
+      ),
     ),
   );
 }

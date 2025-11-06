@@ -731,6 +731,7 @@ class ProjectService {
           'project_description': description,
           'min_budget': minBudget,
           'max_budget': maxBudget,
+          'photo_url': photoUrl,
           'action': 'hire_request',
           'status': 'pending',
           'timestamp': DateTimeHelper.getLocalTimeISOString(),

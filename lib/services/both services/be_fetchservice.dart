@@ -811,12 +811,18 @@ class FetchService {
             final withPhotoUrls = filtered.map((p) {
               final project = Map<String, dynamic>.from(p);
               final dynamic raw = project['photo_url'];
-              if (raw is String && raw.isNotEmpty && !raw.startsWith('http')) {
-                try {
-                  project['photo_url'] = _supabase.storage
-                      .from('projectphotos')
-                      .getPublicUrl(raw);
-                } catch (_) {}
+              if (raw is String && raw.isNotEmpty) {
+                if (raw.startsWith('data:') || raw.startsWith('http')) {
+                  project['photo_url'] = raw;
+                } else {
+                  try {
+                    project['photo_url'] = _supabase.storage
+                        .from('projectphotos')
+                        .getPublicUrl(raw);
+                  } catch (_) {
+                    project['photo_url'] = raw;
+                  }
+                }
               }
               return project;
             }).toList();

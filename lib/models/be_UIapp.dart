@@ -396,7 +396,21 @@ class ProjectView extends StatelessWidget {
         final userType = currentUser?.userMetadata?['user_type']?.toString();
         final isContractee = userType == 'contractee';
         
-        if (isContractee && status.toLowerCase() == 'draft') {
+        final projectStatus = project['status'] as String? ?? '';
+        final projectStatusLower = projectStatus.toLowerCase();
+        final contractStatusLower = status.toLowerCase();
+        
+        if (projectStatusLower == 'awaiting_contract' && contractStatusLower == 'rejected') {
+          return _buildNoContractLabel();
+        }
+        
+        final shouldShowContract = !isContractee || 
+            contractStatusLower != 'draft' ||
+            projectStatusLower == 'awaiting_agreement' ||
+            projectStatusLower == 'awaiting_signature' ||
+            projectStatusLower == 'awaiting_contract';
+        
+        if (!shouldShowContract) {
           return _buildNoContractLabel();
         }
         
@@ -406,7 +420,17 @@ class ProjectView extends StatelessWidget {
         IconData icon;
         String statusText;
 
-        switch (status.toLowerCase()) {
+        final contractStatus = status.toLowerCase().trim();
+        final projectStatusTrimmed = projectStatusLower.trim();
+        
+        final effectiveStatus = (contractStatus == 'draft' && 
+            (projectStatusTrimmed == 'awaiting_agreement' || 
+             projectStatusTrimmed == 'awaiting_signature' || 
+             projectStatusTrimmed == 'awaiting_contract')) 
+            ? 'sent' 
+            : contractStatus;
+
+        switch (effectiveStatus) {
           case 'approved':
           case 'active':
           case 'signed':
@@ -936,9 +960,10 @@ class ProjectView extends StatelessWidget {
           child: Material(
             color: Colors.transparent,
             child: Container(
-              width: MediaQuery.of(dialogContext).size.width * 1.2,
-              constraints: const BoxConstraints(maxWidth: 900),
-              height: MediaQuery.of(dialogContext).size.height * 0.9,
+              constraints: BoxConstraints(
+                maxWidth: 900,
+                maxHeight: MediaQuery.of(dialogContext).size.height * 0.85,
+              ),
               margin: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -1008,12 +1033,7 @@ class ProjectView extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildStatusBadge(liveData['status'] as String? ?? 'draft'),
-                              const SizedBox(height: 20),
  
-                              _buildContractInfo(liveData),
-                              const SizedBox(height: 20),
-
                               if ((liveData['status'] as String?)?.toLowerCase() == 'sent') ...[
                                 Card(
                                   color: Colors.amber[50],
@@ -1158,158 +1178,13 @@ class ProjectView extends StatelessWidget {
     }
   }
 
-  Widget _buildStatusBadge(String status) {
-    Color badgeColor;
-    IconData icon;
-    String displayText;
-
-    switch (status.toLowerCase()) {
-      case 'approved':
-      case 'active':
-      case 'signed':
-      case 'awaiting_signature':
-        badgeColor = Colors.green;
-        icon = Icons.verified;
-        displayText = 'Contract Approved';
-        break;
-      case 'sent':
-        badgeColor = Colors.orange;
-        icon = Icons.pending;
-        displayText = 'Pending Review';
-        break;
-      case 'rejected':
-        badgeColor = Colors.red;
-        icon = Icons.cancel;
-        displayText = 'Rejected';
-        break;
-      default:
-        badgeColor = Colors.blue;
-        icon = Icons.description;
-        displayText = 'Draft';
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: badgeColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: badgeColor.withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 18, color: badgeColor),
-          const SizedBox(width: 8),
-          Text(
-            displayText,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: badgeColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildContractInfo(Map<String, dynamic> contractData) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Contract Information',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade800,
-            ),
-          ),
-          const SizedBox(height: 12),
-          if (contractData['created_at'] != null)
-            _buildInfoRow(
-              'Created',
-              DateFormat('MMM dd, yyyy').format(
-                DateTime.parse(contractData['created_at']).toLocal(),
-              ),
-            ),
-          if (contractData['updated_at'] != null)
-            _buildInfoRow(
-              'Last Updated',
-              DateFormat('MMM dd, yyyy').format(
-                DateTime.parse(contractData['updated_at']).toLocal(),
-              ),
-            ),
-          _buildInfoRow('Status', _formatContractStatus(contractData['status'] as String? ?? 'draft')),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              '$label:',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(color: Colors.black87),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatContractStatus(String status) {
-    switch (status.toLowerCase()) {
-      case 'draft':
-        return 'Draft';
-      case 'sent':
-        return 'Pending Review';
-      case 'approved':
-        return 'Approved';
-      case 'rejected':
-        return 'Rejected';
-      case 'awaiting_signature':
-        return 'Awaiting Signature';
-      case 'active':
-        return 'Active';
-      case 'signed':
-        return 'Signed';
-      default:
-        return status.capitalize();
-    }
-  }
-
   Future<void> _downloadContract(Map<String, dynamic> contractData) async {
     try {
       final pdfUrl = await ViewContractService.getPdfSignedUrl(contractData);
       if (pdfUrl != null) {
-        // Implementation depends on platform
-        // For web, you can use html.window.open(pdfUrl, '_blank');
       }
     } catch (e) {
-      // Handle error
+      // 
     }
   }
 }
