@@ -823,26 +823,29 @@ class _MyAppState extends State<MyApp> {
         ),
       ],
       redirect: (context, state) {
-        final location = state.matchedLocation.isEmpty ? state.uri.path : state.matchedLocation;
+        final uriPath = state.uri.path;
         
         Session? session = Supabase.instance.client.auth.currentSession;
 
         if (session == null) {
-          if (location != '/logincontractor' && location != '/auth/callback' && location != '/auth/reset-password' && location != '/register') {
-            return '/logincontractor';
+          if (uriPath == '/logincontractor' || 
+              uriPath == '/auth/callback' || 
+              uriPath == '/auth/reset-password' || 
+              uriPath == '/register') {
+            return null; 
           }
-          return null;
+          return '/logincontractor';
         }
 
         if (_isRegistering || _preventAuthNavigation) {
           return null;
         }
 
-        if (location == '/auth/callback') {
+        if (uriPath == '/auth/callback') {
           return null;
         }
 
-        if (location == '/logincontractor') {
+        if (uriPath == '/logincontractor') {
           return '/dashboard';
         }
 

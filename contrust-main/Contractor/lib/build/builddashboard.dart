@@ -259,59 +259,67 @@ class DashboardBuildMethods {
               ],
             ),
             SizedBox(height: isTablet ? 16 : 12),
-            FutureBuilder<Map<String, dynamic>?>(
-              future: _fetchCurrentContractee(projectId),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: Colors.amber));
-                }
+            StreamBuilder<List<Map<String, dynamic>>>(
+              stream: Supabase.instance.client
+                  .from('Projects')
+                  .stream(primaryKey: ['project_id'])
+                  .map((rows) => rows.where((p) => p['project_id'] == projectId).toList()),
+              builder: (context, _) {
+                return FutureBuilder<Map<String, dynamic>?>(
+                  future: _fetchCurrentContractee(projectId),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator(color: Colors.amber));
+                    }
 
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Text(
-                      'Error loading contractee',
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-                    ),
-                  );
-                }
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Text(
+                          'Error loading contractee',
+                          style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                        ),
+                      );
+                    }
 
-                final contractee = snapshot.data;
-                
-                if (contractee == null) {
-                  return Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.person_off_outlined,
-                          size: 40,
-                          color: Colors.grey.shade400,
+                    final contractee = snapshot.data;
+                    
+                    if (contractee == null) {
+                      return Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.person_off_outlined,
+                              size: 40,
+                              color: Colors.grey.shade400,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'No contractee assigned',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'A contractee will appear here.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade500,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'No contractee assigned',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'A contractee will appear here.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade500,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  );
-                }
+                      );
+                    }
 
-                return buildContracteeInfo(contractee);
+                    return buildContracteeInfo(contractee);
+                  },
+                );
               },
             ),
           ],
@@ -350,14 +358,31 @@ class DashboardBuildMethods {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              project['full_name']?.toString() ?? "Client Name",
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  project['full_name']?.toString() ?? "Client Name",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (project['email'] != null && (project['email'] as String).isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    project['email'],
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
             ),
           ),
           const SizedBox(width: 8),
@@ -524,62 +549,70 @@ class DashboardBuildMethods {
           ),
           const SizedBox(height: 16),
           
-          FutureBuilder<List<Map<String, dynamic>>>(
-            future: dashboardservice.fetchPendingHiringRequests(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
+          StreamBuilder<List<Map<String, dynamic>>>(
+            stream: Supabase.instance.client
+                .from('Notifications')
+                .stream(primaryKey: ['notification_id'])
+                .map((rows) => rows),
+            builder: (context, _) {
+              return FutureBuilder<List<Map<String, dynamic>>>(
+                future: dashboardservice.fetchPendingHiringRequests(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-              if (snapshot.hasError) {
-                return const Center(child: Text('Error loading hiring requests'));
-              }
+                  if (snapshot.hasError) {
+                    return const Center(child: Text('Error loading hiring requests'));
+                  }
 
-              final hiringRequests = snapshot.data ?? [];
+                  final hiringRequests = snapshot.data ?? [];
 
-              if (hiringRequests.isEmpty) {
-                return Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.inbox_outlined,
-                        size: 40,
-                        color: Colors.grey.shade400,
+                  if (hiringRequests.isEmpty) {
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.inbox_outlined,
+                            size: 40,
+                            color: Colors.grey.shade400,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'No hiring requests at the moment',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'New opportunities will appear here',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'No hiring requests at the moment',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'New opportunities will appear here',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade500,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
+                    );
+                  }
 
-              return SizedBox(
-                height: isMobile ? 240 : 300,
-                child: ListView.builder(
-                  padding: EdgeInsets.zero,
-                  itemCount: hiringRequests.length,
-                  itemBuilder: (context, index) {
-                    final notification = hiringRequests[index];
-                    return _buildCompactHiringCard(notification);
-                  },
-                ),
+                  return SizedBox(
+                    height: isMobile ? 240 : 300,
+                    child: ListView.builder(
+                      padding: EdgeInsets.zero,
+                      itemCount: hiringRequests.length,
+                      itemBuilder: (context, index) {
+                        final notification = hiringRequests[index];
+                        return _buildCompactHiringCard(notification);
+                      },
+                    ),
+                  );
+                },
               );
             },
           ),
@@ -703,6 +736,23 @@ class DashboardBuildMethods {
         ),
       ),
     );
+  }
+
+  String _getProjectPhotoUrl(dynamic photoUrl) {
+    if (photoUrl == null || photoUrl.toString().isEmpty) {
+      return '';
+    }
+    final raw = photoUrl.toString();
+    if (raw.startsWith('data:') || raw.startsWith('http')) {
+      return raw;
+    }
+    try {
+      return Supabase.instance.client.storage
+          .from('projectphotos')
+          .getPublicUrl(raw);
+    } catch (_) {
+      return raw;
+    }
   }
 
   Widget _buildCompactHiringCard(Map<String, dynamic> notification) {
@@ -989,6 +1039,11 @@ class DashboardBuildMethods {
                           
                           const SizedBox(height: 24),
                           
+                          if (info['photo_url'] != null && info['photo_url'].toString().isNotEmpty) ...[
+                            _buildProjectPhotoField(info['photo_url']),
+                            const SizedBox(height: 16),
+                          ],
+                          
                           _buildDetailField('Project Title', info['project_title'] ?? 'Untitled Project'),
                           _buildDetailField('Project Type', info['project_type'] ?? 'Not specified'),
                           _buildDetailField('Location', info['project_location'] ?? 'Not specified'),
@@ -1047,6 +1102,171 @@ class DashboardBuildMethods {
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey.shade800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFullPhoto(String url) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        final size = MediaQuery.of(dialogContext).size;
+        final double maxWidth = size.width * 0.75;
+        final double maxHeight = size.height * 0.7;
+
+        return Dialog(
+          insetPadding: const EdgeInsets.all(16),
+          backgroundColor: Colors.transparent,
+          child: Stack(
+            children: [
+              Container(
+                constraints: BoxConstraints(
+                  maxWidth: maxWidth,
+                  maxHeight: maxHeight,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Center(
+                    child: InteractiveViewer(
+                      minScale: 0.5,
+                      maxScale: 5.0,
+                      child: Image.network(
+                        url,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.image_not_supported,
+                                  size: 48,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'Failed to load image',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: IconButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black54,
+                  ),
+                  tooltip: 'Close',
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildProjectPhotoField(dynamic photoUrl) {
+    final photoUrlString = _getProjectPhotoUrl(photoUrl);
+    if (photoUrlString.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    return Padding(
+      padding: EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Project Photo',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          SizedBox(height: 4),
+          GestureDetector(
+            onTap: () => _showFullPhoto(photoUrlString),
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(7),
+                    child: Image.network(
+                      photoUrlString,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 200,
+                          color: Colors.grey.shade100,
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.image_not_supported,
+                                  size: 48,
+                                  color: Colors.grey.shade400,
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Failed to load image',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Icon(
+                        Icons.zoom_in,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -2199,11 +2419,25 @@ class DashboardBuildMethods {
       
       if (contracteeResponse == null) return null;
       
-      // Return contractee data in the format expected by buildContracteeInfo
+      String email = '';
+      try {
+        final userData = await supabase
+            .from('Users')
+            .select('email')
+            .eq('users_id', contracteeId)
+            .maybeSingle();
+        if (userData != null) {
+          email = userData['email'] ?? '';
+        }
+      } catch (_) {
+        //
+      }
+      
       return {
         'contractee_id': contracteeResponse['contractee_id'],
         'full_name': contracteeResponse['full_name'],
         'contractee_photo': contracteeResponse['profile_photo'],
+        'email': email,
       };
     } catch (e) {
       return null;

@@ -4,6 +4,7 @@ import 'package:backend/services/both services/be_contract_service.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
+import 'package:contractor/build/contract/buildcontracttype.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -206,6 +207,8 @@ class ContractTypeService {
   }) {
     try {
       final contractStatus = contract['status'] as String? ?? 'draft';
+      final contractTypeId = contract['contract_type_id'] as String?;
+      final isCustomContract = contractTypeId == 'd9d78420-7765-44d5-966c-6f0e0297c07d';
       
       final RenderBox button = context.findRenderObject() as RenderBox;
       final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
@@ -234,18 +237,34 @@ class ContractTypeService {
         );
       }
 
-      menuItems.add(
-        const PopupMenuItem(
-          value: 'edit',
-          child: Row(
-            children: [
-              Icon(Icons.edit, size: 20),
-              SizedBox(width: 8),
-              Text('Edit Contract'),
-            ],
+      // For custom contracts, show "Resend File" instead of "Edit Contract"
+      if (isCustomContract) {
+        menuItems.add(
+          const PopupMenuItem(
+            value: 'resend',
+            child: Row(
+              children: [
+                Icon(Icons.upload_file, size: 20),
+                SizedBox(width: 8),
+                Text('Resend File'),
+              ],
+            ),
           ),
-        ),
-      );
+        );
+      } else {
+        menuItems.add(
+          const PopupMenuItem(
+            value: 'edit',
+            child: Row(
+              children: [
+                Icon(Icons.edit, size: 20),
+                SizedBox(width: 8),
+                Text('Edit Contract'),
+              ],
+            ),
+          ),
+        );
+      }
 
       showMenu<String>(
         context: context,
@@ -290,6 +309,14 @@ class ContractTypeService {
             context: context,
             contract: contract,
             contractorId: contractorId,
+          );
+          break;
+        case 'resend':
+          // Show the upload dialog with existing contract data for update
+          await ContractTypeBuild.showUploadContractDialog(
+            context: context,
+            contractorId: contractorId,
+            existingContract: contract,
           );
           break;
       }

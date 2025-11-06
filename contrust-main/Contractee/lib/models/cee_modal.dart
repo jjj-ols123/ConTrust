@@ -143,9 +143,9 @@ class _ProjectDialogState extends State<ProjectDialog> {
       final ImagePicker picker = ImagePicker();
       final XFile? pickedFile = await picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 1920,
-        maxHeight: 1080,
-        imageQuality: 85,
+        maxWidth: 800,
+        maxHeight: 600,
+        imageQuality: 60,
       );
 
       if (pickedFile != null) {
@@ -169,7 +169,7 @@ class _ProjectDialogState extends State<ProjectDialog> {
     try {
       final supabase = Supabase.instance.client;
       final fileName = '${widget.contracteeId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final storagePath = 'contractee/${widget.contracteeId}/$fileName';
+      final storagePath = 'contractee/photo_url/$fileName';
 
       await supabase.storage
           .from('projectphotos')
@@ -182,20 +182,17 @@ class _ProjectDialogState extends State<ProjectDialog> {
             ),
           );
 
-      final publicUrl = supabase.storage
-          .from('projectphotos')
-          .getPublicUrl(storagePath);
-
       setState(() {
-        _photoUrl = publicUrl;
+        _photoUrl = storagePath;
         _isUploadingPhoto = false;
       });
 
-      return publicUrl;
+      return storagePath;
     } catch (e) {
       setState(() => _isUploadingPhoto = false);
       if (mounted) {
-        ConTrustSnackBar.error(context, 'Failed to upload photo: $e');
+        debugPrint('Photo upload error: $e');
+        ConTrustSnackBar.error(context, 'Failed to upload photo: ${e.toString()}');
       }
       return null;
     }
@@ -1864,7 +1861,7 @@ class HireModal {
       try {
         final supabase = Supabase.instance.client;
         final fileName = '${contracteeId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        final storagePath = 'contractee/$contracteeId/$fileName';
+        final storagePath = 'contractee/photo_url/$fileName';
 
         await supabase.storage
             .from('projectphotos')
@@ -1877,16 +1874,13 @@ class HireModal {
               ),
             );
 
-        final publicUrl = supabase.storage
-            .from('projectphotos')
-            .getPublicUrl(storagePath);
-
         isUploadingPhoto = false;
-        return publicUrl;
+        return storagePath;
       } catch (e) {
         isUploadingPhoto = false;
+        debugPrint('Photo upload error: $e');
         if (context.mounted) {
-          ConTrustSnackBar.error(context, 'Failed to upload photo: $e');
+          ConTrustSnackBar.error(context, 'Failed to upload photo: ${e.toString()}');
         }
         return null;
       }
@@ -1897,9 +1891,9 @@ class HireModal {
         final ImagePicker picker = ImagePicker();
         final XFile? pickedFile = await picker.pickImage(
           source: ImageSource.gallery,
-          maxWidth: 1920,
-          maxHeight: 1080,
-          imageQuality: 85,
+          maxWidth: 800,
+          maxHeight: 600,
+          imageQuality: 60,
         );
 
         if (pickedFile != null) {

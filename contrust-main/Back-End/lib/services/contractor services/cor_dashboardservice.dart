@@ -329,6 +329,7 @@ class CorDashboardService {
     required BuildContext context,
     required String notificationId,
     required Map<String, dynamic> info,
+    VoidCallback? onRefresh,
   }) async {
     try {
       final currentNotification = await Supabase.instance.client
@@ -439,6 +440,8 @@ class CorDashboardService {
 
       if (context.mounted) {
         ConTrustSnackBar.success(context, 'Hiring request accepted successfully! Proceed to message for further discussion with the contractee.');
+        // Call refresh callback if provided
+        onRefresh?.call();
         context.go('/dashboard');
       }
     } catch (e) {
@@ -460,6 +463,7 @@ class CorDashboardService {
   Future<void> handleDeclineHiring({
     required BuildContext context,
     required String notificationId,
+    VoidCallback? onRefresh,
   }) async {
     try {
       // Get current notification to preserve existing information
@@ -484,6 +488,8 @@ class CorDashboardService {
 
       if (context.mounted) {
         ConTrustSnackBar.success(context, 'Hiring request declined.');
+        // Call refresh callback if provided
+        onRefresh?.call();
         context.go('/dashboard');
       }
     } catch (e) {

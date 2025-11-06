@@ -96,6 +96,75 @@ class ContractorContractService {
     }
   }
 
+  static Future<void> updateCustomContract({
+    required String contractId,
+    required String contractorId,
+    required String projectId,
+    required String title,
+    String? pdfPath, // Optional - if null, keeps existing file
+  }) async {
+    try {
+      final supabase = Supabase.instance.client;
+      
+      // Get current contract to check status
+      final currentContract = await supabase
+          .from('Contracts')
+          .select('status')
+          .eq('contract_id', contractId)
+          .single();
+      
+      final currentStatus = currentContract['status'] as String?;
+      
+      // Prepare update data
+      final updateData = <String, dynamic>{
+        'title': title,
+        'updated_at': DateTimeHelper.getLocalTimeISOString(),
+      };
+      
+      // If new PDF path provided, update it
+      if (pdfPath != null) {
+        updateData['pdf_url'] = pdfPath;
+      }
+      
+      // If contract was rejected, change status back to draft when updating
+      if (currentStatus == 'rejected') {
+        updateData['status'] = 'draft';
+      }
+      
+      await supabase
+          .from('Contracts')
+          .update(updateData)
+          .eq('contract_id', contractId)
+          .eq('contractor_id', contractorId); // Ensure contractor owns this contract
+      
+      _auditService.logAuditEvent(
+        userId: contractorId,
+        action: 'CUSTOM_CONTRACT_UPDATED',
+        details: 'Custom contract PDF updated',
+        category: 'Contract',
+        metadata: {
+          'contract_id': contractId,
+          'contractor_id': contractorId,
+          'project_id': projectId,
+          'pdf_path_updated': pdfPath != null,
+        },
+      );
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to update custom contract: ',
+        module: 'Contractor Contract Service',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Update Custom Contract',
+          'contract_id': contractId,
+          'contractor_id': contractorId,
+          'project_id': projectId,
+        },
+      );
+      rethrow;
+    }
+  }
+
   static Future<void> saveContract({
     required String projectId,
     required String contractorId,

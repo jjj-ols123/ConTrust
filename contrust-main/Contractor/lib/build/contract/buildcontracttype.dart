@@ -361,6 +361,7 @@ class ContractTypeBuild {
   static Future<void> showUploadContractDialog({
     required BuildContext context,
     required String contractorId,
+    Map<String, dynamic>? existingContract,
   }) async {
     final fetchService = FetchService();
     
@@ -382,12 +383,16 @@ class ContractTypeBuild {
       return status == 'awaiting_contract' || status == 'awaiting_agreement';
     }).toList();
 
+    final isUpdate = existingContract != null;
+    final existingProjectId = existingContract?['project_id'] as String?;
+    
     await showDialog(
       context: context,
       builder: (dialogContext) {
         XFile? selectedFile;
-        String title = '';
-        String? selectedProjectId;
+        final titleController = TextEditingController(text: existingContract?['title'] as String? ?? '');
+        String title = existingContract?['title'] as String? ?? '';
+        String? selectedProjectId = existingProjectId;
         bool isLoading = false;
 
         return StatefulBuilder(
@@ -412,48 +417,87 @@ class ContractTypeBuild {
             }
 
             Future<void> saveCustomContract() async {
-              if (selectedFile == null || title.isEmpty || selectedProjectId == null) {
-                ConTrustSnackBar.warning(dialogContext, 'Please fill all fields and select a file.');
+              // For update, file is optional (can keep existing file)
+              // For new, file is required
+              if (!isUpdate && selectedFile == null) {
+                ConTrustSnackBar.warning(dialogContext, 'Please select a PDF file.');
+                return;
+              }
+              
+              if (title.isEmpty || selectedProjectId == null) {
+                ConTrustSnackBar.warning(dialogContext, 'Please fill all required fields.');
                 return;
               }
 
               setState(() => isLoading = true);
 
               try {
-                final bytes = await selectedFile!.readAsBytes();  
-                final projectData = await fetchService.fetchProjectDetails(selectedProjectId!);
-                final contracteeId = projectData?['contractee_id'];
+                String? pdfPath;
+                
+                // Only upload new file if one was selected
+                if (selectedFile != null) {
+                  final bytes = await selectedFile!.readAsBytes();
+                  final projectData = await fetchService.fetchProjectDetails(selectedProjectId!);
+                  final contracteeId = projectData?['contractee_id'];
 
-                if (contracteeId == null) {
-                  throw Exception('Project has no contractee.');
+                  if (contracteeId == null) {
+                    throw Exception('Project has no contractee.');
+                  }
+
+                  final String? contractIdForUpload = existingContract != null 
+                    ? existingContract['contract_id'] as String? 
+                    : null;
+                  pdfPath = await ContractPdfService.uploadContractPdfToStorage(
+                    pdfBytes: bytes,
+                    contractorId: contractorId,
+                    projectId: selectedProjectId!,
+                    contracteeId: contracteeId,
+                    contractId: contractIdForUpload,
+                  );
                 }
 
-                final pdfPath = await ContractPdfService.uploadContractPdfToStorage(
-                  pdfBytes: bytes,
-                  contractorId: contractorId,
-                  projectId: selectedProjectId!,
-                  contracteeId: contracteeId,
-                );
+                if (existingContract != null) {
+                  // Update existing custom contract
+                  await ContractorContractService.updateCustomContract(
+                    contractId: existingContract['contract_id'] as String,
+                    contractorId: contractorId,
+                    projectId: selectedProjectId!,
+                    title: title,
+                    pdfPath: pdfPath, // null if no new file selected (keeps existing)
+                  );
+                } else {
+                  // Create new custom contract
+                  final projectData = await fetchService.fetchProjectDetails(selectedProjectId!);
+                  final contracteeId = projectData?['contractee_id'];
 
+                  if (contracteeId == null) {
+                    throw Exception('Project has no contractee.');
+                  }
 
-                await ContractorContractService.uploadCustomContract(
-                  contractorId: contractorId,
-                  contracteeId: contracteeId,
-                  projectId: selectedProjectId!,
-                  title: title,
-                  pdfPath: pdfPath, 
-                  contractType: 'Custom',
-                );
+                  await ContractorContractService.uploadCustomContract(
+                    contractorId: contractorId,
+                    contracteeId: contracteeId,
+                    projectId: selectedProjectId!,
+                    title: title,
+                    pdfPath: pdfPath!,
+                    contractType: 'Custom',
+                  );
+                }
 
                 if (dialogContext.mounted) {
                   Navigator.of(dialogContext, rootNavigator: true).pop();
                 }
                 if (context.mounted) {
-                  ConTrustSnackBar.success(context, 'Custom contract uploaded successfully!');
+                  ConTrustSnackBar.success(
+                    context, 
+                    isUpdate 
+                      ? 'Custom contract updated successfully!' 
+                      : 'Custom contract uploaded successfully!'
+                  );
                 }
               } catch (e) {
                 if (dialogContext.mounted) {
-                  ConTrustSnackBar.error(dialogContext, 'Upload failed: ${e.toString()}');
+                  ConTrustSnackBar.error(dialogContext, '${isUpdate ? 'Update' : 'Upload'} failed: ${e.toString()}');
                   setState(() => isLoading = false);
                 }
               }
@@ -498,10 +542,10 @@ class ContractTypeBuild {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          const Expanded(
+                          Expanded(
                             child: Text(
-                              'Upload Custom Contract',
-                              style: TextStyle(
+                              isUpdate ? 'Update Custom Contract' : 'Upload Custom Contract',
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -527,6 +571,7 @@ class ContractTypeBuild {
                                 labelText: 'Contract Title',
                                 border: OutlineInputBorder(),
                               ),
+                              controller: titleController,
                               onChanged: (value) => title = value,
                             ),
                             const SizedBox(height: 16),
@@ -540,7 +585,7 @@ class ContractTypeBuild {
                                 value: p['project_id'] as String,
                                 child: Text(p['title'] ?? 'Project'),
                               )).toList(),
-                              onChanged: (value) {
+                              onChanged: isUpdate ? null : (value) {
                                 setState(() {
                                   selectedProjectId = value;
                                 });
@@ -550,13 +595,29 @@ class ContractTypeBuild {
                             ElevatedButton.icon(
                               onPressed: pickFile,
                               icon: const Icon(Icons.attach_file),
-                              label: Text(selectedFile == null ? 'Select PDF File' : 'File: ${selectedFile!.name}'),
+                              label: Text(
+                                selectedFile == null 
+                                  ? (isUpdate ? 'Select New PDF File (Optional)' : 'Select PDF File')
+                                  : 'File: ${selectedFile!.name}'
+                              ),
                               style: ElevatedButton.styleFrom(
                                 padding: const EdgeInsets.all(16),
                                 backgroundColor: Colors.amber.shade100,
                                 foregroundColor: Colors.amber.shade900,
                               ),
                             ),
+                            if (isUpdate && selectedFile == null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(
+                                  'Current file will be kept if no new file is selected',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ),
                             const SizedBox(height: 24),
                             Row(
                               children: [
@@ -584,7 +645,7 @@ class ContractTypeBuild {
                                             strokeWidth: 2,
                                           ),
                                         )
-                                      : const Text('Upload'),
+                                      : Text(isUpdate ? 'Update' : 'Upload'),
                                   ),
                                 ),
                               ],

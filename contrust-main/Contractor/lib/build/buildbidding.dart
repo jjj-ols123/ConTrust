@@ -24,6 +24,23 @@ class BiddingUIBuildMethods {
     this.isVerified = true,
   }) ;
 
+  String _getProjectPhotoUrl(dynamic photoUrl) {
+    if (photoUrl == null || photoUrl.toString().isEmpty) {
+      return '';
+    }
+    final raw = photoUrl.toString();
+    if (raw.startsWith('data:') || raw.startsWith('http')) {
+      return raw;
+    }
+    try {
+      return Supabase.instance.client.storage
+          .from('projectphotos')
+          .getPublicUrl(raw);
+    } catch (_) {
+      return raw;
+    }
+  }
+
   final bool isVerified;
 
   final BuildContext context;
@@ -818,7 +835,7 @@ class BiddingUIBuildMethods {
                         borderRadius: BorderRadius.circular(16),
                         child: Builder(
                           builder: (context) {
-                            final String photoUrl = selectedProject!['photo_url']?.toString() ?? '';
+                            final String photoUrl = _getProjectPhotoUrl(selectedProject!['photo_url']);
                             final Widget imageWidget = photoUrl.isNotEmpty
                             ? Image.network(
                                     photoUrl,
@@ -1386,7 +1403,7 @@ class BiddingUIBuildMethods {
                                     borderRadius: BorderRadius.circular(16),
                                     child: Builder(
                                       builder: (context) {
-                                        final String photoUrl = project['photo_url']?.toString() ?? '';
+                                        final String photoUrl = _getProjectPhotoUrl(project['photo_url']);
                                         final Widget imageWidget = photoUrl.isNotEmpty
                                         ? Image.network(
                                                 photoUrl,
@@ -1644,9 +1661,9 @@ class BiddingUIBuildMethods {
           Expanded(
             child: Stack(
               children: [
-                project['photo_url'] != null && project['photo_url'].toString().isNotEmpty
+                _getProjectPhotoUrl(project['photo_url']).isNotEmpty
                     ? Image.network(
-                        project['photo_url'].toString(),
+                        _getProjectPhotoUrl(project['photo_url']),
                         fit: BoxFit.cover,
                         width: double.infinity,
                         height: double.infinity,

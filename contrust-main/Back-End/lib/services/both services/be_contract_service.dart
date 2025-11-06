@@ -389,7 +389,12 @@ class ContractService {
             .eq('contract_id', contractId)
             .single();
 
+        final projectId = contractData['project_id'] as String;
+
         try {
+          await _supabase.from('Projects').update({
+            'status': 'awaiting_contract',
+          }).eq('project_id', projectId);
 
           final contractee = await _supabase
               .from('Contractee')
@@ -401,7 +406,7 @@ class ContractService {
           final project = await _supabase
               .from('Projects')
               .select('title')
-              .eq('project_id', contractData['project_id'])
+              .eq('project_id', projectId)
               .maybeSingle();
           final projectTitle = project?['title'] ?? 'Project';
 

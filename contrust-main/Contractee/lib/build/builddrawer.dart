@@ -244,7 +244,8 @@ class _ContracteeShellState extends State<ContracteeShell> {
             Expanded(
               child: Padding(
                 padding: widget.contentPadding ?? EdgeInsets.zero,
-                child: widget.currentPage == ContracteePage.ongoing
+                child: widget.currentPage == ContracteePage.ongoing ||
+                        GoRouter.of(context).routerDelegate.currentConfiguration.uri.path.startsWith('/contractor')
                     ? widget.child
                     : IndexedStack(
                         index: _indexFor(widget.currentPage),
@@ -444,6 +445,9 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
 
   @override
   Widget build(BuildContext context) {
+    final currentPath = GoRouter.of(context).routerDelegate.currentConfiguration.uri.path;
+    final isContractorPage = currentPath.startsWith('/contractor');
+    
     return Container(
       color: Colors.white,
       child: ListView(
@@ -452,7 +456,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
           _SidebarItem(
             icon: Icons.home_outlined,
             label: 'Home',
-            active: widget.currentPage == ContracteePage.home,
+            active: widget.currentPage == ContracteePage.home && !isContractorPage,
             onTap: () {
               if (widget.currentPage != ContracteePage.home) {
                 navigateToPage('/home');
@@ -472,7 +476,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
           _SidebarItem(
             icon: Icons.work_outline,
             label: _loadingOngoing ? 'Loading...' : 'Ongoing Projects',
-            active: widget.currentPage == ContracteePage.ongoing,
+            active: widget.currentPage == ContracteePage.ongoing && !isContractorPage,
             onTap: _loadingOngoing ? null : goToOngoing,
           ),
           _SidebarItem(

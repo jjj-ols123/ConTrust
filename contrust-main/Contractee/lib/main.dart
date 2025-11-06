@@ -206,7 +206,7 @@ class _MyAppState extends State<MyApp> {
                       if (location.startsWith('/ongoing')) {
                         currentPage = ContracteePage.ongoing;
                       } else if (location.startsWith('/contractor')) {
-                        currentPage = ContracteePage.ongoing;
+                        currentPage = ContracteePage.home;
                       } else {
                         currentPage = ContracteePage.home;
                       }
