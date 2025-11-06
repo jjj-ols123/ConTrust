@@ -5,7 +5,9 @@ import 'package:backend/utils/be_validation.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/services/contractor services/cor_signin.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:html' as html;
 import 'cor_forgot_password.dart';
 
 class ToLoginScreen extends StatefulWidget {
@@ -25,6 +27,63 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
   @override
   void initState() {
     super.initState();
+    _checkPasswordResetRedirect();
+  }
+
+  void _checkPasswordResetRedirect() {
+    Uri url = Uri.base;
+    String hash = '';
+    
+    if (kIsWeb) {
+      try {
+        hash = html.window.location.hash;
+        url = Uri.parse(html.window.location.href);
+      } catch (e) {
+        debugPrint('[ToLoginScreen] Error parsing URL: $e');
+      }
+    } else {
+      url = Uri.base;
+      hash = url.fragment;
+    }
+    
+    if (hash.isEmpty) {
+      hash = url.fragment;
+    }
+    
+    if (hash.startsWith('#')) {
+      hash = hash.substring(1);
+    }
+    
+    final queryParams = url.queryParameters;
+    final hashParams = hash.isNotEmpty ? Uri.splitQueryString(hash) : <String, String>{};
+    
+    // Check for password reset indicators
+    final hasRecoveryCode = hashParams.containsKey('access_token') ||
+                           (hashParams.containsKey('type') && hashParams['type'] == 'recovery') ||
+                           hashParams.containsKey('code') ||
+                           queryParams.containsKey('access_token') ||
+                           (queryParams.containsKey('type') && queryParams['type'] == 'recovery') ||
+                           queryParams.containsKey('code');
+    
+    if (hasRecoveryCode) {
+      debugPrint('[ToLoginScreen] Detected password reset flow, redirecting to /auth/reset-password');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          // Preserve hash for web
+          if (kIsWeb && hash.isNotEmpty) {
+            final baseUrl = html.window.location.origin;
+            final hashWithPrefix = hash.startsWith('#') ? hash : '#$hash';
+            html.window.location.href = '$baseUrl/auth/reset-password$hashWithPrefix';
+          } else {
+            // For mobile, use router with query parameters
+            final redirectUrl = hash.isNotEmpty 
+                ? '/auth/reset-password#$hash'
+                : '/auth/reset-password';
+            context.go(redirectUrl);
+          }
+        }
+      });
+    }
   }
 
   @override

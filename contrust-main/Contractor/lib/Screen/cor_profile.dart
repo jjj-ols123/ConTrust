@@ -241,6 +241,39 @@ class _ContractorUserProfileScreenState
       backgroundColor: Color(0xFFF8F9FA),
       body: Column(
         children: [
+
+
+          FutureBuilder<bool>(
+            future: _fetchVerified(),
+            builder: (context, snapshot) {
+              final isVerified = snapshot.data == true;
+              if (snapshot.connectionState == ConnectionState.waiting || isVerified) {
+                return const SizedBox.shrink();
+              }
+              return Container(
+                width: double.infinity,
+                margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.orange.shade700),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Account pending verification. Some features are disabled until approval.',
+                        style: TextStyle(color: Colors.orange.shade900),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
           Expanded(
             child: RefreshIndicator(
               onRefresh: loadContractorData,
@@ -310,6 +343,15 @@ class _ContractorUserProfileScreenState
         ],
       ),
     );
+  }
+
+  Future<bool> _fetchVerified() async {
+    try {
+      final resp = await FetchService().fetchContractorData(widget.contractorId);
+      return resp?['verified'] == true;
+    } catch (_) {
+      return false;
+    }
   }
 
 

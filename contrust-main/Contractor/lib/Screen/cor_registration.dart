@@ -2,11 +2,15 @@
 import 'package:backend/utils/be_validation.dart';
 import 'package:backend/services/contractor services/cor_signup.dart';
 import 'package:backend/utils/be_snackbar.dart';
+import 'package:backend/services/both services/be_verification_service.dart';
+import 'qr_scan.dart';
+import 'verification_capture.dart';
 import 'package:backend/services/both%20services/be_otp_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:async';
 
@@ -29,6 +33,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController confirmPasswordController =
       TextEditingController();
   final TextEditingController addressController = TextEditingController();
+
+  final TextEditingController pcabLicenseController = TextEditingController();
+  final TextEditingController permitNumberController = TextEditingController();
+  final TextEditingController permitLguController = TextEditingController();
+
+  String? _pcabQrText;
+  String? _permitQrText;
 
   final List<Map<String, dynamic>> _verificationFiles = [];
   final String _profilePhoto = 'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
@@ -285,6 +296,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       setState(() => _isSigningUp = false);
 
       if (success) {
+        try {
+          await VerificationService().submitContractorVerification(
+            legalName: firmNameController.text.trim(),
+            pcabQrText: _pcabQrText,
+            permitQrText: _permitQrText,
+          );
+        } catch (_) {}
+
         if (!mounted) return;
         ScaffoldMessenger.of(context).clearSnackBars();
 
@@ -648,66 +667,154 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   style: TextStyle(fontSize: 14),
                                 ),
                                 const SizedBox(height: 16),
-                                ElevatedButton.icon(
-                                  onPressed: () async {
-                                    final result = await FilePicker.platform
-                                        .pickFiles(
-                                          type: FileType.custom,
-                                          allowedExtensions: [
-                                            'jpg',
-                                            'jpeg',
-                                            'png',
-                                            'pdf',
-                                            'doc',
-                                            'docx',
-                                          ],
-                                          allowMultiple: false,
-                                        );
-                                    if (result != null &&
-                                        result.files.isNotEmpty) {
-                                      final file = result.files.first;
-                                      final bytes = file.bytes;
-                                      if (bytes != null) {
-                                        final isImage = [
-                                          'jpg',
-                                          'jpeg',
-                                          'png',
-                                        ].contains(
-                                          file.extension?.toLowerCase(),
-                                        );
-                                        final duplicate = _verificationFiles
-                                            .any(
-                                              (f) =>
-                                                  listEquals(f['bytes'], bytes),
-                                            );
-                                        if (duplicate) {
-                                          ConTrustSnackBar.warning(
-                                            context,
-                                            'This file is already selected',
+                                Builder(
+                                  builder: (_) {
+                                    final isMobile = !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
+                                    final buttons = <Widget>[
+                                      ElevatedButton.icon(
+                                        onPressed: () async {
+                                          final result = await FilePicker.platform.pickFiles(
+                                            type: FileType.custom,
+                                            allowedExtensions: ['jpg','jpeg','png','pdf','doc','docx'],
+                                            allowMultiple: false,
                                           );
-                                          return;
-                                        }
-                                        setState(
-                                          () => _verificationFiles.add({
-                                            'name': file.name,
-                                            'bytes': bytes,
-                                            'isImage': isImage,
-                                          }),
-                                        );
-                                        onUpdate();
-                                      }
+                                          if (result != null && result.files.isNotEmpty) {
+                                            final file = result.files.first;
+                                            final bytes = file.bytes;
+                                            if (bytes != null) {
+                                              final isImage = ['jpg','jpeg','png'].contains(file.extension?.toLowerCase());
+                                              final duplicate = _verificationFiles.any((f) => listEquals(f['bytes'], bytes));
+                                              if (duplicate) {
+                                                ConTrustSnackBar.warning(context, 'This file is already selected');
+                                                return;
+                                              }
+                                              setState(() => _verificationFiles.add({
+                                                'name': file.name,
+                                                'bytes': bytes,
+                                                'isImage': isImage,
+                                              }));
+                                              onUpdate();
+                                            }
+                                          }
+                                        },
+                                        icon: const Icon(Icons.attach_file),
+                                        label: const Text('Pick File'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.amber.shade100,
+                                          foregroundColor: Colors.amber.shade900,
+                                          padding: const EdgeInsets.symmetric(vertical: 16),
+                                        ),
+                                      ),
+                                    ];
+                                    if (isMobile) {
+                                      buttons.add(const SizedBox(height: 12));
+                                      buttons.add(
+                                        ElevatedButton.icon(
+                                          onPressed: () async {
+                                            final picked = await ImagePicker().pickImage(
+                                              source: ImageSource.camera,
+                                              imageQuality: 85,
+                                              preferredCameraDevice: CameraDevice.rear,
+                                            );
+                                            if (picked != null) {
+                                              final bytes = await picked.readAsBytes();
+                                              final duplicate = _verificationFiles.any((f) => listEquals(f['bytes'], bytes));
+                                              if (duplicate) {
+                                                ConTrustSnackBar.warning(context, 'This image is already selected');
+                                                return;
+                                              }
+                                              setState(() => _verificationFiles.add({
+                                                'name': 'camera_${DateTime.now().millisecondsSinceEpoch}.jpg',
+                                                'bytes': bytes,
+                                                'isImage': true,
+                                              }));
+                                              onUpdate();
+                                            }
+                                          },
+                                          icon: const Icon(Icons.photo_camera_outlined),
+                                          label: const Text('Use Camera'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.blue.shade100,
+                                            foregroundColor: Colors.blue.shade900,
+                                            padding: const EdgeInsets.symmetric(vertical: 16),
+                                          ),
+                                        ),
+                                      );
+                                      buttons.add(const SizedBox(height: 12));
+                                      buttons.add(
+                                        ElevatedButton.icon(
+                                          onPressed: () async {
+                                            final result = await Navigator.push<String?>(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) => const QrScanPage(title: 'Scan PCAB QR'),
+                                              ),
+                                            );
+                                            if (result != null && result.isNotEmpty) {
+                                              setState(() => _pcabQrText = result);
+                                              ConTrustSnackBar.success(context, 'PCAB QR captured');
+                                              onUpdate();
+                                            }
+                                          },
+                                          icon: const Icon(Icons.qr_code_scanner),
+                                          label: const Text('Scan PCAB QR'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.green.shade100,
+                                            foregroundColor: Colors.green.shade900,
+                                            padding: const EdgeInsets.symmetric(vertical: 16),
+                                          ),
+                                        ),
+                                      );
+                                      buttons.add(const SizedBox(height: 12));
+                                      buttons.add(
+                                        ElevatedButton.icon(
+                                          onPressed: () async {
+                                            final result = await Navigator.push<String?>(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) => const QrScanPage(title: 'Scan Mayor/Business Permit QR'),
+                                              ),
+                                            );
+                                            if (result != null && result.isNotEmpty) {
+                                              setState(() => _permitQrText = result);
+                                              ConTrustSnackBar.success(context, 'Permit QR captured');
+                                              onUpdate();
+                                            }
+                                          },
+                                          icon: const Icon(Icons.qr_code_2),
+                                          label: const Text('Scan Permit QR'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.purple.shade100,
+                                            foregroundColor: Colors.purple.shade900,
+                                            padding: const EdgeInsets.symmetric(vertical: 16),
+                                          ),
+                                        ),
+                                      );
                                     }
+                                    return isMobile
+                                        ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: buttons)
+                                        : buttons.first;
                                   },
-                                  icon: const Icon(Icons.attach_file),
-                                  label: const Text('Pick File'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.amber.shade100,
-                                    foregroundColor: Colors.amber.shade900,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
-                                    ),
-                                  ),
                                 ),
+                                if (_pcabQrText != null || _permitQrText != null) ...[
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      if (_pcabQrText != null)
+                                        Chip(
+                                          label: const Text('PCAB QR ready'),
+                                          avatar: const Icon(Icons.verified, color: Colors.green, size: 18),
+                                        ),
+                                      if (_permitQrText != null)
+                                        Chip(
+                                          label: const Text('Permit QR ready'),
+                                          avatar: const Icon(Icons.verified, color: Colors.green, size: 18),
+                                        ),
+                                    ],
+                                  ),
+                                ],
                                 const SizedBox(height: 16),
                                 if (_verificationFiles.isNotEmpty)
                                   Wrap(
@@ -1283,13 +1390,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed:
-                        _isUploadingVerification
-                            ? null
-                            : () => _showVerificationUploadDialog(
-                              context,
-                              () => setState(() {}),
-                            ),
+                    onPressed: _isUploadingVerification
+                        ? null
+                        : () async {
+                            final isMobile = !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
+                            if (isMobile) {
+                              final result = await Navigator.push<Map<String, dynamic>?>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => VerificationCapturePage(
+                                    initialFiles: _verificationFiles,
+                                    initialPcabQrText: _pcabQrText,
+                                    initialPermitQrText: _permitQrText,
+                                  ),
+                                ),
+                              );
+                              if (result != null) {
+                                setState(() {
+                                  _verificationFiles
+                                    ..clear()
+                                    ..addAll(List<Map<String, dynamic>>.from(result['files'] ?? []));
+                                  _pcabQrText = result['pcabQrText'] as String?;
+                                  _permitQrText = result['permitQrText'] as String?;
+                                });
+                              }
+                            } else {
+                              _showVerificationUploadDialog(context, () => setState(() {}));
+                            }
+                          },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.amber.shade600,
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1350,13 +1478,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    onPressed:
-                        _isUploadingVerification
-                            ? null
-                            : () => _showVerificationUploadDialog(
-                              context,
-                              () => setState(() {}),
-                            ),
+                    onPressed: _isUploadingVerification
+                        ? null
+                        : () async {
+                            final isMobile = !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
+                            if (isMobile) {
+                              final result = await Navigator.push<Map<String, dynamic>?>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => VerificationCapturePage(
+                                    initialFiles: _verificationFiles,
+                                    initialPcabQrText: _pcabQrText,
+                                    initialPermitQrText: _permitQrText,
+                                  ),
+                                ),
+                              );
+                              if (result != null) {
+                                setState(() {
+                                  _verificationFiles
+                                    ..clear()
+                                    ..addAll(List<Map<String, dynamic>>.from(result['files'] ?? []));
+                                  _pcabQrText = result['pcabQrText'] as String?;
+                                  _permitQrText = result['permitQrText'] as String?;
+                                });
+                              }
+                            } else {
+                              _showVerificationUploadDialog(context, () => setState(() {}));
+                            }
+                          },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.amber.shade600,
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -1496,6 +1645,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     passwordController.dispose();
     confirmPasswordController.dispose();
     addressController.dispose();
+    pcabLicenseController.dispose();
+    permitNumberController.dispose();
+    permitLguController.dispose();
     super.dispose();
   }
 

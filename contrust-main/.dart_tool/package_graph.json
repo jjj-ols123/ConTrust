@@ -105,6 +105,7 @@
         "go_router",
         "google_sign_in",
         "image_picker",
+        "mobile_scanner",
         "path_provider",
         "pdf",
         "printing",
@@ -278,6 +279,16 @@
         "flutter_web_plugins",
         "logging",
         "meta"
+      ]
+    },
+    {
+      "name": "mobile_scanner",
+      "version": "6.0.11",
+      "dependencies": [
+        "flutter",
+        "flutter_web_plugins",
+        "plugin_platform_interface",
+        "web"
       ]
     },
     {
@@ -852,6 +863,13 @@
       ]
     },
     {
+      "name": "plugin_platform_interface",
+      "version": "2.1.8",
+      "dependencies": [
+        "meta"
+      ]
+    },
+    {
       "name": "dbus",
       "version": "0.7.11",
       "dependencies": [
@@ -880,13 +898,6 @@
       "name": "ffi",
       "version": "2.1.4",
       "dependencies": []
-    },
-    {
-      "name": "plugin_platform_interface",
-      "version": "2.1.8",
-      "dependencies": [
-        "meta"
-      ]
     },
     {
       "name": "flutter_plugin_android_lifecycle",

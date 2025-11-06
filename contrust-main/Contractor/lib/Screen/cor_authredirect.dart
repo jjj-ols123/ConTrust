@@ -2,8 +2,10 @@
 
 import 'package:backend/services/contractor services/cor_signin.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:html' as html show window;
 
 class AuthRedirectPage extends StatefulWidget {
   const AuthRedirectPage({super.key});
@@ -26,24 +28,49 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
       debugPrint('[AuthRedirect Contractor] handling OAuth redirect...');
       final supabase = Supabase.instance.client;
       
+      final uri = Uri.base;
+      final hash = uri.fragment;
+      final hashParams = hash.isNotEmpty ? Uri.splitQueryString(hash) : <String, String>{};
+      final queryParams = uri.queryParameters;
+      
+      final isPasswordReset = hashParams['type'] == 'recovery' || 
+                             queryParams['type'] == 'recovery' ||
+                             hashParams.containsKey('access_token') && hashParams['type'] == 'recovery';
+      
+      if (isPasswordReset) {
+        debugPrint('[AuthRedirect Contractor] Detected password reset flow, redirecting to /auth/reset-password');
+        if (mounted && !_hasRedirected) {
+          _hasRedirected = true;
+          if (kIsWeb && hash.isNotEmpty) {
+            try {
+              final baseUrl = html.window.location.origin;
+              final hashWithPrefix = hash.startsWith('#') ? hash : '#$hash';
+              html.window.location.href = '$baseUrl/auth/reset-password$hashWithPrefix';
+              return;
+            } catch (e) {
+              debugPrint('[AuthRedirect] Error setting location with hash: $e');
+            }
+          }
+          context.go('/auth/reset-password');
+        }
+        return;
+      }
+      
       Session? session;
       try {
         final response = await supabase.auth.getSessionFromUrl(Uri.base, storeSession: true);
         session = response.session;
         debugPrint('[AuthRedirect Contractor] getSessionFromUrl succeeded');
       } catch (e) {
-        // If getSessionFromUrl fails, try to get current session
         debugPrint('getSessionFromUrl failed, trying current session: $e');
         session = supabase.auth.currentSession;
       }
 
-      // If no session from URL, wait a bit and try current session
       if (session == null) {
         await Future.delayed(const Duration(seconds: 1));
         session = supabase.auth.currentSession;
       }
 
-      // If still no session, wait a bit more (for async auth state changes)
       if (session == null) {
         await Future.delayed(const Duration(seconds: 2));
         session = supabase.auth.currentSession;
@@ -61,7 +88,6 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
       final user = session.user;
       debugPrint('[AuthRedirect Contractor] session user: ${user.id}');
 
-      // Handle sign-in process
       final signInService = SignInGoogleContractor();
       debugPrint('[AuthRedirect Contractor] calling handleSignIn...');
       await signInService.handleSignIn(context, user);
@@ -70,8 +96,7 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
       if (!mounted || _hasRedirected) {
         return;
       }
-
-      // Refresh session after sign-in handling
+  
       var refreshedSession = supabase.auth.currentSession;
       if (refreshedSession == null) {
         await Future.delayed(const Duration(seconds: 1));

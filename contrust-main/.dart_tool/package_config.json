@@ -542,6 +542,12 @@
       "languageVersion": "3.2"
     },
     {
+      "name": "mobile_scanner",
+      "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/mobile_scanner-6.0.11",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
       "name": "path",
       "rootUri": "file:///C:/Users/asus/AppData/Local/Pub/Cache/hosted/pub.dev/path-1.9.1",
       "packageUri": "lib/",
