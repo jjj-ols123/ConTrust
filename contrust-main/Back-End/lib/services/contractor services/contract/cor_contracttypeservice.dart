@@ -252,18 +252,18 @@ class ContractTypeService {
           ),
         );
       } else {
-        menuItems.add(
-          const PopupMenuItem(
-            value: 'edit',
-            child: Row(
-              children: [
-                Icon(Icons.edit, size: 20),
-                SizedBox(width: 8),
-                Text('Edit Contract'),
-              ],
-            ),
+      menuItems.add(
+        const PopupMenuItem(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(Icons.edit, size: 20),
+              SizedBox(width: 8),
+              Text('Edit Contract'),
+            ],
           ),
-        );
+        ),
+      );
       }
 
       showMenu<String>(
