@@ -442,10 +442,46 @@ class BuildDashboard {
   }
 
   static Widget buildRecentActivitySection(BuildContext context, Map<String, dynamic> dashboardData) {
-
     final recentUsers = (dashboardData['recent_users'] as List? ?? []).cast<Map<String, dynamic>>();
     final recentProjects = (dashboardData['recent_projects'] as List? ?? []).cast<Map<String, dynamic>>();
     final recentLogs = (dashboardData['recent_audit_logs'] as List? ?? []).cast<Map<String, dynamic>>();
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth > 1200;
+
+    if (isDesktop) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.update, color: Colors.grey),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Recent Activity',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          buildRecentUsersCard(recentUsers),
+          const SizedBox(height: 12),
+          buildRecentProjectsCard(recentProjects),
+          const SizedBox(height: 12),
+          buildRecentAuditLogsCard(recentLogs),
+        ],
+      );
+    }
 
     final controller = PageController(viewportFraction: 0.92);
 

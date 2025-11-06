@@ -275,7 +275,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
       setState(() => _loadingPM = false);
 
       if (activeProjects.isEmpty) {
-        ConTrustSnackBar.error(context, 'No current ongoing project found!');
+        ConTrustSnackBar.infoToast(context, 'No active project found');
         return;
       }
 
@@ -777,7 +777,7 @@ class _ProjectNavButton extends StatelessWidget {
           if (response != null && response['project_id'] != null) {
             context.go('/project-management/${response['project_id']}');
           } else {
-            ConTrustSnackBar.error(context, 'No active project found');
+            ConTrustSnackBar.infoToast(context, 'No active project found');
           }
         } catch (e) {
           ConTrustSnackBar.error(context, 'Failed to load project data');
@@ -854,7 +854,7 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
       setState(() => _loadingPM = false);
 
       if (activeProjects.isEmpty) {
-        ConTrustSnackBar.error(context, 'No current ongoing project found!');
+        ConTrustSnackBar.infoToast(context, 'No active project found');
         return;
       }
 

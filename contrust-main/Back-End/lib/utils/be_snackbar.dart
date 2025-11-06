@@ -1,4 +1,4 @@
-// ignore_for_file: library_private_types_in_public_api, deprecated_member_use
+// ignore_for_file: library_private_types_in_public_api, deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
 
@@ -90,6 +90,68 @@ class ConTrustSnackBar {
               child: const Text('OK'),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  static void infoToast(
+    BuildContext context,
+    String message, {
+    Duration duration = const Duration(seconds: 1),
+  }) {
+    final config = getSnackBarConfig(SnackBarType.info);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        // Schedule auto-dismiss
+        Future.delayed(duration, () {
+          if (Navigator.of(dialogContext).canPop()) {
+            Navigator.of(dialogContext).pop();
+          }
+        });
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: Colors.white,
+          elevation: 12,
+          contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          title: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: config.backgroundColor.withOpacity(0.1),
+                ),
+                padding: const EdgeInsets.all(12),
+                child: Icon(
+                  config.icon,
+                  color: config.backgroundColor,
+                  size: 40,
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Information',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: Colors.blue,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 15,
+              color: Colors.black87,
+              height: 1.3,
+            ),
+          ),
         );
       },
     );

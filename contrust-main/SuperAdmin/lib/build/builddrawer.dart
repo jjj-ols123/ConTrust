@@ -56,11 +56,12 @@ class SuperAdminShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= 1000;
+    final isLargeDesktop = screenWidth > 1200;
     final isMobile = screenWidth < 700;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      backgroundColor: Colors.white,
+      backgroundColor: isLargeDesktop ? const Color(0xFFF5F6FA) : Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.deepPurple,
         centerTitle: true,
@@ -94,7 +95,7 @@ class SuperAdminShell extends StatelessWidget {
           ),
         ],
       ),
-      drawer: !isDesktop ? const MobileSuperAdminDrawerContainer() : null,
+      drawer: !isLargeDesktop ? const MobileSuperAdminDrawerContainer() : null,
       body: Row(
         children: [
           if (isDesktop)
@@ -161,10 +162,41 @@ class SuperAdminShell extends StatelessWidget {
             ),
 
           Expanded(
-            child: Padding(
-              padding: contentPadding ?? EdgeInsets.zero,
-              child: child,
-            ),
+            child: isLargeDesktop
+                ? Container(
+                    color: const Color(0xFFF5F6FA),
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1400),
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.06),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: Padding(
+                              padding: contentPadding ?? const EdgeInsets.all(20),
+                              child: child,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                // Mobile/Tablet UI (<= 1200): retain existing behavior
+                : Padding(
+                    padding: contentPadding ?? EdgeInsets.zero,
+                    child: child,
+                  ),
           ),
         ],
       ),

@@ -307,7 +307,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
 
       if (activeProjects.isEmpty) {
         if (mounted) {
-          ConTrustSnackBar.error(context, 'No active project found');
+          ConTrustSnackBar.infoToast(context, 'No active project found');
         }
         return;
       }
