@@ -20,9 +20,6 @@ class _WebsiteStartPageState extends State<WebsiteStartPage> {
   @override
   void initState() {
     super.initState();
-    if (kIsWeb) {
-      _enforceRedirectGuard();
-    }
   }
 
   @override
