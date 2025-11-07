@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:html' as html show window;
+import 'package:backend/build/html_stub.dart' if (dart.library.html) 'dart:html' as html show window;
 
 class AuthRedirectPage extends StatefulWidget {
   const AuthRedirectPage({super.key});

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:html' as html show window;
+import 'package:backend/build/html_stub.dart' if (dart.library.html) 'dart:html' as html show window;
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});

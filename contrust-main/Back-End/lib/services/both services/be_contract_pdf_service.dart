@@ -13,7 +13,7 @@ import '../../contract_templates/CostPlusPDF.dart';
 import 'package:backend/services/superadmin services/auditlogs_service.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 
-import 'dart:html' as html if (dart.library.io) 'dart:io';
+import 'package:backend/build/html_stub.dart' if (dart.library.html) 'dart:html' as html;
 
 class ContractPdfService {
   static final SupabaseClient _supabase = Supabase.instance.client;

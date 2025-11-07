@@ -57,6 +57,7 @@
         "backend",
         "cupertino_icons",
         "flutter",
+        "flutter_inappwebview",
         "flutter_keyboard_visibility",
         "flutter_localizations",
         "flutter_pdfview",
@@ -489,6 +490,19 @@
         "flutter",
         "meta",
         "plugin_platform_interface"
+      ]
+    },
+    {
+      "name": "flutter_inappwebview",
+      "version": "6.1.5",
+      "dependencies": [
+        "flutter",
+        "flutter_inappwebview_android",
+        "flutter_inappwebview_ios",
+        "flutter_inappwebview_macos",
+        "flutter_inappwebview_platform_interface",
+        "flutter_inappwebview_web",
+        "flutter_inappwebview_windows"
       ]
     },
     {
@@ -1361,6 +1375,57 @@
       ]
     },
     {
+      "name": "flutter_inappwebview_windows",
+      "version": "0.6.0",
+      "dependencies": [
+        "flutter",
+        "flutter_inappwebview_platform_interface"
+      ]
+    },
+    {
+      "name": "flutter_inappwebview_web",
+      "version": "1.1.2",
+      "dependencies": [
+        "flutter",
+        "flutter_inappwebview_platform_interface",
+        "flutter_web_plugins",
+        "web"
+      ]
+    },
+    {
+      "name": "flutter_inappwebview_macos",
+      "version": "1.1.2",
+      "dependencies": [
+        "flutter",
+        "flutter_inappwebview_platform_interface"
+      ]
+    },
+    {
+      "name": "flutter_inappwebview_ios",
+      "version": "1.1.2",
+      "dependencies": [
+        "flutter",
+        "flutter_inappwebview_platform_interface"
+      ]
+    },
+    {
+      "name": "flutter_inappwebview_android",
+      "version": "1.1.3",
+      "dependencies": [
+        "flutter",
+        "flutter_inappwebview_platform_interface"
+      ]
+    },
+    {
+      "name": "flutter_inappwebview_platform_interface",
+      "version": "1.3.0+1",
+      "dependencies": [
+        "flutter",
+        "flutter_inappwebview_internal_annotations",
+        "plugin_platform_interface"
+      ]
+    },
+    {
       "name": "http_parser",
       "version": "4.1.2",
       "dependencies": [
@@ -1744,6 +1809,11 @@
     {
       "name": "mime",
       "version": "2.0.0",
+      "dependencies": []
+    },
+    {
+      "name": "flutter_inappwebview_internal_annotations",
+      "version": "1.2.0",
       "dependencies": []
     },
     {

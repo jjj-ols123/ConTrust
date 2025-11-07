@@ -5,10 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart'
+    hide WebResourceError;
 import 'package:contractee/build/buildceeprofile.dart';
 
-import 'dart:html' as html;
-import 'dart:ui_web' as ui_web;
+import 'package:backend/build/html_stub.dart' if (dart.library.html) 'dart:html'
+    as html;
+import 'package:backend/build/ui_web_stub.dart'
+    if (dart.library.html) 'dart:ui_web' as ui_web;
 
 class AiAssistantPage extends StatefulWidget {
   const AiAssistantPage({super.key});
@@ -32,17 +36,18 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
   Future<void> _initializeWebView() async {
     try {
       // Check if WebView is supported on this platform
-      final isDesktop = !kIsWeb && 
-        (defaultTargetPlatform == TargetPlatform.windows ||
-         defaultTargetPlatform == TargetPlatform.linux ||
-         defaultTargetPlatform == TargetPlatform.macOS);
-      
+      final isDesktop = !kIsWeb &&
+          (defaultTargetPlatform == TargetPlatform.windows ||
+              defaultTargetPlatform == TargetPlatform.linux ||
+              defaultTargetPlatform == TargetPlatform.macOS);
+
       if (isDesktop) {
         if (mounted) {
           setState(() {
             _isLoading = false;
             _hasError = true;
-            _errorMessage = 'WebView is not supported on desktop platforms. This feature is only available on mobile devices (Android/iOS).';
+            _errorMessage =
+                'WebView is not supported on desktop platforms. This feature is only available on mobile devices (Android/iOS).';
           });
         }
         return;
@@ -62,18 +67,20 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
 
       if (controller.platform is AndroidWebViewController) {
         AndroidWebViewController.enableDebugging(true);
-        (controller.platform as AndroidWebViewController)
-            .setMediaPlaybackRequiresUserGesture(false);
+        final androidController =
+            controller.platform as AndroidWebViewController;
+        androidController.setMediaPlaybackRequiresUserGesture(false);
       }
 
-      if (defaultTargetPlatform == TargetPlatform.iOS && controller.platform is WebKitWebViewController) {
+      if (defaultTargetPlatform == TargetPlatform.iOS &&
+          controller.platform is WebKitWebViewController) {
         final webKitController = controller.platform as WebKitWebViewController;
         await webKitController.setAllowsBackForwardNavigationGestures(true);
       }
 
       await controller.setJavaScriptMode(JavaScriptMode.unrestricted);
       await controller.setBackgroundColor(const Color(0x00000000));
-      
+
       controller.setNavigationDelegate(
         NavigationDelegate(
           onProgress: (int progress) {
@@ -111,11 +118,14 @@ Page resource error:
                 _hasError = true;
                 // More specific error message based on error code
                 if (error.errorCode == -2) {
-                  _errorMessage = 'Unable to connect to the service. The Hugging Face space may be offline or the URL may be incorrect.';
+                  _errorMessage =
+                      'Unable to connect to the service. The Hugging Face space may be offline or the URL may be incorrect.';
                 } else if (error.errorCode == -8) {
-                  _errorMessage = 'Connection timeout. The service is taking too long to respond.';
+                  _errorMessage =
+                      'Connection timeout. The service is taking too long to respond.';
                 } else if (error.errorCode == -6) {
-                  _errorMessage = 'Unable to find the service. Please verify the URL is correct.';
+                  _errorMessage =
+                      'Unable to find the service. Please verify the URL is correct.';
                 } else {
                   _errorMessage = 'Failed to load: ${error.description}';
                 }
@@ -133,10 +143,9 @@ Page resource error:
       );
 
       _controller = controller;
-      
+
       // Load the Hugging Face space
       await _loadHuggingFaceSpace();
-      
     } catch (e) {
       debugPrint('WebView initialization failed: $e');
       if (mounted) {
@@ -161,23 +170,24 @@ Page resource error:
       }
       return;
     }
-    
+
     try {
       // Wait a bit to ensure WebView is fully initialized
       await Future.delayed(const Duration(milliseconds: 300));
-      
+
       const huggingFaceUrl = 'https://Ryg112-ConTrustAiModel.hf.space/';
-      
+
       // Load the Hugging Face space
       await _controller!.loadRequest(Uri.parse(huggingFaceUrl));
-      
+
       // Set a timeout - if still loading after 15 seconds, show error
       Future.delayed(const Duration(seconds: 15), () {
         if (mounted && _isLoading) {
           setState(() {
             _isLoading = false;
             _hasError = true;
-            _errorMessage = 'The service took too long to load. The Hugging Face space might be temporarily unavailable.';
+            _errorMessage =
+                'The service took too long to load. The Hugging Face space might be temporarily unavailable.';
           });
         }
       });
@@ -187,7 +197,8 @@ Page resource error:
         setState(() {
           _isLoading = false;
           _hasError = true;
-          _errorMessage = 'Failed to connect to the Wall Color Filter service. ${e.toString()}';
+          _errorMessage =
+              'Failed to connect to the Wall Color Filter service. ${e.toString()}';
         });
       }
     }
@@ -195,7 +206,7 @@ Page resource error:
 
   Future<void> _injectCustomCSS() async {
     if (_controller == null) return;
-    
+
     try {
       final String css = '''
         <style>
@@ -245,7 +256,7 @@ Page resource error:
           }
         </style>
       ''';
-      
+
       await _controller!.runJavaScript('''
         if (document && document.head) {
           var style = document.createElement('style');
@@ -277,7 +288,7 @@ Page resource error:
   Widget _buildWebIframe() {
     const huggingFaceUrl = 'https://Ryg112-ConTrustAiModel.hf.space/';
     const viewType = 'webview-iframe';
-    
+
     // Register the platform view for web
     if (!kIsWeb) {
       return const SizedBox.shrink();
@@ -291,14 +302,86 @@ Page resource error:
       ..style.height = '100%'
       ..allowFullscreen = true;
 
-     // Register platform view (only works on web)
-     ui_web.platformViewRegistry.registerViewFactory(
-       viewType,
-       (int viewId) => iframe,
-     );
+    // Register platform view (only works on web)
+    ui_web.platformViewRegistry.registerViewFactory(
+      viewType,
+      (int viewId) => iframe,
+    );
 
     // ignore: undefined_prefixed_name
     return HtmlElementView(viewType: viewType);
+  }
+
+  Widget _buildInAppWebViewAndroid() {
+    const huggingFaceUrl = 'https://Ryg112-ConTrustAiModel.hf.space/';
+    return InAppWebView(
+      initialUrlRequest: URLRequest(url: WebUri(huggingFaceUrl)),
+      initialSettings: InAppWebViewSettings(
+        mediaPlaybackRequiresUserGesture: false,
+        javaScriptEnabled: true,
+        verticalScrollBarEnabled: true,
+        displayZoomControls: false,
+        useWideViewPort: true,
+        transparentBackground: false,
+      ),
+      onPermissionRequest: (controller, request) async {
+        return PermissionResponse(
+          resources: request.resources,
+          action: PermissionResponseAction.GRANT,
+        );
+      },
+      onLoadStart: (controller, url) {
+        if (mounted) {
+          setState(() {
+            _isLoading = true;
+            _hasError = false;
+          });
+        }
+      },
+      onLoadStop: (controller, url) async {
+        // Ensure page remains scrollable even after dynamic content loads
+        try {
+          await controller.evaluateJavascript(source: r'''
+            (function(){
+              try {
+                var style = document.createElement('style');
+                style.innerHTML = `
+                  html, body, #root, .gradio-container { 
+                    overflow: auto !important; 
+                    height: auto !important; 
+                    max-height: none !important; 
+                  }
+                  * { overscroll-behavior: contain; }
+                `;
+                document.head && document.head.appendChild(style);
+                // Fix cases where container sets overflow hidden after rendering
+                document.querySelectorAll('*').forEach(function(el){
+                  var cs = getComputedStyle(el);
+                  if (cs.overflow === 'hidden' && (cs.height === '100vh' || cs.height === '100%')) {
+                    el.style.overflow = 'auto';
+                  }
+                });
+              } catch(e){}
+            })();
+          ''');
+        } catch (_) {}
+
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      },
+      onLoadError: (controller, url, code, message) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _hasError = true;
+            _errorMessage = 'Failed to load: $message ($code)';
+          });
+        }
+      },
+    );
   }
 
   @override
@@ -306,61 +389,58 @@ Page resource error:
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            CeeProfileBuildMethods.buildStickyHeader('AI Assistant'),
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Column(
+        child: Column(
+          children: [
+            // Simple header row (non-sticky) to avoid nested scroll conflicts
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (_isLoading)
-                          SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.amber.shade700),
-                            ),
-                          ),
-                        if (_isLoading) const SizedBox(width: 12),
-                        if (_isLoading)
-                          const Text(
-                            'Loading AI Assistant...',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF6B7280),
-                            ),
-                          ),
-                        const Spacer(),
-                        IconButton(
-                          onPressed: _refreshPage,
-                          icon: Icon(
-                            Icons.refresh,
-                            color: Colors.amber.shade700,
-                          ),
-                          tooltip: 'Refresh',
-                        ),
-                      ],
+                  if (_isLoading)
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.amber.shade700),
+                      ),
                     ),
-                  ),
-                  Expanded(
-              child: _hasError 
-                  ? _buildErrorWidget()
-                  : kIsWeb 
-                      ? _buildWebIframe()
-                      : (_controller == null
-                          ? _buildErrorWidget()
-                          : _isLoading 
-                              ? _buildLoadingWidget()
-                              : WebViewWidget(controller: _controller!)),
+                  if (_isLoading) const SizedBox(width: 12),
+                  if (_isLoading)
+                    const Text(
+                      'Loading AI Assistant...',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: _refreshPage,
+                    icon: Icon(
+                      Icons.refresh,
+                      color: Colors.amber.shade700,
+                    ),
+                    tooltip: 'Refresh',
                   ),
                 ],
               ),
+            ),
+            // WebView area takes the rest and handles its own scrolling
+            Expanded(
+              child: _hasError
+                  ? _buildErrorWidget()
+                  : kIsWeb
+                      ? _buildWebIframe()
+                      : (defaultTargetPlatform == TargetPlatform.android
+                          ? _buildInAppWebViewAndroid()
+                          : (_controller == null
+                              ? _buildErrorWidget()
+                              : _isLoading
+                                  ? _buildLoadingWidget()
+                                  : WebViewWidget(controller: _controller!))),
             ),
           ],
         ),
@@ -418,7 +498,8 @@ Page resource error:
               ),
               const SizedBox(height: 8),
               Text(
-                _errorMessage ?? 'The service may be temporarily unavailable. Please try again in a few moments.',
+                _errorMessage ??
+                    'The service may be temporarily unavailable. Please try again in a few moments.',
                 style: const TextStyle(
                   fontSize: 14,
                   color: Color(0xFF6B7280),

@@ -7,7 +7,7 @@ import 'package:backend/services/contractor services/cor_signin.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:html' as html;
+import 'package:backend/build/html_stub.dart' if (dart.library.html) 'dart:html' as html;
 import 'cor_forgot_password.dart';
 
 class ToLoginScreen extends StatefulWidget {

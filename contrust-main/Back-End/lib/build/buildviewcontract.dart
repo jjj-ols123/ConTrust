@@ -3,8 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:backend/services/contractor services/contract/cor_viewcontractservice.dart';
-import 'dart:html' as html;
-import 'dart:ui_web' as ui_web;
+import 'buildviewcontract_stub.dart' if (dart.library.html) 'buildviewcontract_web.dart';
 import 'dart:typed_data';
 import 'package:signature/signature.dart';
 import 'package:backend/utils/be_contractsignature.dart';
@@ -249,7 +248,7 @@ class ViewContractBuild {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: kIsWeb
-                    ? _buildWebPdfViewerWithFallback(pdfUrl, onDownload, height)
+                    ? buildWebPdfViewerWithFallback(pdfUrl, onDownload, height)
                     : _buildMobilePdfViewer(pdfUrl, onDownload),
               ),
             ),
@@ -259,59 +258,7 @@ class ViewContractBuild {
     );
   }
 
-  static Widget _buildWebPdfViewer(String pdfUrl) {
-    final viewType = 'pdf-viewer-${pdfUrl.hashCode.abs()}';
-
-    if (kIsWeb) {
-      ui_web.platformViewRegistry.registerViewFactory(viewType, (int viewId) {
-        final iframe = html.IFrameElement()
-          ..src = pdfUrl
-          ..style.border = 'none'
-          ..style.width = '100%'
-          ..style.height = '100%'
-          ..allow = 'fullscreen'
-          ..onError.listen((event) {
-          });
-
-        return iframe;
-      });
-    }
-
-    return HtmlElementView(viewType: viewType);
-  }
-
-  static Widget _buildWebPdfViewerWithFallback(String pdfUrl, VoidCallback onDownload, double height) {
-    return StatefulBuilder(
-      builder: (context, setState) {
-        return FutureBuilder<bool>(
-          future: _testPdfUrl(pdfUrl),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return _buildPdfLoadingState();
-            }
-            
-            if (snapshot.hasError || snapshot.data == false) {
-              return _buildPdfErrorState(pdfUrl, onDownload, height);
-            }
-            
-            return _buildWebPdfViewer(pdfUrl);
-          },
-        );
-      },
-    );
-  }
-
-  static Future<bool> _testPdfUrl(String pdfUrl) async {
-    try {
-      final response = await html.HttpRequest.request(
-        pdfUrl,
-        method: 'HEAD',
-      );
-      return response.status == 200;
-    } catch (e) {
-      return false;
-    }
-  }
+  // Web-specific viewer is provided by conditional import helper.
 
   static Widget _buildPdfLoadingState() {
     return Container(
@@ -373,7 +320,7 @@ class ViewContractBuild {
                 children: [
                   ElevatedButton.icon(
                     onPressed: () {
-                      html.window.open(pdfUrl, '_blank');
+                      openPdfInNewTab(pdfUrl);
                     },
                     icon: const Icon(Icons.open_in_new),
                     label: const Text('Open in New Tab'),
@@ -988,7 +935,7 @@ class ViewContractBuild {
                   child: ElevatedButton.icon(
                     onPressed: enabled
                         ? () async {
-                            final signatureBytes = await _pickSignatureImage(context);
+                            final signatureBytes = await pickSignatureImage(context);
                             if (signatureBytes != null) {
                               _showSignatureDialog(context, contractData,
                                   currentUserId, signatureBytes, onRefresh);
@@ -1060,7 +1007,7 @@ class ViewContractBuild {
                   child: ElevatedButton.icon(
                     onPressed: enabled
                         ? () async {
-                            final signatureBytes = await _pickSignatureImage(context);
+                            final signatureBytes = await pickSignatureImage(context);
                             if (signatureBytes != null) {
                               _showSignatureDialog(context, contractData,
                                   currentUserId, signatureBytes, onRefresh);
@@ -1109,36 +1056,12 @@ class ViewContractBuild {
     );
   }
 
-  static Future<Uint8List?> _pickSignatureImage(BuildContext context) async {
-    try {
-      final input = html.FileUploadInputElement()..accept = 'image/*';
-      input.click();
-
-      await input.onChange.first;
-      
-      if (input.files == null || input.files!.isEmpty) {
-        return null; 
-      }
-      
-      final file = input.files!.first;
-
-      final reader = html.FileReader();
-      reader.readAsArrayBuffer(file);
-      await reader.onLoad.first;
-      
-      final result = reader.result;
-      if (result is Uint8List) {
-        return result;
-      } else if (result is ByteBuffer) {
-        return Uint8List.view(result);
-      } else {
-        throw Exception('Unexpected file reader result type: ${result.runtimeType}');
-      }
-    } catch (e) {
-      ConTrustSnackBar.error(
-          context, 'Failed to pick signature image $e');
-      return null;
+  static Future<Uint8List?> pickSignatureImage(BuildContext context) async {
+    final bytes = await pickSignatureImageHelper(context);
+    if (bytes == null) {
+      ConTrustSnackBar.error(context, 'Failed to pick signature image');
     }
+    return bytes;
   }
 
   static void _showSignatureDialog(

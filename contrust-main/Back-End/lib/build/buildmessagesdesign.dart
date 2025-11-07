@@ -1,7 +1,8 @@
 // ignore_for_file: deprecated_member_use, file_names, use_build_context_synchronously, avoid_web_libraries_in_flutter
 
 import 'dart:async';
-import 'dart:html' as html;
+import 'html_stub.dart' if (dart.library.html) 'dart:html' as html;
+
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:backend/services/both%20services/be_project_service.dart';

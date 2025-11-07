@@ -111,3 +111,6 @@ screenshots/
 
 # Documentation builds
 doc/api/
+
+# Allow editing web-related build helpers under lib/build (needed for IDE tools)
+!**/lib/build/**
