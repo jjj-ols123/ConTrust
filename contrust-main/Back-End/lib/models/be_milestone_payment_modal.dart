@@ -27,6 +27,7 @@ class MilestonePaymentModal {
     final cvcController = TextEditingController();
     final nameController = TextEditingController();
     bool isProcessing = false;
+    bool dialogClosed = false;
 
     final milestoneAmount = (currentMilestone['amount'] as num?)?.toDouble() ?? 0.0;
     final milestoneNumber = currentMilestone['milestone_number'] as int? ?? 1;
@@ -49,7 +50,7 @@ class MilestonePaymentModal {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Colors.white, Colors.purple.shade50],
+                  colors: [Colors.white, Colors.amber.shade50],
                 ),
               ),
               child: Column(
@@ -59,7 +60,7 @@ class MilestonePaymentModal {
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.purple.shade700,
+                      color: Colors.amber.shade700,
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(20),
                         topRight: Radius.circular(20),
@@ -106,7 +107,17 @@ class MilestonePaymentModal {
                         ),
                         if (!isProcessing)
                           IconButton(
-                            onPressed: () => Navigator.pop(context),
+                            onPressed: () {
+                              dialogClosed = true;
+                              Navigator.pop(context);
+                              // Dispose controllers after dialog closes
+                              Future.microtask(() {
+                                cardNumberController.dispose();
+                                expiryController.dispose();
+                                cvcController.dispose();
+                                nameController.dispose();
+                              });
+                            },
                             icon: const Icon(Icons.close, color: Colors.white),
                           ),
                       ],
@@ -118,9 +129,9 @@ class MilestonePaymentModal {
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.purple.shade100,
+                      color: Colors.amber.shade100,
                       border: Border(
-                        bottom: BorderSide(color: Colors.purple.shade200),
+                        bottom: BorderSide(color: Colors.amber.shade200),
                       ),
                     ),
                     child: Column(
@@ -136,7 +147,7 @@ class MilestonePaymentModal {
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.purple.shade900,
+                                      color: Colors.amber.shade900,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -144,7 +155,7 @@ class MilestonePaymentModal {
                                     milestoneDescription,
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: Colors.purple.shade700,
+                                      color: Colors.amber.shade700,
                                     ),
                                   ),
                                 ],
@@ -257,7 +268,7 @@ class MilestonePaymentModal {
                                     keyboardType: TextInputType.number,
                                     inputFormatters: [
                                       FilteringTextInputFormatter.digitsOnly,
-                                      LengthLimitingTextInputFormatter(4),
+                                      LengthLimitingTextInputFormatter(3),
                                     ],
                                     decoration: const InputDecoration(
                                       labelText: 'CVC',
@@ -269,8 +280,8 @@ class MilestonePaymentModal {
                                       if (value == null || value.isEmpty) {
                                         return 'Please enter CVC';
                                       }
-                                      if (value.length < 3) {
-                                        return 'CVC must be 3-4 digits';
+                                      if (value.length != 3) {
+                                        return 'CVC must be 3 digits';
                                       }
                                       return null;
                                     },
@@ -334,7 +345,15 @@ class MilestonePaymentModal {
                                     );
 
                                     if (context.mounted) {
+                                      dialogClosed = true;
                                       Navigator.pop(context);
+                                      // Dispose controllers after dialog closes
+                                      Future.microtask(() {
+                                        cardNumberController.dispose();
+                                        expiryController.dispose();
+                                        cvcController.dispose();
+                                        nameController.dispose();
+                                      });
                                       ConTrustSnackBar.success(
                                         context,
                                         'Milestone payment processed successfully!',
@@ -353,8 +372,8 @@ class MilestonePaymentModal {
                                 }
                               },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.purple.shade700,
-                          foregroundColor: Colors.white,
+                          backgroundColor: Colors.amber.shade700,
+                          foregroundColor: Colors.black,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -388,10 +407,14 @@ class MilestonePaymentModal {
       ),
     );
 
-    cardNumberController.dispose();
-    expiryController.dispose();
-    cvcController.dispose();
-    nameController.dispose();
+    // Only dispose controllers if dialog was closed without using them
+    // (e.g., user closed dialog without submitting)
+    if (!dialogClosed) {
+      cardNumberController.dispose();
+      expiryController.dispose();
+      cvcController.dispose();
+      nameController.dispose();
+    }
   }
 
   static Widget _buildMilestoneProgress(List<Map<String, dynamic>> milestones) {

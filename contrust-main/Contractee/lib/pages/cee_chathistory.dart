@@ -367,7 +367,12 @@ class _ContracteeChatHistoryPageState
                       
                       final lastMessage = chat['last_message'] ?? '';
                       final lastTime = chat['last_message_time'] != null
-                          ? DateTime.tryParse(chat['last_message_time'])
+                          ? (() {
+                              final parsed = DateTime.tryParse(chat['last_message_time']);
+                              if (parsed == null) return null;
+                              // Convert to local time if it's UTC
+                              return parsed.isUtc ? parsed.toLocal() : parsed;
+                            })()
                           : null;
 
                       return InkWell(

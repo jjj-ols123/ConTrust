@@ -263,34 +263,50 @@ class NotificationUIBuildMethods {
 
   /// Get group title based on type, count, and date
   String _getGroupTitle(String type, int count, String dateLabel) {
+    // Format: "num notifications for [type] - [date]"
+    String typeLabel;
     switch (type) {
       case 'hiring_requests':
-        return 'You have $count hiring ${count == 1 ? 'request' : 'requests'} $dateLabel';
+        typeLabel = 'hiring request';
+        break;
       case 'hiring_requests_accepted':
-        return 'You accepted $count hiring ${count == 1 ? 'request' : 'requests'} $dateLabel';
+        typeLabel = 'hiring request accepted';
+        break;
       case 'hiring_requests_cancelled':
-        return '$count hiring ${count == 1 ? 'request was' : 'requests were'} cancelled $dateLabel';
+        typeLabel = 'hiring request cancelled';
+        break;
       case 'hiring_requests_declined':
-        return '$count hiring ${count == 1 ? 'request was' : 'requests were'} declined $dateLabel';
+        typeLabel = 'hiring request declined';
+        break;
       case 'hiring_requests_declined_by_me':
-        return 'You declined $count hiring ${count == 1 ? 'request' : 'requests'} $dateLabel';
+        typeLabel = 'hiring request declined';
+        break;
       case 'bid_accepted':
-        return 'You have $count ${count == 1 ? 'bid' : 'bids'} accepted $dateLabel';
+        typeLabel = 'bid accepted';
+        break;
       case 'bid_rejected':
-        return 'You have $count ${count == 1 ? 'bid' : 'bids'} rejected $dateLabel';
+        typeLabel = 'bid rejected';
+        break;
       case 'bid_cancelled':
-        return 'You have $count ${count == 1 ? 'bid' : 'bids'} cancelled $dateLabel';
+        typeLabel = 'bid cancelled';
+        break;
       case 'project_bids_update':
-        return 'You have $count ${count == 1 ? 'project' : 'projects'} with new bids $dateLabel';
+        typeLabel = 'project bids update';
+        break;
       case 'contract_status':
-        return 'You have $count contract ${count == 1 ? 'update' : 'updates'} $dateLabel';
+        typeLabel = 'contract status';
+        break;
       case 'cancellation_request':
-        return 'You have $count cancellation ${count == 1 ? 'request' : 'requests'} $dateLabel';
+        typeLabel = 'cancellation request';
+        break;
       case 'cancellation_declined':
-        return '$count cancellation ${count == 1 ? 'request was' : 'requests were'} declined $dateLabel';
+        typeLabel = 'cancellation declined';
+        break;
       default:
-        return '$count notification${count == 1 ? '' : 's'} $dateLabel';
+        typeLabel = 'notification';
     }
+    
+    return '$count ${count == 1 ? 'notification' : 'notifications'} for $typeLabel - $dateLabel';
   }
 
   /// Get group icon based on type

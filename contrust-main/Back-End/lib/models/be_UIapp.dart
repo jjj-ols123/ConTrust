@@ -1276,6 +1276,7 @@ class ProjectView extends StatelessWidget {
                                     currentUserId: Supabase.instance.client.auth.currentUser?.id,
                                     context: dialogContext,
                                     contractStatus: liveData['status'] as String?,
+                                    parentDialogContext: dialogContext,
                               ),
                             ],
                           ),

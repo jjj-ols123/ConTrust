@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter, use_build_context_synchronously
 
+import 'package:backend/services/both%20services/be_contract_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:backend/services/contractor services/contract/cor_viewcontractservice.dart';
@@ -790,6 +791,7 @@ class ViewContractBuild {
     String? currentUserId,
     BuildContext? context,
     String? contractStatus,
+    BuildContext? parentDialogContext,
   }) {
     final contractorSigned = contractData?['contractor_signature_url'] != null &&
         (contractData!['contractor_signature_url'] as String).isNotEmpty;
@@ -894,6 +896,7 @@ class ViewContractBuild {
                 context,
                 canSign,
                 onRefresh ?? () {},
+                parentDialogContext: parentDialogContext,
               ),
             ],
           ],
@@ -1078,8 +1081,9 @@ class ViewContractBuild {
     String? currentUserId,
     BuildContext context,
     bool enabled,
-    VoidCallback onRefresh,
-  ) {
+    VoidCallback onRefresh, {
+    BuildContext? parentDialogContext,
+  }) {
     final signatureController = SignatureController(
       penStrokeWidth: 3,
       penColor: Colors.black,
@@ -1167,8 +1171,14 @@ class ViewContractBuild {
                         ? () async {
                             final signatureBytes = await _pickSignatureImage(context);
                             if (signatureBytes != null) {
-                              _showSignatureDialog(context, contractData,
-                                  currentUserId, signatureBytes, onRefresh);
+                              _showSignatureDialog(
+                                context, 
+                                contractData,
+                                currentUserId, 
+                                signatureBytes, 
+                                onRefresh,
+                                parentDialogContext: parentDialogContext,
+                              );
                             }
                           }
                         : null,
@@ -1195,8 +1205,14 @@ class ViewContractBuild {
                                   context, 'Please provide a signature');
                               return;
                             }
-                            _showSignatureDialog(context, contractData,
-                                currentUserId, signature, onRefresh);
+                            _showSignatureDialog(
+                              context, 
+                              contractData,
+                              currentUserId, 
+                              signature, 
+                              onRefresh,
+                              parentDialogContext: parentDialogContext,
+                            );
                           }
                         : null,
                     icon: const Icon(Icons.check, size: 18),
@@ -1239,8 +1255,14 @@ class ViewContractBuild {
                         ? () async {
                             final signatureBytes = await _pickSignatureImage(context);
                             if (signatureBytes != null) {
-                              _showSignatureDialog(context, contractData,
-                                  currentUserId, signatureBytes, onRefresh);
+                              _showSignatureDialog(
+                                context, 
+                                contractData,
+                                currentUserId, 
+                                signatureBytes, 
+                                onRefresh,
+                                parentDialogContext: parentDialogContext,
+                              );
                             }
                           }
                         : null,
@@ -1323,8 +1345,9 @@ class ViewContractBuild {
     Map<String, dynamic> contractData,
     String? currentUserId,
     Uint8List signatureBytes,
-    VoidCallback onRefresh,
-  ) {
+    VoidCallback onRefresh, {
+    BuildContext? parentDialogContext,
+  }) {
     if (currentUserId == null) return;
 
     final contractId = contractData['contract_id'] as String;
@@ -1438,8 +1461,21 @@ class ViewContractBuild {
                                     userType: userType,
                                   );
 
+                                  // Check if both parties have signed
+                                  final updatedContract = await ContractService.getContractById(contractId);
+                                  final hasContractorSignature = updatedContract['contractor_signature_url'] != null &&
+                                      (updatedContract['contractor_signature_url'] as String).isNotEmpty;
+                                  final hasContracteeSignature = updatedContract['contractee_signature_url'] != null &&
+                                      (updatedContract['contractee_signature_url'] as String).isNotEmpty;
+                                  final bothSigned = hasContractorSignature && hasContracteeSignature;
+
                                   Navigator.of(dialogContext).pop();
                                   onRefresh();
+                                  
+                                  // If both parties have signed, close the parent contract dialog
+                                  if (bothSigned && parentDialogContext != null) {
+                                    Navigator.of(parentDialogContext).pop();
+                                  }
                                   
                                 } catch (e) {
                                   ConTrustSnackBar.error(context, 'Failed to sign contract: $e');

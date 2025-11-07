@@ -268,13 +268,13 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
     try {
       if (project != null) {
         final contractorId = project['contractor_id'];
-        if (contractorId != null) {
+        if (contractorId != null && contractorId.toString().isNotEmpty) {
           final contractorData = await supabase
               .from('Contractor')
               .select('firm_name, profile_photo')
-              .eq('contractor_id', contractorId)
-              .single();
-          if (mounted) {
+              .eq('contractor_id', contractorId.toString())
+              .maybeSingle();
+          if (mounted && contractorData != null) {
             setState(() {
               _contractorData = contractorData;
             });
@@ -283,9 +283,8 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
       }
     } catch (e) {
       debugPrint('Error loading contractor data: $e');
-      if (mounted) {
-        ConTrustSnackBar.error(context, 'Error loading contractor data: $e');
-      }
+      // Don't show error to user as this is not critical
+      // The contractor data is optional for the UI
     }
   }
 
@@ -603,8 +602,10 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
         projectTitle: projectTitle,
         amount: customAmount,
         customAmount: customAmount, 
-        onPaymentSuccess: () {
-          _emitAggregatedData();
+        onPaymentSuccess: () async {
+          // Refresh payment status and project data after payment
+          await loadData();
+          await _emitAggregatedData();
         },
       );
     } catch (e) {
@@ -699,47 +700,63 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                       dialogMessage,
                       style: const TextStyle(fontSize: 14, color: Colors.black87),
                     ),
-                    if (_paymentSummary != null && _paymentSummary!['remaining'] != null) ...[
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.blue.shade200),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Amount to be Paid',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600,
-                                      fontWeight: FontWeight.w500,
+                    // Only show "Amount to be Paid" for non-lump sum contracts
+                    // Lump sum contracts have a fixed amount, so no need to show remaining
+                    Builder(
+                      builder: (context) {
+                        final contractType = _paymentSummary?['contract_type'] as String? ?? '';
+                        final isLumpSum = contractType.toLowerCase().contains('lump') || 
+                                         contractType.toLowerCase() == 'lump_sum';
+                        
+                        if (!isLumpSum && _paymentSummary != null && _paymentSummary!['remaining'] != null) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.blue.shade200),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Amount to be Paid',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey.shade600,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            '₱${(_paymentSummary!['remaining'] as num).toStringAsFixed(2)}',
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.blue.shade700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '₱${(_paymentSummary!['remaining'] as num).toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.blue.shade700,
-                                    ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                            ],
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
                     const SizedBox(height: 20),
                     TextField(
                       controller: controller,
@@ -915,6 +932,9 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
     final projectDetails = projectData!['projectDetails'] as Map<String, dynamic>? ?? projectData!;
     final projectStatus = projectDetails['status'] ?? '';
     
+    // Only show payment button if project is active AND not already paid
+    final canMakePayment = projectStatus == 'active' && !_isPaid;
+    
     return RefreshIndicator(
       onRefresh: () async {
         await _emitAggregatedData();
@@ -927,7 +947,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
             projectId: widget.projectId,
             projectData: projectData,
             createSignedPhotoUrl: createSignedPhotoUrl,
-            onPayment: projectStatus == 'active' ? _handlePayment : null,
+            onPayment: canMakePayment ? _handlePayment : null,
             isPaid: _isPaid,
             onViewPaymentHistory: _isPaid ? _showPaymentHistory : null,
             paymentButtonText: _paymentSummary?['payment_status'] == 'partial' ? 'Make Payment' : null,

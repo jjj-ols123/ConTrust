@@ -1559,21 +1559,21 @@ class DashboardBuildMethods {
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.checklist,
-                      color: Colors.green.shade700,
-                      size: isTablet ? 24 : 20,
-                    ),
-                    SizedBox(width: isTablet ? 12 : 8),
-                    Text(
-                      'Project Tasks',
-                      style: TextStyle(
-                        fontSize: isTablet ? 18 : 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                Icon(
+                  Icons.checklist,
+                  color: Colors.green.shade700,
+                  size: isTablet ? 24 : 20,
+                ),
+                SizedBox(width: isTablet ? 12 : 8),
+                Text(
+                  'Project Tasks',
+                  style: TextStyle(
+                    fontSize: isTablet ? 18 : 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                     ),
                   ],
                 ),
@@ -1776,7 +1776,7 @@ class DashboardBuildMethods {
                               icon: const Icon(Icons.arrow_forward, size: 16),
                               label: Text(
                                 'View ${tasks.length - 3} more task${tasks.length - 3 > 1 ? 's' : ''} in Project Management',
-                                style: TextStyle(
+                              style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.amber.shade700,
