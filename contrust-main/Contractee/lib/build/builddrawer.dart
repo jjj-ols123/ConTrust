@@ -22,7 +22,8 @@ enum ContracteePage {
   notifications,
   messages,
   chatHistory,
-  aiAssistant
+  aiAssistant,
+  history
 }
 
 class ContracteeShell extends StatefulWidget {
@@ -74,6 +75,8 @@ class _ContracteeShellState extends State<ContracteeShell> {
         return 0; // not used for stack
       case ContracteePage.chatHistory:
         return 1;
+      case ContracteePage.history:
+        return 0; // not used for stack, handled separately
     }
   }
 
@@ -93,6 +96,8 @@ class _ContracteeShellState extends State<ContracteeShell> {
         return 'Chat History';
       case ContracteePage.aiAssistant:
         return 'AI Assistant';
+      case ContracteePage.history:
+        return 'History';
     }
   }
 
@@ -245,6 +250,7 @@ class _ContracteeShellState extends State<ContracteeShell> {
               child: Padding(
                 padding: widget.contentPadding ?? EdgeInsets.zero,
                 child: widget.currentPage == ContracteePage.ongoing ||
+                        widget.currentPage == ContracteePage.history ||
                         GoRouter.of(context).routerDelegate.currentConfiguration.uri.path.startsWith('/contractor')
                     ? widget.child
                     : IndexedStack(
@@ -496,6 +502,16 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             onTap: () {
               if (widget.currentPage != ContracteePage.profile) {
                 navigateToPage('/profile');
+              }
+            },
+          ),
+          _SidebarItem(
+            icon: Icons.history,
+            label: 'History',
+            active: widget.currentPage == ContracteePage.history,
+            onTap: () {
+              if (widget.currentPage != ContracteePage.history) {
+                navigateToPage('/history');
               }
             },
           ),

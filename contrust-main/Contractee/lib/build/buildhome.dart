@@ -248,7 +248,7 @@ class HomePageBuilder {
 
   static Map<String, dynamic> getPlaceholderProject() {
     return {
-      'title': 'No Active Projects',
+      'title': 'N/A',
       'description': 'You have no active projects at the moment.',
       'type': 'N/A',
       'contractee_name': 'No Contractee',
@@ -679,11 +679,17 @@ class HomePageBuilder {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isDesktop = screenWidth >= 1000;
+        
         return Center(
           child: Material(
             color: Colors.transparent,
             child: Container(
-              constraints: const BoxConstraints(maxWidth: 500),
+              constraints: BoxConstraints(
+                maxWidth: isDesktop ? 800 : 500,
+                maxHeight: MediaQuery.of(context).size.height * 0.9,
+              ),
               margin: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -751,7 +757,6 @@ class HomePageBuilder {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 16),
-                          
                           Row(
                             children: [
                               CircleAvatar(
@@ -765,10 +770,18 @@ class HomePageBuilder {
                                     height: 60,
                                     fit: BoxFit.cover,
                                     errorBuilder: (context, error, stackTrace) {
+                                      return Image(
+                                        image: const AssetImage('assets/defaultpic.png'),
+                                    width: 60,
+                                    height: 60,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
                                       return Icon(
-                                        Icons.person,
+                                            Icons.business,
                                         size: 30,
                                         color: Colors.grey.shade400,
+                                          );
+                                        },
                                       );
                                     },
                                   ),
@@ -800,12 +813,10 @@ class HomePageBuilder {
                               ),
                             ],
                           ),
-                          
                           const SizedBox(height: 24),
-                          
-                          _buildDetailField('Bid Amount', '₱${info['bid_amount']}'),
-                          _buildDetailField('Contractor Message', info['message'] ?? 'No description provided'),
-                          _buildDetailField('Status', (info['status'] as String).toUpperCase()),
+                          _buildDetailField('Bid Amount', '₱${info['bid_amount']}', isDesktop),
+                          _buildDetailField('Contractor Message', info['message'] ?? 'No description provided', isDesktop),
+                          _buildDetailField('Status', (info['status'] as String).toUpperCase(), isDesktop),
                         ],
                       ),
                     ),
@@ -1001,7 +1012,7 @@ class HomePageBuilder {
     );
   }
 
-  static Widget _buildDetailField(String label, String value) {
+  static Widget _buildDetailField(String label, String value, bool isDesktop) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -1011,11 +1022,11 @@ class HomePageBuilder {
             label,
             style: TextStyle(
               fontSize: 14,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.bold,
               color: Colors.grey.shade700,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
@@ -1029,6 +1040,80 @@ class HomePageBuilder {
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey.shade800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _buildProjectPhotoButton(BuildContext context, dynamic photoUrl, bool isDesktop) {
+    final photoUrlString = _getProjectPhotoUrl(photoUrl);
+    if (photoUrlString.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: isDesktop
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 180,
+                  child: Text(
+                    'Project Photo:',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showFullPhotoDialog(context, photoUrlString),
+                    icon: const Icon(Icons.image, size: 18),
+                    label: const Text('View Photo'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber.shade700,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Project Photo',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showFullPhotoDialog(context, photoUrlString),
+                    icon: const Icon(Icons.image, size: 18),
+                    label: const Text('View Photo'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber.shade700,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
               ),
             ),
           ),
@@ -1586,11 +1671,17 @@ class HomePageBuilder {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isDesktop = screenWidth >= 1000;
+        
         return Center(
           child: Material(
             color: Colors.transparent,
             child: Container(
-              constraints: const BoxConstraints(maxWidth: 500),
+              constraints: BoxConstraints(
+                maxWidth: isDesktop ? 800 : 500,
+                maxHeight: MediaQuery.of(context).size.height * 0.9,
+              ),
               margin: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -1658,7 +1749,6 @@ class HomePageBuilder {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 16),
-                          
                           Row(
                             children: [
                               CircleAvatar(
@@ -1672,10 +1762,18 @@ class HomePageBuilder {
                                     height: 60,
                                     fit: BoxFit.cover,
                                     errorBuilder: (context, error, stackTrace) {
+                                      return Image(
+                                        image: const AssetImage('assets/defaultpic.png'),
+                                    width: 60,
+                                    height: 60,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
                                       return Icon(
                                         Icons.person,
                                         size: 30,
                                         color: Colors.grey.shade400,
+                                          );
+                                        },
                                       );
                                     },
                                   ),
@@ -1687,7 +1785,7 @@ class HomePageBuilder {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      infoMap['full_name'] ?? 'Unknown Client',
+                                      infoMap['firm_name'] ?? 'Unknown Contractor',
                                       style: const TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.w600,
@@ -1707,31 +1805,28 @@ class HomePageBuilder {
                               ),
                             ],
                           ),
-                          
                           const SizedBox(height: 24),
-                          
                           if (infoMap['photo_url'] != null && infoMap['photo_url'].toString().isNotEmpty) ...[
-                            _buildProjectPhotoField(context, infoMap['photo_url']),
+                            _buildProjectPhotoButton(context, infoMap['photo_url'], isDesktop),
                             const SizedBox(height: 16),
                           ],
-                          
-                          _buildDetailField('Project Title', infoMap['project_title'] ?? 'Untitled Project'),
-                          _buildDetailField('Project Type', infoMap['project_type'] ?? 'Not specified'),
-                          _buildDetailField('Location', infoMap['project_location'] ?? 'Not specified'),
-                          _buildDetailField('Description', infoMap['project_description'] ?? 'No description provided'),
+                          _buildDetailField('Project Title', infoMap['project_title'] ?? 'Untitled Project', isDesktop),
+                          _buildDetailField('Project Type', infoMap['project_type'] ?? 'Not specified', isDesktop),
+                          _buildDetailField('Location', infoMap['project_location'] ?? 'Not specified', isDesktop),
+                          _buildDetailField('Description', infoMap['project_description'] ?? 'No description provided', isDesktop),
                           
                           if (infoMap['min_budget'] != null && infoMap['max_budget'] != null)
-                            _buildDetailField('Budget Range', '₱${infoMap['min_budget']} - ₱${infoMap['max_budget']}')
+                            _buildDetailField('Budget Range', '₱${infoMap['min_budget']} - ₱${infoMap['max_budget']}', isDesktop)
                           else if (infoMap['project_budget'] != null)
-                            _buildDetailField('Budget', '₱${infoMap['project_budget']}')
+                            _buildDetailField('Budget', '₱${infoMap['project_budget']}', isDesktop)
                           else
-                            _buildDetailField('Budget', 'Not specified'),
+                            _buildDetailField('Budget', 'Not specified', isDesktop),
                           
                           if (infoMap['start_date'] != null)
-                            _buildDetailField('Preferred Start Date', infoMap['start_date'].toString().split(' ')[0]),
+                            _buildDetailField('Preferred Start Date', infoMap['start_date'].toString().split(' ')[0], isDesktop),
                           
                           if (infoMap['additional_info'] != null && infoMap['additional_info'].isNotEmpty)
-                            _buildDetailField('Additional Information', infoMap['additional_info']),
+                            _buildDetailField('Additional Information', infoMap['additional_info'], isDesktop),
                         ],
                       ),
                     ),
@@ -1902,9 +1997,11 @@ class HomePageBuilder {
     required BuildContext context,
     required Widget projectContent,
     required VoidCallback onPostProject,
+    bool isPostingProject = false,
   }) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
+    final isMobile = screenWidth < 600;
 
     return Container(
       width: double.infinity,
@@ -1946,16 +2043,45 @@ class HomePageBuilder {
                     ),
                   ),
                 ),
-                ElevatedButton.icon(
-                  onPressed: onPostProject,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Post Project'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.amber[700],
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  ),
-                ),
+                isMobile
+                    ? IconButton(
+                        onPressed: isPostingProject ? null : onPostProject,
+                        icon: isPostingProject 
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.add, size: 24),
+                        style: IconButton.styleFrom(
+                          backgroundColor: isPostingProject ? Colors.grey[400] : Colors.amber[700],
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.all(12),
+                        ),
+                        tooltip: isPostingProject ? 'Posting...' : 'Post Project',
+                      )
+                    : ElevatedButton.icon(
+                        onPressed: isPostingProject ? null : onPostProject,
+                        icon: isPostingProject 
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.add, size: 18),
+                        label: Text(isPostingProject ? 'Posting...' : 'Post Project'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isPostingProject ? Colors.grey[400] : Colors.amber[700],
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        ),
+                      ),
               ],
             ),
             SizedBox(height: isTablet ? 20 : 16),

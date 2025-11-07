@@ -214,6 +214,11 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
                       );
                     }
 
+                    // Show loading while waiting for initial data
+                    if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator(color: Colors.amber));
+                    }
+
                     final incomingChats = snapshot.data ?? [];
                     final newKey = _computeBatchKey(incomingChats);
                     if (incomingChats.isNotEmpty && contractorId != null && newKey != _batchKey) {
@@ -226,7 +231,8 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
                         ? _lastChatsSnapshot
                         : incomingChats;
 
-                    if (chats.isEmpty) {
+                    // Show empty state only after data has been received
+                    if (snapshot.hasData && chats.isEmpty) {
                       return const Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -255,6 +261,11 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
                           ],
                         ),
                       );
+                    }
+                    
+                    // If still no data but connection is active, show loading
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator(color: Colors.amber));
                     }
 
                     return ListView.builder(
@@ -296,13 +307,33 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
                                         children: [
                                           Stack(
                                             children: [
-                                              CircleAvatar(
-                                                radius: 24,
-                                                backgroundColor: Colors.amber[100],
-                                                backgroundImage: NetworkImage(
+                                              ClipOval(
+                                                child: Container(
+                                                  width: 48,
+                                                  height: 48,
+                                                  color: Colors.amber[100],
+                                                  child: Image.network(
                                                   (contracteeProfile != null && contracteeProfile.isNotEmpty)
                                                       ? contracteeProfile
                                                       : 'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
+                                                    width: 48,
+                                                    height: 48,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (context, error, stackTrace) {
+                                                      return Image(
+                                                        image: const AssetImage('assets/images/defaultpic.png'),
+                                                        width: 48,
+                                                        height: 48,
+                                                        fit: BoxFit.cover,
+                                                        errorBuilder: (context, error, stackTrace) {
+                                                          return Container(
+                                                            color: Colors.amber[100],
+                                                            child: Icon(Icons.person, size: 24, color: Colors.grey.shade600),
+                                                          );
+                                                        },
+                                                      );
+                                                    },
+                                                  ),
                                                 ),
                                               ),
                                               if (hasUnread)

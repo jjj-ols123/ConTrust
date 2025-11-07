@@ -18,6 +18,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 enum ContractorPage {
   dashboard,
   messages,
+  notifications,
   contractTypes,
   createContract,
   chatHistory,
@@ -25,6 +26,7 @@ enum ContractorPage {
   profile,
   projectManagement,
   materials,
+  history,
 }
 
 class ContractorShell extends StatefulWidget {
@@ -72,10 +74,12 @@ class _ContractorShellState extends State<ContractorShell> {
         return 3;
       case ContractorPage.profile:
         return 4;
+      case ContractorPage.notifications:
       case ContractorPage.createContract:
       case ContractorPage.chatHistory:
       case ContractorPage.projectManagement:
       case ContractorPage.materials:
+      case ContractorPage.history:
         return 0;
     }
   }
@@ -86,6 +90,8 @@ class _ContractorShellState extends State<ContractorShell> {
         return 'Dashboard';
       case ContractorPage.messages:
         return 'Messages';
+      case ContractorPage.notifications:
+        return 'Notifications';
       case ContractorPage.contractTypes:
         return 'Contracts';
       case ContractorPage.createContract:
@@ -100,6 +106,8 @@ class _ContractorShellState extends State<ContractorShell> {
         return 'Project Management';
       case ContractorPage.materials:
         return 'Materials';
+      case ContractorPage.history:
+        return 'History';
     }
   }
 
@@ -118,7 +126,7 @@ class _ContractorShellState extends State<ContractorShell> {
         automaticallyImplyLeading: false,
         leading: !isDesktop
             ? IconButton(
-                icon: const Icon(Icons.home, color: Colors.white),
+                icon: const Icon(Icons.home, color: Colors.black),
                 onPressed: () {
                   if (widget.currentPage != ContractorPage.dashboard) {
                     context.go('/dashboard');
@@ -220,7 +228,7 @@ class _ContractorShellState extends State<ContractorShell> {
               ],
             ),
           ),
-          if (!isDesktop)
+          if (!isDesktop && widget.currentPage != ContractorPage.createContract)
             ModernBottomNavigationBar(
           contractorId: widget.contractorId,
           currentPage: widget.currentPage,
@@ -500,6 +508,16 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             },
           ),
           _SidebarItem(
+            icon: Icons.history,
+            label: 'History',
+            active: widget.currentPage == ContractorPage.history,
+            onTap: () {
+              if (widget.currentPage != ContractorPage.history) {
+                navigateToPage('/history');
+              }
+            },
+          ),
+          _SidebarItem(
             icon: Icons.work_outline,
             label: _loadingPM ? 'Loading...' : 'Project Management',
             active: widget.currentPage == ContractorPage.projectManagement,
@@ -760,44 +778,88 @@ class _ProjectNavButton extends StatelessWidget {
     required this.hasActiveProject,
   });
 
+  void _showMultiButtonMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            ListTile(
+              leading: Icon(Icons.work_outline, color: Colors.amber.shade700),
+              title: const Text('Project Management'),
+              subtitle: Text(hasActiveProject ? 'View active project' : 'No active project'),
+              onTap: hasActiveProject ? () async {
+                Navigator.pop(context);
+                try {
+                  final response = await Supabase.instance.client
+                      .from('Projects')
+                      .select('project_id')
+                      .eq('contractor_id', contractorId)
+                      .eq('status', 'active')
+                      .limit(1)
+                      .maybeSingle();
+
+                  if (response != null && response['project_id'] != null) {
+                    context.go('/project-management/${response['project_id']}');
+                  } else {
+                    ConTrustSnackBar.infoToast(context, 'No active project found');
+                  }
+                } catch (e) {
+                  ConTrustSnackBar.error(context, 'Failed to load project data');
+                }
+              } : () {
+                Navigator.pop(context);
+                ConTrustSnackBar.infoToast(context, 'No active project found');
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: Icon(Icons.history, color: Colors.amber.shade700),
+              title: const Text('History'),
+              subtitle: const Text('View project, payment, and review history'),
+              onTap: () {
+                Navigator.pop(context);
+                context.go('/history');
+              },
+            ),
+            const SizedBox(height: 10),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    
     return GestureDetector(
-      onTap: hasActiveProject ? () async {
-        try {
-          final response = await Supabase.instance.client
-              .from('Projects')
-              .select('project_id')
-              .eq('contractor_id', contractorId)
-              .eq('status', 'active')
-              .limit(1)
-              .maybeSingle();
-
-          if (response != null && response['project_id'] != null) {
-            context.go('/project-management/${response['project_id']}');
-          } else {
-            ConTrustSnackBar.infoToast(context, 'No active project found');
-          }
-        } catch (e) {
-          ConTrustSnackBar.error(context, 'Failed to load project data');
-        }
-      } : null,
+      onTap: () => _showMultiButtonMenu(context),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: hasActiveProject 
-                    ? Colors.amber.shade400 
-                    : Colors.grey.shade400,
+            color: Colors.amber.shade400,
             borderRadius: BorderRadius.circular(25),
             boxShadow: [
               BoxShadow(
-                color: hasActiveProject 
-                    ? Colors.amber.withOpacity(0.3)
-                    : Colors.grey.withOpacity(0.2),
+                color: Colors.amber.withOpacity(0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -805,11 +867,11 @@ class _ProjectNavButton extends StatelessWidget {
           ),
           child: Icon(
             Icons.work_outline,
-                    color: Colors.white,
+            color: Colors.white,
             size: 28,
-                    ),
-                  ),
-                ),
+          ),
+        ),
+      ),
     );
   }
 }

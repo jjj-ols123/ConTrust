@@ -5,6 +5,7 @@ import 'package:contractor/Screen/cor_dashboard.dart';
 import 'package:contractor/Screen/cor_profile.dart';
 import 'package:contractor/Screen/cor_registration.dart';
 import 'package:contractor/Screen/cor_startup.dart';
+import 'package:contractor/Screen/verification_capture.dart';
 import 'package:contractor/Screen/cor_authredirect.dart';
 import 'package:contractor/Screen/cor_forgot_password.dart';
 import 'package:contractor/Screen/cor_bidding.dart';
@@ -14,6 +15,7 @@ import 'package:contractor/Screen/cor_createcontract.dart';
 import 'package:contractor/Screen/cor_messages.dart';
 import 'package:contractor/Screen/cor_ongoing.dart';
 import 'package:contractor/Screen/cor_notification.dart';
+import 'package:contractor/Screen/cor_history.dart';
 import 'package:contractor/Screen/cor_viewcontract.dart';
 import 'package:contractor/Screen/cor_product.dart';
 import 'package:contractor/Screen/cor_editcontract.dart';
@@ -104,6 +106,19 @@ class _MyAppState extends State<MyApp> {
             child: const RegisterScreen(),
           ),
         ),
+        GoRoute(
+          path: '/register/verification',
+          pageBuilder: (context, state) {
+            final extra = state.extra as Map<String, dynamic>?;
+            return NoTransitionPage(
+              child: VerificationCapturePage(
+                initialFiles: extra?['files'] as List<Map<String, dynamic>>? ?? const [],
+                initialPcabQrText: extra?['pcabQrText'] as String?,
+                initialPermitQrText: extra?['permitQrText'] as String?,
+              ),
+            );
+          },
+        ),
         
         ShellRoute(
           pageBuilder: (context, state, child) {
@@ -142,6 +157,9 @@ class _MyAppState extends State<MyApp> {
                     case '/messages':
                       currentPage = ContractorPage.messages;
                       break;
+                    case '/notifications':
+                      currentPage = ContractorPage.notifications;
+                      break;
                     case '/contracttypes':
                       currentPage = ContractorPage.contractTypes;
                       break;
@@ -155,9 +173,15 @@ class _MyAppState extends State<MyApp> {
                       } else if (location.startsWith('/profile')) {
                         currentPage = ContractorPage.profile;
                       } else if (location.startsWith('/project-management')) {
+                        if (location.contains('/materials')) {
+                          currentPage = ContractorPage.materials;
+                        } else {
                         currentPage = ContractorPage.projectManagement;
+                        }
                       } else if (location.startsWith('/materials')) {
                         currentPage = ContractorPage.materials;
+                      } else if (location.startsWith('/history')) {
+                        currentPage = ContractorPage.history;
                       } else if (location.startsWith('/viewcontract')) {
                         currentPage = ContractorPage.createContract;
                       } else if (location.startsWith('/editcontract')) {
@@ -203,6 +227,38 @@ class _MyAppState extends State<MyApp> {
                       final session = Supabase.instance.client.auth.currentSession;
                       if (session != null) {
                         return ContractorChatHistoryPage();
+                      }
+                      return const ToLoginScreen();
+                    },
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/notifications',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      if (session != null) {
+                        return const ContractorNotificationPage();
+                      }
+                      return const ToLoginScreen();
+                    },
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/history',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      if (session != null) {
+                        return CorHistoryPage(contractorId: session.user.id);
                       }
                       return const ToLoginScreen();
                     },
@@ -566,6 +622,28 @@ class _MyAppState extends State<MyApp> {
                   ),
                 );
               },
+              routes: [
+                GoRoute(
+                  path: 'materials',
+                  pageBuilder: (context, state) {
+                    return NoTransitionPage(
+                      child: Builder(
+                        builder: (context) {
+                          final session = Supabase.instance.client.auth.currentSession;
+                          final projectId = state.pathParameters['projectId'];
+                          if (session != null && projectId != null && projectId.isNotEmpty) {
+                            return ProductPanelScreen(
+                              contractorId: session.user.id,
+                              projectId: projectId,
+                            );
+                          }
+                          return const ToLoginScreen();
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
             GoRoute(
               path: '/materials',
@@ -648,22 +726,6 @@ class _MyAppState extends State<MyApp> {
                           contractId: contractId,
                           contractorId: contractorId,
                         );
-                      }
-                      return const ToLoginScreen();
-                    },
-                  ),
-                );
-              },
-            ),
-            GoRoute(
-              path: '/notifications',
-              pageBuilder: (context, state) {
-                return NoTransitionPage(
-                  child: Builder(
-                    builder: (context) {
-                      final session = Supabase.instance.client.auth.currentSession;
-                      if (session != null) {
-                        return const ContractorNotificationPage();
                       }
                       return const ToLoginScreen();
                     },
@@ -831,7 +893,8 @@ class _MyAppState extends State<MyApp> {
           if (uriPath == '/logincontractor' || 
               uriPath == '/auth/callback' || 
               uriPath == '/auth/reset-password' || 
-              uriPath == '/register') {
+              uriPath == '/register' ||
+              uriPath == '/register/verification') {
             return null; 
           }
           return '/logincontractor';

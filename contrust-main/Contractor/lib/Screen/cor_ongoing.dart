@@ -473,7 +473,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   void goToMaterials() {
     final contractorId = Supabase.instance.client.auth.currentUser?.id;
     if (contractorId != null) {
-      context.go('/materials', extra: {'projectId': widget.projectId});
+      context.go('/project-management/${widget.projectId}/materials');
     }
   }
 

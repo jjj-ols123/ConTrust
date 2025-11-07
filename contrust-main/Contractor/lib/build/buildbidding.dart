@@ -302,7 +302,7 @@ class BiddingUIBuildMethods {
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
                     itemCount: displayBids.length,
                     separatorBuilder: (context, index) => const SizedBox(width: 8),
                     itemBuilder: (context, index) {
@@ -323,6 +323,7 @@ class BiddingUIBuildMethods {
                           'SEE MORE',
                           style: TextStyle(
                             fontSize: 14,
+                            color: Colors.amber,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -438,6 +439,10 @@ class BiddingUIBuildMethods {
       case 'rejected':
         statusColor = Colors.red;
         statusIcon = Icons.cancel;
+        break;
+      case 'cancelled':
+        statusColor = Colors.grey;
+        statusIcon = Icons.cancel_outlined;
         break;
       case 'stopped':
         statusColor = Colors.grey;
@@ -1269,6 +1274,24 @@ class BiddingUIBuildMethods {
                               bidController.clear();
                               messageController.clear();
                               onProjectSelected(null);
+
+                              final dialogCtx = dialogContext;
+                              if (dialogCtx != null) {
+                                // Close the dialog first
+                                Navigator.pop(dialogCtx);
+                                
+                                // Show success message after dialog closes
+                                Future.delayed(const Duration(milliseconds: 300), () {
+                                  if (context.mounted) {
+                                    ConTrustSnackBar.success(context, 'Bid submitted successfully!');
+                                  }
+                                });
+                              } else {
+                                // Fallback if dialogContext is null
+                                if (context.mounted) {
+                                  ConTrustSnackBar.success(context, 'Bid submitted successfully!');
+                                }
+                              }
                             } catch (e) {
                               final dialogCtx = dialogContext;
                               if (dialogCtx != null) {
@@ -1287,6 +1310,17 @@ class BiddingUIBuildMethods {
                                   }
                                 });
                                 return;
+                              } else {
+                                // Fallback if dialogContext is null
+                                if (context.mounted) {
+                                  String errorMessage = e.toString();
+                                  if (errorMessage.startsWith('Exception: ')) {
+                                    errorMessage = errorMessage.substring(11);
+                                  }
+                                  bidController.clear();
+                                  messageController.clear();
+                                  ConTrustSnackBar.warning(context, errorMessage);
+                                }
                               }
                             }
                           } : null,
@@ -1667,12 +1701,40 @@ class BiddingUIBuildMethods {
                         fit: BoxFit.cover,
                         width: double.infinity,
                         height: double.infinity,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            width: double.infinity,
+                            height: double.infinity,
+                            color: Colors.grey.shade200,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                    : null,
+                                color: Colors.amber,
+                              ),
+                            ),
+                          );
+                        },
                         errorBuilder: (context, error, stackTrace) {
                           return Image.asset(
                             'assets/images/kitchen.jpg',
                             fit: BoxFit.cover,
                             width: double.infinity,
                             height: double.infinity,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: double.infinity,
+                                height: double.infinity,
+                                color: Colors.grey.shade300,
+                                child: Icon(
+                                  Icons.image_not_supported,
+                                  size: 48,
+                                  color: Colors.grey.shade600,
+                                ),
+                              );
+                            },
                           );
                         },
                       )
@@ -1681,6 +1743,18 @@ class BiddingUIBuildMethods {
                         fit: BoxFit.cover,
                         width: double.infinity,
                         height: double.infinity,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: double.infinity,
+                            height: double.infinity,
+                            color: Colors.grey.shade300,
+                            child: Icon(
+                              Icons.image_not_supported,
+                              size: 48,
+                              color: Colors.grey.shade600,
+                            ),
+                          );
+                        },
                       ),
                 Container(
                   decoration: BoxDecoration(

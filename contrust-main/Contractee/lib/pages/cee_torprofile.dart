@@ -759,20 +759,29 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: Text(
-                      hasPendingHireRequest
-                          ? "HIRE REQUEST PENDING"
-                          : hasActiveProject
-                              ? "CANNOT HIRE - ACTIVE PROJECT"
-                              : hasPendingBiddingProject
-                                  ? "CANNOT HIRE - PROJECT UP FOR BIDDING"
-                                  : "HIRE THIS CONTRACTOR",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
+                    child: isHiring
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(
+                            hasPendingHireRequest
+                                ? "HIRE REQUEST PENDING"
+                                : hasActiveProject
+                                    ? "CANNOT HIRE - ACTIVE PROJECT"
+                                    : hasPendingBiddingProject
+                                        ? "CANNOT HIRE - PROJECT UP FOR BIDDING"
+                                        : "HIRE THIS CONTRACTOR",
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
                 ),
         ),

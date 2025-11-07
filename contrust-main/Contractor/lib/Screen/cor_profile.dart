@@ -364,7 +364,6 @@ class _ContractorUserProfileScreenState
       () => _buildPortfolio(),
       () => _buildAboutContent(),
       () => _buildReviewsContent(),
-      () => _buildClientHistory(),
     );
   }
 
@@ -432,31 +431,6 @@ class _ContractorUserProfileScreenState
     );
   }
 
-  Widget _buildClientHistory() {
-    return ProfileBuildMethods.buildClientHistory(
-      context: context,
-      filteredProjects: filteredProjects,
-      filteredTransactions: filteredTransactions,
-      projectSearchController: searchController,
-      transactionSearchController: transactionSearchController,
-      selectedProjectStatus: selectedProjectStatus,
-      selectedPaymentType: selectedPaymentType,
-      onProjectStatusChanged: (status) {
-        setState(() {
-          selectedProjectStatus = status;
-          _filterProjects();
-        });
-      },
-      onPaymentTypeChanged: (type) {
-        setState(() {
-          selectedPaymentType = type;
-          _filterTransactions();
-        });
-      },
-      onProjectTap: _showProjectDetails,
-      getTimeAgo: _getTimeAgo,
-    );
-  }
 
   Future<void> _loadInitialProjects() async {
     try {
@@ -512,11 +486,6 @@ class _ContractorUserProfileScreenState
 
   void _applySearchFilter() {
     _filterProjects();
-  }
-
-  void _showProjectDetails(Map<String, dynamic> project) async {
-    // You can implement a dialog or navigation to show project details
-    // For now, this is a placeholder
   }
 
   String _getTimeAgo(DateTime dateTime) {

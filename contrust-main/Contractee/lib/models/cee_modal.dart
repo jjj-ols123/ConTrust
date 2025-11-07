@@ -150,6 +150,45 @@ class _ProjectDialogState extends State<ProjectDialog> {
 
       if (pickedFile != null) {
         final bytes = await pickedFile.readAsBytes();
+        
+        // Check file size (max 10MB)
+        const maxSizeBytes = 10 * 1024 * 1024; // 10MB
+        if (bytes.length > maxSizeBytes) {
+          if (mounted) {
+            ConTrustSnackBar.error(
+              context, 
+              'Image size exceeds 10MB limit. Please choose a smaller image.'
+            );
+          }
+          return;
+        }
+        
+        final extension = pickedFile.path.contains('.') 
+            ? pickedFile.path.split('.').last.toLowerCase()
+            : '';
+        
+        bool isValidImage = false;
+        if (extension == 'jpg' || extension == 'jpeg' || extension == 'png') {
+          isValidImage = true;
+        } else if (bytes.length >= 4) {
+          if (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) {
+            isValidImage = true;
+          }
+          else if (bytes.length >= 3 && bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) {
+            isValidImage = true;
+          }
+        }
+        
+        if (!isValidImage) {
+          if (mounted) {
+            ConTrustSnackBar.error(
+              context, 
+              'Only PNG and JPG images are allowed.'
+            );
+          }
+          return;
+        }
+        
         setState(() {
           _selectedPhoto = bytes;
           _photoUrl = null;
@@ -579,15 +618,27 @@ class _ProjectDialogState extends State<ProjectDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+    
     return Center(
       child: Material(
         color: Colors.transparent,
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 500),
-          margin: const EdgeInsets.symmetric(horizontal: 16),
+          constraints: isMobile 
+              ? const BoxConstraints(
+                  maxWidth: double.infinity,
+                  maxHeight: double.infinity,
+                )
+              : const BoxConstraints(maxWidth: 800),
+          margin: isMobile 
+              ? EdgeInsets.zero 
+              : const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: isMobile 
+                ? BorderRadius.zero 
+                : BorderRadius.circular(20),
             border: Border.all(color: Colors.black, width: 1.5),
             boxShadow: [
               BoxShadow(
@@ -605,9 +656,11 @@ class _ProjectDialogState extends State<ProjectDialog> {
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Colors.amber.shade700,
-                  borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20)),
+                  borderRadius: isMobile 
+                      ? BorderRadius.zero
+                      : const BorderRadius.only(
+                          topLeft: Radius.circular(20),
+                          topRight: Radius.circular(20)),
                 ),
                 child: Row(
                   children: [
@@ -754,6 +807,18 @@ class _ProjectDialogState extends State<ProjectDialog> {
                             ])),
                         const SizedBox(height: 16),
                         _buildLabeledField(
+                            label: 'Location',
+                            child: TextFormField(
+                                controller: widget.locationController,
+                                decoration: const InputDecoration(
+                                    labelText: 'Enter your location',
+                                    border: OutlineInputBorder()),
+                                validator: (v) =>
+                                    (v == null || v.trim().isEmpty)
+                                        ? 'Please enter a location'
+                                        : null)),
+                        const SizedBox(height: 16),
+                        _buildLabeledField(
                             label: 'Preferred Start Date',
                             child: TextFormField(
                                 controller: _startDateController,
@@ -766,18 +831,6 @@ class _ProjectDialogState extends State<ProjectDialog> {
                                 validator: (v) =>
                                     (v == null || v.trim().isEmpty)
                                         ? 'Please select a start date'
-                                        : null)),
-                        const SizedBox(height: 16),
-                        _buildLabeledField(
-                            label: 'Location',
-                            child: TextFormField(
-                                controller: widget.locationController,
-                                decoration: const InputDecoration(
-                                    labelText: 'Enter your location',
-                                    border: OutlineInputBorder()),
-                                validator: (v) =>
-                                    (v == null || v.trim().isEmpty)
-                                        ? 'Please enter a location'
                                         : null)),
                         const SizedBox(height: 16),
                         _buildLabeledField(
@@ -958,22 +1011,43 @@ class _ProjectDialogState extends State<ProjectDialog> {
     required String label,
     required Widget child,
   }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth >= 1000;
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+      child: isDesktop
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 180,
+                  child: Text(
+                    '$label:',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(child: child),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                child,
+              ],
             ),
-          ),
-          const SizedBox(height: 8),
-          child,
-        ],
-      ),
     );
   }
 }
@@ -1141,6 +1215,47 @@ class _BidsModalContentState extends State<_BidsModalContent> {
     });
   }
 
+  Widget _buildBidDetailField({
+    required BuildContext context,
+    required String label,
+    required String value,
+    required bool isDesktop,
+  }) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -1299,11 +1414,33 @@ class _BidsModalContentState extends State<_BidsModalContent> {
                                 children: [
                                   Row(
                                     children: [
-                                      CircleAvatar(
-                                        radius: 28,
-                                        backgroundImage: profilePhoto.isNotEmpty
-                                            ? NetworkImage(profilePhoto)
-                                            : NetworkImage(BidsModal.profileUrl),
+                                      ClipOval(
+                                        child: Container(
+                                          width: 56,
+                                          height: 56,
+                                          child: Image.network(
+                                            profilePhoto.isNotEmpty
+                                                ? profilePhoto
+                                                : BidsModal.profileUrl,
+                                            width: 56,
+                                            height: 56,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Image(
+                                                image: const AssetImage('assets/defaultpic.png'),
+                                                width: 56,
+                                                height: 56,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (context, error, stackTrace) {
+                                                  return Container(
+                                                    color: Colors.grey.shade300,
+                                                    child: Icon(Icons.business, size: 28, color: Colors.grey.shade600),
+                                                  );
+                                                },
+                                              );
+                                            },
+                                          ),
+                                        ),
                                       ),
                                       const SizedBox(width: 12),
                                       Expanded(
@@ -1423,93 +1560,115 @@ class _BidsModalContentState extends State<_BidsModalContent> {
                                             if (!mounted) return;
                                             showDialog(
                                               context: context,
-                                              builder: (dialogContext) => Dialog(
-                                                shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(20)),
-                                                child: Container(
-                                                  constraints: const BoxConstraints(maxWidth: 500),
-                                                  decoration: BoxDecoration(
-                                                    borderRadius: BorderRadius.circular(20),
-                                                    gradient: LinearGradient(
-                                                      begin: Alignment.topLeft,
-                                                      end: Alignment.bottomRight,
-                                                      colors: [Colors.white, Colors.grey.shade50],
+                                              builder: (dialogContext) {
+                                                final screenWidth = MediaQuery.of(dialogContext).size.width;
+                                                final isDesktop = screenWidth >= 1000;
+                                                
+                                                return Center(
+                                                  child: Material(
+                                                    color: Colors.transparent,
+                                                    child: Container(
+                                                      constraints: BoxConstraints(
+                                                        maxWidth: isDesktop ? 800 : 500,
+                                                        maxHeight: MediaQuery.of(dialogContext).size.height * 0.9,
+                                                      ),
+                                                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.white,
+                                                        borderRadius: BorderRadius.circular(20),
+                                                        border: Border.all(color: Colors.black, width: 1.5),
+                                                        boxShadow: [
+                                                          BoxShadow(
+                                                            color: Colors.black.withOpacity(0.15),
+                                                            blurRadius: 20,
+                                                            spreadRadius: 1,
+                                                            offset: const Offset(0, 8),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      child: Column(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          Container(
+                                                            padding: const EdgeInsets.all(20),
+                                                            decoration: BoxDecoration(
+                                                              color: Colors.amber.shade700,
+                                                              borderRadius: const BorderRadius.only(
+                                                                topLeft: Radius.circular(20),
+                                                                topRight: Radius.circular(20),
+                                                              ),
+                                                            ),
+                                                            child: Row(
+                                                              children: [
+                                                                Container(
+                                                                  padding: const EdgeInsets.all(6),
+                                                                  decoration: BoxDecoration(
+                                                                    color: Colors.white.withOpacity(0.2),
+                                                                    borderRadius: BorderRadius.circular(6),
+                                                                  ),
+                                                                  child: const Icon(Icons.description,
+                                                                      color: Colors.white, size: 18),
+                                                                ),
+                                                                const SizedBox(width: 10),
+                                                                const Expanded(
+                                                                  child: Text(
+                                                                    'Bid Description',
+                                                                    style: TextStyle(
+                                                                      color: Colors.white,
+                                                                      fontSize: 16,
+                                                                      fontWeight: FontWeight.bold,
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                                IconButton(
+                                                                  onPressed: () => Navigator.pop(dialogContext),
+                                                                  icon: const Icon(Icons.close,
+                                                                      color: Colors.white, size: 20),
+                                                                  padding: EdgeInsets.zero,
+                                                                  constraints: const BoxConstraints(),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                          Flexible(
+                                                            child: SingleChildScrollView(
+                                                              padding: const EdgeInsets.all(24),
+                                                              child: Column(
+                                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                                children: [
+                                                                  _buildBidDetailField(
+                                                                    context: dialogContext,
+                                                                    label: 'Bid Message',
+                                                                    value: message,
+                                                                    isDesktop: isDesktop,
+                                                                  ),
+                                                                  const SizedBox(height: 24),
+                                                                  SizedBox(
+                                                                    width: double.infinity,
+                                                                    child: ElevatedButton(
+                                                                      onPressed: () => Navigator.pop(dialogContext),
+                                                                      style: ElevatedButton.styleFrom(
+                                                                        backgroundColor: const Color(0xFFFFB300),
+                                                                        foregroundColor: Colors.white,
+                                                                        minimumSize: const Size.fromHeight(50),
+                                                                        shape: RoundedRectangleBorder(
+                                                                          borderRadius: BorderRadius.circular(8),
+                                                                        ),
+                                                                        padding: const EdgeInsets.symmetric(vertical: 16),
+                                                                      ),
+                                                                      child: const Text('Close'),
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
                                                     ),
                                                   ),
-                                                  child: Column(
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    children: [
-                                                      Container(
-                                                        padding: const EdgeInsets.all(20),
-                                                        decoration: BoxDecoration(
-                                                          color: Colors.amber.shade700,
-                                                          borderRadius: const BorderRadius.only(
-                                                            topLeft: Radius.circular(20),
-                                                            topRight: Radius.circular(20),
-                                                          ),
-                                                        ),
-                                                        child: Row(
-                                                          children: [
-                                                            Container(
-                                                              padding: const EdgeInsets.all(6),
-                                                              decoration: BoxDecoration(
-                                                                color: Colors.white.withOpacity(0.2),
-                                                                borderRadius: BorderRadius.circular(6),
-                                                              ),
-                                                              child: const Icon(Icons.description,
-                                                                  color: Colors.white, size: 18),
-                                                            ),
-                                                            const SizedBox(width: 10),
-                                                            const Expanded(
-                                                              child: Text(
-                                                                'Bid Description',
-                                                                style: TextStyle(
-                                                                  color: Colors.white,
-                                                                  fontSize: 16,
-                                                                  fontWeight: FontWeight.bold,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                            IconButton(
-                                                              onPressed: () => Navigator.pop(dialogContext),
-                                                              icon: const Icon(Icons.close,
-                                                                  color: Colors.white, size: 20),
-                                                              padding: EdgeInsets.zero,
-                                                              constraints: const BoxConstraints(),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                      Padding(
-                                                        padding: const EdgeInsets.all(24),
-                                                        child: Column(
-                                                          mainAxisSize: MainAxisSize.min,
-                                                          children: [
-                                                            Text(message, style: const TextStyle(fontSize: 14)),
-                                                            const SizedBox(height: 24),
-                                                            SizedBox(
-                                                              width: double.infinity,
-                                                              child: ElevatedButton(
-                                                                onPressed: () => Navigator.pop(dialogContext),
-                                                                style: ElevatedButton.styleFrom(
-                                                                  backgroundColor: const Color(0xFFFFB300),
-                                                                  foregroundColor: Colors.white,
-                                                                  minimumSize: const Size.fromHeight(50),
-                                                                  shape: RoundedRectangleBorder(
-                                                                    borderRadius: BorderRadius.circular(8),
-                                                                  ),
-                                                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                                                ),
-                                                                child: const Text('Close'),
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ),
+                                                );
+                                              },
                                             );
                                           },
                                           icon: const Icon(Icons.info_outline, size: 16),
@@ -1898,6 +2057,49 @@ class HireModal {
 
         if (pickedFile != null) {
           final bytes = await pickedFile.readAsBytes();
+          
+          // Check file size (max 10MB)
+          const maxSizeBytes = 10 * 1024 * 1024; // 10MB
+          if (bytes.length > maxSizeBytes) {
+            if (context.mounted) {
+              ConTrustSnackBar.error(
+                context, 
+                'Image size exceeds 10MB limit. Please choose a smaller image.'
+              );
+            }
+            return;
+          }
+          
+          // Check file extension or image format (only PNG/JPG)
+          final extension = pickedFile.path.contains('.') 
+              ? pickedFile.path.split('.').last.toLowerCase()
+              : '';
+          
+          // If no extension, check image format from bytes (PNG starts with 89 50 4E 47, JPEG starts with FF D8 FF)
+          bool isValidImage = false;
+          if (extension == 'jpg' || extension == 'jpeg' || extension == 'png') {
+            isValidImage = true;
+          } else if (bytes.length >= 4) {
+            // Check PNG signature: 89 50 4E 47 (0x89 0x50 0x4E 0x47)
+            if (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) {
+              isValidImage = true;
+            }
+            // Check JPEG signature: FF D8 FF
+            else if (bytes.length >= 3 && bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) {
+              isValidImage = true;
+            }
+          }
+          
+          if (!isValidImage) {
+            if (context.mounted) {
+              ConTrustSnackBar.error(
+                context, 
+                'Only PNG and JPG images are allowed.'
+              );
+            }
+            return;
+          }
+          
           setDialogState(() {
             selectedPhoto = bytes;
             photoUrl = null;
@@ -1935,16 +2137,28 @@ class HireModal {
               typeController.text = 'Other';
             }
             
+            final screenWidth = MediaQuery.of(context).size.width;
+            final isMobile = screenWidth < 600;
+            
             return Center(
               child: Material(
                 color: Colors.transparent,
                 child: Container(
-                  constraints: const BoxConstraints(maxWidth: 500),
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  constraints: isMobile 
+                      ? const BoxConstraints(
+                          maxWidth: double.infinity,
+                          maxHeight: double.infinity,
+                        )
+                      : const BoxConstraints(maxWidth: 800),
+                  margin: isMobile 
+                      ? EdgeInsets.zero 
+                      : const EdgeInsets.symmetric(horizontal: 16),
                   padding: const EdgeInsets.all(0),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: isMobile 
+                        ? BorderRadius.zero 
+                        : BorderRadius.circular(20),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -1953,10 +2167,12 @@ class HireModal {
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
                           color: Colors.amber.shade700,
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(20),
-                            topRight: Radius.circular(20),
-                          ),
+                          borderRadius: isMobile 
+                              ? BorderRadius.zero
+                              : const BorderRadius.only(
+                                  topLeft: Radius.circular(20),
+                                  topRight: Radius.circular(20),
+                                ),
                         ),
                         child: Row(
                           children: [
@@ -2070,7 +2286,8 @@ class HireModal {
                                   ),
                                   const SizedBox(height: 16),
                                 ],
-                                _buildLabeledField(
+                                HireModal._buildLabeledField(
+                                  context: context,
                                   label: 'Project Title',
                                   child: TextFormField(
                                     controller: titleController,
@@ -2092,7 +2309,8 @@ class HireModal {
                                   ),
                                 ),
                                 const SizedBox(height: 16),
-                                _buildLabeledField(
+                                HireModal._buildLabeledField(
+                                  context: context,
                                   label: 'Type of Construction',
                                   child: hasAutoFilledProject
                                       ? TextFormField(
@@ -2125,7 +2343,8 @@ class HireModal {
                                 ),
                                 if (!hasAutoFilledProject && showCustomField) ...[
                                   const SizedBox(height: 16),
-                                  _buildLabeledField(
+                                  HireModal._buildLabeledField(
+                                    context: context,
                                     label: 'Custom Construction Type',
                                     child: TextFormField(
                                       controller: customTypeController,
@@ -2147,7 +2366,8 @@ class HireModal {
                                   ),
                                 ],
                                 const SizedBox(height: 16),
-                                _buildLabeledField(
+                                HireModal._buildLabeledField(
+                                  context: context,
                                   label: 'Location',
                                   child: TextFormField(
                                     controller: locationController,
@@ -2169,7 +2389,91 @@ class HireModal {
                                   ),
                                 ),
                                 const SizedBox(height: 16),
-                                _buildLabeledField(
+                                HireModal._buildLabeledField(
+                                  context: context,
+                                  label: 'Start Date',
+                                  child: FormField<DateTime>(
+                                    validator: (value) {
+                                      if (selectedStartDate == null) {
+                                        return 'Please select a start date';
+                                      }
+                                      return null;
+                                    },
+                                    builder: (FormFieldState<DateTime> field) {
+                                      return Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          InkWell(
+                                            onTap: hasAutoFilledProject ? null : () async {
+                                              final DateTime? picked =
+                                                  await showDatePicker(
+                                                context: context,
+                                                initialDate:
+                                                    selectedStartDate ?? DateTime.now(),
+                                                firstDate: DateTime.now(),
+                                                lastDate: DateTime.now().add(const Duration(days: 365)),
+                                              );
+                                              if (picked != null) {
+                                                setDialogState(() {
+                                                  selectedStartDate = picked;
+                                                  field.didChange(picked);
+                                                });
+                                              }
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.all(16),
+                                              decoration: BoxDecoration(
+                                                border: Border.all(
+                                                  color: field.hasError ? Colors.red : Colors.grey,
+                                                ),
+                                                borderRadius: BorderRadius.circular(4),
+                                                color: hasAutoFilledProject 
+                                                  ? Colors.grey.shade100 
+                                                  : null,
+                                              ),
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  Text(
+                                                    selectedStartDate != null
+                                                        ? '${selectedStartDate!.year}-${selectedStartDate!.month.toString().padLeft(2, '0')}-${selectedStartDate!.day.toString().padLeft(2, '0')}'
+                                                        : (hasAutoFilledProject 
+                                                            ? 'Start date'
+                                                            : 'Select start date'),
+                                                    style: TextStyle(
+                                                      color: selectedStartDate != null
+                                                          ? Colors.black
+                                                          : Colors.grey,
+                                                    ),
+                                                  ),
+                                                  Icon(Icons.calendar_today,
+                                                      color: hasAutoFilledProject 
+                                                        ? Colors.grey.shade400
+                                                        : Colors.grey),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          if (field.hasError)
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 8.0),
+                                              child: Text(
+                                                field.errorText!,
+                                                style: const TextStyle(
+                                                  color: Colors.red,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                HireModal._buildLabeledField(
+                                  context: context,
                                   label: 'Estimated Budget Range',
                                   child: Row(
                                     children: [
@@ -2249,7 +2553,8 @@ class HireModal {
                                   ),
                                 ),
                                 const SizedBox(height: 16),
-                                _buildLabeledField(
+                                HireModal._buildLabeledField(
+                                  context: context,
                                   label: 'Project Description',
                                   child: TextFormField(
                                     controller: descriptionController,
@@ -2272,7 +2577,8 @@ class HireModal {
                                   ),
                                 ),
                                 const SizedBox(height: 16),
-                                _buildLabeledField(
+                                HireModal._buildLabeledField(
+                                  context: context,
                                   label: 'Project Photo (Optional)',
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2332,88 +2638,6 @@ class HireModal {
                                         ],
                                       ),
                                     ],
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                _buildLabeledField(
-                                  label: 'Start Date',
-                                  child: FormField<DateTime>(
-                                    validator: (value) {
-                                      if (selectedStartDate == null) {
-                                        return 'Please select a start date';
-                                      }
-                                      return null;
-                                    },
-                                    builder: (FormFieldState<DateTime> field) {
-                                      return Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          InkWell(
-                                            onTap: hasAutoFilledProject ? null : () async {
-                                              final DateTime? picked =
-                                                  await showDatePicker(
-                                                context: context,
-                                                initialDate:
-                                                    selectedStartDate ?? DateTime.now(),
-                                                firstDate: DateTime.now(),
-                                                lastDate: DateTime.now().add(const Duration(days: 365)),
-                                              );
-                                              if (picked != null) {
-                                                setDialogState(() {
-                                                  selectedStartDate = picked;
-                                                  field.didChange(picked);
-                                                });
-                                              }
-                                            },
-                                            child: Container(
-                                              padding: const EdgeInsets.all(16),
-                                              decoration: BoxDecoration(
-                                                border: Border.all(
-                                                  color: field.hasError ? Colors.red : Colors.grey,
-                                                ),
-                                                borderRadius: BorderRadius.circular(4),
-                                                color: hasAutoFilledProject 
-                                                  ? Colors.grey.shade100 
-                                                  : null,
-                                              ),
-                                              child: Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.spaceBetween,
-                                                children: [
-                                                  Text(
-                                                    selectedStartDate != null
-                                                        ? '${selectedStartDate!.year}-${selectedStartDate!.month.toString().padLeft(2, '0')}-${selectedStartDate!.day.toString().padLeft(2, '0')}'
-                                                        : (hasAutoFilledProject 
-                                                            ? 'Start date'
-                                                            : 'Select start date'),
-                                                    style: TextStyle(
-                                                      color: selectedStartDate != null
-                                                          ? Colors.black
-                                                          : Colors.grey,
-                                                    ),
-                                                  ),
-                                                  Icon(Icons.calendar_today,
-                                                      color: hasAutoFilledProject 
-                                                        ? Colors.grey.shade400
-                                                        : Colors.grey),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                          if (field.hasError)
-                                            Padding(
-                                              padding: const EdgeInsets.only(top: 8.0),
-                                              child: Text(
-                                                field.errorText!,
-                                                style: const TextStyle(
-                                                  color: Colors.red,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      );
-                                    },
                                   ),
                                 ),
                                 const SizedBox(height: 24),
@@ -2520,25 +2744,47 @@ class HireModal {
   }
 
   static Widget _buildLabeledField({
+    required BuildContext context,
     required String label,
     required Widget child,
   }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth >= 1000;
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+      child: isDesktop
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 180,
+                  child: Text(
+                    '$label:',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(child: child),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                child,
+              ],
             ),
-          ),
-          const SizedBox(height: 8),
-          child,
-        ],
-      ),
     );
   }
 }

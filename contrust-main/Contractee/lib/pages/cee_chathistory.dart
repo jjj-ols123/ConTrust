@@ -305,11 +305,13 @@ class _ContracteeChatHistoryPageState
                 .eq('contractee_id', contracteeId as Object)
                 .order('last_message_time', ascending: false),
             builder: (context, snapshot) {
-              if (!snapshot.hasData) {
+              // Show loading while waiting for initial data
+              if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
                 return const Center(child: CircularProgressIndicator(color: Colors.amber));
               }
-              final chatRooms = snapshot.data!;
-              if (chatRooms.isEmpty) {
+              
+              // Show empty state only after data has been received
+              if (snapshot.hasData && snapshot.data!.isEmpty) {
                 return const Center(
                   child: Text(
                     'No conversations yet.',
@@ -317,6 +319,13 @@ class _ContracteeChatHistoryPageState
                   ),
                 );
               }
+              
+              // If still no data but connection is active, show loading
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator(color: Colors.amber));
+              }
+              
+              final chatRooms = snapshot.data!;
               
               // Batch fetch all data for all chat rooms with caching to avoid flicker
               return FutureBuilder<Map<String, dynamic>>(
@@ -394,12 +403,32 @@ class _ContracteeChatHistoryPageState
                             children: [
                               Stack(
                                 children: [
-                                  CircleAvatar(
-                                    radius: 28,
-                                    backgroundColor: Colors.blue.shade600,
-                                    backgroundImage: NetworkImage(
-                                      contractorProfile ??
-                                          'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
+                                  ClipOval(
+                                    child: Container(
+                                      width: 56,
+                                      height: 56,
+                                      color: Colors.blue.shade600,
+                                      child: Image.network(
+                                        contractorProfile ??
+                                            'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
+                                        width: 56,
+                                        height: 56,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Image(
+                                            image: const AssetImage('assets/defaultpic.png'),
+                                            width: 56,
+                                            height: 56,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Container(
+                                                color: Colors.blue.shade600,
+                                                child: Icon(Icons.business, size: 28, color: Colors.white),
+                                              );
+                                            },
+                                          );
+                                        },
+                                      ),
                                     ),
                                   ),
                                   if (hasUnread)

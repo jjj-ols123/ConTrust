@@ -41,6 +41,7 @@ class _ContractorNotificationPageState
 
     return notificationUIBuilder.buildNotificationUI(
       NotificationService().listenToNotifications(contractorId!),
+      showAppBar: false,
     );
   }
 }

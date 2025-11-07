@@ -355,7 +355,39 @@ class UserService {
     final pickedFile =
         await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
-      return await pickedFile.readAsBytes();
+      final bytes = await pickedFile.readAsBytes();
+      
+      // Check file size (max 10MB)
+      const maxSizeBytes = 10 * 1024 * 1024; // 10MB
+      if (bytes.length > maxSizeBytes) {
+        return null; // File too large
+      }
+      
+      // Check file extension or image format (only PNG/JPG)
+      final extension = pickedFile.path.contains('.') 
+          ? pickedFile.path.split('.').last.toLowerCase()
+          : '';
+      
+      // If no extension, check image format from bytes (PNG starts with 89 50 4E 47, JPEG starts with FF D8 FF)
+      bool isValidImage = false;
+      if (extension == 'jpg' || extension == 'jpeg' || extension == 'png') {
+        isValidImage = true;
+      } else if (bytes.length >= 4) {
+        // Check PNG signature: 89 50 4E 47 (0x89 0x50 0x4E 0x47)
+        if (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) {
+          isValidImage = true;
+        }
+        // Check JPEG signature: FF D8 FF
+        else if (bytes.length >= 3 && bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) {
+          isValidImage = true;
+        }
+      }
+      
+      if (!isValidImage) {
+        return null; // Invalid format
+      }
+      
+      return bytes;
     }
     return null;
   }

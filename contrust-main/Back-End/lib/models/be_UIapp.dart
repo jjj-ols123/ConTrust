@@ -58,6 +58,13 @@ class ContractorsView extends StatelessWidget {
                     profileUrl,
                   height: isMobile ? 90 : 140,
                     fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: isMobile ? 90 : 140,
+                        color: Colors.grey.shade300,
+                        child: Icon(Icons.person, size: isMobile ? 45 : 70, color: Colors.grey.shade600),
+                      );
+                    },
                   );
                 },
               ),
@@ -246,13 +253,55 @@ class ProjectView extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context, ProjectStatus status) {
-    return Row(
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+    
+    // Determine user type
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    final userType = currentUser?.userMetadata?['user_type']?.toString();
+    final isContractee = userType == 'contractee';
+    
+    if (isMobile) {
+      if (isContractee) {
+        return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
       children: [
         Expanded(
-          child: Column(
+                  child: Text(
+                    project['title'] ?? 'No title given',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _buildContractButton(context),
+                const SizedBox(width: 8),
+                if ((onUpdateProject != null || onCancelProject != null) && project['project_id'] != null)
+                  _buildActionMenu(context),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _buildStatusChip(status),
+          ],
+        );
+      } else {
+        return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+            Row(
+              children: [
+                const Spacer(),
+                _buildContractButton(context),
+              ],
+            ),
+            const SizedBox(height: 8),
               Text(
                 project['title'] ?? 'No title given',
                 style: const TextStyle(
@@ -266,18 +315,62 @@ class ProjectView extends StatelessWidget {
               const SizedBox(height: 8),
               _buildStatusChip(status),
             ],
-          ),
-        ),
-        Row(
+        );
+      }
+    } else {
+      if (isContractee) {
+        return Row(
           children: [
+            Expanded(
+              child: Text(
+                project['title'] ?? 'No title given',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 12),
+            _buildStatusChip(status),
+            const SizedBox(width: 12),
             _buildContractButton(context),
             const SizedBox(width: 8),
-            if (onUpdateProject != null || onCancelProject != null)
+            if ((onUpdateProject != null || onCancelProject != null) && project['project_id'] != null)
               _buildActionMenu(context),
           ],
-        ),
+        );
+      } else {
+        return Row(
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      project['title'] ?? 'No title given',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  _buildStatusChip(status),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            _buildContractButton(context),
       ],
     );
+      }
+    }
   }
 
   Widget _buildStatusChip(ProjectStatus status) {
@@ -508,7 +601,7 @@ class ProjectView extends StatelessWidget {
     
     final details = [
       _buildDetailItem(
-        icon: Icons.attach_money,
+        icon: Icons.money,
         label: 'BUDGET',
         value: _formatBudget(isHiringRequest),
       ),
@@ -575,14 +668,18 @@ class ProjectView extends StatelessWidget {
     required String label,
     required String value,
   }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isMobile = screenWidth < 600;
+        
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, size: 16, color: Colors.grey.shade600),
         const SizedBox(width: 6),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+              child: isMobile ? Row(
             children: [
               Text(
                 '$label:',
@@ -592,18 +689,43 @@ class ProjectView extends StatelessWidget {
                   color: Colors.grey.shade700,
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
+                  const Spacer(),
+                  Expanded(
+                    child: Text(
                 value,
                 style: const TextStyle(
                   fontSize: 14,
                   color: Colors.black87,
+                      ),
+                      textAlign: TextAlign.end,
                 ),
               ),
             ],
+              ) : RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: '$label: ',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    TextSpan(
+                      text: value,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
           ),
         ),
       ],
+        );
+      },
     );
   }
 

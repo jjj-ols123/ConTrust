@@ -43,6 +43,7 @@ class _ContracteeNotificationPageState
 
     return notificationUIBuilder.buildNotificationUI(
       NotificationService().listenToNotifications(contracteeId!),
+      showAppBar: false,
     );
   }
 }

@@ -3,16 +3,14 @@ import 'package:backend/utils/be_validation.dart';
 import 'package:backend/services/contractor services/cor_signup.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/services/both services/be_verification_service.dart';
-import 'qr_scan.dart';
 import 'verification_capture.dart';
 import 'package:backend/services/both%20services/be_otp_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:contractor/main.dart' as app;
@@ -209,6 +207,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     if (!_emailVerified) {
+      // Pre-OTP: verify uploaded documents (OCR) and/or QR presence with blocking dialog
+      final preVerified = await _verifyVerificationDataBeforeOtp();
+      if (preVerified != true) {
+        return;
+      }
+
       setState(() => _isSigningUp = true);
       
       try {
@@ -263,6 +267,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _completeSignUp() async {
+    final hasFiles = _verificationFiles.isNotEmpty;
+    final hasQrCodes = _pcabQrText != null || _permitQrText != null;
+    
+    if (!hasFiles && !hasQrCodes) {
+      if (mounted) {
+        ConTrustSnackBar.error(
+          context,
+          'Please upload verification documents or scan QR codes before completing registration.',
+        );
+      }
+      return;
+    }
+
     setState(() => _isSigningUp = true);
     app.setRegistrationState(true);
 
@@ -296,14 +313,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       setState(() => _isSigningUp = false);
 
       if (success) {
-        try {
-          await VerificationService().submitContractorVerification(
-            legalName: firmNameController.text.trim(),
-            pcabQrText: _pcabQrText,
-            permitQrText: _permitQrText,
-          );
-        } catch (_) {}
-
         if (!mounted) return;
         ScaffoldMessenger.of(context).clearSnackBars();
 
@@ -584,354 +593,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  void _showVerificationUploadDialog(
-    BuildContext context,
-    VoidCallback onUpdate,
-  ) async {
-
-    showDialog(
-      context: context,
-      builder:
-          (context) => Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 500),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Colors.white, Colors.grey.shade50],
-                ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.shade700,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            Icons.upload_file,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Expanded(
-                          child: Text(
-                            'Upload Verification Documents',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.close, color: Colors.white),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Flexible(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(24),
-                      child: StatefulBuilder(
-                        builder:
-                            (context, setState) => Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                const Text(
-                                  'Please upload clear photos of your ID, business license, or other documents.',
-                                  style: TextStyle(fontSize: 14),
-                                ),
-                                const SizedBox(height: 16),
-                                Builder(
-                                  builder: (_) {
-                                    final isMobile = !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
-                                    final buttons = <Widget>[
-                                      ElevatedButton.icon(
-                                        onPressed: () async {
-                                          final result = await FilePicker.platform.pickFiles(
-                                            type: FileType.custom,
-                                            allowedExtensions: ['jpg','jpeg','png','pdf','doc','docx'],
-                                            allowMultiple: false,
-                                          );
-                                          if (result != null && result.files.isNotEmpty) {
-                                            final file = result.files.first;
-                                            final bytes = file.bytes;
-                                            if (bytes != null) {
-                                              final isImage = ['jpg','jpeg','png'].contains(file.extension?.toLowerCase());
-                                              final duplicate = _verificationFiles.any((f) => listEquals(f['bytes'], bytes));
-                                              if (duplicate) {
-                                                ConTrustSnackBar.warning(context, 'This file is already selected');
-                                                return;
-                                              }
-                                              setState(() => _verificationFiles.add({
-                                                'name': file.name,
-                                                'bytes': bytes,
-                                                'isImage': isImage,
-                                              }));
-                                              onUpdate();
-                                            }
-                                          }
-                                        },
-                                        icon: const Icon(Icons.attach_file),
-                                        label: const Text('Pick File'),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.amber.shade100,
-                                          foregroundColor: Colors.amber.shade900,
-                                          padding: const EdgeInsets.symmetric(vertical: 16),
-                                        ),
-                                      ),
-                                    ];
-                                    if (isMobile) {
-                                      buttons.add(const SizedBox(height: 12));
-                                      buttons.add(
-                                        ElevatedButton.icon(
-                                          onPressed: () async {
-                                            final picked = await ImagePicker().pickImage(
-                                              source: ImageSource.camera,
-                                              imageQuality: 85,
-                                              preferredCameraDevice: CameraDevice.rear,
-                                            );
-                                            if (picked != null) {
-                                              final bytes = await picked.readAsBytes();
-                                              final duplicate = _verificationFiles.any((f) => listEquals(f['bytes'], bytes));
-                                              if (duplicate) {
-                                                ConTrustSnackBar.warning(context, 'This image is already selected');
-                                                return;
-                                              }
-                                              setState(() => _verificationFiles.add({
-                                                'name': 'camera_${DateTime.now().millisecondsSinceEpoch}.jpg',
-                                                'bytes': bytes,
-                                                'isImage': true,
-                                              }));
-                                              onUpdate();
-                                            }
-                                          },
-                                          icon: const Icon(Icons.photo_camera_outlined),
-                                          label: const Text('Use Camera'),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.blue.shade100,
-                                            foregroundColor: Colors.blue.shade900,
-                                            padding: const EdgeInsets.symmetric(vertical: 16),
-                                          ),
-                                        ),
-                                      );
-                                      buttons.add(const SizedBox(height: 12));
-                                      buttons.add(
-                                        ElevatedButton.icon(
-                                          onPressed: () async {
-                                            final result = await Navigator.push<String?>(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (_) => const QrScanPage(title: 'Scan PCAB QR'),
-                                              ),
-                                            );
-                                            if (result != null && result.isNotEmpty) {
-                                              setState(() => _pcabQrText = result);
-                                              ConTrustSnackBar.success(context, 'PCAB QR captured');
-                                              onUpdate();
-                                            }
-                                          },
-                                          icon: const Icon(Icons.qr_code_scanner),
-                                          label: const Text('Scan PCAB QR'),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.green.shade100,
-                                            foregroundColor: Colors.green.shade900,
-                                            padding: const EdgeInsets.symmetric(vertical: 16),
-                                          ),
-                                        ),
-                                      );
-                                      buttons.add(const SizedBox(height: 12));
-                                      buttons.add(
-                                        ElevatedButton.icon(
-                                          onPressed: () async {
-                                            final result = await Navigator.push<String?>(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (_) => const QrScanPage(title: 'Scan Mayor/Business Permit QR'),
-                                              ),
-                                            );
-                                            if (result != null && result.isNotEmpty) {
-                                              setState(() => _permitQrText = result);
-                                              ConTrustSnackBar.success(context, 'Permit QR captured');
-                                              onUpdate();
-                                            }
-                                          },
-                                          icon: const Icon(Icons.qr_code_2),
-                                          label: const Text('Scan Permit QR'),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.purple.shade100,
-                                            foregroundColor: Colors.purple.shade900,
-                                            padding: const EdgeInsets.symmetric(vertical: 16),
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                    return isMobile
-                                        ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: buttons)
-                                        : buttons.first;
-                                  },
-                                ),
-                                if (_pcabQrText != null || _permitQrText != null) ...[
-                                  const SizedBox(height: 8),
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: [
-                                      if (_pcabQrText != null)
-                                        Chip(
-                                          label: const Text('PCAB QR ready'),
-                                          avatar: const Icon(Icons.verified, color: Colors.green, size: 18),
-                                        ),
-                                      if (_permitQrText != null)
-                                        Chip(
-                                          label: const Text('Permit QR ready'),
-                                          avatar: const Icon(Icons.verified, color: Colors.green, size: 18),
-                                        ),
-                                    ],
-                                  ),
-                                ],
-                                const SizedBox(height: 16),
-                                if (_verificationFiles.isNotEmpty)
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children:
-                                        _verificationFiles.asMap().entries.map((
-                                          e,
-                                        ) {
-                                          final idx = e.key;
-                                          final file = e.value;
-                                          final isImage =
-                                              file['isImage'] as bool;
-                                          return Stack(
-                                            alignment: Alignment.topRight,
-                                            children: [
-                                              Container(
-                                                width: 70,
-                                                height: 70,
-                                                decoration: BoxDecoration(
-                                                  border: Border.all(
-                                                    color: Colors.grey,
-                                                  ),
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                                child:
-                                                    isImage
-                                                        ? ClipRRect(
-                                                          borderRadius:
-                                                              BorderRadius.circular(
-                                                                8,
-                                                              ),
-                                                          child: Image.memory(
-                                                            file['bytes'],
-                                                            fit: BoxFit.cover,
-                                                          ),
-                                                        )
-                                                        : Column(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .center,
-                                                          children: [
-                                                            const Icon(
-                                                              Icons
-                                                                  .insert_drive_file,
-                                                              size: 24,
-                                                              color:
-                                                                  Colors.grey,
-                                                            ),
-                                                            Text(
-                                                              file['name'].length >
-                                                                      10
-                                                                  ? '${file['name'].substring(0, 10)}...'
-                                                                  : file['name'],
-                                                              style:
-                                                                  const TextStyle(
-                                                                    fontSize:
-                                                                        10,
-                                                                    color:
-                                                                        Colors
-                                                                            .grey,
-                                                                  ),
-                                                              textAlign:
-                                                                  TextAlign
-                                                                      .center,
-                                                            ),
-                                                          ],
-                                                        ),
-                                              ),
-                                              GestureDetector(
-                                                onTap:
-                                                    () => setState(
-                                                      () => _verificationFiles
-                                                          .removeAt(idx),
-                                                    ),
-                                                child: Container(
-                                                  decoration:
-                                                      const BoxDecoration(
-                                                        shape: BoxShape.circle,
-                                                        color: Colors.black54,
-                                                      ),
-                                                  padding: const EdgeInsets.all(
-                                                    4,
-                                                  ),
-                                                  child: const Icon(
-                                                    Icons.close,
-                                                    size: 14,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          );
-                                        }).toList(),
-                                  ),
-                                const SizedBox(height: 24),
-                                ElevatedButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.amber.shade700,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
-                                    ),
-                                  ),
-                                  child: const Text('Close'),
-                                ),
-                              ],
-                            ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
     );
   }
 
@@ -1415,7 +1076,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 });
                               }
                             } else {
-                              _showVerificationUploadDialog(context, () => setState(() {}));
+                              final result = await showDialog<Map<String, dynamic>?>(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (context) => Dialog(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Container(
+                                    width: MediaQuery.of(context).size.width * 0.8,
+                                    height: MediaQuery.of(context).size.height * 0.8,
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 800,
+                                      maxHeight: 600,
+                                    ),
+                                    child: VerificationCapturePage(
+                                      initialFiles: _verificationFiles,
+                                      initialPcabQrText: _pcabQrText,
+                                      initialPermitQrText: _permitQrText,
+                                    ),
+                                  ),
+                                ),
+                              );
+                              if (result != null) {
+                                setState(() {
+                                  _verificationFiles
+                                    ..clear()
+                                    ..addAll(List<Map<String, dynamic>>.from(result['files'] ?? []));
+                                  _pcabQrText = result['pcabQrText'] as String?;
+                                  _permitQrText = result['permitQrText'] as String?;
+                                });
+                              }
                             }
                           },
                     style: ElevatedButton.styleFrom(
@@ -1503,7 +1194,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 });
                               }
                             } else {
-                              _showVerificationUploadDialog(context, () => setState(() {}));
+                              final result = await showDialog<Map<String, dynamic>?>(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (context) => Dialog(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Container(
+                                    width: MediaQuery.of(context).size.width * 0.8,
+                                    height: MediaQuery.of(context).size.height * 0.8,
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 800,
+                                      maxHeight: 600,
+                                    ),
+                                    child: VerificationCapturePage(
+                                      initialFiles: _verificationFiles,
+                                      initialPcabQrText: _pcabQrText,
+                                      initialPermitQrText: _permitQrText,
+                                    ),
+                                  ),
+                                ),
+                              );
+                              if (result != null) {
+                                setState(() {
+                                  _verificationFiles
+                                    ..clear()
+                                    ..addAll(List<Map<String, dynamic>>.from(result['files'] ?? []));
+                                  _pcabQrText = result['pcabQrText'] as String?;
+                                  _permitQrText = result['permitQrText'] as String?;
+                                });
+                              }
                             }
                           },
                     style: ElevatedButton.styleFrom(
@@ -1649,6 +1370,92 @@ class _RegisterScreenState extends State<RegisterScreen> {
     permitNumberController.dispose();
     permitLguController.dispose();
     super.dispose();
+  }
+
+  Future<bool> _verifyVerificationDataBeforeOtp() async {
+    final hasFiles = _verificationFiles.isNotEmpty;
+    final hasQrCodes = _pcabQrText != null || _permitQrText != null;
+
+    if (!hasFiles && !hasQrCodes) {
+      ConTrustSnackBar.error(
+        context,
+        'Please upload verification documents or scan QR codes before continuing.',
+      );
+      return false;
+    }
+
+    // If there are no image files to OCR, but QR codes exist, allow proceeding.
+    final ocrTargets = _verificationFiles.where((f) => f['isImage'] == true && f['bytes'] != null).toList();
+    if (ocrTargets.isEmpty) {
+      return true;
+    }
+
+    bool anyOcrSuccess = false;
+    // Show blocking dialog
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        () async {
+          try {
+            final textractService = TextractService();
+            for (final file in ocrTargets) {
+              try {
+                final extractedText = await textractService.processDocument(
+                  imageBytes: file['bytes'] as Uint8List,
+                  filename: file['name'] as String? ?? 'document.jpg',
+                  analysisType: 'text',
+                );
+                if (extractedText.trim().isNotEmpty) {
+                  anyOcrSuccess = true;
+                  break;
+                }
+              } catch (e) {
+                // Continue other files
+              }
+            }
+          } finally {
+            if (dialogContext.mounted) {
+              Navigator.of(dialogContext).pop();
+            }
+          }
+        }();
+
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: Colors.white,
+          elevation: 12,
+          contentPadding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: const [
+              SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(color: Color(0xFFFFB300), strokeWidth: 3),
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Verifying documents...',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (!anyOcrSuccess) {
+      ConTrustSnackBar.error(
+        context,
+        'Verification failed. We could not read text from your documents. Please upload clearer images or try again.',
+      );
+      return false;
+    }
+
+    return true;
   }
 
   void _showPolicyTabs(BuildContext context) {

@@ -338,23 +338,43 @@ class DashboardBuildMethods {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: Colors.grey.shade200,
-            backgroundImage:
-                project['contractee_photo'] != null &&
-                        project['contractee_photo'].toString().isNotEmpty
-                    ? NetworkImage(project['contractee_photo'])
-                    : null,
-            child:
-                project['contractee_photo'] == null ||
-                        project['contractee_photo'].toString().isEmpty
-                    ? Icon(
+          ClipOval(
+            child: Container(
+              width: 40,
+              height: 40,
+              color: Colors.grey.shade200,
+              child: (project['contractee_photo'] != null &&
+                      project['contractee_photo'].toString().isNotEmpty)
+                  ? Image.network(
+                      project['contractee_photo'],
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Image(
+                          image: const AssetImage('assets/defaultpic.png'),
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey.shade200,
+                              child: Icon(
+                                Icons.person,
+                                color: Colors.grey.shade600,
+                                size: 20,
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    )
+                  : Icon(
                       Icons.person,
                       color: Colors.grey.shade600,
                       size: 20,
-                    )
-                    : null,
+                    ),
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -532,8 +552,8 @@ class DashboardBuildMethods {
           Row(
             children: [
               Icon(
-                Icons.work_outline,
-                color: Colors.blue,
+                Icons.request_page,
+                color: Colors.amber,
                 size: 24,
               ),
               const SizedBox(width: 8),
@@ -559,7 +579,7 @@ class DashboardBuildMethods {
                 future: dashboardservice.fetchPendingHiringRequests(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Center(child: CircularProgressIndicator(color: Colors.amber));
                   }
 
                   if (snapshot.hasError) {
@@ -665,10 +685,18 @@ class DashboardBuildMethods {
                           height: (isTablet ? 50 : 40) * 2,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
-                            return Icon(
-                              Icons.business,
-                              size: isTablet ? 50 : 40,
-                              color: Colors.amber.shade700,
+                            return Image(
+                              image: const AssetImage('assets/images/defaultpic.png'),
+                              width: (isTablet ? 50 : 40) * 2,
+                              height: (isTablet ? 50 : 40) * 2,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(
+                                  Icons.business,
+                                  size: isTablet ? 50 : 40,
+                                  color: Colors.amber.shade700,
+                                );
+                              },
                             );
                           },
                         )
@@ -782,10 +810,18 @@ class DashboardBuildMethods {
                 height: (isMobile ? 18 : 20) * 2,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    Icons.person,
-                    size: isMobile ? 18 : 20,
-                    color: Colors.grey.shade400,
+                  return Image(
+                    image: const AssetImage('assets/defaultpic.png'),
+                    width: (isMobile ? 18 : 20) * 2,
+                    height: (isMobile ? 18 : 20) * 2,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(
+                        Icons.person,
+                        size: isMobile ? 18 : 20,
+                        color: Colors.grey.shade400,
+                      );
+                    },
                   );
                 },
               ),
@@ -915,11 +951,17 @@ class DashboardBuildMethods {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isDesktop = screenWidth >= 1000;
+        
         return Center(
           child: Material(
             color: Colors.transparent,
             child: Container(
-              constraints: const BoxConstraints(maxWidth: 500),
+              constraints: BoxConstraints(
+                maxWidth: isDesktop ? 800 : 500,
+                maxHeight: MediaQuery.of(context).size.height * 0.9,
+              ),
               margin: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -987,7 +1029,6 @@ class DashboardBuildMethods {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 16),
-                          
                           Row(
                             children: [
                               CircleAvatar(
@@ -1001,10 +1042,18 @@ class DashboardBuildMethods {
                                     height: 60,
                                     fit: BoxFit.cover,
                                     errorBuilder: (context, error, stackTrace) {
-                                      return Icon(
-                                        Icons.person,
-                                        size: 30,
-                                        color: Colors.grey.shade400,
+                                      return Image(
+                                        image: const AssetImage('assets/images/defaultpic.png'),
+                                        width: 60,
+                                        height: 60,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Icon(
+                                            Icons.person,
+                                            size: 30,
+                                            color: Colors.grey.shade400,
+                                          );
+                                        },
                                       );
                                     },
                                   ),
@@ -1036,31 +1085,28 @@ class DashboardBuildMethods {
                               ),
                             ],
                           ),
-                          
                           const SizedBox(height: 24),
-                          
                           if (info['photo_url'] != null && info['photo_url'].toString().isNotEmpty) ...[
-                            _buildProjectPhotoField(info['photo_url']),
+                            _buildProjectPhotoButton(info['photo_url']),
                             const SizedBox(height: 16),
                           ],
-                          
-                          _buildDetailField('Project Title', info['project_title'] ?? 'Untitled Project'),
-                          _buildDetailField('Project Type', info['project_type'] ?? 'Not specified'),
-                          _buildDetailField('Location', info['project_location'] ?? 'Not specified'),
-                          _buildDetailField('Description', info['project_description'] ?? 'No description provided'),
+                          _buildDetailField('Project Title', info['project_title'] ?? 'Untitled Project', isDesktop),
+                          _buildDetailField('Project Type', info['project_type'] ?? 'Not specified', isDesktop),
+                          _buildDetailField('Location', info['project_location'] ?? 'Not specified', isDesktop),
+                          _buildDetailField('Description', info['project_description'] ?? 'No description provided', isDesktop),
                           
                           if (info['min_budget'] != null && info['max_budget'] != null)
-                            _buildDetailField('Budget Range', '₱${info['min_budget']} - ₱${info['max_budget']}')
+                            _buildDetailField('Budget Range', '₱${info['min_budget']} - ₱${info['max_budget']}', isDesktop)
                           else if (info['project_budget'] != null)
-                            _buildDetailField('Budget', '₱${info['project_budget']}')
+                            _buildDetailField('Budget', '₱${info['project_budget']}', isDesktop)
                           else
-                            _buildDetailField('Budget', 'Not specified'),
+                            _buildDetailField('Budget', 'Not specified', isDesktop),
                           
                           if (info['start_date'] != null)
-                            _buildDetailField('Preferred Start Date', info['start_date'].toString().split(' ')[0]),
+                            _buildDetailField('Preferred Start Date', info['start_date'].toString().split(' ')[0], isDesktop),
                           
                           if (info['additional_info'] != null && info['additional_info'].isNotEmpty)
-                            _buildDetailField('Additional Information', info['additional_info']),
+                            _buildDetailField('Additional Information', info['additional_info'], isDesktop),
                         ],
                       ),
                     ),
@@ -1074,7 +1120,7 @@ class DashboardBuildMethods {
     );
   }
 
-  Widget _buildDetailField(String label, String value) {
+  Widget _buildDetailField(String label, String value, bool isDesktop) {
     return Padding(
       padding: EdgeInsets.only(bottom: 16),
       child: Column(
@@ -1084,11 +1130,11 @@ class DashboardBuildMethods {
             label,
             style: TextStyle(
               fontSize: 14,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.bold,
               color: Colors.grey.shade700,
             ),
           ),
-          SizedBox(height: 4),
+          SizedBox(height: 8),
           Container(
             width: double.infinity,
             padding: EdgeInsets.all(12),
@@ -1186,92 +1232,80 @@ class DashboardBuildMethods {
     );
   }
 
-  Widget _buildProjectPhotoField(dynamic photoUrl) {
+  Widget _buildProjectPhotoButton(dynamic photoUrl) {
     final photoUrlString = _getProjectPhotoUrl(photoUrl);
     if (photoUrlString.isEmpty) {
       return const SizedBox.shrink();
     }
     
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth >= 1000;
+    
     return Padding(
       padding: EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Project Photo',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
-            ),
-          ),
-          SizedBox(height: 4),
-          GestureDetector(
-            onTap: () => _showFullPhoto(photoUrlString),
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(7),
-                    child: Image.network(
-                      photoUrlString,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          height: 200,
-                          color: Colors.grey.shade100,
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.image_not_supported,
-                                  size: 48,
-                                  color: Colors.grey.shade400,
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Failed to load image',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
+      child: isDesktop
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 180,
+                  child: Text(
+                    'Project Photo:',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade700,
                     ),
                   ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Icon(
-                        Icons.zoom_in,
-                        color: Colors.white,
-                        size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showFullPhoto(photoUrlString),
+                    icon: const Icon(Icons.image, size: 18),
+                    label: const Text('View Photo'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber.shade700,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Project Photo',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+                SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showFullPhoto(photoUrlString),
+                    icon: const Icon(Icons.image, size: 18),
+                    label: const Text('View Photo'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber.shade700,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1791,7 +1825,7 @@ class DashboardBuildMethods {
   }
   Map<String, dynamic> _getPlaceholderProject() {
     return {
-      'title': 'No Active Projects',
+      'title': 'N/A',
       'description': 'You have no active projects at the moment.',
       'type': 'N/A',
       'contractee_name': 'No Contractee',
@@ -1805,7 +1839,7 @@ class DashboardBuildMethods {
     final projectId = project['project_id']?.toString() ?? '';
     
     Widget card = Card(
-      margin: const EdgeInsets.only(bottom: 0),
+      margin: const EdgeInsets.only(bottom: 12),
       elevation: 4,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
@@ -1920,7 +1954,7 @@ class DashboardBuildMethods {
     
     final details = [
       _buildDetailItem(
-        icon: Icons.attach_money,
+        icon: Icons.money,
         label: 'BUDGET',
         value: _formatProjectBudget(project),
       ),
@@ -1981,33 +2015,59 @@ class DashboardBuildMethods {
     required String label,
     required String value,
   }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth > 1200;
+    
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, size: 16, color: Colors.grey.shade600),
         const SizedBox(width: 6),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '$label:',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                  color: Colors.grey.shade700,
+          child: isDesktop
+              ? RichText(
+                  text: TextSpan(
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.black87,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: '$label: ',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      TextSpan(
+                        text: value,
+                        style: const TextStyle(
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : Row(
+                  children: [
+                    Text(
+                      '$label: ',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
         ),
       ],
     );
