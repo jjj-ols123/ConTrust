@@ -14,6 +14,7 @@ import 'package:contractee/pages/cee_registration.dart';
 import 'package:contractee/pages/cee_torprofile.dart';
 import 'package:contractee/pages/cee_notification.dart';
 import 'package:contractee/pages/cee_ai_assistant.dart';
+import 'package:contractee/pages/cee_history.dart';
 import 'package:contractee/build/builddrawer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -202,6 +203,9 @@ class _MyAppState extends State<MyApp> {
                     case '/ai-assistant':
                       currentPage = ContracteePage.aiAssistant;
                       break;
+                    case '/history':
+                      currentPage = ContracteePage.history;
+                      break;
                     default:
                       if (location.startsWith('/ongoing')) {
                         currentPage = ContracteePage.ongoing;
@@ -328,6 +332,22 @@ class _MyAppState extends State<MyApp> {
                       final session = Supabase.instance.client.auth.currentSession;
                       if (session != null) {
                         return const AiAssistantPage();
+                      }
+                      return const LoginPage();
+                    },
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: '/history',
+              pageBuilder: (context, state) {
+                return NoTransitionPage(
+                  child: Builder(
+                    builder: (context) {
+                      final session = Supabase.instance.client.auth.currentSession;
+                      if (session != null) {
+                        return CeeHistoryPage(contracteeId: session.user.id);
                       }
                       return const LoginPage();
                     },

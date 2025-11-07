@@ -243,12 +243,6 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
                     profileUrl: profileUrl,
                     completedProjectsCount: completedProjectsCount,
                     ongoingProjectsCount: ongoingProjectsCount,
-                    selectedTab: selectedTab,
-                    onTabChanged: (String tab) {
-                      setState(() {
-                        selectedTab = tab;
-                      });
-                    },
                     mainContent: _buildMainContent(),
                     onUploadPhoto: isUploadingPhoto ? null : _uploadProfilePhoto,
                 ),
@@ -266,12 +260,6 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
                   profileUrl: profileUrl,
                   completedProjectsCount: completedProjectsCount,
                   ongoingProjectsCount: ongoingProjectsCount,
-                  selectedTab: selectedTab,
-                  onTabChanged: (String tab) {
-                    setState(() {
-                      selectedTab = tab;
-                    });
-                  },
                   mainContent: _buildMainContent(),
                   onUploadPhoto: isUploadingPhoto ? null : _uploadProfilePhoto,
                 ),
@@ -284,11 +272,7 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
   }
 
   Widget _buildMainContent() {
-    return CeeProfileBuildMethods.buildMainContent(
-      selectedTab,
-      () => _buildAboutContent(),
-      () => _buildHistoryContent(),
-    );
+    return _buildAboutContent();
   }
 
   Widget _buildAboutContent() {
@@ -314,62 +298,7 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
     );
   }
 
-  Widget _buildHistoryContent() {
-    return CeeProfileBuildMethods.buildHistory(
-      context: context,
-      filteredProjects: filteredProjects,
-      filteredTransactions: filteredTransactions,
-      reviews: reviews,
-      projectSearchController: projectSearchController,
-      transactionSearchController: transactionSearchController,
-      selectedProjectStatus: selectedProjectStatus,
-      selectedPaymentType: selectedPaymentType,
-      onProjectStatusChanged: (status) {
-        setState(() {
-          selectedProjectStatus = status;
-          _filterProjects();
-        });
-      },
-      onPaymentTypeChanged: (type) {
-        setState(() {
-          selectedPaymentType = type;
-          _filterTransactions();
-        });
-      },
-      onProjectTap: _showProjectDetails,
-      getTimeAgo: _getTimeAgo,
-    );
-  }
 
-  void _showProjectDetails(Map<String, dynamic> project) async {
-    try {
-      final projectId = project['project_id'];
-      final projectDetails = await supabase
-          .from('Projects')
-          .select('*')
-          .eq('project_id', projectId)
-          .single();
-
-      if (mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: true,
-          builder: (dialogContext) => CeeProfileBuildMethods.buildProjectDetailsDialog(
-            dialogContext,
-            projectDetails,
-            _getTimeAgo, 
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ConTrustSnackBar.error(
-          context,
-          'Error loading project details: $e',
-        );
-      }
-    }
-  }
 
   void _toggleEdit(String fieldType) {
     setState(() {
@@ -484,24 +413,4 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
     }
   }
 
-  String _getTimeAgo(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inDays > 365) {
-      final years = (difference.inDays / 365).floor();
-      return '$years year${years == 1 ? '' : 's'} ago';
-    } else if (difference.inDays > 30) {
-      final months = (difference.inDays / 30).floor();
-      return '$months month${months == 1 ? '' : 's'} ago';
-    } else if (difference.inDays > 0) {
-      return '${difference.inDays} day${difference.inDays == 1 ? '' : 's'} ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours} hour${difference.inHours == 1 ? '' : 's'} ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes} minute${difference.inMinutes == 1 ? '' : 's'} ago';
-    } else {
-      return 'Just now';
-    }
-  }
 }

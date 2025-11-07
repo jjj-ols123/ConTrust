@@ -137,7 +137,17 @@ class MessageUIBuildMethods {
                   .eq(chatStreamColumn, userId as Object)
                   .order('last_message_time', ascending: false),
               builder: (context, snapshot) {
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                // Show loading while waiting for initial data
+                if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+                  return Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                    ),
+                  );
+                }
+                
+                // Show empty state only after data has been received
+                if (snapshot.hasData && snapshot.data!.isEmpty) {
                   return Center(
                     child: Padding(
                       padding: EdgeInsets.all(isDesktop ? 32.0 : (isTablet ? 24.0 : 16.0)),
@@ -171,6 +181,15 @@ class MessageUIBuildMethods {
                             ),
                         ],
                       ),
+                    ),
+                  );
+                }
+                
+                // If still no data but connection is active, show loading
+                if (!snapshot.hasData) {
+                  return Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(accentColor),
                     ),
                   );
                 }
@@ -220,8 +239,7 @@ class MessageUIBuildMethods {
                             userSnapshot.data?['profile_photo'];
                         final lastMessage =
                             chat['last_message'] ?? 'No messages yet';
-                        final lastTime = chat['last_message_time'] != null &&
-                                screenWidth > 1000
+                        final lastTime = chat['last_message_time'] != null
                             ? DateTime.tryParse(chat['last_message_time'])
                             : null;
 
@@ -349,12 +367,10 @@ class MessageUIBuildMethods {
               ),
               overflow: TextOverflow.ellipsis,
             ),
-            subtitle: isMobile && screenWidth < 400
-                ? null
-                : Column(
+            subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (projectTitle.isNotEmpty) ...[
+                      if (projectTitle.isNotEmpty && (!isMobile || screenWidth >= 400)) ...[
                         Text(
                           projectTitle,
                           maxLines: 1,
@@ -367,33 +383,50 @@ class MessageUIBuildMethods {
                         ),
                         SizedBox(height: 2),
                       ],
-                      Text(
-                        lastMessage,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: hasUnread ? Colors.black87 : Colors.grey.shade600,
-                          fontSize: subtitleFontSize - 1,
-                          fontWeight: hasUnread ? FontWeight.w500 : FontWeight.normal,
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              lastMessage,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: hasUnread ? Colors.black87 : Colors.grey.shade600,
+                                fontSize: subtitleFontSize - 1,
+                                fontWeight: hasUnread ? FontWeight.w500 : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                          if (lastTime != null && isMobile && screenWidth < 400) ...[
+                            const SizedBox(width: 8),
+                            Text(
+                              "${lastTime.hour.toString().padLeft(2, '0')}:${lastTime.minute.toString().padLeft(2, '0')}",
+                              style: TextStyle(
+                                fontSize: subtitleFontSize - 2,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ],
                   ),
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (lastTime != null && (!isMobile || screenWidth > 350))
-                  Text(
-                    "${lastTime.hour.toString().padLeft(2, '0')}:${lastTime.minute.toString().padLeft(2, '0')}",
-                    style: TextStyle(
-                      fontSize: subtitleFontSize - 2,
-                      color: Colors.grey,
-                    ),
-                  ),
-              ],
-            ),
+            trailing: lastTime != null && (!isMobile || screenWidth >= 400)
+                ? Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "${lastTime.hour.toString().padLeft(2, '0')}:${lastTime.minute.toString().padLeft(2, '0')}",
+                        style: TextStyle(
+                          fontSize: subtitleFontSize - 2,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  )
+                : null,
             onTap: () {
               onSelectChat(
                 chat['chatroom_id'],

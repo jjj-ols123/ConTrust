@@ -1,9 +1,12 @@
 // ignore_for_file: use_build_context_synchronously, unused_local_variable
 import 'package:backend/services/both services/be_user_service.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/services/both services/be_project_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/build/buildproduct.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class ProductPanelScreen extends StatefulWidget {
   final String? contractorId;
@@ -28,7 +31,8 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
   ];
 
   String search = '';
-  List<Map<String, dynamic>> inventory = [];
+  List<Map<String, dynamic>> inventory = []; // Database materials
+  List<Map<String, dynamic>> localInventory = []; // Local materials not yet saved
   List<Map<String, dynamic>> projects = [];
   Map<String, List<Map<String, dynamic>>> projectMaterials = {};
 
@@ -51,6 +55,39 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
     super.initState();
     projectId = widget.projectId;
     _initializeData();
+    _loadLocalInventory(); // Load saved local inventory
+  }
+
+  Future<void> _loadLocalInventory() async {
+    if (projectId == null) return;
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'local_inventory_$projectId';
+      final savedData = prefs.getString(key);
+      
+      if (savedData != null) {
+        final List<dynamic> decodedData = json.decode(savedData);
+        setState(() {
+          localInventory = decodedData.map((item) => Map<String, dynamic>.from(item)).toList();
+        });
+      }
+    } catch (e) {
+      print('Error loading local inventory: $e');
+    }
+  }
+
+  Future<void> _saveLocalInventory() async {
+    if (projectId == null) return;
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'local_inventory_$projectId';
+      final encodedData = json.encode(localInventory);
+      await prefs.setString(key, encodedData);
+    } catch (e) {
+      print('Error saving local inventory: $e');
+    }
   }
 
   Future<void> _initializeData() async {
@@ -68,11 +105,11 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
   void _initializeStreams() {
     if (contractorId != null) {
 
-      _materialsStream = FetchService().streamProjectMaterials(contractorId!);
-      
       if (projectId != null && projectId!.isNotEmpty) {
+        _materialsStream = FetchService().streamSpecificProjectMaterials(contractorId!, projectId!);
         _projectsStream = FetchService().streamProjectData(projectId!).map((project) => [project]);
       } else {
+        _materialsStream = FetchService().streamProjectMaterials(contractorId!);
         _projectsStream = FetchService().streamContractorActiveProjects(contractorId!);
       }
     }
@@ -191,12 +228,13 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
               context: context,
               search: search,
               onSearchChanged: (value) => setState(() => search = value),
-              projects: projects,
               filteredCatalog: filteredCatalog,
-              projectMaterials: projectMaterials,
-              getProjectTotal: getProjectTotal,
+              localInventory: localInventory,
               openMaterialDialog: openMaterialDialog,
               contractorId: contractorId,
+              projectTitle: projects.isNotEmpty ? projects.first['title'] : null,
+              onAddToProject: localInventory.isNotEmpty ? addLocalInventoryToProject : null,
+              onRemoveFromInventory: removeFromLocalInventory,
             );
           },
         );
@@ -210,7 +248,9 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
       return;
     }
 
-    final existing = editIndex != null ? inventory[editIndex] : null;
+    final existing = editIndex != null && editIndex < localInventory.length 
+        ? localInventory[editIndex] 
+        : null;
 
     ProductBuildMethods.showMaterialDialog(
       context: context,
@@ -220,13 +260,113 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
       projectId: projectId,
       onSuccess: (Map<String, dynamic> materialMap) {
         setState(() {
-          if (projectMaterials[projectId] == null) {
-            projectMaterials[projectId!] = [];
+          if (editIndex != null && editIndex < localInventory.length) {
+            // Edit existing local inventory item
+            localInventory[editIndex] = materialMap;
+          } else {
+            // Add new item to local inventory
+            localInventory.add(materialMap);
           }
-          projectMaterials[projectId]!.add(materialMap);
         });
+        _saveLocalInventory(); // Save to persistent storage
       },
     );
+  }
+
+  void removeFromLocalInventory(int index) {
+    setState(() {
+      localInventory.removeAt(index);
+    });
+    _saveLocalInventory(); // Save to persistent storage
+    ConTrustSnackBar.success(context, 'Material removed from local inventory');
+  }
+
+  Future<bool> addLocalInventoryToProject() async {
+    if (localInventory.isEmpty) {
+      ConTrustSnackBar.error(context, 'No local materials to add to project');
+      return false;
+    }
+
+    if (contractorId == null || projectId == null) {
+      ConTrustSnackBar.error(context, 'Invalid contractor or project information');
+      return false;
+    }
+
+    try {
+      // Get existing materials to check for duplicates
+      final existingMaterials = await FetchService().fetchProjectCosts(projectId!);
+      final existingMaterialNames = existingMaterials
+          .map((m) => (m['material_name'] as String).toLowerCase())
+          .toSet();
+
+      int addedCount = 0;
+      int skippedCount = 0;
+      List<Map<String, dynamic>> successfullyAddedItems = [];
+      List<Map<String, dynamic>> duplicateItems = [];
+
+      for (final material in localInventory) {
+        final materialName = (material['name'] as String).toLowerCase();
+        
+        // Check if material already exists in project
+        if (existingMaterialNames.contains(materialName)) {
+          skippedCount++;
+          duplicateItems.add(material); // Track duplicates to remove
+          continue;
+        }
+
+        try {
+          await ProjectService().addCostToProject(
+            contractor_id: contractorId!,
+            projectId: projectId!,
+            material_name: material['name'],
+            quantity: material['qty'],
+            brand: material['brand'],
+            unit: material['unit'],
+            unit_price: material['unitPrice'],
+            notes: material['note'],
+          );
+          addedCount++;
+          successfullyAddedItems.add(material); // Track successfully added items
+        } catch (e) {
+          print('Failed to add material ${material['name']}: $e');
+          // Failed items remain in local inventory
+        }
+      }
+
+      // Remove successfully added items and duplicates from local inventory
+      setState(() {
+        // Remove all successfully added items
+        for (final item in successfullyAddedItems) {
+          localInventory.remove(item);
+        }
+        // Remove all duplicate items
+        for (final item in duplicateItems) {
+          localInventory.remove(item);
+        }
+      });
+      _saveLocalInventory(); // Save updated local inventory (only failed items remain)
+
+      if (addedCount > 0) {
+        String message = 'Successfully added $addedCount material${addedCount > 1 ? 's' : ''} to project';
+        if (skippedCount > 0) {
+          message += ' ($skippedCount duplicate${skippedCount > 1 ? 's' : ''} removed)';
+        }
+        if (localInventory.isNotEmpty) {
+          message += '. ${localInventory.length} item${localInventory.length > 1 ? 's' : ''} remain${localInventory.length == 1 ? 's' : ''} in local inventory';
+        }
+        ConTrustSnackBar.success(context, message);
+        return true;
+      } else if (skippedCount > 0) {
+        ConTrustSnackBar.warning(context, 'All materials were duplicates and removed from local inventory');
+        return true;
+      } else {
+        ConTrustSnackBar.error(context, 'Failed to add materials to project');
+        return false;
+      }
+    } catch (e) {
+      ConTrustSnackBar.error(context, 'Error adding materials to project: $e');
+      return false;
+    }
   }
 
   @override
@@ -248,7 +388,9 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Materials & Inventory',
+                    projectId != null && projects.isNotEmpty 
+                        ? '${projects.first['title'] ?? 'Project'} - Materials' 
+                        : 'Materials & Inventory',
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,

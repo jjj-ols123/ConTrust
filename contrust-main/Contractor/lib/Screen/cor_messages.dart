@@ -64,17 +64,33 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
   }
   
   Future<void> _initializeData() async {
+    // Load all data before showing the screen
+    final projectStatusFuture = FetchService().fetchProjectStatus(widget.chatRoomId);
+    
+    // Load contractee data and project status in parallel
+    final results = await Future.wait([
+      _loadContracteeData(),
+      projectStatusFuture,
+    ]);
+    
+    // Get the project status value
+    final projectStatusValue = results[1] as String?;
+    
+    // Set project status after it's loaded
     setState(() {
-      _projectStatus = FetchService().fetchProjectStatus(widget.chatRoomId);
+      _projectStatus = Future.value(projectStatusValue);
     });
-    await _loadContracteeData();
+    
     await MessageService().markMessagesAsRead(
       chatRoomId: widget.chatRoomId,
       userId: widget.contractorId,
     );
+    
+    if (mounted) {
     setState(() {
       _isLoading = false;
     });
+    }
   }
 
   Future<void> _loadContracteeData() async {
@@ -87,7 +103,13 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
         });
       }
     } catch (e) {
-      ConTrustSnackBar.error(context, 'Failed to load contractee data');
+      // If fetch fails, use widget parameters as fallback
+      if (mounted) {
+        setState(() {
+          _contracteeName = widget.contracteeName;
+          _contracteeProfile = widget.contracteeProfile;
+        });
+      }
     }
   }
 
@@ -512,9 +534,17 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
 
   String _formatContractTime(dynamic timestamp) {
     try {
-      final date = timestamp is String
-          ? DateTime.parse(timestamp).toLocal()
-          : (timestamp as DateTime).toLocal();
+      DateTime date;
+      if (timestamp is String) {
+        // Parse the timestamp - if it has 'Z' or timezone, it's UTC, otherwise it's local
+        final parsed = DateTime.parse(timestamp);
+        // If the string ends with 'Z' or has timezone info, it's UTC, convert to local
+        // Otherwise, it's already local time (no timezone indicator)
+        date = parsed.isUtc ? parsed.toLocal() : parsed;
+      } else {
+        date = (timestamp as DateTime).toLocal();
+      }
+      
       final now = DateTime.now();
       final difference = now.difference(date);
 
@@ -686,23 +716,56 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
       return Scaffold(
         backgroundColor: Colors.grey[100],
         appBar: AppBar(
-          backgroundColor: Colors.amber,
+          backgroundColor: const Color(0xFFFFB300),
           foregroundColor: Colors.white,
+          leading: MediaQuery.of(context).size.width < 1200 ? IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.go('/messages'),
+          ) : null,
+          automaticallyImplyLeading: false,
           title: Row(
             children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: Colors.white,
-                child: Icon(Icons.person, color: Colors.amber, size: 20),
+              ClipOval(
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  color: Colors.white,
+                  child: Image.network(
+                    ((_contracteeProfile != null && _contracteeProfile!.isNotEmpty)
+                            ? _contracteeProfile!
+                            : (widget.contracteeProfile != null && widget.contracteeProfile!.isNotEmpty)
+                                ? widget.contracteeProfile!
+                                : profileUrl),
+                    width: 32,
+                    height: 32,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Image(
+                        image: const AssetImage('assets/images/defaultpic.png'),
+                        width: 32,
+                        height: 32,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.white,
+                            child: Icon(Icons.person, size: 16, color: Colors.grey.shade600),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
-              Text(
+              Expanded(
+                child: Text(
                 _contracteeName ?? widget.contracteeName,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                 ),
                 overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
@@ -763,15 +826,35 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
         automaticallyImplyLeading: false,
          title: Row(
            children: [
-             CircleAvatar(
-               radius: 16,
-               backgroundColor: Colors.white,
-               backgroundImage: NetworkImage(
+             ClipOval(
+               child: Container(
+                 width: 32,
+                 height: 32,
+                 color: Colors.white,
+                 child: Image.network(
                  ((_contracteeProfile != null && _contracteeProfile!.isNotEmpty)
                         ? _contracteeProfile!
                         : (widget.contracteeProfile != null && widget.contracteeProfile!.isNotEmpty)
                             ? widget.contracteeProfile!
                             : profileUrl),
+                   width: 32,
+                   height: 32,
+                   fit: BoxFit.cover,
+                   errorBuilder: (context, error, stackTrace) {
+                     return Image(
+                       image: const AssetImage('assets/images/defaultpic.png'),
+                       width: 32,
+                       height: 32,
+                       fit: BoxFit.cover,
+                       errorBuilder: (context, error, stackTrace) {
+                         return Container(
+                           color: Colors.white,
+                           child: Icon(Icons.person, size: 16, color: Colors.grey.shade600),
+                         );
+                       },
+                     );
+                   },
+                 ),
                ),
              ),
              const SizedBox(width: 12),

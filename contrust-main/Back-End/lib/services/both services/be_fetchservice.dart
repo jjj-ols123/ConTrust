@@ -224,6 +224,7 @@ class FetchService {
           )
           .eq('contractee_id', userId)
           .neq('status', 'cancelled')
+          .neq('status', 'stopped')
           .order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
@@ -811,18 +812,23 @@ class FetchService {
             final withPhotoUrls = filtered.map((p) {
               final project = Map<String, dynamic>.from(p);
               final dynamic raw = project['photo_url'];
-              if (raw is String && raw.isNotEmpty) {
-                if (raw.startsWith('data:') || raw.startsWith('http')) {
-                  project['photo_url'] = raw;
+              if (raw != null && raw.toString().isNotEmpty) {
+                final rawString = raw.toString();
+                if (rawString.startsWith('data:') || rawString.startsWith('http')) {
+                  project['photo_url'] = rawString;
                 } else {
                   try {
+                    // Convert storage path to public URL
                     project['photo_url'] = _supabase.storage
                         .from('projectphotos')
-                        .getPublicUrl(raw);
+                        .getPublicUrl(rawString);
                   } catch (_) {
-                    project['photo_url'] = raw;
+                    // If conversion fails, try to use as-is or set to empty
+                    project['photo_url'] = rawString;
                   }
                 }
+              } else {
+                project['photo_url'] = null;
               }
               return project;
             }).toList();
@@ -1311,6 +1317,34 @@ class FetchService {
         extraInfo: {
           'operation': 'Stream Project Materials',
           'contractor_id': contractorId,
+        },
+      );
+      return Stream.value([]);
+    }
+  }
+
+  Stream<List<Map<String, dynamic>>> streamSpecificProjectMaterials(String contractorId, String projectId) {
+    try {
+      return _supabase
+          .from('ProjectMaterials')
+          .stream(primaryKey: ['material_id'])
+          .map((data) => List<Map<String, dynamic>>.from(data))
+          .map((materials) => materials.where((material) => 
+              material['contractor_id'] == contractorId && 
+              material['project_id'] == projectId).toList())
+          .map((materials) => materials..sort((a, b) => 
+              DateTime.parse(b['created_at'] ?? '').compareTo(
+                DateTime.parse(a['created_at'] ?? ''))));
+    } catch (e) {
+      _errorService.logError(
+        userId: _supabase.auth.currentUser?.id,
+        errorMessage: 'Failed to stream specific project materials: $e',
+        module: 'FetchService',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Stream Specific Project Materials',
+          'contractor_id': contractorId,
+          'project_id': projectId,
         },
       );
       return Stream.value([]);

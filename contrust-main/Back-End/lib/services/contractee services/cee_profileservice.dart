@@ -205,6 +205,46 @@ class CeeProfileService {
         return null;
       }
 
+      // Check file size (max 10MB)
+      const maxSizeBytes = 10 * 1024 * 1024; // 10MB
+      if (fileBytes.length > maxSizeBytes) {
+        if (context.mounted) {
+          ConTrustSnackBar.error(
+            context, 
+            'Image size exceeds 10MB limit. Please choose a smaller image.'
+          );
+        }
+        return null;
+      }
+
+      // Check file extension or image format (only PNG/JPG)
+      final extension = file.extension?.toLowerCase() ?? '';
+      
+      // If no extension, check image format from bytes (PNG starts with 89 50 4E 47, JPEG starts with FF D8 FF)
+      bool isValidImage = false;
+      if (extension == 'jpg' || extension == 'jpeg' || extension == 'png') {
+        isValidImage = true;
+      } else if (fileBytes.length >= 4) {
+        // Check PNG signature: 89 50 4E 47 (0x89 0x50 0x4E 0x47)
+        if (fileBytes[0] == 0x89 && fileBytes[1] == 0x50 && fileBytes[2] == 0x4E && fileBytes[3] == 0x47) {
+          isValidImage = true;
+        }
+        // Check JPEG signature: FF D8 FF
+        else if (fileBytes.length >= 3 && fileBytes[0] == 0xFF && fileBytes[1] == 0xD8 && fileBytes[2] == 0xFF) {
+          isValidImage = true;
+        }
+      }
+      
+      if (!isValidImage) {
+        if (context.mounted) {
+          ConTrustSnackBar.error(
+            context, 
+            'Only PNG and JPG images are allowed.'
+          );
+        }
+        return null;
+      }
+
       final String uniqueFileName = '${contracteeId}_${DateTime.now().millisecondsSinceEpoch}_$fileName';
       
       await Supabase.instance.client.storage

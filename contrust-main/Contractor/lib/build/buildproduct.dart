@@ -3,23 +3,24 @@
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/services/contractor services/cor_productservice.dart';
+import 'package:backend/services/both services/be_project_service.dart';
 
 class ProductBuildMethods {
   static Widget buildProductUI({
     required BuildContext context,
     required String search,
     required Function(String) onSearchChanged,
-    required List<Map<String, dynamic>> projects,
     required List<Map<String, dynamic>> filteredCatalog,
-    required Map<String, List<Map<String, dynamic>>> projectMaterials,
-    required Function(String) getProjectTotal,
+    required List<Map<String, dynamic>> localInventory,
     required Function(Map<String, dynamic>, {int? editIndex})
     openMaterialDialog,
     required String? contractorId,
+    String? projectTitle,
+    Future<bool> Function()? onAddToProject,
+    Function(int)? onRemoveFromInventory,
   }) {
     final width = MediaQuery.of(context).size.width;
     final isDesktop = width >= 1200;
-    final isTablet = width >= 700 && width < 1200;
     final crossAxisCount =
         width > 1200
             ? 4
@@ -41,16 +42,16 @@ class ProductBuildMethods {
                             child: Column(
                               children: [
                                 const SizedBox(height: 24),
-                                buildProjectsOverview(
+                                buildLocalInventorySection(
                                   context: context,
-                                  projects: projects,
-                                  projectMaterials: projectMaterials,
-                                  getProjectTotal: getProjectTotal,
-                                  contractorId: contractorId,
+                                  localInventory: localInventory,
                                   isDesktop: isDesktop,
-                                  isTablet: isTablet,
+                                  onAddToProject: onAddToProject,
+                                  openMaterialDialog: openMaterialDialog,
+                                  onRemoveFromInventory: onRemoveFromInventory,
+                                  projectTitle: projectTitle,
                                 ),
-                                 const SizedBox(height: 24),
+                                const SizedBox(height: 24),
                                 buildSearchHeader(
                                   context: context,
                                   search: search,
@@ -91,14 +92,14 @@ class ProductBuildMethods {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const SizedBox(height: 24),
-                            buildProjectsOverview(
+                            buildLocalInventorySection(
                               context: context,
-                              projects: projects,
-                              projectMaterials: projectMaterials,
-                              getProjectTotal: getProjectTotal,
-                              contractorId: contractorId,
+                              localInventory: localInventory,
                               isDesktop: isDesktop,
-                              isTablet: isTablet,
+                              onAddToProject: onAddToProject,
+                              openMaterialDialog: openMaterialDialog,
+                              onRemoveFromInventory: onRemoveFromInventory,
+                              projectTitle: projectTitle,
                             ),
                             const SizedBox(height: 24),
                             buildSearchHeader(
@@ -227,12 +228,12 @@ class ProductBuildMethods {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
+                    color: Colors.grey.shade50,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     Icons.work,
-                    color: Colors.blue.shade600,
+                    color: Colors.amber,
                     size: 24,
                   ),
                 ),
@@ -269,6 +270,431 @@ class ProductBuildMethods {
                   ),
           ],
         ),
+      ),
+    );
+  }
+
+  static Widget buildLocalInventorySection({
+    required BuildContext context,
+    required List<Map<String, dynamic>> localInventory,
+    required bool isDesktop,
+    Future<bool> Function()? onAddToProject,
+    required Function(Map<String, dynamic>, {int? editIndex}) openMaterialDialog,
+    Function(int)? onRemoveFromInventory,
+    String? projectTitle,
+  }) {
+    if (localInventory.isEmpty) {
+      return buildEmptyLocalInventoryState(isDesktop);
+    }
+
+    final totalCost = localInventory.fold<double>(
+      0.0,
+      (sum, item) => sum + ((item['total'] as num?)?.toDouble() ?? 0.0),
+    );
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(isDesktop ? 20 : 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.inventory_2,
+                    color: Colors.orange,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  'Local Inventory',
+                  style: TextStyle(
+                    fontSize: isDesktop ? 24 : 20,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF2D3748),
+                  ),
+                ),
+                const Spacer(),
+              ],
+            ),
+            const SizedBox(height: 24),
+            // Summary Card
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.pending_actions,
+                        color: Colors.orange.shade600,
+                        size: 28,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              projectTitle ?? 'Project Materials',
+                              style: TextStyle(
+                                fontSize: isDesktop ? 24 : 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.orange.shade700,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              '${localInventory.length} item${localInventory.length > 1 ? 's' : ''} pending',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.orange.shade600,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Materials',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          Text(
+                            '${localInventory.length} item${localInventory.length > 1 ? 's' : ''}',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            'Total Cost',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          Text(
+                            '₱${totalCost.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => _showLocalInventoryDialog(
+                        context,
+                        localInventory,
+                        onAddToProject,
+                        openMaterialDialog,
+                        onRemoveFromInventory,
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'View Materials',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget buildEmptyLocalInventoryState(bool isDesktop) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(isDesktop ? 20 : 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.inventory_2,
+                    color: Colors.grey.shade400,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  'Local Inventory',
+                  style: TextStyle(
+                    fontSize: isDesktop ? 24 : 20,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF2D3748),
+                  ),
+                ),
+                const Spacer(),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Container(
+              height: 120,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.inventory_outlined,
+                      size: isDesktop ? 48 : 40,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'No Materials Added',
+                      style: TextStyle(
+                        fontSize: isDesktop ? 16 : 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Add materials from the catalog below',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static void _showLocalInventoryDialog(
+    BuildContext context,
+    List<Map<String, dynamic>> localInventory,
+    Future<bool> Function()? onAddToProject,
+    Function(Map<String, dynamic>, {int? editIndex}) openMaterialDialog,
+    Function(int)? onRemoveFromInventory,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final totalCost = localInventory.fold<double>(
+            0.0,
+            (sum, item) => sum + ((item['total'] as num?)?.toDouble() ?? 0.0),
+          );
+
+          return Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.9,
+              constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
+              child: Column(
+                children: [
+                  // Header
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.inventory_2, color: Colors.orange, size: 28),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Local Inventory',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF2D3748),
+                                ),
+                              ),
+                              Text(
+                                '${localInventory.length} item${localInventory.length > 1 ? 's' : ''} • ₱${totalCost.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.orange.shade600,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.close),
+                          color: Colors.grey.shade600,
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Materials List
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: localInventory.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.inventory_outlined,
+                                    size: 64,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No materials added yet',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey.shade600,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.separated(
+                              itemCount: localInventory.length,
+                              separatorBuilder: (context, index) => const SizedBox(height: 12),
+                              itemBuilder: (context, index) {
+                                final item = localInventory[index];
+                                return buildMaterialListItem(
+                                  item,
+                                  onTap: () {
+                                    Navigator.of(context).pop();
+                                    openMaterialDialog(
+                                      {'name': item['name']},
+                                      editIndex: index,
+                                    );
+                                  },
+                                  onDelete: onRemoveFromInventory != null 
+                                      ? () {
+                                          onRemoveFromInventory(index);
+                                          setDialogState(() {}); // Refresh dialog
+                                        }
+                                      : null,
+                                );
+                              },
+                            ),
+                    ),
+                  ),
+                  // Footer with Add to Project button
+                  if (onAddToProject != null && localInventory.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(20),
+                          bottomRight: Radius.circular(20),
+                        ),
+                      ),
+                      child: _AddToProjectButton(
+                        onAddToProject: onAddToProject,
+                        onSuccess: () {
+                          Navigator.of(context).pop();
+                          setDialogState(() {}); // Refresh dialog state
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -586,12 +1012,12 @@ class ProductBuildMethods {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.purple.shade50,
+                color: Colors.grey.shade50,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 Icons.category,
-                color: Colors.purple.shade600,
+                color: Colors.amber,
                 size: 24,
               ),
             ),
@@ -1273,6 +1699,73 @@ class ProductBuildMethods {
   static void showMaterialDetailsDialog(BuildContext context, Map<String, dynamic> material) {}
 }
 
+class _AddToProjectButton extends StatefulWidget {
+  final Future<bool> Function() onAddToProject;
+  final VoidCallback onSuccess;
+
+  const _AddToProjectButton({
+    required this.onAddToProject,
+    required this.onSuccess,
+  });
+
+  @override
+  State<_AddToProjectButton> createState() => _AddToProjectButtonState();
+}
+
+class _AddToProjectButtonState extends State<_AddToProjectButton> {
+  bool _isLoading = false;
+
+  Future<void> _handleAddToProject() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final success = await widget.onAddToProject();
+      if (success) {
+        widget.onSuccess();
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: _isLoading ? null : _handleAddToProject,
+        icon: _isLoading 
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Icon(Icons.add_box, size: 24),
+        label: Text(_isLoading ? 'Adding...' : 'Add to Project'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.amber,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          disabledBackgroundColor: Colors.amber.shade300,
+          disabledForegroundColor: Colors.white,
+        ),
+      ),
+    );
+  }
+}
+
 class MaterialInputDialog extends StatefulWidget {
   final Map<String, dynamic> material;
   final Map<String, dynamic>? existingItem;
@@ -1379,7 +1872,7 @@ class _MaterialInputDialogState extends State<MaterialInputDialog> {
 
     widget.onSuccess(materialMap);
     Navigator.pop(context);
-    ConTrustSnackBar.success(context, 'Material added to inventory');
+    ConTrustSnackBar.success(context, 'Material added to local inventory');
 
     if (mounted) setState(() => _isSaving = false);
   }

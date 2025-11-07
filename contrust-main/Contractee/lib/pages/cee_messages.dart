@@ -1,12 +1,12 @@
-// ignore_for_file: deprecated_member_use, unnecessary_null_comparison
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously, unnecessary_null_comparison
 import 'dart:async';
-import 'package:backend/build/buildmessagesdesign.dart';
 import 'package:backend/build/buildmessage.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/services/both services/be_contract_service.dart';
 import 'package:backend/services/both services/be_message_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractee/build/buildceeprofile.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MessagePageContractee extends StatefulWidget {
@@ -43,6 +43,8 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
 
   bool _canSend = false;
+  String? _contractorName;
+  String? _contractorProfile;
   bool _isLoading = true;
   bool _isSending = false;
 
@@ -62,17 +64,53 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
   }
   
   Future<void> _initializeData() async {
+    // Load all data before showing the screen
+    final projectStatusFuture = FetchService().fetchProjectStatus(widget.chatRoomId);
+    
+    // Load contractor data and project status in parallel
+    final results = await Future.wait([
+      _loadContractorData(),
+      projectStatusFuture,
+    ]);
+    
+    // Get the project status value
+    final projectStatusValue = results[1] as String?;
+    
+    // Set project status after it's loaded
     setState(() {
-      _projectStatus = FetchService().fetchProjectStatus(widget.chatRoomId);
+      _projectStatus = Future.value(projectStatusValue);
     });
-    await _projectStatus;
+    
     await MessageService().markMessagesAsRead(
       chatRoomId: widget.chatRoomId,
       userId: widget.contracteeId,
     );
+    
+    if (mounted) {
     setState(() {
       _isLoading = false;
     });
+    }
+  }
+
+  Future<void> _loadContractorData() async {
+    try {
+      final contractorData = await MessageService().fetchContractorData(widget.contractorId);
+      if (mounted) {
+        setState(() {
+          _contractorName = contractorData?['firm_name'] ?? widget.contractorName;
+          _contractorProfile = contractorData?['profile_photo'];
+        });
+      }
+    } catch (e) {
+      // If fetch fails, use widget parameters as fallback
+      if (mounted) {
+        setState(() {
+          _contractorName = widget.contractorName;
+          _contractorProfile = widget.contractorProfile;
+        });
+      }
+    }
   }
 
   Future<void> _setupRealtimeSubscriptions() async {
@@ -159,8 +197,10 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
   }
 
   Future<void> _sendMessage() async {
+    if (!_canSend || _isSending) return;
+
     final text = _messageController.text.trim();
-    if (text.isEmpty || _isSending) return;
+    if (text.isEmpty) return;
 
     setState(() => _isSending = true);
     try {
@@ -184,7 +224,7 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
       _scrollToBottom();
     } catch (e) {
       if (mounted) {
-        ConTrustSnackBar.error(context, 'Failed to send message');
+        ConTrustSnackBar.error(context, 'Failed to send message: $e');
       }
     } finally {
       if (mounted) {
@@ -217,30 +257,480 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
     super.dispose();
   }
 
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              '$label:',
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.grey,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: Colors.grey,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContractsTab() {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: supabase
+          .from('Messages')
+          .stream(primaryKey: ['msg_id'])
+          .eq('chatroom_id', widget.chatRoomId)
+          .order('timestamp', ascending: false),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.amber),
+          );
+        }
+
+        final allMessages = snapshot.data!;
+        final contractMessages = allMessages.where((msg) => msg['message_type'] == 'contract').toList();
+
+        if (contractMessages.isEmpty) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.description_outlined,
+                  size: 48,
+                  color: Colors.grey,
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'No contracts sent yet',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final contractIds = contractMessages
+            .map((msg) => msg['contract_id'] as String?)
+            .whereType<String>()
+            .toSet()
+            .toList();
+        
+        return FutureBuilder<Map<String, Map<String, dynamic>>>(
+          future: _batchFetchContracts(contractIds),
+          builder: (context, contractsSnapshot) {
+            if (!contractsSnapshot.hasData) {
+              return const Center(
+                child: CircularProgressIndicator(color: Colors.amber),
+              );
+            }
+            
+            final contractsCache = contractsSnapshot.data!;
+            
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: contractMessages.length,
+              itemBuilder: (context, index) {
+                final contractMsg = contractMessages[index];
+                final contractId = contractMsg['contract_id'] as String?;
+                final contract = contractId != null ? contractsCache[contractId] : null;
+                
+                if (contract == null) {
+                  return Container(
+                    key: ValueKey('contract_${contractMsg['msg_id']}'),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.description, color: Colors.grey, size: 20),
+                        SizedBox(width: 12),
+                        Text(
+                          'Contract not found',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                
+                // Use cached contract data
+                final messageStatus = contractMsg['contract_status']?.toString();
+                final displayStatus = messageStatus ?? contract['status']?.toString() ?? 'Unknown';
+                final statusColor = _getContractStatusColor(displayStatus);
+                final statusLabel = _getContractStatusLabel(displayStatus);
+
+                return Container(
+                  key: ValueKey('contract_$contractId'),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade200),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.description,
+                            size: 20,
+                            color: Colors.amber,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              contract['title']?.toString() ?? 'Contract',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: Colors.black,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: statusColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: statusColor.withOpacity(0.3)),
+                            ),
+                            child: Text(
+                              statusLabel,
+                              style: TextStyle(
+                                color: statusColor,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        contractMsg['message']?.toString() ?? '',
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 14,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.access_time,
+                            size: 14,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _formatContractTime(contractMsg['timestamp']),
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<Map<String, Map<String, dynamic>>> _batchFetchContracts(List<String> contractIds) async {
+    if (contractIds.isEmpty) return {};
+    
+    final futures = contractIds.map((id) =>
+      ContractService.getContractById(id).then((contract) => MapEntry(id, contract))
+    );
+    
+    final results = await Future.wait(futures);
+    final Map<String, Map<String, dynamic>> contractsMap = {};
+    
+    for (final entry in results) {
+      if (entry.value != null) {
+        contractsMap[entry.key] = entry.value;
+      }
+    }
+    
+    return contractsMap;
+  }
+
+  Color _getContractStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'draft':
+        return Colors.grey;
+      case 'sent':
+        return Colors.orange;
+      case 'approved':
+        return Colors.green;
+      case 'rejected':
+        return Colors.red;
+      case 'awaiting_signature':
+        return Colors.blue;
+      case 'active':
+        return Colors.green[700]!;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getContractStatusLabel(String status) {
+    switch (status.toLowerCase()) {
+      case 'draft':
+        return 'Draft';
+      case 'sent':
+        return 'Sent';
+      case 'approved':
+        return 'Approved';
+      case 'rejected':
+        return 'Rejected';
+      case 'awaiting_signature':
+        return 'Awaiting Signature';
+      case 'active':
+        return 'Active';
+      default:
+        return status;
+    }
+  }
+
+  String _formatContractTime(dynamic timestamp) {
+    try {
+      DateTime date;
+      if (timestamp is String) {
+        // Parse the timestamp - if it has 'Z' or timezone, it's UTC, otherwise it's local
+        final parsed = DateTime.parse(timestamp);
+        // If the string ends with 'Z' or has timezone info, it's UTC, convert to local
+        // Otherwise, it's already local time (no timezone indicator)
+        date = parsed.isUtc ? parsed.toLocal() : parsed;
+      } else {
+        date = (timestamp as DateTime).toLocal();
+      }
+      
+      final now = DateTime.now();
+      final difference = now.difference(date);
+
+      if (difference.inDays > 0) {
+        return '${difference.inDays}d ago';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours}h ago';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes}m ago';
+      } else {
+        return 'Just now';
+      }
+    } catch (e) {
+      return '';
+    }
+  }
+
+  void _showProjectInfoModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [ 
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.amber.withOpacity(0.1),
+                border: Border(
+                  bottom: BorderSide(color: Colors.grey.shade200, width: 1),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.amber, size: 24),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Project Information',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: DefaultTabController(
+                length: 2,
+                child: Column(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        border: Border(
+                          bottom: BorderSide(color: Colors.grey.shade200, width: 1),
+                        ),
+                      ),
+                      child: const TabBar(
+                        labelColor: Colors.amber,
+                        unselectedLabelColor: Colors.grey,
+                        indicatorColor: Colors.amber,
+                        tabs: [
+                          Tab(text: 'Project Info'),
+                          Tab(text: 'Contracts'),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          FutureBuilder<Map<String, dynamic>?>(
+                            future: FetchService().fetchProjectDetailsByChatRoom(widget.chatRoomId),
+                            builder: (context, projectSnapshot) {
+                              if (projectSnapshot.connectionState == ConnectionState.waiting) {
+                                return const Center(
+                                  child: CircularProgressIndicator(color: Colors.amber),
+                                );
+                              }
+
+                              if (!projectSnapshot.hasData || projectSnapshot.data == null) {
+                                return const Center(
+                                  child: Text(
+                                    'No project information available',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              final project = projectSnapshot.data!;
+                              return SingleChildScrollView(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      project['title']?.toString() ?? 'Project',
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _buildInfoRow('Type', project['type']?.toString() ?? 'N/A'),
+                                    _buildInfoRow('Location', project['location']?.toString() ?? 'N/A'),
+                                    _buildInfoRow('Duration', project['duration']?.toString() ?? 'N/A'),
+                                    _buildInfoRow('Budget', 
+                                      '₱${project['min_budget']?.toString() ?? '0'} - ₱${project['max_budget']?.toString() ?? '0'}'),
+                                    _buildInfoRow('Status', project['status']?.toString() ?? 'N/A'),
+                                    const SizedBox(height: 16),
+                                    const Text(
+                                      'Description:',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      project['description']?.toString() ?? 'No description available',
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 14,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                          _buildContractsTab(),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    
     if (_isLoading) {
       return Scaffold(
         backgroundColor: Colors.grey[100],
-        appBar: screenWidth > 1200 ? null : AppBar(
-          elevation: 1,
+        appBar: AppBar(
           backgroundColor: Colors.amber[700],
           foregroundColor: Colors.white,
-          iconTheme: const IconThemeData(color: Colors.white),
-          titleSpacing: 0,
           title: Row(
             children: [
               CircleAvatar(
                 backgroundColor: Colors.white,
                 radius: 22,
-                child: Icon(Icons.person, color: Colors.amber[700], size: 24),
+                child: Icon(Icons.business, color: Colors.amber[700], size: 24),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  widget.contractorName,
+                  _contractorName ?? widget.contractorName,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -276,7 +766,6 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
   }
 
   Widget _buildMessageContent() {
-    final screenWidth = MediaQuery.of(context).size.width;
     final messageUIBuilder = MessageUIBuildMethods(
       context: context,
       supabase: supabase,
@@ -284,12 +773,13 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
       userRole: 'contractee',
       chatRoomId: widget.chatRoomId,
       otherUserId: widget.contractorId,
-      userName: widget.contractorName,
-      userProfile: widget.contractorProfile,
+      userName: _contractorName ?? widget.contractorName,
+      userProfile: _contractorProfile ?? widget.contractorProfile,
       messageController: _messageController,
       scrollController: _scrollController,
       projectStatus: _projectStatus,
-      onSelectChat: (chatRoomId, otherUserId, userName, userProfile) {
+      onSelectChat: (chatRoomId, contractorId, contractorName, contractorProfile) {
+        return;
       },
       onSendMessage: _sendMessage,
       onScrollToBottom: _scrollToBottom,
@@ -298,169 +788,70 @@ class _MessagePageContracteeState extends State<MessagePageContractee> {
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: screenWidth > 1200 ? null : AppBar(
-        elevation: 1,
-        backgroundColor: Colors.amber[700],
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFFFB300),
         foregroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.white),
-        titleSpacing: 0,
-        leading: IconButton(
+        leading: MediaQuery.of(context).size.width < 1200 ? IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+          onPressed: () => context.go('/messages'),
+        ) : null,
         automaticallyImplyLeading: false,
         title: Row(
           children: [
-            CircleAvatar(
-              backgroundImage: NetworkImage(
-                widget.contractorProfile ?? profileUrl,
-              ),
-              radius: 22,
+             ClipOval(
+               child: Container(
+                 width: 32,
+                 height: 32,
+                 color: Colors.white,
+                 child: Image.network(
+                 ((_contractorProfile != null && _contractorProfile!.isNotEmpty)
+                        ? _contractorProfile!
+                        : (widget.contractorProfile != null && widget.contractorProfile!.isNotEmpty)
+                            ? widget.contractorProfile!
+                            : profileUrl),
+                   width: 32,
+                   height: 32,
+                   fit: BoxFit.cover,
+                   errorBuilder: (context, error, stackTrace) {
+                     return Image(
+                       image: const AssetImage('assets/defaultpic.png'),
+                       width: 32,
+                       height: 32,
+                       fit: BoxFit.cover,
+                       errorBuilder: (context, error, stackTrace) {
+                         return Container(
+                           color: Colors.white,
+                           child: Icon(Icons.business, size: 16, color: Colors.grey.shade600),
+                         );
+                       },
+                     );
+                   },
+                 ),
+               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                widget.contractorName,
+                 _contractorName ?? widget.contractorName,
                 style: const TextStyle(
-                  color: Colors.white,
+                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  fontSize: 18,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
         ),
-      ),
-      body: screenWidth > 1200 
-        ? CustomScrollView(
-            slivers: [
-              CeeProfileBuildMethods.buildStickyHeader('Messages'),
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Row(
-                  children: [
-                    messageUIBuilder.buildChatHistoryUI(),
-                    messageUIBuilder.buildMessagesUI(),
-                    messageUIBuilder.buildProjectInfoUI(),
-                  ],
-                ),
-              ),
-            ],
-          )
-        : Column(
-            children: [
-              CeeProfileBuildMethods.buildStickyHeader('Messages'),
-              FutureBuilder<String?>(
-                future: _projectStatus,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const SizedBox(height: 60, child: Center(child: CircularProgressIndicator(color: Colors.amber, strokeWidth: 2)));
-                  } else if (snapshot.hasError) {
-                    return const SizedBox.shrink();
-                  } else {
-                    final projectStatus = snapshot.data ?? 'pending';
-
-                    if (projectStatus == 'awaiting_contract' || projectStatus == 'active') {
-                      return ContractAgreementBanner(
-                        chatRoomId: widget.chatRoomId,
-                        userRole: 'contractee',
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  }
-                },
-              ),
-              Expanded(
-                child: StreamBuilder<List<Map<String, dynamic>>>(
-                  stream: supabase
-                      .from('Messages')
-                      .stream(primaryKey: ['msg_id'])
-                      .eq('chatroom_id', widget.chatRoomId)
-                      .order('timestamp', ascending: true),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
-                      return Container();
-                    }
-                    final messages = snapshot.data!;
-                    WidgetsBinding.instance
-                        .addPostFrameCallback((_) => _scrollToBottom());
-                    if (messages.isEmpty) {
-                      return Container();
-                    }
-                    return ListView.builder(
-                      controller: _scrollController,
-                      padding:
-                          const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                      itemCount: messages.length,
-                      itemBuilder: (context, index) {
-                        final msg = messages[index];
-                        final isMe = msg['sender_id'] == widget.contracteeId;
-                        return UIMessage.buildContractMessage(
-                          context,
-                          msg,
-                          isMe,
-                          widget.contracteeId,
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-              SafeArea(
-                child: Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          child: TextField(
-                            controller: _messageController,
-                            minLines: 1,
-                            maxLines: 4,
-                            decoration: const InputDecoration(
-                              hintText: "Type your message...",
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 12),
-                            ),
-                            onSubmitted: (_) {
-                              if (_canSend && !_isSending) {
-                                _sendMessage();
-                              }
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      CircleAvatar(
-                        backgroundColor: (_canSend && !_isSending) ? Colors.blue[700] : Colors.grey[400],
-                        radius: 24,
-                        child: _isSending
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                ),
-                              )
-                            : IconButton(
-                                icon: const Icon(Icons.send, color: Colors.white),
-                                onPressed: (_canSend && !_isSending) ? _sendMessage : null,
-                              ),
+         actions: [
+           IconButton(
+             icon: const Icon(Icons.info_outline),
+             onPressed: () {
+               _showProjectInfoModal(context);
+             },
                       ),
                     ],
                   ),
-                ),
-              ),
-            ],
-          ),
+      body: messageUIBuilder.buildMessagesUI(),
     );
   }
 }

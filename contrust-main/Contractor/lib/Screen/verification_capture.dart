@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:go_router/go_router.dart';
 
 class VerificationCapturePage extends StatefulWidget {
   final List<Map<String, dynamic>> initialFiles;
@@ -51,6 +52,17 @@ class _VerificationCapturePageState extends State<VerificationCapturePage> {
       final file = result.files.first;
       final bytes = file.bytes;
       if (bytes != null) {
+        const maxSizeBytes = 10 * 1024 * 1024; 
+        if (bytes.length > maxSizeBytes) {
+          if (mounted) {
+            ConTrustSnackBar.error(
+              context, 
+              'File size exceeds 10MB limit. Please choose a smaller file.'
+            );
+          }
+          return;
+        }
+        
         final isImage = ['jpg', 'jpeg', 'png'].contains(file.extension?.toLowerCase());
         final duplicate = _files.any((f) => listEquals(f['bytes'], bytes));
         if (duplicate) {
@@ -72,6 +84,48 @@ class _VerificationCapturePageState extends State<VerificationCapturePage> {
     );
     if (picked != null) {
       final bytes = await picked.readAsBytes();
+
+      const maxSizeBytes = 10 * 1024 * 1024;
+      if (bytes.length > maxSizeBytes) {
+        if (mounted) {
+          ConTrustSnackBar.error(
+            context, 
+            'Image size exceeds 10MB limit. Please take a new photo with lower quality.'
+          );
+        }
+        return;
+      }
+      
+      // Check file extension or image format (only PNG/JPG)
+      final extension = picked.path.contains('.') 
+          ? picked.path.split('.').last.toLowerCase()
+          : '';
+      
+      // If no extension, check image format from bytes (PNG starts with 89 50 4E 47, JPEG starts with FF D8 FF)
+      bool isValidImage = false;
+      if (extension == 'jpg' || extension == 'jpeg' || extension == 'png') {
+        isValidImage = true;
+      } else if (bytes.length >= 4) {
+        // Check PNG signature: 89 50 4E 47 (0x89 0x50 0x4E 0x47)
+        if (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) {
+          isValidImage = true;
+        }
+        // Check JPEG signature: FF D8 FF
+        else if (bytes.length >= 3 && bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) {
+          isValidImage = true;
+        }
+      }
+      
+      if (!isValidImage) {
+        if (mounted) {
+          ConTrustSnackBar.error(
+            context, 
+            'Only PNG and JPG images are allowed.'
+          );
+        }
+        return;
+      }
+      
       final duplicate = _files.any((f) => listEquals(f['bytes'], bytes));
       if (duplicate) {
         if (mounted) ConTrustSnackBar.warning(context, 'This image is already selected');
@@ -229,7 +283,7 @@ class _VerificationCapturePageState extends State<VerificationCapturePage> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => context.pop(),
                     child: const Text('Cancel'),
                   ),
                 ),
@@ -237,7 +291,7 @@ class _VerificationCapturePageState extends State<VerificationCapturePage> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.pop(context, {
+                      context.pop({
                         'files': _files,
                         'pcabQrText': _pcabQrText,
                         'permitQrText': _permitQrText,

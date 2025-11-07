@@ -7,7 +7,7 @@ import 'package:backend/utils/be_snackbar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileBuildMethods {
-  static Widget buildMainContent(String selectedTab, Function buildPortfolioContent, Function buildAboutContent, Function buildReviewsContent, Function buildClientHistoryContent) {
+  static Widget buildMainContent(String selectedTab, Function buildPortfolioContent, Function buildAboutContent, Function buildReviewsContent) {
     switch (selectedTab) {
       case 'Portfolio':
         return buildPortfolioContent();
@@ -15,8 +15,6 @@ class ProfileBuildMethods {
         return buildAboutContent();
       case 'Reviews':
         return buildReviewsContent();
-      case 'History':
-        return buildClientHistoryContent();
       default:
         return buildPortfolioContent();
     }
@@ -92,10 +90,18 @@ class ProfileBuildMethods {
                                         height: 100,
                                         fit: BoxFit.cover,
                                         errorBuilder: (context, error, stackTrace) {
+                                          return Image(
+                                            image: const AssetImage('assets/images/defaultpic.png'),
+                                        width: 100,
+                                        height: 100,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
                                           return Icon(
                                             Icons.business,
                                             size: 35,
                                             color: Colors.grey.shade400,
+                                              );
+                                            },
                                           );
                                         },
                                       );
@@ -107,10 +113,18 @@ class ProfileBuildMethods {
                                     height: 100,
                                     fit: BoxFit.cover,
                                     errorBuilder: (context, error, stackTrace) {
+                                      return Image(
+                                        image: const AssetImage('assets/defaultpic.png'),
+                                    width: 100,
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
                                       return Icon(
                                         Icons.business,
                                         size: 35,
                                         color: Colors.grey.shade400,
+                                          );
+                                        },
                                       );
                                     },
                                   ),
@@ -454,7 +468,6 @@ class ProfileBuildMethods {
                       buildNavigation('Portfolio', selectedTab == 'Portfolio', () => onTabChanged('Portfolio')),
                       buildNavigation('About', selectedTab == 'About', () => onTabChanged('About')),
                       buildNavigation('Reviews', selectedTab == 'Reviews', () => onTabChanged('Reviews')),
-                      buildNavigation('History', selectedTab == 'History', () => onTabChanged('History')),
                     ],
                   ),
                 ),
@@ -1401,7 +1414,7 @@ class ProfileBuildMethods {
   }
   
   static Widget buildMobileNavigation(String selectedTab, Function(String) onTabChanged) {
-    final tabs = ['Portfolio', 'About', 'Reviews', 'History'];
+    final tabs = ['Portfolio', 'About', 'Reviews'];
     
     return Container(
       decoration: BoxDecoration(

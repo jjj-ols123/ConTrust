@@ -142,6 +142,87 @@ class ProjectService {
           },
         }).eq('notification_id', notif['notification_id']);
       }
+
+      // Notify contractors with pending bids about project deletion
+      try {
+        final projectData = await _supabase
+            .from('Projects')
+            .select('contractee_id, title, type')
+            .eq('project_id', projectId)
+            .maybeSingle();
+
+        if (projectData != null) {
+          final contracteeId = projectData['contractee_id'] as String?;
+          final projectTitle = projectData['title'] as String? ?? 'Project';
+          final projectType = projectData['type'] as String? ?? 'project';
+
+          final pendingBids = await _supabase
+              .from('Bids')
+              .select('bid_id, contractor_id, bid_amount')
+              .eq('project_id', projectId)
+              .eq('status', 'pending');
+
+          if (pendingBids.isNotEmpty && contracteeId != null) {
+            // Update ALL pending bids to cancelled status FIRST
+            await _supabase
+                .from('Bids')
+                .update({'status': 'cancelled'})
+                .eq('project_id', projectId)
+                .inFilter('status', ['pending', 'accepted']); // Also cancel accepted bids if any
+
+            // Send notifications to each contractor
+            final notificationService = NotificationService();
+            for (final bid in pendingBids) {
+              final bidContractorId = bid['contractor_id'] as String?;
+              if (bidContractorId != null) {
+                try {
+                  await notificationService.createNotification(
+                    receiverId: bidContractorId,
+                    receiverType: 'contractor',
+                    senderId: contracteeId,
+                    senderType: 'contractee',
+                    type: 'Bid Cancelled',
+                    message: 'The project "$projectTitle" ($projectType) you bid on has been deleted by the contractee.',
+                    information: {
+                      'project_id': projectId,
+                      'project_title': projectTitle,
+                      'project_type': projectType,
+                      'bid_id': bid['bid_id'],
+                      'bid_amount': bid['bid_amount'],
+                      'status': 'deleted',
+                      'deleted_reason': 'Project has been deleted by the contractee',
+                      'deleted_at': DateTimeHelper.getLocalTimeISOString(),
+                    },
+                  );
+                } catch (e) {
+                  await _errorService.logError(
+                    errorMessage: 'Failed to send bid deletion notification: $e',
+                    module: 'Project Service',
+                    severity: 'Medium',
+                    extraInfo: {
+                      'operation': 'Delete Project - Notify Bidder',
+                      'project_id': projectId,
+                      'contractor_id': bidContractorId,
+                      'bid_id': bid['bid_id'],
+                    },
+                  );
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {
+        await _errorService.logError(
+          errorMessage: 'Failed to notify bidders about project deletion: $e',
+          module: 'Project Service',
+          severity: 'Medium',
+          extraInfo: {
+            'operation': 'Delete Project - Notify Bidders',
+            'project_id': projectId,
+          },
+        );
+      }
+
       await _supabase.from('Projects').delete().eq('project_id', projectId);
 
       await _auditService.logAuditEvent(
@@ -368,6 +449,85 @@ class ProjectService {
           },
         }).eq('notification_id', notif['notification_id']);
       }
+
+      // Notify contractors with pending bids about project cancellation
+      try {
+        final pendingBids = await _supabase
+            .from('Bids')
+            .select('bid_id, contractor_id, bid_amount')
+            .eq('project_id', projectId)
+            .eq('status', 'pending');
+
+        if (pendingBids.isNotEmpty) {
+          final projectType = await _supabase
+              .from('Projects')
+              .select('type')
+              .eq('project_id', projectId)
+              .maybeSingle();
+          final projectTypeStr = projectType?['type'] ?? 'project';
+
+          // Update ALL pending bids to cancelled status FIRST
+          await _supabase
+              .from('Bids')
+              .update({'status': 'cancelled'})
+              .eq('project_id', projectId)
+              .inFilter('status', ['pending', 'accepted']); // Also cancel accepted bids if any
+
+          // Send notifications to each contractor
+          final notificationService = NotificationService();
+          for (final bid in pendingBids) {
+            final bidContractorId = bid['contractor_id'] as String?;
+            if (bidContractorId != null && 
+                bidContractorId != contractorId && 
+                contracteeId != null) {
+              try {
+                await notificationService.createNotification(
+                  receiverId: bidContractorId,
+                  receiverType: 'contractor',
+                  senderId: contracteeId,
+                  senderType: 'contractee',
+                  type: 'Bid Cancelled',
+                  message: reason != null
+                      ? 'The project "$projectTitle" ($projectTypeStr) you bid on has been cancelled. Reason: $reason'
+                      : 'The project "$projectTitle" ($projectTypeStr) you bid on has been cancelled by the contractee.',
+                  information: {
+                    'project_id': projectId,
+                    'project_title': projectTitle,
+                    'project_type': projectTypeStr,
+                    'bid_id': bid['bid_id'],
+                    'bid_amount': bid['bid_amount'],
+                    'status': 'cancelled',
+                    'cancelled_reason': reason,
+                    'cancelled_at': DateTimeHelper.getLocalTimeISOString(),
+                  },
+                );
+              } catch (e) {
+                await _errorService.logError(
+                  errorMessage: 'Failed to send bid cancellation notification: $e',
+                  module: 'Project Service',
+                  severity: 'Medium',
+                  extraInfo: {
+                    'operation': 'Cancel Project - Notify Bidder',
+                    'project_id': projectId,
+                    'contractor_id': bidContractorId,
+                    'bid_id': bid['bid_id'],
+                  },
+                );
+              }
+            }
+          }
+        }
+      } catch (e) {
+        await _errorService.logError(
+          errorMessage: 'Failed to notify bidders about project cancellation: $e',
+          module: 'Project Service',
+          severity: 'Medium',
+          extraInfo: {
+            'operation': 'Cancel Project - Notify Bidders',
+            'project_id': projectId,
+          },
+        );
+      }
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Failed to cancel project: $e',
@@ -410,6 +570,13 @@ class ProjectService {
       if (!isContractor && !isContractee) {
         throw Exception('User is not authorized to cancel this project');
       }
+
+      // Update ALL pending bids to cancelled status FIRST
+      await _supabase
+          .from('Bids')
+          .update({'status': 'cancelled'})
+          .eq('project_id', projectId)
+          .inFilter('status', ['pending', 'accepted']);
 
       await _supabase.from('Projects').update({
         'status': 'cancelled',
@@ -1002,14 +1169,24 @@ class ProjectService {
     try {
       final otherRequests = await _supabase
           .from('Notifications')
-          .select('notification_id, information')
+          .select('notification_id, information, receiver_id')
           .eq('headline', 'Hiring Request')
           .eq('sender_id', contracteeId)
           .filter('information->>project_id', 'eq', projectId)
           .neq('notification_id', acceptedNotificationId);
 
+      // Get project details for notification message
+      final projectResponse = await _supabase
+          .from('Projects')
+          .select('title, type')
+          .eq('project_id', projectId)
+          .maybeSingle();
+      final projectTitle = projectResponse?['title'] ?? 'the project';
+      final projectType = projectResponse?['type'] ?? 'project';
+
       for (final request in otherRequests) {
         final info = Map<String, dynamic>.from(request['information'] ?? {});
+        final receiverId = request['receiver_id'] as String;
         info['status'] = 'cancelled';
         info['cancelled_reason'] = 'Another contractor was selected';
         info['cancelled_at'] = DateTimeHelper.getLocalTimeISOString();
@@ -1017,6 +1194,35 @@ class ProjectService {
         await _supabase.from('Notifications').update({
           'information': info,
         }).eq('notification_id', request['notification_id']);
+
+        // Send notification to the contractor that their request was not selected
+        try {
+          await NotificationService().createNotification(
+            receiverId: receiverId,
+            receiverType: 'contractor',
+            senderId: contracteeId,
+            senderType: 'contractee',
+            type: 'Hiring Request Not Selected',
+            message: 'Your hiring request for "$projectTitle" ($projectType) was not selected. Another contractor has been chosen for this project.',
+            information: {
+              'project_id': projectId,
+              'status': 'cancelled',
+              'cancelled_reason': 'Another contractor was selected',
+            },
+          );
+        } catch (notificationError) {
+          // Log error but don't fail the cancellation operation
+          await _errorService.logError(
+            errorMessage: 'Failed to send cancellation notification: $notificationError',
+            module: 'Project Service',
+            severity: 'Low',
+            extraInfo: {
+              'operation': 'Send Cancellation Notification',
+              'notification_id': request['notification_id'],
+              'receiver_id': receiverId,
+            },
+          );
+        }
 
         await _auditService.logAuditEvent(
           userId: contracteeId,

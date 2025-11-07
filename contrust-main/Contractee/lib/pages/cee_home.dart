@@ -39,6 +39,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
   List<Map<String, dynamic>> filteredContractors = [];
   List<Map<String, dynamic>> projects = [];
   bool isLoading = true;
+  bool isPostingProject = false;
 
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounceTimer;
@@ -421,11 +422,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
   }
 
   void _postProject() {
+    if (isPostingProject) return; // Prevent multiple clicks
+    
     CheckUserLogin.isLoggedIn(
       context: context,
       onAuthenticated: () async {
+        setState(() => isPostingProject = true);
         final contracteeId = supabase.auth.currentUser?.id;
         if (contracteeId != null) {
+          try {
           final ongoingProject = await hasOngoingProject(contracteeId);
           if (ongoingProject != null) {
             ConTrustSnackBar.warning(
@@ -482,6 +487,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
           );
           if (actionTaken) {
             ConTrustSnackBar.success(context, 'Project posted successfully!');
+            }
+          } finally {
+            if (mounted) {
+              setState(() => isPostingProject = false);
+            }
           }
         }
       },
@@ -538,6 +548,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
                           HomePageBuilder.buildActiveProjectsContainer(
                             context: context,
                             onPostProject: _postProject,
+                            isPostingProject: isPostingProject,
                             projectContent: ListView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
@@ -700,6 +711,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
                                 HomePageBuilder.buildActiveProjectsContainer(
                                   context: context,
                                   onPostProject: _postProject,
+                                  isPostingProject: isPostingProject,
                                   projectContent: ListView.builder(
                                     shrinkWrap: true,
                                     physics: const NeverScrollableScrollPhysics(),

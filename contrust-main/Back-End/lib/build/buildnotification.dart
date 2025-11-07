@@ -67,6 +67,8 @@ class NotificationUIBuildMethods {
       'hiring_requests_declined_by_me_today': [],
       'bid_accepted_today': [],
       'bid_rejected_today': [],
+      'bid_cancelled_today': [],
+      'project_bids_update_today': [],
       'contract_status_today': [],
       'cancellation_request_today': [],
       'cancellation_declined_today': [],
@@ -133,6 +135,16 @@ class NotificationUIBuildMethods {
           createdAt != null &&
           createdAt.startsWith(todayStr)) {
         groups['bid_rejected_today']!.add(notification);
+        continue;
+      } else if (headline == 'Bid Cancelled' &&
+          createdAt != null &&
+          createdAt.startsWith(todayStr)) {
+        groups['bid_cancelled_today']!.add(notification);
+        continue;
+      } else if (headline == 'Project Bids Update' &&
+          createdAt != null &&
+          createdAt.startsWith(todayStr)) {
+        groups['project_bids_update_today']!.add(notification);
         continue;
       } else if ((headline == 'Contract Signed' || 
                   headline == 'Contract Activated' || 
@@ -204,6 +216,8 @@ class NotificationUIBuildMethods {
             groups['hiring_requests_declined_by_me_today']!;
         final bidAcceptedToday = groups['bid_accepted_today']!;
         final bidRejectedToday = groups['bid_rejected_today']!;
+        final bidCancelledToday = groups['bid_cancelled_today']!;
+        final projectBidsUpdateToday = groups['project_bids_update_today']!;
         final contractStatusToday = groups['contract_status_today']!;
         final cancellationRequestToday = groups['cancellation_request_today']!;
         final cancellationDeclinedToday = groups['cancellation_declined_today']!;
@@ -266,6 +280,22 @@ class NotificationUIBuildMethods {
                 icon: Icons.cancel_outlined,
                 notifications: bidRejectedToday,
                 groupKey: 'bid_rejected_today',
+              ),
+            if (bidCancelledToday.isNotEmpty)
+              _buildGroupedNotification(
+                title:
+                    'You have ${bidCancelledToday.length} ${bidCancelledToday.length == 1 ? 'bid' : 'bids'} cancelled today',
+                icon: Icons.cancel_outlined,
+                notifications: bidCancelledToday,
+                groupKey: 'bid_cancelled_today',
+              ),
+            if (projectBidsUpdateToday.isNotEmpty)
+              _buildGroupedNotification(
+                title:
+                    'You have ${projectBidsUpdateToday.length} ${projectBidsUpdateToday.length == 1 ? 'project' : 'projects'} with new bids today',
+                icon: Icons.gavel,
+                notifications: projectBidsUpdateToday,
+                groupKey: 'project_bids_update_today',
               ),
             if (contractStatusToday.isNotEmpty)
               _buildGroupedNotification(
@@ -762,7 +792,7 @@ class NotificationUIBuildMethods {
   }
 
   Widget buildNotificationUI(
-      Stream<List<Map<String, dynamic>>> notificationStream) {
+      Stream<List<Map<String, dynamic>>> notificationStream, {bool showAppBar = true}) {
     final isDesktopScreen = screenWidth > 1200;
     return isDesktopScreen
         ? Scaffold(
@@ -803,11 +833,11 @@ class NotificationUIBuildMethods {
             ),
           )
         : Scaffold(
-            appBar: AppBar(
+            appBar: showAppBar ? AppBar(
               title: const Text("Notifications",
                   style: TextStyle(fontWeight: FontWeight.bold)),
               backgroundColor: const Color(0xFFFFB300),
-            ),
+            ) : null,
             body: buildNotificationList(notificationStream),
           );
   }

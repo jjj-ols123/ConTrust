@@ -64,13 +64,15 @@ class CorBiddingService {
         }
       }
 
-      await _supabase.from('Bids').insert({
+      final bidResponse = await _supabase.from('Bids').insert({
         'contractor_id': contractorId,
         'project_id': projectId,
         'bid_amount': bidAmount,
         'message': message,
         'status': 'pending',
-      });
+      }).select('bid_id').single();
+
+      final bidId = bidResponse['bid_id'].toString();
 
       await _auditService.logAuditEvent(
         userId: contractorId,
@@ -95,32 +97,18 @@ class CorBiddingService {
           final contracteeId = projectResponse['contractee_id'];
           final projectType = projectResponse['type'];
 
-          final contractorResponse = await _supabase
-              .from('Contractor')
-              .select('firm_name, profile_photo')
-              .eq('contractor_id', contractorId)
-              .single();
-
-          final contractorName =
-              contractorResponse['firm_name'] ?? 'Unknown Contractor';
-          final contractorPhoto = contractorResponse['profile_photo'] ?? '';
-
           final notificationService = NotificationService();
 
-          await notificationService.createNotification(
+          await notificationService.createBidNotification(
             receiverId: contracteeId,
             receiverType: 'contractee',
             senderId: contractorId,
             senderType: 'contractor',
+            bidId: bidId,
+            projectId: projectId,
             type: 'New Bid',
             message:
-                '$contractorName submitted a bid of ₱$bidAmount for your $projectType project',
-            information: {
-              'bid_amount': bidAmount,
-              'project_type': projectType,
-              'contractor_name': contractorName,
-              'contractor_photo': contractorPhoto,
-            },
+                'A contractor submitted a bid of ₱$bidAmount for your $projectType project',
           );
         }
       } catch (e) {

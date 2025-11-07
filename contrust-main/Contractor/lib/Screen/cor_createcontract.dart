@@ -713,10 +713,16 @@ class _CreateContractPageState extends State<CreateContractPage>
 
     return Column(
       children: [
-        CreateContractBuild.buildHeader(
-          context,
-          title: 'Create Contract',
-          actions: [
+        // Save button at the top
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
               ElevatedButton.icon(
                 onPressed: isSaving ? null : saveContract,
                 icon: isSaving
@@ -725,7 +731,7 @@ class _CreateContractPageState extends State<CreateContractPage>
                         height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color:Color(0xFFFFB300),
+                          color: Color(0xFFFFB300),
                         ),
                       )
                     : const Icon(Icons.save),
@@ -742,6 +748,7 @@ class _CreateContractPageState extends State<CreateContractPage>
               ),
             ],
           ),
+        ),
 
           ContractTabsBuild.buildCompletionIndicator(
             completedFields: completionStatus['completed']!,

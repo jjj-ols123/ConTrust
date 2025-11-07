@@ -466,18 +466,19 @@ class CorDashboardService {
     VoidCallback? onRefresh,
   }) async {
     try {
-      // Get current notification to preserve existing information
       final currentNotification = await Supabase.instance.client
           .from('Notifications')
-          .select('information')
+          .select('information, sender_id, receiver_id')
           .eq('notification_id', notificationId)
           .single();
       
-      // Update the status within the information object
       final currentInfo = Map<String, dynamic>.from(currentNotification['information'] ?? {});
+      final contracteeId = currentNotification['sender_id'] as String;
+      final contractorId = currentNotification['receiver_id'] as String;
+      final projectId = currentInfo['project_id'] as String?;
+      
       currentInfo['status'] = 'declined';
       
-      // Update notification information status to declined
       await Supabase.instance.client
           .from('Notifications')
           .update({
@@ -485,6 +486,49 @@ class CorDashboardService {
           })
           .eq('notification_id', notificationId);
 
+      if (projectId != null) {
+        try {
+          final projectResponse = await Supabase.instance.client
+              .from('Projects')
+              .select('title')
+              .eq('project_id', projectId)
+              .maybeSingle();
+          final projectTitle = projectResponse?['title'] ?? 'the project';
+          
+          // Get contractor name for the notification message
+          final contractorResponse = await Supabase.instance.client
+              .from('Contractor')
+              .select('firm_name')
+              .eq('contractor_id', contractorId)
+              .maybeSingle();
+          final contractorName = contractorResponse?['firm_name'] ?? 'A contractor';
+          
+          await NotificationService().createNotification(
+            receiverId: contracteeId,
+            receiverType: 'contractee',
+            senderId: contractorId,
+            senderType: 'contractor',
+            type: 'Hiring Request Declined',
+            message: '$contractorName has declined your hiring request for "$projectTitle".',
+            information: {
+              'project_id': projectId,
+              'status': 'declined',
+              'contractor_id': contractorId,
+            },
+          );
+        } catch (notificationError) {
+          // Log error but don't fail the decline operation
+          await _errorService.logError(
+            errorMessage: 'Failed to send decline notification: $notificationError',
+            module: 'Contractor Dashboard Service',
+            severity: 'Low',
+            extraInfo: {
+              'operation': 'Send Decline Notification',
+              'notification_id': notificationId,
+            },
+          );
+        }
+      }
 
       if (context.mounted) {
         ConTrustSnackBar.success(context, 'Hiring request declined.');
@@ -512,14 +556,24 @@ class CorDashboardService {
     try {
       final otherRequests = await Supabase.instance.client
           .from('Notifications')
-          .select('notification_id, information')
+          .select('notification_id, information, receiver_id')
           .eq('headline', 'Hiring Request')
           .eq('sender_id', contracteeId)
           .filter('information->>project_id', 'eq', projectId)
           .neq('notification_id', acceptedNotificationId);
 
+      // Get project details for notification message
+      final projectResponse = await Supabase.instance.client
+          .from('Projects')
+          .select('title, type')
+          .eq('project_id', projectId)
+          .maybeSingle();
+      final projectTitle = projectResponse?['title'] ?? 'the project';
+      final projectType = projectResponse?['type'] ?? 'project';
+
       for (final request in otherRequests) {
         final info = Map<String, dynamic>.from(request['information'] ?? {});
+        final receiverId = request['receiver_id'] as String;
         // Set other requests as rejected so they remain visible to both parties
         info['status'] = 'rejected';
         // Clean up any previously used cancelled fields if present
@@ -529,6 +583,35 @@ class CorDashboardService {
         await Supabase.instance.client.from('Notifications').update({
           'information': info,
         }).eq('notification_id', request['notification_id']);
+
+        // Send notification to the contractor that their request was not selected
+        try {
+          await NotificationService().createNotification(
+            receiverId: receiverId,
+            receiverType: 'contractor',
+            senderId: contracteeId,
+            senderType: 'contractee',
+            type: 'Hiring Request Not Selected',
+            message: 'Your hiring request for "$projectTitle" ($projectType) was not selected. Another contractor has been chosen for this project.',
+            information: {
+              'project_id': projectId,
+              'status': 'rejected',
+              'cancelled_reason': 'Another contractor was selected',
+            },
+          );
+        } catch (notificationError) {
+          // Log error but don't fail the cancellation operation
+          await _errorService.logError(
+            errorMessage: 'Failed to send rejection notification: $notificationError',
+            module: 'Contractor Dashboard Service',
+            severity: 'Low',
+            extraInfo: {
+              'operation': 'Send Rejection Notification',
+              'notification_id': request['notification_id'],
+              'receiver_id': receiverId,
+            },
+          );
+        }
       }
     } catch (e) {
       await _errorService.logError(

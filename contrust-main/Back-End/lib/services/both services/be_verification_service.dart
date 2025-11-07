@@ -1,64 +1,106 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class VerificationService {
-  SupabaseClient get _supabase => Supabase.instance.client;
+class TextractService {
+  final SupabaseClient _supabase = Supabase.instance.client;
 
-  Future<String?> submitContractorVerification({
-    required String legalName,
-    String? pcabLicenseNo,
-    String? pcabQrText,
-    String? permitLgu,
-    String? permitNumber,
-    String? permitQrText,
+  Future<String> processDocument({
+    required Uint8List imageBytes,
+    required String filename,
+    String analysisType = 'text',
   }) async {
-    final user = _supabase.auth.currentUser;
-    if (user == null) return null;
-
-    final payload = {
-      'contractor_id': user.id,
-      'legal_name_submitted': legalName,
-      if (pcabLicenseNo != null && pcabLicenseNo.isNotEmpty) 'pcab_license_no': pcabLicenseNo,
-      if (pcabQrText != null && pcabQrText.isNotEmpty) 'pcab_qr_text': pcabQrText,
-      if (permitLgu != null && permitLgu.isNotEmpty) 'permit_lgu': permitLgu,
-      if (permitNumber != null && permitNumber.isNotEmpty) 'permit_number': permitNumber,
-      if (permitQrText != null && permitQrText.isNotEmpty) 'permit_qr_text': permitQrText,
-    };
-
-    final inserted = await _supabase
-        .from('contractor_verifications')
-        .insert(payload)
-        .select('id')
-        .maybeSingle();
-
-    final verificationId = inserted?['id']?.toString();
-
     try {
-      await _supabase.functions.invoke(
-        'run-verification',
+      // 1. Create document record
+      final documentResponse = await _supabase
+          .from('documents')
+          .insert({
+            'original_filename': filename,
+            'file_size': imageBytes.length,
+            'file_type': _getFileType(filename),
+            'processing_status': 'pending',
+          })
+          .select()
+          .single();
+
+      final documentId = documentResponse['id'];
+
+      // 2. Convert image to base64
+      final base64Image = base64Encode(imageBytes);
+
+      // 3. Call edge function
+      final response = await _supabase.functions.invoke(
+        'textract-processor',
         body: {
-          'verificationId': verificationId,
-          'contractorId': user.id,
+          'documentId': documentId,
+          'imageBase64': base64Image,
+          'analysisType': analysisType,
         },
       );
-    } catch (_) {
-      // 
+
+      if (response.status != 200) {
+        final errorData = response.data;
+        final errorMessage = errorData?['error'] ?? errorData?['message'] ?? 'Processing failed';
+        throw Exception('Processing failed: $errorMessage');
+      }
+
+      final result = response.data;
+      return result['extractedText'] ?? '';
+
+    } catch (e) {
+      throw Exception('Failed to process document: $e');
     }
-
-    return verificationId;
   }
 
-  Future<Map<String, dynamic>?> getLatestVerification() async {
-    final user = _supabase.auth.currentUser;
-    if (user == null) return null;
-    final row = await _supabase
-        .from('contractor_verifications')
-        .select()
-        .eq('contractor_id', user.id)
-        .order('created_at', ascending: false)
-        .limit(1)
-        .maybeSingle();
-    return row;
+  Future<List<Map<String, dynamic>>> getUserDocuments() async {
+    final response = await _supabase
+        .from('documents')
+        .select('''
+          *,
+          textract_results (
+            id,
+            extracted_text,
+            confidence_score,
+            processing_time_ms,
+            created_at
+          )
+        ''')
+        .order('created_at', ascending: false);
+
+    return List<Map<String, dynamic>>.from(response);
   }
+
+  Future<Map<String, dynamic>?> getDocumentDetails(String documentId) async {
+    final response = await _supabase
+        .from('documents')
+        .select('''
+          *,
+          textract_results (
+            *,
+            document_blocks (*),
+            extracted_key_values (*),
+            extracted_tables (*)
+          )
+        ''')
+        .eq('id', documentId)
+        .single();
+
+    return response;
+  }
+
+  String _getFileType(String filename) {
+    final extension = filename.split('.').last.toLowerCase();
+    switch (extension) {
+      case 'pdf':
+        return 'application/pdf';
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      default:
+        return 'application/octet-stream';
+    }
+  }
+
 }
-
-
