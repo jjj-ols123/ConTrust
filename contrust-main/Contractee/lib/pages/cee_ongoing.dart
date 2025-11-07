@@ -7,6 +7,7 @@ import 'package:backend/utils/be_constraint.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractee/build/buildongoing.dart';
 import 'package:contractee/build/buildceeprofile.dart';
+import 'package:contractee/pages/cee_project_dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -44,26 +45,35 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
   final List<StreamSubscription> _subscriptions = [];
   Timer? _debounceTimer;
   Future<List<List<Map<String, dynamic>>>>? _tabDataFuture;
+  StreamController<Map<String, dynamic>>? _controller;
+  Stream<Map<String, dynamic>>? _projectStream;
+  bool _isRetryingRealtime = false;
 
   @override
   void initState() {
     super.initState();
-    _initializeData();
-    _attachRealtimeListeners();
+    _initializeStreams();
   }
 
-  Future<void> _initializeData() async {
-    await loadData();
+  void _initializeStreams() {
+    _disposeRealtime();
+    _controller = StreamController<Map<String, dynamic>>.broadcast();
+    _projectStream = _controller!.stream;
+    _attachRealtimeListeners();
+    _emitAggregatedData();
     _getChatRoomId();
-    // Note: _checkChatPermission and _loadContractorData are already called in loadData()
+  }
+
+  void _debouncedEmitAggregatedData() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      _emitAggregatedData();
+    });
   }
 
   @override
   void dispose() {
-    for (final sub in _subscriptions) {
-      sub.cancel();
-    }
-    _debounceTimer?.cancel();
+    _disposeRealtime();
     reportController.dispose();
     costAmountController.dispose();
     costNoteController.dispose();
@@ -71,73 +81,165 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
     super.dispose();
   }
 
-  void _attachRealtimeListeners() {
-    final client = Supabase.instance.client;
-    
+  void _disposeRealtime() {
+    _debounceTimer?.cancel();
+    for (final sub in _subscriptions) {
+      sub.cancel();
+    }
+    _subscriptions.clear();
+    _controller?.close();
+    _controller = null;
+    _isRetryingRealtime = false;
+  }
 
-    void debouncedLoadData() {
-      _debounceTimer?.cancel();
-      _debounceTimer = Timer(const Duration(milliseconds: 300), () {
-        if (mounted) {
-          setState(() {
-            _tabDataFuture = _getTabData();
-          });
-        }
-      });
+  void _attachRealtimeListeners() {
+    final supabase = Supabase.instance.client;
+    
+    void safeListen(Stream stream, String tableName) {
+      _subscriptions.add(
+        stream.listen(
+          (_) => _debouncedEmitAggregatedData(),
+          onError: (error) {
+            if (mounted && !_isRetryingRealtime) {
+              debugPrint('Realtime subscription error for $tableName: $error');
+              // Dispose existing subscriptions before retrying to prevent channel buildup
+              _isRetryingRealtime = true;
+              Future.delayed(const Duration(seconds: 5), () {
+                if (mounted) {
+                  // Dispose all subscriptions before retrying
+                  for (final sub in _subscriptions) {
+                    sub.cancel();
+                  }
+                  _subscriptions.clear();
+                  _isRetryingRealtime = false;
+                  _attachRealtimeListeners();
+                } else {
+                  _isRetryingRealtime = false;
+                }
+              });
+            }
+          },
+          cancelOnError: false,
+        ),
+      );
     }
     
-    _subscriptions.add(
-      client
-          .from('Projects')
-          .stream(primaryKey: ['project_id'])
-          .eq('project_id', widget.projectId)
-          .listen((_) => debouncedLoadData()),
-    );
-    _subscriptions.add(
-      client
-          .from('ProjectTasks')
-          .stream(primaryKey: ['task_id'])
-          .eq('project_id', widget.projectId)
-          .listen((_) => debouncedLoadData()),
-    );
-    _subscriptions.add(
-      client
-          .from('ProjectReports')
-          .stream(primaryKey: ['report_id'])
-          .eq('project_id', widget.projectId)
-          .listen((_) => debouncedLoadData()),
-    );
-    _subscriptions.add(
-      client
-          .from('ProjectPhotos')
-          .stream(primaryKey: ['photo_id'])
-          .eq('project_id', widget.projectId)
-          .listen((_) => debouncedLoadData()),
-    );
-    _subscriptions.add(
-      client
-          .from('ProjectMaterials')
-          .stream(primaryKey: ['material_id'])
-          .eq('project_id', widget.projectId)
-          .listen((_) => debouncedLoadData()),
-    );
-    _subscriptions.add(
-      client
-          .from('Contracts')
-          .stream(primaryKey: ['contract_id'])
-          .eq('project_id', widget.projectId)
-          .listen((_) => debouncedLoadData()),
-    );
+    try {
+      safeListen(
+        supabase
+            .from('Projects')
+            .stream(primaryKey: ['project_id'])
+            .eq('project_id', widget.projectId),
+        'Projects',
+      );
+      safeListen(
+        supabase
+            .from('ProjectTasks')
+            .stream(primaryKey: ['task_id'])
+            .eq('project_id', widget.projectId),
+        'ProjectTasks',
+      );
+      safeListen(
+        supabase
+            .from('ProjectReports')
+            .stream(primaryKey: ['report_id'])
+            .eq('project_id', widget.projectId),
+        'ProjectReports',
+      );
+      safeListen(
+        supabase
+            .from('ProjectPhotos')
+            .stream(primaryKey: ['photo_id'])
+            .eq('project_id', widget.projectId),
+        'ProjectPhotos',
+      );
+      safeListen(
+        supabase
+            .from('ProjectMaterials')
+            .stream(primaryKey: ['material_id'])
+            .eq('project_id', widget.projectId),
+        'ProjectMaterials',
+      );
+      safeListen(
+        supabase
+            .from('Contracts')
+            .stream(primaryKey: ['contract_id'])
+            .eq('project_id', widget.projectId),
+        'Contracts',
+      );
+    } catch (e) {
+      debugPrint('Error setting up realtime listeners: $e');
+    }
+  }
+
+  Future<void> _emitAggregatedData() async {
+    try {
+      final data = await _loadProjectData();
+      if (!(_controller?.isClosed ?? true)) {
+        _controller!.add(data);
+      }
+    } catch (e) {
+      // Continue
+    }
+  }
+
+  Future<Map<String, dynamic>> _loadProjectData() async {
+    final projectDetails = await _fetchService.fetchProjectDetails(widget.projectId);
+    if (projectDetails == null) {
+      return {
+        'projectDetails': {},
+        'tasks': [],
+        'reports': [],
+        'photos': [],
+        'costs': [],
+        'contracts': [],
+        'progress': 0.0,
+      };
+    }
+
+    final tasks = await _fetchService.fetchProjectTasks(widget.projectId);
+    final reports = await _fetchService.fetchProjectReports(widget.projectId);
+    final photos = await _fetchService.fetchProjectPhotos(widget.projectId);
+    final costs = await _fetchService.fetchProjectCosts(widget.projectId);
+
+    Map<String, dynamic>? contractData;
+    final contractId = projectDetails['contract_id'];
+    if (contractId != null) {
+      try {
+        contractData = await _fetchService.fetchContractWithDetails(
+          contractId,
+          contracteeId: supabase.auth.currentUser?.id,
+        );
+      } catch (e) {
+        // Continue without contract data
+      }
+    }
+
+    final progress = (projectDetails['progress'] as num?)?.toDouble() ?? 0.0;
+    
+    return {
+      'projectDetails': projectDetails,
+      'tasks': tasks,
+      'reports': reports,
+      'photos': photos,
+      'costs': costs,
+      'contracts': contractData != null ? [contractData] : [],
+      'progress': progress,
+    };
   }
 
   Future<void> _getChatRoomId() async {
     try {
       final chatRoomId = await _fetchService.fetchChatRoomId(widget.projectId);
-      setState(() {
-        _chatRoomId = chatRoomId;
-      });
+      if (mounted) {
+        setState(() {
+          _chatRoomId = chatRoomId;
+        });
+      }
     } catch (e) {
-      ConTrustSnackBar.error(context, 'Error getting chatroom_id:');
+      if (mounted) {
+        ConTrustSnackBar.error(context, 'Error getting chatroom_id:');
+      }
     }
   }
 
@@ -148,13 +250,17 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
         final contracteeId = supabase.auth.currentUser?.id;
         if (contractorId != null && contracteeId != null) {
           final canChat = await functionConstraint(contractorId, contracteeId);
-          setState(() {
-            _canChat = canChat;
-          });
+          if (mounted) {
+            setState(() {
+              _canChat = canChat;
+            });
+          }
         }
       }
     } catch (e) {
-      ConTrustSnackBar.error(context, 'Error checking chat permission: ');
+      if (mounted) {
+        ConTrustSnackBar.error(context, 'Error checking chat permission: ');
+      }
     }
   }
 
@@ -168,9 +274,11 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
               .select('firm_name, profile_photo')
               .eq('contractor_id', contractorId)
               .single();
-          setState(() {
-            _contractorData = contractorData;
-          });
+          if (mounted) {
+            setState(() {
+              _contractorData = contractorData;
+            });
+          }
         }
       }
     } catch (e) {
@@ -187,69 +295,60 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
     try {
       setState(() => isLoading = true);
       
-      // Parallelize independent queries for better performance
       final results = await Future.wait([
-        _fetchService.fetchProjectDetails(widget.projectId),
-        _fetchService.fetchProjectTasks(widget.projectId),
+        _loadProjectData(),
         _paymentService.isProjectPaid(widget.projectId),
         _paymentService.getPaymentSummary(widget.projectId),
       ]);
       
-      final data = results[0] as Map<String, dynamic>?;
-      final tasks = results[1] as List<Map<String, dynamic>>;
-      final isPaid = results[2] as bool;
-      final paymentSummary = results[3] as Map<String, dynamic>;
+      final data = results[0] as Map<String, dynamic>;
+      final isPaid = results[1] as bool;
+      final paymentSummary = results[2] as Map<String, dynamic>;
       
-      if (data == null) {
-        debugPrint('Error: fetchProjectDetails returned null for projectId: ${widget.projectId}');
+      final projectDetails = data['projectDetails'] as Map<String, dynamic>?;
+      if (projectDetails == null) {
+      if (mounted) {
         setState(() {
           isLoading = false;
           projectData = null;
         });
-        if (mounted) {
-          ConTrustSnackBar.error(context, 'Project not found. Please check the project ID.');
-        }
+        ConTrustSnackBar.error(context, 'Project not found. Please check the project ID.');
+      }
         return;
       }
       
       Map<String, dynamic>? contractData;
-      final contractId = data['contract_id'];
-      if (contractId != null) {
-        try {
-          final contract = await Supabase.instance.client
-              .from('Contracts')
-              .select()
-              .eq('contract_id', contractId)
-              .maybeSingle();
-          contractData = contract;
-        } catch (e) {
-          // Log error but don't break the flow
-          debugPrint('Error fetching contract data: $e');
-        }
+      final contracts = data['contracts'] as List?;
+      if (contracts != null && contracts.isNotEmpty) {
+        contractData = contracts.first as Map<String, dynamic>?;
       }
       
-      setState(() {
-        projectData = data;
-        _contractData = contractData;
-        _localTasks = tasks;
-        _localProgress = (data['progress'] as num?)?.toDouble() ?? 0.0;
-        _isPaid = isPaid;
-        _paymentSummary = paymentSummary;
-        isLoading = false;
-        // Cache the tab data future to prevent unnecessary rebuilds
-        _tabDataFuture = _getTabData();
-      });
+      if (mounted) {
+        setState(() {
+          projectData = projectDetails;
+          _contractData = contractData;
+          _localTasks = List<Map<String, dynamic>>.from(data['tasks'] ?? []);
+          _localProgress = (data['progress'] as num?)?.toDouble() ?? 0.0;
+          _isPaid = isPaid;
+          _paymentSummary = paymentSummary;
+          isLoading = false;
+          _tabDataFuture = _getTabData();
+        });
+      }
       
-      // Load dependent data after project data is loaded
-        _checkChatPermission(data);
-        _loadContractorData(data);
+      if (!(_controller?.isClosed ?? true)) {
+        _controller!.add(data);
+      }
+      
+      _checkChatPermission(projectDetails);
+      _loadContractorData(projectDetails);
     } catch (e) {
       debugPrint('Error in loadData: $e');
-      setState(() {
-        isLoading = false;
-        projectData = null;
-      });
       if (mounted) {
+        setState(() {
+          isLoading = false;
+          projectData = null;
+        });
         ConTrustSnackBar.error(context, 'Error loading project data. Please try again. $e');
       }
     }
@@ -462,9 +561,9 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
   void _navigateToChat() async {
     if (!_canChat) return;
     
-    final project = projectData!;
-    final contracteeId = project['contractee_id'] ?? '';
-    final contractorId = project['contractor_id'] ?? '';
+    final projectDetails = projectData!['projectDetails'] as Map<String, dynamic>? ?? projectData!;
+    final contracteeId = projectDetails['contractee_id'] ?? supabase.auth.currentUser?.id ?? '';
+    final contractorId = projectDetails['contractor_id'] ?? '';
     final contractorName = _contractorData?['firm_name'] ?? 'Contractor';
     final contractorPhoto = _contractorData?['profile_photo'] ?? '';
 
@@ -492,8 +591,8 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
 
   Future<void> _handlePayment() async {
     try {
-      final project = projectData!;
-      final projectTitle = (project['title'] as String?) ?? 'Untitled Project';
+      final projectDetails = projectData!['projectDetails'] as Map<String, dynamic>? ?? projectData!;
+      final projectTitle = (projectDetails['title'] as String?) ?? 'Untitled Project';
       
       final customAmount = await _showAmountInputDialog(null);
         if (customAmount == null) return;
@@ -505,7 +604,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
         amount: customAmount,
         customAmount: customAmount, 
         onPaymentSuccess: () {
-          loadData();
+          _emitAggregatedData();
         },
       );
     } catch (e) {
@@ -600,6 +699,47 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                       dialogMessage,
                       style: const TextStyle(fontSize: 14, color: Colors.black87),
                     ),
+                    if (_paymentSummary != null && _paymentSummary!['remaining'] != null) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.blue.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Amount to be Paid',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '₱${(_paymentSummary!['remaining'] as num).toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 20),
                     TextField(
                       controller: controller,
@@ -607,7 +747,9 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                       decoration: InputDecoration(
                         labelText: 'Amount',
                         prefixText: '₱',
-                        hintText: '0.00',
+                        hintText: _paymentSummary != null && _paymentSummary!['remaining'] != null
+                            ? (_paymentSummary!['remaining'] as num).toStringAsFixed(2)
+                            : '0.00',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -675,109 +817,65 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: Colors.amber)),
-      );
-    }
-    
-    if (projectData == null) {
-      return const Scaffold(
-        body: Center(child: Text('Project not found.')),
-      );
-    }
-    
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       body: SafeArea(
-        child: _buildResponsiveContent(),
-      ),
-    );
-  }
-
-  Widget _buildResponsiveContent() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 700;
-
-    if (isMobile) {
-      return _buildMobileContent();
-    } else {
-      return _buildDesktopContent();
-    }
-  }
-
-  Widget _buildMobileContent() {
-    final project = projectData!;
-    final projectTitle = project['title'] ?? 'Project';
-    final contractorName = _contractorData?['firm_name'] ?? 'Contractor';
-    final address = project['location'] ?? '';
-    
-    String startDate = project['start_date'] ?? '';
-    if (startDate.isEmpty && _contractData != null && _contractData!['type'] == 'custom') {
-      try {
-        final fieldValues = _contractData!['field_values'];
-        if (fieldValues != null && fieldValues is Map) {
-          final startDateValue = fieldValues['Project.StartDate'];
-          if (startDateValue != null && startDateValue.toString().isNotEmpty) {
-            startDate = startDateValue.toString();
-          }
-        }
-      } catch (e) {
-        debugPrint('Error parsing contract start date: $e');
-      }
-    }
-    
-    final estimatedCompletion = project['estimated_completion'] ?? '';
-    final duration = project['duration'] as int?;
-    final projectStatus = project['status'] ?? '';
-
-    return CustomScrollView(
-      slivers: [
-        CeeProfileBuildMethods.buildStickyHeader('Ongoing Project'),
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: CeeOngoingBuildMethods.buildMobileLayout(
-            projectTitle: projectTitle,
-            clientName: contractorName,
-            address: address,
-            startDate: startDate,
-            estimatedCompletion: estimatedCompletion,
-            duration: duration,
-        progress: _localProgress,
-        selectedTab: selectedTab,
-        onTabChanged: onTabChanged,
-        onRefresh: null,
-        onChat: _canChat && _chatRoomId != null ? _navigateToChat : null,
-        canChat: _canChat,
-        onPayment: projectStatus == 'active' ? _handlePayment : null,
-        isPaid: _isPaid,
-        onViewPaymentHistory: _isPaid ? _showPaymentHistory : null,
-        paymentButtonText: _paymentSummary?['payment_status'] == 'partial' ? 'Make Payment' : null,
-        tabContent: FutureBuilder<List<List<Map<String, dynamic>>>>(
-          future: _tabDataFuture,
+        child: StreamBuilder<Map<String, dynamic>>(
+          stream: _projectStream,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator(color: Colors.amber));
+              return const Center(
+                child: CircularProgressIndicator(
+                  color: Colors.amber,
+                ),
+              );
             }
 
             if (snapshot.hasError) {
+              final error = snapshot.error;
+              final isRealtimeError = error.toString().contains('RealtimeSubscribeException');
+              
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error_outline, color: Colors.red, size: 48),
+                    Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: isRealtimeError ? Colors.orange.shade300 : Colors.red.shade300,
+                    ),
                     const SizedBox(height: 16),
                     Text(
-                      'Error loading data',
-                      style: TextStyle(color: Colors.red.shade700),
+                      isRealtimeError 
+                          ? 'Connection issue - retrying...' 
+                          : 'Error loading project',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade700,
+                      ),
                     ),
                     const SizedBox(height: 8),
-                    TextButton(
+                    Text(
+                      'Please try again later',
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
                       onPressed: () {
-                        setState(() {
-                          _tabDataFuture = _getTabData();
-                        });
+                        if (mounted) {
+                          setState(() {
+                            _initializeStreams();
+                          });
+                        }
                       },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber,
+                        foregroundColor: Colors.white,
+                      ),
                       child: const Text('Retry'),
                     ),
                   ],
@@ -785,127 +883,57 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
               );
             }
 
-            final data = snapshot.data ?? [[], [], []];
-            final reports = data[0];
-            final photos = data[1];
-            final costs = data[2];
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const Center(
+                child: Text('Project not found.'),
+              );
+            }
 
-            return CeeOngoingBuildMethods.buildTabContent(
-              context: context,
-              selectedTab: selectedTab,
-              tasks: _localTasks,
-              reports: reports,
-              photos: photos,
-              costs: costs,
-              createSignedUrl: createSignedPhotoUrl,
-              onViewReport: onViewReport,
-              onViewPhoto: onViewPhoto,
-              onViewMaterial: onViewMaterial,
-            );
+            final data = snapshot.data!;
+            projectData = data;
+            _localTasks = List<Map<String, dynamic>>.from(data['tasks'] ?? []);
+            _localProgress = (data['progress'] as num?)?.toDouble() ?? 0.0;
+
+            final projectDetails = data['projectDetails'] as Map<String, dynamic>?;
+            if (projectDetails != null) {
+              _checkChatPermission(projectDetails);
+              _loadContractorData(projectDetails);
+            }
+
+            return _buildResponsiveContent();
           },
         ),
-            ),
-          ),
-        ],
+      ),
     );
   }
 
+  Widget _buildResponsiveContent() {
+    return _buildDesktopContent();
+  }
+
   Widget _buildDesktopContent() {
-    final project = projectData!;
-    final projectTitle = project['title'] ?? 'Project';
-    final contractorName = _contractorData?['firm_name'] ?? 'Contractor';
-    final address = project['location'] ?? '';
+    final projectDetails = projectData!['projectDetails'] as Map<String, dynamic>? ?? projectData!;
+    final projectStatus = projectDetails['status'] ?? '';
     
-    String startDate = project['start_date'] ?? '';
-    if (startDate.isEmpty && _contractData != null && _contractData!['type'] == 'custom') {
-      try {
-        final fieldValues = _contractData!['field_values'];
-        if (fieldValues != null && fieldValues is Map) {
-          final startDateValue = fieldValues['Project.StartDate'];
-          if (startDateValue != null && startDateValue.toString().isNotEmpty) {
-            startDate = startDateValue.toString();
-          }
-        }
-      } catch (e) {
-        debugPrint('Error parsing contract start date: $e');
-      }
-    }
-    
-    final estimatedCompletion = project['estimated_completion'] ?? '';
-    final duration = project['duration'] as int?;
-    final projectStatus = project['status'] ?? '';
-
-    return CustomScrollView(
-      slivers: [
-        CeeProfileBuildMethods.buildStickyHeader('Ongoing Project'),
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: FutureBuilder<List<List<Map<String, dynamic>>>>(
-              future: _tabDataFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: Colors.amber));
-                }
-
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.error_outline, color: Colors.red, size: 48),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Error loading data',
-                          style: TextStyle(color: Colors.red.shade700),
-                        ),
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              _tabDataFuture = _getTabData();
-                            });
-                          },
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                final data = snapshot.data ?? [[], [], []];
-                final reports = data[0];
-                final photos = data[1];
-                final costs = data[2];
-
-                return CeeOngoingBuildMethods.buildDesktopGridLayout(
-                  context: context,
-                  projectTitle: projectTitle,
-                  clientName: contractorName,
-                  address: address,
-                  startDate: startDate,
-                  estimatedCompletion: estimatedCompletion,
-                  duration: duration,
-                  progress: _localProgress,
-                  tasks: _localTasks,
-                  reports: reports,
-            photos: photos,
-            costs: costs,
-            createSignedUrl: createSignedPhotoUrl,
-            onViewReport: onViewReport,
-            onViewPhoto: onViewPhoto,
-            onViewMaterial: onViewMaterial,
-            onRefresh: null,
-            onChat: _canChat && _chatRoomId != null ? _navigateToChat : null,
-            canChat: _canChat,
+    return RefreshIndicator(
+      onRefresh: () async {
+        await _emitAggregatedData();
+        await _getChatRoomId();
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8F9FA),
+        body: SafeArea(
+          child: CeeProjectDashboard(
+            projectId: widget.projectId,
+            projectData: projectData,
+            createSignedPhotoUrl: createSignedPhotoUrl,
             onPayment: projectStatus == 'active' ? _handlePayment : null,
             isPaid: _isPaid,
             onViewPaymentHistory: _isPaid ? _showPaymentHistory : null,
             paymentButtonText: _paymentSummary?['payment_status'] == 'partial' ? 'Make Payment' : null,
-          );
-        },
+          ),
+        ),
       ),
-    ),
-      ],
     );
   }
 

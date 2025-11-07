@@ -1043,6 +1043,29 @@ class FetchService {
     }
   }
 
+  Future<List<Map<String, dynamic>>> fetchContractorProjectsIncludingCompleted(String contractorId) async {
+    try {
+      final res = await _supabase
+          .from('Projects')
+          .select('project_id,title,status')
+          .eq('contractor_id', contractorId)
+          .inFilter('status', ['active', 'ongoing', 'completed']) 
+          .order('created_at', ascending: false);
+      return List<Map<String, dynamic>>.from(res);
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch contractor projects including completed: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Contractor Projects Including Completed',
+          'contractor_id': contractorId,
+        },
+      );
+      return [];
+    }
+  }
+
   Future<List<Map<String, dynamic>>> fetchContracteeActiveProjects(String contracteeId) async {
     try {
       final res = await _supabase

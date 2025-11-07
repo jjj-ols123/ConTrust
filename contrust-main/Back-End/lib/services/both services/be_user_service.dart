@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 
 class UserService {
   SupabaseClient get _supabase => Supabase.instance.client;
@@ -300,14 +300,24 @@ class UserService {
     String? fileName,
     bool upsert = false,
   }) async {
-    final String resolvedFileName = fileName ?? '${DateTime.now().millisecondsSinceEpoch}.png';
-    final String filePath = folderPath != null ? '$folderPath/$resolvedFileName' : resolvedFileName;
+    try {
+      final String resolvedFileName = fileName ?? '${DateTime.now().millisecondsSinceEpoch}.png';
+      final String filePath = folderPath != null ? '$folderPath/$resolvedFileName' : resolvedFileName;
 
-    await _supabase.storage
-        .from(bucketName)
-        .uploadBinary(filePath, imageBytes, fileOptions: FileOptions(upsert: upsert));
+      debugPrint('[uploadImage] Uploading to bucket: $bucketName, path: $filePath, size: ${imageBytes.length} bytes');
 
-    return _supabase.storage.from(bucketName).getPublicUrl(filePath);
+      await _supabase.storage
+          .from(bucketName)
+          .uploadBinary(filePath, imageBytes, fileOptions: FileOptions(upsert: upsert));
+
+      final publicUrl = _supabase.storage.from(bucketName).getPublicUrl(filePath);
+      debugPrint('[uploadImage] Upload successful, public URL: $publicUrl');
+      
+      return publicUrl;
+    } catch (e) {
+      debugPrint('[uploadImage] Error uploading image: $e');
+      rethrow;
+    }
   }
 
   Future<bool> updateProfilePhoto(String userId, String imageUrl,
@@ -326,11 +336,18 @@ class UserService {
     String contractorId,
     Uint8List imageBytes,
   ) async {
-    final String contractorFolder = 'contractor_$contractorId';
-    
-    final String imageUrl = await uploadImage(imageBytes, 'pastprojects', folderPath: contractorFolder);
-
     try {
+      final String contractorFolder = 'contractor_$contractorId';
+      
+      // Upload image to storage
+      final String imageUrl = await uploadImage(imageBytes, 'pastprojects', folderPath: contractorFolder);
+      
+      if (imageUrl.isEmpty) {
+        debugPrint('[addPastProjectPhoto] Failed to get image URL after upload');
+        return false;
+      }
+
+      // Fetch current past projects
       final response = await _supabase
           .from('Contractor')
           .select('past_projects')
@@ -341,12 +358,17 @@ class UserService {
           ? List<String>.from(response['past_projects'])
           : [];
 
+      // Add new image URL
       pastProjects.add(imageUrl);
 
+      // Update database
       await _supabase.from('Contractor').update(
           {'past_projects': pastProjects}).eq('contractor_id', contractorId);
+      
+      debugPrint('[addPastProjectPhoto] Successfully uploaded and saved photo: $imageUrl');
       return true;
     } catch (error) {
+      debugPrint('[addPastProjectPhoto] Error: $error');
       return false;
     }
   }

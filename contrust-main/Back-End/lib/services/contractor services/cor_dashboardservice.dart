@@ -112,7 +112,38 @@ class CorDashboardService {
         }
       }
 
-      final totalEarnings = completed * 50000.0;
+      // Calculate total earnings from actual payments
+      double totalEarnings = 0.0;
+      List<Map<String, dynamic>> allPayments = [];
+      
+      for (var project in projects) {
+        final projectdata = project['projectdata'] as Map<String, dynamic>? ?? {};
+        final payments = projectdata['payments'] as List<dynamic>? ?? [];
+        
+        for (var payment in payments) {
+          final paymentMap = Map<String, dynamic>.from(payment);
+          final amount = (paymentMap['amount'] as num?)?.toDouble() ?? 0.0;
+          if (amount > 0) {
+            allPayments.add({
+              'amount': amount,
+              'date': paymentMap['date'],
+              'reference': paymentMap['reference'],
+              'project_id': project['project_id'],
+              'project_title': project['title'] ?? 'Untitled Project',
+              'contract_type': paymentMap['contract_type'],
+            });
+            totalEarnings += amount;
+          }
+        }
+      }
+      
+      // Sort payments by date (newest first)
+      allPayments.sort((a, b) {
+        final dateA = a['date'] as String? ?? '';
+        final dateB = b['date'] as String? ?? '';
+        return dateB.compareTo(dateA);
+      });
+      
       final totalClients = projects.map((p) => p['contractee_id']).toSet().length;
 
       // Batch fetch tasks for all active projects
@@ -162,6 +193,7 @@ class CorDashboardService {
         'rating': ratingVal.toDouble(),
         'recentActivities': activeProjectList,
         'totalEarnings': totalEarnings,
+        'allPayments': allPayments,
         'totalClients': totalClients,
         'localTasks': localTasks,
       };

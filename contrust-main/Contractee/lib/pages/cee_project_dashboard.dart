@@ -2,41 +2,42 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:backend/services/contractor services/cor_ongoingservices.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractor/build/buildongoing.dart';
+import 'package:contractee/build/buildongoing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:http/http.dart' as http;
 import 'dart:html' as html if (dart.library.html) 'dart:html';
 import 'dart:ui_web' as ui_web if (dart.library.html) 'dart:ui_web';
 
-class CorProjectDashboard extends StatefulWidget {
+
+class CeeProjectDashboard extends StatefulWidget {
   final String projectId;
   final Map<String, dynamic>? projectData;
-  final String? contractorFirmName;
-  final CorOngoingService ongoingService;
   final Future<String?> Function(String?) createSignedPhotoUrl;
+  final VoidCallback? onPayment;
+  final bool isPaid;
+  final VoidCallback? onViewPaymentHistory;
+  final String? paymentButtonText;
 
-  const CorProjectDashboard({
+  const CeeProjectDashboard({
     super.key,
     required this.projectId,
     this.projectData,
-    this.contractorFirmName,
-    required this.ongoingService,
     required this.createSignedPhotoUrl,
+    this.onPayment,
+    this.isPaid = false,
+    this.onViewPaymentHistory,
+    this.paymentButtonText,
   });
 
   @override
-  State<CorProjectDashboard> createState() => _CorProjectDashboardState();
+  State<CeeProjectDashboard> createState() => _CeeProjectDashboardState();
 }
 
-class _CorProjectDashboardState extends State<CorProjectDashboard> {
+class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
   DateTime _selectedDate = DateTime.now();
   DateTime _focusedDate = DateTime.now();
 
@@ -46,24 +47,20 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
   List<Map<String, dynamic>> _materials = [];
   bool _isLoading = true;
   
-  String? _contracteeName;
+  String? _contractorName;
   String? _contractType;
   DateTime? _startDate;
   DateTime? _estimatedCompletion;
-  Map<String, dynamic>? _contractData; // Store contract data including field_values
-  String? _projectStatus; // Track project status
+  Map<String, dynamic>? _contractData;
   final FetchService _fetchService = FetchService();
-  final TextEditingController _reportController = TextEditingController();
   
   // Mobile layout state
   String _selectedTab = 'Tasks';
-  PageController? _activitiesPageController;
   PageController? _calendarActivitiesPageController;
 
   @override
   void initState() {
     super.initState();
-    // Use widget.projectData if available (from real-time stream), otherwise load
     if (widget.projectData != null) {
       _updateFromProjectData(widget.projectData!);
     } else {
@@ -72,9 +69,8 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
   }
 
   @override
-  void didUpdateWidget(CorProjectDashboard oldWidget) {
+  void didUpdateWidget(CeeProjectDashboard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Update local state when projectData changes from real-time updates
     if (widget.projectData != null && widget.projectData != oldWidget.projectData) {
       _updateFromProjectData(widget.projectData!);
     }
@@ -82,13 +78,10 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
 
   @override
   void dispose() {
-    _reportController.dispose();
-    _activitiesPageController?.dispose();
     _calendarActivitiesPageController?.dispose();
     super.dispose();
   }
 
-  /// Update local state from projectData (used for real-time updates)
   void _updateFromProjectData(Map<String, dynamic> data) {
     final projectDetails = data['projectDetails'] as Map<String, dynamic>?;
     
@@ -97,50 +90,53 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       _reports = List<Map<String, dynamic>>.from(data['reports'] ?? []);
       _photos = List<Map<String, dynamic>>.from(data['photos'] ?? []);
       _materials = List<Map<String, dynamic>>.from(data['costs'] ?? []);
-      _projectStatus = projectDetails?['status'] as String?;
       _isLoading = false;
     });
 
-    // Update dates and contract info asynchronously (non-blocking)
     _updateContractInfo(projectDetails);
   }
 
-  /// Update contract info (contractee name, contract type, dates) - non-blocking
   Future<void> _updateContractInfo(Map<String, dynamic>? projectDetails) async {
     if (projectDetails == null) return;
 
-    final contracteeId = projectDetails['contractee_id'] as String?;
-    if (contracteeId != null) {
-      final contracteeData = await _fetchService.fetchContracteeData(contracteeId);
-      if (mounted) {
-        setState(() {
-          _contracteeName = contracteeData?['full_name'] as String?;
-        });
+    final contractorId = projectDetails['contractor_id'] as String?;
+    if (contractorId != null) {
+      try {
+        final contractorData = await _fetchService.fetchContractorData(contractorId);
+        if (mounted) {
+          setState(() {
+            _contractorName = contractorData?['firm_name'] as String?;
+          });
+        }
+      } catch (e) {
+        // Continue without contractor name
       }
     }
 
     final contractId = projectDetails['contract_id'] as String?;
     if (contractId != null) {
-      final contract = await _fetchService.fetchContractWithDetails(
-        contractId,
-        contractorId: Supabase.instance.client.auth.currentUser?.id,
-      );
-      if (contract != null && mounted) {
-        setState(() {
-          _contractData = contract; // Store full contract data
-          final contractTypeData = contract['contract_type'] as Map<String, dynamic>?;
-          _contractType = contractTypeData?['template_name'] as String?;
-        });
+      try {
+        final contract = await _fetchService.fetchContractWithDetails(
+          contractId,
+          contracteeId: Supabase.instance.client.auth.currentUser?.id,
+        );
+        if (contract != null && mounted) {
+          setState(() {
+            _contractData = contract;
+            final contractTypeData = contract['contract_type'] as Map<String, dynamic>?;
+            _contractType = contractTypeData?['template_name'] as String?;
+          });
+        }
+      } catch (e) {
+        // Continue without contract data
       }
     }
 
-    // Parse dates based on contract type
     if (mounted) {
       final isCustomContract = _contractType?.toLowerCase() == 'custom';
       
       setState(() {
         if (isCustomContract) {
-          // For CUSTOM contracts, use dates from Projects table
           final startDateStr = projectDetails['start_date'] as String?;
           if (startDateStr != null && startDateStr.isNotEmpty) {
             try {
@@ -165,15 +161,12 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             _estimatedCompletion = null;
           }
         } else if (_contractData != null) {
-          // For non-CUSTOM contracts, extract dates from field_values
           final fieldValues = _contractData!['field_values'] as Map<String, dynamic>?;
           if (fieldValues != null) {
-            // Extract start date from field_values
             final startDateStr = fieldValues['Project.StartDate'] as String?;
             if (startDateStr != null && startDateStr.isNotEmpty) {
               try {
-                // Handle different date formats (e.g., "2025-11-07" or "2025-11-07 00:00:00")
-                final dateStr = startDateStr.split(' ')[0]; // Take only date part
+                final dateStr = startDateStr.split(' ')[0];
                 final parsed = DateTime.parse(dateStr);
                 _startDate = DateTime(parsed.year, parsed.month, parsed.day);
               } catch (_) {
@@ -183,12 +176,10 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               _startDate = null;
             }
 
-            // Extract estimated completion from field_values
             final completionDateStr = fieldValues['Project.CompletionDate'] as String?;
             if (completionDateStr != null && completionDateStr.isNotEmpty) {
               try {
-                // Handle different date formats
-                final dateStr = completionDateStr.split(' ')[0]; // Take only date part
+                final dateStr = completionDateStr.split(' ')[0];
                 final parsed = DateTime.parse(dateStr);
                 _estimatedCompletion = DateTime(parsed.year, parsed.month, parsed.day);
               } catch (_) {
@@ -198,7 +189,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               _estimatedCompletion = null;
             }
           } else {
-            // Fallback to Projects table if field_values is empty
             final startDateStr = projectDetails['start_date'] as String?;
             if (startDateStr != null && startDateStr.isNotEmpty) {
               try {
@@ -224,7 +214,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             }
           }
         } else {
-          // No contract found, use Projects table
           final startDateStr = projectDetails['start_date'] as String?;
           if (startDateStr != null && startDateStr.isNotEmpty) {
             try {
@@ -256,44 +245,74 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
   Future<void> _loadData() async {
     try {
       setState(() => _isLoading = true);
-      final data = await widget.ongoingService.loadProjectData(
-        widget.projectId,
-        contractorId: Supabase.instance.client.auth.currentUser?.id,
-      );
-
-      final projectDetails = data['projectDetails'] as Map<String, dynamic>?;
-      final contracteeId = projectDetails?['contractee_id'] as String?;
       
-      // Fetch contractee name
-      if (contracteeId != null) {
-        final contracteeData = await _fetchService.fetchContracteeData(contracteeId);
-        _contracteeName = contracteeData?['full_name'] as String?;
+      final projectDetails = await _fetchService.fetchProjectDetails(widget.projectId);
+      if (projectDetails == null) {
+        setState(() => _isLoading = false);
+        return;
       }
-      
-      // Fetch contract data to get contract_type and field_values
-      final contractId = projectDetails?['contract_id'] as String?;
-      if (contractId != null) {
-        final contract = await _fetchService.fetchContractWithDetails(
-          contractId,
-          contractorId: Supabase.instance.client.auth.currentUser?.id,
-        );
-        if (contract != null) {
-          _contractData = contract; // Store full contract data
-          final contractTypeData = contract['contract_type'] as Map<String, dynamic>?;
-          _contractType = contractTypeData?['template_name'] as String?;
+
+      final contractorId = projectDetails['contractor_id'] as String?;
+      if (contractorId != null) {
+        try {
+          final contractorData = await _fetchService.fetchContractorData(contractorId);
+          _contractorName = contractorData?['firm_name'] as String?;
+        } catch (e) {
+          // Continue without contractor name
         }
       }
+
+      final contractId = projectDetails['contract_id'] as String?;
+      if (contractId != null) {
+        try {
+          final contract = await _fetchService.fetchContractWithDetails(
+            contractId,
+            contracteeId: Supabase.instance.client.auth.currentUser?.id,
+          );
+          if (contract != null) {
+            _contractData = contract;
+            final contractTypeData = contract['contract_type'] as Map<String, dynamic>?;
+            _contractType = contractTypeData?['template_name'] as String?;
+          }
+        } catch (e) {
+          // Continue without contract data
+        }
+      }
+
+      final isCustomContract = _contractType?.toLowerCase() == 'custom';
       
-      // Parse dates based on contract type
-      if (projectDetails != null) {
-        final isCustomContract = _contractType?.toLowerCase() == 'custom';
-        
-        if (isCustomContract) {
-          // For CUSTOM contracts, use dates from Projects table
-          final startDateStr = projectDetails['start_date'] as String?;
+      if (isCustomContract) {
+        final startDateStr = projectDetails['start_date'] as String?;
+        if (startDateStr != null && startDateStr.isNotEmpty) {
+          try {
+            final parsed = DateTime.parse(startDateStr);
+            _startDate = DateTime(parsed.year, parsed.month, parsed.day);
+          } catch (_) {
+            _startDate = null;
+          }
+        } else {
+          _startDate = null;
+        }
+
+        final estimatedCompletionStr = projectDetails['estimated_completion'] as String?;
+        if (estimatedCompletionStr != null && estimatedCompletionStr.isNotEmpty) {
+          try {
+            final parsed = DateTime.parse(estimatedCompletionStr);
+            _estimatedCompletion = DateTime(parsed.year, parsed.month, parsed.day);
+          } catch (_) {
+            _estimatedCompletion = null;
+          }
+        } else {
+          _estimatedCompletion = null;
+        }
+      } else if (_contractData != null) {
+        final fieldValues = _contractData!['field_values'] as Map<String, dynamic>?;
+        if (fieldValues != null) {
+          final startDateStr = fieldValues['Project.StartDate'] as String?;
           if (startDateStr != null && startDateStr.isNotEmpty) {
             try {
-              final parsed = DateTime.parse(startDateStr);
+              final dateStr = startDateStr.split(' ')[0];
+              final parsed = DateTime.parse(dateStr);
               _startDate = DateTime(parsed.year, parsed.month, parsed.day);
             } catch (_) {
               _startDate = null;
@@ -301,11 +320,12 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
           } else {
             _startDate = null;
           }
-          
-          final estimatedCompletionStr = projectDetails['estimated_completion'] as String?;
-          if (estimatedCompletionStr != null && estimatedCompletionStr.isNotEmpty) {
+
+          final completionDateStr = fieldValues['Project.CompletionDate'] as String?;
+          if (completionDateStr != null && completionDateStr.isNotEmpty) {
             try {
-              final parsed = DateTime.parse(estimatedCompletionStr);
+              final dateStr = completionDateStr.split(' ')[0];
+              final parsed = DateTime.parse(dateStr);
               _estimatedCompletion = DateTime(parsed.year, parsed.month, parsed.day);
             } catch (_) {
               _estimatedCompletion = null;
@@ -313,67 +333,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
           } else {
             _estimatedCompletion = null;
           }
-        } else if (_contractData != null) {
-          // For non-CUSTOM contracts, extract dates from field_values
-          final fieldValues = _contractData!['field_values'] as Map<String, dynamic>?;
-          if (fieldValues != null) {
-            // Extract start date from field_values
-            final startDateStr = fieldValues['Project.StartDate'] as String?;
-            if (startDateStr != null && startDateStr.isNotEmpty) {
-              try {
-                // Handle different date formats (e.g., "2025-11-07" or "2025-11-07 00:00:00")
-                final dateStr = startDateStr.split(' ')[0]; // Take only date part
-                final parsed = DateTime.parse(dateStr);
-                _startDate = DateTime(parsed.year, parsed.month, parsed.day);
-              } catch (_) {
-                _startDate = null;
-              }
-            } else {
-              _startDate = null;
-            }
-
-            // Extract estimated completion from field_values
-            final completionDateStr = fieldValues['Project.CompletionDate'] as String?;
-            if (completionDateStr != null && completionDateStr.isNotEmpty) {
-              try {
-                // Handle different date formats
-                final dateStr = completionDateStr.split(' ')[0]; // Take only date part
-                final parsed = DateTime.parse(dateStr);
-                _estimatedCompletion = DateTime(parsed.year, parsed.month, parsed.day);
-              } catch (_) {
-                _estimatedCompletion = null;
-              }
-            } else {
-              _estimatedCompletion = null;
-            }
-          } else {
-            // Fallback to Projects table if field_values is empty
-            final startDateStr = projectDetails['start_date'] as String?;
-            if (startDateStr != null && startDateStr.isNotEmpty) {
-              try {
-                final parsed = DateTime.parse(startDateStr);
-                _startDate = DateTime(parsed.year, parsed.month, parsed.day);
-              } catch (_) {
-                _startDate = null;
-              }
-            } else {
-              _startDate = null;
-            }
-
-            final estimatedCompletionStr = projectDetails['estimated_completion'] as String?;
-            if (estimatedCompletionStr != null && estimatedCompletionStr.isNotEmpty) {
-              try {
-                final parsed = DateTime.parse(estimatedCompletionStr);
-                _estimatedCompletion = DateTime(parsed.year, parsed.month, parsed.day);
-              } catch (_) {
-                _estimatedCompletion = null;
-              }
-            } else {
-              _estimatedCompletion = null;
-            }
-          }
         } else {
-          // No contract found, use Projects table
           final startDateStr = projectDetails['start_date'] as String?;
           if (startDateStr != null && startDateStr.isNotEmpty) {
             try {
@@ -399,16 +359,41 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
           }
         }
       } else {
-        _startDate = null;
-        _estimatedCompletion = null;
+        final startDateStr = projectDetails['start_date'] as String?;
+        if (startDateStr != null && startDateStr.isNotEmpty) {
+          try {
+            final parsed = DateTime.parse(startDateStr);
+            _startDate = DateTime(parsed.year, parsed.month, parsed.day);
+          } catch (_) {
+            _startDate = null;
+          }
+        } else {
+          _startDate = null;
+        }
+
+        final estimatedCompletionStr = projectDetails['estimated_completion'] as String?;
+        if (estimatedCompletionStr != null && estimatedCompletionStr.isNotEmpty) {
+          try {
+            final parsed = DateTime.parse(estimatedCompletionStr);
+            _estimatedCompletion = DateTime(parsed.year, parsed.month, parsed.day);
+          } catch (_) {
+            _estimatedCompletion = null;
+          }
+        } else {
+          _estimatedCompletion = null;
+        }
       }
 
+      final tasks = await _fetchService.fetchProjectTasks(widget.projectId);
+      final reports = await _fetchService.fetchProjectReports(widget.projectId);
+      final photos = await _fetchService.fetchProjectPhotos(widget.projectId);
+      final costs = await _fetchService.fetchProjectCosts(widget.projectId);
+
       setState(() {
-        _tasks = List<Map<String, dynamic>>.from(data['tasks'] ?? []);
-        _reports = List<Map<String, dynamic>>.from(data['reports'] ?? []);
-        _photos = List<Map<String, dynamic>>.from(data['photos'] ?? []);
-        _materials = List<Map<String, dynamic>>.from(data['costs'] ?? []);
-        _projectStatus = projectDetails?['status'] as String?;
+        _tasks = tasks;
+        _reports = reports;
+        _photos = photos;
+        _materials = costs;
         _isLoading = false;
       });
     } catch (e) {
@@ -679,7 +664,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: OngoingBuildMethods.buildRecentActivityFeed(
+      child: CeeOngoingBuildMethods.buildRecentActivityFeed(
         tasks: _tasks,
         reports: _reports,
         photos: _photos,
@@ -736,8 +721,8 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
   }
 
   /// Mobile Tab Content
-  Widget _buildMobileTabContent(String selectedTab) {
-    switch (selectedTab) {
+  Widget _buildMobileTabContent(String tab) {
+    switch (tab) {
       case 'Tasks':
         return _buildMobileTasksContainer();
       case 'Reports':
@@ -747,7 +732,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       case 'Materials':
         return _buildMobileMaterialsContainer();
       default:
-        return _buildMobileTasksContainer();
+        return const Center(child: Text('Unknown tab'));
     }
   }
 
@@ -781,12 +766,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                   ),
                 ],
               ),
-              if (_projectStatus != 'completed')
-                IconButton(
-                  icon: const Icon(Icons.add, color: Colors.amber),
-                  onPressed: _addTask,
-                  tooltip: 'Add Task',
-                ),
             ],
           ),
           const SizedBox(height: 16),
@@ -797,7 +776,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                   )
                 : SingleChildScrollView(
                     child: Column(
-                      children: _getSortedTasks().map((task) => _buildTaskItem(task)).toList(),
+                      children: _tasks.map((task) => _buildTaskItem(task)).toList(),
                     ),
                   ),
           ),
@@ -836,12 +815,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                   ),
                 ],
               ),
-              if (_projectStatus != 'completed')
-                IconButton(
-                  icon: const Icon(Icons.add, color: Colors.amber),
-                  onPressed: _addReport,
-                  tooltip: 'Add Report & Generate PDF',
-                ),
             ],
           ),
           const SizedBox(height: 16),
@@ -891,12 +864,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                   ),
                 ],
               ),
-              if (_projectStatus != 'completed')
-                IconButton(
-                  icon: const Icon(Icons.add, color: Colors.amber),
-                  onPressed: _addPhoto,
-                  tooltip: 'Add Photo',
-                ),
             ],
           ),
           const SizedBox(height: 16),
@@ -953,12 +920,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                   ),
                 ],
               ),
-              if (_projectStatus != 'completed')
-                IconButton(
-                  icon: const Icon(Icons.add, color: Colors.amber),
-                  onPressed: _goToMaterials,
-                  tooltip: 'Add Material',
-                ),
             ],
           ),
           const SizedBox(height: 16),
@@ -1025,7 +986,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     );
   }
 
-  /// Main two-column layout with flex 1 (left) and flex 3 (right)
   Widget _buildTwoColumnLayout() {
     return SizedBox(
       height: MediaQuery.of(context).size.height - 
@@ -1034,17 +994,14 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Left Column - flex 1
           Expanded(
             flex: 1,
             child: _buildLeftColumn(),
           ),
-          // Vertical Divider
           Container(
             width: 1,
             color: Colors.grey.shade300,
           ),
-          // Right Column - flex 3
           Expanded(
             flex: 3,
             child: _buildRightColumn(),
@@ -1054,7 +1011,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     );
   }
 
-  /// Left Column: Title Container, Calendar, Recent Activities
   Widget _buildLeftColumn() {
     final project = widget.projectData?['projectDetails'] as Map<String, dynamic>?;
     final projectTitle = project?['title'] ?? 'Project';
@@ -1064,221 +1020,17 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title Container with Switch Project
           _buildTitleContainer(projectTitle),
           const SizedBox(height: 16),
-          // Calendar Widget
           _buildCalendarWidget(),
           const SizedBox(height: 16),
-          // Recent Activities Container
           _buildRecentActivities(),
         ],
       ),
     );
   }
 
-  /// Title Container with Switch Project
   Widget _buildTitleContainer(String title) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'By: ${_contracteeName ?? 'Client'}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Switch Project Button
-          TextButton.icon(
-            onPressed: _switchProject,
-            icon: const Icon(Icons.swap_horiz, size: 18),
-            label: const Text('Switch Project'),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.amber.shade700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  /// Switch Project Function
-  Future<void> _switchProject() async {
-    try {
-      final contractorId = Supabase.instance.client.auth.currentUser?.id;
-      if (contractorId == null) return;
-
-      final projects = await _fetchService.fetchContractorProjectsIncludingCompleted(contractorId);
-
-      if (projects.isEmpty) {
-        if (mounted) {
-          ConTrustSnackBar.info(context, 'No projects found.');
-        }
-        return;
-      }
-
-      if (projects.length == 1) {
-        if (mounted) {
-          ConTrustSnackBar.warning(context, 'You only have one project.');
-        }
-        return;
-      }
-
-      final selectedProjectId = await showDialog<String>(
-        context: context,
-        builder: (dialogContext) => Center(
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 500),
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.black, width: 1.5),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
-                    blurRadius: 20,
-                    spreadRadius: 1,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.shade700,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Icon(
-                            Icons.swap_horiz,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        const Expanded(
-                          child: Text(
-                            'Switch Project',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.of(dialogContext).pop(),
-                          icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Flexible(
-                    child: Container(
-                      constraints: const BoxConstraints(maxHeight: 400),
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        padding: const EdgeInsets.all(16),
-                        itemCount: projects.length,
-                      itemBuilder: (context, index) {
-                        final project = projects[index];
-                        final isCurrentProject = project['project_id'] == widget.projectId;
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            color: isCurrentProject ? Colors.amber.shade50 : null,
-                            child: ListTile(
-                              selected: isCurrentProject,
-                              title: Text(
-                                project['title'] ?? 'Untitled Project',
-                                style: TextStyle(
-                                  fontWeight: isCurrentProject ? FontWeight.bold : FontWeight.normal,
-                                ),
-                              ),
-                              subtitle: Text(isCurrentProject 
-                                ? 'Current Project • ${project['status'] ?? 'N/A'}' 
-                                : 'Status: ${project['status'] ?? 'N/A'}'),
-                              leading: isCurrentProject 
-                                ? const Icon(Icons.check_circle, color: Colors.green)
-                                : Icon(Icons.folder, color: Colors.amber.shade700),
-                              trailing: isCurrentProject 
-                                ? null 
-                                : Icon(Icons.arrow_forward_ios, size: 16, color: Colors.amber.shade700),
-                              onTap: isCurrentProject 
-                                ? null 
-                                : () {
-                                    Navigator.of(dialogContext).pop(project['project_id']);
-                                  },
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-
-      if (selectedProjectId != null && selectedProjectId != widget.projectId) {
-        if (mounted) {
-          context.go('/project-management/$selectedProjectId');
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ConTrustSnackBar.error(context, 'Failed to switch project');
-      }
-    }
-  }
-
-  /// Calendar Widget - Compact and interactive
-  Widget _buildCalendarWidget() {
-    final isCustomContract = _contractType?.toLowerCase() == 'custom';
-    
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -1290,7 +1042,102 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with Calendar label, month, and edit button
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'By: ${_contractorName ?? 'Contractor'}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (widget.isPaid)
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.green.shade300),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.check_circle, color: Colors.green.shade700, size: 16),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Paid',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (widget.onViewPaymentHistory != null) ...[
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: widget.onViewPaymentHistory,
+                        icon: const Icon(Icons.history, size: 16),
+                        label: const Text('Payment History', style: TextStyle(fontSize: 12)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                      ),
+                    ],
+                  ],
+                )
+              else if (widget.onPayment != null)
+                ElevatedButton.icon(
+                  onPressed: widget.onPayment,
+                  icon: const Icon(Icons.payment, size: 16),
+                  label: Text(widget.paymentButtonText ?? 'Pay Now', style: const TextStyle(fontSize: 12)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCalendarWidget() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1332,13 +1179,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                   ],
                 ),
               ),
-              // Edit button for CUSTOM contracts
-              if (isCustomContract)
-                IconButton(
-                  icon: const Icon(Icons.edit, size: 20),
-                  onPressed: _editEstimatedCompletion,
-                  tooltip: 'Edit Estimated Completion',
-                ),
             ],
           ),
           const SizedBox(height: 12),
@@ -1347,43 +1187,19 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       ),
     );
   }
-  
-  /// Edit Estimated Completion for CUSTOM contracts
-  Future<void> _editEstimatedCompletion() async {
-    OngoingBuildMethods.showEditCompletionDialog(
-      context: context,
-      currentCompletion: _estimatedCompletion,
-      onSave: (selectedDate) async {
-        await widget.ongoingService.updateEstimatedCompletion(
-          projectId: widget.projectId,
-          estimatedCompletion: selectedDate,
-          context: context,
-          onSuccess: () {
-            setState(() {
-              _estimatedCompletion = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
-            });
-            // Real-time subscription will update the data automatically
-          },
-        );
-      },
-    );
-  }
 
-  /// Calendar Grid View
   Widget _buildCalendarGrid() {
     final firstDay = DateTime(_focusedDate.year, _focusedDate.month, 1);
     final lastDay = DateTime(_focusedDate.year, _focusedDate.month + 1, 0);
     final firstDayWeekday = firstDay.weekday;
     final daysInMonth = lastDay.day;
 
-    // Calculate days from previous month to show
     final daysBefore = firstDayWeekday - 1;
     final prevMonth = DateTime(_focusedDate.year, _focusedDate.month - 1);
     final daysInPrevMonth = DateTime(prevMonth.year, prevMonth.month + 1, 0).day;
 
     return Column(
       children: [
-        // Weekday headers
         Row(
           children: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
               .map((day) => Expanded(
@@ -1401,7 +1217,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               .toList(),
         ),
         const SizedBox(height: 8),
-        // Calendar days
         ...List.generate(6, (weekIndex) {
           return Row(
             children: List.generate(7, (dayIndex) {
@@ -1410,11 +1225,9 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
 
               late DateTime dayDate;
               if (dayNumber <= 0) {
-                // Previous month
                 dayDate = DateTime(prevMonth.year, prevMonth.month, daysInPrevMonth + dayNumber);
                 isCurrentMonth = false;
               } else if (dayNumber > daysInMonth) {
-                // Next month
                 dayDate = DateTime(_focusedDate.year, _focusedDate.month + 1, dayNumber - daysInMonth);
                 isCurrentMonth = false;
               } else {
@@ -1428,8 +1241,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                   dayDate.month == DateTime.now().month &&
                   dayDate.day == DateTime.now().day;
               
-              // Check if this date is start_date or estimated_completion
-              // Normalize dayDate to only compare date parts (ignore time)
               final normalizedDayDate = DateTime(dayDate.year, dayDate.month, dayDate.day);
               
               bool isStartDate = false;
@@ -1479,7 +1290,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               final hasDoneTasks = doneTaskNamesForDate.isNotEmpty;
               final hasUndoneTasks = undoneTaskNamesForDate.isNotEmpty;
 
-              // Determine tooltip text
               String? tooltipText;
               if (isStartDate) {
                 tooltipText = 'Start Date';
@@ -1525,7 +1335,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                                             ? Colors.red.shade200
                                             : hasDoneTasks && !hasUndoneTasks
                                                 ? Colors.green.shade200
-                                                : Colors.orange.shade200) // Mixed: some done, some undone
+                                                : Colors.orange.shade200)
                                         : isToday
                                             ? Colors.amber.shade50
                                             : Colors.transparent,
@@ -1583,7 +1393,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     );
   }
 
-  /// Recent Activities Container
   Widget _buildRecentActivities() {
     return Expanded(
       child: Container(
@@ -1612,7 +1421,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                       child: Text('No recent activities'),
                     )
                   : SingleChildScrollView(
-                      child: OngoingBuildMethods.buildRecentActivityFeed(
+                      child: CeeOngoingBuildMethods.buildRecentActivityFeed(
                         tasks: _tasks,
                         reports: _reports,
                         photos: _photos,
@@ -1626,7 +1435,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     );
   }
 
-  /// Right Column: Tasks, Reports, Photos, Materials in 2x2 Grid
   Widget _buildRightColumn() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1635,7 +1443,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Left Column of Grid
               Expanded(
                 child: Column(
                   children: [
@@ -1650,7 +1457,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                 ),
               ),
               const SizedBox(width: 16),
-              // Right Column of Grid
               Expanded(
                 child: Column(
                   children: [
@@ -1671,7 +1477,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     );
   }
 
-  /// To-Dos & Tasks Container (scrollable)
   Widget _buildTasksContainer() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1683,29 +1488,18 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          const Row(
             children: [
-              Row(
-                children: [
-                  Icon(Icons.task, color: Colors.black87, size: MediaQuery.of(context).size.width < 700 ? 20 : 24),
-                  SizedBox(width: MediaQuery.of(context).size.width < 700 ? 8 : 12),
-                  Text(
-                    'To-Dos & Tasks',
-                    style: TextStyle(
-                      fontSize: MediaQuery.of(context).size.width < 700 ? 14 : 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-              if (_projectStatus != 'completed')
-                IconButton(
-                  icon: const Icon(Icons.add, color: Colors.amber),
-                  onPressed: _addTask,
-                  tooltip: 'Add Task',
+              Icon(Icons.task, color: Colors.black87, size: 24),
+              SizedBox(width: 12),
+              Text(
+                'To-Dos & Tasks',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
                 ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -1725,13 +1519,11 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     );
   }
 
-  /// Individual Task Item with expect_finish
   Widget _buildTaskItem(Map<String, dynamic> task) {
     final taskText = task['task'] ?? 'Untitled Task';
     final isDone = task['done'] == true;
     final expectFinish = task['expect_finish'] as String?;
     final taskDone = task['task_done'] as String?;
-    final taskId = task['task_id']?.toString() ?? '';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1745,13 +1537,10 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       ),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => _markTaskDone(taskId, !isDone),
-            child: Icon(
-              isDone ? Icons.check_circle : Icons.radio_button_unchecked,
-              color: isDone ? Colors.green : Colors.grey,
-              size: 20,
-            ),
+          Icon(
+            isDone ? Icons.check_circle : Icons.radio_button_unchecked,
+            color: isDone ? Colors.green : Colors.grey,
+            size: 20,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1796,71 +1585,20 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     );
   }
 
-  /// Get sorted tasks (undone first, then done)
   List<Map<String, dynamic>> _getSortedTasks() {
     final sortedTasks = List<Map<String, dynamic>>.from(_tasks);
     sortedTasks.sort((a, b) {
       final aDone = a['done'] == true;
       final bDone = b['done'] == true;
       
-      // Undone tasks come first (return -1 if a is undone and b is done)
       if (!aDone && bDone) return -1;
       if (aDone && !bDone) return 1;
       
-      // If both have same status, maintain original order (or sort by creation date)
       return 0;
     });
     return sortedTasks;
   }
 
-  /// Mark task as done/undone
-  Future<void> _markTaskDone(String taskId, bool done) async {
-    if (done) {
-      // Marking as done - show multi-select dialog if there are multiple undone tasks
-      final undoneTasks = _tasks.where((t) => t['done'] != true).toList();
-      
-      if (undoneTasks.length > 1) {
-        // Show multi-select dialog for marking multiple tasks as done
-        await OngoingBuildMethods.showMarkTasksDoneDialog(
-          context: context,
-          undoneTasks: undoneTasks,
-          onConfirm: (selectedTaskIds) async {
-            // Update all selected tasks
-            for (final selectedTaskId in selectedTaskIds) {
-              await widget.ongoingService.updateTaskStatus(
-                projectId: widget.projectId,
-                taskId: selectedTaskId,
-                done: true,
-                allTasks: _tasks,
-                context: context,
-              );
-            }
-            // Real-time subscription will update the data automatically
-          },
-        );
-      } else {
-        // Single task update
-        await widget.ongoingService.updateTaskStatus(
-          projectId: widget.projectId,
-          taskId: taskId,
-          done: true,
-          allTasks: _tasks,
-          context: context,
-        );
-      }
-    } else {
-      // Marking as undone - single task update
-      await widget.ongoingService.updateTaskStatus(
-        projectId: widget.projectId,
-        taskId: taskId,
-        done: false,
-        allTasks: _tasks,
-        context: context,
-      );
-    }
-  }
-
-  /// Progress Reports Container with Make Report button
   Widget _buildProgressReportsContainer() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1872,29 +1610,18 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          const Row(
             children: [
-              Row(
-                children: [
-                  Icon(Icons.description, color: Colors.black87, size: MediaQuery.of(context).size.width < 700 ? 20 : 24),
-                  SizedBox(width: MediaQuery.of(context).size.width < 700 ? 8 : 12),
-                  Text(
-                    'Progress Reports',
-                    style: TextStyle(
-                      fontSize: MediaQuery.of(context).size.width < 700 ? 14 : 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-              if (_projectStatus != 'completed')
-                IconButton(
-                  icon: const Icon(Icons.add, color: Colors.amber),
-                  onPressed: _addReport,
-                  tooltip: 'Add Report & Generate PDF',
+              Icon(Icons.description, color: Colors.black87, size: 24),
+              SizedBox(width: 12),
+              Text(
+                'Progress Reports',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
                 ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -1914,7 +1641,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     );
   }
 
-  /// Report Item
   Widget _buildReportItem(Map<String, dynamic> report) {
     final title = report['title'] as String? ?? 'Progress Report';
     final content = report['content'] ?? 'No content';
@@ -1980,14 +1706,15 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       if (pdfUrl.startsWith('http://') || pdfUrl.startsWith('https://')) {
         signedUrl = pdfUrl;
       } else {
-        signedUrl = await widget.ongoingService.getSignedReportUrl(pdfUrl);
-        
-        if (signedUrl == null) {
+        try {
+          signedUrl = await Supabase.instance.client.storage
+              .from('reports')
+              .createSignedUrl(pdfUrl, 3600);
+        } catch (e) {
           try {
-            final publicUrl = Supabase.instance.client.storage
+            signedUrl = Supabase.instance.client.storage
                 .from('reports')
                 .getPublicUrl(pdfUrl);
-            signedUrl = publicUrl;
           } catch (publicError) {
             // Ignore
           }
@@ -2016,10 +1743,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             child: Material(
               color: Colors.transparent,
               child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: MediaQuery.of(context).size.width * 0.9,
-                  maxHeight: MediaQuery.of(context).size.height * 0.8,
-                ),
+                constraints: const BoxConstraints(maxWidth: 1200, maxHeight: 900),
                 child: Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
@@ -2291,7 +2015,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     }
   }
 
-  /// Project Photos Container
   Widget _buildProjectPhotosContainer() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -2303,29 +2026,18 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          const Row(
             children: [
-              Row(
-                children: [
-                  Icon(Icons.photo_library, color: Colors.black87, size: MediaQuery.of(context).size.width < 700 ? 20 : 24),
-                  SizedBox(width: MediaQuery.of(context).size.width < 700 ? 8 : 12),
-                  Text(
-                    'Project Photos',
-                    style: TextStyle(
-                      fontSize: MediaQuery.of(context).size.width < 700 ? 14 : 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-              if (_projectStatus != 'completed')
-                IconButton(
-                  icon: const Icon(Icons.add, color: Colors.amber),
-                  onPressed: _addPhoto,
-                  tooltip: 'Add Photo',
+              Icon(Icons.photo_library, color: Colors.black87, size: 24),
+              SizedBox(width: 12),
+              Text(
+                'Project Photos',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
                 ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -2345,7 +2057,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     );
   }
 
-  /// Photo List Item (like task items)
   Widget _buildPhotoListItem(Map<String, dynamic> photo) {
     final description = photo['description'] as String?;
     
@@ -2359,7 +2070,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       ),
       child: Row(
         children: [
-          // Photo thumbnail on the left
           FutureBuilder<String?>(
             future: widget.createSignedPhotoUrl(photo['photo_url']),
             builder: (context, snapshot) {
@@ -2403,7 +2113,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             },
           ),
           const SizedBox(width: 12),
-          // Photo info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2431,7 +2140,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               ],
             ),
           ),
-          // Info icon on the right
           IconButton(
             icon: const Icon(Icons.info_outline, color: Colors.amber),
             onPressed: () => _showPhotoInfoDialog(photo),
@@ -2442,7 +2150,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     );
   }
 
-  /// Show Photo Info Dialog with enlarged photo and description
   Future<void> _showPhotoInfoDialog(Map<String, dynamic> photo) async {
     final photoUrl = photo['photo_url'];
     final description = photo['description'] as String?;
@@ -2459,10 +2166,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
           child: Material(
             color: Colors.transparent,
             child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.9,
-                maxHeight: MediaQuery.of(context).size.height * 0.8,
-              ),
+              constraints: const BoxConstraints(maxWidth: 800, maxHeight: 700),
               child: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
@@ -2527,7 +2231,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                     Expanded(
                       child: Column(
                         children: [
-                          // Photo takes most of the space
                           Expanded(
                             child: Padding(
                               padding: const EdgeInsets.all(16),
@@ -2600,7 +2303,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                               ),
                             ),
                           ),
-                          // Description section in separate container below
                           Container(
                             margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                             padding: const EdgeInsets.all(16),
@@ -2660,9 +2362,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     );
   }
 
-  /// Materials & Costs Container
   Widget _buildMaterialsContainer() {
-    // Calculate total cost
     double totalCost = 0;
     for (var material in _materials) {
       final quantity = (material['quantity'] as num?)?.toDouble() ?? 0.0;
@@ -2680,29 +2380,18 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          const Row(
             children: [
-              Row(
-                children: [
-                  Icon(Icons.inventory, color: Colors.black87, size: MediaQuery.of(context).size.width < 700 ? 20 : 24),
-                  SizedBox(width: MediaQuery.of(context).size.width < 700 ? 8 : 12),
-                  Text(
-                    'Materials & Costs',
-                    style: TextStyle(
-                      fontSize: MediaQuery.of(context).size.width < 700 ? 14 : 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-              if (_projectStatus != 'completed')
-                IconButton(
-                  icon: const Icon(Icons.add, color: Colors.amber),
-                  onPressed: _goToMaterials,
-                  tooltip: 'Add Material',
+              Icon(Icons.inventory, color: Colors.black87, size: 24),
+              SizedBox(width: 12),
+              Text(
+                'Materials & Costs',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
                 ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -2714,12 +2403,11 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                 : Stack(
                     children: [
                       SingleChildScrollView(
-                        padding: const EdgeInsets.only(bottom: 70), // Space for sticky total
+                        padding: const EdgeInsets.only(bottom: 70),
                         child: Column(
                           children: _materials.map((material) => _buildMaterialItem(material)).toList(),
                         ),
                       ),
-                      // Sticky total container at bottom
                       Positioned(
                         left: 0,
                         right: 0,
@@ -2770,7 +2458,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     );
   }
 
-  /// Material Item
   Widget _buildMaterialItem(Map<String, dynamic> material) {
     final name = material['material_name'] ?? 'Unknown Material';
     final quantity = (material['quantity'] as num?)?.toDouble() ?? 0.0;
@@ -2811,7 +2498,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               ],
             ),
           ),
-          // Unit price x quantity text
           Text(
             '₱${unitPrice.toStringAsFixed(2)} × ${quantity.toStringAsFixed(1)} $unit',
             style: TextStyle(
@@ -2820,7 +2506,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             ),
           ),
           const SizedBox(width: 8),
-          // Eye icon at the far end
           IconButton(
             icon: const Icon(Icons.visibility_outlined, color: Colors.amber),
             onPressed: () => _showMaterialDetailsDialog(material),
@@ -2833,7 +2518,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     );
   }
 
-  /// Show Material Details Dialog
   Future<void> _showMaterialDetailsDialog(Map<String, dynamic> material) async {
     await showDialog(
       context: context,
@@ -2842,7 +2526,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     );
   }
 
-  /// Build Material Details Dialog (similar to project details dialog)
   Widget _buildMaterialDetailsDialog(BuildContext dialogContext, Map<String, dynamic> material) {
     final name = material['material_name'] ?? 'Unknown Material';
     final quantity = (material['quantity'] as num?)?.toDouble() ?? 0.0;
@@ -2858,10 +2541,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Container(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(dialogContext).size.width * 0.9,
-          maxHeight: MediaQuery.of(dialogContext).size.height * 0.8,
-        ),
+        constraints: const BoxConstraints(maxWidth: 700, maxHeight: 600),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -2877,7 +2557,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -2921,14 +2600,12 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                 ],
               ),
             ),
-            // Content area
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Material details
                     _buildMaterialDetailField('Material Name', name),
                     if (brand != null && brand.isNotEmpty)
                       _buildMaterialDetailField('Brand', brand),
@@ -2951,7 +2628,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     );
   }
 
-  /// Build Material Detail Field (similar to _buildDetailField in cor_history.dart)
   Widget _buildMaterialDetailField(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -2988,7 +2664,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     );
   }
 
-  /// Format Material Date
   String _formatMaterialDate(String dateString) {
     try {
       final date = DateTime.parse(dateString);
@@ -3001,654 +2676,16 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
   String _formatDate(String? dateString) {
     if (dateString == null || dateString.isEmpty) return 'N/A';
     try {
-      // Parse the date string - if it's already in local time format, parse it directly
-      // If it's in UTC format, convert to local
       DateTime date;
       if (dateString.endsWith('Z')) {
-        // UTC format, convert to local
         date = DateTime.parse(dateString).toLocal();
       } else {
-        // Already in local time format, parse as-is
         date = DateTime.parse(dateString);
       }
       return DateFormat('MMM dd, yyyy HH:mm').format(date);
     } catch (e) {
       return dateString;
     }
-  }
-
-  /// Add Task Function
-  Future<void> _addTask() async {
-    await OngoingBuildMethods.showAddTaskDialog(
-      context: context,
-      onAdd: (taskList) async {
-        int successCount = 0;
-        int errorCount = 0;
-        
-        for (final taskData in taskList) {
-          final task = taskData['task'] as String;
-          final expectFinish = taskData['expect_finish'] as DateTime?;
-          try {
-            await widget.ongoingService.addTask(
-              projectId: widget.projectId,
-              task: task,
-              context: context,
-              expectFinish: expectFinish,
-              showSuccessMessage: false, // Suppress individual success messages
-              onSuccess: () {},
-            );
-            successCount++;
-          } catch (e) {
-            errorCount++;
-          }
-        }
-        
-        // Show a single success message after all tasks are added
-        if (context.mounted) {
-          if (successCount > 0 && errorCount == 0) {
-            ConTrustSnackBar.success(
-              context,
-              successCount == 1 
-                  ? 'Task added successfully!'
-                  : '$successCount tasks added successfully!',
-            );
-          } else if (successCount > 0 && errorCount > 0) {
-            ConTrustSnackBar.warning(
-              context,
-              '$successCount task(s) added, $errorCount task(s) failed',
-            );
-          }
-        }
-        
-        _loadData();
-      },
-    );
-  }
-
-  /// Add Report Function - Shows time period selection dialog with title field
-  Future<void> _addReport() async {
-    final titleController = TextEditingController();
-    
-    await showDialog(
-      context: context,
-      barrierColor: Colors.black54,
-      barrierDismissible: true,
-      useSafeArea: true,
-      builder: (dialogContext) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-          child: Material(
-            color: Colors.transparent,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 500, maxHeight: 500),
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.black, width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 20,
-                      spreadRadius: 1,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.shade700,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(20),
-                          topRight: Radius.circular(20),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Icon(
-                              Icons.description,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          const Expanded(
-                            child: Text(
-                              'Generate Progress Report',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () => Navigator.of(dialogContext).pop(),
-                            icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Flexible(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxHeight: 400),
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Text(
-                                'Report Title:',
-                                style: TextStyle(
-                                  color: Colors.grey.shade700,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              TextField(
-                                controller: titleController,
-                                decoration: InputDecoration(
-                                  hintText: 'Enter report title...',
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide(color: Colors.grey.shade300),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide(color: Colors.amber.shade700, width: 2),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              Text(
-                                'Select time period for the report:',
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              _buildPeriodOption(dialogContext, titleController, 'hour', 'Last Hour', Icons.access_time),
-                              const SizedBox(height: 8),
-                              _buildPeriodOption(dialogContext, titleController, 'today', 'Today', Icons.today),
-                              const SizedBox(height: 8),
-                              _buildPeriodOption(dialogContext, titleController, 'week', 'This Week', Icons.date_range),
-                              const SizedBox(height: 8),
-                              _buildPeriodOption(dialogContext, titleController, 'month', 'This Month', Icons.calendar_month),
-                              const SizedBox(height: 8),
-                              _buildPeriodOption(dialogContext, titleController, 'year', 'This Year', Icons.calendar_today),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    ).then((_) {
-      titleController.dispose();
-    });
-  }
-
-  /// Build Period Option Button
-  Widget _buildPeriodOption(BuildContext dialogContext, TextEditingController titleController, String period, String label, IconData icon) {
-    return ElevatedButton(
-      onPressed: () {
-        final title = titleController.text.trim();
-        if (title.isEmpty) {
-          ConTrustSnackBar.warning(
-            dialogContext,
-            'Please enter a report title',
-          );
-          return;
-        }
-        Navigator.of(dialogContext).pop();
-        _generateAndSaveReport(period, title);
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.amber.shade50,
-        foregroundColor: Colors.black87,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        minimumSize: const Size(0, 50),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-          side: BorderSide(color: Colors.amber.shade300),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.amber.shade700),
-          const SizedBox(width: 12),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Generate and Save Report with PDF
-  Future<void> _generateAndSaveReport(String periodType, String reportTitle) async {
-    try {
-      // Calculate date range based on period type
-      final now = DateTime.now();
-      DateTime startDate;
-      String periodLabel;
-
-      switch (periodType) {
-        case 'hour':
-          startDate = now.subtract(const Duration(hours: 1));
-          periodLabel = 'Last Hour';
-          break;
-        case 'today':
-          startDate = DateTime(now.year, now.month, now.day);
-          periodLabel = 'Today';
-          break;
-        case 'week':
-          startDate = now.subtract(Duration(days: now.weekday - 1));
-          startDate = DateTime(startDate.year, startDate.month, startDate.day);
-          periodLabel = 'This Week';
-          break;
-        case 'month':
-          startDate = DateTime(now.year, now.month, 1);
-          periodLabel = 'This Month';
-          break;
-        case 'year':
-          startDate = DateTime(now.year, 1, 1);
-          periodLabel = 'This Year';
-          break;
-        default:
-          startDate = DateTime(now.year, now.month, now.day);
-          periodLabel = 'Today';
-      }
-
-      // Compile recent activities filtered by date
-      final activities = <Map<String, dynamic>>[];
-
-      // Add completed tasks
-      for (final task in _tasks) {
-        if (task['done'] == true && task['task_done'] != null) {
-          try {
-            final taskDate = DateTime.parse(task['task_done']).toLocal();
-            if (taskDate.isAfter(startDate) || taskDate.isAtSameMomentAs(startDate)) {
-              activities.add({
-                'type': 'task_done',
-                'date': task['task_done'],
-                'description': task['task'] ?? 'Task completed',
-              });
-            }
-          } catch (e) {
-            // Skip invalid dates
-          }
-        }
-      }
-
-      // Add photos
-      for (final photo in _photos) {
-        try {
-          final photoDate = DateTime.parse(photo['created_at']).toLocal();
-          if (photoDate.isAfter(startDate) || photoDate.isAtSameMomentAs(startDate)) {
-            activities.add({
-              'type': 'photo',
-              'date': photo['created_at'],
-              'description': photo['description'] ?? 'Progress photo uploaded',
-            });
-          }
-        } catch (e) {
-          // Skip invalid dates
-        }
-      }
-
-      // Add materials
-      for (final material in _materials) {
-        try {
-          final materialDate = material['created_at'] != null
-              ? DateTime.parse(material['created_at']).toLocal()
-              : DateTime.now();
-          if (materialDate.isAfter(startDate) || materialDate.isAtSameMomentAs(startDate)) {
-            activities.add({
-              'type': 'material',
-              'date': material['created_at'] ?? DateTime.now().toIso8601String(),
-              'description': 'Material added: ${material['material_name'] ?? 'Unknown'}',
-            });
-          }
-        } catch (e) {
-          // Skip invalid dates
-        }
-      }
-
-      // Sort by date (newest first)
-      activities.sort((a, b) {
-        try {
-          final aDate = DateTime.parse(a['date']);
-          final bDate = DateTime.parse(b['date']);
-          return bDate.compareTo(aDate);
-        } catch (e) {
-          return 0;
-        }
-      });
-
-      // Prevent creating empty reports
-      if (activities.isEmpty) {
-        if (mounted) {
-          ConTrustSnackBar.warning(
-            context,
-            'No activities found for the selected period. Cannot create an empty report.',
-          );
-        }
-        return;
-      }
-
-      // Generate PDF
-      final pdf = pw.Document();
-      final project = widget.projectData?['projectDetails'] as Map<String, dynamic>?;
-      final projectTitle = project?['title'] ?? 'Project';
-
-      pdf.addPage(
-        pw.MultiPage(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(40),
-          build: (pw.Context context) {
-            return [
-              pw.Header(
-                level: 0,
-                child: pw.Text(
-                  reportTitle,
-                  style: pw.TextStyle(
-                    fontSize: 24,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-              ),
-              pw.SizedBox(height: 20),
-              pw.Text(
-                'Project: $projectTitle',
-                style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
-              ),
-              pw.SizedBox(height: 10),
-              pw.Text(
-                'Period: $periodLabel',
-                style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
-              ),
-              pw.SizedBox(height: 10),
-              pw.Text(
-                'Generated: ${DateFormat('MMMM dd, yyyy HH:mm').format(DateTime.now())}',
-                style: pw.TextStyle(fontSize: 12),
-              ),
-              pw.SizedBox(height: 30),
-              ...activities.map((activity) {
-                  final date = _formatDate(activity['date']);
-                  final type = activity['type'] as String;
-                  final description = activity['description'] as String;
-
-                  String typeLabel = '';
-                  if (type == 'task_done') {
-                    typeLabel = 'Task completed at $date';
-                  } else if (type == 'photo') {
-                    typeLabel = 'Progress photo uploaded at $date';
-                  } else if (type == 'material') {
-                    typeLabel = 'Material added at $date';
-                  }
-
-                  return pw.Padding(
-                    padding: const pw.EdgeInsets.only(bottom: 16),
-                    child: pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        pw.Text(
-                          typeLabel,
-                          style: pw.TextStyle(
-                            fontSize: 12,
-                            fontWeight: pw.FontWeight.bold,
-                          ),
-                        ),
-                        pw.SizedBox(height: 4),
-                        pw.Text(
-                          description,
-                          style: pw.TextStyle(fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-            ];
-          },
-        ),
-      );
-
-      // Save PDF bytes
-      final pdfBytes = await pdf.save();
-
-      // Upload PDF to storage and save report
-      await widget.ongoingService.addReportWithPdf(
-        projectId: widget.projectId,
-        title: reportTitle,
-        content: 'Progress Report - $periodLabel (${activities.length} activities)',
-        pdfBytes: pdfBytes,
-        periodType: periodType,
-        context: context,
-        onSuccess: () {
-          // Real-time subscription will update the data automatically
-          // Success message is already shown in addReportWithPdf service method
-        },
-      );
-    } catch (e) {
-      if (mounted) {
-        ConTrustSnackBar.error(
-          context,
-          'Error generating report: $e',
-        );
-      }
-    }
-  }
-
-  /// Add Photo Function
-  Future<void> _addPhoto() async {
-    final descriptionController = TextEditingController();
-    
-    await showDialog(
-      context: context,
-      barrierColor: Colors.black54,
-      barrierDismissible: true,
-      useSafeArea: true,
-      builder: (dialogContext) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-          child: Material(
-            color: Colors.transparent,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 500, maxHeight: 400),
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.black, width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 20,
-                      spreadRadius: 1,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.shade700,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(20),
-                          topRight: Radius.circular(20),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Icon(
-                              Icons.add_photo_alternate,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          const Expanded(
-                            child: Text(
-                              'Add Photo',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () => Navigator.of(dialogContext).pop(),
-                            icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Flexible(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxHeight: 300),
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Text(
-                                'Add a description for this photo (optional)',
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Container(
-                                constraints: const BoxConstraints(minHeight: 100, maxHeight: 150),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey.shade300),
-                                  borderRadius: BorderRadius.circular(12),
-                                  color: Colors.grey.shade50,
-                                ),
-                                child: TextField(
-                                  controller: descriptionController,
-                                  maxLines: null,
-                                  minLines: 4,
-                                  textAlignVertical: TextAlignVertical.top,
-                                  decoration: const InputDecoration(
-                                    hintText: 'Enter photo description...',
-                                    border: InputBorder.none,
-                                    contentPadding: EdgeInsets.all(16),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  TextButton(
-                                    onPressed: () => Navigator.of(dialogContext).pop(),
-                                    style: TextButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 20,
-                                        vertical: 12,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      'Cancel',
-                                      style: TextStyle(color: Colors.grey.shade600),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      Navigator.of(dialogContext).pop();
-                                      _uploadPhotoWithDescription(descriptionController.text.trim());
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFFFFB300),
-                                      foregroundColor: Colors.black,
-                                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                      minimumSize: const Size(0, 50),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                    child: const Text('Select Photo'),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    ).then((_) {
-      descriptionController.dispose();
-    });
-  }
-
-  /// Upload Photo with Description
-  Future<void> _uploadPhotoWithDescription(String description) async {
-    await widget.ongoingService.uploadPhoto(
-      projectId: widget.projectId,
-      context: context,
-      description: description.isEmpty ? null : description,
-      onSuccess: () {
-        // Real-time subscription will update the data automatically
-      },
-    );
-  }
-
-  /// Navigate to Materials Page
-  void _goToMaterials() {
-    context.go('/project-management/${widget.projectId}/materials');
   }
 }
 

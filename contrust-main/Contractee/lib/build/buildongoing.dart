@@ -3,6 +3,44 @@ import 'package:flutter/material.dart';
 import 'package:backend/utils/be_contractformat.dart';
 
 class CeeOngoingBuildMethods {
+  /// Show date picker with amber theme matching add tasks dialog
+  static Future<DateTime?> showThemedDatePicker({
+    required BuildContext context,
+    required DateTime initialDate,
+    required DateTime firstDate,
+    required DateTime lastDate,
+    String? helpText,
+    String? cancelText,
+    String? confirmText,
+  }) async {
+    return await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
+      helpText: helpText ?? 'Select Date',
+      cancelText: cancelText ?? 'Cancel',
+      confirmText: confirmText ?? 'OK',
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: Colors.amber.shade700,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black87,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.amber.shade700,
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+  }
   static List<Map<String, dynamic>> _composeRecentItems({
     required List<Map<String, dynamic>> tasks,
     required List<Map<String, dynamic>> reports,
@@ -474,6 +512,7 @@ class CeeOngoingBuildMethods {
                           ],
                         ),
                       ),
+                      const Spacer(),
                       if (onPayment != null && !isPaid)
                         ElevatedButton.icon(
                           onPressed: onPayment,
@@ -490,6 +529,7 @@ class CeeOngoingBuildMethods {
                           ),
                         ),
                       if (isPaid) ...[
+                        const Spacer(),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
@@ -551,6 +591,7 @@ class CeeOngoingBuildMethods {
                           ],
                         ),
                       ),
+                      const Spacer(),
                       if (onPayment != null && !isPaid)
                         ElevatedButton.icon(
                           onPressed: onPayment,
@@ -567,6 +608,7 @@ class CeeOngoingBuildMethods {
                           ),
                         ),
                       if (isPaid) ...[
+                        const Spacer(),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           decoration: BoxDecoration(

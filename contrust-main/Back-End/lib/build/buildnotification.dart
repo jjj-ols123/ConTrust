@@ -53,31 +53,49 @@ class NotificationUIBuildMethods {
   double get screenWidth => MediaQuery.of(context).size.width;
   bool get isDesktop => screenWidth > 1200;
 
+  /// Get date string from timestamp (YYYY-MM-DD)
+  String _getDateString(String? timestamp) {
+    if (timestamp == null || timestamp.isEmpty) return '';
+    try {
+      final dt = DateTime.parse(timestamp).toLocal();
+      return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  /// Get date label (today, yesterday, or formatted date)
+  String _getDateLabel(String dateStr) {
+    final today = DateTime.now();
+    final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
+    if (dateStr == todayStr) return 'today';
+    
+    final yesterday = today.subtract(const Duration(days: 1));
+    final yesterdayStr = '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}';
+    
+    if (dateStr == yesterdayStr) return 'yesterday';
+    
+    try {
+      final dt = DateTime.parse('$dateStr 00:00:00');
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
+    } catch (_) {
+      return dateStr;
+    }
+  }
+
   Map<String, List<Map<String, dynamic>>> _groupNotifications(
       List<Map<String, dynamic>> notifications) {
-    final today = DateTime.now();
-    final todayStr =
-        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-
-    final Map<String, List<Map<String, dynamic>>> groups = {
-      'hiring_requests_today': [],
-      'hiring_requests_accepted_today': [],
-      'hiring_requests_cancelled_today': [],
-      'hiring_requests_declined_today': [],
-      'hiring_requests_declined_by_me_today': [],
-      'bid_accepted_today': [],
-      'bid_rejected_today': [],
-      'bid_cancelled_today': [],
-      'project_bids_update_today': [],
-      'contract_status_today': [],
-      'cancellation_request_today': [],
-      'cancellation_declined_today': [],
-      'other': [],
-    };
+    // Use composite keys: 'type_date' (e.g., 'hiring_requests_2024-01-15')
+    final Map<String, List<Map<String, dynamic>>> groups = {};
+    final List<Map<String, dynamic>> otherNotifications = [];
 
     for (var notification in notifications) {
       final createdAt = notification['created_at'] as String?;
       final headline = notification['headline'] as String?;
+      String? dateStr;
+      String? groupType;
 
       if (headline == 'Hiring Request') {
         final rawInfo = notification['information'];
@@ -87,32 +105,22 @@ class NotificationUIBuildMethods {
         final status = info['status'] as String?;
         final updatedAt = info['updated_at'] as String?;
 
-        if (status == 'pending' &&
-            createdAt != null &&
-            createdAt.startsWith(todayStr)) {
-          groups['hiring_requests_today']!.add(notification);
-          continue;
-        } else if (status == 'accepted' &&
-            updatedAt != null &&
-            updatedAt.startsWith(todayStr)) {
-          groups['hiring_requests_accepted_today']!.add(notification);
-          continue;
-        } else if (status == 'cancelled' &&
-            updatedAt != null &&
-            updatedAt.startsWith(todayStr)) {
-          groups['hiring_requests_cancelled_today']!.add(notification);
-          continue;
-        } else if (status == 'declined' &&
-            updatedAt != null &&
-            updatedAt.startsWith(todayStr)) {
-          groups['hiring_requests_declined_by_me_today']!.add(notification);
-          continue;
+        if (status == 'pending' && createdAt != null) {
+          dateStr = _getDateString(createdAt);
+          groupType = 'hiring_requests';
+        } else if (status == 'accepted' && updatedAt != null) {
+          dateStr = _getDateString(updatedAt);
+          groupType = 'hiring_requests_accepted';
+        } else if (status == 'cancelled' && updatedAt != null) {
+          dateStr = _getDateString(updatedAt);
+          groupType = 'hiring_requests_cancelled';
+        } else if (status == 'declined' && updatedAt != null) {
+          dateStr = _getDateString(updatedAt);
+          groupType = 'hiring_requests_declined_by_me';
         }
-      } else if (headline == 'Hiring Request Cancelled' &&
-          createdAt != null &&
-          createdAt.startsWith(todayStr)) {
-        groups['hiring_requests_cancelled_today']!.add(notification);
-        continue;
+      } else if (headline == 'Hiring Request Cancelled' && createdAt != null) {
+        dateStr = _getDateString(createdAt);
+        groupType = 'hiring_requests_cancelled';
       } else if (headline == 'Hiring Response') {
         final rawInfo = notification['information'];
         final info = rawInfo is String
@@ -120,39 +128,28 @@ class NotificationUIBuildMethods {
             : Map<String, dynamic>.from(rawInfo ?? {});
         final action = info['action'] as String?;
 
-        if (action == 'hire_declined' &&
-            createdAt != null &&
-            createdAt.startsWith(todayStr)) {
-          groups['hiring_requests_declined_today']!.add(notification);
-          continue;
+        if (action == 'hire_declined' && createdAt != null) {
+          dateStr = _getDateString(createdAt);
+          groupType = 'hiring_requests_declined';
         }
-      } else if (headline == 'Bid Accepted' &&
-          createdAt != null &&
-          createdAt.startsWith(todayStr)) {
-        groups['bid_accepted_today']!.add(notification);
-        continue;
-      } else if (headline == 'Bid Rejected' &&
-          createdAt != null &&
-          createdAt.startsWith(todayStr)) {
-        groups['bid_rejected_today']!.add(notification);
-        continue;
-      } else if (headline == 'Bid Cancelled' &&
-          createdAt != null &&
-          createdAt.startsWith(todayStr)) {
-        groups['bid_cancelled_today']!.add(notification);
-        continue;
-      } else if (headline == 'Project Bids Update' &&
-          createdAt != null &&
-          createdAt.startsWith(todayStr)) {
-        groups['project_bids_update_today']!.add(notification);
-        continue;
+      } else if (headline == 'Bid Accepted' && createdAt != null) {
+        dateStr = _getDateString(createdAt);
+        groupType = 'bid_accepted';
+      } else if (headline == 'Bid Rejected' && createdAt != null) {
+        dateStr = _getDateString(createdAt);
+        groupType = 'bid_rejected';
+      } else if (headline == 'Bid Cancelled' && createdAt != null) {
+        dateStr = _getDateString(createdAt);
+        groupType = 'bid_cancelled';
+      } else if (headline == 'Project Bids Update' && createdAt != null) {
+        dateStr = _getDateString(createdAt);
+        groupType = 'project_bids_update';
       } else if ((headline == 'Contract Signed' || 
                   headline == 'Contract Activated' || 
                   headline == 'Contract Rejected') &&
-          createdAt != null &&
-          createdAt.startsWith(todayStr)) {
-        groups['contract_status_today']!.add(notification);
-        continue;
+          createdAt != null) {
+        dateStr = _getDateString(createdAt);
+        groupType = 'contract_status';
       } else if (headline == 'Project Cancellation Request') {
         final rawInfo = notification['information'];
         final info = rawInfo is String
@@ -162,25 +159,31 @@ class NotificationUIBuildMethods {
         final updatedAt = info['updated_at'] as String?;
         final senderType = notification['sender_type'] as String?;
         
-        if (status == 'rejected' &&
-            updatedAt != null &&
-            updatedAt.startsWith(todayStr)) {
-          groups['cancellation_declined_today']!.add(notification);
-          continue;
-        }
-        
+        if (status == 'rejected' && updatedAt != null) {
+          dateStr = _getDateString(updatedAt);
+          groupType = 'cancellation_declined';
+        } else {
         final isPending = status == null || status == 'pending' || status == '';
         final isSystemNotification = senderType == null || senderType == 'system';
         
-        if ((isPending || isSystemNotification) &&
-            createdAt != null &&
-            createdAt.startsWith(todayStr)) {
-          groups['cancellation_request_today']!.add(notification);
-          continue;
+          if ((isPending || isSystemNotification) && createdAt != null) {
+            dateStr = _getDateString(createdAt);
+            groupType = 'cancellation_request';
+          }
         }
       }
 
-      groups['other']!.add(notification);
+      if (groupType != null && dateStr != null && dateStr.isNotEmpty) {
+        final groupKey = '${groupType}_$dateStr';
+        groups.putIfAbsent(groupKey, () => []).add(notification);
+      } else {
+        otherNotifications.add(notification);
+        }
+      }
+
+    // Add other notifications
+    if (otherNotifications.isNotEmpty) {
+      groups['other'] = otherNotifications;
     }
 
     return groups;
@@ -205,122 +208,50 @@ class NotificationUIBuildMethods {
         }
 
         final groups = _groupNotifications(snapshot.data!);
-        final hiringRequestsToday = groups['hiring_requests_today']!;
-        final hiringRequestsAcceptedToday =
-            groups['hiring_requests_accepted_today']!;
-        final hiringRequestsCancelledToday =
-            groups['hiring_requests_cancelled_today']!;
-        final hiringRequestsDeclinedToday =
-            groups['hiring_requests_declined_today']!;
-        final hiringRequestsDeclinedByMeToday =
-            groups['hiring_requests_declined_by_me_today']!;
-        final bidAcceptedToday = groups['bid_accepted_today']!;
-        final bidRejectedToday = groups['bid_rejected_today']!;
-        final bidCancelledToday = groups['bid_cancelled_today']!;
-        final projectBidsUpdateToday = groups['project_bids_update_today']!;
-        final contractStatusToday = groups['contract_status_today']!;
-        final cancellationRequestToday = groups['cancellation_request_today']!;
-        final cancellationDeclinedToday = groups['cancellation_declined_today']!;
-        final otherNotifications = groups['other']!;
+        final otherNotifications = groups['other'] ?? [];
+
+        // Sort groups by date (newest first) and type
+        final sortedGroupKeys = groups.keys.where((key) => key != 'other').toList();
+        sortedGroupKeys.sort((a, b) {
+          // Extract date from key (format: 'type_YYYY-MM-DD')
+          final partsA = a.split('_');
+          final partsB = b.split('_');
+          
+          if (partsA.length < 3 || partsB.length < 3) return 0;
+          
+          final dateA = partsA.sublist(partsA.length - 3).join('-');
+          final dateB = partsB.sublist(partsB.length - 3).join('-');
+          
+          if (dateA.isEmpty || dateB.isEmpty) return 0;
+          return dateB.compareTo(dateA); // Newest first
+        });
 
         return ListView(
           children: [
-            if (hiringRequestsToday.isNotEmpty)
-              _buildGroupedNotification(
-                title:
-                    'You have ${hiringRequestsToday.length} hiring ${hiringRequestsToday.length == 1 ? 'request' : 'requests'} today',
-                icon: Icons.work_outline,
-                notifications: hiringRequestsToday,
-                groupKey: 'hiring_requests_today',
-              ),
-            if (hiringRequestsAcceptedToday.isNotEmpty)
-              _buildGroupedNotification(
-                title:
-                    'You accepted ${hiringRequestsAcceptedToday.length} hiring ${hiringRequestsAcceptedToday.length == 1 ? 'request' : 'requests'} today',
-                icon: Icons.check_circle_outline,
-                notifications: hiringRequestsAcceptedToday,
-                groupKey: 'hiring_requests_accepted_today',
-              ),
-            if (hiringRequestsCancelledToday.isNotEmpty)
-              _buildGroupedNotification(
-                title:
-                    '${hiringRequestsCancelledToday.length} hiring ${hiringRequestsCancelledToday.length == 1 ? 'request was' : 'requests were'} cancelled today',
-                icon: Icons.cancel_outlined,
-                notifications: hiringRequestsCancelledToday,
-                groupKey: 'hiring_requests_cancelled_today',
-              ),
-            if (hiringRequestsDeclinedToday.isNotEmpty)
-              _buildGroupedNotification(
-                title:
-                    '${hiringRequestsDeclinedToday.length} hiring ${hiringRequestsDeclinedToday.length == 1 ? 'request was' : 'requests were'} declined today',
-                icon: Icons.thumb_down_outlined,
-                notifications: hiringRequestsDeclinedToday,
-                groupKey: 'hiring_requests_declined_today',
-              ),
-            if (hiringRequestsDeclinedByMeToday.isNotEmpty)
-              _buildGroupedNotification(
-                title:
-                    'You declined ${hiringRequestsDeclinedByMeToday.length} hiring ${hiringRequestsDeclinedByMeToday.length == 1 ? 'request' : 'requests'} today',
-                icon: Icons.block,
-                notifications: hiringRequestsDeclinedByMeToday,
-                groupKey: 'hiring_requests_declined_by_me_today',
-              ),
-            if (bidAcceptedToday.isNotEmpty)
-              _buildGroupedNotification(
-                title:
-                    'You have ${bidAcceptedToday.length} ${bidAcceptedToday.length == 1 ? 'bid' : 'bids'} accepted today',
-                icon: Icons.check_circle_outline,
-                notifications: bidAcceptedToday,
-                groupKey: 'bid_accepted_today',
-              ),
-            if (bidRejectedToday.isNotEmpty)
-              _buildGroupedNotification(
-                title:
-                    'You have ${bidRejectedToday.length} ${bidRejectedToday.length == 1 ? 'bid' : 'bids'} rejected today',
-                icon: Icons.cancel_outlined,
-                notifications: bidRejectedToday,
-                groupKey: 'bid_rejected_today',
-              ),
-            if (bidCancelledToday.isNotEmpty)
-              _buildGroupedNotification(
-                title:
-                    'You have ${bidCancelledToday.length} ${bidCancelledToday.length == 1 ? 'bid' : 'bids'} cancelled today',
-                icon: Icons.cancel_outlined,
-                notifications: bidCancelledToday,
-                groupKey: 'bid_cancelled_today',
-              ),
-            if (projectBidsUpdateToday.isNotEmpty)
-              _buildGroupedNotification(
-                title:
-                    'You have ${projectBidsUpdateToday.length} ${projectBidsUpdateToday.length == 1 ? 'project' : 'projects'} with new bids today',
-                icon: Icons.gavel,
-                notifications: projectBidsUpdateToday,
-                groupKey: 'project_bids_update_today',
-              ),
-            if (contractStatusToday.isNotEmpty)
-              _buildGroupedNotification(
-                title:
-                    'You have ${contractStatusToday.length} contract ${contractStatusToday.length == 1 ? 'update' : 'updates'} today',
-                icon: Icons.description_outlined,
-                notifications: contractStatusToday,
-                groupKey: 'contract_status_today',
-              ),
-            if (cancellationRequestToday.isNotEmpty)
-              _buildGroupedNotification(
-                title:
-                    'You have ${cancellationRequestToday.length} cancellation ${cancellationRequestToday.length == 1 ? 'request' : 'requests'} today',
-                icon: Icons.cancel_outlined,
-                notifications: cancellationRequestToday,
-                groupKey: 'cancellation_request_today',
-              ),
-            if (cancellationDeclinedToday.isNotEmpty)
-              _buildGroupedNotification(
-                title:
-                    '${cancellationDeclinedToday.length} cancellation ${cancellationDeclinedToday.length == 1 ? 'request was' : 'requests were'} declined today',
-                icon: Icons.block_outlined,
-                notifications: cancellationDeclinedToday,
-                groupKey: 'cancellation_declined_today',
-              ),
+            ...sortedGroupKeys.map((groupKey) {
+              final notifications = groups[groupKey]!;
+              if (notifications.isEmpty) return const SizedBox.shrink();
+
+              // Extract type and date from key
+              final parts = groupKey.split('_');
+              final dateStr = parts.length >= 3 
+                  ? parts.sublist(parts.length - 3).join('-')
+                  : '';
+              final type = parts.length >= 3 
+                  ? parts.sublist(0, parts.length - 3).join('_')
+                  : groupKey;
+
+              final dateLabel = _getDateLabel(dateStr);
+              final title = _getGroupTitle(type, notifications.length, dateLabel);
+              final icon = _getGroupIcon(type);
+
+              return _buildGroupedNotification(
+                title: title,
+                icon: icon,
+                notifications: notifications,
+                groupKey: groupKey,
+              );
+            }),
             ...otherNotifications.map((notification) {
               return _buildSingleNotification(notification);
             }),
@@ -328,6 +259,64 @@ class NotificationUIBuildMethods {
         );
       },
     );
+  }
+
+  /// Get group title based on type, count, and date
+  String _getGroupTitle(String type, int count, String dateLabel) {
+    switch (type) {
+      case 'hiring_requests':
+        return 'You have $count hiring ${count == 1 ? 'request' : 'requests'} $dateLabel';
+      case 'hiring_requests_accepted':
+        return 'You accepted $count hiring ${count == 1 ? 'request' : 'requests'} $dateLabel';
+      case 'hiring_requests_cancelled':
+        return '$count hiring ${count == 1 ? 'request was' : 'requests were'} cancelled $dateLabel';
+      case 'hiring_requests_declined':
+        return '$count hiring ${count == 1 ? 'request was' : 'requests were'} declined $dateLabel';
+      case 'hiring_requests_declined_by_me':
+        return 'You declined $count hiring ${count == 1 ? 'request' : 'requests'} $dateLabel';
+      case 'bid_accepted':
+        return 'You have $count ${count == 1 ? 'bid' : 'bids'} accepted $dateLabel';
+      case 'bid_rejected':
+        return 'You have $count ${count == 1 ? 'bid' : 'bids'} rejected $dateLabel';
+      case 'bid_cancelled':
+        return 'You have $count ${count == 1 ? 'bid' : 'bids'} cancelled $dateLabel';
+      case 'project_bids_update':
+        return 'You have $count ${count == 1 ? 'project' : 'projects'} with new bids $dateLabel';
+      case 'contract_status':
+        return 'You have $count contract ${count == 1 ? 'update' : 'updates'} $dateLabel';
+      case 'cancellation_request':
+        return 'You have $count cancellation ${count == 1 ? 'request' : 'requests'} $dateLabel';
+      case 'cancellation_declined':
+        return '$count cancellation ${count == 1 ? 'request was' : 'requests were'} declined $dateLabel';
+      default:
+        return '$count notification${count == 1 ? '' : 's'} $dateLabel';
+    }
+  }
+
+  /// Get group icon based on type
+  IconData _getGroupIcon(String type) {
+    switch (type) {
+      case 'hiring_requests':
+        return Icons.work_outline;
+      case 'hiring_requests_accepted':
+      case 'bid_accepted':
+        return Icons.check_circle_outline;
+      case 'hiring_requests_cancelled':
+      case 'bid_cancelled':
+      case 'bid_rejected':
+      case 'cancellation_request':
+        return Icons.cancel_outlined;
+      case 'hiring_requests_declined':
+      case 'hiring_requests_declined_by_me':
+      case 'cancellation_declined':
+        return Icons.thumb_down_outlined;
+      case 'project_bids_update':
+        return Icons.gavel;
+      case 'contract_status':
+        return Icons.description_outlined;
+      default:
+        return Icons.notifications_outlined;
+    }
   }
 
   Widget _buildGroupedNotification({
