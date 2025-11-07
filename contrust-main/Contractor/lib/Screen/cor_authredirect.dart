@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously, avoid_web_libraries_in_flutter, deprecated_member_use
 
 import 'package:backend/services/contractor services/cor_signin.dart';
 import 'package:flutter/material.dart';
