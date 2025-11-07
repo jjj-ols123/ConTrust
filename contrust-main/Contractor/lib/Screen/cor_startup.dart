@@ -1,4 +1,4 @@
-// ignore_for_file: file_names, use_build_context_synchronously, deprecated_member_use, library_private_types_in_public_api
+// ignore_for_file: file_names, use_build_context_synchronously, deprecated_member_use, library_private_types_in_public_api, avoid_web_libraries_in_flutter
 import 'dart:io';
 
 import 'package:backend/utils/be_validation.dart';

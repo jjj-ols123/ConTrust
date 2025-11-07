@@ -1548,9 +1548,7 @@ class DashboardBuildMethods {
 
   Widget buildProjectTasks([Map<String, dynamic>? project]) {
     final projectData = project ?? (recentActivities.isNotEmpty ? recentActivities.first : null);
-    final projectTasks = projectData != null 
-        ? localTasks.where((task) => task['project_id'] == projectData['project_id']).toList()
-        : localTasks;
+    final projectId = projectData?['project_id']?.toString() ?? '';
     
     return Container(
       width: double.infinity,
@@ -1571,24 +1569,29 @@ class DashboardBuildMethods {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(
-                  Icons.checklist,
-                  color: Colors.green.shade700,
-                  size: isTablet ? 24 : 20,
-                ),
-                SizedBox(width: isTablet ? 12 : 8),
-                Text(
-                  'Project Tasks',
-                  style: TextStyle(
-                    fontSize: isTablet ? 18 : 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.checklist,
+                      color: Colors.green.shade700,
+                      size: isTablet ? 24 : 20,
+                    ),
+                    SizedBox(width: isTablet ? 12 : 8),
+                    Text(
+                      'Project Tasks',
+                      style: TextStyle(
+                        fontSize: isTablet ? 18 : 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
             SizedBox(height: isTablet ? 16 : 12),
-            if (projectTasks.isEmpty)
+            if (projectId.isEmpty)
               Center(
                 child: Container(
                   padding: EdgeInsets.symmetric(
@@ -1606,7 +1609,7 @@ class DashboardBuildMethods {
                       ),
                       SizedBox(height: isDesktop ? 12 : (isTablet ? 16 : 8)),
                       Text(
-                        'No tasks yet',
+                        'No project selected',
                         style: TextStyle(
                           fontSize: isDesktop ? 14 : (isTablet ? 18 : 12),
                           color: Colors.grey.shade600,
@@ -1618,64 +1621,204 @@ class DashboardBuildMethods {
                   ),
                 ),
               )
-            else ...[
-              ...localTasks
-                  .take(isDesktop ? 2 : 3)
-                  .map(
-                    (task) => Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
-                        borderRadius: BorderRadius.circular(8),
+            else
+              StreamBuilder<List<Map<String, dynamic>>>(
+                stream: Supabase.instance.client
+                    .from('ProjectTasks')
+                    .stream(primaryKey: ['task_id'])
+                    .eq('project_id', projectId)
+                    .order('created_at', ascending: false),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(20),
+                        child: CircularProgressIndicator(color: Colors.amber),
                       ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            task['done'] == true
-                                ? Icons.check_circle
-                                : Icons.radio_button_unchecked,
-                            color:
-                                task['done'] == true
-                                    ? Colors.green
-                                    : Colors.grey,
-                            size: 16,
+                    );
+                  }
+
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Text(
+                          'Error loading tasks',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 14,
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              task['task'] ?? '',
+                        ),
+                      ),
+                    );
+                  }
+
+                  final tasks = snapshot.data ?? [];
+                  
+                  if (tasks.isEmpty) {
+                    return Center(
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          vertical: isDesktop ? 30 : (isTablet ? 40 : 30),
+                          horizontal: 16,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.inbox,
+                              size: isDesktop ? 40 : (isTablet ? 48 : 32),
+                              color: Colors.grey.shade400,
+                            ),
+                            SizedBox(height: isDesktop ? 12 : (isTablet ? 16 : 8)),
+                            Text(
+                              'No tasks yet',
+                              style: TextStyle(
+                                fontSize: isDesktop ? 14 : (isTablet ? 18 : 12),
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'Tasks will appear here when added',
                               style: TextStyle(
                                 fontSize: 12,
-                                decoration:
-                                    task['done'] == true
-                                        ? TextDecoration.lineThrough
-                                        : null,
+                                color: Colors.grey.shade500,
                               ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  // Always show only 3 tasks
+                  final tasksToShow = tasks.take(3).toList();
+                  final hasMoreTasks = tasks.length > 3;
+                  
+                  return Column(
+                    children: [
+                      ...tasksToShow.map(
+                        (task) => Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: (task['done'] == true || task['task_done'] == true)
+                                  ? Colors.green.shade200
+                                  : Colors.grey.shade200,
+                              width: 1,
                             ),
                           ),
-                        ],
+                          child: Row(
+                            children: [
+                              Icon(
+                                (task['done'] == true || task['task_done'] == true)
+                                    ? Icons.check_circle
+                                    : Icons.radio_button_unchecked,
+                                color: (task['done'] == true || task['task_done'] == true)
+                                    ? Colors.green
+                                    : Colors.grey,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      task['task']?.toString() ?? 'Untitled Task',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        decoration: (task['done'] == true || task['task_done'] == true)
+                                            ? TextDecoration.lineThrough
+                                            : null,
+                                        color: (task['done'] == true || task['task_done'] == true)
+                                            ? Colors.grey.shade600
+                                            : Colors.grey.shade800,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (task['expect_finish'] != null) ...[
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.calendar_today,
+                                            size: 12,
+                                            color: Colors.grey.shade500,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Due: ${_formatTaskDate(task['expect_finish'])}',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.grey.shade600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-              if (localTasks.length > (isDesktop ? 2 : 3))
-                Center(
-                  child: Text(
-                    'More tasks available...',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ),
-            ],
+                      if (hasMoreTasks)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Center(
+                            child: TextButton.icon(
+                              onPressed: () {
+                                if (projectId.isNotEmpty) {
+                                  context.go('/project-management/$projectId');
+                                }
+                              },
+                              icon: const Icon(Icons.arrow_forward, size: 16),
+                              label: Text(
+                                'View ${tasks.length - 3} more task${tasks.length - 3 > 1 ? 's' : ''} in Project Management',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.amber.shade700,
+                                ),
+                              ),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
           ],
         ),
       ),
     );
+  }
+
+  String _formatTaskDate(dynamic dateValue) {
+    if (dateValue == null) return 'Not set';
+    try {
+      final date = DateTime.parse(dateValue.toString());
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return '${months[date.month - 1]} ${date.day}, ${date.year}';
+    } catch (e) {
+      return dateValue.toString();
+    }
   }
 
   List<Map<String, dynamic>> _getProjectsToShow() {

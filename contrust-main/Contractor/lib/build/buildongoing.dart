@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:backend/utils/be_contractformat.dart'; 
 
 class OngoingBuildMethods {
@@ -984,21 +985,182 @@ class OngoingBuildMethods {
     );
   }
 
-  static void showAddReportDialog({
+  static Future<void> showAddReportDialog({
     required BuildContext context,
     required TextEditingController controller,
     required VoidCallback onAdd,
-  }) {
-    showDialog(
+  }) async {
+    if (!context.mounted) return;
+    
+    await showDialog(
       context: context,
-      builder: (context) {
-        return Center(
+      barrierColor: Colors.black54,
+      barrierDismissible: true,
+      useSafeArea: true,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          child: Material(
+            color: Colors.transparent,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600, maxHeight: 600),
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.black, width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 20,
+                      spreadRadius: 1,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade700,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Icon(
+                            Icons.description,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text(
+                            'Add Progress Report',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(dialogContext).pop(),
+                          icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 500),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Share updates and progress details for this project',
+                              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                            ),
+                            const SizedBox(height: 20),
+                            Container(
+                              constraints: const BoxConstraints(minHeight: 200, maxHeight: 300),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(12),
+                                color: Colors.grey.shade50,
+                              ),
+                              child: TextField(
+                                controller: controller,
+                                maxLines: null,
+                                minLines: 8,
+                                textAlignVertical: TextAlignVertical.top,
+                                decoration: const InputDecoration(
+                                  hintText: 'Enter progress details...',
+                                  border: InputBorder.none,
+                                  contentPadding: EdgeInsets.all(16),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(dialogContext).pop(),
+                                  child: const Text('Cancel'),
+                                ),
+                                const SizedBox(width: 12),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    if (controller.text.trim().isNotEmpty) {
+                                      Navigator.of(dialogContext).pop();
+                                      onAdd();
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFFFB300),
+                                    foregroundColor: Colors.black,
+                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                    minimumSize: const Size(0, 50),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: const Text('Add Report'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          )
+        );
+      },
+    );
+  }
+
+  static Future<void> showTestTaskDialog({
+    required BuildContext context,
+  }) async {
+    if (!context.mounted) return;
+    
+    await showDialog(
+      context: context,
+      barrierColor: Colors.black54,
+      barrierDismissible: true,
+      useSafeArea: true,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
           child: Material(
             color: Colors.transparent,
             child: Container(
-              width: 600,
-              constraints: const BoxConstraints(maxWidth: 600, maxHeight: 600),
-              margin: const EdgeInsets.symmetric(horizontal: 16),
+              constraints: const BoxConstraints(maxWidth: 400, maxHeight: 300),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
@@ -1012,351 +1174,656 @@ class OngoingBuildMethods {
                   ),
                 ],
               ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade700,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade700,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Icon(
-                          Icons.description,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      const Expanded(
-                        child: Text(
-                          'Add Progress Report',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                    ],
-                  ),
-                ),
-                Flexible(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      mainAxisSize: MainAxisSize.min,
+                    child: Row(
                       children: [
-                        Text(
-                          'Share updates and progress details for this project',
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-                        ),
-                        const SizedBox(height: 20),
-                        Expanded(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.shade300),
-                              borderRadius: BorderRadius.circular(12),
-                              color: Colors.grey.shade50,
-                            ),
-                            child: TextField(
-                              controller: controller,
-                              maxLines: null,
-                              expands: true,
-                              textAlignVertical: TextAlignVertical.top,
-                              decoration: const InputDecoration(
-                                hintText: 'Enter progress details...',
-                                border: InputBorder.none,
-                                contentPadding: EdgeInsets.all(16),
-                              ),
+                        const Icon(Icons.bug_report, color: Colors.white, size: 24),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Test Dialog',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('Cancel'),
-                            ),
-                            const SizedBox(width: 12),
-                            ElevatedButton(
-                              onPressed: () {
-                                if (controller.text.trim().isNotEmpty) {
-                                  onAdd();
-                                  Navigator.pop(context);
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFFFB300),
-                                foregroundColor: Colors.black,
-                                minimumSize: const Size.fromHeight(50),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: const Text('Add Report'),
-                            ),
-                          ],
+                        IconButton(
+                          onPressed: () => Navigator.of(dialogContext).pop(),
+                          icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.check_circle, color: Colors.green, size: 64),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Dialog is working!',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'If you can see this, the dialog system is functioning correctly.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: () => Navigator.of(dialogContext).pop(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue.shade700,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text('Close'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
           ),
         );
       },
     );
   }
 
-  static void showAddTaskDialog({
+  static Future<void> showAddTaskDialog({
     required BuildContext context,
-    required Function(List<String>) onAdd,
-  }) {
-    final List<TextEditingController> controllers = [TextEditingController()];
+    required Function(List<Map<String, dynamic>>) onAdd,
+  }) async {
+    if (!context.mounted) return;
+    
+    final TextEditingController taskController = TextEditingController();
+    final List<Map<String, dynamic>> addedTasks = [];
 
-    showDialog(
+    await showDialog(
       context: context,
-      builder: (context) {
+      barrierColor: Colors.black54,
+      barrierDismissible: true,
+      useSafeArea: true,
+      builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setState) {
-            return Center(
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
               child: Material(
                 color: Colors.transparent,
-                child: Container(
-                  width: 500,
+                child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.black, width: 1.5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
-                        blurRadius: 20,
-                        spreadRadius: 1,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.shade700,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(20),
-                          topRight: Radius.circular(20),
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.black, width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 20,
+                          spreadRadius: 1,
+                          offset: const Offset(0, 8),
                         ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Icon(
-                              Icons.checklist,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          const Expanded(
-                            child: Text(
-                              'Add Multiple Tasks',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () => Navigator.pop(context),
-                            icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          ),
-                        ],
-                      ),
+                      ],
                     ),
-                    Flexible(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade700,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(20),
+                            topRight: Radius.circular(20),
+                          ),
+                        ),
+                        child: Row(
                           children: [
-                            Text(
-                              'Add one or more tasks for this project',
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 14,
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Icon(
+                                Icons.checklist,
+                                color: Colors.white,
+                                size: 18,
                               ),
                             ),
-                            const SizedBox(height: 20),
-                            Column(
-                              children: [
-                                ...controllers.asMap().entries.map((entry) {
-                                  final index = entry.key;
-                                  final controller = entry.value;
-                                  return Container(
-                                    margin: const EdgeInsets.only(bottom: 12),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: Colors.grey.shade300,
-                                      ),
-                                      borderRadius: BorderRadius.circular(12),
-                                      color: Colors.grey.shade50,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: TextField(
-                                            controller: controller,
-                                            decoration: InputDecoration(
-                                              hintText: 'Enter task ...',
-                                              border: InputBorder.none,
-                                              contentPadding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 16,
-                                                    vertical: 12,
-                                                  ),
-                                            ),
-                                            maxLines: null,
-                                            minLines: 1,
-                                          ),
-                                        ),
-                                        if (controllers.length > 1)
-                                          IconButton(
-                                            icon: Icon(
-                                              Icons.remove_circle,
-                                              color: Colors.red.shade400,
-                                            ),
-                                            onPressed: () {
-                                              setState(() {
-                                                controllers.removeAt(index);
-                                              });
-                                            },
-                                          ),
-                                      ],
-                                    ),
-                                  );
-                                }),
-                                const SizedBox(height: 12),
-                                OutlinedButton.icon(
-                                  onPressed: () {
-                                    setState(() {
-                                      controllers.add(TextEditingController());
-                                    });
-                                  },
-                                  icon: Icon(
-                                    Icons.add,
-                                    color: Colors.blue.shade700,
-                                  ),
-                                  label: Text(
-                                    'Add Another Task',
-                                    style: TextStyle(color: Colors.blue.shade700),
-                                  ),
-                                  style: OutlinedButton.styleFrom(
-                                    side: BorderSide(color: Colors.blue.shade700),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 12,
-                                    ),
-                                  ),
+                            const SizedBox(width: 10),
+                            const Expanded(
+                              child: Text(
+                                'Add Tasks',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                              ],
+                              ),
                             ),
-                            const SizedBox(height: 24),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 20,
-                                      vertical: 12,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'Cancel',
-                                    style: TextStyle(color: Colors.grey.shade600),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    final validTasks =
-                                        controllers
-                                            .map((c) => c.text.trim())
-                                            .where((text) => text.isNotEmpty)
-                                            .toList();
-                                    if (validTasks.isNotEmpty) {
-                                      Navigator.pop(context);
-                                      onAdd(validTasks);
-                                    }
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFFFFB300),
-                                    foregroundColor: Colors.black,
-                                    minimumSize: const Size.fromHeight(50),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                  child: const Text('Add Tasks'),
-                                ),
-                              ],
+                            IconButton(
+                              onPressed: () => Navigator.of(dialogContext).pop(),
+                              icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
                             ),
                           ],
                         ),
                       ),
+                      Flexible(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 500),
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Enter task and select expected finish date',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextField(
+                                        controller: taskController,
+                                        decoration: InputDecoration(
+                                          hintText: 'Enter task...',
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                            borderSide: BorderSide(color: Colors.grey.shade300),
+                                          ),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                            borderSide: BorderSide(color: Colors.grey.shade300),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                            borderSide: BorderSide(color: Colors.amber.shade700, width: 2),
+                                          ),
+                                          contentPadding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 12,
+                                          ),
+                                        ),
+                                        maxLines: 1,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    ElevatedButton(
+                                      onPressed: () async {
+                                        final taskText = taskController.text.trim();
+                                        if (taskText.isEmpty) return;
+                                        
+                                        // Show date picker
+                                        final selectedDate = await showDatePicker(
+                                          context: context,
+                                          initialDate: DateTime.now(),
+                                          firstDate: DateTime.now(),
+                                          lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+                                        );
+                                        
+                                        if (selectedDate != null) {
+                                          setState(() {
+                                            addedTasks.add({
+                                              'task': taskText,
+                                              'expect_finish': selectedDate,
+                                            });
+                                            taskController.clear();
+                                          });
+                                        }
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFFFFB300),
+                                        foregroundColor: Colors.black,
+                                        padding: const EdgeInsets.all(12),
+                                        minimumSize: const Size(56, 56),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                      child: const Icon(Icons.access_time, size: 24),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                // List of added tasks
+                                if (addedTasks.isNotEmpty) ...[
+                                  Text(
+                                    'Added Tasks (${addedTasks.length})',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey.shade700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  ...addedTasks.asMap().entries.map((entry) {
+                                    final index = entry.key;
+                                    final task = entry.value;
+                                    return Container(
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade50,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: Colors.grey.shade300),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  task['task'] as String,
+                                                  style: const TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons.calendar_today,
+                                                      size: 12,
+                                                      color: Colors.grey.shade600,
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      'Expected: ${DateFormat('MMM dd, yyyy').format(task['expect_finish'] as DateTime)}',
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: Colors.grey.shade600,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          IconButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                addedTasks.removeAt(index);
+                                              });
+                                            },
+                                            icon: Icon(
+                                              Icons.delete_outline,
+                                              color: Colors.red.shade400,
+                                              size: 20,
+                                            ),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }),
+                                ],
+                                const SizedBox(height: 24),
+                                Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(dialogContext).pop(),
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                        vertical: 12,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Cancel',
+                                      style: TextStyle(color: Colors.grey.shade600),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  ElevatedButton(
+                                    onPressed: addedTasks.isEmpty
+                                        ? null
+                                        : () {
+                                            Navigator.of(dialogContext).pop();
+                                            onAdd(addedTasks);
+                                          },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFFFFB300),
+                                      foregroundColor: Colors.black,
+                                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                      minimumSize: const Size(0, 50),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child: Text('Add ${addedTasks.length} Task${addedTasks.length != 1 ? 's' : ''}'),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ));
+            ),
+            );
           },
         );
       },
     ).then((_) {
-      for (final controller in controllers) {
-        controller.dispose();
-      }
+      taskController.dispose();
     });
+  }
+
+  static Future<void> showMarkTasksDoneDialog({
+    required BuildContext context,
+    required List<Map<String, dynamic>> undoneTasks,
+    required Function(List<String>) onConfirm,
+  }) async {
+    if (!context.mounted) return;
+    
+    final Set<String> selectedTaskIds = {};
+
+    await showDialog(
+      context: context,
+      barrierColor: Colors.black54,
+      barrierDismissible: true,
+      useSafeArea: true,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              child: Material(
+                color: Colors.transparent,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.black, width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 20,
+                          spreadRadius: 1,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.shade700,
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(20),
+                              topRight: Radius.circular(20),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Icon(
+                                  Icons.check_circle,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              const Expanded(
+                                child: Text(
+                                  'Mark Tasks as Done',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () => Navigator.of(dialogContext).pop(),
+                                icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Flexible(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxHeight: 500),
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Select tasks to mark as done',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  ...undoneTasks.map((task) {
+                                    final taskId = task['task_id']?.toString() ?? '';
+                                    final taskText = task['task'] ?? 'Untitled Task';
+                                    final isSelected = selectedTaskIds.contains(taskId);
+                                    final expectFinish = task['expect_finish'] as String?;
+                                    
+                                    return Container(
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: isSelected ? Colors.green.shade50 : Colors.grey.shade50,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: isSelected ? Colors.green.shade300 : Colors.grey.shade300,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          GestureDetector(
+                                            onTap: () {
+                                              setState(() {
+                                                if (isSelected) {
+                                                  selectedTaskIds.remove(taskId);
+                                                } else {
+                                                  selectedTaskIds.add(taskId);
+                                                }
+                                              });
+                                            },
+                                            child: Icon(
+                                              isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+                                              color: isSelected ? Colors.green : Colors.grey,
+                                              size: 20,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  taskText,
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Colors.black87,
+                                                  ),
+                                                ),
+                                                if (expectFinish != null && expectFinish.isNotEmpty) ...[
+                                                  const SizedBox(height: 4),
+                                                  Row(
+                                                    children: [
+                                                      Icon(
+                                                        Icons.calendar_today,
+                                                        size: 12,
+                                                        color: Colors.grey.shade600,
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        'Expected: ${DateFormat('MMM dd, yyyy').format(DateTime.parse(expectFinish))}',
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          color: Colors.grey.shade600,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }),
+                                  const SizedBox(height: 16),
+                                  // Select All / Deselect All buttons
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      TextButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            if (selectedTaskIds.length == undoneTasks.length) {
+                                              selectedTaskIds.clear();
+                                            } else {
+                                              selectedTaskIds.clear();
+                                              for (var task in undoneTasks) {
+                                                final taskId = task['task_id']?.toString() ?? '';
+                                                if (taskId.isNotEmpty) {
+                                                  selectedTaskIds.add(taskId);
+                                                }
+                                              }
+                                            }
+                                          });
+                                        },
+                                        child: Text(
+                                          selectedTaskIds.length == undoneTasks.length
+                                              ? 'Deselect All'
+                                              : 'Select All',
+                                          style: TextStyle(color: Colors.blue.shade700),
+                                        ),
+                                      ),
+                                      Text(
+                                        '${selectedTaskIds.length} of ${undoneTasks.length} selected',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 24),
+                                  // Action buttons
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      TextButton(
+                                        onPressed: () => Navigator.of(dialogContext).pop(),
+                                        style: TextButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 20,
+                                            vertical: 12,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          'Cancel',
+                                          style: TextStyle(color: Colors.grey.shade600),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      ElevatedButton(
+                                        onPressed: selectedTaskIds.isEmpty
+                                            ? null
+                                            : () {
+                                                Navigator.of(dialogContext).pop();
+                                                onConfirm(selectedTaskIds.toList());
+                                              },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFFFFB300),
+                                          foregroundColor: Colors.black,
+                                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                          minimumSize: const Size(0, 50),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        child: Text('Mark ${selectedTaskIds.length} Task${selectedTaskIds.length != 1 ? 's' : ''} as Done'),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   static Widget buildRecentActivityFeed({
@@ -1409,7 +1876,7 @@ class OngoingBuildMethods {
       activities.add({
         'type': 'photo',
         'title': 'Photo uploaded',
-        'description': photo['description'] ?? 'Project photo',
+        'description': 'Project photo uploaded',
         'timestamp': photo['created_at'] ?? DateTime.now().toIso8601String(),
         'icon': Icons.photo_camera,
       });

@@ -280,7 +280,7 @@ class FetchService {
     try {
       final response = await _supabase
           .from('ProjectTasks')
-          .select('task_id, project_id, task, done, created_at, task_done')
+          .select('task_id, project_id, task, done, created_at, task_done, expect_finish, expect_finish')
           .eq('project_id', projectId)
           .order('created_at', ascending: false);
 
@@ -304,7 +304,7 @@ class FetchService {
     try {
       final response = await _supabase
           .from('ProjectReports')
-          .select('report_id, project_id, content, author_id, created_at')
+          .select('report_id, project_id, content, author_id, created_at, pdf_url, period_type, title')
           .eq('project_id', projectId)
           .order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(response);
@@ -327,7 +327,7 @@ class FetchService {
     try {
       final response = await _supabase
           .from('ProjectPhotos')
-          .select('photo_id, project_id, photo_url, uploader_id, created_at')
+          .select('photo_id, project_id, photo_url, uploader_id, description, created_at')
           .eq('project_id', projectId)
           .order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(response);

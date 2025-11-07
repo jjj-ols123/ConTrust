@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:typed_data';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_project_service.dart';
 import 'package:backend/services/superadmin services/auditlogs_service.dart';
@@ -8,6 +9,7 @@ import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 
 class CorOngoingService {
   final _fetchService = FetchService();
@@ -187,19 +189,160 @@ class CorOngoingService {
     }
   }
 
+  Future<void> addReportWithPdf({
+    required String projectId,
+    required String title,
+    required String content,
+    required List<int> pdfBytes,
+    required String periodType,
+    required BuildContext context,
+    required VoidCallback onSuccess,
+  }) async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Upload PDF to storage
+      final pdfUrl = await _uploadReportPdfToStorage(
+        pdfBytes: pdfBytes,
+        projectId: projectId,
+        contractorId: userId,
+      );
+
+      // Save report with PDF URL
+      await _projectService.addReportToProject(
+        projectId: projectId,
+        title: title,
+        content: content,
+        authorId: userId,
+        pdfUrl: pdfUrl,
+        periodType: periodType,
+      );
+
+      if (context.mounted) {
+        ConTrustSnackBar.success(
+          context,
+          'Report generated and saved successfully!',
+        );
+      }
+
+      await _auditService.logAuditEvent(
+        userId: userId,
+        action: 'REPORT_ADDED_WITH_PDF',
+        details: 'Progress report with PDF generated',
+        metadata: {
+          'project_id': projectId,
+          'author_id': userId,
+          'period_type': periodType,
+          'pdf_url': pdfUrl,
+        },
+      );
+
+      onSuccess();
+    } catch (e) {
+      await _errorService.logError(
+        userId: _supabase.auth.currentUser?.id,
+        errorMessage: 'Failed to add report with PDF: $e',
+        module: 'CorOngoingService',
+        severity: 'Medium',
+        extraInfo: {'project_id': projectId},
+      );
+
+      if (context.mounted) {
+        ConTrustSnackBar.error(
+          context,
+          'Error generating report: $e',
+        );
+      }
+    }
+  }
+
+  Future<String> _uploadReportPdfToStorage({
+    required List<int> pdfBytes,
+    required String projectId,
+    required String contractorId,
+  }) async {
+    try {
+      final uuid = const Uuid().v4();
+      final fileName = '${projectId}_${DateTime.now().millisecondsSinceEpoch}_$uuid.pdf';
+      final filePath = '$contractorId/$fileName';
+
+      await _supabase.storage
+          .from('reports')
+          .uploadBinary(
+            filePath,
+            Uint8List.fromList(pdfBytes),
+            fileOptions: const FileOptions(upsert: false),
+          );
+
+      return filePath;
+    } catch (e) {
+      await _errorService.logError(
+        userId: contractorId,
+        errorMessage: 'Failed to upload report PDF: $e',
+        module: 'CorOngoingService',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Upload Report PDF',
+          'project_id': projectId,
+        },
+      );
+      rethrow;
+    }
+  }
+
+  Future<String?> getSignedReportUrl(String pdfUrl) async {
+    try {
+      final response = await _supabase.storage
+          .from('reports')
+          .createSignedUrl(pdfUrl, 3600);
+      
+      if (response.isEmpty) {
+        try {
+          final publicUrl = _supabase.storage.from('reports').getPublicUrl(pdfUrl);
+          return publicUrl;
+        } catch (publicError) {
+          return null;
+        }
+      }
+      
+      return response;
+    } catch (e) {
+      await _errorService.logError(
+        userId: _supabase.auth.currentUser?.id,
+        errorMessage: 'Failed to get signed report URL: $e',
+        module: 'CorOngoingService',
+        severity: 'Low',
+        extraInfo: {'pdf_url': pdfUrl},
+      );
+      
+      try {
+        final publicUrl = _supabase.storage.from('reports').getPublicUrl(pdfUrl);
+        return publicUrl;
+      } catch (publicError) {
+        return null;
+      }
+    }
+  }
+
   Future<void> addTask({
     required String projectId,
     required String task,
     required BuildContext context,
     required VoidCallback onSuccess,
+    DateTime? expectFinish,
+    bool showSuccessMessage = true,
   }) async {
     try {
       await _projectService.addTaskToProject(
         projectId: projectId,
         task: task,
+        expectFinish: expectFinish,
       );
 
-      if (context.mounted) {
+      if (context.mounted && showSuccessMessage) {
         ConTrustSnackBar.success(
           context,
           'Task added successfully!',
@@ -236,6 +379,7 @@ class CorOngoingService {
     required String projectId,
     required BuildContext context,
     required VoidCallback onSuccess,
+    String? description,
   }) async {
     try {
       final pickedFile = await ImagePicker().pickImage(
@@ -311,6 +455,7 @@ class CorOngoingService {
             projectId: projectId,
             photoUrl: storagePath,
             uploaderId: userId,
+            description: description,
           );
 
           if (context.mounted) {
@@ -624,7 +769,7 @@ class CorOngoingService {
       }
 
       final updateData = <String, dynamic>{
-        'estimated_completion': estimatedCompletion.toIso8601String(),
+        'estimated_completion': estimatedCompletion.toLocal().toIso8601String(),
       };
       
       if (duration != null) {

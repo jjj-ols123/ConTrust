@@ -1348,12 +1348,14 @@ class ProjectService {
     required String projectId,
     required String task,
     bool done = false,
+    DateTime? expectFinish,
   }) async {
     try {
       await _supabase.from('ProjectTasks').insert({
         'project_id': projectId,
         'task': task,
         'done': done,
+        'expect_finish': expectFinish?.toLocal().toIso8601String(),
         'created_at': DateTimeHelper.getLocalTimeISOString(),
       });
 
@@ -1384,14 +1386,22 @@ class ProjectService {
     required String projectId,
     required String content,
     required String authorId,
+    String? title,
+    String? pdfUrl,
+    String? periodType,
   }) async {
     try {
-      await _supabase.from('ProjectReports').insert({
+      final reportData = {
         'project_id': projectId,
         'content': content,
         'author_id': authorId,
         'created_at': DateTimeHelper.getLocalTimeISOString(),
-      });
+        if (title != null) 'title': title,
+        if (pdfUrl != null) 'pdf_url': pdfUrl,
+        if (periodType != null) 'period_type': periodType,
+      };
+      
+      await _supabase.from('ProjectReports').insert(reportData);
 
       await _auditService.logAuditEvent(
         userId: authorId,
@@ -1422,12 +1432,14 @@ class ProjectService {
     required String projectId,
     required String photoUrl,
     required String uploaderId,
+    String? description,
   }) async {
     try {
       await _supabase.from('ProjectPhotos').insert({
         'project_id': projectId,
         'photo_url': photoUrl,
         'uploader_id': uploaderId,
+        'description': description,
         'created_at': DateTimeHelper.getLocalTimeISOString(),
       });
 

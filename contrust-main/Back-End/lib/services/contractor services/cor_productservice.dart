@@ -204,25 +204,10 @@ class CorProductService {
     }
 
     try {
-      final fetchService = FetchService();
-      final existingMaterials = await fetchService.fetchProjectCosts(
-        projectId,
-      );
-      final existingMaterialNames =
-          existingMaterials.map((m) => m['material_name'] as String).toSet();
-
       int addedCount = 0;
-      int skippedCount = 0;
 
       for (final item in materials) {
-        
         final materialName = item['name'] as String;
-
-        if (existingMaterialNames.contains(materialName)) {
-          skippedCount++;
-          continue;
-        }
-
         final note = item['note'] as String?;
         final qty = (item['qty'] as num?)?.toDouble() ?? 0.0;
         final unit = item['unit'] as String? ?? 'pcs';
@@ -246,12 +231,7 @@ class CorProductService {
         if (addedCount > 0) {
           ConTrustSnackBar.success(
             context,
-            'Successfully added $addedCount material${addedCount > 1 ? 's' : ''} to project costs${skippedCount > 0 ? ' ($skippedCount skipped - already exist)' : ''}',
-          );
-        } else if (skippedCount > 0) {
-          ConTrustSnackBar.info(
-            context,
-            'All materials already exist in project costs ($skippedCount skipped)',
+            'Successfully added $addedCount material${addedCount > 1 ? 's' : ''} to project costs',
           );
         }
       }

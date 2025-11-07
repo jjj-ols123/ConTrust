@@ -2,8 +2,8 @@
 
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:backend/services/contractor services/cor_productservice.dart';
-import 'package:backend/services/both services/be_project_service.dart';
 
 class ProductBuildMethods {
   static Widget buildProductUI({
@@ -579,7 +579,7 @@ class ProductBuildMethods {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.orange.shade50,
+                      color: Colors.amber.shade700,
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(20),
                         topRight: Radius.circular(20),
@@ -587,8 +587,15 @@ class ProductBuildMethods {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.inventory_2, color: Colors.orange, size: 28),
-                        const SizedBox(width: 12),
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Icon(Icons.inventory_2, color: Colors.white, size: 18),
+                        ),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -596,17 +603,16 @@ class ProductBuildMethods {
                               const Text(
                                 'Local Inventory',
                                 style: TextStyle(
-                                  fontSize: 20,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF2D3748),
+                                  color: Colors.white,
                                 ),
                               ),
                               Text(
                                 '${localInventory.length} item${localInventory.length > 1 ? 's' : ''} • ₱${totalCost.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.orange.shade600,
-                                  fontWeight: FontWeight.w500,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white,
                                 ),
                               ),
                             ],
@@ -614,8 +620,9 @@ class ProductBuildMethods {
                         ),
                         IconButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(Icons.close),
-                          color: Colors.grey.shade600,
+                          icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
                         ),
                       ],
                     ),
@@ -1178,7 +1185,7 @@ class ProductBuildMethods {
                         Container(
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
-                            color: Colors.amber.shade400,
+                            color: Colors.amber.shade700,
                             borderRadius: const BorderRadius.only(
                               topLeft: Radius.circular(20),
                               topRight: Radius.circular(20),
@@ -1351,7 +1358,6 @@ class ProductBuildMethods {
 
                                             if (confirmed == true) {
                                               setDialogState(() => materials.removeAt(index));
-                                              ConTrustSnackBar.success(context, 'Material deleted successfully!');
                                             }
                                           },
                                           onTap: () => showMaterialDetailsDialog(context, material),
@@ -1696,7 +1702,154 @@ class ProductBuildMethods {
     );
   }
   
-  static void showMaterialDetailsDialog(BuildContext context, Map<String, dynamic> material) {}
+  static void showMaterialDetailsDialog(BuildContext context, Map<String, dynamic> material) {
+    final name = material['name'] ?? material['material_name'] ?? 'Unknown Material';
+    final quantity = (material['qty'] ?? material['quantity'] as num?)?.toDouble() ?? 0.0;
+    final unitPrice = (material['unitPrice'] ?? material['unit_price'] as num?)?.toDouble() ?? 0.0;
+    final unit = material['unit'] ?? 'pcs';
+    final brand = material['brand'] as String?;
+    final notes = material['note'] ?? material['notes'] as String?;
+    final totalCost = quantity * unitPrice;
+    final createdAt = material['created_at'] as String?;
+
+    showDialog(
+      context: context,
+      barrierColor: Colors.black54,
+      barrierDismissible: true,
+      useSafeArea: true,
+      builder: (dialogContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 700, maxHeight: 600),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 20,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade700,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(Icons.inventory_2, color: Colors.white, size: 18),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          name,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildMaterialDetailField('Material Name', name),
+                        if (brand != null && brand.isNotEmpty)
+                          _buildMaterialDetailField('Brand', brand),
+                        _buildMaterialDetailField('Quantity', '${quantity.toStringAsFixed(1)} $unit'),
+                        _buildMaterialDetailField('Unit Price', '₱${unitPrice.toStringAsFixed(2)}'),
+                        _buildMaterialDetailField('Total Cost', '₱${totalCost.toStringAsFixed(2)}'),
+                        if (notes != null && notes.isNotEmpty)
+                          _buildMaterialDetailField('Notes', notes),
+                        if (createdAt != null) ...[
+                          const SizedBox(height: 24),
+                          _buildMaterialDetailField('Created', _formatMaterialDate(createdAt)),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  static Widget _buildMaterialDetailField(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _formatMaterialDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+    } catch (e) {
+      return dateString;
+    }
+  }
 }
 
 class _AddToProjectButton extends StatefulWidget {
@@ -1843,8 +1996,44 @@ class _MaterialInputDialogState extends State<MaterialInputDialog> {
 
     setState(() => _isSaving = true);
 
-    final qty = double.tryParse(_qtyController.text.trim()) ?? 0;
-    final price = double.tryParse(_priceController.text.trim()) ?? 0;
+    // Validate quantity - must be a number and greater than 0
+    final qtyText = _qtyController.text.trim();
+    if (qtyText.isEmpty) {
+      setState(() => _isSaving = false);
+      ConTrustSnackBar.error(context, 'Please enter a quantity');
+      return;
+    }
+    final qty = double.tryParse(qtyText);
+    if (qty == null) {
+      setState(() => _isSaving = false);
+      ConTrustSnackBar.error(context, 'Quantity must be a valid number');
+      return;
+    }
+    if (qty <= 0) {
+      setState(() => _isSaving = false);
+      ConTrustSnackBar.error(context, 'Quantity must be greater than 0');
+      return;
+    }
+
+    // Validate price - must be a number and greater than 0
+    final priceText = _priceController.text.trim();
+    if (priceText.isEmpty) {
+      setState(() => _isSaving = false);
+      ConTrustSnackBar.error(context, 'Please enter a price');
+      return;
+    }
+    final price = double.tryParse(priceText);
+    if (price == null) {
+      setState(() => _isSaving = false);
+      ConTrustSnackBar.error(context, 'Price must be a valid number');
+      return;
+    }
+    if (price <= 0) {
+      setState(() => _isSaving = false);
+      ConTrustSnackBar.error(context, 'Price must be greater than 0');
+      return;
+    }
+
     final note =
         _noteController.text.trim().isEmpty
             ? null
@@ -1872,7 +2061,6 @@ class _MaterialInputDialogState extends State<MaterialInputDialog> {
 
     widget.onSuccess(materialMap);
     Navigator.pop(context);
-    ConTrustSnackBar.success(context, 'Material added to local inventory');
 
     if (mounted) setState(() => _isSaving = false);
   }
@@ -1901,7 +2089,7 @@ class _MaterialInputDialogState extends State<MaterialInputDialog> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.amber.shade400,
+                color: Colors.amber.shade700,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
@@ -1984,8 +2172,9 @@ class _MaterialInputDialogState extends State<MaterialInputDialog> {
                             controller: _qtyController,
                             label: 'Quantity',
                             icon: Icons.numbers,
-                            keyboardType: TextInputType.number,
+                            keyboardType: TextInputType.numberWithOptions(decimal: true),
                             isRequired: true,
+                            isNumberField: true,
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -2042,8 +2231,9 @@ class _MaterialInputDialogState extends State<MaterialInputDialog> {
                       controller: _priceController,
                       label: 'Price (₱)',
                       icon: Icons.money,
-                      keyboardType: TextInputType.number,
+                      keyboardType: TextInputType.numberWithOptions(decimal: true),
                       isRequired: true,
+                      isNumberField: true,
                     ),
                     const SizedBox(height: 16),
 
@@ -2169,11 +2359,17 @@ class _MaterialInputDialogState extends State<MaterialInputDialog> {
     bool isRequired = false,
     TextInputType? keyboardType,
     int maxLines = 1,
+    bool isNumberField = false,
   }) {
     return TextField(
       controller: controller,
-      keyboardType: keyboardType,
+      keyboardType: keyboardType ?? (isNumberField ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text),
       maxLines: maxLines,
+      inputFormatters: isNumberField
+          ? [
+              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+            ]
+          : null,
       decoration: InputDecoration(
         labelText: isRequired ? '$label *' : label,
         prefixIcon: Icon(icon, color: Colors.grey.shade600),
