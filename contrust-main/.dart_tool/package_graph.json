@@ -67,6 +67,7 @@
         "go_router",
         "google_sign_in",
         "image_picker",
+        "intl",
         "path_provider",
         "pdf",
         "printing",
@@ -104,7 +105,9 @@
         "flutter_web_plugins",
         "go_router",
         "google_sign_in",
+        "http",
         "image_picker",
+        "intl",
         "mobile_scanner",
         "path_provider",
         "pdf",
@@ -257,6 +260,16 @@
         "clock",
         "meta",
         "path"
+      ]
+    },
+    {
+      "name": "http",
+      "version": "1.5.0",
+      "dependencies": [
+        "async",
+        "http_parser",
+        "meta",
+        "web"
       ]
     },
     {
@@ -540,16 +553,6 @@
       ]
     },
     {
-      "name": "http",
-      "version": "1.5.0",
-      "dependencies": [
-        "async",
-        "http_parser",
-        "meta",
-        "web"
-      ]
-    },
-    {
       "name": "uuid",
       "version": "4.5.1",
       "dependencies": [
@@ -825,6 +828,16 @@
       "name": "characters",
       "version": "1.4.0",
       "dependencies": []
+    },
+    {
+      "name": "http_parser",
+      "version": "4.1.2",
+      "dependencies": [
+        "collection",
+        "source_span",
+        "string_scanner",
+        "typed_data"
+      ]
     },
     {
       "name": "google_sign_in_web",
@@ -1358,16 +1371,6 @@
         "flutter",
         "flutter_plugin_android_lifecycle",
         "image_picker_platform_interface"
-      ]
-    },
-    {
-      "name": "http_parser",
-      "version": "4.1.2",
-      "dependencies": [
-        "collection",
-        "source_span",
-        "string_scanner",
-        "typed_data"
       ]
     },
     {

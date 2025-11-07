@@ -292,27 +292,10 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
     }
 
     try {
-      // Get existing materials to check for duplicates
-      final existingMaterials = await FetchService().fetchProjectCosts(projectId!);
-      final existingMaterialNames = existingMaterials
-          .map((m) => (m['material_name'] as String).toLowerCase())
-          .toSet();
-
       int addedCount = 0;
-      int skippedCount = 0;
       List<Map<String, dynamic>> successfullyAddedItems = [];
-      List<Map<String, dynamic>> duplicateItems = [];
 
       for (final material in localInventory) {
-        final materialName = (material['name'] as String).toLowerCase();
-        
-        // Check if material already exists in project
-        if (existingMaterialNames.contains(materialName)) {
-          skippedCount++;
-          duplicateItems.add(material); // Track duplicates to remove
-          continue;
-        }
-
         try {
           await ProjectService().addCostToProject(
             contractor_id: contractorId!,
@@ -335,23 +318,14 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
         for (final item in successfullyAddedItems) {
           localInventory.remove(item);
         }
-        for (final item in duplicateItems) {
-          localInventory.remove(item);
-        }
       });
 
       if (addedCount > 0) {
         String message = 'Successfully added $addedCount material${addedCount > 1 ? 's' : ''} to project';
-        if (skippedCount > 0) {
-          message += ' ($skippedCount duplicate${skippedCount > 1 ? 's' : ''} removed)';
-        }
         if (localInventory.isNotEmpty) {
           message += '. ${localInventory.length} item${localInventory.length > 1 ? 's' : ''} remain${localInventory.length == 1 ? 's' : ''} in local inventory';
         }
         ConTrustSnackBar.success(context, message);
-        return true;
-      } else if (skippedCount > 0) {
-        ConTrustSnackBar.warning(context, 'All materials were duplicates and removed from local inventory');
         return true;
       } else {
         ConTrustSnackBar.error(context, 'Failed to add materials to project');

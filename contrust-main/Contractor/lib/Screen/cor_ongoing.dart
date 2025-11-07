@@ -8,6 +8,7 @@ import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/build/buildviewcontract.dart';
 import 'package:backend/services/contractor services/contract/cor_viewcontractservice.dart';
 import 'package:contractor/build/buildongoing.dart';
+import 'package:contractor/Screen/cor_project_dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -36,6 +37,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   List<Map<String, dynamic>> _localTasks = [];
   double _localProgress = 0.0;
   String? contractorId;
+  String? _contractorFirmName;
   Stream<Map<String, dynamic>>? _projectStream;
   final List<StreamSubscription> _subscriptions = [];
   StreamController<Map<String, dynamic>>? _controller;
@@ -55,6 +57,25 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     _projectStream = _controller!.stream;
     _attachRealtimeListeners();
     _emitAggregatedData();
+    _loadContractorFirmName();
+  }
+
+  Future<void> _loadContractorFirmName() async {
+    if (contractorId == null) return;
+    try {
+      final contractor = await Supabase.instance.client
+          .from('Contractor')
+          .select('firm_name')
+          .eq('contractor_id', contractorId!)
+          .maybeSingle();
+      if (contractor != null && mounted) {
+        setState(() {
+          _contractorFirmName = contractor['firm_name'] as String?;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading contractor firm name: $e');
+    }
   }
 
   void _debouncedEmitAggregatedData() {
@@ -67,48 +88,76 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   void _attachRealtimeListeners() {
     final supabase = Supabase.instance.client;
     
-    _subscriptions.add(
-      supabase
-          .from('Projects')
-          .stream(primaryKey: ['project_id'])
-          .eq('project_id', widget.projectId)
-          .listen((_) => _debouncedEmitAggregatedData()),
-    );
-    _subscriptions.add(
-      supabase
-          .from('ProjectTasks')
-          .stream(primaryKey: ['task_id'])
-          .eq('project_id', widget.projectId)
-          .listen((_) => _debouncedEmitAggregatedData()),
-    );
-    _subscriptions.add(
-      supabase
-          .from('ProjectReports')
-          .stream(primaryKey: ['report_id'])
-          .eq('project_id', widget.projectId)
-          .listen((_) => _debouncedEmitAggregatedData()),
-    );
-    _subscriptions.add(
-      supabase
-          .from('ProjectPhotos')
-          .stream(primaryKey: ['photo_id'])
-          .eq('project_id', widget.projectId)
-          .listen((_) => _debouncedEmitAggregatedData()),
-    );
-    _subscriptions.add(
-      supabase
-          .from('ProjectMaterials')
-          .stream(primaryKey: ['material_id'])
-          .eq('project_id', widget.projectId)
-          .listen((_) => _debouncedEmitAggregatedData()),
-    );
-    _subscriptions.add(
-      supabase
-          .from('Contracts')
-          .stream(primaryKey: ['contract_id'])
-          .eq('project_id', widget.projectId)
-          .listen((_) => _debouncedEmitAggregatedData()),
-    );
+    // Helper function to safely listen with error handling
+    void safeListen(Stream stream, String tableName) {
+      _subscriptions.add(
+        stream.listen(
+          (_) => _debouncedEmitAggregatedData(),
+          onError: (error) {
+            // Log error but don't crash - realtime subscriptions can fail
+            // and the app should continue working with periodic refreshes
+            if (mounted) {
+              debugPrint('Realtime subscription error for $tableName: $error');
+              // Optionally retry after a delay
+              Future.delayed(const Duration(seconds: 5), () {
+                if (mounted) {
+                  _attachRealtimeListeners();
+                }
+              });
+            }
+          },
+          cancelOnError: false, // Don't cancel on error, keep trying
+        ),
+      );
+    }
+    
+    try {
+      safeListen(
+        supabase
+            .from('Projects')
+            .stream(primaryKey: ['project_id'])
+            .eq('project_id', widget.projectId),
+        'Projects',
+      );
+      safeListen(
+        supabase
+            .from('ProjectTasks')
+            .stream(primaryKey: ['task_id'])
+            .eq('project_id', widget.projectId),
+        'ProjectTasks',
+      );
+      safeListen(
+        supabase
+            .from('ProjectReports')
+            .stream(primaryKey: ['report_id'])
+            .eq('project_id', widget.projectId),
+        'ProjectReports',
+      );
+      safeListen(
+        supabase
+            .from('ProjectPhotos')
+            .stream(primaryKey: ['photo_id'])
+            .eq('project_id', widget.projectId),
+        'ProjectPhotos',
+      );
+      safeListen(
+        supabase
+            .from('ProjectMaterials')
+            .stream(primaryKey: ['material_id'])
+            .eq('project_id', widget.projectId),
+        'ProjectMaterials',
+      );
+      safeListen(
+        supabase
+            .from('Contracts')
+            .stream(primaryKey: ['contract_id'])
+            .eq('project_id', widget.projectId),
+        'Contracts',
+      );
+    } catch (e) {
+      debugPrint('Error setting up realtime listeners: $e');
+      // Continue without realtime - data will still load via _loadData
+    }
   }
 
   Future<void> _emitAggregatedData() async {
@@ -308,8 +357,8 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     });
   }
 
-  void addReport() async {
-    OngoingBuildMethods.showAddReportDialog(
+  Future<void> addReport() async {
+    await OngoingBuildMethods.showAddReportDialog(
       context: context,
       controller: reportController,
       onAdd: () async {
@@ -325,15 +374,18 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     );
   }
 
-  void addTask() async {
-    OngoingBuildMethods.showAddTaskDialog(
+  Future<void> addTask() async {
+    await OngoingBuildMethods.showAddTaskDialog(
       context: context,
-      onAdd: (tasks) async {
-        for (final task in tasks) {
+      onAdd: (taskList) async {
+        for (final taskData in taskList) {
+          final task = taskData['task'] as String;
+          final expectFinish = taskData['expect_finish'] as DateTime?;
           await ongoingService.addTask(
             projectId: widget.projectId,
             task: task,
             context: context,
+            expectFinish: expectFinish,
             onSuccess: () {
             },
           );
@@ -563,6 +615,10 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
           }
 
           if (snapshot.hasError) {
+            // Check if it's a RealtimeSubscribeException - these are often recoverable
+            final error = snapshot.error;
+            final isRealtimeError = error.toString().contains('RealtimeSubscribeException');
+            
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -570,11 +626,13 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
                   Icon(
                     Icons.error_outline,
                     size: 64,
-                    color: Colors.red.shade300,
+                    color: isRealtimeError ? Colors.orange.shade300 : Colors.red.shade300,
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Error loading project',
+                    isRealtimeError 
+                        ? 'Connection issue - retrying...' 
+                        : 'Error loading project',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w500,
@@ -749,97 +807,22 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   }
 
   Widget _buildDesktopContent() {
-    final project = projectData!['projectDetails'] as Map<String, dynamic>;
-    final reports = projectData!['reports'] as List<Map<String, dynamic>>;
-    final photos = projectData!['photos'] as List<Map<String, dynamic>>;
-    final costs = projectData!['costs'] as List<Map<String, dynamic>>;
-    final contractsRaw = projectData!['contracts'];
-    final contracts = contractsRaw is List ? contractsRaw.map((e) => Map<String, dynamic>.from(e as Map)).toList() : <Map<String, dynamic>>[];
-
-    final projectTitle = project['title'] ?? 'Project';
-    final clientName = project['full_name'] ?? 'Client';
-    final address = project['location'] ?? '';
-    
-    String startDate = project['start_date'] ?? '';
-    if (startDate.isEmpty && _isCustomContract() && contracts.isNotEmpty) {
-      try {
-        final contract = contracts.first;
-        final fieldValues = contract['field_values'];
-        if (fieldValues != null && fieldValues is Map) {
-          final startDateValue = fieldValues['Project.StartDate'];
-          if (startDateValue != null && startDateValue.toString().isNotEmpty) {
-            startDate = startDateValue.toString();
-          }
-        }
-      } catch (_) {}
-    }
-
-    final contractInfo = _extractContractInfo(contracts);
-
-    final int? duration = project['duration'] != null
-        ? (project['duration'] is int
-            ? project['duration'] as int
-            : int.tryParse(project['duration'].toString()))
-        : null;
-
-    final estimatedCompletion = _isCustomContract() 
-        ? (project['estimated_completion'] ?? '') 
-        : (contractInfo['estimateDate'] ?? project['estimated_completion'] ?? '');
-
-    // Determine contract status and availability
-    String? contractStatus;
-    Color? contractStatusColor;
-    String? contractId;
-    if (projectData!['contracts'] is List && (projectData!['contracts'] as List).isNotEmpty) {
-      final first = Map<String, dynamic>.from((projectData!['contracts'] as List).first as Map);
-      contractId = first['contract_id']?.toString();
-      final status = (first['status'] as String?) ?? '';
-      contractStatus = _contractStatusLabel(status);
-      contractStatusColor = _contractStatusColor(status);
-    }
-
-    // Get client name with proper fallback for custom contracts
-    final extractedClientName = contractInfo['clientName'];
-    final finalClientName = (extractedClientName != null && extractedClientName.toString().isNotEmpty)
-        ? extractedClientName.toString()
-        : clientName;
-
     return RefreshIndicator(
-      onRefresh: () async => loadData(),
-      child: OngoingBuildMethods.buildDesktopGridLayout(
-        context: context,
-        projectTitle: projectTitle,
-        clientName: finalClientName,
-        address: address,
-        startDate: startDate,
-        estimatedCompletion: estimatedCompletion,
-        duration: duration,
-        isCustomContract: _isCustomContract(),
-        progress: _localProgress,
-        tasks: _localTasks,
-        reports: reports,
-        photos: photos,
-        costs: costs,
-        onUpdateTaskStatus: updateTaskStatus,
-        onDeleteTask: deleteTask,
-        onDeleteReport: deleteReport,
-        onDeletePhoto: deletePhoto,
-        onDeleteCost: deleteCost,
-        createSignedUrl: createSignedPhotoUrl,
-        onAddTask: addTask,
-        onAddReport: addReport,
-        onAddPhoto: pickImage,
-        onGoToMaterials: goToMaterials,
-        onViewReport: onViewReport,
-        onViewPhoto: onViewPhoto,
-        onRefresh: loadData,
-        onEditCompletion: _isCustomContract() ? _editCompletion : null,
-        onSwitchProject: switchProject,
-        contractStatusLabel: contractStatus,
-        contractStatusColor: contractStatusColor,
-        onViewContract: (contractId != null)
-            ? () => _showContractDialog(context, contractId!)
-            : null,
+      onRefresh: () async {
+        loadData();
+        await _loadContractorFirmName();
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8F9FA),
+        body: SafeArea(
+          child: CorProjectDashboard(
+            projectId: widget.projectId,
+            projectData: projectData,
+            contractorFirmName: _contractorFirmName,
+            ongoingService: ongoingService,
+            createSignedPhotoUrl: createSignedPhotoUrl,
+          ),
+        ),
       ),
     );
   }

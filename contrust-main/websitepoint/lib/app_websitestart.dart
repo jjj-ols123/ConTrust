@@ -1,8 +1,9 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/utils/be_snackbar.dart';
+import 'package:websitepoint/web_redirect.dart';
 
 class WebsiteStartPage extends StatelessWidget {
   const WebsiteStartPage({super.key});
@@ -21,7 +22,7 @@ class WebsiteStartPage extends StatelessWidget {
           SingleChildScrollView(
             child: Column(
               children: [
-                _buildNavigationBar(context, isDesktop),         
+                _buildNavigationBar(context, isDesktop, false, false),         
                 _buildHeroSection(context, isDesktop, screenWidth),               
                 _buildMainContent(context, isDesktop, screenWidth),
               ],
@@ -50,27 +51,7 @@ class WebsiteStartPage extends StatelessWidget {
     );
   }
 
-  void _rememberAndRedirect(String role) {
-    if (!kIsWeb) {
-      // This method should only be called on web
-      return;
-    }
-    try {
-      html.window.localStorage['preferredSubdomain'] = role;
-      final String base = role == 'contractor'
-          ? 'https://contractor.contrust-sjdm.com'
-          : 'https://contractee.contrust-sjdm.com';
-      final String path = role == 'contractor' ? '/' : '/login';
-      html.window.location.replace('$base$path');
-    } catch (e) {
-      ConTrustSnackBar.error(context, 'Navigation error: $e');
-    }
-  }
-
   Widget _buildNavigationBar(BuildContext context, bool isDesktop, bool isTablet, bool isMobile) {
-    final double horizontalPadding = isDesktop ? 60 : (isTablet ? 40 : 16);
-    final double logoHeight = isDesktop ? 40 : (isMobile ? 28 : 32);
-    final double fontSize = isDesktop ? 32 : (isMobile ? 20 : 26);
     
     return Container(
       height: 80,
@@ -102,22 +83,8 @@ class WebsiteStartPage extends StatelessWidget {
     );
   }
 
-  Widget _buildNavLink(String text, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          color: Color(0xFF1a1a1a),
-        ),
-      ),
-    );
-  }
-
   Widget _buildHeroSection(BuildContext context, bool isDesktop, double screenWidth) {
-    return Container(
+    return SizedBox(
       height: isDesktop ? 600 : 500,
       width: double.infinity,
       child: Stack(
@@ -254,94 +221,9 @@ class WebsiteStartPage extends StatelessWidget {
     );
   }
 
-  Widget _buildFooter(BuildContext context, bool isDesktop) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: isDesktop ? 80 : 30,
-        vertical: isDesktop ? 60 : 40,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1a1a1a),
-        border: Border(
-          top: BorderSide(
-            color: Colors.white.withOpacity(0.1),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Column(
-        children: [
-          if (isDesktop)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'ConTrust',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Building trust in construction, one contract at a time.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white.withOpacity(0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            )
-          else
-            Column(
-              children: [
-                const Text(
-                  'ConTrust',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Building trust in construction, one contract at a time.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white.withOpacity(0.7),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          SizedBox(height: isDesktop ? 40 : 30),
-          Divider(color: Colors.white.withOpacity(0.1)),
-          const SizedBox(height: 20),
-          Text(
-            '© 2025 ConTrust. All rights reserved.',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withOpacity(0.5),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildContracteeCard(BuildContext context) {
     return _RoleCard(
-      color: const Color(0xFF0066CC),
+      color: Colors.amber,
       icon: Icons.person_outline,
       title: 'Contractee',
       description:
@@ -349,7 +231,12 @@ class WebsiteStartPage extends StatelessWidget {
       buttonText: 'Get Started',
       onPressed: () {
         try {
-          Navigator.of(context).pushReplacementNamed('/contractee');
+          if (kIsWeb) {
+            // Redirect to contractee website - prevents going back
+            redirectToUrl('https://contractee.contrust-sjdm.com');
+          } else {
+            Navigator.of(context).pushReplacementNamed('/contractee');
+          }
         } catch (e) {
           ConTrustSnackBar.error(context, 'Error navigating to Contractee: $e');
         }
@@ -359,7 +246,7 @@ class WebsiteStartPage extends StatelessWidget {
 
   Widget _buildContractorCard(BuildContext context) {
     return _RoleCard(
-      color: const Color(0xFF0066CC),
+      color: Colors.amber,
       icon: Icons.engineering_outlined,
       title: 'Contractor',
       description:
@@ -367,7 +254,12 @@ class WebsiteStartPage extends StatelessWidget {
       buttonText: 'Get Started',
       onPressed: () {
         try {
-          Navigator.of(context).pushNamed('/contractor');
+          if (kIsWeb) {
+            // Redirect to contractor website - prevents going back
+            redirectToUrl('https://www.contractor.contrust-sjdm.com');
+          } else {
+            Navigator.of(context).pushReplacementNamed('/contractor');
+          }
         } catch (e) {
           ConTrustSnackBar.error(context, 'Error navigating to Contractor: $e');
         }
