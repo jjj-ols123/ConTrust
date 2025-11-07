@@ -2,7 +2,6 @@
 import 'package:backend/utils/be_validation.dart';
 import 'package:backend/services/contractor services/cor_signup.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:backend/services/both services/be_verification_service.dart';
 import 'verification_capture.dart';
 import 'package:backend/services/both%20services/be_otp_service.dart';
 import 'package:flutter/foundation.dart';
@@ -206,9 +205,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     if (!_emailVerified) {
-      // Pre-OTP: verify uploaded documents (OCR) and/or QR presence with blocking dialog
-      final preVerified = await _verifyVerificationDataBeforeOtp();
-      if (preVerified != true) {
+      // Check if verification documents are uploaded (no auto verification, manual verification by superadmin)
+      final hasFiles = _verificationFiles.isNotEmpty;
+      final hasQrCodes = _pcabQrText != null || _permitQrText != null;
+
+      if (!hasFiles && !hasQrCodes) {
+        ConTrustSnackBar.error(
+          context,
+          'Please upload verification documents or scan QR codes before continuing.',
+        );
         return;
       }
 
@@ -1371,91 +1376,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  Future<bool> _verifyVerificationDataBeforeOtp() async {
-    final hasFiles = _verificationFiles.isNotEmpty;
-    final hasQrCodes = _pcabQrText != null || _permitQrText != null;
-
-    if (!hasFiles && !hasQrCodes) {
-      ConTrustSnackBar.error(
-        context,
-        'Please upload verification documents or scan QR codes before continuing.',
-      );
-      return false;
-    }
-
-    // If there are no image files to OCR, but QR codes exist, allow proceeding.
-    final ocrTargets = _verificationFiles.where((f) => f['isImage'] == true && f['bytes'] != null).toList();
-    if (ocrTargets.isEmpty) {
-      return true;
-    }
-
-    bool anyOcrSuccess = false;
-    // Show blocking dialog
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        () async {
-          try {
-            final textractService = TextractService();
-            for (final file in ocrTargets) {
-              try {
-                final extractedText = await textractService.processDocument(
-                  imageBytes: file['bytes'] as Uint8List,
-                  filename: file['name'] as String? ?? 'document.jpg',
-                  analysisType: 'text',
-                );
-                if (extractedText.trim().isNotEmpty) {
-                  anyOcrSuccess = true;
-                  break;
-                }
-              } catch (e) {
-                // Continue other files
-              }
-            }
-          } finally {
-            if (dialogContext.mounted) {
-              Navigator.of(dialogContext).pop();
-            }
-          }
-        }();
-
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          backgroundColor: Colors.white,
-          elevation: 12,
-          contentPadding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: const [
-              SizedBox(
-                width: 28,
-                height: 28,
-                child: CircularProgressIndicator(color: Color(0xFFFFB300), strokeWidth: 3),
-              ),
-              SizedBox(height: 16),
-              Text(
-                'Verifying documents...',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        );
-      },
-    );
-
-    if (!anyOcrSuccess) {
-      ConTrustSnackBar.error(
-        context,
-        'Verification failed. We could not read text from your documents. Please upload clearer images or try again.',
-      );
-      return false;
-    }
-
-    return true;
-  }
 
   void _showPolicyTabs(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;

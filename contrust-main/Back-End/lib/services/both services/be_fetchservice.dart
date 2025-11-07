@@ -859,7 +859,7 @@ class FetchService {
     try {
       final response = await _supabase
           .from('Projects')
-          .select('project_id, title, type, description, duration, min_budget, max_budget, created_at, status, start_date, location')
+          .select('project_id, title, type, description, duration, min_budget, max_budget, created_at, status, start_date, location, projectdata, contractee_id')
           .eq('contractor_id', contractorId)
           .order('created_at', ascending: false);
 

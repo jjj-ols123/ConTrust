@@ -1,6 +1,7 @@
 import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
+import 'package:backend/services/both services/be_notification_service.dart';
 
 class VerifyService {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -99,6 +100,15 @@ class VerifyService {
 
   Future<void> verifyContractor(String contractorId, bool approve) async {
     try {
+      // Get contractor details for notification
+      final contractorData = await _supabase
+          .from('Contractor')
+          .select('firm_name')
+          .eq('contractor_id', contractorId)
+          .maybeSingle();
+      
+      final firmName = contractorData?['firm_name'] ?? 'Your account';
+
       await _supabase
           .from('Contractor')
           .update({'verified': approve})
@@ -109,7 +119,56 @@ class VerifyService {
           .update({'verified': approve})
           .eq('users_id', contractorId);
 
-      if (!approve) {
+      if (approve) {
+        // Send approval notification to contractor
+        try {
+          await NotificationService().createNotification(
+            receiverId: contractorId,
+            receiverType: 'contractor',
+            senderId: 'system',
+            senderType: 'system',
+            type: 'Account Verified',
+            message: 'Congratulations! Your contractor account "$firmName" has been verified and approved. You can now access all platform features.',
+          );
+        } catch (e) {
+          // Log notification error but don't fail the verification
+          await _errorService.logError(
+            errorMessage: 'Failed to send approval notification: $e',
+            module: 'Verify Service',
+            severity: 'Low',
+            extraInfo: {
+              'operation': 'Send Approval Notification',
+              'contractor_id': contractorId,
+              'timestamp': DateTimeHelper.getLocalTimeISOString(),
+            },
+          );
+        }
+      } else {
+        // Send rejection notification to contractor
+        try {
+          await NotificationService().createNotification(
+            receiverId: contractorId,
+            receiverType: 'contractor',
+            senderId: 'system',
+            senderType: 'system',
+            type: 'Account Verification Rejected',
+            message: 'Your contractor account verification has been rejected. Please review your submitted documents and contact support if you have questions.',
+          );
+        } catch (e) {
+          // Log notification error but don't fail the verification
+          await _errorService.logError(
+            errorMessage: 'Failed to send rejection notification: $e',
+            module: 'Verify Service',
+            severity: 'Low',
+            extraInfo: {
+              'operation': 'Send Rejection Notification',
+              'contractor_id': contractorId,
+              'timestamp': DateTimeHelper.getLocalTimeISOString(),
+            },
+          );
+        }
+
+        // Delete verification files and records if rejected
         final files = await _supabase.storage
             .from('verification')
             .list(path: contractorId);

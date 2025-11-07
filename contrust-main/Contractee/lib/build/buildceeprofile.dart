@@ -673,50 +673,80 @@ class CeeProfileBuildMethods {
                                       ],
                                     ),
                                   ),
-                                  if (receiptPath != null && receiptPath.isNotEmpty) ...[
-                                    const SizedBox(width: 8),
-                                    Material(
-                                      color: Colors.transparent,
-                                      child: InkWell(
-                                        onTap: () => _showReceiptDialog(context, receiptPath, reference),
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                            color: Colors.blue.shade50,
-                                            borderRadius: BorderRadius.circular(8),
-                                            border: Border.all(color: Colors.blue.shade200, width: 1),
+                                  const SizedBox(width: 8),
+                                  Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      onTap: receiptPath != null && receiptPath.isNotEmpty
+                                          ? () {
+                                              final path = receiptPath;
+                                              if (path != null && path.isNotEmpty) {
+                                                _showReceiptDialog(context, path, reference);
+                                              }
+                                            }
+                                          : null,
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: (receiptPath != null && receiptPath.isNotEmpty)
+                                              ? Colors.blue.shade50
+                                              : Colors.grey.shade200,
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: (receiptPath != null && receiptPath.isNotEmpty)
+                                                ? Colors.blue.shade200
+                                                : Colors.grey.shade300,
+                                            width: 1,
                                           ),
-                                          child: const Icon(
-                                            Icons.visibility,
-                                            color: Colors.blue,
-                                            size: 20,
-                                          ),
+                                        ),
+                                        child: Icon(
+                                          Icons.visibility,
+                                          color: (receiptPath != null && receiptPath.isNotEmpty)
+                                              ? Colors.blue
+                                              : Colors.grey.shade400,
+                                          size: 20,
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
-                                    Material(
-                                      color: Colors.transparent,
-                                      child: InkWell(
-                                        onTap: () => _downloadReceipt(context, receiptPath, reference),
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                            color: Colors.green.shade50,
-                                            borderRadius: BorderRadius.circular(8),
-                                            border: Border.all(color: Colors.green.shade200, width: 1),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      onTap: receiptPath != null && receiptPath.isNotEmpty
+                                          ? () {
+                                              final path = receiptPath;
+                                              if (path != null && path.isNotEmpty) {
+                                                _downloadReceipt(context, path, reference);
+                                              }
+                                            }
+                                          : null,
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: (receiptPath != null && receiptPath.isNotEmpty)
+                                              ? Colors.green.shade50
+                                              : Colors.grey.shade200,
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: (receiptPath != null && receiptPath.isNotEmpty)
+                                                ? Colors.green.shade200
+                                                : Colors.grey.shade300,
+                                            width: 1,
                                           ),
-                                          child: const Icon(
-                                            Icons.download,
-                                            color: Colors.green,
-                                            size: 20,
-                                          ),
+                                        ),
+                                        child: Icon(
+                                          Icons.download,
+                                          color: (receiptPath != null && receiptPath.isNotEmpty)
+                                              ? Colors.green
+                                              : Colors.grey.shade400,
+                                          size: 20,
                                         ),
                                       ),
                                     ),
-                                  ],
+                                  ),
                                 ],
                               ),
                             ),
