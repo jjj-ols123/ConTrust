@@ -479,9 +479,19 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text('Remaining:', style: TextStyle(fontSize: 14)),
-                              Text(
-                                '₱${(_paymentSummary!['remaining'] as num).toStringAsFixed(2)}',
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.orange),
+                              Builder(
+                                builder: (context) {
+                                  final contractType = _paymentSummary?['contract_type'] as String? ?? '';
+                                  final isMilestone = contractType.toLowerCase().contains('milestone');
+                                  return Text(
+                                    '₱${(_paymentSummary!['remaining'] as num).toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: isMilestone ? Colors.red : Colors.orange,
+                                    ),
+                                  );
+                                },
                               ),
                             ],
                           ),
@@ -707,6 +717,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                         final contractType = _paymentSummary?['contract_type'] as String? ?? '';
                         final isLumpSum = contractType.toLowerCase().contains('lump') || 
                                          contractType.toLowerCase() == 'lump_sum';
+                        final isMilestone = contractType.toLowerCase().contains('milestone');
                         
                         if (!isLumpSum && _paymentSummary != null && _paymentSummary!['remaining'] != null) {
                           return Column(
@@ -716,13 +727,19 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                               Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: Colors.blue.shade50,
+                                  color: isMilestone ? Colors.red.shade50 : Colors.blue.shade50,
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.blue.shade200),
+                                  border: Border.all(
+                                    color: isMilestone ? Colors.red.shade200 : Colors.blue.shade200,
+                                  ),
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                                    Icon(
+                                      Icons.info_outline,
+                                      color: isMilestone ? Colors.red.shade700 : Colors.blue.shade700,
+                                      size: 20,
+                                    ),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Column(
@@ -742,7 +759,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                                             style: TextStyle(
                                               fontSize: 20,
                                               fontWeight: FontWeight.bold,
-                                              color: Colors.blue.shade700,
+                                              color: isMilestone ? Colors.red.shade700 : Colors.blue.shade700,
                                             ),
                                           ),
                                         ],
