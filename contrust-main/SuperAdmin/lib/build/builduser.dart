@@ -536,24 +536,27 @@ class UserTableState extends State<UserTable> with SingleTickerProviderStateMixi
                               constraints: BoxConstraints(
                                 minWidth: minTableWidth > constraints.maxWidth ? minTableWidth : constraints.maxWidth,
                               ),
-                              child: DataTable(
-                                columnSpacing: 15,
-                                headingRowHeight: 56,
-                                dataRowHeight: 56,
-                                columns: const [
-                                  DataColumn(label: Text('Name', style: TextStyle(color: Colors.black))),
-                                  DataColumn(label: Text('Email', style: TextStyle(color: Colors.black))),
-                                  DataColumn(label: Text('Role', style: TextStyle(color: Colors.black))),
-                                  DataColumn(label: Text('Last Login', style: TextStyle(color: Colors.black))),
-                                ],
-                                rows: users.map((user) => DataRow(
-                                  cells: [
-                                    DataCell(Text(user['name']?.toString() ?? 'N/A', style: const TextStyle(color: Colors.black))),
-                                    DataCell(Text(user['email']?.toString() ?? 'N/A', style: const TextStyle(color: Colors.black))),
-                                    DataCell(_buildRoleChip(user['role']?.toString() ?? 'unknown')),
-                                    DataCell(Text(_formatLastLogin(user['last_login']), style: const TextStyle(color: Colors.black))),
+                              child: SingleChildScrollView(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: DataTable(
+                                  columnSpacing: 15,
+                                  headingRowHeight: 56,
+                                  dataRowHeight: 56,
+                                  columns: const [
+                                    DataColumn(label: Text('Name', style: TextStyle(color: Colors.black))),
+                                    DataColumn(label: Text('Email', style: TextStyle(color: Colors.black))),
+                                    DataColumn(label: Text('Role', style: TextStyle(color: Colors.black))),
+                                    DataColumn(label: Text('Last Login', style: TextStyle(color: Colors.black))),
                                   ],
-                                )).toList(),
+                                  rows: users.map((user) => DataRow(
+                                    cells: [
+                                      DataCell(Text(user['name']?.toString() ?? 'N/A', style: const TextStyle(color: Colors.black))),
+                                      DataCell(Text(user['email']?.toString() ?? 'N/A', style: const TextStyle(color: Colors.black))),
+                                      DataCell(_buildRoleChip(user['role']?.toString() ?? 'unknown')),
+                                      DataCell(Text(_formatLastLogin(user['last_login']), style: const TextStyle(color: Colors.black))),
+                                    ],
+                                  )).toList(),
+                                ),
                               ),
                             ),
                           ),
