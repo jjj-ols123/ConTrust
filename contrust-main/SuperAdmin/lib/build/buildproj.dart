@@ -755,6 +755,25 @@ class ProjectsManagementTableState extends State<ProjectsManagementTable> {
       );
     }
 
+    final isNarrow = MediaQuery.of(context).size.width < 700;
+
+    if (isNarrow) {
+      return CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: BuildProjects.buildProjectStatisticsCard(context, _statistics, _refreshStatistics),
+          ),
+          SliverToBoxAdapter(
+            child: BuildProjects.buildProjectsFilters(context, this),
+          ),
+          SliverFillRemaining(
+            hasScrollBody: true,
+            child: BuildProjects.buildProjectsGrid(context, _filteredProjects, false, _refreshProjects),
+          ),
+        ],
+      );
+    }
+
     return Column(
       children: [
         BuildProjects.buildProjectStatisticsCard(context, _statistics, _refreshStatistics),
@@ -766,3 +785,4 @@ class ProjectsManagementTableState extends State<ProjectsManagementTable> {
     );
   }
 }
+

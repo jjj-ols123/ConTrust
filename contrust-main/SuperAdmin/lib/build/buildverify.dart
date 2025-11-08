@@ -1055,11 +1055,13 @@ class VerificationManagementTableState extends State<VerificationManagementTable
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+
             const SizedBox(height: 16),
             const Text(
               'Error loading contractors',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500, color: Colors.black),
             ),
+
             const SizedBox(height: 8),
             Text(
               _error!,
@@ -1073,6 +1075,30 @@ class VerificationManagementTableState extends State<VerificationManagementTable
             ),
           ],
         ),
+      );
+    }
+
+    final isNarrow = MediaQuery.of(context).size.width < 700;
+
+    if (isNarrow) {
+      return CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: BuildVerifyMethods.buildVerifyStatisticsCard(
+              context,
+              _contractors.length,
+              _loadContractors,
+            ),
+          ),
+          SliverFillRemaining(
+            hasScrollBody: true,
+            child: BuildVerifyMethods.buildUnverifiedContractorsList(
+              contractors: _contractors,
+              onContractorTap: _onContractorTap,
+              isLoading: _isLoading,
+            ),
+          ),
+        ],
       );
     }
 

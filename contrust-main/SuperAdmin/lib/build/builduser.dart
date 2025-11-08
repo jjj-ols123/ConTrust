@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:backend/services/superadmin services/userlogs_service.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 
@@ -15,77 +16,112 @@ class BuildUser {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // accent
-            Container(
-              height: 3,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(2),
-                gradient: const LinearGradient(colors: [Color(0xFF7C4DFF), Color(0xFF9E86FF)]),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 700;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.people_outlined, color: Colors.grey, size: 24),
-                const SizedBox(width: 8),
-                const Text(
-                  'User Statistics',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.black),
+                Container(
+                  height: 3,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(2),
+                    gradient: const LinearGradient(colors: [Color(0xFF7C4DFF), Color(0xFF9E86FF)]),
+                  ),
                 ),
-                const Spacer(),
-                if (onRefresh != null)
-                  ElevatedButton.icon(
-                    onPressed: onRefresh,
-                    icon: const Icon(Icons.refresh, size: 16),
-                    label: const Text('Refresh'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey.shade200,
-                      foregroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.people_outlined, color: Colors.grey, size: 24),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'User Statistics',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.black),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
+                    if (onRefresh != null)
+                      ElevatedButton.icon(
+                        onPressed: onRefresh,
+                        icon: const Icon(Icons.refresh, size: 16),
+                        label: const Text('Refresh'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey.shade200,
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                if (isNarrow)
+                  Column(
+                    children: [
+                      _buildStatItem(
+                        context,
+                        'All Users',
+                        stats['total']?.toString() ?? '0',
+                        Icons.group_outlined,
+                        Colors.black,
+                      ),
+                      const SizedBox(height: 12),
+                      _buildStatItem(
+                        context,
+                        'Contractors',
+                        stats['contractors']?.toString() ?? '0',
+                        Icons.business_outlined,
+                        Colors.black,
+                      ),
+                      const SizedBox(height: 12),
+                      _buildStatItem(
+                        context,
+                        'Contractees',
+                        stats['contractees']?.toString() ?? '0',
+                        Icons.person_outlined,
+                        Colors.black,
+                      ),
+                    ],
+                  )
+                else
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatItem(
+                          context,
+                          'All Users',
+                          stats['total']?.toString() ?? '0',
+                          Icons.group_outlined,
+                          Colors.black,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildStatItem(
+                          context,
+                          'Contractors',
+                          stats['contractors']?.toString() ?? '0',
+                          Icons.business_outlined,
+                          Colors.black,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildStatItem(
+                          context,
+                          'Contractees',
+                          stats['contractees']?.toString() ?? '0',
+                          Icons.person_outlined,
+                          Colors.black,
+                        ),
+                      ),
+                    ],
                   ),
               ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatItem(
-                    context,
-                    'All Users',
-                    stats['total']?.toString() ?? '0',
-                    Icons.group_outlined,
-                    Colors.black,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildStatItem(
-                    context,
-                    'Contractors',
-                    stats['contractors']?.toString() ?? '0',
-                    Icons.business_outlined,
-                    Colors.black,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildStatItem(
-                    context,
-                    'Contractees',
-                    stats['contractees']?.toString() ?? '0',
-                    Icons.person_outlined,
-                    Colors.black,
-                  ),
-                ),
-              ],
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -324,6 +360,8 @@ class UserTableState extends State<UserTable> with SingleTickerProviderStateMixi
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final isNarrow = width < 700;
     if (_isLoading) {
       return const Center(
         child: Column(
@@ -361,6 +399,43 @@ class UserTableState extends State<UserTable> with SingleTickerProviderStateMixi
             ),
           ],
         ),
+      );
+    }
+
+    if (isNarrow) {
+      return CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: BuildUser.buildUserStatisticsCard(context, _statistics, _refreshUserStatistics)),
+          SliverToBoxAdapter(child: BuildUser.buildUserFilters(context, this)),
+          SliverFillRemaining(
+            hasScrollBody: true,
+            child: DefaultTabController(
+              length: 2,
+              child: Column(
+                children: [
+                  TabBar(
+                    controller: _tabController,
+                    tabs: const [
+                      Tab(text: 'Contractors'),
+                      Tab(text: 'Contractees'),
+                    ],
+                    labelColor: Colors.black,
+                    unselectedLabelColor: Colors.grey,
+                  ),
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildUserTable(_contractors, 'Contractors'),
+                        _buildUserTable(_contractees, 'Contractees'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       );
     }
 
@@ -444,29 +519,42 @@ class UserTableState extends State<UserTable> with SingleTickerProviderStateMixi
                   )
                 : LayoutBuilder(
                     builder: (context, constraints) {
-                      return SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                      const double minTableWidth = 900; // force overflow on narrow screens
+                      return ScrollConfiguration(
+                        behavior: ScrollConfiguration.of(context).copyWith(
+                          dragDevices: {
+                            PointerDeviceKind.touch,
+                            PointerDeviceKind.mouse,
+                            PointerDeviceKind.trackpad,
+                          },
+                        ),
+                        child: Scrollbar(
+                          thumbVisibility: true,
                           child: SingleChildScrollView(
-                            child: DataTable(
-                              columnSpacing: 15,
-                              headingRowHeight: 56,
-                              dataRowHeight: 56,
-                              columns: const [
-                                DataColumn(label: Text('Name', style: TextStyle(color: Colors.black))),
-                                DataColumn(label: Text('Email', style: TextStyle(color: Colors.black))),
-                                DataColumn(label: Text('Role', style: TextStyle(color: Colors.black))),
-                                DataColumn(label: Text('Last Login', style: TextStyle(color: Colors.black))),
-                              ],
-                              rows: users.map((user) => DataRow(
-                                cells: [
-                                  DataCell(Text(user['name']?.toString() ?? 'N/A', style: const TextStyle(color: Colors.black))),
-                                  DataCell(Text(user['email']?.toString() ?? 'N/A', style: const TextStyle(color: Colors.black))),
-                                  DataCell(_buildRoleChip(user['role']?.toString() ?? 'unknown')),
-                                  DataCell(Text(_formatLastLogin(user['last_login']), style: const TextStyle(color: Colors.black))),
+                            scrollDirection: Axis.horizontal,
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minWidth: minTableWidth > constraints.maxWidth ? minTableWidth : constraints.maxWidth,
+                              ),
+                              child: DataTable(
+                                columnSpacing: 15,
+                                headingRowHeight: 56,
+                                dataRowHeight: 56,
+                                columns: const [
+                                  DataColumn(label: Text('Name', style: TextStyle(color: Colors.black))),
+                                  DataColumn(label: Text('Email', style: TextStyle(color: Colors.black))),
+                                  DataColumn(label: Text('Role', style: TextStyle(color: Colors.black))),
+                                  DataColumn(label: Text('Last Login', style: TextStyle(color: Colors.black))),
                                 ],
-                              )).toList(),
+                                rows: users.map((user) => DataRow(
+                                  cells: [
+                                    DataCell(Text(user['name']?.toString() ?? 'N/A', style: const TextStyle(color: Colors.black))),
+                                    DataCell(Text(user['email']?.toString() ?? 'N/A', style: const TextStyle(color: Colors.black))),
+                                    DataCell(_buildRoleChip(user['role']?.toString() ?? 'unknown')),
+                                    DataCell(Text(_formatLastLogin(user['last_login']), style: const TextStyle(color: Colors.black))),
+                                  ],
+                                )).toList(),
+                              ),
                             ),
                           ),
                         ),
