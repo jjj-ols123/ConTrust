@@ -366,6 +366,9 @@ class CeeProfileService {
                 project['Contractor']?['firm_name'] ?? 'Unknown Contractor',
             'payment_date': payment['date'] ?? DateTimeHelper.getLocalTimeISOString(),
             'reference': payment['reference'] ?? payment['payment_id'] ?? '',
+            'receipt_path': payment['receipt_path'],
+            'project_id': project['project_id'],
+            'payment_id': payment['payment_id'] ?? payment['reference'] ?? '',
           });
         }
       }

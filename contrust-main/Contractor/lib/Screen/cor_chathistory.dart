@@ -283,7 +283,12 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
                         final contracteeProfile = contracteeData?['profile_photo'];
                         final lastMessage = chat['last_message'] ?? '';
                         final lastTime = chat['last_message_time'] != null
-                            ? DateTime.tryParse(chat['last_message_time'])
+                            ? (() {
+                                final parsed = DateTime.tryParse(chat['last_message_time']);
+                                if (parsed == null) return null;
+                                // Convert to local time if it's UTC
+                                return parsed.isUtc ? parsed.toLocal() : parsed;
+                              })()
                             : null;
                         final unreadCount = _unreadCountCache[chatRoomId] ?? 0;
                         final hasUnread = unreadCount > 0;

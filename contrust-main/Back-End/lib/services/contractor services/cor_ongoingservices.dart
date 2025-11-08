@@ -503,7 +503,6 @@ class CorOngoingService {
     required bool done,
     required List<Map<String, dynamic>> allTasks,
     required BuildContext context,
-    required Function(double) onProgressUpdate,
   }) async {
     try {
       await _projectService.updateTaskStatus(taskId, done);
@@ -523,8 +522,6 @@ class CorOngoingService {
           .from('Projects')
           .update({'progress': newProgress})
           .eq('project_id', projectId);
-
-      onProgressUpdate(newProgress);
 
       await _auditService.logAuditEvent(
         userId: _supabase.auth.currentUser?.id,

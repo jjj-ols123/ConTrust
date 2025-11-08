@@ -272,7 +272,26 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
   }
 
   Widget _buildMainContent() {
-    return _buildAboutContent();
+    return CeeProfileBuildMethods.buildMainContent(
+      selectedTab,
+      _buildAboutContent,
+      _buildPaymentHistoryContent,
+    );
+  }
+
+  Widget _buildPaymentHistoryContent() {
+    return CeeProfileBuildMethods.buildPaymentHistory(
+      context: context,
+      transactions: filteredTransactions,
+      transactionSearchController: transactionSearchController,
+      selectedPaymentType: selectedPaymentType,
+      onPaymentTypeChanged: (type) {
+        setState(() {
+          selectedPaymentType = type;
+          _filterTransactions();
+        });
+      },
+    );
   }
 
   Widget _buildAboutContent() {

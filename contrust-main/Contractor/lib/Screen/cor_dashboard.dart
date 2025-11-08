@@ -58,6 +58,7 @@ class _DashboardUIState extends State<DashboardUI>
   List<Map<String, dynamic>> recentActivities = [];
   List<Map<String, dynamic>> localTasks = [];
   double totalEarnings = 0.0;
+  List<Map<String, dynamic>> allPayments = [];
   int totalClients = 0;
   Timer? _debounceTimer;
   late AnimationController _fadeController;
@@ -117,6 +118,7 @@ class _DashboardUIState extends State<DashboardUI>
         rating = data['rating'];
         recentActivities = data['recentActivities'];
         totalEarnings = data['totalEarnings'];
+        allPayments = List<Map<String, dynamic>>.from(data['allPayments'] ?? []);
         totalClients = data['totalClients'];
         localTasks = data['localTasks'];
         loading = false;
@@ -310,6 +312,7 @@ class _DashboardUIState extends State<DashboardUI>
       onDataRefresh: fetchDashboardData,
     );
     buildMethods.contractorData = contractorData;
+    buildMethods.allPayments = allPayments;
     return buildMethods.buildWelcomeCard();
   }
 
@@ -324,6 +327,7 @@ class _DashboardUIState extends State<DashboardUI>
       rating,
       onDataRefresh: fetchDashboardData,
     );
+    buildMethods.allPayments = allPayments;
     return buildMethods.buildStatsGrid();
   }
 
@@ -339,6 +343,7 @@ class _DashboardUIState extends State<DashboardUI>
       onDataRefresh: fetchDashboardData,
     );
     buildMethods.contractorData = contractorData;
+    buildMethods.allPayments = allPayments;
     buildMethods.localTasks = localTasks;
     return buildMethods.buildDesktopProjectsAndTasks();
   }
@@ -369,6 +374,7 @@ class _DashboardUIState extends State<DashboardUI>
       onDataRefresh: fetchDashboardData,
     );
     buildMethods.contractorData = contractorData;
+    buildMethods.allPayments = allPayments;
     buildMethods.localTasks = localTasks;
     return buildMethods.buildMobileProjectsAndTasks();
   }

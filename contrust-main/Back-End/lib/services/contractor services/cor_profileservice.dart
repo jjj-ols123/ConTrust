@@ -190,7 +190,8 @@ class CorProfileService {
           }
           return;
         }
-      } catch (_) {
+      } catch (e) {
+        debugPrint('[Upload Project Photo] Error checking verification: $e');
         if (context.mounted) {
           ConTrustSnackBar.warning(
             context,
@@ -202,37 +203,73 @@ class CorProfileService {
 
       Uint8List? imageBytes = await UserService().pickImage();
 
-      if (imageBytes != null) {
-        bool success = await UserService().addPastProjectPhoto(
-          contractorId,
-          imageBytes,
+      if (imageBytes == null) {
+        // User cancelled image selection
+        if (context.mounted) {
+          debugPrint('[Upload Project Photo] User cancelled image selection');
+        }
+        return;
+      }
+
+      debugPrint('[Upload Project Photo] Image selected, size: ${imageBytes.length} bytes');
+      
+      bool success = await UserService().addPastProjectPhoto(
+        contractorId,
+        imageBytes,
+      );
+
+      if (success) {
+        if (context.mounted) {
+          ConTrustSnackBar.success(
+            context,
+            'Project photo uploaded successfully!',
+          );
+        }
+
+        await _auditService.logAuditEvent(
+          userId: Supabase.instance.client.auth.currentUser?.id,
+          action: 'Project_Photo_Uploaded',
+          details: 'Uploaded project photo',
+          metadata: {
+            'contractor_id': contractorId,
+            'timestamp': DateTimeHelper.getLocalTimeISOString(),
+          },
         );
 
-        if (success) {
-          if (context.mounted) {
-            ConTrustSnackBar.success(
-              context,
-              'Project photo uploaded successfully!',
-            );
-          }
-
-          await _auditService.logAuditEvent(
-            userId: Supabase.instance.client.auth.currentUser?.id,
-            action: 'Project_Photo_Uploaded',
-            details: 'Uploaded project photo',
-            metadata: {
-              'contractor_id': contractorId,
-              'timestamp': DateTimeHelper.getLocalTimeISOString(),
-            },
+        // Call onSuccess safely with a post-frame callback to avoid assertion errors
+        if (context.mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) {
+              onSuccess();
+            }
+          });
+        }
+      } else {
+        // Upload failed but no exception was thrown
+        if (context.mounted) {
+          ConTrustSnackBar.error(
+            context,
+            'Failed to upload project photo. Please check your connection and try again.',
           );
-
-          onSuccess();
-      }   }
+        }
+        await _errorService.logError(
+          userId: Supabase.instance.client.auth.currentUser?.id,
+          errorMessage: 'Project photo upload failed: addPastProjectPhoto returned false',
+          module: 'CorProfileService',
+          severity: 'Medium',
+          extraInfo: {'contractor_id': contractorId},
+        );
+      }
     } catch (e) {
+      debugPrint('[Upload Project Photo] Exception: $e');
       if (context.mounted) {
         String message = 'An error occurred while uploading the photo.';
-        if (e.toString().contains('Failed to upload')) {
+        if (e.toString().contains('Failed to upload') || e.toString().contains('upload')) {
           message = 'Failed to upload project photo. Please try again.';
+        } else if (e.toString().contains('permission') || e.toString().contains('access')) {
+          message = 'Permission denied. Please check your account permissions.';
+        } else if (e.toString().contains('network') || e.toString().contains('connection')) {
+          message = 'Network error. Please check your connection and try again.';
         }
 
         ConTrustSnackBar.error(

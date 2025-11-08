@@ -27,6 +27,45 @@ String toProperCase(String text) {
 const String profileUrl =
     'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
 
+/// Show date picker with amber theme matching add tasks dialog
+Future<DateTime?> showThemedDatePicker({
+  required BuildContext context,
+  required DateTime initialDate,
+  required DateTime firstDate,
+  required DateTime lastDate,
+  String? helpText,
+  String? cancelText,
+  String? confirmText,
+}) async {
+  return await showDatePicker(
+    context: context,
+    initialDate: initialDate,
+    firstDate: firstDate,
+    lastDate: lastDate,
+    helpText: helpText ?? 'Select Date',
+    cancelText: cancelText ?? 'Cancel',
+    confirmText: confirmText ?? 'OK',
+    builder: (context, child) {
+      return Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: ColorScheme.light(
+            primary: Colors.amber.shade700,
+            onPrimary: Colors.white,
+            surface: Colors.white,
+            onSurface: Colors.black87,
+          ),
+          textButtonTheme: TextButtonThemeData(
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.amber.shade700,
+            ),
+          ),
+        ),
+        child: child!,
+      );
+    },
+  );
+}
+
 class ProjectDialog extends StatefulWidget {
   final String contracteeId;
   final TextEditingController titleController;
@@ -238,7 +277,7 @@ class _ProjectDialogState extends State<ProjectDialog> {
   }
 
   Future<void> _selectStartDate() async {
-    final DateTime? picked = await showDatePicker(
+    final DateTime? picked = await showThemedDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime.now(),
@@ -2406,7 +2445,7 @@ class HireModal {
                                           InkWell(
                                             onTap: hasAutoFilledProject ? null : () async {
                                               final DateTime? picked =
-                                                  await showDatePicker(
+                                                  await showThemedDatePicker(
                                                 context: context,
                                                 initialDate:
                                                     selectedStartDate ?? DateTime.now(),

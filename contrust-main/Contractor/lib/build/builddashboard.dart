@@ -37,6 +37,7 @@ class DashboardBuildMethods {
   int activeProjects = 0;
   int completedProjects = 0;
   double totalEarnings = 0.0;
+  List<Map<String, dynamic>> allPayments = [];
   int totalClients = 0;
   double rating = 0.0;
 
@@ -501,13 +502,7 @@ class DashboardBuildMethods {
               Row(
                 children: [
                   Expanded(
-                    child: buildStatCard(
-                      'Total Earnings',
-                      '₱${totalEarnings.toStringAsFixed(0)}',
-                      Icons.money,
-                      Colors.black,
-                      'From all projects',
-                    ),
+                    child: _buildEarningsCard(),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1389,13 +1384,7 @@ class DashboardBuildMethods {
                 Colors.black,
                 'Successfully finished',
               ),
-              buildStatCard(
-                'Total Earnings',
-                '₱${totalEarnings.toStringAsFixed(0)}',
-                Icons.money,
-                Colors.black,
-                'From all projects',
-              ),
+              _buildEarningsCard(),
               buildStatCard(
                 'Number of Clients',
                 totalClients.toString(),
@@ -1570,21 +1559,21 @@ class DashboardBuildMethods {
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.checklist,
-                      color: Colors.green.shade700,
-                      size: isTablet ? 24 : 20,
-                    ),
-                    SizedBox(width: isTablet ? 12 : 8),
-                    Text(
-                      'Project Tasks',
-                      style: TextStyle(
-                        fontSize: isTablet ? 18 : 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                Icon(
+                  Icons.checklist,
+                  color: Colors.green.shade700,
+                  size: isTablet ? 24 : 20,
+                ),
+                SizedBox(width: isTablet ? 12 : 8),
+                Text(
+                  'Project Tasks',
+                  style: TextStyle(
+                    fontSize: isTablet ? 18 : 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                     ),
                   ],
                 ),
@@ -1787,7 +1776,7 @@ class DashboardBuildMethods {
                               icon: const Icon(Icons.arrow_forward, size: 16),
                               label: Text(
                                 'View ${tasks.length - 3} more task${tasks.length - 3 > 1 ? 's' : ''} in Project Management',
-                                style: TextStyle(
+                              style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.amber.shade700,
@@ -2645,5 +2634,165 @@ class DashboardBuildMethods {
     } catch (e) {
       return null;
     }
+  }
+
+  Widget _buildEarningsCard() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth >= 1200;
+    final isTablet = screenWidth >= 900 && screenWidth < 1200;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(
+          isDesktop ? 20 : (isTablet ? 10 : 12),
+        ),
+        border: Border.all(
+          color: Colors.grey.shade300,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(isDesktop ? 15.2 : (isTablet ? 14 : 12)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(
+                    isDesktop ? 14 : (isTablet ? 14 : 12),
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(
+                      isDesktop ? 12 : (isTablet ? 16 : 8),
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.money,
+                    color: Colors.black,
+                    size: isDesktop ? 22 : (isTablet ? 22 : 20),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: isDesktop ? 23 : (isTablet ? 20 : 8)),
+            Text(
+              '₱${totalEarnings.toStringAsFixed(0)}',
+              style: TextStyle(
+                fontSize: isDesktop ? 17 : (isTablet ? 15 : 18),
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Total Earnings',
+              style: TextStyle(
+                fontSize: isDesktop ? 16 : (isTablet ? 14 : 12),
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'From all projects',
+              style: TextStyle(
+                fontSize: isTablet ? 14 : 12,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            if (allPayments.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Divider(color: Colors.grey.shade300, height: 1),
+              const SizedBox(height: 8),
+              Text(
+                'Recent Payments:',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: isDesktop ? 120 : (isTablet ? 100 : 80),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: allPayments.length > 5 ? 5 : allPayments.length,
+                  itemBuilder: (context, index) {
+                    final payment = allPayments[index];
+                    final amount = (payment['amount'] as num?)?.toDouble() ?? 0.0;
+                    final date = payment['date'] as String? ?? '';
+                    final projectTitle = payment['project_title'] as String? ?? 'Project';
+                    
+                    String formattedDate = 'N/A';
+                    if (date.isNotEmpty) {
+                      try {
+                        final dateTime = DateTime.parse(date);
+                        final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                        formattedDate = '${months[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year}';
+                      } catch (_) {
+                        formattedDate = date;
+                      }
+                    }
+                    
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '₱${amount.toStringAsFixed(0)}',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey.shade800,
+                                  ),
+                                ),
+                                Text(
+                                  projectTitle,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            formattedDate,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }

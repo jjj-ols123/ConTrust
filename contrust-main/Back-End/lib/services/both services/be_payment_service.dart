@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:backend/utils/supabase_config.dart';
 import 'package:backend/services/both services/be_notification_service.dart';
+import 'package:backend/services/both services/be_receipt_service.dart';
 import 'package:backend/services/superadmin services/auditlogs_service.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:backend/utils/be_datetime_helper.dart';
@@ -431,7 +432,17 @@ class PaymentService {
                 .maybeSingle();
             
             if (contractTypeData != null) {
-              contractType = ((contractTypeData['template_name'] as String?)?.toLowerCase() ?? 'custom');
+              final templateName = ((contractTypeData['template_name'] as String?)?.toLowerCase() ?? 'custom');
+              // Normalize contract type names to match _checkAndCompleteProject expectations
+              if (templateName.contains('lump sum')) {
+                contractType = 'lump_sum';
+              } else if (templateName.contains('time and materials')) {
+                contractType = 'time_and_materials';
+              } else if (templateName.contains('cost-plus') || templateName.contains('cost plus')) {
+                contractType = 'cost_plus';
+              } else {
+                contractType = templateName.replaceAll(' ', '_');
+              }
             }
           }
         } catch (_) {
@@ -442,7 +453,25 @@ class PaymentService {
       final projectTitle = projectData['title'] as String? ?? 'Untitled Project';
 
       final projectdata = projectData['projectdata'] as Map<String, dynamic>? ?? {};
-      if (projectdata['payment_status'] == 'paid') {
+      final projectStatus = projectData['status'] as String?;
+      
+      // Use contractType from contract lookup (line 415), or fallback to projectdata if not found
+      if (contractType == 'manual') {
+        final projectdataContractType = projectdata['contract_type'] as String? ?? '';
+        if (projectdataContractType.isNotEmpty) {
+          contractType = projectdataContractType;
+        }
+      }
+      
+      // Check if project is already completed
+      if (projectStatus == 'completed') {
+        throw Exception('This project has already been completed');
+      }
+      
+      // Check if project is already fully paid (only for non-milestone contracts)
+      // Milestone contracts can have partial payments, so allow payment even if status is 'partial'
+      final currentPaymentStatus = projectdata['payment_status'] as String?;
+      if (currentPaymentStatus == 'paid' && !contractType.toLowerCase().contains('milestone')) {
         throw Exception('This project has already been paid');
       }
 
@@ -468,9 +497,9 @@ class PaymentService {
         paymentMethodId: paymentMethodId,
       );
 
-      final paymentStatus = result['data']['attributes']['status'] as String;
+      final stripePaymentStatus = result['data']['attributes']['status'] as String;
 
-      if (paymentStatus == 'succeeded' || paymentStatus == 'awaiting_payment_method') {
+      if (stripePaymentStatus == 'succeeded' || stripePaymentStatus == 'awaiting_payment_method') {
         final updatedProjectdata = Map<String, dynamic>.from(projectdata);
         
         final payments = List<Map<String, dynamic>>.from(
@@ -515,6 +544,99 @@ class PaymentService {
         final contracteeId = projectData['contractee_id'] as String?;
         final contractorId = projectData['contractor_id'] as String?;
         
+        // Generate and store receipt
+        String? receiptPath;
+        try {
+          // Fetch contractee and contractor details for receipt
+          String contracteeName = 'Contractee';
+          String contracteeEmail = '';
+          String contractorName = 'Contractor';
+          
+          if (contracteeId != null) {
+            try {
+              final contracteeData = await _supabase
+                  .from('Contractee')
+                  .select('full_name')
+                  .eq('contractee_id', contracteeId)
+                  .maybeSingle();
+              if (contracteeData != null) {
+                contracteeName = contracteeData['full_name'] ?? 'Contractee';
+              }
+              
+              final userData = await _supabase
+                  .from('Users')
+                  .select('email')
+                  .eq('users_id', contracteeId)
+                  .maybeSingle();
+              if (userData != null) {
+                contracteeEmail = userData['email'] ?? '';
+              }
+            } catch (e) {
+              // Use defaults if fetch fails
+            }
+          }
+          
+          if (contractorId != null) {
+            try {
+              final contractorData = await _supabase
+                  .from('Contractor')
+                  .select('firm_name')
+                  .eq('contractor_id', contractorId)
+                  .maybeSingle();
+              if (contractorData != null) {
+                contractorName = contractorData['firm_name'] ?? 'Contractor';
+              }
+            } catch (e) {
+              // Use defaults if fetch fails
+            }
+          }
+          
+          // Generate receipt PDF
+          final receiptPdf = await ReceiptService.generateReceiptPdf(
+            paymentId: paymentIntentId,
+            amount: amount,
+            projectTitle: projectTitle,
+            contractorName: contractorName,
+            contracteeName: contracteeName,
+            contracteeEmail: contracteeEmail,
+            paymentDate: DateTimeHelper.getLocalTimeISOString(),
+            paymentReference: paymentIntentId,
+            contractType: contractType,
+            paymentStructure: paymentStructure,
+          );
+          
+          // Upload receipt to storage
+          if (contracteeId != null) {
+            receiptPath = await ReceiptService.uploadReceiptToStorage(
+              pdfBytes: receiptPdf,
+              projectId: projectId,
+              contracteeId: contracteeId,
+              paymentId: paymentIntentId,
+            );
+            
+            // Update payment with receipt path
+            final lastPayment = payments.last;
+            lastPayment['receipt_path'] = receiptPath;
+            updatedProjectdata['payments'] = payments;
+            
+            await _supabase.from('Projects').update({
+              'projectdata': updatedProjectdata,
+            }).eq('project_id', projectId);
+          }
+        } catch (receiptError) {
+          // Log error but don't fail payment
+          await _errorService.logError(
+            errorMessage: 'Failed to generate receipt: $receiptError',
+            module: 'Payment Service',
+            severity: 'Medium',
+            extraInfo: {
+              'operation': 'Generate Receipt',
+              'project_id': projectId,
+              'payment_id': paymentIntentId,
+            },
+          );
+        }
+        
         if (contracteeId != null) {
           await _auditService.logAuditEvent(
             userId: contracteeId,
@@ -527,6 +649,7 @@ class PaymentService {
               'payment_reference': paymentIntentId,
               'contract_type': contractType,
               'payment_structure': paymentStructure,
+              'receipt_path': receiptPath,
             },
           );
         }
@@ -546,8 +669,19 @@ class PaymentService {
             },
           );
         }
+
+        // Check and complete project after payment (pass the updated payment_status)
+        // Ensure we use the correct contract type and payment status
+        final finalContractType = updatedProjectdata['contract_type'] as String? ?? contractType;
+        final finalPaymentStatus = updatedProjectdata['payment_status'] as String?;
+        
+        await _checkAndCompleteProject(
+          projectId, 
+          finalContractType,
+          paymentStatus: finalPaymentStatus,
+        );
       } else {
-        throw Exception('Payment failed with status: $paymentStatus');
+        throw Exception('Payment failed with status: $stripePaymentStatus');
       }
     } catch (e) {
       try {
@@ -704,12 +838,13 @@ class PaymentService {
     try {
       final projectData = await _supabase
           .from('Projects')
-          .select('projectdata, bid_id')
+          .select('projectdata, bid_id, contract_id')
           .eq('project_id', projectId)
           .single();
 
       final projectdata = projectData['projectdata'] as Map<String, dynamic>? ?? {};
       final payments = projectdata['payments'] as List<dynamic>? ?? [];
+      final contractType = (projectdata['contract_type'] as String?)?.toLowerCase() ?? '';
       
       final totalPaid = payments.fold<double>(
         0.0,
@@ -719,41 +854,60 @@ class PaymentService {
       // Get total contract amount
       double? totalAmount;
       
-      // First, try to get contract price from the signed contract
-      if (projectData['contract_id'] != null) {
-        try {
-          final contractData = await _supabase
-              .from('Contracts')
-              .select('field_values')
-              .eq('contract_id', projectData['contract_id'])
-              .single();
-          
-          final fieldValues = contractData['field_values'] as Map<String, dynamic>? ?? {};
-          
-          // Try to get contract price from different contract types
-          if (fieldValues['Project.ContractPrice'] != null) {
-            // Lump Sum contract
-            totalAmount = double.tryParse(fieldValues['Project.ContractPrice'].toString());
-          } else if (fieldValues['Payment.Total'] != null) {
-            // Time & Materials contract
-            totalAmount = double.tryParse(fieldValues['Payment.Total'].toString());
-          } else if (fieldValues['Estimated Total'] != null) {
-            // Cost Plus contract
-            totalAmount = double.tryParse(fieldValues['Estimated Total'].toString());
+      // For custom contracts, use bid amount directly (no field_values)
+      if (contractType == 'custom') {
+        final bidId = projectData['bid_id'] as String?;
+        if (bidId != null) {
+          try {
+            final bidData = await _supabase
+                .from('Bids')
+                .select('bid_amount')
+                .eq('bid_id', bidId)
+                .single();
+            totalAmount = (bidData['bid_amount'] as num?)?.toDouble();
+          } catch (_) {}
+        }
+      } else {
+        // For other contract types, try to get from contract field_values first
+        final contractId = projectData['contract_id'] as String?;
+        if (contractId != null) {
+          try {
+            final contractData = await _supabase
+                .from('Contracts')
+                .select('field_values')
+                .eq('contract_id', contractId)
+                .single();
+            
+            final fieldValues = contractData['field_values'] as Map<String, dynamic>? ?? {};
+            
+            // Try to get contract price from different contract types
+            if (fieldValues['Project.ContractPrice'] != null) {
+              // Lump Sum contract
+              totalAmount = double.tryParse(fieldValues['Project.ContractPrice'].toString());
+            } else if (fieldValues['Payment.Total'] != null) {
+              // Time & Materials contract
+              totalAmount = double.tryParse(fieldValues['Payment.Total'].toString());
+            } else if (fieldValues['Estimated Total'] != null) {
+              // Cost Plus contract
+              totalAmount = double.tryParse(fieldValues['Estimated Total'].toString());
+            }
+          } catch (_) {}
+        }
+        
+        // Fallback to bid amount if contract price not found
+        if (totalAmount == null) {
+          final bidId = projectData['bid_id'] as String?;
+          if (bidId != null) {
+            try {
+              final bidData = await _supabase
+                  .from('Bids')
+                  .select('bid_amount')
+                  .eq('bid_id', bidId)
+                  .single();
+              totalAmount = (bidData['bid_amount'] as num?)?.toDouble();
+            } catch (_) {}
           }
-        } catch (_) {}
-      }
-      
-      // Fallback to bid amount if contract price not found
-      if (totalAmount == null && projectData['bid_id'] != null) {
-        try {
-          final bidData = await _supabase
-              .from('Bids')
-              .select('bid_amount')
-              .eq('bid_id', projectData['bid_id'])
-              .single();
-          totalAmount = (bidData['bid_amount'] as num?)?.toDouble();
-        } catch (_) {}
+        }
       }
       
       return {
@@ -894,23 +1048,124 @@ class PaymentService {
 
       final projectData = await _supabase
           .from('Projects')
-          .select('projectdata')
+          .select('projectdata, title, contractor_id, contractee_id')
           .eq('project_id', projectId)
           .single();
 
       final projectdata = Map<String, dynamic>.from(projectData['projectdata'] ?? {});
       final payments = List<Map<String, dynamic>>.from(projectdata['payments'] ?? []);
+      final projectTitle = projectData['title'] ?? 'Project';
+      final contractorId = projectData['contractor_id'] as String?;
+      final contracteeId = projectData['contractee_id'] as String?;
 
       if (payments.isNotEmpty) {
         final lastPayment = payments.last;
         lastPayment['milestone_number'] = milestoneNumber;
         lastPayment['milestone_description'] = targetMilestone['description'];
+        
+        // Generate and store receipt for milestone payment
+        String? receiptPath;
+        try {
+          // Fetch contractee and contractor details for receipt
+          String contracteeName = 'Contractee';
+          String contracteeEmail = '';
+          String contractorName = 'Contractor';
+          
+          if (contracteeId != null) {
+            try {
+              final contracteeData = await _supabase
+                  .from('Contractee')
+                  .select('full_name')
+                  .eq('contractee_id', contracteeId)
+                  .maybeSingle();
+              if (contracteeData != null) {
+                contracteeName = contracteeData['full_name'] ?? 'Contractee';
+              }
+              
+              final userData = await _supabase
+                  .from('Users')
+                  .select('email')
+                  .eq('users_id', contracteeId)
+                  .maybeSingle();
+              if (userData != null) {
+                contracteeEmail = userData['email'] ?? '';
+              }
+            } catch (e) {
+              // Use defaults if fetch fails
+            }
+          }
+          
+          if (contractorId != null) {
+            try {
+              final contractorData = await _supabase
+                  .from('Contractor')
+                  .select('firm_name')
+                  .eq('contractor_id', contractorId)
+                  .maybeSingle();
+              if (contractorData != null) {
+                contractorName = contractorData['firm_name'] ?? 'Contractor';
+              }
+            } catch (e) {
+              // Use defaults if fetch fails
+            }
+          }
+          
+          final paymentId = lastPayment['payment_id'] ?? lastPayment['reference'] ?? '';
+          final paymentDate = lastPayment['date'] ?? DateTimeHelper.getLocalTimeISOString();
+          
+          // Generate receipt PDF
+          final receiptPdf = await ReceiptService.generateReceiptPdf(
+            paymentId: paymentId,
+            amount: amount,
+            projectTitle: projectTitle,
+            contractorName: contractorName,
+            contracteeName: contracteeName,
+            contracteeEmail: contracteeEmail,
+            paymentDate: paymentDate,
+            paymentReference: paymentId,
+            contractType: 'milestone',
+            paymentStructure: 'milestone',
+            milestoneNumber: milestoneNumber,
+            milestoneDescription: targetMilestone['description'],
+          );
+          
+          // Upload receipt to storage
+          if (contracteeId != null && paymentId.isNotEmpty) {
+            receiptPath = await ReceiptService.uploadReceiptToStorage(
+              pdfBytes: receiptPdf,
+              projectId: projectId,
+              contracteeId: contracteeId,
+              paymentId: paymentId,
+            );
+            
+            // Update payment with receipt path
+            lastPayment['receipt_path'] = receiptPath;
+          }
+        } catch (receiptError) {
+          // Log error but don't fail payment
+          await _errorService.logError(
+            errorMessage: 'Failed to generate receipt: $receiptError',
+            module: 'Payment Service',
+            severity: 'Medium',
+            extraInfo: {
+              'operation': 'Generate Receipt (Milestone)',
+              'project_id': projectId,
+              'milestone_number': milestoneNumber,
+            },
+          );
+        }
       }
 
       await _supabase
           .from('Projects')
           .update({'projectdata': projectdata})
           .eq('project_id', projectId);
+
+      // Get contract type for completion check
+      final contractType = 'milestone';
+
+      // Check if all milestones are paid and auto-complete if so
+      await _checkAndCompleteProject(projectId, contractType);
 
       await _auditService.logAuditEvent(
         userId: _supabase.auth.currentUser?.id,
@@ -944,6 +1199,247 @@ class PaymentService {
       return milestoneInfo != null;
     } catch (e) {
       return false;
+    }
+  }
+
+  /// Check if project is fully paid and auto-complete project and contract
+  Future<void> _checkAndCompleteProject(
+    String projectId, 
+    String contractType, {
+    String? paymentStatus,
+  }) async {
+    try {
+      // Normalize contract type to handle variations
+      final normalizedContractType = contractType.toLowerCase().trim();
+      final isLumpSum = normalizedContractType == 'lump_sum' || 
+                       (normalizedContractType.contains('lump') && normalizedContractType.contains('sum'));
+      
+      bool isFullyPaid = false;
+
+      if (isLumpSum) {
+        // For lump sum, check if payment_status is 'paid'
+        // Use provided paymentStatus if available, otherwise read from database
+        if (paymentStatus != null) {
+          isFullyPaid = paymentStatus.toLowerCase() == 'paid';
+        } else {
+          final projectData = await _supabase
+              .from('Projects')
+              .select('projectdata')
+              .eq('project_id', projectId)
+              .single();
+
+          final projectdata = projectData['projectdata'] as Map<String, dynamic>? ?? {};
+          final status = projectdata['payment_status'] as String?;
+          isFullyPaid = (status?.toLowerCase() ?? '') == 'paid';
+        }
+      } else if (contractType == 'custom' || contractType == 'cost_plus' || contractType == 'time_and_materials') {
+        // For custom, cost-plus, and time & materials contracts, check if total_paid >= contract_total
+        final projectData = await _supabase
+            .from('Projects')
+            .select('projectdata, contract_id, bid_id')
+            .eq('project_id', projectId)
+            .single();
+
+        final projectdata = projectData['projectdata'] as Map<String, dynamic>? ?? {};
+        final payments = projectdata['payments'] as List<dynamic>? ?? [];
+        
+        final totalPaid = payments.fold<double>(
+          0.0,
+          (sum, payment) => sum + ((payment['amount'] as num?)?.toDouble() ?? 0.0),
+        );
+
+        // Get total contract amount
+        double? totalAmount;
+        
+        // For custom contracts, they are uploaded PDFs without field_values, so use bid amount
+        if (contractType == 'custom') {
+          // Custom contracts: use bid amount as the total contract amount
+          final bidId = projectData['bid_id'] as String?;
+          if (bidId != null) {
+            try {
+              final bidData = await _supabase
+                  .from('Bids')
+                  .select('bid_amount')
+                  .eq('bid_id', bidId)
+                  .single();
+              totalAmount = (bidData['bid_amount'] as num?)?.toDouble();
+            } catch (_) {
+              // If no bid amount, we can't determine completion for custom contracts
+            }
+          }
+        } else {
+          // For cost-plus and time & materials, try to get from contract field_values first
+          final contractId = projectData['contract_id'] as String?;
+          if (contractId != null) {
+            try {
+              final contractData = await _supabase
+                  .from('Contracts')
+                  .select('field_values')
+                  .eq('contract_id', contractId)
+                  .single();
+              
+              final fieldValues = contractData['field_values'] as Map<String, dynamic>? ?? {};
+              
+              // Try to get contract price from different contract types
+              if (fieldValues['Payment.Total'] != null) {
+                // Time & Materials contract
+                totalAmount = double.tryParse(fieldValues['Payment.Total'].toString());
+              } else if (fieldValues['Estimated Total'] != null) {
+                // Cost Plus contract
+                totalAmount = double.tryParse(fieldValues['Estimated Total'].toString());
+              }
+            } catch (_) {
+              // Continue to fallback
+            }
+          }
+          
+          // Fallback to bid amount if contract price not found
+          if (totalAmount == null) {
+            final bidId = projectData['bid_id'] as String?;
+            if (bidId != null) {
+              try {
+                final bidData = await _supabase
+                    .from('Bids')
+                    .select('bid_amount')
+                    .eq('bid_id', bidId)
+                    .single();
+                totalAmount = (bidData['bid_amount'] as num?)?.toDouble();
+              } catch (_) {
+                // If no bid amount, we can't determine completion
+              }
+            }
+          }
+        }
+
+        // Check if fully paid (with small tolerance for floating point comparison)
+        if (totalAmount != null && totalAmount > 0) {
+          isFullyPaid = totalPaid >= (totalAmount - 0.01); // Allow 1 cent tolerance
+          
+          // If fully paid, update payment_status to 'paid'
+          if (isFullyPaid) {
+            final updatedProjectdata = Map<String, dynamic>.from(projectdata);
+            updatedProjectdata['payment_status'] = 'paid';
+
+            await _supabase.from('Projects').update({
+              'projectdata': updatedProjectdata,
+            }).eq('project_id', projectId);
+          }
+        }
+      } else if (normalizedContractType.contains('milestone')) {
+        // For milestone payments, check if all milestones are paid
+        final milestoneInfo = await getMilestonePaymentInfo(projectId);
+        if (milestoneInfo != null) {
+          final completedMilestones = milestoneInfo['completed_milestones'] as int? ?? 0;
+          final totalMilestones = milestoneInfo['total_milestones'] as int? ?? 0;
+          isFullyPaid = totalMilestones > 0 && completedMilestones >= totalMilestones;
+          
+          // If all milestones are paid, update payment_status to 'paid'
+          if (isFullyPaid) {
+            final projectData = await _supabase
+                .from('Projects')
+                .select('projectdata')
+                .eq('project_id', projectId)
+                .single();
+
+            final projectdata = Map<String, dynamic>.from(projectData['projectdata'] ?? {});
+            projectdata['payment_status'] = 'paid';
+
+            await _supabase.from('Projects').update({
+              'projectdata': projectdata,
+            }).eq('project_id', projectId);
+          }
+        }
+      }
+
+      // If fully paid, complete the project and contract
+      if (isFullyPaid) {
+        // Get project data to find contract_id
+        final projectData = await _supabase
+            .from('Projects')
+            .select('contract_id, title, contractor_id, contractee_id, status')
+            .eq('project_id', projectId)
+            .single();
+
+        final contractId = projectData['contract_id'] as String?;
+        final projectTitle = projectData['title'] as String? ?? 'Project';
+        final contractorId = projectData['contractor_id'] as String?;
+        final contracteeId = projectData['contractee_id'] as String?;
+        final currentStatus = projectData['status'] as String?;
+
+        // Only update if not already completed
+        if (currentStatus?.toLowerCase() != 'completed') {
+          // Update project status to completed
+          await _supabase.from('Projects').update({
+            'status': 'completed',
+            'updated_at': DateTimeHelper.getLocalTimeISOString(),
+          }).eq('project_id', projectId);
+
+          // Update contract status to completed if contract exists
+          if (contractId != null) {
+            await _supabase.from('Contracts').update({
+              'status': 'completed',
+              'updated_at': DateTimeHelper.getLocalTimeISOString(),
+            }).eq('contract_id', contractId);
+          }
+        }
+
+        // Log audit event
+        if (contracteeId != null) {
+          await _auditService.logAuditEvent(
+            userId: contracteeId,
+            action: 'PROJECT_COMPLETED',
+            details: 'Project automatically completed after full payment',
+            category: 'Project',
+            metadata: {
+              'project_id': projectId,
+              'contract_id': contractId,
+              'contract_type': contractType,
+            },
+          );
+        }
+
+        // Send notifications
+        if (contractorId != null && contracteeId != null) {
+          await _notificationService.createNotification(
+            receiverId: contractorId,
+            receiverType: 'contractor',
+            senderId: 'system',
+            senderType: 'system',
+            type: 'Project Completed',
+            message: 'Project "$projectTitle" has been automatically completed after full payment.',
+            information: {
+              'project_id': projectId,
+              'contract_id': contractId,
+              'completion_date': DateTimeHelper.getLocalTimeISOString(),
+            },
+          );
+
+          await _notificationService.createNotification(
+            receiverId: contracteeId,
+            receiverType: 'contractee',
+            senderId: 'system',
+            senderType: 'system',
+            type: 'Project Completed',
+            message: 'Project "$projectTitle" has been automatically completed after full payment.',
+            information: {
+              'project_id': projectId,
+              'contract_id': contractId,
+              'completion_date': DateTimeHelper.getLocalTimeISOString(),
+            },
+          );
+        }
+      }
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to check and complete project: $e',
+        module: 'Payment Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Check and Complete Project',
+          'project_id': projectId,
+        },
+      );
+      // Don't rethrow - this is a background operation that shouldn't fail payment
     }
   }
 }

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:backend/services/both services/be_payment_service.dart';
 import 'package:backend/models/be_milestone_payment_modal.dart';
 import 'package:backend/utils/be_snackbar.dart';
+import 'package:go_router/go_router.dart';
 
 class PaymentModal {
   static Future<void> show({
@@ -393,8 +394,85 @@ class PaymentModal {
 
                                   if (context.mounted) {
                                     Navigator.pop(context);
-                                    ConTrustSnackBar.success(context, 'Payment successful! ₱${paymentAmount.toStringAsFixed(2)} paid.');
                                     onPaymentSuccess();
+                                    
+                                    // Show success dialog with receipt info
+                                    if (context.mounted) {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                          title: Row(
+                                            children: [
+                                              Icon(Icons.check_circle, color: Colors.green.shade700, size: 28),
+                                              const SizedBox(width: 12),
+                                              const Expanded(
+                                                child: Text(
+                                                  'Payment Successful!',
+                                                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          content: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'Your payment of ₱${paymentAmount.toStringAsFixed(2)} has been processed successfully.',
+                                                style: const TextStyle(fontSize: 16),
+                                              ),
+                                              const SizedBox(height: 16),
+                                              Container(
+                                                padding: const EdgeInsets.all(12),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.amber.shade50,
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  border: Border.all(color: Colors.amber.shade200),
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    Icon(Icons.receipt_long, color: Colors.amber.shade700, size: 20),
+                                                    const SizedBox(width: 8),
+                                                    const Expanded(
+                                                      child: Text(
+                                                        'E-receipt has been created!',
+                                                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              const SizedBox(height: 12),
+                                              const Text(
+                                                'You can view and download your receipt from the Payment History.',
+                                                style: TextStyle(fontSize: 13, color: Colors.grey),
+                                              ),
+                                            ],
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(context),
+                                              child: const Text('Close'),
+                                            ),
+                                            ElevatedButton(
+                                              onPressed: () {
+                                                Navigator.pop(context);
+                                                // Navigate to payment history page
+                                                context.go('/history');
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.amber.shade700,
+                                                foregroundColor: Colors.white,
+                                              ),
+                                              child: const Text('View Payment History'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }
                                   }
                                 } catch (e) {
                                   setState(() => isProcessing = false);

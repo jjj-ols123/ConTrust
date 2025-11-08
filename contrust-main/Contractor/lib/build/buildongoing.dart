@@ -5,6 +5,44 @@ import 'package:intl/intl.dart';
 import 'package:backend/utils/be_contractformat.dart'; 
 
 class OngoingBuildMethods {
+  /// Show date picker with amber theme matching add tasks dialog
+  static Future<DateTime?> showThemedDatePicker({
+    required BuildContext context,
+    required DateTime initialDate,
+    required DateTime firstDate,
+    required DateTime lastDate,
+    String? helpText,
+    String? cancelText,
+    String? confirmText,
+  }) async {
+    return await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
+      helpText: helpText ?? 'Select Date',
+      cancelText: cancelText ?? 'Cancel',
+      confirmText: confirmText ?? 'OK',
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: Colors.amber.shade700,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black87,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.amber.shade700,
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+  }
   static Widget buildProjectHeader({
     required String projectTitle,
     required String clientName,
@@ -356,7 +394,7 @@ class OngoingBuildMethods {
     final initial = (currentCompletion != null && currentCompletion.isAfter(now))
         ? currentCompletion
         : now;
-    final selectedDate = await showDatePicker(
+    final selectedDate = await showThemedDatePicker(
       context: context,
       initialDate: initial,
       firstDate: now,
@@ -1004,138 +1042,141 @@ class OngoingBuildMethods {
           child: Material(
             color: Colors.transparent,
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 600, maxHeight: 600),
-              child: Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.9,
+                maxHeight: MediaQuery.of(context).size.height * 0.8,
+              ),
+            child: Container(
                 width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.black, width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 20,
-                      spreadRadius: 1,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.shade700,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Icon(
-                            Icons.description,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        const Expanded(
-                          child: Text(
-                            'Add Progress Report',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.of(dialogContext).pop(),
-                          icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Flexible(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 500),
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Share updates and progress details for this project',
-                              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-                            ),
-                            const SizedBox(height: 20),
-                            Container(
-                              constraints: const BoxConstraints(minHeight: 200, maxHeight: 300),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey.shade300),
-                                borderRadius: BorderRadius.circular(12),
-                                color: Colors.grey.shade50,
-                              ),
-                              child: TextField(
-                                controller: controller,
-                                maxLines: null,
-                                minLines: 8,
-                                textAlignVertical: TextAlignVertical.top,
-                                decoration: const InputDecoration(
-                                  hintText: 'Enter progress details...',
-                                  border: InputBorder.none,
-                                  contentPadding: EdgeInsets.all(16),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                TextButton(
-                                  onPressed: () => Navigator.of(dialogContext).pop(),
-                                  child: const Text('Cancel'),
-                                ),
-                                const SizedBox(width: 12),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    if (controller.text.trim().isNotEmpty) {
-                                      Navigator.of(dialogContext).pop();
-                                      onAdd();
-                                    }
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFFFFB300),
-                                    foregroundColor: Colors.black,
-                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                    minimumSize: const Size(0, 50),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                  child: const Text('Add Report'),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.black, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 20,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade700,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          Icons.description,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Add Progress Report',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                          onPressed: () => Navigator.of(dialogContext).pop(),
+                        icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                ),
+                Flexible(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 500),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Share updates and progress details for this project',
+                          style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                        ),
+                        const SizedBox(height: 20),
+                            Container(
+                              constraints: const BoxConstraints(minHeight: 200, maxHeight: 300),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey.shade300),
+                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.grey.shade50,
+                            ),
+                            child: TextField(
+                              controller: controller,
+                              maxLines: null,
+                                minLines: 8,
+                              textAlignVertical: TextAlignVertical.top,
+                              decoration: const InputDecoration(
+                                hintText: 'Enter progress details...',
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.all(16),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                                  onPressed: () => Navigator.of(dialogContext).pop(),
+                              child: const Text('Cancel'),
+                            ),
+                            const SizedBox(width: 12),
+                            ElevatedButton(
+                              onPressed: () {
+                                if (controller.text.trim().isNotEmpty) {
+                                      Navigator.of(dialogContext).pop();
+                                  onAdd();
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFFB300),
+                                foregroundColor: Colors.black,
+                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                    minimumSize: const Size(0, 50),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: const Text('Add Report'),
+                            ),
+                          ],
+                        ),
+                      ],
+                        ),
+                    ),
+                  ),
+                ),
+              ],
             ),
+          ),
           ),
           )
         );
@@ -1147,7 +1188,7 @@ class OngoingBuildMethods {
     required BuildContext context,
   }) async {
     if (!context.mounted) return;
-    
+
     await showDialog(
       context: context,
       barrierColor: Colors.black54,
@@ -1281,87 +1322,90 @@ class OngoingBuildMethods {
               child: Material(
                 color: Colors.transparent,
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
-                  child: Container(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.9,
+                    maxHeight: MediaQuery.of(context).size.height * 0.8,
+                  ),
+                child: Container(
                     width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.black, width: 1.5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
-                          blurRadius: 20,
-                          spreadRadius: 1,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.shade700,
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(20),
-                            topRight: Radius.circular(20),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: const Icon(
-                                Icons.checklist,
-                                color: Colors.white,
-                                size: 18,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            const Expanded(
-                              child: Text(
-                                'Add Tasks',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () => Navigator.of(dialogContext).pop(),
-                              icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                            ),
-                          ],
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.black, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 20,
+                        spreadRadius: 1,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade700,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(20),
+                          topRight: Radius.circular(20),
                         ),
                       ),
-                      Flexible(
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Icon(
+                              Icons.checklist,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          const Expanded(
+                            child: Text(
+                                'Add Tasks',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                              onPressed: () => Navigator.of(dialogContext).pop(),
+                            icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Flexible(
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxHeight: 500),
-                          child: SingleChildScrollView(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
                                   'Enter task and select expected finish date',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 14,
-                                  ),
-                                ),
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 14,
+                              ),
+                            ),
                                 const SizedBox(height: 16),
                                 Row(
-                                  children: [
+                              children: [
                                     Expanded(
                                       child: TextField(
                                         controller: taskController,
@@ -1394,7 +1438,7 @@ class OngoingBuildMethods {
                                         if (taskText.isEmpty) return;
                                         
                                         // Show date picker
-                                        final selectedDate = await showDatePicker(
+                                        final selectedDate = await showThemedDatePicker(
                                           context: context,
                                           initialDate: DateTime.now(),
                                           firstDate: DateTime.now(),
@@ -1437,19 +1481,19 @@ class OngoingBuildMethods {
                                   ),
                                   const SizedBox(height: 8),
                                   ...addedTasks.asMap().entries.map((entry) {
-                                    final index = entry.key;
+                                  final index = entry.key;
                                     final task = entry.value;
-                                    return Container(
+                                  return Container(
                                       margin: const EdgeInsets.only(bottom: 8),
                                       padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey.shade50,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade50,
                                         borderRadius: BorderRadius.circular(8),
                                         border: Border.all(color: Colors.grey.shade300),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Expanded(
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
                                             child: Column(
                                               crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
@@ -1580,7 +1624,10 @@ class OngoingBuildMethods {
               child: Material(
                 color: Colors.transparent,
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.9,
+                    maxHeight: MediaQuery.of(context).size.height * 0.8,
+                  ),
                   child: Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
@@ -1729,18 +1776,18 @@ class OngoingBuildMethods {
                                               ],
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                    );
-                                  }),
+                                      ],
+                                    ),
+                                  );
+                                }),
                                   const SizedBox(height: 16),
                                   // Select All / Deselect All buttons
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       TextButton(
-                                        onPressed: () {
-                                          setState(() {
+                                  onPressed: () {
+                                    setState(() {
                                             if (selectedTaskIds.length == undoneTasks.length) {
                                               selectedTaskIds.clear();
                                             } else {
@@ -1752,71 +1799,71 @@ class OngoingBuildMethods {
                                                 }
                                               }
                                             }
-                                          });
-                                        },
+                                    });
+                                  },
                                         child: Text(
                                           selectedTaskIds.length == undoneTasks.length
                                               ? 'Deselect All'
                                               : 'Select All',
-                                          style: TextStyle(color: Colors.blue.shade700),
-                                        ),
+                                    style: TextStyle(color: Colors.blue.shade700),
+                                  ),
                                       ),
                                       Text(
                                         '${selectedTaskIds.length} of ${undoneTasks.length} selected',
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: Colors.grey.shade600,
-                                        ),
-                                      ),
-                                    ],
                                   ),
-                                  const SizedBox(height: 24),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
                                   // Action buttons
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      TextButton(
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                TextButton(
                                         onPressed: () => Navigator.of(dialogContext).pop(),
-                                        style: TextButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 20,
-                                            vertical: 12,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          'Cancel',
-                                          style: TextStyle(color: Colors.grey.shade600),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      ElevatedButton(
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Cancel',
+                                    style: TextStyle(color: Colors.grey.shade600),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                ElevatedButton(
                                         onPressed: selectedTaskIds.isEmpty
                                             ? null
                                             : () {
                                                 Navigator.of(dialogContext).pop();
                                                 onConfirm(selectedTaskIds.toList());
-                                              },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(0xFFFFB300),
-                                          foregroundColor: Colors.black,
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFFFB300),
+                                    foregroundColor: Colors.black,
                                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                                           minimumSize: const Size(0, 50),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                        ),
-                                        child: Text('Mark ${selectedTaskIds.length} Task${selectedTaskIds.length != 1 ? 's' : ''} as Done'),
-                                      ),
-                                    ],
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
                                   ),
-                                ],
-                              ),
+                                        child: Text('Mark ${selectedTaskIds.length} Task${selectedTaskIds.length != 1 ? 's' : ''} as Done'),
+                                ),
+                              ],
                             ),
-                          ),
+                          ],
+                              ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
+                ),
+              ),
                 ),
               ),
             );

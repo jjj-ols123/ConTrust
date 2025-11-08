@@ -1,13 +1,18 @@
 // ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter, use_build_context_synchronously
 
+import 'package:backend/services/both%20services/be_contract_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:backend/services/contractor services/contract/cor_viewcontractservice.dart';
-import 'buildviewcontract_stub.dart' if (dart.library.html) 'buildviewcontract_web.dart';
+import 'dart:html' as html;
+import 'dart:ui_web' as ui_web;
 import 'dart:typed_data';
 import 'package:signature/signature.dart';
 import 'package:backend/utils/be_contractsignature.dart';
 import 'package:backend/utils/be_snackbar.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 
 class ViewContractBuild {
   static Widget buildHeader(
@@ -258,7 +263,59 @@ class ViewContractBuild {
     );
   }
 
-  // Web-specific viewer is provided by conditional import helper.
+  static Widget _buildWebPdfViewer(String pdfUrl) {
+    final viewType = 'pdf-viewer-${pdfUrl.hashCode.abs()}';
+
+    if (kIsWeb) {
+      ui_web.platformViewRegistry.registerViewFactory(viewType, (int viewId) {
+        final iframe = html.IFrameElement()
+          ..src = pdfUrl
+          ..style.border = 'none'
+          ..style.width = '100%'
+          ..style.height = '100%'
+          ..allow = 'fullscreen'
+          ..onError.listen((event) {
+          });
+
+        return iframe;
+      });
+    }
+
+    return HtmlElementView(viewType: viewType);
+  }
+
+  static Widget _buildWebPdfViewerWithFallback(String pdfUrl, VoidCallback onDownload, double height) {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return FutureBuilder<bool>(
+          future: _testPdfUrl(pdfUrl),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return _buildPdfLoadingState();
+            }
+            
+            if (snapshot.hasError || snapshot.data == false) {
+              return _buildPdfErrorState(pdfUrl, onDownload, height);
+            }
+            
+            return _buildWebPdfViewer(pdfUrl);
+          },
+        );
+      },
+    );
+  }
+
+  static Future<bool> _testPdfUrl(String pdfUrl) async {
+    try {
+      final response = await html.HttpRequest.request(
+        pdfUrl,
+        method: 'HEAD',
+      );
+      return response.status == 200;
+    } catch (e) {
+      return false;
+    }
+  }
 
   static Widget _buildPdfLoadingState() {
     return Container(
@@ -279,7 +336,7 @@ class ViewContractBuild {
     );
   }
 
-  static Widget _buildPdfErrorState(String pdfUrl, VoidCallback onDownload, double height) {
+  static Widget _buildPdfErrorState(String pdfUrl, VoidCallback onDownload, double height, BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
@@ -320,7 +377,7 @@ class ViewContractBuild {
                 children: [
                   ElevatedButton.icon(
                     onPressed: () {
-                      openPdfInNewTab(pdfUrl);
+                      html.window.open(pdfUrl, '_blank');
                     },
                     icon: const Icon(Icons.open_in_new),
                     label: const Text('Open in New Tab'),
@@ -349,49 +406,195 @@ class ViewContractBuild {
   }
 
   static Widget _buildMobilePdfViewer(String pdfUrl, VoidCallback onDownload) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.picture_as_pdf, size: 64, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'PDF Viewer',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[600],
+    return FutureBuilder<Uint8List?>(
+      future: _downloadPdfBytes(pdfUrl),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Colors.amber),
+                  SizedBox(height: 16),
+                  Text('Loading PDF...'),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'PDF viewing is optimized for web browsers.\nTap download to view the contract.',
-              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-              textAlign: TextAlign.center,
+          );
+        }
+
+        if (snapshot.hasError || !snapshot.hasData) {
+          return Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: onDownload,
-              icon: const Icon(Icons.download),
-              label: const Text('Download PDF'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[600],
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                const Text(
+                  'Error loading PDF',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Tap the button below to open in external app',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () => _launchPdfUrl(context, pdfUrl),
+                  icon: const Icon(Icons.open_in_new),
+                  label: const Text('Open PDF'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.amber,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: onDownload,
+                  icon: const Icon(Icons.download),
+                  label: const Text('Download PDF'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue[600],
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          );
+        }
+
+        try {
+          return SizedBox(
+            width: double.infinity,
+            height: double.infinity,
+            child: SfPdfViewer.memory(
+              snapshot.data!,
+              canShowScrollHead: true,
+              canShowScrollStatus: true,
+            ),
+          );
+        } catch (e) {
+          debugPrint('Error displaying PDF with SfPdfViewer: $e');
+          return Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                const Text(
+                  'Error displaying PDF',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Error: $e',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () => _launchPdfUrl(context, pdfUrl),
+                  icon: const Icon(Icons.open_in_new),
+                  label: const Text('Open PDF'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.amber,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: onDownload,
+                  icon: const Icon(Icons.download),
+                  label: const Text('Download PDF'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue[600],
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+      },
     );
+  }
+
+  static Future<Uint8List?> _downloadPdfBytes(String pdfUrl) async {
+    try {
+      final response = await http.get(Uri.parse(pdfUrl));
+      
+      if (response.statusCode == 200) {
+        final bytes = response.bodyBytes;
+        if (bytes.isEmpty) {
+          debugPrint('PDF download returned empty bytes');
+          return null;
+        }
+        debugPrint('PDF downloaded successfully: ${bytes.length} bytes');
+        return bytes;
+      } else {
+        debugPrint('PDF download failed with status: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('Error downloading PDF bytes: $e');
+      return null;
+    }
+  }
+
+  static Future<void> _launchPdfUrl(BuildContext context, String url) async {
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (context.mounted) {
+          ConTrustSnackBar.error(context, 'Could not open PDF URL');
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ConTrustSnackBar.error(context, 'Error opening PDF: $e');
+      }
+    }
   }
 
   static Widget buildSignaturesSection(
@@ -560,6 +763,7 @@ class ViewContractBuild {
     String? currentUserId,
     BuildContext? context,
     String? contractStatus,
+    BuildContext? parentDialogContext,
   }) {
     final contractorSigned = contractData?['contractor_signature_url'] != null &&
         (contractData!['contractor_signature_url'] as String).isNotEmpty;
@@ -664,6 +868,7 @@ class ViewContractBuild {
                 context,
                 canSign,
                 onRefresh ?? () {},
+                parentDialogContext: parentDialogContext,
               ),
             ],
           ],
@@ -848,8 +1053,9 @@ class ViewContractBuild {
     String? currentUserId,
     BuildContext context,
     bool enabled,
-    VoidCallback onRefresh,
-  ) {
+    VoidCallback onRefresh, {
+    BuildContext? parentDialogContext,
+  }) {
     final signatureController = SignatureController(
       penStrokeWidth: 3,
       penColor: Colors.black,
@@ -937,8 +1143,14 @@ class ViewContractBuild {
                         ? () async {
                             final signatureBytes = await pickSignatureImage(context);
                             if (signatureBytes != null) {
-                              _showSignatureDialog(context, contractData,
-                                  currentUserId, signatureBytes, onRefresh);
+                              _showSignatureDialog(
+                                context, 
+                                contractData,
+                                currentUserId, 
+                                signatureBytes, 
+                                onRefresh,
+                                parentDialogContext: parentDialogContext,
+                              );
                             }
                           }
                         : null,
@@ -965,8 +1177,14 @@ class ViewContractBuild {
                                   context, 'Please provide a signature');
                               return;
                             }
-                            _showSignatureDialog(context, contractData,
-                                currentUserId, signature, onRefresh);
+                            _showSignatureDialog(
+                              context, 
+                              contractData,
+                              currentUserId, 
+                              signature, 
+                              onRefresh,
+                              parentDialogContext: parentDialogContext,
+                            );
                           }
                         : null,
                     icon: const Icon(Icons.check, size: 18),
@@ -1009,8 +1227,14 @@ class ViewContractBuild {
                         ? () async {
                             final signatureBytes = await pickSignatureImage(context);
                             if (signatureBytes != null) {
-                              _showSignatureDialog(context, contractData,
-                                  currentUserId, signatureBytes, onRefresh);
+                              _showSignatureDialog(
+                                context, 
+                                contractData,
+                                currentUserId, 
+                                signatureBytes, 
+                                onRefresh,
+                                parentDialogContext: parentDialogContext,
+                              );
                             }
                           }
                         : null,
@@ -1069,8 +1293,9 @@ class ViewContractBuild {
     Map<String, dynamic> contractData,
     String? currentUserId,
     Uint8List signatureBytes,
-    VoidCallback onRefresh,
-  ) {
+    VoidCallback onRefresh, {
+    BuildContext? parentDialogContext,
+  }) {
     if (currentUserId == null) return;
 
     final contractId = contractData['contract_id'] as String;
@@ -1184,8 +1409,21 @@ class ViewContractBuild {
                                     userType: userType,
                                   );
 
+                                  // Check if both parties have signed
+                                  final updatedContract = await ContractService.getContractById(contractId);
+                                  final hasContractorSignature = updatedContract['contractor_signature_url'] != null &&
+                                      (updatedContract['contractor_signature_url'] as String).isNotEmpty;
+                                  final hasContracteeSignature = updatedContract['contractee_signature_url'] != null &&
+                                      (updatedContract['contractee_signature_url'] as String).isNotEmpty;
+                                  final bothSigned = hasContractorSignature && hasContracteeSignature;
+
                                   Navigator.of(dialogContext).pop();
                                   onRefresh();
+                                  
+                                  // If both parties have signed, close the parent contract dialog
+                                  if (bothSigned && parentDialogContext != null) {
+                                    Navigator.of(parentDialogContext).pop();
+                                  }
                                   
                                 } catch (e) {
                                   ConTrustSnackBar.error(context, 'Failed to sign contract: $e');
