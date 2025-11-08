@@ -4,9 +4,9 @@ import 'package:backend/services/both%20services/be_contract_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:backend/services/contractor services/contract/cor_viewcontractservice.dart';
-import 'dart:html' as html;
+import 'package:backend/build/html_stub.dart' if (dart.library.html) 'dart:html' as html;
 import 'dart:async';
-import 'dart:ui_web' as ui_web;
+import 'package:backend/build/ui_web_stub.dart' if (dart.library.html) 'dart:ui_web' as ui_web;
 import 'dart:typed_data';
 import 'package:signature/signature.dart';
 import 'package:backend/utils/be_contractsignature.dart';
@@ -756,7 +756,10 @@ class ViewContractBuild {
                       const SizedBox(height: 4),
                       Text(
                         'Not signed',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
@@ -1346,68 +1349,43 @@ class ViewContractBuild {
     );
   }
 
+  static Future<Uint8List?> pickSignatureImageHelper(BuildContext context) async {
+    try {
+      final input = html.FileUploadInputElement()..accept = 'image/*';
+      input.click();
+
+      await input.onChange.first;
+
+      if (input.files == null || input.files!.isEmpty) {
+        return null;
+      }
+
+      final file = input.files!.first;
+
+      final reader = html.FileReader();
+      reader.readAsArrayBuffer(file);
+      await reader.onLoad.first;
+
+      final result = reader.result;
+      if (result is Uint8List) {
+        return result;
+      } else if (result is ByteBuffer) {
+        return Uint8List.view(result);
+      } else {
+        throw Exception('Unexpected file reader result type: ${result.runtimeType}');
+      }
+    } catch (e) {
+      debugPrint('Failed to pick signature image: $e');
+      return null;
+    }
+  }
+
   static Future<Uint8List?> pickSignatureImage(BuildContext context) async {
     final bytes = await pickSignatureImageHelper(context);
     if (bytes == null) {
       ConTrustSnackBar.error(context, 'Failed to pick signature image');
     }
     return bytes;
-  }
-
-  static Future<Uint8List?> pickSignatureImageHelper(
-    BuildContext context,
-  ) async {
-    if (kIsWeb) {
-      final completer = Completer<Uint8List?>();
-      final input = html.FileUploadInputElement()..accept = 'image/*';
-
-      void cleanup() {
-        // No-op placeholder for symmetry; browser will GC detached input
-      }
-
-      input.onChange.listen((event) {
-        if (input.files == null || input.files!.isEmpty) {
-          completer.complete(null);
-          cleanup();
-          return;
-        }
-
-        final file = input.files!.first;
-        final reader = html.FileReader();
-        reader.onError.listen((_) {
-          completer.completeError('Failed to read file');
-          cleanup();
-        });
-        reader.onLoadEnd.listen((_) {
-          try {
-            final result = reader.result;
-            if (result is ByteBuffer) {
-              completer.complete(Uint8List.view(result));
-            } else if (result is Uint8List) {
-              completer.complete(result);
-            } else {
-              completer.complete(null);
-            }
-          } catch (e) {
-            completer.completeError(e);
-          } finally {
-            cleanup();
-          }
-        });
-        reader.readAsArrayBuffer(file);
-      });
-
-      input.click();
-      return completer.future;
-    } else {
-      if (context.mounted) {
-        ConTrustSnackBar.error(
-          context,
-          'Image upload is only supported on Web in this build',
-        );
-      }
-      return null;
-    }
   }
 
   static void _showSignatureDialog(

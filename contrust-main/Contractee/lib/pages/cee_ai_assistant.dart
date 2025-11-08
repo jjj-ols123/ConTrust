@@ -7,7 +7,6 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart'
     hide WebResourceError;
-import 'package:contractee/build/buildceeprofile.dart';
 
 import 'package:backend/build/html_stub.dart' if (dart.library.html) 'dart:html'
     as html;

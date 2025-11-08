@@ -6,10 +6,8 @@ import 'package:backend/models/be_payment_modal.dart';
 import 'package:backend/utils/be_constraint.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractee/build/buildongoing.dart';
-import 'package:contractee/build/buildceeprofile.dart';
 import 'package:contractee/pages/cee_project_dashboard.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CeeOngoingProjectScreen extends StatefulWidget {
@@ -32,19 +30,13 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
   final _fetchService = FetchService();
   final _paymentService = PaymentService();
   final supabase = Supabase.instance.client;
-  String? _chatRoomId;
-  bool _canChat = false;
-  Map<String, dynamic>? _contractorData;
 
   Map<String, dynamic>? projectData;
-  List<Map<String, dynamic>> _localTasks = [];
-  double _localProgress = 0.0;
   bool isLoading = true;
   bool _isPaid = false;
   Map<String, dynamic>? _paymentSummary;
   final List<StreamSubscription> _subscriptions = [];
   Timer? _debounceTimer;
-  Future<List<List<Map<String, dynamic>>>>? _tabDataFuture;
   StreamController<Map<String, dynamic>>? _controller;
   Stream<Map<String, dynamic>>? _projectStream;
   bool _isRetryingRealtime = false;
@@ -102,11 +94,9 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
           onError: (error) {
             if (mounted && !_isRetryingRealtime) {
               debugPrint('Realtime subscription error for $tableName: $error');
-              // Dispose existing subscriptions before retrying to prevent channel buildup
               _isRetryingRealtime = true;
               Future.delayed(const Duration(seconds: 5), () {
                 if (mounted) {
-                  // Dispose all subscriptions before retrying
                   for (final sub in _subscriptions) {
                     sub.cancel();
                   }
@@ -179,7 +169,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
         _controller!.add(data);
       }
     } catch (e) {
-      // Continue
+      // 
     }
   }
 
@@ -211,7 +201,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
           contracteeId: supabase.auth.currentUser?.id,
         );
       } catch (e) {
-        // Continue without contract data
+        //
       }
     }
 
@@ -230,12 +220,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
 
   Future<void> _getChatRoomId() async {
     try {
-      final chatRoomId = await _fetchService.fetchChatRoomId(widget.projectId);
-      if (mounted) {
-        setState(() {
-          _chatRoomId = chatRoomId;
-        });
-      }
+      await _fetchService.fetchChatRoomId(widget.projectId);
     } catch (e) {
       if (mounted) {
         ConTrustSnackBar.error(context, 'Error getting chatroom_id:');
@@ -249,12 +234,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
         final contractorId = project['contractor_id'];
         final contracteeId = supabase.auth.currentUser?.id;
         if (contractorId != null && contracteeId != null) {
-          final canChat = await functionConstraint(contractorId, contracteeId);
-          if (mounted) {
-            setState(() {
-              _canChat = canChat;
-            });
-          }
+          await functionConstraint(contractorId, contracteeId);
         }
       }
     } catch (e) {
@@ -269,26 +249,17 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
       if (project != null) {
         final contractorId = project['contractor_id'];
         if (contractorId != null && contractorId.toString().isNotEmpty) {
-          final contractorData = await supabase
+          await supabase
               .from('Contractor')
               .select('firm_name, profile_photo')
               .eq('contractor_id', contractorId.toString())
               .maybeSingle();
-          if (mounted && contractorData != null) {
-            setState(() {
-              _contractorData = contractorData;
-            });
-          }
         }
       }
     } catch (e) {
       debugPrint('Error loading contractor data: $e');
-      // Don't show error to user as this is not critical
-      // The contractor data is optional for the UI
     }
   }
-
-  Map<String, dynamic>? _contractData;
 
   Future<void> loadData() async {
     try {
@@ -316,22 +287,16 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
         return;
       }
       
-      Map<String, dynamic>? contractData;
       final contracts = data['contracts'] as List?;
       if (contracts != null && contracts.isNotEmpty) {
-        contractData = contracts.first as Map<String, dynamic>?;
       }
       
       if (mounted) {
         setState(() {
           projectData = projectDetails;
-          _contractData = contractData;
-          _localTasks = List<Map<String, dynamic>>.from(data['tasks'] ?? []);
-          _localProgress = (data['progress'] as num?)?.toDouble() ?? 0.0;
           _isPaid = isPaid;
           _paymentSummary = paymentSummary;
           isLoading = false;
-          _tabDataFuture = _getTabData();
         });
       }
       
@@ -359,7 +324,6 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
     });
   }
 
-  // Constants for signed URL expiration (24 hours in seconds)
   static const int _signedUrlExpirationSeconds = 60 * 60 * 24;
 
   Future<String?> createSignedPhotoUrl(String? path) async {
@@ -567,37 +531,6 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
     }
   }
 
-  void _navigateToChat() async {
-    if (!_canChat) return;
-    
-    final projectDetails = projectData!['projectDetails'] as Map<String, dynamic>? ?? projectData!;
-    final contracteeId = projectDetails['contractee_id'] ?? supabase.auth.currentUser?.id ?? '';
-    final contractorId = projectDetails['contractor_id'] ?? '';
-    final contractorName = _contractorData?['firm_name'] ?? 'Contractor';
-    final contractorPhoto = _contractorData?['profile_photo'] ?? '';
-
-    String? chatRoomId = _chatRoomId;
-    if (chatRoomId == null) {
-      try {
-        chatRoomId = await FetchService().fetchChatRoomId(widget.projectId);
-        if (chatRoomId == null) {
-          ConTrustSnackBar.error(context, 'Unable to access chat room');
-          return;
-        }
-      } catch (e) {
-        ConTrustSnackBar.error(context, 'Error accessing chat: $e');
-        return;
-      }
-    }
-
-    context.go('/chat/${Uri.encodeComponent(contractorName)}', extra: {
-      'chatRoomId': chatRoomId,
-      'contracteeId': contracteeId,
-      'contractorId': contractorId,
-      'contractorProfile': contractorPhoto,
-    });
-  }
-
   Future<void> _handlePayment() async {
     try {
       final projectDetails = projectData!['projectDetails'] as Map<String, dynamic>? ?? projectData!;
@@ -613,7 +546,6 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
         amount: customAmount,
         customAmount: customAmount, 
         onPaymentSuccess: () async {
-          // Refresh payment status and project data after payment
           await loadData();
           await _emitAggregatedData();
         },
@@ -640,7 +572,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
       dialogMessage = 'Enter the payment amount as agreed in the custom contract.';
       }
     }
-    
+
     return showDialog<double>(
       context: context,
       barrierDismissible: false,
@@ -710,8 +642,6 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                       dialogMessage,
                       style: const TextStyle(fontSize: 14, color: Colors.black87),
                     ),
-                    // Only show "Amount to be Paid" for non-lump sum contracts
-                    // Lump sum contracts have a fixed amount, so no need to show remaining
                     Builder(
                       builder: (context) {
                         final contractType = _paymentSummary?['contract_type'] as String? ?? '';
@@ -925,8 +855,6 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
 
             final data = snapshot.data!;
             projectData = data;
-            _localTasks = List<Map<String, dynamic>>.from(data['tasks'] ?? []);
-            _localProgress = (data['progress'] as num?)?.toDouble() ?? 0.0;
 
             final projectDetails = data['projectDetails'] as Map<String, dynamic>?;
             if (projectDetails != null) {
@@ -948,8 +876,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
   Widget _buildDesktopContent() {
     final projectDetails = projectData!['projectDetails'] as Map<String, dynamic>? ?? projectData!;
     final projectStatus = projectDetails['status'] ?? '';
-    
-    // Only show payment button if project is active AND not already paid
+
     final canMakePayment = projectStatus == 'active' && !_isPaid;
     
     return RefreshIndicator(
@@ -972,17 +899,5 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
         ),
       ),
     );
-  }
-
-
-  Future<List<List<Map<String, dynamic>>>> _getTabData() async {
-    try {
-      final reports = await _fetchService.fetchProjectReports(widget.projectId);
-      final photos = await _fetchService.fetchProjectPhotos(widget.projectId);
-      final costs = await _fetchService.fetchProjectCosts(widget.projectId);
-      return [reports, photos, costs];
-    } catch (e) {
-      return [[], [], []];
-    }
   }
 }
