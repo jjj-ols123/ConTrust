@@ -3,7 +3,10 @@
 import 'package:flutter/material.dart';
 
 class BuildDashboard {
-  static Widget buildSystemHealthCard(BuildContext context, Map<String, dynamic> systemHealth) {
+  static Widget buildSystemHealthCard(
+    BuildContext context,
+    Map<String, dynamic> systemHealth,
+  ) {
     final overallStatus = systemHealth['overall_status'] ?? 'unknown';
     final statusColor = _getStatusColor(overallStatus);
 
@@ -17,15 +20,24 @@ class BuildDashboard {
           children: [
             Row(
               children: [
-                Icon(Icons.health_and_safety_outlined, color: Colors.grey, size: 28),
+                Icon(
+                  Icons.health_and_safety_outlined,
+                  color: Colors.grey,
+                  size: 28,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'System Health',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.black),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.headlineSmall?.copyWith(color: Colors.black),
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -42,7 +54,9 @@ class BuildDashboard {
             ),
             const SizedBox(height: 16),
             if (systemHealth['checks'] != null)
-              ...((systemHealth['checks'] as List).map((check) => buildHealthCheckItem(check))),
+              ...((systemHealth['checks'] as List).map(
+                (check) => buildHealthCheckItem(check),
+              )),
           ],
         ),
       ),
@@ -58,9 +72,13 @@ class BuildDashboard {
       child: Row(
         children: [
           Icon(
-            status == 'healthy' ? Icons.check_circle_outline :
-            status == 'warning' ? Icons.warning_outlined :
-            status == 'error' ? Icons.error_outline : Icons.help_outline,
+            status == 'healthy'
+                ? Icons.check_circle_outline
+                : status == 'warning'
+                ? Icons.warning_outlined
+                : status == 'error'
+                ? Icons.error_outline
+                : Icons.help_outline,
             color: statusColor,
             size: 20,
           ),
@@ -68,7 +86,10 @@ class BuildDashboard {
           Expanded(
             child: Text(
               (check['component'] as String).replaceAll('_', ' ').toUpperCase(),
-              style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.black),
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+                color: Colors.black,
+              ),
             ),
           ),
           Container(
@@ -99,12 +120,17 @@ class BuildDashboard {
     return const SizedBox.shrink();
   }
 
-  static Widget buildMetricsGrid(BuildContext context, Map<String, dynamic> systemStats, Map<String, dynamic> systemHealth) {
+  static Widget buildMetricsGrid(
+    BuildContext context,
+    Map<String, dynamic> systemStats,
+    Map<String, dynamic> systemHealth,
+  ) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
 
     final totalUsers = systemStats['users']?['total']?.toString() ?? '0';
-    final activeProjects = systemStats['projects']?['active']?.toString() ?? '0';
+    final activeProjects =
+        systemStats['projects']?['active']?.toString() ?? '0';
     final allProjects = systemStats['projects']?['total']?.toString() ?? '0';
     final status = systemHealth['overall_status']?.toString() ?? 'unknown';
     final statusText = status.toUpperCase();
@@ -115,22 +141,28 @@ class BuildDashboard {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.grey.shade300,
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Container(
+            height: 3,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(2),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF7C4DFF), Color(0xFF9E86FF)],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           Row(
             children: [
               Icon(Icons.bar_chart, size: isMobile ? 20 : 24),
@@ -151,13 +183,37 @@ class BuildDashboard {
           if (isMobile)
             Column(
               children: [
-                _buildDashboardStatCard('Total Users', totalUsers, Icons.people_outlined, Colors.black, isMobile),
+                _buildDashboardStatCard(
+                  'Total Users',
+                  totalUsers,
+                  Icons.people_outlined,
+                  Colors.black,
+                  isMobile,
+                ),
                 const SizedBox(height: 10),
-                _buildDashboardStatCard('Active Projects', activeProjects, Icons.work, Colors.black, isMobile),
+                _buildDashboardStatCard(
+                  'Active Projects',
+                  activeProjects,
+                  Icons.work,
+                  Colors.black,
+                  isMobile,
+                ),
                 const SizedBox(height: 10),
-                _buildDashboardStatCard('All Projects', allProjects, Icons.work_outline, Colors.black, isMobile),
+                _buildDashboardStatCard(
+                  'All Projects',
+                  allProjects,
+                  Icons.work_outline,
+                  Colors.black,
+                  isMobile,
+                ),
                 const SizedBox(height: 10),
-                _buildDashboardStatCard('System Status', statusText, Icons.health_and_safety_outlined, statusColor, isMobile),
+                _buildDashboardStatCard(
+                  'System Status',
+                  statusText,
+                  Icons.health_and_safety_outlined,
+                  statusColor,
+                  isMobile,
+                ),
               ],
             )
           else
@@ -165,17 +221,49 @@ class BuildDashboard {
               children: [
                 Row(
                   children: [
-                    Expanded(child: _buildDashboardStatCard('Total Users', totalUsers, Icons.people_outlined, Colors.black, isMobile)),
+                    Expanded(
+                      child: _buildDashboardStatCard(
+                        'Total Users',
+                        totalUsers,
+                        Icons.people_outlined,
+                        Colors.black,
+                        isMobile,
+                      ),
+                    ),
                     const SizedBox(width: 12),
-                    Expanded(child: _buildDashboardStatCard('Active Projects', activeProjects, Icons.work, Colors.black, isMobile)),
+                    Expanded(
+                      child: _buildDashboardStatCard(
+                        'Active Projects',
+                        activeProjects,
+                        Icons.work,
+                        Colors.black,
+                        isMobile,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    Expanded(child: _buildDashboardStatCard('All Projects', allProjects, Icons.work_outline, Colors.black, isMobile)),
+                    Expanded(
+                      child: _buildDashboardStatCard(
+                        'All Projects',
+                        allProjects,
+                        Icons.work_outline,
+                        Colors.black,
+                        isMobile,
+                      ),
+                    ),
                     const SizedBox(width: 12),
-                    Expanded(child: _buildDashboardStatCard('System Status', statusText, Icons.health_and_safety_outlined, statusColor, isMobile)),
+                    Expanded(
+                      child: _buildDashboardStatCard(
+                        'System Status',
+                        statusText,
+                        Icons.health_and_safety_outlined,
+                        statusColor,
+                        isMobile,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -185,102 +273,101 @@ class BuildDashboard {
     );
   }
 
-  static Widget buildMetricCard(String title, String value, IconData icon, Color color) {
-    return Card(
-      elevation: 4,
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 32, color: color),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 12, color: Colors.black),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  static Widget _buildDashboardStatCard(String title, String value, IconData icon, Color color, bool isMobile) {
+  static Widget _buildDashboardStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+    bool isMobile,
+  ) {
     return Container(
       width: isMobile ? double.infinity : null,
-      padding: EdgeInsets.all(isMobile ? 12 : 13),
+      padding: EdgeInsets.all(isMobile ? 12 : 14),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: isMobile
-          ? Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(icon, color: color, size: 22),
-                    const SizedBox(width: 10),
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                        fontWeight: FontWeight.w600,
+      child:
+          isMobile
+              ? Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(icon, color: color, size: 20),
                       ),
+                      const SizedBox(width: 10),
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[800],
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: color,
                     ),
-                  ],
-                ),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: color,
                   ),
-                ),
-              ],
-            )
-          : Column(
-              children: [
-                Icon(icon, color: color, size: 24),
-                const SizedBox(height: 8),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: color,
+                ],
+              )
+              : Column(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, color: color, size: 22),
                   ),
-                ),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
+                  const SizedBox(height: 10),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      color: color,
+                    ),
                   ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
+                  const SizedBox(height: 2),
+                  Text(
+                    title,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
     );
   }
 
-  static Widget buildPerformanceMetricsCard(Map<String, dynamic> performanceData) {
+  static Widget buildPerformanceMetricsCard(
+    Map<String, dynamic> performanceData,
+  ) {
     final metrics = performanceData['metrics'] as List<dynamic>? ?? [];
-    
+
     if (metrics.isEmpty) return const SizedBox.shrink();
 
     return Card(
@@ -297,12 +384,19 @@ class BuildDashboard {
                 const SizedBox(width: 8),
                 const Text(
                   'Performance Metrics',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500, color: Colors.black),
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            ...metrics.map((metric) => buildPerformanceMetricItem(metric as Map<String, dynamic>)),
+            ...metrics.map(
+              (metric) =>
+                  buildPerformanceMetricItem(metric as Map<String, dynamic>),
+            ),
           ],
         ),
       ),
@@ -311,24 +405,34 @@ class BuildDashboard {
 
   static Widget buildPerformanceMetricItem(Map<String, dynamic> metric) {
     final status = metric['status'] ?? 'unknown';
-    final statusColor = status == 'good' ? Colors.green :
-                       status == 'warning' ? Colors.orange :
-                       status == 'error' ? Colors.red : Colors.grey;
-    final metricName = (metric['metric'] as String).replaceAll('_', ' ').toUpperCase();
-    
-    final hasData = (metric['average_ms'] ?? 0) > 0 || 
-                    (metric['requests_count'] ?? 0) > 0 ||
-                    (metric['total_errors'] ?? 0) > 0;
+    final statusColor =
+        status == 'good'
+            ? Colors.green
+            : status == 'warning'
+            ? Colors.orange
+            : status == 'error'
+            ? Colors.red
+            : Colors.grey;
+    final metricName =
+        (metric['metric'] as String).replaceAll('_', ' ').toUpperCase();
+
+    final hasData =
+        (metric['average_ms'] ?? 0) > 0 ||
+        (metric['requests_count'] ?? 0) > 0 ||
+        (metric['total_errors'] ?? 0) > 0;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
           Icon(
-            metric['metric'] == 'api_response_times' ? Icons.api_outlined :
-            metric['metric'] == 'database_query_times' ? Icons.storage_outlined :
-            metric['metric'] == 'error_rates' ? Icons.error_outline :
-            Icons.analytics_outlined,
+            metric['metric'] == 'api_response_times'
+                ? Icons.api_outlined
+                : metric['metric'] == 'database_query_times'
+                ? Icons.storage_outlined
+                : metric['metric'] == 'error_rates'
+                ? Icons.error_outline
+                : Icons.analytics_outlined,
             color: statusColor,
             size: 20,
           ),
@@ -336,7 +440,10 @@ class BuildDashboard {
           Expanded(
             child: Text(
               metricName,
-              style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.black),
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+                color: Colors.black,
+              ),
             ),
           ),
           Container(
@@ -364,9 +471,9 @@ class BuildDashboard {
     Map<String, dynamic> systemStats,
     Map<String, dynamic> systemHealth,
     List<Map<String, dynamic>> systemAlerts,
-    Map<String, dynamic> dashboardData,
-    {Map<String, dynamic>? performanceData}
-  ) {
+    Map<String, dynamic> dashboardData, {
+    Map<String, dynamic>? performanceData,
+  }) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isWide = screenWidth >= 1000;
 
@@ -409,7 +516,13 @@ class BuildDashboard {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(width: 8),
-                    Expanded(child: buildMetricsGrid(context, systemStats, systemHealth)),
+                    Expanded(
+                      child: buildMetricsGrid(
+                        context,
+                        systemStats,
+                        systemHealth,
+                      ),
+                    ),
                     const SizedBox(width: 16),
                   ],
                 ),
@@ -441,10 +554,19 @@ class BuildDashboard {
     );
   }
 
-  static Widget buildRecentActivitySection(BuildContext context, Map<String, dynamic> dashboardData) {
-    final recentUsers = (dashboardData['recent_users'] as List? ?? []).cast<Map<String, dynamic>>();
-    final recentProjects = (dashboardData['recent_projects'] as List? ?? []).cast<Map<String, dynamic>>();
-    final recentLogs = (dashboardData['recent_audit_logs'] as List? ?? []).cast<Map<String, dynamic>>();
+  static Widget buildRecentActivitySection(
+    BuildContext context,
+    Map<String, dynamic> dashboardData,
+  ) {
+    final recentUsers =
+        (dashboardData['recent_users'] as List? ?? [])
+            .cast<Map<String, dynamic>>();
+    final recentProjects =
+        (dashboardData['recent_projects'] as List? ?? [])
+            .cast<Map<String, dynamic>>();
+    final recentLogs =
+        (dashboardData['recent_audit_logs'] as List? ?? [])
+            .cast<Map<String, dynamic>>();
 
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth > 1200;
@@ -467,7 +589,11 @@ class BuildDashboard {
                 Expanded(
                   child: Text(
                     'Recent Activity',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                    ),
                   ),
                 ),
               ],
@@ -491,7 +617,10 @@ class BuildDashboard {
         AnimatedBuilder(
           animation: controller,
           builder: (context, _) {
-            final current = controller.hasClients && controller.page != null ? controller.page!.round() : 0;
+            final current =
+                controller.hasClients && controller.page != null
+                    ? controller.page!.round()
+                    : 0;
             return Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -506,29 +635,35 @@ class BuildDashboard {
                   const Expanded(
                     child: Text(
                       'Recent Activity',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black,
+                      ),
                     ),
                   ),
                   IconButton(
                     tooltip: 'Previous',
-                    onPressed: current > 0
-                        ? () => controller.animateToPage(
+                    onPressed:
+                        current > 0
+                            ? () => controller.animateToPage(
                               current - 1,
                               duration: const Duration(milliseconds: 250),
                               curve: Curves.easeInOut,
                             )
-                        : null,
+                            : null,
                     icon: const Icon(Icons.chevron_left),
                   ),
                   IconButton(
                     tooltip: 'Next',
-                    onPressed: current < 2
-                        ? () => controller.animateToPage(
+                    onPressed:
+                        current < 2
+                            ? () => controller.animateToPage(
                               current + 1,
                               duration: const Duration(milliseconds: 250),
                               curve: Curves.easeInOut,
                             )
-                        : null,
+                            : null,
                     icon: const Icon(Icons.chevron_right),
                   ),
                 ],
@@ -553,7 +688,10 @@ class BuildDashboard {
           child: AnimatedBuilder(
             animation: controller,
             builder: (context, _) {
-              final page = controller.hasClients && controller.page != null ? controller.page!.round() : 0;
+              final page =
+                  controller.hasClients && controller.page != null
+                      ? controller.page!.round()
+                      : 0;
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: List.generate(3, (index) {
@@ -590,12 +728,21 @@ class BuildDashboard {
               children: [
                 const Icon(Icons.people_outlined, color: Colors.grey),
                 const SizedBox(width: 8),
-                const Text('Recent Users', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w700)),
+                const Text(
+                  'Recent Users',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 8),
             if (recentUsers.isEmpty)
-              const Text('No recent users', style: TextStyle(color: Colors.grey))
+              const Text(
+                'No recent users',
+                style: TextStyle(color: Colors.grey),
+              )
             else
               ...recentUsers.take(3).map((user) => buildUserListItem(user)),
           ],
@@ -604,7 +751,9 @@ class BuildDashboard {
     );
   }
 
-  static Widget buildRecentProjectsCard(List<Map<String, dynamic>> recentProjects) {
+  static Widget buildRecentProjectsCard(
+    List<Map<String, dynamic>> recentProjects,
+  ) {
     return Card(
       elevation: 4,
       color: Colors.white,
@@ -617,21 +766,34 @@ class BuildDashboard {
               children: [
                 const Icon(Icons.work_outlined, color: Colors.grey),
                 const SizedBox(width: 8),
-                const Text('Recent Projects', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w700)),
+                const Text(
+                  'Recent Projects',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 8),
             if (recentProjects.isEmpty)
-              const Text('No recent projects', style: TextStyle(color: Colors.grey))
+              const Text(
+                'No recent projects',
+                style: TextStyle(color: Colors.grey),
+              )
             else
-              ...recentProjects.take(3).map((project) => buildProjectListItem(project)),
+              ...recentProjects
+                  .take(3)
+                  .map((project) => buildProjectListItem(project)),
           ],
         ),
       ),
     );
   }
 
-  static Widget buildRecentAuditLogsCard(List<Map<String, dynamic>> recentLogs) {
+  static Widget buildRecentAuditLogsCard(
+    List<Map<String, dynamic>> recentLogs,
+  ) {
     return Card(
       elevation: 4,
       color: Colors.white,
@@ -644,12 +806,21 @@ class BuildDashboard {
               children: [
                 const Icon(Icons.history_outlined, color: Colors.grey),
                 const SizedBox(width: 8),
-                const Text('Recent Audit Logs', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w700)),
+                const Text(
+                  'Recent Audit Logs',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 8),
             if (recentLogs.isEmpty)
-              const Text('No recent audit logs', style: TextStyle(color: Colors.grey))
+              const Text(
+                'No recent audit logs',
+                style: TextStyle(color: Colors.grey),
+              )
             else
               ...recentLogs.take(5).map((log) => buildAuditLogItem(log)),
           ],
@@ -685,31 +856,39 @@ class BuildDashboard {
           const Icon(Icons.work_outlined, size: 16, color: Colors.grey),
           const SizedBox(width: 8),
           Expanded(
-            child: Row(children: [
-              const Icon(Icons.work_outline, size: 16, color: Colors.grey),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      project['title'] ?? 'Untitled Project',
-                      style: const TextStyle(fontSize: 14, color: Colors.black),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      project['status']?.toString().toUpperCase() ?? 'UNKNOWN',
-                      style: TextStyle(
-                        color: _getStatusColor(project['status'] ?? 'unknown'),
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+            child: Row(
+              children: [
+                const Icon(Icons.work_outline, size: 16, color: Colors.grey),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        project['title'] ?? 'Untitled Project',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.black,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 2),
+                      Text(
+                        project['status']?.toString().toUpperCase() ??
+                            'UNKNOWN',
+                        style: TextStyle(
+                          color: _getStatusColor(
+                            project['status'] ?? 'unknown',
+                          ),
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ]),
+              ],
+            ),
           ),
         ],
       ),

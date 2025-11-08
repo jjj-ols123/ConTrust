@@ -14,14 +14,20 @@ class BuildProjects {
       elevation: 6,
       margin: const EdgeInsets.all(16),
       color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Container(
+              height: 3,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(2),
+                gradient: const LinearGradient(colors: [Color(0xFF7C4DFF), Color(0xFF9E86FF)]),
+              ),
+            ),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Container(
@@ -35,8 +41,22 @@ class BuildProjects {
                 const SizedBox(width: 12),
                 const Text(
                   'Project Statistics',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.black),
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.black),
                 ),
+                const Spacer(),
+                if (onRefresh != null)
+                  ElevatedButton.icon(
+                    onPressed: onRefresh,
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('Refresh'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey.shade200,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    ),
+                  ),
               ],
             ),
             const SizedBox(height: 16),
@@ -47,7 +67,7 @@ class BuildProjects {
                     'Total Projects',
                     total.toString(),
                     Icons.work_outlined,
-                    Colors.grey,
+                    Colors.black,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -56,7 +76,7 @@ class BuildProjects {
                     'Active',
                     stats['active']?.toString() ?? '0',
                     Icons.trending_up_outlined,
-                    Colors.grey,
+                    Colors.black,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -65,7 +85,7 @@ class BuildProjects {
                     'Completed',
                     stats['completed']?.toString() ?? '0',
                     Icons.check_circle_outlined,
-                    Colors.grey,
+                    Colors.black,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -74,7 +94,7 @@ class BuildProjects {
                     'Pending',
                     stats['pending']?.toString() ?? '0',
                     Icons.pending_outlined,
-                    Colors.grey,
+                    Colors.black,
                   ),
                 ),
               ],
@@ -87,32 +107,25 @@ class BuildProjects {
 
   static Widget _buildStatItem(String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.2)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 14, offset: const Offset(0, 4))],
       ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+            child: Icon(icon, color: color, size: 22),
           ),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.black,
-            ),
-            textAlign: TextAlign.center,
-          ),
+          const SizedBox(height: 8),
+          Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.black)),
+          const SizedBox(height: 2),
+          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600), textAlign: TextAlign.center),
         ],
       ),
     );
@@ -123,6 +136,7 @@ class BuildProjects {
       elevation: 2,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: LayoutBuilder(
@@ -140,19 +154,30 @@ class BuildProjects {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  TextField(
-                    decoration: InputDecoration(
-                      labelText: 'Search',
-                      hintText: 'Search by title, contractor, or contractee...',
-                      prefixIcon: const Icon(Icons.search_outlined, color: Colors.grey),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      labelStyle: const TextStyle(color: Colors.black),
-                      hintStyle: const TextStyle(color: Colors.grey),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: Colors.grey.shade200),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4))],
                     ),
-                    onChanged: (value) => state.filterProjects(value),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.search, color: Colors.grey),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            decoration: const InputDecoration(
+                              hintText: 'Search by title, contractor, or contractee...',
+                              border: InputBorder.none,
+                              isCollapsed: true,
+                            ),
+                            onChanged: (value) => state.filterProjects(value),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -180,8 +205,8 @@ class BuildProjects {
                         icon: const Icon(Icons.clear_outlined),
                         label: const Text('Clear'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey,
-                          foregroundColor: Colors.white,
+                          backgroundColor: Colors.grey.shade200,
+                          foregroundColor: Colors.black,
                         ),
                       ),
                     ],
@@ -192,19 +217,30 @@ class BuildProjects {
               Row(
                 children: [
                   Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Search',
-                        hintText: 'Search by title, contractor, or contractee...',
-                        prefixIcon: const Icon(Icons.search_outlined, color: Colors.grey),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        labelStyle: const TextStyle(color: Colors.black),
-                        hintStyle: const TextStyle(color: Colors.grey),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: Colors.grey.shade200),
+                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4))],
                       ),
-                      onChanged: (value) => state.filterProjects(value),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.search, color: Colors.grey),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextField(
+                              decoration: const InputDecoration(
+                                hintText: 'Search by title, contractor, or contractee...',
+                                border: InputBorder.none,
+                                isCollapsed: true,
+                              ),
+                              onChanged: (value) => state.filterProjects(value),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -226,8 +262,8 @@ class BuildProjects {
                     icon: const Icon(Icons.clear_outlined),
                     label: const Text('Clear'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey,
-                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.grey.shade200,
+                      foregroundColor: Colors.black,
                     ),
                   ),
                 ],

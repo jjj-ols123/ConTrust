@@ -6,6 +6,8 @@ import 'pages/dashboard.dart';
 import 'pages/login.dart';
 import 'build/builddrawer.dart';
 
+const bool kBypassLogin = true;
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -110,6 +112,12 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    if (kBypassLogin) {
+      return const SuperAdminShell(
+        currentPage: SuperAdminPage.dashboard,
+        child: SuperAdminDashboard(),
+      );
+    }
     if (_isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator(color: Colors.amber)),

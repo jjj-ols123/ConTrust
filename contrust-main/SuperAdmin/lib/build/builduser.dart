@@ -12,25 +12,42 @@ class BuildUser {
       elevation: 4,
       margin: const EdgeInsets.all(16),
       color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // accent
+            Container(
+              height: 3,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(2),
+                gradient: const LinearGradient(colors: [Color(0xFF7C4DFF), Color(0xFF9E86FF)]),
+              ),
+            ),
+            const SizedBox(height: 12),
             Row(
               children: [
                 const Icon(Icons.people_outlined, color: Colors.grey, size: 24),
                 const SizedBox(width: 8),
-                Text(
+                const Text(
                   'User Statistics',
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500, color: Colors.black),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.black),
                 ),
                 const Spacer(),
                 if (onRefresh != null)
-                  IconButton(
+                  ElevatedButton.icon(
                     onPressed: onRefresh,
-                    icon: const Icon(Icons.refresh_outlined, color: Colors.grey),
-                    tooltip: 'Refresh Statistics',
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('Refresh'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey.shade200,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    ),
                   ),
               ],
             ),
@@ -43,7 +60,7 @@ class BuildUser {
                     'All Users',
                     stats['total']?.toString() ?? '0',
                     Icons.group_outlined,
-                    Colors.grey,
+                    Colors.black,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -53,7 +70,7 @@ class BuildUser {
                     'Contractors',
                     stats['contractors']?.toString() ?? '0',
                     Icons.business_outlined,
-                    Colors.grey,
+                    Colors.black,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -63,7 +80,7 @@ class BuildUser {
                     'Contractees',
                     stats['contractees']?.toString() ?? '0',
                     Icons.person_outlined,
-                    Colors.grey,
+                    Colors.black,
                   ),
                 ),
               ],
@@ -76,30 +93,30 @@ class BuildUser {
 
   static Widget _buildStatItem(BuildContext context, String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.2)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 14, offset: const Offset(0, 4))],
       ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 4),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+            child: Icon(icon, color: color, size: 22),
+          ),
+          const SizedBox(height: 8),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.black),
           ),
+          const SizedBox(height: 2),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.black,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             textAlign: TextAlign.center,
           ),
         ],
@@ -112,33 +129,64 @@ class BuildUser {
       elevation: 2,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Filters',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.black),
-            ),
+            const Text('Filters', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black)),
             const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    decoration: InputDecoration(
-                      labelText: 'Search',
-                      hintText: 'Search by name, email, or role...',
-                      prefixIcon: const Icon(Icons.search_outlined, color: Colors.black),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      labelStyle: const TextStyle(color: Colors.black),
-                      hintStyle: const TextStyle(color: Colors.grey),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: Colors.grey.shade200),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4))],
                     ),
-                    onChanged: (value) => state.filterUsers(value),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.search, color: Colors.grey),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            decoration: const InputDecoration(
+                              hintText: 'Search by name, email, or role...',
+                              border: InputBorder.none,
+                              isCollapsed: true,
+                            ),
+                            onChanged: (value) => state.filterUsers(value),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ChoiceChip(
+                  label: const Text('All'),
+                  selected: state.selectedRole == 'All',
+                  onSelected: (_) => state.filterByRole('All'),
+                ),
+                ChoiceChip(
+                  label: const Text('Contractor'),
+                  selected: state.selectedRole == 'contractor',
+                  onSelected: (_) => state.filterByRole('contractor'),
+                ),
+                ChoiceChip(
+                  label: const Text('Contractee'),
+                  selected: state.selectedRole == 'contractee',
+                  onSelected: (_) => state.filterByRole('contractee'),
                 ),
               ],
             ),
