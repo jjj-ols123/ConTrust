@@ -4,8 +4,8 @@ import 'package:backend/services/both%20services/be_contract_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:backend/services/contractor services/contract/cor_viewcontractservice.dart';
-import 'dart:html' as html;
-import 'dart:ui_web' as ui_web;
+import 'package:backend/build/html_stub.dart' if (dart.library.html) 'dart:html' as html;
+import 'package:backend/build/ui_web_stub.dart' if (dart.library.html) 'dart:ui_web' as ui_web;
 import 'dart:typed_data';
 import 'package:signature/signature.dart';
 import 'package:backend/utils/be_contractsignature.dart';
@@ -253,7 +253,7 @@ class ViewContractBuild {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: kIsWeb
-                    ? buildWebPdfViewerWithFallback(pdfUrl, onDownload, height)
+                    ? _buildWebPdfViewerWithFallback(pdfUrl, onDownload, height)
                     : _buildMobilePdfViewer(pdfUrl, onDownload),
               ),
             ),
@@ -295,7 +295,7 @@ class ViewContractBuild {
             }
             
             if (snapshot.hasError || snapshot.data == false) {
-              return _buildPdfErrorState(pdfUrl, onDownload, height);
+              return _buildPdfErrorState(pdfUrl, onDownload, height, context);
             }
             
             return _buildWebPdfViewer(pdfUrl);
@@ -597,165 +597,6 @@ class ViewContractBuild {
     }
   }
 
-  static Widget buildSignaturesSection(
-    Map<String, dynamic>? contractData, {
-    VoidCallback? onRefresh,
-  }) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.amber.shade100, width: 1),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.draw, color: Colors.amber[700]),
-                const SizedBox(width: 8),
-                const Text(
-                  'Signatures',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2D3748),
-                  ),
-                ),
-                const Spacer(),
-                if (onRefresh != null)
-                  IconButton(
-                    onPressed: onRefresh,
-                    icon: const Icon(Icons.refresh),
-                    tooltip: 'Refresh signatures',
-                    color: Colors.amber[700],
-                    iconSize: 20,
-                  ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildSignatureSection(
-                    title: 'Contractor',
-                    signaturePath: contractData?['contractor_signature_url'],
-                  ),
-                ),
-                const SizedBox(width: 24),
-                Expanded(
-                  child: _buildSignatureSection(
-                    title: 'Contractee',
-                    signaturePath: contractData?['contractee_signature_url'],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  static Widget _buildSignatureSection({
-    required String title,
-    String? signaturePath,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '$title Signature',
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-            color: Color(0xFF2D3748),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Container(
-          width: double.infinity,
-          height: 100,
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: signaturePath != null && signaturePath.isNotEmpty
-              ? FutureBuilder<String?>(
-                  future: ViewContractService.getSignedUrl(signaturePath),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(
-                        child: SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            color: Colors.amber,
-                            strokeWidth: 2,
-                          ),
-                        ),
-                      );
-                    }
-
-                    final signedUrl = snapshot.data;
-                    if (signedUrl == null) {
-                      return Center(
-                        child: Text(
-                          'Unable to load',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
-                          ),
-                        ),
-                      );
-                    }
-
-                    return Image.network(
-                      signedUrl,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) => Center(
-                        child: Text(
-                          'Failed to load',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                )
-              : Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.pending_outlined,
-                        size: 24,
-                        color: Colors.grey[400],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Not signed',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-        ),
-      ],
-    );
-  }
 
   static Widget buildEnhancedSignaturesSection(
     Map<String, dynamic>? contractData, {
@@ -1286,6 +1127,39 @@ class ViewContractBuild {
       ConTrustSnackBar.error(context, 'Failed to pick signature image');
     }
     return bytes;
+  }
+
+  static Future<Uint8List?> pickSignatureImageHelper(BuildContext context) async {
+    try {
+      final input = html.FileUploadInputElement()..accept = 'image/*';
+      input.click();
+
+      await input.onChange.first;
+
+      if (input.files == null || input.files!.isEmpty) {
+        return null;
+      }
+
+      final file = input.files!.first;
+
+      final reader = html.FileReader();
+      reader.readAsArrayBuffer(file);
+      await reader.onLoad.first;
+
+      final result = reader.result;
+      if (result is Uint8List) {
+        return result;
+      } else if (result is ByteBuffer) {
+        return Uint8List.view(result);
+      } else {
+        return null;
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ConTrustSnackBar.error(context, 'Failed to pick signature image: $e');
+      }
+      return null;
+    }
   }
 
   static void _showSignatureDialog(

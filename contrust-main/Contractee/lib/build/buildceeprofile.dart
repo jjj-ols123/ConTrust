@@ -680,7 +680,7 @@ class CeeProfileBuildMethods {
                                       onTap: receiptPath != null && receiptPath.isNotEmpty
                                           ? () {
                                               final path = receiptPath;
-                                              if (path != null && path.isNotEmpty) {
+                                              if (path.isNotEmpty) {
                                                 _showReceiptDialog(context, path, reference);
                                               }
                                             }
@@ -717,7 +717,7 @@ class CeeProfileBuildMethods {
                                       onTap: receiptPath != null && receiptPath.isNotEmpty
                                           ? () {
                                               final path = receiptPath;
-                                              if (path != null && path.isNotEmpty) {
+                                              if (path.isNotEmpty) {
                                                 _downloadReceipt(context, path, reference);
                                               }
                                             }
