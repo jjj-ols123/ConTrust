@@ -6,7 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 
 class BuildError {
-  static Widget buildErrorStatisticsCard(BuildContext context, Map<String, dynamic> stats, VoidCallback? onRefresh) {
+  static Widget buildErrorStatisticsCard(
+    BuildContext context,
+    Map<String, dynamic> stats,
+    VoidCallback? onRefresh,
+  ) {
     return Card(
       elevation: 4,
       margin: const EdgeInsets.all(16),
@@ -22,13 +26,20 @@ class BuildError {
                 const SizedBox(width: 8),
                 Text(
                   'Error Statistics',
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500, color: Colors.black),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black,
+                  ),
                 ),
                 const Spacer(),
                 if (onRefresh != null)
                   IconButton(
                     onPressed: onRefresh,
-                    icon: const Icon(Icons.refresh_outlined, color: Colors.grey),
+                    icon: const Icon(
+                      Icons.refresh_outlined,
+                      color: Colors.grey,
+                    ),
                     tooltip: 'Refresh Statistics',
                   ),
               ],
@@ -60,7 +71,9 @@ class BuildError {
                   child: _buildStatItem(
                     context,
                     'Modules',
-                    (stats['module_counts'] as Map<String, dynamic>?)?.length.toString() ?? '0',
+                    (stats['module_counts'] as Map<String, dynamic>?)?.length
+                            .toString() ??
+                        '0',
                     Icons.category_outlined,
                     Colors.grey,
                   ),
@@ -73,7 +86,13 @@ class BuildError {
     );
   }
 
-  static Widget _buildStatItem(BuildContext context, String label, String value, IconData icon, Color color) {
+  static Widget _buildStatItem(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -95,10 +114,7 @@ class BuildError {
           ),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.black,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.black),
             textAlign: TextAlign.center,
           ),
         ],
@@ -106,7 +122,10 @@ class BuildError {
     );
   }
 
-  static Widget buildErrorFilters(BuildContext context, ErrorLogsTableState state) {
+  static Widget buildErrorFilters(
+    BuildContext context,
+    ErrorLogsTableState state,
+  ) {
     return Card(
       elevation: 2,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -117,132 +136,196 @@ class BuildError {
           builder: (context, constraints) {
             final isNarrow = constraints.maxWidth < 820;
             return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Filters',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.black),
-            ),
-            const SizedBox(height: 12),
-            if (isNarrow)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  TextField(
-                    decoration: InputDecoration(
-                      labelText: 'Search',
-                      hintText: 'Search by error message, module, or user...',
-                      prefixIcon: const Icon(Icons.search_outlined, color: Colors.grey),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      labelStyle: const TextStyle(color: Colors.black),
-                      hintStyle: const TextStyle(color: Colors.grey),
-                    ),
-                    onChanged: (value) => state.filterLogs(value),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Filters',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black,
                   ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: state.selectedSeverity,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Severity',
-                    ),
-                    items: ['All', 'low', 'medium', 'high', 'critical']
-                        .map((severity) => DropdownMenuItem(
-                              value: severity,
-                              child: Text(severity == 'All' ? 'All Severities' : severity.toUpperCase(), style: const TextStyle(color: Colors.black)),
-                            ))
-                        .toList(),
-                    onChanged: (value) => state.filterBySeverity(value!),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: state.selectedStatus,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Status',
-                    ),
-                    items: ['All', 'resolved', 'unresolved']
-                        .map((status) => DropdownMenuItem(
-                              value: status,
-                              child: Text(status == 'All' ? 'All Status' : status.toUpperCase(), style: const TextStyle(color: Colors.black)),
-                            ))
-                        .toList(),
-                    onChanged: (value) => state.filterByStatus(value!),
-                  ),
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: ElevatedButton.icon(
-                      onPressed: state.clearFilters,
-                      icon: const Icon(Icons.clear_outlined),
-                      label: const Text('Clear'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              )
-            else
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Search',
-                        hintText: 'Search by error message, module, or user...',
-                        prefixIcon: const Icon(Icons.search_outlined, color: Colors.grey),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                ),
+                const SizedBox(height: 12),
+                if (isNarrow)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextField(
+                        decoration: InputDecoration(
+                          labelText: 'Search',
+                          hintText:
+                              'Search by error message, module, or user...',
+                          prefixIcon: const Icon(
+                            Icons.search_outlined,
+                            color: Colors.grey,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          labelStyle: const TextStyle(color: Colors.black),
+                          hintStyle: const TextStyle(color: Colors.grey),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        labelStyle: const TextStyle(color: Colors.black),
-                        hintStyle: const TextStyle(color: Colors.grey),
+                        onChanged: (value) => state.filterLogs(value),
                       ),
-                      onChanged: (value) => state.filterLogs(value),
-                    ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: state.selectedSeverity,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          labelText: 'Severity',
+                        ),
+                        items:
+                            ['All', 'low', 'medium', 'high', 'critical']
+                                .map(
+                                  (severity) => DropdownMenuItem(
+                                    value: severity,
+                                    child: Text(
+                                      severity == 'All'
+                                          ? 'All Severities'
+                                          : severity.toUpperCase(),
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                        onChanged: (value) => state.filterBySeverity(value!),
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: state.selectedStatus,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          labelText: 'Status',
+                        ),
+                        items:
+                            ['All', 'resolved', 'unresolved']
+                                .map(
+                                  (status) => DropdownMenuItem(
+                                    value: status,
+                                    child: Text(
+                                      status == 'All'
+                                          ? 'All Status'
+                                          : status.toUpperCase(),
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                        onChanged: (value) => state.filterByStatus(value!),
+                      ),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: ElevatedButton.icon(
+                          onPressed: state.clearFilters,
+                          icon: const Icon(Icons.clear_outlined),
+                          label: const Text('Clear'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          decoration: InputDecoration(
+                            labelText: 'Search',
+                            hintText:
+                                'Search by error message, module, or user...',
+                            prefixIcon: const Icon(
+                              Icons.search_outlined,
+                              color: Colors.grey,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            labelStyle: const TextStyle(color: Colors.black),
+                            hintStyle: const TextStyle(color: Colors.grey),
+                          ),
+                          onChanged: (value) => state.filterLogs(value),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      DropdownButton<String>(
+                        value: state.selectedSeverity,
+                        hint: const Text(
+                          'Severity',
+                          style: TextStyle(color: Colors.black),
+                        ),
+                        items:
+                            ['All', 'low', 'medium', 'high', 'critical']
+                                .map(
+                                  (severity) => DropdownMenuItem(
+                                    value: severity,
+                                    child: Text(
+                                      severity == 'All'
+                                          ? 'All Severities'
+                                          : severity.toUpperCase(),
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                        onChanged: (value) => state.filterBySeverity(value!),
+                      ),
+                      const SizedBox(width: 12),
+                      DropdownButton<String>(
+                        value: state.selectedStatus,
+                        hint: const Text(
+                          'Status',
+                          style: TextStyle(color: Colors.black),
+                        ),
+                        items:
+                            ['All', 'resolved', 'unresolved']
+                                .map(
+                                  (status) => DropdownMenuItem(
+                                    value: status,
+                                    child: Text(
+                                      status == 'All'
+                                          ? 'All Status'
+                                          : status.toUpperCase(),
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                        onChanged: (value) => state.filterByStatus(value!),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton.icon(
+                        onPressed: state.clearFilters,
+                        icon: const Icon(Icons.clear_outlined),
+                        label: const Text('Clear'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  DropdownButton<String>(
-                    value: state.selectedSeverity,
-                    hint: const Text('Severity', style: TextStyle(color: Colors.black)),
-                    items: ['All', 'low', 'medium', 'high', 'critical']
-                        .map((severity) => DropdownMenuItem(
-                              value: severity,
-                              child: Text(severity == 'All' ? 'All Severities' : severity.toUpperCase(), style: const TextStyle(color: Colors.black)),
-                            ))
-                        .toList(),
-                    onChanged: (value) => state.filterBySeverity(value!),
-                  ),
-                  const SizedBox(width: 12),
-                  DropdownButton<String>(
-                    value: state.selectedStatus,
-                    hint: const Text('Status', style: TextStyle(color: Colors.black)),
-                    items: ['All', 'resolved', 'unresolved']
-                        .map((status) => DropdownMenuItem(
-                              value: status,
-                              child: Text(status == 'All' ? 'All Status' : status.toUpperCase(), style: const TextStyle(color: Colors.black)),
-                            ))
-                        .toList(),
-                    onChanged: (value) => state.filterByStatus(value!),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: state.clearFilters,
-                    icon: const Icon(Icons.clear_outlined),
-                    label: const Text('Clear'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-          ],
+              ],
             );
           },
         ),
@@ -283,7 +366,7 @@ class ErrorLogsTableState extends State<ErrorLogsTable> {
       });
 
       final results = await Future.wait([
-        _errorService.getRecentErrorLogs(limit: 500), 
+        _errorService.getRecentErrorLogs(limit: 500),
         _errorService.getErrorStatistics(),
       ]);
 
@@ -331,7 +414,9 @@ class ErrorLogsTableState extends State<ErrorLogsTable> {
 
   Future<void> _refreshErrorLogs() async {
     try {
-      final logs = await _errorService.getRecentErrorLogs(limit: 500); // Reduced refresh load
+      final logs = await _errorService.getRecentErrorLogs(
+        limit: 500,
+      ); // Reduced refresh load
       setState(() {
         _allLogs = logs;
         _filteredLogs = List.from(_allLogs);
@@ -381,30 +466,44 @@ class ErrorLogsTableState extends State<ErrorLogsTable> {
   }
 
   void _applyFilters() {
-    _filteredLogs = _allLogs.where((log) {
-      // Search filter
-      final matchesSearch = _searchQuery.isEmpty ||
-          (log['error_message']?.toString().toLowerCase().contains(_searchQuery) ?? false) ||
-          (log['users_id']?.toString().toLowerCase().contains(_searchQuery) ?? false) ||
-          (log['module']?.toString().toLowerCase().contains(_searchQuery) ?? false) ||
-          (log['stack_trace']?.toString().toLowerCase().contains(_searchQuery) ?? false);
+    _filteredLogs =
+        _allLogs.where((log) {
+          // Search filter
+          final matchesSearch =
+              _searchQuery.isEmpty ||
+              (log['error_message']?.toString().toLowerCase().contains(
+                    _searchQuery,
+                  ) ??
+                  false) ||
+              (log['users_id']?.toString().toLowerCase().contains(
+                    _searchQuery,
+                  ) ??
+                  false) ||
+              (log['module']?.toString().toLowerCase().contains(_searchQuery) ??
+                  false) ||
+              (log['stack_trace']?.toString().toLowerCase().contains(
+                    _searchQuery,
+                  ) ??
+                  false);
 
-      // Severity filter (case-insensitive)
-      final logSeverity = log['severity']?.toString().toLowerCase() ?? '';
-      final selectedSeverityLower = selectedSeverity.toLowerCase();
-      final matchesSeverity = selectedSeverity == 'All' ||
-          logSeverity == selectedSeverityLower;
+          // Severity filter (case-insensitive)
+          final logSeverity = log['severity']?.toString().toLowerCase() ?? '';
+          final selectedSeverityLower = selectedSeverity.toLowerCase();
+          final matchesSeverity =
+              selectedSeverity == 'All' || logSeverity == selectedSeverityLower;
 
-      final matchesStatus = selectedStatus == 'All' ||
-          (selectedStatus == 'resolved' && log['resolved'] == true) ||
-          (selectedStatus == 'unresolved' && log['resolved'] == false);
+          final matchesStatus =
+              selectedStatus == 'All' ||
+              (selectedStatus == 'resolved' && log['resolved'] == true) ||
+              (selectedStatus == 'unresolved' && log['resolved'] == false);
 
-      return matchesSearch && matchesSeverity && matchesStatus;
-    }).toList();
+          return matchesSearch && matchesSeverity && matchesStatus;
+        }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
+    final isNarrow = MediaQuery.of(context).size.width < 700;
     if (_isLoading) {
       return const Center(
         child: Column(
@@ -412,7 +511,10 @@ class ErrorLogsTableState extends State<ErrorLogsTable> {
           children: [
             CircularProgressIndicator(color: Colors.amber),
             SizedBox(height: 16),
-            Text('Loading error logs...', style: TextStyle(color: Colors.black)),
+            Text(
+              'Loading error logs...',
+              style: TextStyle(color: Colors.black),
+            ),
           ],
         ),
       );
@@ -427,7 +529,11 @@ class ErrorLogsTableState extends State<ErrorLogsTable> {
             const SizedBox(height: 16),
             Text(
               'Error loading error logs',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500, color: Colors.black),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w500,
+                color: Colors.black,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -445,9 +551,258 @@ class ErrorLogsTableState extends State<ErrorLogsTable> {
       );
     }
 
+    if (isNarrow) {
+      return CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: BuildError.buildErrorStatisticsCard(
+              context,
+              _statistics,
+              _refreshErrorStatistics,
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: BuildError.buildErrorFilters(context, this),
+          ),
+          SliverFillRemaining(
+            hasScrollBody: true,
+            child: Card(
+              elevation: 4,
+              margin: const EdgeInsets.all(16),
+              color: Colors.white,
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        topRight: Radius.circular(12),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          'Error Logs (${_filteredLogs.length})',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black,
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          onPressed: _refreshErrorLogs,
+                          icon: const Icon(
+                            Icons.refresh_outlined,
+                            color: Colors.grey,
+                          ),
+                          tooltip: 'Refresh Logs',
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child:
+                        _filteredLogs.isEmpty
+                            ? const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.check_circle_outline,
+                                    size: 64,
+                                    color: Colors.green,
+                                  ),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'No error logs found',
+                                    style: TextStyle(color: Colors.black),
+                                  ),
+                                ],
+                              ),
+                            )
+                            : SingleChildScrollView(
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  return SingleChildScrollView(
+                                    scrollDirection: Axis.vertical,
+                                    child: SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      child: ConstrainedBox(
+                                        constraints: BoxConstraints(
+                                          minWidth: constraints.maxWidth,
+                                        ),
+                                        child: DataTable(
+                                          columnSpacing: 32,
+                                          columns: const [
+                                            DataColumn(
+                                              label: Text(
+                                                'Resolved',
+                                                style: TextStyle(
+                                                  color: Colors.black,
+                                                ),
+                                              ),
+                                            ),
+                                            DataColumn(
+                                              label: Text(
+                                                'Timestamp',
+                                                style: TextStyle(
+                                                  color: Colors.black,
+                                                ),
+                                              ),
+                                            ),
+                                            DataColumn(
+                                              label: Text(
+                                                'Severity',
+                                                style: TextStyle(
+                                                  color: Colors.black,
+                                                ),
+                                              ),
+                                            ),
+                                            DataColumn(
+                                              label: Text(
+                                                'Module',
+                                                style: TextStyle(
+                                                  color: Colors.black,
+                                                ),
+                                              ),
+                                            ),
+                                            DataColumn(
+                                              label: Text(
+                                                'Message',
+                                                style: TextStyle(
+                                                  color: Colors.black,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                          rows:
+                                              _filteredLogs
+                                                  .map(
+                                                    (log) => DataRow(
+                                                      cells: [
+                                                        DataCell(
+                                                          Align(
+                                                            alignment:
+                                                                Alignment
+                                                                    .centerLeft,
+                                                            child: Checkbox(
+                                                              value:
+                                                                  log['resolved'] ??
+                                                                  false,
+                                                              onChanged: (
+                                                                value,
+                                                              ) async {
+                                                                try {
+                                                                  if (value ==
+                                                                      true) {
+                                                                    await _errorService.markErrorResolved(
+                                                                      log['error_id']
+                                                                          .toString(),
+                                                                    );
+                                                                  } else {
+                                                                    await _errorService.markErrorUnresolved(
+                                                                      log['error_id']
+                                                                          .toString(),
+                                                                    );
+                                                                  }
+                                                                  setState(() {
+                                                                    log['resolved'] =
+                                                                        value;
+                                                                  });
+                                                                  await _refreshErrorStatistics();
+                                                                } catch (e) {
+                                                                  ConTrustSnackBar.error(
+                                                                    context,
+                                                                    'Failed to update resolved status',
+                                                                  );
+                                                                }
+                                                              },
+                                                              activeColor:
+                                                                  Colors.green,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        DataCell(
+                                                          Text(
+                                                            ContractStyle()
+                                                                .formatTimestamp(
+                                                                  log['timestamp'],
+                                                                ),
+                                                            style:
+                                                                const TextStyle(
+                                                                  color:
+                                                                      Colors
+                                                                          .black,
+                                                                ),
+                                                          ),
+                                                        ),
+                                                        DataCell(
+                                                          _buildSeverityChip(
+                                                            log['severity']
+                                                                    ?.toString() ??
+                                                                'medium',
+                                                          ),
+                                                        ),
+                                                        DataCell(
+                                                          Text(
+                                                            log['module']
+                                                                    ?.toString() ??
+                                                                'N/A',
+                                                            style:
+                                                                const TextStyle(
+                                                                  color:
+                                                                      Colors
+                                                                          .black,
+                                                                ),
+                                                          ),
+                                                        ),
+                                                        DataCell(
+                                                          Text(
+                                                            log['error_message']
+                                                                    ?.toString() ??
+                                                                'N/A',
+                                                            style:
+                                                                const TextStyle(
+                                                                  color:
+                                                                      Colors
+                                                                          .black,
+                                                                ),
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                            maxLines: 2,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  )
+                                                  .toList(),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     return Column(
       children: [
-        BuildError.buildErrorStatisticsCard(context, _statistics, _refreshErrorStatistics),
+        BuildError.buildErrorStatisticsCard(
+          context,
+          _statistics,
+          _refreshErrorStatistics,
+        ),
         BuildError.buildErrorFilters(context, this),
         Expanded(
           child: Card(
@@ -469,93 +824,210 @@ class ErrorLogsTableState extends State<ErrorLogsTable> {
                     children: [
                       Text(
                         'Error Logs (${_filteredLogs.length})',
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500, color: Colors.black),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black,
+                        ),
                       ),
                       const Spacer(),
                       IconButton(
                         onPressed: _refreshErrorLogs,
-                        icon: const Icon(Icons.refresh_outlined, color: Colors.grey),
+                        icon: const Icon(
+                          Icons.refresh_outlined,
+                          color: Colors.grey,
+                        ),
                         tooltip: 'Refresh Logs',
                       ),
                     ],
                   ),
                 ),
                 Expanded(
-                  child: _filteredLogs.isEmpty
-                      ? const Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.check_circle_outline, size: 64, color: Colors.green),
-                              SizedBox(height: 16),
-                              Text('No error logs found', style: TextStyle(color: Colors.black)),
-                            ],
-                          ),
-                        )
-                      : SingleChildScrollView(
-                          child: LayoutBuilder(
-                            builder: (context, constraints) {
-                              return SingleChildScrollView(
-                                scrollDirection: Axis.vertical,
-                                child: SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                                    child: DataTable(
-                                      columnSpacing: 32,
-                                      columns: const [
-                                        DataColumn(label: Text('Resolved', style: TextStyle(color: Colors.black))),
-                                        DataColumn(label: Text('Timestamp', style: TextStyle(color: Colors.black))),
-                                        DataColumn(label: Text('Severity', style: TextStyle(color: Colors.black))),
-                                        DataColumn(label: Text('Module', style: TextStyle(color: Colors.black))),
-                                        DataColumn(label: Text('Message', style: TextStyle(color: Colors.black))),
-                                      ],
-                                      rows: _filteredLogs.map((log) => DataRow(
-                                        cells: [
-                                          DataCell(
-                                            Align(
-                                              alignment: Alignment.centerLeft,
-                                              child: Checkbox(
-                                                value: log['resolved'] ?? false,
-                                                onChanged: (value) async {
-                                                  try {
-                                                    if (value == true) {
-                                                      await _errorService.markErrorResolved(log['error_id'].toString());
-                                                    } else {
-                                                      await _errorService.markErrorUnresolved(log['error_id'].toString());
-                                                    }
-                                                    setState(() {
-                                                      log['resolved'] = value;
-                                                    });
-                                                    await _refreshErrorStatistics();
-                                                  } catch (e) {
-                                                    ConTrustSnackBar.error(context, 'Failed to update resolved status');
-                                                  }
-                                                },
-                                                activeColor: Colors.green,
+                  child:
+                      _filteredLogs.isEmpty
+                          ? const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.check_circle_outline,
+                                  size: 64,
+                                  color: Colors.green,
+                                ),
+                                SizedBox(height: 16),
+                                Text(
+                                  'No error logs found',
+                                  style: TextStyle(color: Colors.black),
+                                ),
+                              ],
+                            ),
+                          )
+                          : SingleChildScrollView(
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                return SingleChildScrollView(
+                                  scrollDirection: Axis.vertical,
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        minWidth: constraints.maxWidth,
+                                      ),
+                                      child: DataTable(
+                                        columnSpacing: 32,
+                                        columns: const [
+                                          DataColumn(
+                                            label: Text(
+                                              'Resolved',
+                                              style: TextStyle(
+                                                color: Colors.black,
                                               ),
                                             ),
                                           ),
-                                          DataCell(Text(ContractStyle().formatTimestamp(log['timestamp']), style: const TextStyle(color: Colors.black))),
-                                          DataCell(_buildSeverityChip(log['severity']?.toString() ?? 'medium')),
-                                          DataCell(Text(log['module']?.toString() ?? 'N/A', style: const TextStyle(color: Colors.black))),
-                                          DataCell(
-                                            Text(
-                                              log['error_message']?.toString() ?? 'N/A',
-                                              style: const TextStyle(color: Colors.black),
-                                              overflow: TextOverflow.ellipsis,
-                                              maxLines: 2,
+                                          DataColumn(
+                                            label: Text(
+                                              'Timestamp',
+                                              style: TextStyle(
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                          ),
+                                          DataColumn(
+                                            label: Text(
+                                              'Severity',
+                                              style: TextStyle(
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                          ),
+                                          DataColumn(
+                                            label: Text(
+                                              'Module',
+                                              style: TextStyle(
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                          ),
+                                          DataColumn(
+                                            label: Text(
+                                              'Message',
+                                              style: TextStyle(
+                                                color: Colors.black,
+                                              ),
                                             ),
                                           ),
                                         ],
-                                      )).toList(),
+                                        rows:
+                                            _filteredLogs
+                                                .map(
+                                                  (log) => DataRow(
+                                                    cells: [
+                                                      DataCell(
+                                                        Align(
+                                                          alignment:
+                                                              Alignment
+                                                                  .centerLeft,
+                                                          child: Checkbox(
+                                                            value:
+                                                                log['resolved'] ??
+                                                                false,
+                                                            onChanged: (
+                                                              value,
+                                                            ) async {
+                                                              try {
+                                                                if (value ==
+                                                                    true) {
+                                                                  await _errorService
+                                                                      .markErrorResolved(
+                                                                        log['error_id']
+                                                                            .toString(),
+                                                                      );
+                                                                } else {
+                                                                  await _errorService
+                                                                      .markErrorUnresolved(
+                                                                        log['error_id']
+                                                                            .toString(),
+                                                                      );
+                                                                }
+                                                                setState(() {
+                                                                  log['resolved'] =
+                                                                      value;
+                                                                });
+                                                                await _refreshErrorStatistics();
+                                                              } catch (e) {
+                                                                ConTrustSnackBar.error(
+                                                                  context,
+                                                                  'Failed to update resolved status',
+                                                                );
+                                                              }
+                                                            },
+                                                            activeColor:
+                                                                Colors.green,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      DataCell(
+                                                        Text(
+                                                          ContractStyle()
+                                                              .formatTimestamp(
+                                                                log['timestamp'],
+                                                              ),
+                                                          style:
+                                                              const TextStyle(
+                                                                color:
+                                                                    Colors
+                                                                        .black,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                      DataCell(
+                                                        _buildSeverityChip(
+                                                          log['severity']
+                                                                  ?.toString() ??
+                                                              'medium',
+                                                        ),
+                                                      ),
+                                                      DataCell(
+                                                        Text(
+                                                          log['module']
+                                                                  ?.toString() ??
+                                                              'N/A',
+                                                          style:
+                                                              const TextStyle(
+                                                                color:
+                                                                    Colors
+                                                                        .black,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                      DataCell(
+                                                        Text(
+                                                          log['error_message']
+                                                                  ?.toString() ??
+                                                              'N/A',
+                                                          style:
+                                                              const TextStyle(
+                                                                color:
+                                                                    Colors
+                                                                        .black,
+                                                              ),
+                                                          overflow:
+                                                              TextOverflow
+                                                                  .ellipsis,
+                                                          maxLines: 2,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                )
+                                                .toList(),
+                                      ),
                                     ),
                                   ),
-                                ),
-                              );
-                            },
+                                );
+                              },
+                            ),
                           ),
-                        ),
                 ),
               ],
             ),

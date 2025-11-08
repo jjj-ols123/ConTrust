@@ -538,6 +538,7 @@ class AuditLogsTableState extends State<AuditLogsTable> {
 
   @override
   Widget build(BuildContext context) {
+    final isNarrow = MediaQuery.of(context).size.width < 700;
     if (_isLoading) {
       return const Center(
         child: Column(
@@ -582,6 +583,212 @@ class AuditLogsTableState extends State<AuditLogsTable> {
             ),
           ],
         ),
+      );
+    }
+
+    if (isNarrow) {
+      return CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: BuildAudit.buildAuditStatisticsCard(
+              context,
+              _statistics,
+              _refreshAuditStatistics,
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: BuildAudit.buildAuditFilters(context, this),
+          ),
+          SliverFillRemaining(
+            hasScrollBody: true,
+            child: Card(
+              elevation: 4,
+              margin: const EdgeInsets.all(16),
+              color: Colors.white,
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        topRight: Radius.circular(12),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          'Audit Logs (${_filteredLogs.length})',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black,
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          onPressed: _refreshAuditLogs,
+                          icon: const Icon(
+                            Icons.refresh_outlined,
+                            color: Colors.grey,
+                          ),
+                          tooltip: 'Refresh Logs',
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child:
+                        _filteredLogs.isEmpty
+                            ? const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.history_outlined,
+                                    size: 64,
+                                    color: Colors.grey,
+                                  ),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'No audit logs found',
+                                    style: TextStyle(color: Colors.black),
+                                  ),
+                                ],
+                              ),
+                            )
+                            : LayoutBuilder(
+                              builder: (context, constraints) {
+                                return SingleChildScrollView(
+                                  scrollDirection: Axis.vertical,
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        minWidth: constraints.maxWidth,
+                                      ),
+                                      child: DataTable(
+                                        columns: const [
+                                          DataColumn(
+                                            label: Text(
+                                              'Timestamp',
+                                              style: TextStyle(
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                          ),
+                                          DataColumn(
+                                            label: Text(
+                                              'User ID',
+                                              style: TextStyle(
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                          ),
+                                          DataColumn(
+                                            label: Text(
+                                              'Action',
+                                              style: TextStyle(
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                          ),
+                                          DataColumn(
+                                            label: Text(
+                                              'Category',
+                                              style: TextStyle(
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                          ),
+                                          DataColumn(
+                                            label: Text(
+                                              'Details',
+                                              style: TextStyle(
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                        rows:
+                                            _filteredLogs
+                                                .map(
+                                                  (log) => DataRow(
+                                                    cells: [
+                                                      DataCell(
+                                                        Text(
+                                                          formatTimestamp(
+                                                            log['timestamp'],
+                                                          ),
+                                                          style:
+                                                              const TextStyle(
+                                                                color:
+                                                                    Colors
+                                                                        .black,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                      DataCell(
+                                                        Text(
+                                                          log['users_id']
+                                                                  ?.toString() ??
+                                                              'N/A',
+                                                          style:
+                                                              const TextStyle(
+                                                                color:
+                                                                    Colors
+                                                                        .black,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                      DataCell(
+                                                        _buildActionChip(
+                                                          log['action']
+                                                                  ?.toString() ??
+                                                              'unknown',
+                                                        ),
+                                                      ),
+                                                      DataCell(
+                                                        _buildCategoryChip(
+                                                          log['category']
+                                                                  ?.toString() ??
+                                                              'unknown',
+                                                        ),
+                                                      ),
+                                                      DataCell(
+                                                        Text(
+                                                          _formatDetails(
+                                                            log['details'],
+                                                          ),
+                                                          maxLines: 2,
+                                                          overflow:
+                                                              TextOverflow
+                                                                  .ellipsis,
+                                                          style:
+                                                              const TextStyle(
+                                                                color:
+                                                                    Colors
+                                                                        .black,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                )
+                                                .toList(),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       );
     }
 
