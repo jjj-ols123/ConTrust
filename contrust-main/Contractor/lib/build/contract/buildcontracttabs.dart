@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:backend/contract_templates/CostPlus.dart';
 import 'package:backend/contract_templates/LumpSum.dart';
 import 'package:backend/contract_templates/TimeandMaterials.dart';
+import 'package:backend/utils/be_contractformat.dart';
 
 class ContractTabsBuild {
   static Widget buildTabBar({
@@ -169,6 +170,9 @@ class ContractTabsBuild {
       return buildSelectContractTypeMessage();
     }
 
+    // Clear any existing text resolver to ensure template shows placeholders, not filled data
+    ContractStyle.clearTextResolver();
+
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -209,7 +213,12 @@ class ContractTabsBuild {
                   child: SingleChildScrollView(
                     key: const PageStorageKey('template_preview_scroll'),
                     physics: const ClampingScrollPhysics(),
-                    child: getTemplateWidget(contractType),
+                    child: Builder(
+                      builder: (context) {
+                        ContractStyle.clearTextResolver();
+                        return getTemplateWidget(contractType);
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -331,30 +340,36 @@ class ContractTabsBuild {
           ),
           const SizedBox(width: 8),
           Text(
-            'Progress: $completedFields/$totalRequiredFields required fields',
+            totalRequiredFields == 0
+                ? 'Loading contract fields...'
+                : 'Progress: $completedFields/$totalRequiredFields required fields',
             style: TextStyle(
               fontWeight: FontWeight.w500,
-              color: percentage == 1.0 ? Colors.green : Colors.amber.shade700,
+              color: totalRequiredFields == 0 ? Colors.grey : (percentage == 1.0 ? Colors.green : Colors.amber.shade700),
             ),
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: LinearProgressIndicator(
-              value: percentage,
-              backgroundColor: Colors.grey.shade300,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                percentage == 1.0 ? Colors.green : Colors.amber.shade700,
-              ),
-            ),
+            child: totalRequiredFields == 0
+                ? Container() // Don't show progress bar when loading
+                : LinearProgressIndicator(
+                    value: percentage,
+                    backgroundColor: Colors.grey.shade300,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      percentage == 1.0 ? Colors.green : Colors.amber.shade700,
+                    ),
+                  ),
           ),
-          const SizedBox(width: 8),
-          Text(
-            '${(percentage * 100).toInt()}%',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: percentage == 1.0 ? Colors.green : Colors.amber.shade700,
-            ),
-          ),
+          totalRequiredFields > 0 ? const SizedBox(width: 8) : Container(),
+          totalRequiredFields > 0
+              ? Text(
+                  '${(percentage * 100).toInt()}%',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: percentage == 1.0 ? Colors.green : Colors.amber.shade700,
+                  ),
+                )
+              : Container(),
         ],
       ),
     );
@@ -385,19 +400,36 @@ class ContractTabsBuild {
   ) {
     int completed = 0;
     int totalRequired = 0;
-    
+
+    // Fields that are auto-filled and should not count toward manual progress
+    const autoFilledFields = {
+      'Contractor.Company',
+      'Contractor.Phone',
+      'Contractor.Address',
+      'Contractor.Bio',
+      'Contractor.Email',
+      'Contractee.FirstName',
+      'Contractee.LastName',
+      'Contractee.Phone',
+      'Contractee.Address',
+      'Contractee.Email',
+      'Project.StartDate',
+    };
+
     for (final field in contractFields) {
       final f = field as dynamic;
       final isRequired = (f.isRequired as bool?) ?? false;
       final key = f.key as String;
-      
-      if (isRequired) {
+
+      if (isRequired && !autoFilledFields.contains(key)) {
+        // Only count non-auto-filled required fields
         totalRequired++;
         final value = controllers[key]?.text.trim() ?? '';
         if (value.isNotEmpty) {
           completed++;
         }
       }
+      // Auto-filled required fields are excluded from progress tracking
     }
     
     return {

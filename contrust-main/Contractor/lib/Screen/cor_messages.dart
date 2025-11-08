@@ -536,10 +536,7 @@ class _MessagePageContractorState extends State<MessagePageContractor> {
     try {
       DateTime date;
       if (timestamp is String) {
-        // Parse the timestamp - if it has 'Z' or timezone, it's UTC, otherwise it's local
         final parsed = DateTime.parse(timestamp);
-        // If the string ends with 'Z' or has timezone info, it's UTC, convert to local
-        // Otherwise, it's already local time (no timezone indicator)
         date = parsed.isUtc ? parsed.toLocal() : parsed;
       } else {
         date = (timestamp as DateTime).toLocal();

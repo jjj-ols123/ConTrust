@@ -1983,6 +1983,11 @@ class HireModal {
     TextEditingController maxBudgetController = TextEditingController();
     DateTime? selectedStartDate;
 
+    // Photo-related variables for auto-fill
+    Uint8List? selectedPhoto;
+    String? photoUrl;
+    bool isUploadingPhoto = false;
+
     final checkResults = await Future.wait([
       hasExistingProjectWithContractor(contracteeId, contractorId),
       hasPendingProject(contracteeId),
@@ -2002,6 +2007,7 @@ class HireModal {
           existingProjectWithContractor['min_budget']?.toString() ?? '';
       maxBudgetController.text =
           existingProjectWithContractor['max_budget']?.toString() ?? '';
+      photoUrl = existingProjectWithContractor['photo_url'] as String?;
       if (existingProjectWithContractor['start_date'] != null) {
         try {
           selectedStartDate = DateTime.parse(existingProjectWithContractor['start_date']);
@@ -2018,6 +2024,7 @@ class HireModal {
           pendingHireRequest['min_budget']?.toString() ?? '';
       maxBudgetController.text =
           pendingHireRequest['max_budget']?.toString() ?? '';
+      photoUrl = pendingHireRequest['photo_url'] as String?;
       if (pendingHireRequest['start_date'] != null) {
         try {
           selectedStartDate = DateTime.parse(pendingHireRequest['start_date']);
@@ -2034,6 +2041,7 @@ class HireModal {
           pendingProject['min_budget']?.toString() ?? '';
       maxBudgetController.text =
           pendingProject['max_budget']?.toString() ?? '';
+      photoUrl = pendingProject['photo_url'] as String?;
       if (pendingProject['start_date'] != null) {
         try {
           selectedStartDate = DateTime.parse(pendingProject['start_date']);
@@ -2045,9 +2053,6 @@ class HireModal {
 
     final formKey = GlobalKey<FormState>();
     bool isLoading = false;
-    Uint8List? selectedPhoto;
-    String? photoUrl;
-    bool isUploadingPhoto = false;
     
     // Use predefined specializations list
     const availableSpecializations = _ProjectDialogState._availableSpecializations;

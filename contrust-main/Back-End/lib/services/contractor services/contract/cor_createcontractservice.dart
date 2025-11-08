@@ -2,6 +2,7 @@ import 'package:backend/services/both services/be_contract_service.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ContractField {
   final String key;
@@ -336,50 +337,25 @@ class CreateContractService {
 
   void populateProjectFields(Map<String, dynamic> projectData, Map<String, TextEditingController> controllers, String? selectedContractType) {
     try {
-      controllers['Project.Description']?.text = projectData['description'] ?? '';
-      controllers['Project.Address']?.text = projectData['location'] ?? '';
-      
+      // Only populate non-numeric fields and start date - NO BUDGETS OR NUMBERS
+      // Only fill if field is empty (preserve manual entries)
+      if ((controllers['Project.Description']?.text ?? '').isEmpty) {
+        controllers['Project.Description']?.text = projectData['description'] ?? '';
+      }
+      if ((controllers['Project.Address']?.text ?? '').isEmpty) {
+        controllers['Project.Address']?.text = projectData['location'] ?? '';
+      }
 
       final currentDate = DateTime.now().toString().split(' ')[0];
       controllers['Contract.CreationDate']?.text = currentDate;
-      
-      if (projectData['start_date'] != null) {
-        final startDate = projectData['start_date'].toString().split(' ')[0];
-        controllers['Project.StartDate']?.text = startDate;
-      } else {
-        controllers['Project.StartDate']?.text = currentDate;
-      }
-      
-      if (projectData['end_date'] != null) {
-        final endDate = projectData['end_date'].toString().split(' ')[0];
-        controllers['Project.CompletionDate']?.text = endDate;
-      }
 
-      if (projectData['start_date'] != null && projectData['end_date'] != null) {
-        try {
-          final startDate = DateTime.parse(projectData['start_date'].toString());
-          final endDate = DateTime.parse(projectData['end_date'].toString());
-          final duration = endDate.difference(startDate).inDays;
-          if (duration > 0) {
-            controllers['Project.Duration']?.text = duration.toString();
-          }
-        } catch (_) {}
-      }
-
-      final contractType = selectedContractType?.toLowerCase();
-      final maxBudget = projectData['max_budget']?.toString() ?? '';
-      
-      if (contractType?.contains('lump sum') == true) {
-        if ((controllers['Payment.Total']?.text ?? '').isEmpty && maxBudget.isNotEmpty) {
-          controllers['Payment.Total']?.text = maxBudget;
-        }
-      } else if (contractType?.contains('cost-plus') == true || contractType?.contains('cost plus') == true) {
-        if ((controllers['Estimated.Total']?.text ?? '').isEmpty && maxBudget.isNotEmpty) {
-          controllers['Estimated.Total']?.text = maxBudget;
-        }
-      } else if (contractType?.contains('time and materials') == true) {
-        if ((controllers['Payment.Total']?.text ?? '').isEmpty && maxBudget.isNotEmpty) {
-          controllers['Payment.Total']?.text = maxBudget;
+      // Only populate start date if empty - preserve manual entries
+      if ((controllers['Project.StartDate']?.text ?? '').isEmpty) {
+        if (projectData['start_date'] != null) {
+          final startDate = projectData['start_date'].toString().split(' ')[0];
+          controllers['Project.StartDate']?.text = startDate;
+        } else {
+          controllers['Project.StartDate']?.text = currentDate;
         }
       }
     } catch (e) {
@@ -422,7 +398,6 @@ class CreateContractService {
       double parsePercent(String raw) {
         final cleaned = raw.trim().replaceAll('%', '').replaceAll(',', '');
         final v = double.tryParse(cleaned) ?? 0.0;
-        if (v <= 0) return 0.0;
         return v > 1.0 ? (v / 100.0) : v;
       }
       final discountRate = parsePercent(controllers['Payment.Discount']?.text ?? '0');
@@ -742,12 +717,19 @@ class CreateContractService {
     required String contractType,
   }) async {
     try {
+      // Auto-fill contractor and contractee information from database
+      final enrichedFieldValues = await _enrichFieldValuesWithContactInfo(
+        fieldValues,
+        projectId,
+        contractorId,
+      );
+
       await ContractService.saveContract(
         contractorId: contractorId,
         contractTypeId: contractTypeId,
         title: title,
         projectId: projectId,
-        fieldValues: fieldValues,
+        fieldValues: enrichedFieldValues,
         contractType: contractType,
       );
     } catch (e) {
@@ -775,13 +757,20 @@ class CreateContractService {
     required String contractType,
   }) async {
     try {
+      // Auto-fill contractor and contractee information from database
+      final enrichedFieldValues = await _enrichFieldValuesWithContactInfo(
+        fieldValues,
+        projectId,
+        contractorId,
+      );
+
       await ContractService.updateContract(
         contractId: contractId,
         contractorId: contractorId,
         contractTypeId: contractTypeId,
         title: title,
         projectId: projectId,
-        fieldValues: fieldValues,
+        fieldValues: enrichedFieldValues,
         contractType: contractType,
       );
     } catch (e) {
@@ -824,6 +813,134 @@ class CreateContractService {
         },
       );
       rethrow;
+    }
+  }
+
+  /// Enrich field values with contractor and contractee contact information from database
+  Future<Map<String, String>> _enrichFieldValuesWithContactInfo(
+    Map<String, String> fieldValues,
+    String projectId,
+    String contractorId,
+  ) async {
+    try {
+      // Create a copy of fieldValues to modify
+      final enrichedValues = Map<String, String>.from(fieldValues);
+
+      // Get project data to find contractee_id
+      final projectData = await Supabase.instance.client
+          .from('Projects')
+          .select('contractee_id')
+          .eq('project_id', projectId)
+          .single();
+
+      final contracteeId = projectData['contractee_id'] as String?;
+
+      // Fetch contractor information
+      if (contractorId.isNotEmpty) {
+        try {
+          final contractorData = await Supabase.instance.client
+              .from('Contractor')
+              .select('firm_name, contact_number, address, bio, specialization')
+              .eq('contractor_id', contractorId)
+              .single();
+
+          // Also fetch contractor email from Users table
+          String? contractorEmail;
+          try {
+            final userData = await Supabase.instance.client
+                .from('Users')
+                .select('email')
+                .eq('users_id', contractorId)
+                .single();
+            contractorEmail = userData['email'] as String?;
+          } catch (e) {
+            debugPrint('Failed to fetch contractor email for enrichment: $e');
+          }
+
+          // Auto-fill contractor information if not already set
+          if (contractorData['firm_name'] != null && (enrichedValues['Contractor.Company']?.isEmpty ?? true)) {
+            enrichedValues['Contractor.Company'] = contractorData['firm_name'] as String;
+          }
+          if (contractorData['contact_number'] != null && (enrichedValues['Contractor.Phone']?.isEmpty ?? true)) {
+            enrichedValues['Contractor.Phone'] = contractorData['contact_number'] as String;
+          }
+          if (contractorData['address'] != null && (enrichedValues['Contractor.Address']?.isEmpty ?? true)) {
+            enrichedValues['Contractor.Address'] = contractorData['address'] as String;
+          }
+          if (contractorData['bio'] != null && (enrichedValues['Contractor.Bio']?.isEmpty ?? true)) {
+            enrichedValues['Contractor.Bio'] = contractorData['bio'] as String;
+          }
+          if (contractorEmail != null && (enrichedValues['Contractor.Email']?.isEmpty ?? true)) {
+            enrichedValues['Contractor.Email'] = contractorEmail;
+          }
+        } catch (e) {
+          debugPrint('Failed to fetch contractor data: $e');
+        }
+      }
+
+      // Fetch contractee information
+      if (contracteeId != null && contracteeId.isNotEmpty) {
+        try {
+          final contracteeData = await Supabase.instance.client
+              .from('Contractee')
+              .select('full_name, phone_number, address, project_history_count')
+              .eq('contractee_id', contracteeId)
+              .single();
+
+          // Also fetch contractee email from Users table
+          String? contracteeEmail;
+          try {
+            final userData = await Supabase.instance.client
+                .from('Users')
+                .select('email')
+                .eq('users_id', contracteeId)
+                .single();
+            contracteeEmail = userData['email'] as String?;
+          } catch (e) {
+            debugPrint('Failed to fetch contractee email for enrichment: $e');
+          }
+
+          // Auto-fill contractee information if not already set
+          if (contracteeData['full_name'] != null) {
+            // Split full name into first and last name
+            final fullName = contracteeData['full_name'] as String;
+            final nameParts = fullName.split(' ');
+            if (nameParts.isNotEmpty && (enrichedValues['Contractee.FirstName']?.isEmpty ?? true)) {
+              enrichedValues['Contractee.FirstName'] = nameParts.first;
+            }
+            if (nameParts.length > 1 && (enrichedValues['Contractee.LastName']?.isEmpty ?? true)) {
+              enrichedValues['Contractee.LastName'] = nameParts.sublist(1).join(' ');
+            }
+          }
+
+          if (contracteeData['phone_number'] != null && (enrichedValues['Contractee.Phone']?.isEmpty ?? true)) {
+            enrichedValues['Contractee.Phone'] = contracteeData['phone_number'] as String;
+          }
+          if (contracteeData['address'] != null && (enrichedValues['Contractee.Address']?.isEmpty ?? true)) {
+            enrichedValues['Contractee.Address'] = contracteeData['address'] as String;
+          }
+          if (contracteeEmail != null && (enrichedValues['Contractee.Email']?.isEmpty ?? true)) {
+            enrichedValues['Contractee.Email'] = contracteeEmail;
+          }
+        } catch (e) {
+          debugPrint('Failed to fetch contractee data: $e');
+        }
+      }
+
+      return enrichedValues;
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to enrich field values with contact info: ',
+        module: 'Create Contract Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Enrich Field Values',
+          'project_id': projectId,
+          'contractor_id': contractorId,
+        },
+      );
+      // Return original values if enrichment fails
+      return fieldValues;
     }
   }
 }

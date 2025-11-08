@@ -71,13 +71,23 @@ class ContractTypeService {
     required String contractorId,
   }) async {
     try {
+      debugPrint('🔧 EDIT CONTRACT: Starting navigation to edit contract');
+      debugPrint('🔧 EDIT CONTRACT: Received contract data: $contract');
+      debugPrint('🔧 EDIT CONTRACT: Contractor ID: $contractorId');
+      debugPrint('🔧 EDIT CONTRACT: Contract ID: ${contract['contract_id']}');
+      debugPrint('🔧 EDIT CONTRACT: Contract type ID: ${contract['contract_type_id']}');
+      debugPrint('🔧 EDIT CONTRACT: Project ID: ${contract['project_id']}');
+
       final contractTypes = await FetchService().fetchContractTypes();
+      debugPrint('🔧 EDIT CONTRACT: Fetched ${contractTypes.length} contract types');
       final contractType = contractTypes.firstWhere(
         (type) => type['contract_type_id'] == contract['contract_type_id'],
         orElse: () => <String, dynamic>{},
       );
+      debugPrint('🔧 EDIT CONTRACT: Found contract type: $contractType');
 
       if (contractType.isEmpty) {
+        debugPrint('🔧 EDIT CONTRACT: ERROR - Contract type not found');
         if (context.mounted) {
           ConTrustSnackBar.error(context, 'Error: Contract type not found');
         }
@@ -85,13 +95,31 @@ class ContractTypeService {
       }
 
       final contractId = contract['contract_id'];
+      debugPrint('🔧 EDIT CONTRACT: Using contract ID: $contractId');
+
+      final fetchService = FetchService();
+      debugPrint('🔧 EDIT CONTRACT: Fetching complete contract details...');
+      final fullContract = await fetchService.fetchContractWithDetails(contractId, contractorId: contractorId);
+      debugPrint('🔧 EDIT CONTRACT: Full contract fetched: ${fullContract != null ? 'SUCCESS' : 'NULL'}');
+      if (fullContract != null) {
+        debugPrint('🔧 EDIT CONTRACT: Full contract project_id: ${fullContract['project_id']}');
+        debugPrint('🔧 EDIT CONTRACT: Full contract title: ${fullContract['title']}');
+      }
+
+      final contractToUse = fullContract ?? contract;
+      debugPrint('🔧 EDIT CONTRACT: Contract to use: $contractToUse');
+      debugPrint('🔧 EDIT CONTRACT: Final project_id: ${contractToUse['project_id']}');
+
+      debugPrint('🔧 EDIT CONTRACT: Navigating to /editcontract/$contractId');
       context.go('/editcontract/$contractId', extra: {
         'template': contractType,
         'contractType': contractType['template_name'] ?? '',
-        'existingContract': contract,
+        'existingContract': contractToUse,
       });
+      debugPrint('🔧 EDIT CONTRACT: Navigation completed successfully');
       return true;
     } catch (e) {
+      debugPrint('🔧 EDIT CONTRACT: ERROR - Failed to navigate to edit contract: $e');
       await _errorService.logError(
         errorMessage: 'Failed to navigate to edit contract: ',
         module: 'Contract Type Service',

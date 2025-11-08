@@ -231,7 +231,7 @@ class ContractService {
         'sender_id': contractData['contractor_id'],
         'receiver_id': contracteeId,
         'message': message,
-        'timestamp': DateTime.now().toIso8601String(),
+        'timestamp': DateTime.now().toUtc().toIso8601String(),
         'message_type': 'contract',
         'contract_id': contractId,
         'contract_status': 'sent',
@@ -240,7 +240,7 @@ class ContractService {
 
       await _supabase.from('ChatRoom').update({
         'last_message': '📄 Contract sent: $message',
-        'last_message_time': DateTime.now().toIso8601String(),
+        'last_message_time': DateTime.now().toUtc().toIso8601String(),
       }).eq('chatroom_id', chatRoomData['chatroom_id']);
 
       await _auditService.logAuditEvent(

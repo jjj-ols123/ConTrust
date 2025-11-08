@@ -10,6 +10,7 @@ import 'package:backend/utils/be_contractformat.dart';
 import 'package:backend/contract_templates/TimeandMaterials.dart';
 import 'package:backend/contract_templates/CostPlus.dart';
 import 'package:backend/contract_templates/LumpSum.dart';
+import 'package:go_router/go_router.dart';
 
 class CreateContractBuild {
   static Widget buildHeader(BuildContext context, {required String title, required List<Widget> actions}) {
@@ -70,19 +71,206 @@ class CreateContractBuild {
     return Expanded(child: preview);
   }
 
-static Future<Map<String, dynamic>?> showSaveDialog(
-    BuildContext context, 
+  static Future<Map<String, dynamic>?> showProjectSelectionDialog(
+    BuildContext context,
     String contractorId, {
-    TextEditingController? titleController, 
     String? initialProjectId,
-    Function(String?)? onProjectChanged,
+  }) async {
+    return showDialog<Map<String, dynamic>>(
+      context: context,
+      barrierDismissible: false, // User must select a project or cancel
+      builder: (BuildContext dialogContext) {
+        String? selectedProjectId = initialProjectId;
+        List<Map<String, dynamic>> projects = [];
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            // Load projects if not loaded yet
+            if (projects.isEmpty) {
+              FetchService().fetchContractorProjectInfo(contractorId).then((fetchedProjects) {
+                setDialogState(() {
+                  projects = fetchedProjects;
+                  // Auto-select if only one project
+                  if (projects.length == 1 && selectedProjectId == null) {
+                    selectedProjectId = projects.first['project_id'] as String?;
+                  }
+                });
+              });
+            }
+
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 500),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Colors.white, Colors.grey.shade50],
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade700,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(20),
+                          topRight: Radius.circular(20),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.folder_open,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Text(
+                              "Select Project",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Choose a project to create a contract for:',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          if (projects.isEmpty)
+                            const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(20),
+                                child: CircularProgressIndicator(color: Color(0xFFFFB300)),
+                              ),
+                            )
+                          else
+                            DropdownButtonFormField<String>(
+                              value: selectedProjectId,
+                              decoration: InputDecoration(
+                                labelText: 'Select Project',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey.shade50,
+                              ),
+                              items: projects.map((project) {
+                                final projectId = project['project_id'] as String?;
+                                final title = project['title'] as String? ?? 'Untitled Project';
+                                return DropdownMenuItem<String>(
+                                  value: projectId,
+                                  child: Text(
+                                    title,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (String? newValue) {
+                                setDialogState(() {
+                                  selectedProjectId = newValue;
+                                });
+                              },
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please select a project';
+                                }
+                                return null;
+                              },
+                            ),
+                          const SizedBox(height: 24),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(dialogContext).pop(); // Close dialog
+                                  // Navigate back to contract types page
+                                  if (context.mounted) {
+                                    context.go('/contracttypes');
+                                  }
+                                },
+                                child: const Text(
+                                  'Cancel',
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              ElevatedButton(
+                                onPressed: selectedProjectId != null && selectedProjectId!.isNotEmpty
+                                    ? () {
+                                        Navigator.of(dialogContext).pop({
+                                          'projectId': selectedProjectId,
+                                        });
+                                      }
+                                    : null,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.amber.shade700,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: const Text('Continue'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+static Future<Map<String, dynamic>?> showSaveDialog(
+    BuildContext context,
+    String contractorId, {
+    TextEditingController? titleController,
+    String? initialProjectId,
   }) async {
     titleController ??= TextEditingController();
     
     return showDialog<Map<String, dynamic>>(
       context: context,
       builder: (BuildContext dialogContext) {
-        String? selectedProjectId = initialProjectId;
         return Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: Container(
@@ -153,47 +341,6 @@ static Future<Map<String, dynamic>?> showSaveDialog(
                             border: OutlineInputBorder(),
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        FutureBuilder<List<Map<String, dynamic>>>(
-                          future: FetchService().fetchContractorProjectInfo(contractorId),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
-                              return const Center(
-                                child: Padding(
-                                  padding: EdgeInsets.all(16.0),
-                                  child: CircularProgressIndicator(color: Colors.amber),
-                                ),
-                              );
-                            }
-                            if (snapshot.hasError || !snapshot.hasData) {
-                              return const Text('Error loading projects');
-                            }
-                            final validProjects = snapshot.data!.where((p) {
-                              final status = p['status'] as String?;
-                              return status == 'awaiting_contract' || status == 'awaiting_agreement';
-                            }).toList();
-                            
-                            if (validProjects.isEmpty) {
-                              return const Text('No available projects for contract creation');
-                            }
-                            
-                            return DropdownButtonFormField<String>(
-                              decoration: const InputDecoration(
-                                labelText: 'Select Project',
-                                border: OutlineInputBorder(),
-                              ),
-                              value: selectedProjectId,
-                              items: validProjects.map((project) => DropdownMenuItem<String>(
-                                value: project['project_id'],
-                                child: Text(project['title'] ?? 'No Title'),
-                              )).toList(),
-                              onChanged: (value) {
-                                selectedProjectId = value;
-                                onProjectChanged?.call(value);
-                              },
-                            );
-                          },
-                        ),
                         const SizedBox(height: 24),
                         Row(
                           children: [
@@ -207,13 +354,13 @@ static Future<Map<String, dynamic>?> showSaveDialog(
                             Expanded(
                               child: ElevatedButton(
                                 onPressed: () {
-                                  if (titleController?.text.trim().isEmpty == true || selectedProjectId == null) {
+                                  if (titleController?.text.trim().isEmpty == true || initialProjectId == null) {
                                     ConTrustSnackBar.error(context, 'Please fill all fields');
                                     return;
                                   }
                                   Navigator.of(dialogContext).pop({
                                     'title': titleController?.text.trim() ?? '',
-                                    'projectId': selectedProjectId,
+                                    'projectId': initialProjectId,
                                   });
                                 },
                                 style: ElevatedButton.styleFrom(

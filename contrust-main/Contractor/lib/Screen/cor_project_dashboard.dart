@@ -50,12 +50,12 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
   String? _contractType;
   DateTime? _startDate;
   DateTime? _estimatedCompletion;
-  Map<String, dynamic>? _contractData; // Store contract data including field_values
-  String? _projectStatus; // Track project status
+  List<DateTime> _milestoneDates = []; 
+  Map<String, dynamic>? _contractData; 
+  String? _projectStatus;
   final FetchService _fetchService = FetchService();
   final TextEditingController _reportController = TextEditingController();
   
-  // Mobile layout state
   String _selectedTab = 'Tasks';
   PageController? _activitiesPageController;
   PageController? _calendarActivitiesPageController;
@@ -63,7 +63,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
   @override
   void initState() {
     super.initState();
-    // Use widget.projectData if available (from real-time stream), otherwise load
     if (widget.projectData != null) {
       _updateFromProjectData(widget.projectData!);
     } else {
@@ -74,7 +73,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
   @override
   void didUpdateWidget(CorProjectDashboard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Update local state when projectData changes from real-time updates
     if (widget.projectData != null && widget.projectData != oldWidget.projectData) {
       _updateFromProjectData(widget.projectData!);
     }
@@ -88,7 +86,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     super.dispose();
   }
 
-  /// Update local state from projectData (used for real-time updates)
   void _updateFromProjectData(Map<String, dynamic> data) {
     final projectDetails = data['projectDetails'] as Map<String, dynamic>?;
     
@@ -101,11 +98,9 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       _isLoading = false;
     });
 
-    // Update dates and contract info asynchronously (non-blocking)
     _updateContractInfo(projectDetails);
   }
 
-  /// Update contract info (contractee name, contract type, dates) - non-blocking
   Future<void> _updateContractInfo(Map<String, dynamic>? projectDetails) async {
     if (projectDetails == null) return;
 
@@ -127,20 +122,38 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       );
       if (contract != null && mounted) {
         setState(() {
-          _contractData = contract; // Store full contract data
+          _contractData = contract; 
           final contractTypeData = contract['contract_type'] as Map<String, dynamic>?;
           _contractType = contractTypeData?['template_name'] as String?;
         });
+
+        if (_contractType?.toLowerCase() == 'lump sum') {
+          final fieldValues = contract['field_values'] as Map<String, dynamic>?;
+          if (fieldValues != null) {
+            _milestoneDates = [];
+            for (int i = 1; i <= 10; i++) {
+              final milestoneDateStr = fieldValues['Milestone.$i.Date'] as String?;
+              if (milestoneDateStr != null && milestoneDateStr.isNotEmpty) {
+                try {
+                  final dateStr = milestoneDateStr.split(' ')[0]; 
+                  final parsed = DateTime.parse(dateStr);
+                  _milestoneDates.add(DateTime(parsed.year, parsed.month, parsed.day));
+                } catch (_) {
+                  //
+                }
+              }
+            }
+          }
+        } else {
+          _milestoneDates = [];
+        }
       }
     }
-
-    // Parse dates based on contract type
     if (mounted) {
       final isCustomContract = _contractType?.toLowerCase() == 'custom';
       
       setState(() {
         if (isCustomContract) {
-          // For CUSTOM contracts, use dates from Projects table
           final startDateStr = projectDetails['start_date'] as String?;
           if (startDateStr != null && startDateStr.isNotEmpty) {
             try {
@@ -165,15 +178,12 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             _estimatedCompletion = null;
           }
         } else if (_contractData != null) {
-          // For non-CUSTOM contracts, extract dates from field_values
           final fieldValues = _contractData!['field_values'] as Map<String, dynamic>?;
           if (fieldValues != null) {
-            // Extract start date from field_values
             final startDateStr = fieldValues['Project.StartDate'] as String?;
             if (startDateStr != null && startDateStr.isNotEmpty) {
               try {
-                // Handle different date formats (e.g., "2025-11-07" or "2025-11-07 00:00:00")
-                final dateStr = startDateStr.split(' ')[0]; // Take only date part
+                final dateStr = startDateStr.split(' ')[0]; 
                 final parsed = DateTime.parse(dateStr);
                 _startDate = DateTime(parsed.year, parsed.month, parsed.day);
               } catch (_) {
@@ -183,12 +193,10 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               _startDate = null;
             }
 
-            // Extract estimated completion from field_values
             final completionDateStr = fieldValues['Project.CompletionDate'] as String?;
             if (completionDateStr != null && completionDateStr.isNotEmpty) {
               try {
-                // Handle different date formats
-                final dateStr = completionDateStr.split(' ')[0]; // Take only date part
+                final dateStr = completionDateStr.split(' ')[0]; 
                 final parsed = DateTime.parse(dateStr);
                 _estimatedCompletion = DateTime(parsed.year, parsed.month, parsed.day);
               } catch (_) {
@@ -198,7 +206,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               _estimatedCompletion = null;
             }
           } else {
-            // Fallback to Projects table if field_values is empty
             final startDateStr = projectDetails['start_date'] as String?;
             if (startDateStr != null && startDateStr.isNotEmpty) {
               try {
@@ -224,7 +231,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             }
           }
         } else {
-          // No contract found, use Projects table
           final startDateStr = projectDetails['start_date'] as String?;
           if (startDateStr != null && startDateStr.isNotEmpty) {
             try {
@@ -264,13 +270,11 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       final projectDetails = data['projectDetails'] as Map<String, dynamic>?;
       final contracteeId = projectDetails?['contractee_id'] as String?;
       
-      // Fetch contractee name
       if (contracteeId != null) {
         final contracteeData = await _fetchService.fetchContracteeData(contracteeId);
         _contracteeName = contracteeData?['full_name'] as String?;
       }
       
-      // Fetch contract data to get contract_type and field_values
       final contractId = projectDetails?['contract_id'] as String?;
       if (contractId != null) {
         final contract = await _fetchService.fetchContractWithDetails(
@@ -278,18 +282,16 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
           contractorId: Supabase.instance.client.auth.currentUser?.id,
         );
         if (contract != null) {
-          _contractData = contract; // Store full contract data
+          _contractData = contract; 
           final contractTypeData = contract['contract_type'] as Map<String, dynamic>?;
           _contractType = contractTypeData?['template_name'] as String?;
         }
       }
       
-      // Parse dates based on contract type
       if (projectDetails != null) {
         final isCustomContract = _contractType?.toLowerCase() == 'custom';
         
         if (isCustomContract) {
-          // For CUSTOM contracts, use dates from Projects table
           final startDateStr = projectDetails['start_date'] as String?;
           if (startDateStr != null && startDateStr.isNotEmpty) {
             try {
@@ -314,15 +316,12 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             _estimatedCompletion = null;
           }
         } else if (_contractData != null) {
-          // For non-CUSTOM contracts, extract dates from field_values
           final fieldValues = _contractData!['field_values'] as Map<String, dynamic>?;
           if (fieldValues != null) {
-            // Extract start date from field_values
             final startDateStr = fieldValues['Project.StartDate'] as String?;
             if (startDateStr != null && startDateStr.isNotEmpty) {
               try {
-                // Handle different date formats (e.g., "2025-11-07" or "2025-11-07 00:00:00")
-                final dateStr = startDateStr.split(' ')[0]; // Take only date part
+                final dateStr = startDateStr.split(' ')[0]; 
                 final parsed = DateTime.parse(dateStr);
                 _startDate = DateTime(parsed.year, parsed.month, parsed.day);
               } catch (_) {
@@ -332,12 +331,10 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               _startDate = null;
             }
 
-            // Extract estimated completion from field_values
             final completionDateStr = fieldValues['Project.CompletionDate'] as String?;
             if (completionDateStr != null && completionDateStr.isNotEmpty) {
               try {
-                // Handle different date formats
-                final dateStr = completionDateStr.split(' ')[0]; // Take only date part
+                final dateStr = completionDateStr.split(' ')[0]; 
                 final parsed = DateTime.parse(dateStr);
                 _estimatedCompletion = DateTime(parsed.year, parsed.month, parsed.day);
               } catch (_) {
@@ -347,7 +344,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               _estimatedCompletion = null;
             }
           } else {
-            // Fallback to Projects table if field_values is empty
             final startDateStr = projectDetails['start_date'] as String?;
             if (startDateStr != null && startDateStr.isNotEmpty) {
               try {
@@ -373,7 +369,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             }
           }
         } else {
-          // No contract found, use Projects table
           final startDateStr = projectDetails['start_date'] as String?;
           if (startDateStr != null && startDateStr.isNotEmpty) {
             try {
@@ -446,7 +441,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // Info icon at top
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(
@@ -460,17 +454,14 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                   ],
                 ),
               ),
-              // Calendar and Recent Activities with horizontal navigation
               _buildMobileCalendarAndActivities(),
               const SizedBox(height: 16),
-              // Tab Navigation
               _buildMobileTabNavigation(_selectedTab, (tab) {
                 setState(() {
                   _selectedTab = tab;
                 });
               }),
               const SizedBox(height: 8),
-              // Tab Content
               SizedBox(
                 height: MediaQuery.of(context).size.height * 0.5,
                 child: _buildMobileTabContent(_selectedTab),
@@ -482,7 +473,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     );
   }
 
-  /// Show Project Info Dialog
   Future<void> _showProjectInfoDialog(String projectTitle) async {
     await showDialog(
       context: context,
@@ -577,7 +567,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     );
   }
 
-  /// Mobile Calendar and Activities with Horizontal Navigation
   Widget _buildMobileCalendarAndActivities() {
     _calendarActivitiesPageController ??= PageController();
     
@@ -1434,17 +1423,28 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               
               bool isStartDate = false;
               bool isCompletionDate = false;
+              bool isMilestoneDate = false;
               if (_startDate != null) {
                 final normalizedStartDate = DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
                 isStartDate = normalizedDayDate == normalizedStartDate;
               }
               if (_estimatedCompletion != null) {
                 final normalizedCompletionDate = DateTime(
-                  _estimatedCompletion!.year, 
-                  _estimatedCompletion!.month, 
+                  _estimatedCompletion!.year,
+                  _estimatedCompletion!.month,
                   _estimatedCompletion!.day
                 );
                 isCompletionDate = normalizedDayDate == normalizedCompletionDate;
+              }
+              // Check if this date is a milestone date
+              if (_milestoneDates.isNotEmpty) {
+                for (final milestoneDate in _milestoneDates) {
+                  final normalizedMilestoneDate = DateTime(milestoneDate.year, milestoneDate.month, milestoneDate.day);
+                  if (normalizedDayDate == normalizedMilestoneDate) {
+                    isMilestoneDate = true;
+                    break;
+                  }
+                }
               }
 
               List<String> taskNamesForDate = [];
@@ -1471,7 +1471,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                       }
                     }
                   } catch (e) {
-                    // Skip invalid date formats
+                    //
                   }
                 }
               }
@@ -1479,12 +1479,13 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               final hasDoneTasks = doneTaskNamesForDate.isNotEmpty;
               final hasUndoneTasks = undoneTaskNamesForDate.isNotEmpty;
 
-              // Determine tooltip text
               String? tooltipText;
               if (isStartDate) {
                 tooltipText = 'Start Date';
               } else if (isCompletionDate) {
                 tooltipText = 'Estimated Completion';
+              } else if (isMilestoneDate) {
+                tooltipText = 'Milestone Due Date';
               } else if (isTaskDueDate) {
                 List<String> tooltipParts = [];
                 if (hasDoneTasks) {
@@ -1520,12 +1521,14 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                                 ? Colors.blue.shade100
                                 : isCompletionDate
                                     ? Colors.green.shade100
-                                    : isTaskDueDate
+                                    : isMilestoneDate
+                                        ? Colors.purple.shade100
+                                        : isTaskDueDate
                                         ? (hasUndoneTasks && !hasDoneTasks
                                             ? Colors.red.shade200
                                             : hasDoneTasks && !hasUndoneTasks
                                                 ? Colors.green.shade200
-                                                : Colors.orange.shade200) // Mixed: some done, some undone
+                                                : Colors.orange.shade200) 
                                         : isToday
                                             ? Colors.amber.shade50
                                             : Colors.transparent,
@@ -1536,7 +1539,9 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                                 ? Border.all(color: Colors.blue.shade700, width: 1.5)
                                 : isCompletionDate && !isSelected
                                     ? Border.all(color: Colors.green.shade700, width: 1.5)
-                                    : isTaskDueDate && !isSelected
+                                    : isMilestoneDate && !isSelected
+                                        ? Border.all(color: Colors.purple.shade700, width: 1.5)
+                                        : isTaskDueDate && !isSelected
                                         ? Border.all(
                                             color: hasUndoneTasks && !hasDoneTasks
                                                 ? Colors.red.shade700
@@ -3001,14 +3006,10 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
   String _formatDate(String? dateString) {
     if (dateString == null || dateString.isEmpty) return 'N/A';
     try {
-      // Parse the date string - if it's already in local time format, parse it directly
-      // If it's in UTC format, convert to local
       DateTime date;
       if (dateString.endsWith('Z')) {
-        // UTC format, convert to local
         date = DateTime.parse(dateString).toLocal();
       } else {
-        // Already in local time format, parse as-is
         date = DateTime.parse(dateString);
       }
       return DateFormat('MMM dd, yyyy HH:mm').format(date);
@@ -3017,7 +3018,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     }
   }
 
-  /// Add Task Function
   Future<void> _addTask() async {
     await OngoingBuildMethods.showAddTaskDialog(
       context: context,
@@ -3034,7 +3034,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               task: task,
               context: context,
               expectFinish: expectFinish,
-              showSuccessMessage: false, // Suppress individual success messages
+              showSuccessMessage: false, 
               onSuccess: () {},
             );
             successCount++;
@@ -3043,7 +3043,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
           }
         }
         
-        // Show a single success message after all tasks are added
         if (context.mounted) {
           if (successCount > 0 && errorCount == 0) {
             ConTrustSnackBar.success(
@@ -3065,7 +3064,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     );
   }
 
-  /// Add Report Function - Shows time period selection dialog with title field
   Future<void> _addReport() async {
     final titleController = TextEditingController();
     
@@ -3211,7 +3209,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     });
   }
 
-  /// Build Period Option Button
   Widget _buildPeriodOption(BuildContext dialogContext, TextEditingController titleController, String period, String label, IconData icon) {
     return ElevatedButton(
       onPressed: () {
@@ -3252,10 +3249,8 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     );
   }
 
-  /// Generate and Save Report with PDF
   Future<void> _generateAndSaveReport(String periodType, String reportTitle) async {
     try {
-      // Calculate date range based on period type
       final now = DateTime.now();
       DateTime startDate;
       String periodLabel;
@@ -3287,10 +3282,8 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
           periodLabel = 'Today';
       }
 
-      // Compile recent activities filtered by date
       final activities = <Map<String, dynamic>>[];
 
-      // Add completed tasks
       for (final task in _tasks) {
         if (task['done'] == true && task['task_done'] != null) {
           try {
@@ -3303,12 +3296,11 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               });
             }
           } catch (e) {
-            // Skip invalid dates
+            //
           }
         }
       }
 
-      // Add photos
       for (final photo in _photos) {
         try {
           final photoDate = DateTime.parse(photo['created_at']).toLocal();
@@ -3320,11 +3312,10 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             });
           }
         } catch (e) {
-          // Skip invalid dates
+          //
         }
       }
 
-      // Add materials
       for (final material in _materials) {
         try {
           final materialDate = material['created_at'] != null
@@ -3338,11 +3329,10 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             });
           }
         } catch (e) {
-          // Skip invalid dates
+          //
         }
       }
 
-      // Sort by date (newest first)
       activities.sort((a, b) {
         try {
           final aDate = DateTime.parse(a['date']);
@@ -3353,7 +3343,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
         }
       });
 
-      // Prevent creating empty reports
       if (activities.isEmpty) {
         if (mounted) {
           ConTrustSnackBar.warning(
@@ -3364,7 +3353,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
         return;
       }
 
-      // Generate PDF
       final pdf = pw.Document();
       final project = widget.projectData?['projectDetails'] as Map<String, dynamic>?;
       final projectTitle = project?['title'] ?? 'Project';
@@ -3453,8 +3441,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
         periodType: periodType,
         context: context,
         onSuccess: () {
-          // Real-time subscription will update the data automatically
-          // Success message is already shown in addReportWithPdf service method
+          //
         },
       );
     } catch (e) {
@@ -3467,7 +3454,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     }
   }
 
-  /// Add Photo Function
   Future<void> _addPhoto() async {
     final descriptionController = TextEditingController();
     
@@ -3634,19 +3620,17 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     });
   }
 
-  /// Upload Photo with Description
   Future<void> _uploadPhotoWithDescription(String description) async {
     await widget.ongoingService.uploadPhoto(
       projectId: widget.projectId,
       context: context,
       description: description.isEmpty ? null : description,
       onSuccess: () {
-        // Real-time subscription will update the data automatically
+        //
       },
     );
   }
 
-  /// Navigate to Materials Page
   void _goToMaterials() {
     context.go('/project-management/${widget.projectId}/materials');
   }

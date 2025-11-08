@@ -7,6 +7,7 @@ import 'package:backend/services/contractor services/contract/cor_createcontract
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CreateContractPage extends StatefulWidget {
   final String? contractType;
@@ -51,6 +52,7 @@ class _CreateContractPageState extends State<CreateContractPage>
   String? contractorId;
   Map<String, dynamic>? existingContract;
   bool isLoading = true;
+  bool _isFieldsLoaded = false; // Track when contract fields are loaded
 
   final CreateContractService service = CreateContractService();
 
@@ -84,6 +86,13 @@ class _CreateContractPageState extends State<CreateContractPage>
   }
 
   void _initialize() async {
+    if (initialProjectId == null && widget.existingContract == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await _showProjectSelectionDialog();
+      });
+      return; // Don't continue initialization until project is selected
+    }
+
     try {
       final fetchService = FetchService();
       
@@ -300,7 +309,7 @@ class _CreateContractPageState extends State<CreateContractPage>
         controller.addListener(() {
           if (mounted) {
             setState(() {});
-            if (selectedTemplate != null && 
+            if (selectedTemplate != null &&
                 selectedTemplate!['template_name']?.toLowerCase().contains('time and materials') == true) {
               triggerTimeAndMaterialsCalculation();
             }
@@ -308,6 +317,7 @@ class _CreateContractPageState extends State<CreateContractPage>
         });
         controllers[field.key] = controller;
       }
+
 
       if (widget.existingContract != null && widget.existingContract!['field_values'] != null) {
         final existingFieldValues = widget.existingContract!['field_values'] as Map<String, dynamic>;
@@ -319,9 +329,12 @@ class _CreateContractPageState extends State<CreateContractPage>
         }
       }
 
+      _isFieldsLoaded = true; // Mark fields as loaded
       if (mounted) setState(() {});
     } catch (e) {
       buildDefaultFields();
+      _isFieldsLoaded = true; // Even on error, mark as loaded
+      if (mounted) setState(() {});
     }
   }
 
@@ -377,6 +390,12 @@ class _CreateContractPageState extends State<CreateContractPage>
           contractorId!,
           controllers,
         );
+
+        // Auto-populate ONLY contractor/contractee info and start date for new contracts
+        if (existingContract == null) {
+          await _autoPopulateContactFields();
+          if (mounted) setState(() {}); // Update UI after auto-population
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -525,6 +544,43 @@ class _CreateContractPageState extends State<CreateContractPage>
         fieldValues[field.key] = controllers[field.key]?.text ?? '';
       }
 
+      double parsePercent(String raw) {
+        final cleaned = raw.trim().replaceAll('%', '').replaceAll(',', '');
+        final v = double.tryParse(cleaned) ?? 0.0;
+        return v > 1.0 ? (v / 100.0) : v;
+      }
+
+      if (selectedContractType == 'Lump Sum') {
+        final totalText = fieldValues['Payment.Total'] ?? '0';
+        final downPaymentPercentText = fieldValues['Payment.DownPaymentPercentage'] ?? '0';
+        final retentionPercentText = fieldValues['Payment.RetentionPercentage'] ?? '0';
+
+        final total = double.tryParse(totalText) ?? 0;
+        final downPaymentPercent = parsePercent(downPaymentPercentText);
+        final retentionPercent = parsePercent(retentionPercentText);
+
+        final downPayment = total * downPaymentPercent;
+        final retention = total * retentionPercent;
+
+        double totalMilestonePayments = 0.0;
+        final milestoneKeys = fieldValues.keys.where((key) => key.startsWith('Milestone.') && key.endsWith('.Amount'));
+        for (final key in milestoneKeys) {
+          final milestoneAmountText = fieldValues[key] ?? '0';
+          final milestoneAmount = double.tryParse(milestoneAmountText) ?? 0;
+          totalMilestonePayments += milestoneAmount;
+        }
+
+        final finalPayment = total - downPayment - retention - totalMilestonePayments;
+
+        fieldValues['Payment.FinalPayment'] = finalPayment.toStringAsFixed(2);
+      } else if (selectedContractType == 'Cost Plus') {
+        final overheadPercentText = fieldValues['Overhead.Percentage'] ?? '0';
+        final lateFeePercentText = fieldValues['Late.Fee.Percentage'] ?? '0';
+        
+        fieldValues['Overhead.Percentage'] = parsePercent(overheadPercentText).toString();
+        fieldValues['Late.Fee.Percentage'] = parsePercent(lateFeePercentText).toString();
+      }
+
       final contractData = await showSaveDialog();
 
       if (contractData != null) {
@@ -575,19 +631,31 @@ class _CreateContractPageState extends State<CreateContractPage>
     }
   }
 
+  Future<void> _showProjectSelectionDialog() async {
+    if (!mounted) return;
+
+    final result = await CreateContractBuild.showProjectSelectionDialog(
+      context,
+      contractorId!,
+      initialProjectId: initialProjectId,
+    );
+
+    if (result != null && result['projectId'] != null && mounted) {
+      initialProjectId = result['projectId'] as String;
+      // Now proceed with normal initialization
+      _initialize();
+    } else if (mounted) {
+      // User cancelled, go back
+      context.pop();
+    }
+  }
+
   Future<Map<String, dynamic>?> showSaveDialog() async {
-    String? selectedProjectId = initialProjectId;
     return await CreateContractBuild.showSaveDialog(
       context,
       contractorId!,
       titleController: titleController,
-      initialProjectId: selectedProjectId,
-      onProjectChanged: (String? projectId) {
-        if (projectId != null && projectId != selectedProjectId) {
-          selectedProjectId = projectId;
-          fetchProjectData(projectId);
-        }
-      },
+      initialProjectId: initialProjectId,
     );
   }
 
@@ -701,15 +769,19 @@ class _CreateContractPageState extends State<CreateContractPage>
       },
     );
 
-    final canViewFinalPreview = ContractTabsBuild.validateRequiredFields(
-      contractFields,
-      controllers,
-    );
+    final canViewFinalPreview = _isFieldsLoaded
+        ? ContractTabsBuild.validateRequiredFields(
+            contractFields,
+            controllers,
+          )
+        : false; // Don't allow preview until fields are loaded
 
-    final completionStatus = ContractTabsBuild.getFieldCompletionStatus(
-      contractFields,
-      controllers,
-    );
+    final completionStatus = _isFieldsLoaded
+        ? ContractTabsBuild.getFieldCompletionStatus(
+            contractFields,
+            controllers,
+          )
+        : {'completed': 0, 'total': 0}; // Show 0/0 until fields are loaded
 
     return Column(
       children: [
@@ -785,6 +857,111 @@ class _CreateContractPageState extends State<CreateContractPage>
         ],
       );
     }
+
+  Future<void> _autoPopulateContactFields() async {
+    // Use the current project ID from projectData
+    final currentProjectId = projectData?['project_id'] as String?;
+    if (currentProjectId == null || contractorId == null) return;
+
+    try {
+      // Get project data to find contractee_id (we already have it in projectData)
+      final contracteeId = projectData?['contractee_id'] as String?;
+
+      // Fetch contractor information
+      if (contractorId!.isNotEmpty) {
+        try {
+          final contractorData = await Supabase.instance.client
+              .from('Contractor')
+              .select('firm_name, contact_number, address, bio, specialization')
+              .eq('contractor_id', contractorId!)
+              .single();
+
+          String? contractorEmail;
+          try {
+            final userData = await Supabase.instance.client
+                .from('Users')
+                .select('email')
+                .eq('users_id', contractorId!)
+                .single();
+            contractorEmail = userData['email'] as String?;
+          } catch (e) {
+            debugPrint('Failed to fetch contractor email: $e');
+          }
+
+          // Auto-populate contractor form fields if empty
+          if (contractorData['firm_name'] != null && (controllers['Contractor.Company']?.text.isEmpty ?? true)) {
+            controllers['Contractor.Company']?.text = contractorData['firm_name'] as String;
+          }
+          if (contractorData['contact_number'] != null && (controllers['Contractor.Phone']?.text.isEmpty ?? true)) {
+            controllers['Contractor.Phone']?.text = contractorData['contact_number'] as String;
+          }
+          if (contractorData['address'] != null && (controllers['Contractor.Address']?.text.isEmpty ?? true)) {
+            controllers['Contractor.Address']?.text = contractorData['address'] as String;
+          }
+          if (contractorData['bio'] != null && (controllers['Contractor.Bio']?.text.isEmpty ?? true)) {
+            controllers['Contractor.Bio']?.text = contractorData['bio'] as String;
+          }
+          if (contractorEmail != null && (controllers['Contractor.Email']?.text.isEmpty ?? true)) {
+            controllers['Contractor.Email']?.text = contractorEmail;
+          }
+        } catch (e) {
+          debugPrint('Failed to fetch contractor data for auto-populate: $e');
+        }
+      }
+
+      // Fetch contractee information
+      if (contracteeId != null && contracteeId.isNotEmpty) {
+        try {
+          final contracteeData = await Supabase.instance.client
+              .from('Contractee')
+              .select('full_name, phone_number, address, project_history_count')
+              .eq('contractee_id', contracteeId)
+              .single();
+
+          // Also fetch contractee email from Users table
+          String? contracteeEmail;
+          try {
+            final userData = await Supabase.instance.client
+                .from('Users')
+                .select('email')
+                .eq('users_id', contracteeId)
+                .single();
+            contracteeEmail = userData['email'] as String?;
+          } catch (e) {
+            debugPrint('Failed to fetch contractee email: $e');
+          }
+
+          // Auto-populate contractee form fields if empty
+          if (contracteeData['full_name'] != null) {
+            // Split full name into first and last name
+            final fullName = contracteeData['full_name'] as String;
+            final nameParts = fullName.split(' ');
+            if (nameParts.isNotEmpty && (controllers['Contractee.FirstName']?.text.isEmpty ?? true)) {
+              controllers['Contractee.FirstName']?.text = nameParts.first;
+            }
+            if (nameParts.length > 1 && (controllers['Contractee.LastName']?.text.isEmpty ?? true)) {
+              controllers['Contractee.LastName']?.text = nameParts.sublist(1).join(' ');
+            }
+          }
+
+          if (contracteeData['phone_number'] != null && (controllers['Contractee.Phone']?.text.isEmpty ?? true)) {
+            controllers['Contractee.Phone']?.text = contracteeData['phone_number'] as String;
+          }
+          if (contracteeData['address'] != null && (controllers['Contractee.Address']?.text.isEmpty ?? true)) {
+            controllers['Contractee.Address']?.text = contracteeData['address'] as String;
+          }
+          if (contracteeEmail != null && (controllers['Contractee.Email']?.text.isEmpty ?? true)) {
+            controllers['Contractee.Email']?.text = contracteeEmail;
+          }
+        } catch (e) {
+          debugPrint('Failed to fetch contractee data for auto-populate: $e');
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to auto-populate contact fields: $e');
+    }
+  }
+
   @override
   void dispose() {
     titleController.dispose();

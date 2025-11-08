@@ -332,16 +332,17 @@ class ContractTypeBuild {
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.more_vert),
-                  onPressed: () {
-                    ContractTypeService.showContractMenu(
-                      context: buttonContext,
-                      contract: contract,
-                      contractorId: contractorId,
-                    );
-                  },
-                ),
+                if (contract['status'] != 'rejected' && contract['status'] != 'cancelled' && contract['status'] != 'sent')
+                  IconButton(
+                    icon: const Icon(Icons.more_vert),
+                    onPressed: () {
+                      ContractTypeService.showContractMenu(
+                        context: buttonContext,
+                        contract: contract,
+                        contractorId: contractorId,
+                      );
+                    },
+                  ),
               ],
             );
           },

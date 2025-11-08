@@ -2696,7 +2696,7 @@ class DashboardBuildMethods {
             ),
             const SizedBox(height: 4),
             Text(
-              'Total Earnings',
+              'Total Earning',
               style: TextStyle(
                 fontSize: isDesktop ? 16 : (isTablet ? 14 : 12),
                 fontWeight: FontWeight.w600,
@@ -2711,85 +2711,6 @@ class DashboardBuildMethods {
                 color: Colors.grey.shade600,
               ),
             ),
-            if (allPayments.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Divider(color: Colors.grey.shade300, height: 1),
-              const SizedBox(height: 8),
-              Text(
-                'Recent Payments:',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade700,
-                ),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: isDesktop ? 120 : (isTablet ? 100 : 80),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: allPayments.length > 5 ? 5 : allPayments.length,
-                  itemBuilder: (context, index) {
-                    final payment = allPayments[index];
-                    final amount = (payment['amount'] as num?)?.toDouble() ?? 0.0;
-                    final date = payment['date'] as String? ?? '';
-                    final projectTitle = payment['project_title'] as String? ?? 'Project';
-                    
-                    String formattedDate = 'N/A';
-                    if (date.isNotEmpty) {
-                      try {
-                        final dateTime = DateTime.parse(date);
-                        final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                        formattedDate = '${months[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year}';
-                      } catch (_) {
-                        formattedDate = date;
-                      }
-                    }
-                    
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '₱${amount.toStringAsFixed(0)}',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey.shade800,
-                                  ),
-                                ),
-                                Text(
-                                  projectTitle,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-                          Text(
-                            formattedDate,
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.grey.shade500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
           ],
         ),
       ),

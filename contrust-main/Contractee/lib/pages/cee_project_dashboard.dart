@@ -51,10 +51,10 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
   String? _contractType;
   DateTime? _startDate;
   DateTime? _estimatedCompletion;
+  List<DateTime> _milestoneDates = [];
   Map<String, dynamic>? _contractData;
   final FetchService _fetchService = FetchService();
   
-  // Mobile layout state
   String _selectedTab = 'Tasks';
   PageController? _calendarActivitiesPageController;
 
@@ -126,6 +126,29 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
             final contractTypeData = contract['contract_type'] as Map<String, dynamic>?;
             _contractType = contractTypeData?['template_name'] as String?;
           });
+
+          // Extract milestone dates from contract field_values (only for Lump Sum)
+          if (_contractType?.toLowerCase() == 'lump sum') {
+            final fieldValues = contract['field_values'] as Map<String, dynamic>?;
+            if (fieldValues != null) {
+              _milestoneDates = [];
+              // Check up to 10 possible milestones
+              for (int i = 1; i <= 10; i++) {
+                final milestoneDateStr = fieldValues['Milestone.$i.Date'] as String?;
+                if (milestoneDateStr != null && milestoneDateStr.isNotEmpty) {
+                  try {
+                    final dateStr = milestoneDateStr.split(' ')[0]; // Take only date part
+                    final parsed = DateTime.parse(dateStr);
+                    _milestoneDates.add(DateTime(parsed.year, parsed.month, parsed.day));
+                  } catch (_) {
+                    // Skip invalid dates
+                  }
+                }
+              }
+            }
+          } else {
+            _milestoneDates = [];
+          }
         }
       } catch (e) {
         // Continue without contract data
@@ -1245,17 +1268,28 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
               
               bool isStartDate = false;
               bool isCompletionDate = false;
+              bool isMilestoneDate = false;
               if (_startDate != null) {
                 final normalizedStartDate = DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
                 isStartDate = normalizedDayDate == normalizedStartDate;
               }
               if (_estimatedCompletion != null) {
                 final normalizedCompletionDate = DateTime(
-                  _estimatedCompletion!.year, 
-                  _estimatedCompletion!.month, 
+                  _estimatedCompletion!.year,
+                  _estimatedCompletion!.month,
                   _estimatedCompletion!.day
                 );
                 isCompletionDate = normalizedDayDate == normalizedCompletionDate;
+              }
+              // Check if this date is a milestone date
+              if (_milestoneDates.isNotEmpty) {
+                for (final milestoneDate in _milestoneDates) {
+                  final normalizedMilestoneDate = DateTime(milestoneDate.year, milestoneDate.month, milestoneDate.day);
+                  if (normalizedDayDate == normalizedMilestoneDate) {
+                    isMilestoneDate = true;
+                    break;
+                  }
+                }
               }
 
               List<String> taskNamesForDate = [];
@@ -1295,6 +1329,8 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
                 tooltipText = 'Start Date';
               } else if (isCompletionDate) {
                 tooltipText = 'Estimated Completion';
+              } else if (isMilestoneDate) {
+                tooltipText = 'Milestone Due Date';
               } else if (isTaskDueDate) {
                 List<String> tooltipParts = [];
                 if (hasDoneTasks) {
@@ -1330,7 +1366,9 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
                                 ? Colors.blue.shade100
                                 : isCompletionDate
                                     ? Colors.green.shade100
-                                    : isTaskDueDate
+                                    : isMilestoneDate
+                                        ? Colors.purple.shade100
+                                        : isTaskDueDate
                                         ? (hasUndoneTasks && !hasDoneTasks
                                             ? Colors.red.shade200
                                             : hasDoneTasks && !hasUndoneTasks
@@ -1346,7 +1384,9 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
                                 ? Border.all(color: Colors.blue.shade700, width: 1.5)
                                 : isCompletionDate && !isSelected
                                     ? Border.all(color: Colors.green.shade700, width: 1.5)
-                                    : isTaskDueDate && !isSelected
+                                    : isMilestoneDate && !isSelected
+                                        ? Border.all(color: Colors.purple.shade700, width: 1.5)
+                                        : isTaskDueDate && !isSelected
                                         ? Border.all(
                                             color: hasUndoneTasks && !hasDoneTasks
                                                 ? Colors.red.shade700
