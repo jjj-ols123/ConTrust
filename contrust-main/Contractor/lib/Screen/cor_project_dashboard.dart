@@ -55,6 +55,32 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
   String? _projectStatus;
   final FetchService _fetchService = FetchService();
   final TextEditingController _reportController = TextEditingController();
+
+  void _extractMilestoneDates(Map<String, dynamic> contract) {
+    final contractTypeData = contract['contract_type'] as Map<String, dynamic>?;
+    final contractType = contractTypeData?['template_name'] as String?;
+
+    if (contractType?.toLowerCase() == 'lump sum') {
+      final fieldValues = contract['field_values'] as Map<String, dynamic>?;
+      if (fieldValues != null) {
+        _milestoneDates = [];
+        for (int i = 1; i <= 10; i++) {
+          final milestoneDateStr = fieldValues['Milestone.$i.Date'] as String?;
+          if (milestoneDateStr != null && milestoneDateStr.isNotEmpty) {
+            try {
+              final dateStr = milestoneDateStr.split(' ')[0];
+              final parsed = DateTime.parse(dateStr);
+              _milestoneDates.add(DateTime(parsed.year, parsed.month, parsed.day));
+            } catch (_) {
+              //
+            }
+          }
+        }
+      }
+    } else {
+      _milestoneDates = [];
+    }
+  }
   
   String _selectedTab = 'Tasks';
   PageController? _activitiesPageController;
@@ -122,31 +148,11 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       );
       if (contract != null && mounted) {
         setState(() {
-          _contractData = contract; 
+          _contractData = contract;
           final contractTypeData = contract['contract_type'] as Map<String, dynamic>?;
           _contractType = contractTypeData?['template_name'] as String?;
         });
-
-        if (_contractType?.toLowerCase() == 'lump sum') {
-          final fieldValues = contract['field_values'] as Map<String, dynamic>?;
-          if (fieldValues != null) {
-            _milestoneDates = [];
-            for (int i = 1; i <= 10; i++) {
-              final milestoneDateStr = fieldValues['Milestone.$i.Date'] as String?;
-              if (milestoneDateStr != null && milestoneDateStr.isNotEmpty) {
-                try {
-                  final dateStr = milestoneDateStr.split(' ')[0]; 
-                  final parsed = DateTime.parse(dateStr);
-                  _milestoneDates.add(DateTime(parsed.year, parsed.month, parsed.day));
-                } catch (_) {
-                  //
-                }
-              }
-            }
-          }
-        } else {
-          _milestoneDates = [];
-        }
+        _extractMilestoneDates(contract);
       }
     }
     if (mounted) {
@@ -282,9 +288,10 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
           contractorId: Supabase.instance.client.auth.currentUser?.id,
         );
         if (contract != null) {
-          _contractData = contract; 
+          _contractData = contract;
           final contractTypeData = contract['contract_type'] as Map<String, dynamic>?;
           _contractType = contractTypeData?['template_name'] as String?;
+          _extractMilestoneDates(contract);
         }
       }
       

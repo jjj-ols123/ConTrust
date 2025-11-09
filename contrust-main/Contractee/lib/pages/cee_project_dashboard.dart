@@ -55,8 +55,35 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
   List<DateTime> _milestoneDates = [];
   Map<String, dynamic>? _contractData;
   final FetchService _fetchService = FetchService();
-  
+
   String _selectedTab = 'Tasks';
+
+  void _extractMilestoneDates(Map<String, dynamic> contract) {
+    final contractTypeData = contract['contract_type'] as Map<String, dynamic>?;
+    final contractType = contractTypeData?['template_name'] as String?;
+
+    if (contractType?.toLowerCase() == 'lump sum') {
+      final fieldValues = contract['field_values'] as Map<String, dynamic>?;
+      if (fieldValues != null) {
+        _milestoneDates = [];
+        // Check up to 10 possible milestones
+        for (int i = 1; i <= 10; i++) {
+          final milestoneDateStr = fieldValues['Milestone.$i.Date'] as String?;
+          if (milestoneDateStr != null && milestoneDateStr.isNotEmpty) {
+            try {
+              final dateStr = milestoneDateStr.split(' ')[0]; // Take only date part
+              final parsed = DateTime.parse(dateStr);
+              _milestoneDates.add(DateTime(parsed.year, parsed.month, parsed.day));
+            } catch (_) {
+              // Skip invalid dates
+            }
+          }
+        }
+      }
+    } else {
+      _milestoneDates = [];
+    }
+  }
   PageController? _calendarActivitiesPageController;
 
   @override
@@ -122,34 +149,10 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
           contracteeId: Supabase.instance.client.auth.currentUser?.id,
         );
         if (contract != null && mounted) {
-          setState(() {
-            _contractData = contract;
-            final contractTypeData = contract['contract_type'] as Map<String, dynamic>?;
-            _contractType = contractTypeData?['template_name'] as String?;
-          });
-
-          // Extract milestone dates from contract field_values (only for Lump Sum)
-          if (_contractType?.toLowerCase() == 'lump sum') {
-            final fieldValues = contract['field_values'] as Map<String, dynamic>?;
-            if (fieldValues != null) {
-              _milestoneDates = [];
-              // Check up to 10 possible milestones
-              for (int i = 1; i <= 10; i++) {
-                final milestoneDateStr = fieldValues['Milestone.$i.Date'] as String?;
-                if (milestoneDateStr != null && milestoneDateStr.isNotEmpty) {
-                  try {
-                    final dateStr = milestoneDateStr.split(' ')[0]; // Take only date part
-                    final parsed = DateTime.parse(dateStr);
-                    _milestoneDates.add(DateTime(parsed.year, parsed.month, parsed.day));
-                  } catch (_) {
-                    // Skip invalid dates
-                  }
-                }
-              }
-            }
-          } else {
-            _milestoneDates = [];
-          }
+          _contractData = contract;
+          final contractTypeData = contract['contract_type'] as Map<String, dynamic>?;
+          _contractType = contractTypeData?['template_name'] as String?;
+          _extractMilestoneDates(contract);
         }
       } catch (e) {
         // Continue without contract data
@@ -297,6 +300,7 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
             _contractData = contract;
             final contractTypeData = contract['contract_type'] as Map<String, dynamic>?;
             _contractType = contractTypeData?['template_name'] as String?;
+            _extractMilestoneDates(contract);
           }
         } catch (e) {
           // Continue without contract data
