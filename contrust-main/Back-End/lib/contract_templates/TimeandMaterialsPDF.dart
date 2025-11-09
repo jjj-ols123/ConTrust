@@ -226,7 +226,7 @@ class TimeAndMaterialsPDF {
     widgets.add(pw.SizedBox(height: 8));
     widgets.add(
       pw.Text(
-        'This Contract shall begin on the day specified and shall continue until the Project is completed or upon the set due date. Any delays incurred by the Contractor that are found to be unreasonable shall be determined a breach of this Contract. The Company shall impose a fine of up to ₱${ContractStyle.getFieldValue(fieldValues, 'Penalty.Amount')} for such a delay.',
+        'This Contract shall begin on the day specified and shall continue until the Project is completed or upon the set due date. Any delays incurred by the Contractor that are found to be unreasonable shall be determined a breach of this Contract. The Company shall impose a fine of up to PHP${ContractStyle.getFieldValue(fieldValues, 'Penalty.Amount')} for such a delay.',
         style: const pw.TextStyle(fontSize: 11),
         textAlign: pw.TextAlign.justify,
       ),

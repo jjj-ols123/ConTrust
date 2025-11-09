@@ -368,8 +368,6 @@ class ProfileBuildMethods {
     required Function(String) onViewPhoto, // add this
   }) {
 
-    final screenWidth = MediaQuery.of(context).size.width;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -499,23 +497,44 @@ class ProfileBuildMethods {
             ),
           )
         else
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: screenWidth > 1200 ? 3 : screenWidth > 800 ? 2 : 1,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 20,
-              childAspectRatio: screenWidth > 1200 ? 1.9: 1.7,
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.grey.shade200,
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            itemCount: pastProjects.length,
-            itemBuilder: (context, index) {
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3, // Fixed 3 columns to fill screen
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 16,
+                childAspectRatio: 1.5, // Optimized ratio for screen fitting
+              ),
+              itemCount: pastProjects.length,
+              itemBuilder: (context, index) {
               return GestureDetector(
                 onTap: () => onViewPhoto(pastProjects[index]),
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     color: Colors.amber.shade50,
+                    border: Border.all(
+                      color: Colors.grey.shade300,
+                      width: 0.5,
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.amber.withOpacity(0.1),
@@ -562,6 +581,7 @@ class ProfileBuildMethods {
               );
             },
           ),
+        ),
       ],
     );
   }
@@ -1289,11 +1309,12 @@ class ProfileBuildMethods {
   
   static Widget buildMobileNavigation(String selectedTab, Function(String) onTabChanged) {
     final tabs = ['Portfolio', 'About', 'Reviews'];
-    
+
     return Container(
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),

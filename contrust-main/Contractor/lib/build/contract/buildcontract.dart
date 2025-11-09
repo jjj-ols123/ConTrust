@@ -16,10 +16,24 @@ class CreateContractBuild {
   static Widget buildHeader(BuildContext context, {required String title, required List<Widget> actions}) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
-    
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(color: Colors.amber.shade50, border: Border(bottom: BorderSide(color: Colors.grey.shade200))),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.amber.shade50, Colors.white],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        border: Border(bottom: BorderSide(color: Colors.amber.shade200, width: 1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.amber.shade100.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: isMobile
           ? Column(
               mainAxisSize: MainAxisSize.min,
@@ -27,37 +41,82 @@ class CreateContractBuild {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.create, color: Colors.amber, size: 20),
-                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade100,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.amber.shade200),
+                      ),
+                      child: Icon(Icons.create, color: Colors.amber.shade800, size: 18),
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         title,
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade800,
+                          letterSpacing: 0.5,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
-                  children: actions,
+                  children: actions.map((action) => Container(
+                    margin: const EdgeInsets.only(left: 8),
+                    child: action,
+                  )).toList(),
                 ),
               ],
             )
           : Row(
               children: [
-                Icon(Icons.create, color: Colors.amber, size: 20),
-                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.amber.shade200),
+                  ),
+                  child: Icon(Icons.create, color: Colors.amber.shade800, size: 20),
+                ),
+                const SizedBox(width: 16),
                 Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
-                    overflow: TextOverflow.ellipsis,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                          letterSpacing: 0.5,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        'Create and customize your contract',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const Spacer(),
-                ...actions,
+                ...actions.map((action) => Container(
+                  margin: const EdgeInsets.only(left: 12),
+                  child: action,
+                )),
               ],
             ),
     );
@@ -78,19 +137,18 @@ class CreateContractBuild {
   }) async {
     return showDialog<Map<String, dynamic>>(
       context: context,
-      barrierDismissible: false, // User must select a project or cancel
+      barrierDismissible: false, 
       builder: (BuildContext dialogContext) {
         String? selectedProjectId = initialProjectId;
         List<Map<String, dynamic>> projects = [];
 
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            // Load projects if not loaded yet
             if (projects.isEmpty) {
               FetchService().fetchContractorProjectInfo(contractorId).then((fetchedProjects) {
                 setDialogState(() {
-                  projects = fetchedProjects;
-                  // Auto-select if only one project
+                  // Filter out cancelled projects
+                  projects = fetchedProjects.where((project) => project['status'] != 'cancelled').toList();
                   if (projects.length == 1 && selectedProjectId == null) {
                     selectedProjectId = projects.first['project_id'] as String?;
                   }
@@ -98,58 +156,87 @@ class CreateContractBuild {
               });
             }
 
-            return Dialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 500),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Colors.white, Colors.grey.shade50],
-                  ),
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      elevation: 16,
+      shadowColor: Colors.amber.shade200.withOpacity(0.3),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 520),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.white, Colors.grey.shade50],
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.amber.shade600, Colors.amber.shade700],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.shade700,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(20),
-                          topRight: Radius.circular(20),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.folder_open,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Text(
-                              "Select Project",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.amber.shade300.withOpacity(0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withOpacity(0.3)),
                     ),
+                    child: const Icon(
+                      Icons.folder_open,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Select Project",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "Choose a project to create your contract",
+                          style: const TextStyle(
+                            color: Color(0xE6FFFFFF), // White with 0.9 opacity
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
                     Padding(
                       padding: const EdgeInsets.all(24),
                       child: Column(
@@ -215,8 +302,7 @@ class CreateContractBuild {
                             children: [
                               TextButton(
                                 onPressed: () {
-                                  Navigator.of(dialogContext).pop(); // Close dialog
-                                  // Navigate back to contract types page
+                                  Navigator.of(dialogContext).pop(); 
                                   if (context.mounted) {
                                     context.go('/contracttypes');
                                   }
@@ -405,6 +491,8 @@ class CreateContractBuildMethods {
     this.onItemCountChanged,
     this.onMilestoneCountChanged,
     this.onCalculationTriggered,
+    this.onLumpSumCalculationTriggered,
+    this.onMilestoneDurationCalculationTriggered,
   });
 
   final BuildContext context;
@@ -422,6 +510,8 @@ class CreateContractBuildMethods {
   final void Function(int)? onItemCountChanged;
   final void Function(int)? onMilestoneCountChanged;
   final VoidCallback? onCalculationTriggered;
+  final VoidCallback? onLumpSumCalculationTriggered;
+  final VoidCallback? onMilestoneDurationCalculationTriggered;
 
   Widget buildForm() {
     return Form(
@@ -1465,6 +1555,16 @@ class CreateContractBuildMethods {
           }
         : null,
       onChanged: (value) {
+        // Trigger Lump Sum calculations for payment and milestone fields
+        if (key == 'Payment.Total' || key == 'Payment.DownPaymentPercentage' ||
+            key == 'Payment.RetentionPercentage' || (key.startsWith('Milestone.') && key.endsWith('.Amount'))) {
+          _triggerLumpSumCalculation();
+        }
+        // Trigger milestone duration calculations for date changes
+        if (key == 'Project.StartDate' || (key.startsWith('Milestone.') && key.endsWith('.Date'))) {
+          _triggerMilestoneDurationCalculation();
+        }
+        // Trigger Time & Materials calculations
         if (key.contains('.Price') || key.contains('.Quantity') || key.contains('Payment.Discount') || key.contains('Payment.Tax')) {
           _triggerCalculation();
         }
@@ -1487,6 +1587,20 @@ class CreateContractBuildMethods {
   void _triggerCalculation() {
     if (onCalculationTriggered != null) {
       onCalculationTriggered!();
+    }
+  }
+
+  void _triggerLumpSumCalculation() {
+    if (onLumpSumCalculationTriggered != null) {
+      onLumpSumCalculationTriggered!();
+      // Force UI update for disabled fields
+      // Note: This might not be needed since calculation happens in setState() block
+    }
+  }
+
+  void _triggerMilestoneDurationCalculation() {
+    if (onMilestoneDurationCalculationTriggered != null) {
+      onMilestoneDurationCalculationTriggered!();
     }
   }
 

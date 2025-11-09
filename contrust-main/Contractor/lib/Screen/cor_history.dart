@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/contractor services/cor_profileservice.dart';
+import 'package:backend/utils/be_status.dart';
 
 class CorHistoryPage extends StatefulWidget {
   final String contractorId;
@@ -159,7 +160,7 @@ class _CorHistoryPageState extends State<CorHistoryPage> {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 700, maxHeight: 600),
+        constraints: const BoxConstraints(maxWidth: 800, maxHeight: 650),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -255,19 +256,37 @@ class _CorHistoryPageState extends State<CorHistoryPage> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    
-                    // Project details
-                    _buildDetailField('Type', project['type'] ?? 'Not specified'),
-                    _buildDetailField('Location', project['location'] ?? 'Not specified'),
-                    _buildDetailField('Budget', _formatBudget(project)),
-                    _buildDetailField('Start Date', _formatStartDate(project)),
-                    if (project['created_at'] != null)
-                      _buildDetailField('Created', _getTimeAgo(DateTime.parse(project['created_at']))),
-                    
+
+                    // Project details in 2x2 grid
+                    Builder(
+                      builder: (context) {
+                        final fields = [
+                          _buildDetailField('Type', project['type'] ?? 'Not specified'),
+                          _buildDetailField('Location', project['location'] ?? 'Not specified'),
+                          _buildDetailField('Budget', _formatBudget(project)),
+                          _buildDetailField('Start Date', _formatStartDate(project)),
+                          if (project['created_at'] != null)
+                            _buildDetailField('Created', _getTimeAgo(DateTime.parse(project['created_at']))),
+                        ];
+
+                        return GridView.count(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          children: fields,
+                        );
+                      },
+                    ),
+
                     const SizedBox(height: 24),
                     
-                    // Description
-                    _buildDetailField('Description', project['description'] ?? 'No description provided'),
+                    // Description (full width)
+                    SizedBox(
+                      width: double.infinity,
+                      child: _buildDetailField('Description', project['description'] ?? 'No description provided'),
+                    ),
                   ],
                 ),
               ),
@@ -279,33 +298,37 @@ class _CorHistoryPageState extends State<CorHistoryPage> {
   }
 
   Widget _buildDetailField(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+    return Container(
+      height: 80, // Fixed height for consistent 2x2 grid
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 12, // Smaller font for compact layout
               fontWeight: FontWeight.bold,
               color: Colors.grey.shade700,
             ),
           ),
-          const SizedBox(height: 8),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade800,
+          const SizedBox(height: 4), // Reduced spacing
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(8), // Reduced padding
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(6), // Smaller border radius
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: 12, // Smaller font for compact layout
+                  color: Colors.grey.shade800,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
               ),
             ),
           ),
@@ -344,18 +367,7 @@ class _CorHistoryPageState extends State<CorHistoryPage> {
   }
 
   Color _getStatusColor(String? status) {
-    switch ((status ?? '').toLowerCase()) {
-      case 'active':
-        return Colors.green;
-      case 'pending':
-        return Colors.orange;
-      case 'completed':
-        return Colors.teal;
-      case 'cancelled':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
+    return ProjectStatus().getStatusColor(status);
   }
 
   IconData _getStatusIcon(String? status) {
@@ -374,18 +386,7 @@ class _CorHistoryPageState extends State<CorHistoryPage> {
   }
 
   String _getStatusLabel(String? status) {
-    switch ((status ?? '').toLowerCase()) {
-      case 'active':
-        return 'Active';
-      case 'pending':
-        return 'Pending';
-      case 'completed':
-        return 'Completed';
-      case 'cancelled':
-        return 'Cancelled';
-      default:
-        return 'Unknown';
-    }
+    return ProjectStatus().getStatusLabel(status);
   }
 
   Widget _buildTabNavigation() {

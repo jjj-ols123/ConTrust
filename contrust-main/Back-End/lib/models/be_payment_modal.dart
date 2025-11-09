@@ -22,11 +22,14 @@ class PaymentModal {
     if (isMilestone) {
       final milestoneInfo = await paymentService.getMilestonePaymentInfo(projectId);
       if (milestoneInfo != null) {
+        final contractInfo = milestoneInfo['contract_info'] as Map<String, dynamic>? ?? {};
+
         await MilestonePaymentModal.show(
           context: context,
           projectId: projectId,
           projectTitle: projectTitle,
           milestoneInfo: milestoneInfo,
+          contractInfo: contractInfo,
           onPaymentSuccess: onPaymentSuccess,
         );
         return;

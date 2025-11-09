@@ -11,15 +11,30 @@ class MilestonePaymentModal {
     required String projectId,
     required String projectTitle,
     required Map<String, dynamic> milestoneInfo,
+    required Map<String, dynamic> contractInfo,
     required VoidCallback onPaymentSuccess,
   }) async {
     final milestones = List<Map<String, dynamic>>.from(milestoneInfo['milestones'] ?? []);
     final currentMilestone = milestoneInfo['current_milestone'] as Map<String, dynamic>? ?? {};
-    
+
     if (currentMilestone.isEmpty) {
       ConTrustSnackBar.error(context, 'No pending milestones found');
       return;
     }
+
+    // Extract contract information
+    final totalContractPrice = (contractInfo['total_price'] as num?)?.toDouble() ?? 0.0;
+    final downPaymentPercent = (contractInfo['down_payment_percentage'] as num?)?.toDouble() ?? 0.0;
+    final retentionPercent = (contractInfo['retention_percentage'] as num?)?.toDouble() ?? 0.0;
+    final paidMilestones = milestones.where((m) => m['status'] == 'paid').toList();
+    final paidMilestoneTotal = paidMilestones.fold<double>(0.0, (sum, m) => sum + ((m['amount'] as num?)?.toDouble() ?? 0.0));
+    final currentMilestoneAmount = (currentMilestone['amount'] as num?)?.toDouble() ?? 0.0;
+
+    // Calculate payment components
+    final downPaymentAmount = totalContractPrice * (downPaymentPercent / 100);
+    final retentionAmount = totalContractPrice * (retentionPercent / 100);
+    final totalMilestoneAmount = milestones.fold<double>(0.0, (sum, m) => sum + ((m['amount'] as num?)?.toDouble() ?? 0.0));
+    final finalPaymentAmount = totalContractPrice - downPaymentAmount - retentionAmount - totalMilestoneAmount;
 
     final formKey = GlobalKey<FormState>();
     final cardNumberController = TextEditingController();
@@ -144,10 +159,10 @@ class MilestonePaymentModal {
                                 children: [
                                   Text(
                                     'Milestone $milestoneNumber',
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.amber.shade900,
+                                      color: Color(0xFF1565C0), // Blue shade
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -185,6 +200,147 @@ class MilestonePaymentModal {
                         ),
                         const SizedBox(height: 16),
                         _buildMilestoneProgress(milestones),
+                      ],
+                    ),
+                  ),
+
+                  // Payment Breakdown Section
+                  if (totalContractPrice > 0) Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      border: Border(
+                        bottom: BorderSide(color: Colors.blue.shade200),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.account_balance_wallet, color: Colors.blue.shade600, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Payment Breakdown',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade900,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Total Contract Price
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blue.shade200),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Total Contract Price',
+                                style: TextStyle(fontWeight: FontWeight.w500),
+                              ),
+                              Text(
+                                '₱${totalContractPrice.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // Payment Components
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Column(
+                            children: [
+                              // Down Payment
+                              _buildPaymentRow('Down Payment', '${downPaymentPercent.toStringAsFixed(1)}%', downPaymentAmount),
+
+                              const Divider(height: 12),
+
+                              // Retention
+                              _buildPaymentRow('Retention', '${retentionPercent.toStringAsFixed(1)}%', retentionAmount),
+
+                              const Divider(height: 12),
+
+                              // Milestones Paid
+                              _buildPaymentRow('Milestones Paid', '${paidMilestones.length}/${milestones.length}', paidMilestoneTotal),
+
+                              const Divider(height: 12),
+
+                              // Current Milestone (Pending)
+                              _buildPaymentRow(
+                                'Current Milestone',
+                                'Milestone ${currentMilestone['milestone_number']}',
+                                currentMilestoneAmount,
+                                highlight: true,
+                              ),
+
+                              const Divider(height: 12),
+
+                              // Final Payment
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade50,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: Colors.green.shade200),
+                                ),
+                                child: _buildPaymentRow(
+                                  'Final Payment',
+                                  'After completion',
+                                  finalPaymentAmount,
+                                  isTotal: true,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // Summary
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.shade50,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.amber.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.check_circle, color: Colors.amber.shade600, size: 16),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'All payments will total ₱${totalContractPrice.toStringAsFixed(2)} when completed',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.amber.shade800,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -415,6 +571,46 @@ class MilestonePaymentModal {
       cvcController.dispose();
       nameController.dispose();
     }
+  }
+
+  static Widget _buildPaymentRow(String label, String subtitle, double amount, {bool highlight = false, bool isTotal = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
+                  color: highlight ? Colors.purple.shade700 : Colors.black87,
+                  fontSize: isTotal ? 14 : 13,
+                ),
+              ),
+              if (subtitle.isNotEmpty)
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: highlight ? Colors.purple.shade600 : Colors.grey.shade600,
+                    fontWeight: highlight ? FontWeight.w500 : FontWeight.normal,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        Text(
+          '₱${amount.toStringAsFixed(2)}',
+          style: TextStyle(
+            fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
+            color: highlight ? Colors.purple.shade700 : (isTotal ? Colors.green.shade700 : Colors.black87),
+            fontSize: isTotal ? 15 : 14,
+          ),
+        ),
+      ],
+    );
   }
 
   static Widget _buildMilestoneProgress(List<Map<String, dynamic>> milestones) {

@@ -470,7 +470,7 @@ class LumpSumPDF {
               ),
               pw.Padding(
                 padding: const pw.EdgeInsets.all(8),
-                child: pw.Text(amount != '____________' ? '₱$amount' : '____________', style: const pw.TextStyle(fontSize: 9)),
+                child: pw.Text(amount != '____________' ? 'PHP$amount' : '____________', style: const pw.TextStyle(fontSize: 9)),
               ),
             ],
           ),

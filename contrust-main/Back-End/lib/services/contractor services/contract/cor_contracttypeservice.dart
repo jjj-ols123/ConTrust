@@ -264,8 +264,6 @@ class ContractTypeService {
           ),
         );
       }
-
-      // For custom contracts, show "Resend File" instead of "Edit Contract"
       if (isCustomContract) {
         menuItems.add(
           const PopupMenuItem(

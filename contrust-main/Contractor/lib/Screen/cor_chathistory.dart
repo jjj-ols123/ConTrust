@@ -3,6 +3,7 @@ import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_user_service.dart';
 import 'package:backend/services/both services/be_message_service.dart';
 import 'package:backend/build/buildmessage.dart';
+import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -85,14 +86,14 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
         'sender_id': contractorId,
         'receiver_id': selectedContracteeId,
         'message': text,
-        'timestamp': DateTime.now().toIso8601String(),
+        'timestamp': DateTimeHelper.getLocalTimeISOString(),
       });
 
       await supabase
           .from('ChatRoom')
           .update({
             'last_message': text,
-            'last_message_time': DateTime.now().toIso8601String(),
+            'last_message_time': DateTimeHelper.getLocalTimeISOString(),
           })
           .eq('chatroom_id', selectedChatRoomId!);
 

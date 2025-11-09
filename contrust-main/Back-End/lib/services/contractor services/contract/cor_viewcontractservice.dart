@@ -193,9 +193,9 @@ class ViewContractService {
           // Try to fall back to regular PDF
         }
       }
-      
+
       final pdfPath = getPdfUrl(contractData);
-      
+
       if (pdfPath == null) {
         await _errorService.logError(
           errorMessage: 'No PDF path found in contract data',
@@ -208,12 +208,12 @@ class ViewContractService {
         );
         return null;
       }
-      
+
       try {
         // Try to create signed URL directly - if file doesn't exist, createSignedUrl will throw
         final signedUrl = await Supabase.instance.client.storage
             .from('contracts')
-            .createSignedUrl(pdfPath, 60 * 60 * 24); 
+            .createSignedUrl(pdfPath, 60 * 60 * 24);
         return signedUrl;
       } catch (e) {
         await _errorService.logError(

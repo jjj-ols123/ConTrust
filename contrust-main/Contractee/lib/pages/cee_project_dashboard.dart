@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractee/build/buildongoing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -1684,7 +1685,7 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
   Widget _buildReportItem(Map<String, dynamic> report) {
     final title = report['title'] as String? ?? 'Progress Report';
     final content = report['content'] ?? 'No content';
-    final createdAt = report['created_at'] ?? DateTime.now().toIso8601String();
+    final createdAt = report['created_at'] ?? DateTimeHelper.getLocalTimeISOString();
     final pdfUrl = report['pdf_url'] as String?;
 
     return Container(

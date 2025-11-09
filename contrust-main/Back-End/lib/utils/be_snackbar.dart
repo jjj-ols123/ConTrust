@@ -15,7 +15,7 @@ class ConTrustSnackBar {
     BuildContext context,
     String message, {
     SnackBarType type = SnackBarType.info,
-    Duration duration = const Duration(seconds: 2),
+    Duration duration = const Duration(seconds: 1),
     SnackBarAction? action,
   }) {
     final config = getSnackBarConfig(type);
@@ -24,6 +24,14 @@ class ConTrustSnackBar {
       context: context,
       barrierDismissible: type != SnackBarType.loading,
       builder: (dialogContext) {
+        // Auto-close after duration (except for loading type)
+        if (type != SnackBarType.loading) {
+          Future.delayed(duration, () {
+            if (Navigator.canPop(dialogContext)) {
+              Navigator.pop(dialogContext);
+            }
+          });
+        }
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           backgroundColor: Colors.white,
@@ -78,17 +86,6 @@ class ConTrustSnackBar {
                 },
                 child: Text(action.label),
               ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: config.backgroundColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('OK'),
-            ),
           ],
         );
       },
@@ -105,7 +102,6 @@ class ConTrustSnackBar {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) {
-        // Schedule auto-dismiss
         Future.delayed(duration, () {
           if (Navigator.of(dialogContext).canPop()) {
             Navigator.of(dialogContext).pop();
@@ -175,7 +171,7 @@ class ConTrustSnackBar {
   static void success(
     BuildContext context,
     String message, {
-    Duration duration = const Duration(seconds: 2),
+    Duration duration = const Duration(seconds: 1),
     SnackBarAction? action,
   }) {
     show(context, message, type: SnackBarType.success, duration: duration, action: action);
@@ -184,7 +180,7 @@ class ConTrustSnackBar {
   static void error(
     BuildContext context,
     String message, {
-    Duration duration = const Duration(seconds: 3),
+    Duration duration = const Duration(seconds: 1),
     SnackBarAction? action,
   }) {
     show(context, message, type: SnackBarType.error, duration: duration, action: action);
@@ -193,7 +189,7 @@ class ConTrustSnackBar {
   static void warning(
     BuildContext context,
     String message, {
-    Duration duration = const Duration(seconds: 2),
+    Duration duration = const Duration(seconds: 1),
     SnackBarAction? action,
   }) {
     show(context, message, type: SnackBarType.warning, duration: duration, action: action);
@@ -202,7 +198,7 @@ class ConTrustSnackBar {
   static void info(
     BuildContext context,
     String message, {
-    Duration duration = const Duration(seconds: 2),
+    Duration duration = const Duration(seconds: 1),
     SnackBarAction? action,
   }) {
     show(context, message, type: SnackBarType.info, duration: duration, action: action);
@@ -211,7 +207,7 @@ class ConTrustSnackBar {
   static void loading(
     BuildContext context,
     String message, {
-    Duration duration = const Duration(seconds: 2),
+    Duration duration = const Duration(seconds: 1),
   }) {
     show(context, message, type: SnackBarType.loading, duration: duration);
   }

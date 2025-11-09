@@ -130,6 +130,7 @@ class CreateContractService {
         
         ContractField(key: 'Payment.Total', label: 'Total Contract Price (₱)', isRequired: true, inputType: TextInputType.number),
         ContractField(key: 'Payment.DownPaymentPercentage', label: 'Down Payment Percentage (%)', inputType: TextInputType.number),
+        ContractField(key: 'Payment.FinalPayment', label: 'Final Payment Amount (₱)', inputType: TextInputType.number, isEnabled: false),
         ContractField(key: 'Payment.RetentionPercentage', label: 'Retention Percentage (%)', inputType: TextInputType.number),
         ContractField(key: 'Payment.RetentionPeriod', label: 'Retention Period (days)', inputType: TextInputType.number),
         ContractField(key: 'Payment.DueDays', label: 'Payment Due Days from Invoice', inputType: TextInputType.number),
@@ -139,7 +140,7 @@ class CreateContractService {
       for (int i = 1; i <= milestoneCount; i++) {
         fields.addAll([
           ContractField(key: 'Milestone.$i.Description', label: 'Milestone $i Description', isRequired: i <= 3, maxLines: 2),
-          ContractField(key: 'Milestone.$i.Duration', label: 'Milestone $i Duration (days)', isRequired: i <= 3, inputType: TextInputType.number),
+          ContractField(key: 'Milestone.$i.Duration', label: 'Milestone $i Duration (days)', isRequired: i <= 3, inputType: TextInputType.number, isEnabled: false),
           ContractField(key: 'Milestone.$i.Date', label: 'Milestone $i Target Date', isRequired: i <= 3),
           ContractField(key: 'Milestone.$i.Amount', label: 'Milestone $i Payment Amount (₱)', isRequired: i <= 3, inputType: TextInputType.number),
         ]);
@@ -368,6 +369,140 @@ class CreateContractService {
         },
       );
     }
+  }
+
+  void calculateMilestoneDurations(Map<String, TextEditingController> controllers, {int? milestoneCount}) {
+    try {
+      final projectStartDateStr = controllers['Project.StartDate']?.text ?? '';
+      if (projectStartDateStr.isEmpty) {
+        // Clear all milestone durations if no project start date
+        final maxMilestones = milestoneCount ?? getMaxMilestoneCountFromControllers(controllers);
+        for (int i = 1; i <= maxMilestones; i++) {
+          controllers['Milestone.$i.Duration']?.text = '';
+        }
+        return;
+      }
+
+      // Parse project start date
+      DateTime? projectStartDate;
+      try {
+        projectStartDate = DateTime.parse('${projectStartDateStr}T00:00:00.000Z');
+      } catch (e) {
+        return; // Invalid start date format
+      }
+
+      final maxMilestones = milestoneCount ?? getMaxMilestoneCountFromControllers(controllers);
+
+      // Collect all milestone dates first, then calculate durations
+      List<DateTime?> milestoneDates = [projectStartDate]; // Index 0 = project start
+
+      for (int i = 1; i <= maxMilestones; i++) {
+        final milestoneDateStr = controllers['Milestone.$i.Date']?.text ?? '';
+
+        if (milestoneDateStr.isEmpty) {
+          milestoneDates.add(null); // Mark as empty
+        } else {
+          try {
+            final milestoneDate = DateTime.parse('${milestoneDateStr}T00:00:00.000Z');
+            milestoneDates.add(milestoneDate);
+          } catch (e) {
+            milestoneDates.add(null); // Mark as invalid
+          }
+        }
+      }
+
+      // Now calculate durations based on consecutive valid dates
+      DateTime? previousValidDate = null;
+
+      for (int i = 0; i < milestoneDates.length; i++) {
+        if (i == 0) {
+          // Project start date - no duration to calculate
+          previousValidDate = milestoneDates[0];
+          continue;
+        }
+
+        final currentDate = milestoneDates[i];
+        final durationKey = 'Milestone.$i.Duration';
+
+        if (currentDate == null) {
+          // No date for this milestone
+          controllers[durationKey]?.text = '';
+        } else if (previousValidDate != null) {
+          // Calculate duration from previous valid date
+          final duration = currentDate.difference(previousValidDate).inDays;
+          final durationText = duration > 0 ? duration.toString() : '0';
+          controllers[durationKey]?.text = durationText;
+          previousValidDate = currentDate; // Update for next milestone
+        } else {
+          // No previous valid date
+          controllers[durationKey]?.text = '';
+        }
+      }
+    } catch (e) {
+      _errorService.logError(
+        errorMessage: 'Failed to calculate milestone durations: ',
+        module: 'Create Contract Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Calculate Milestone Durations',
+        },
+      );
+    }
+  }
+
+  void calculateLumpSumPayments(Map<String, TextEditingController> controllers, {int? milestoneCount}) {
+    try {
+      // Get total contract price
+      final totalText = controllers['Payment.Total']?.text ?? '0';
+      final total = double.tryParse(totalText.replaceAll(',', '')) ?? 0;
+
+      if (total <= 0) {
+        controllers['Payment.FinalPayment']?.text = '0.00';
+        return;
+      }
+
+      // Calculate down payment
+      final downPaymentPercentText = controllers['Payment.DownPaymentPercentage']?.text ?? '0';
+      final downPaymentPercent = _parsePercent(downPaymentPercentText);
+      final downPayment = total * downPaymentPercent;
+
+      // Calculate retention
+      final retentionPercentText = controllers['Payment.RetentionPercentage']?.text ?? '0';
+      final retentionPercent = _parsePercent(retentionPercentText);
+      final retention = total * retentionPercent;
+
+      // Calculate total milestone payments
+      double totalMilestonePayments = 0.0;
+      final maxMilestones = milestoneCount ?? getMaxMilestoneCountFromControllers(controllers);
+
+      for (int i = 1; i <= maxMilestones; i++) {
+        final milestoneAmountText = controllers['Milestone.$i.Amount']?.text ?? '0';
+        final milestoneAmount = double.tryParse(milestoneAmountText.replaceAll(',', '')) ?? 0;
+        totalMilestonePayments += milestoneAmount;
+      }
+
+      // Calculate final payment: Total - Down Payment - Retention - Milestone Payments
+      final finalPayment = total - downPayment - retention - totalMilestonePayments;
+
+      // Ensure final payment is not negative
+      controllers['Payment.FinalPayment']?.text = finalPayment > 0 ? finalPayment.toStringAsFixed(2) : '0.00';
+    } catch (e) {
+      _errorService.logError(
+        errorMessage: 'Failed to calculate lump sum payments: ',
+        module: 'Create Contract Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Calculate Lump Sum Payments',
+        },
+      );
+      controllers['Payment.FinalPayment']?.text = '0.00';
+    }
+  }
+
+  double _parsePercent(String raw) {
+    final cleaned = raw.trim().replaceAll('%', '').replaceAll(',', '');
+    final v = double.tryParse(cleaned) ?? 0.0;
+    return v > 1.0 ? (v / 100.0) : v;
   }
 
   void calculateTimeAndMaterialsRates(Map<String, TextEditingController> controllers, {int? itemCount}) {

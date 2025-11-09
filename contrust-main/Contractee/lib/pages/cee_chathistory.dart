@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'package:backend/utils/be_constraint.dart';
+import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:backend/build/buildmessage.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_message_service.dart';
@@ -86,14 +87,14 @@ class _ContracteeChatHistoryPageState
         'sender_id': contracteeId,
         'receiver_id': selectedContractorId,
         'message': text,
-        'timestamp': DateTime.now().toIso8601String(),
+        'timestamp': DateTimeHelper.getLocalTimeISOString(),
       });
 
       await supabase
           .from('ChatRoom')
           .update({
             'last_message': text,
-            'last_message_time': DateTime.now().toIso8601String(),
+            'last_message_time': DateTimeHelper.getLocalTimeISOString(),
           })
           .eq('chatroom_id', selectedChatRoomId!);
 

@@ -1024,84 +1024,114 @@ class DashboardBuildMethods {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 30,
-                                child: ClipOval(
-                                  child: Image.network(
-                                    info['profile_photo'] != null && info['profile_photo'].isNotEmpty
-                                        ? info['profile_photo']
-                                        : 'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
-                                    width: 60,
-                                    height: 60,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Image(
-                                        image: const AssetImage('assets/images/defaultpic.png'),
-                                        width: 60,
-                                        height: 60,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          return Icon(
-                                            Icons.person,
-                                            size: 30,
-                                            color: Colors.grey.shade400,
-                                          );
-                                        },
-                                      );
-                                    },
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 30,
+                                  child: ClipOval(
+                                    child: Image.network(
+                                      info['profile_photo'] != null && info['profile_photo'].isNotEmpty
+                                          ? info['profile_photo']
+                                          : 'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
+                                      width: 60,
+                                      height: 60,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Image(
+                                          image: const AssetImage('assets/images/defaultpic.png'),
+                                          width: 60,
+                                          height: 60,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Icon(
+                                              Icons.person,
+                                              size: 30,
+                                              color: Colors.grey.shade400,
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      info['full_name'] ?? 'Unknown Client',
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.black87,
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        info['full_name'] ?? 'Unknown Client',
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black87,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      info['email'] ?? 'No email provided',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey.shade600,
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        info['email'] ?? 'No email provided',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey.shade600,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 24),
                           if (info['photo_url'] != null && info['photo_url'].toString().isNotEmpty) ...[
                             _buildProjectPhotoButton(info['photo_url']),
                             const SizedBox(height: 16),
                           ],
-                          _buildDetailField('Project Title', info['project_title'] ?? 'Untitled Project', isDesktop),
-                          _buildDetailField('Project Type', info['project_type'] ?? 'Not specified', isDesktop),
-                          _buildDetailField('Location', info['project_location'] ?? 'Not specified', isDesktop),
-                          _buildDetailField('Description', info['project_description'] ?? 'No description provided', isDesktop),
-                          
-                          if (info['min_budget'] != null && info['max_budget'] != null)
-                            _buildDetailField('Budget Range', '₱${info['min_budget']} - ₱${info['max_budget']}', isDesktop)
-                          else if (info['project_budget'] != null)
-                            _buildDetailField('Budget', '₱${info['project_budget']}', isDesktop)
-                          else
-                            _buildDetailField('Budget', 'Not specified', isDesktop),
-                          
-                          if (info['start_date'] != null)
-                            _buildDetailField('Preferred Start Date', info['start_date'].toString().split(' ')[0], isDesktop),
-                          
-                          if (info['additional_info'] != null && info['additional_info'].isNotEmpty)
-                            _buildDetailField('Additional Information', info['additional_info'], isDesktop),
+                          Builder(
+                            builder: (context) {
+                              final detailFields = [
+                                _buildDetailField('Project Title', info['project_title'] ?? 'Untitled Project', isDesktop),
+                                _buildDetailField('Project Type', info['project_type'] ?? 'Not specified', isDesktop),
+                                _buildDetailField('Location', info['project_location'] ?? 'Not specified', isDesktop),
+                                if (info['min_budget'] != null && info['max_budget'] != null)
+                                  _buildDetailField('Budget Range', '₱${info['min_budget']} - ₱${info['max_budget']}', isDesktop)
+                                else if (info['project_budget'] != null)
+                                  _buildDetailField('Budget', '₱${info['project_budget']}', isDesktop)
+                                else
+                                  _buildDetailField('Budget', 'Not specified', isDesktop),
+                                if (info['start_date'] != null)
+                                  _buildDetailField('Preferred Start Date', info['start_date'].toString().split(' ')[0], isDesktop),
+                                _buildDetailField('Description', info['project_description'] ?? 'No description provided', isDesktop),
+                                if (info['additional_info'] != null && info['additional_info'].isNotEmpty)
+                                  _buildDetailField('Additional Information', info['additional_info'], isDesktop),
+                              ];
+
+                              return Column(
+                                children: [
+                                  for (int i = 0; i < detailFields.length; i += 2)
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 16),
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Expanded(child: detailFields[i]),
+                                          if (i + 1 < detailFields.length) ...[
+                                            const SizedBox(width: 16),
+                                            Expanded(child: detailFields[i + 1]),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
+                          ),
                         ],
                       ),
                     ),
@@ -1157,8 +1187,8 @@ class DashboardBuildMethods {
       barrierDismissible: true,
       builder: (dialogContext) {
         final size = MediaQuery.of(dialogContext).size;
-        final double maxWidth = size.width * 0.75;
-        final double maxHeight = size.height * 0.7;
+        final double maxWidth = size.width * 0.5;
+        final double maxHeight = size.height * 0.6;
 
         return Dialog(
           insetPadding: const EdgeInsets.all(16),

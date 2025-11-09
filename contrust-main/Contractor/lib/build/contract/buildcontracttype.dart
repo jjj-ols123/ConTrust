@@ -22,14 +22,17 @@ class ContractTypeBuild {
   }
 
   static Widget buildHeader(BuildContext context) {
-    // Removed page header bar
     return const SizedBox.shrink();
   }
 
   static Widget buildTypeCarousel({
+    Key? key,
     required String contractorId,
+    String searchQuery = '',
+    String selectedCategory = 'All',
   }) {
     return SizedBox(
+      key: key,
       height: 220,
       child: FutureBuilder<Map<String, dynamic>>(
         future: _fetchContractData(contractorId),
@@ -42,13 +45,32 @@ class ContractTypeBuild {
               child: Text('No contract types available.'),
             );
           }
-          final contractTypes = snapshot.data!['contractTypes'] as List<Map<String, dynamic>>;
+          final allContractTypes = snapshot.data!['contractTypes'] as List<Map<String, dynamic>>;
           final contractorData = snapshot.data!['contractorData'] as Map<String, dynamic>?;
           final isVerified = contractorData?['verified'] == true;
-          
+
+          // Filter contract types based on search and category
+          final filteredContractTypes = allContractTypes.where((template) {
+            final templateName = template['template_name']?.toString().toLowerCase() ?? '';
+            final templateDescription = template['template_description']?.toString().toLowerCase() ?? '';
+
+            // Search filter
+            final matchesSearch = searchQuery.isEmpty ||
+                templateName.contains(searchQuery) ||
+                templateDescription.contains(searchQuery);
+
+            // Category filter
+            final matchesCategory = selectedCategory == 'All' ||
+                (selectedCategory == 'Standard' && !templateName.toLowerCase().contains('specialized') && !templateName.toLowerCase().contains('custom')) ||
+                (selectedCategory == 'Specialized' && templateName.toLowerCase().contains('specialized')) ||
+                (selectedCategory == 'Custom' && (templateName.toLowerCase().contains('custom') || templateName.toLowerCase().contains('upload')));
+
+            return matchesSearch && matchesCategory;
+          }).toList();
+
           return buildContractTypesList(
             context: context,
-            contractTypes: contractTypes,
+            contractTypes: filteredContractTypes,
             contractorId: contractorId,
             isVerified: isVerified,
           );
@@ -63,28 +85,36 @@ class ContractTypeBuild {
     required String contractorId,
     required bool isVerified,
   }) {
-    return ScrollConfiguration(
-      behavior: const MaterialScrollBehavior().copyWith(
-        dragDevices: {
-          PointerDeviceKind.touch,
-          PointerDeviceKind.mouse,
-          PointerDeviceKind.trackpad,
-        },
-      ),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: contractTypes.length,
-        itemBuilder: (context, index) {
-          final template = contractTypes[index];
-          return buildContractTypeCard(
-            context: context,
-            template: template,
-            contractorId: contractorId,
-            isVerified: isVerified,
-          );
-        },
+    if (contractTypes.isEmpty) {
+      return const Center(
+        child: Text('No contract types match your search.'),
+      );
+    }
+
+    return Center(
+      child: ScrollConfiguration(
+        behavior: const MaterialScrollBehavior().copyWith(
+          dragDevices: {
+            PointerDeviceKind.touch,
+            PointerDeviceKind.mouse,
+            PointerDeviceKind.trackpad,
+          },
+        ),
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          itemCount: contractTypes.length,
+          itemBuilder: (context, index) {
+            final template = contractTypes[index];
+            return buildContractTypeCard(
+              context: context,
+              template: template,
+              contractorId: contractorId,
+              isVerified: isVerified,
+            );
+          },
+        ),
       ),
     );
   }
@@ -182,6 +212,9 @@ class ContractTypeBuild {
   static Widget buildContractListContainer({
     required String contractorId,
     required Key contractListKey,
+    String searchQuery = '',
+    String selectedStatus = 'All',
+    String selectedProject = 'All',
   }) {
     return Expanded(
       child: Container(
@@ -209,9 +242,28 @@ class ContractTypeBuild {
             if (contracts.isEmpty) {
               return const Center(child: Text('No contracts created yet.'));
             }
+            // Filter contracts based on search query, status, and project
+            final filteredContracts = contracts.where((contract) {
+              final contractTitle = contract['title']?.toString().toLowerCase() ?? '';
+              final project = contract['project'] as Map<String, dynamic>?;
+              final projectId = project?['project_id']?.toString() ?? '';
+              final contractStatus = contract['status']?.toString().toLowerCase() ?? '';
+
+              // Search filter (by title)
+              final matchesSearch = searchQuery.isEmpty || contractTitle.contains(searchQuery);
+
+              // Status filter
+              final matchesStatus = selectedStatus == 'All' || contractStatus == selectedStatus.toLowerCase();
+
+              // Project filter
+              final matchesProject = selectedProject == 'All' || projectId == selectedProject;
+
+              return matchesSearch && matchesStatus && matchesProject;
+            }).toList();
+
             return buildContractsList(
               context: context,
-              contracts: contracts,
+              contracts: filteredContracts,
               contractorId: contractorId,
             );
           },
@@ -671,19 +723,43 @@ class ContractTypeBuild {
     }
 
     try {
-      final dateString = dateTimeString.toString();
+      final dateString = dateTimeString.toString().trim();
       DateTime dateTime;
-      
-      if (dateString.endsWith('Z') || dateString.contains('+') || (dateString.length > 19 && (dateString[19] == '+' || dateString[19] == '-'))) {
+
+      // Handle different date formats more robustly
+      if (dateString.endsWith('Z') ||
+          dateString.contains('+') ||
+          dateString.contains('-') && dateString.length > 10) {
+        // ISO format with timezone
         dateTime = DateTime.parse(dateString);
-      } else {
+      } else if (dateString.length == 10 && !dateString.contains('T')) {
+        // Date only format (YYYY-MM-DD)
+        dateTime = DateTime.parse('${dateString}T00:00:00.000Z');
+      } else if (dateString.contains('T') && !dateString.endsWith('Z')) {
+        // ISO format without Z
         dateTime = DateTime.parse('${dateString}Z');
+      } else {
+        // Try direct parsing
+        dateTime = DateTime.parse(dateString);
       }
 
       final localDateTime = dateTime.toLocal();
       return DateFormat('MMM dd, yyyy • hh:mm a').format(localDateTime);
     } catch (e) {
-      return dateTimeString.toString();
+      // If parsing fails, try to extract just the date part
+      try {
+        final dateStr = dateTimeString.toString();
+        if (dateStr.length >= 10) {
+          final dateOnly = dateStr.substring(0, 10); // Extract YYYY-MM-DD
+          final dateTime = DateTime.parse('${dateOnly}T00:00:00.000Z');
+          final localDateTime = dateTime.toLocal();
+          return DateFormat('MMM dd, yyyy').format(localDateTime);
+        }
+      } catch (e2) {
+        // If all parsing fails, return a generic message
+        return 'Date unavailable';
+      }
+      return 'Date unavailable';
     }
   }
 

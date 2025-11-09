@@ -110,13 +110,6 @@ class TorProfileBuildMethods {
                             color: Color(0xFF2D3748),
                           ),
                         ),
-                        Text(
-                          'Projects',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
                       ],
                     ),
                     Column(
@@ -129,13 +122,6 @@ class TorProfileBuildMethods {
                             color: Color(0xFF2D3748),
                           ),
                         ),
-                        Text(
-                          'Rating',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
                       ],
                     ),
                     Column(
@@ -146,13 +132,6 @@ class TorProfileBuildMethods {
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF2D3748),
-                          ),
-                        ),
-                        Text(
-                          'Photos',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade600,
                           ),
                         ),
                       ],
@@ -265,13 +244,6 @@ class TorProfileBuildMethods {
                                   color: Color(0xFF2D3748),
                                 ),
                               ),
-                              Text(
-                                'Projects',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
                             ],
                           ),
                           Column(
@@ -284,13 +256,6 @@ class TorProfileBuildMethods {
                                   color: Color(0xFF2D3748),
                                 ),
                               ),
-                              Text(
-                                'Rating',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
                             ],
                           ),
                           Column(
@@ -301,13 +266,6 @@ class TorProfileBuildMethods {
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFF2D3748),
-                                ),
-                              ),
-                              Text(
-                                'Photos',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
                                 ),
                               ),
                             ],

@@ -247,14 +247,12 @@ class MessageUIBuildMethods {
                           future: FetchService().fetchProjectDetailsByChatRoom(chat['chatroom_id']),
                           builder: (context, projectSnapshot) {
                             final project = projectSnapshot.data;
-                            final projectTitle = project?['title'] ?? '';
                             final projectStatus = project?['status'] ?? '';
-                            
+
                             return buildChatListItem(
                               chat: chat,
                               userName: userName,
                               userProfile: userProfile,
-                              projectTitle: projectTitle,
                               projectStatus: projectStatus,
                               lastMessage: lastMessage,
                               lastTime: lastTime,
@@ -282,7 +280,6 @@ class MessageUIBuildMethods {
     required Map<String, dynamic> chat,
     required String userName,
     required String? userProfile,
-    required String projectTitle,
     required String projectStatus,
     required String lastMessage,
     required DateTime? lastTime,
@@ -302,12 +299,12 @@ class MessageUIBuildMethods {
         return Container(
           decoration: BoxDecoration(
             color: isSelected
-                ? accentColor.withOpacity(0.05)
+                ? Colors.grey.shade200
                 : Colors.transparent,
             border: isSelected
                 ? Border(
                     right: BorderSide(
-                      color: accentColor,
+                      color: Colors.grey.shade400,
                       width: 3,
                     ),
                   )
@@ -370,19 +367,6 @@ class MessageUIBuildMethods {
             subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (projectTitle.isNotEmpty && (!isMobile || screenWidth >= 400)) ...[
-                        Text(
-                          projectTitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.blue.shade700,
-                            fontSize: subtitleFontSize - 2,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                      ],
                       Row(
                         children: [
                           Expanded(

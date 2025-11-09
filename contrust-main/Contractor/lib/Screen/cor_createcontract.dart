@@ -309,9 +309,14 @@ class _CreateContractPageState extends State<CreateContractPage>
         controller.addListener(() {
           if (mounted) {
             setState(() {});
-            if (selectedTemplate != null &&
-                selectedTemplate!['template_name']?.toLowerCase().contains('time and materials') == true) {
-              triggerTimeAndMaterialsCalculation();
+            if (selectedTemplate != null) {
+              final templateName = selectedTemplate!['template_name']?.toLowerCase() ?? '';
+              if (templateName.contains('time and materials')) {
+                triggerTimeAndMaterialsCalculation();
+              } else if (templateName.contains('lump sum')) {
+                triggerMilestoneDurationCalculation();
+                triggerLumpSumCalculation();
+              }
             }
           }
         });
@@ -461,6 +466,8 @@ class _CreateContractPageState extends State<CreateContractPage>
             setState(() {});
             if (templateName.toLowerCase().contains('time and materials')) {
               triggerTimeAndMaterialsCalculation();
+            } else if (templateName.toLowerCase().contains('lump sum')) {
+              triggerMilestoneDurationCalculation();
             }
           }
         });
@@ -498,9 +505,31 @@ class _CreateContractPageState extends State<CreateContractPage>
           controller.text = oldValues[field.key] ?? '';
         }
         controller.addListener(() {
-          if (mounted) setState(() {});
+          if (mounted) {
+            setState(() {});
+            if (selectedTemplate != null) {
+              final templateName = selectedTemplate!['template_name']?.toLowerCase() ?? '';
+              if (templateName.contains('time and materials')) {
+                triggerTimeAndMaterialsCalculation();
+              } else if (templateName.contains('lump sum')) {
+                triggerMilestoneDurationCalculation();
+                triggerLumpSumCalculation();
+              }
+            }
+          }
         });
         controllers[field.key] = controller;
+      }
+
+      // Trigger calculations for the updated milestone count
+      if (selectedTemplate != null) {
+        final templateName = selectedTemplate!['template_name']?.toLowerCase() ?? '';
+        if (templateName.contains('time and materials')) {
+          triggerTimeAndMaterialsCalculation();
+        } else if (templateName.contains('lump sum')) {
+          triggerMilestoneDurationCalculation();
+          triggerLumpSumCalculation();
+        }
       }
 
       if (mounted) setState(() {});
@@ -510,11 +539,25 @@ class _CreateContractPageState extends State<CreateContractPage>
   }
 
   void triggerTimeAndMaterialsCalculation() {
-    if (selectedTemplate != null && 
+    if (selectedTemplate != null &&
         selectedTemplate!['template_name']?.toLowerCase().contains('time and materials') == true) {
       Future.delayed(const Duration(milliseconds: 100), () {
         service.calculateTimeAndMaterialsRates(controllers);
       });
+    }
+  }
+
+  void triggerLumpSumCalculation() {
+    if (selectedTemplate != null &&
+        selectedTemplate!['template_name']?.toLowerCase().contains('lump sum') == true) {
+      service.calculateLumpSumPayments(controllers);
+    }
+  }
+
+  void triggerMilestoneDurationCalculation() {
+    if (selectedTemplate != null &&
+        selectedTemplate!['template_name']?.toLowerCase().contains('lump sum') == true) {
+      service.calculateMilestoneDurations(controllers);
     }
   }
 
@@ -576,7 +619,7 @@ class _CreateContractPageState extends State<CreateContractPage>
       } else if (selectedContractType == 'Cost Plus') {
         final overheadPercentText = fieldValues['Overhead.Percentage'] ?? '0';
         final lateFeePercentText = fieldValues['Late.Fee.Percentage'] ?? '0';
-        
+
         fieldValues['Overhead.Percentage'] = parsePercent(overheadPercentText).toString();
         fieldValues['Late.Fee.Percentage'] = parsePercent(lateFeePercentText).toString();
       }
@@ -584,6 +627,30 @@ class _CreateContractPageState extends State<CreateContractPage>
       final contractData = await showSaveDialog();
 
       if (contractData != null) {
+        final contractTitle = contractData['title'] as String? ?? '';
+        if (contractTitle.trim().isEmpty) {
+          ConTrustSnackBar.error(context, 'Contract title is required');
+          return;
+        }
+
+        try {
+          final existingContracts = await FetchService().fetchCreatedContracts(contractorId!);
+          final currentContractId = widget.existingContract?['contract_id'];
+
+          final hasDuplicate = existingContracts.any(
+            (contract) => contract['title']?.toString().toLowerCase() == contractTitle.toLowerCase() &&
+                         (isEditMode ? contract['contract_id'] != currentContractId : true),
+          );
+
+          if (hasDuplicate) {
+            ConTrustSnackBar.error(context, 'A contract with this title already exists. Please choose a different title.');
+            return;
+          }
+        } catch (e) {
+          // If we can't check for duplicates, continue with save but log the error
+          print('Warning: Could not check for duplicate contract titles: $e');
+        }
+
         ConTrustSnackBar.loading(context, 'Contract saving...');
         
         if (existingContract != null) {
@@ -666,9 +733,14 @@ class _CreateContractPageState extends State<CreateContractPage>
 
     try {
 
-      if (selectedTemplate != null && 
-          selectedTemplate!['template_name']?.toLowerCase().contains('time and materials') == true) {
-        service.calculateTimeAndMaterialsRates(controllers);
+      if (selectedTemplate != null) {
+        final templateName = selectedTemplate!['template_name']?.toLowerCase() ?? '';
+        if (templateName.contains('time and materials')) {
+          service.calculateTimeAndMaterialsRates(controllers);
+        } else if (templateName.contains('lump sum')) {
+          service.calculateLumpSumPayments(controllers);
+          service.calculateMilestoneDurations(controllers);
+        }
       }
 
       await Future.delayed(const Duration(milliseconds: 500));
@@ -767,6 +839,12 @@ class _CreateContractPageState extends State<CreateContractPage>
       onCalculationTriggered: () {
         triggerTimeAndMaterialsCalculation();
       },
+      onLumpSumCalculationTriggered: () {
+        triggerLumpSumCalculation();
+      },
+      onMilestoneDurationCalculationTriggered: () {
+        triggerMilestoneDurationCalculation();
+      },
     );
 
     final canViewFinalPreview = _isFieldsLoaded
@@ -822,40 +900,49 @@ class _CreateContractPageState extends State<CreateContractPage>
           ),
         ),
 
-          ContractTabsBuild.buildCompletionIndicator(
-            completedFields: completionStatus['completed']!,
-            totalRequiredFields: completionStatus['total']!,
-          ),
+        // Make the rest of the content scrollable
+        Expanded(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              children: [
+                ContractTabsBuild.buildCompletionIndicator(
+                  completedFields: completionStatus['completed']!,
+                  totalFields: completionStatus['total']!,
+                ),
 
-          ContractTabsBuild.buildTabBar(
-            tabController: tabController,
-            canViewFinalPreview: canViewFinalPreview,
-            onBeforeFinalPreview: () async {
-              await prepareFinalPreview();
-            },
-            showTemplate: !isEditMode,
-          ),
-
-          SizedBox(
-            height: MediaQuery.of(context).size.height * 0.72,
-            child: ContractTabsBuild.buildTabBarView(
-              tabController: tabController,
-              templatePreview: ContractTabsBuild.buildTemplatePreview(
-                selectedContractType ?? selectedTemplate?['template_name'],
-              ),
-              contractForm: buildHelper.buildForm(),
-              finalPreview: isPreparingPreview
-                  ? buildPreviewLoadingIndicator()
-                  : KeyedSubtree(
-                      key: ValueKey(_previewRefreshTick),
-                      child: buildHelper.buildPreview(),
+                ContractTabsBuild.buildTabBar(
+                  tabController: tabController,
+                  canViewFinalPreview: canViewFinalPreview,
+                  onBeforeFinalPreview: () async {
+                    await prepareFinalPreview();
+                  },
+                  showTemplate: !isEditMode,
+                ),
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.6, 
+                  child: ContractTabsBuild.buildTabBarView(
+                    tabController: tabController,
+                    templatePreview: ContractTabsBuild.buildTemplatePreview(
+                      selectedContractType ?? selectedTemplate?['template_name'],
                     ),
-              canViewFinalPreview: canViewFinalPreview,
-              showTemplate: !isEditMode,
+                    contractForm: buildHelper.buildForm(),
+                    finalPreview: isPreparingPreview
+                        ? buildPreviewLoadingIndicator()
+                        : KeyedSubtree(
+                            key: ValueKey(_previewRefreshTick),
+                            child: buildHelper.buildPreview(),
+                          ),
+                    canViewFinalPreview: canViewFinalPreview,
+                    showTemplate: !isEditMode,
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      );
+        ),
+      ],
+    );
     }
 
   Future<void> _autoPopulateContactFields() async {

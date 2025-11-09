@@ -131,6 +131,9 @@ class NotificationUIBuildMethods {
         if (action == 'hire_declined' && createdAt != null) {
           dateStr = _getDateString(createdAt);
           groupType = 'hiring_requests_declined';
+        } else if (action == 'hire_accepted' && createdAt != null) {
+          dateStr = _getDateString(createdAt);
+          groupType = 'hiring_requests_accepted';
         }
       } else if (headline == 'Bid Accepted' && createdAt != null) {
         dateStr = _getDateString(createdAt);
@@ -144,8 +147,14 @@ class NotificationUIBuildMethods {
       } else if (headline == 'Project Bids Update' && createdAt != null) {
         dateStr = _getDateString(createdAt);
         groupType = 'project_bids_update';
-      } else if ((headline == 'Contract Signed' || 
-                  headline == 'Contract Activated' || 
+      } else if (headline == 'New Bid' && createdAt != null) {
+        dateStr = _getDateString(createdAt);
+        groupType = 'new_bids';
+      } else if (headline == 'Hiring Request Declined' && createdAt != null) {
+        dateStr = _getDateString(createdAt);
+        groupType = 'hiring_requests_declined';
+      } else if ((headline == 'Contract Signed' ||
+                  headline == 'Contract Activated' ||
                   headline == 'Contract Rejected') &&
           createdAt != null) {
         dateStr = _getDateString(createdAt);
@@ -261,55 +270,37 @@ class NotificationUIBuildMethods {
     );
   }
 
-  /// Get group title based on type, count, and date
   String _getGroupTitle(String type, int count, String dateLabel) {
-    // Format: "num notifications for [type] - [date]"
-    String typeLabel;
     switch (type) {
       case 'hiring_requests':
-        typeLabel = 'hiring request';
-        break;
+        return count == 1 ? 'Hiring Request' : '$count Hiring Requests';
       case 'hiring_requests_accepted':
-        typeLabel = 'hiring request accepted';
-        break;
+        return count == 1 ? 'Hiring Request Accepted!' : '$count Hiring Requests Accepted!';
       case 'hiring_requests_cancelled':
-        typeLabel = 'hiring request cancelled';
-        break;
-      case 'hiring_requests_declined':
-        typeLabel = 'hiring request declined';
-        break;
+        return count == 1 ? 'Hiring Request Cancelled' : '$count Hiring Requests Cancelled';
       case 'hiring_requests_declined_by_me':
-        typeLabel = 'hiring request declined';
-        break;
+        return count == 1 ? 'Hiring Request Declined' : '$count Hiring Requests Declined';
       case 'bid_accepted':
-        typeLabel = 'bid accepted';
-        break;
+        return count == 1 ? 'Bid Accepted!' : '$count Bids Accepted!';
       case 'bid_rejected':
-        typeLabel = 'bid rejected';
-        break;
+        return count == 1 ? 'Bid Not Accepted' : '$count Bids Not Accepted';
       case 'bid_cancelled':
-        typeLabel = 'bid cancelled';
-        break;
+        return count == 1 ? 'Bid Cancelled' : '$count Bids Cancelled';
       case 'project_bids_update':
-        typeLabel = 'project bids update';
-        break;
+        return count == 1 ? 'New Bids on Your Project' : '$count New Bids on Your Projects';
+      case 'new_bids':
+        return count == 1 ? 'New Bid Received' : '$count New Bids Received';
       case 'contract_status':
-        typeLabel = 'contract status';
-        break;
+        return count == 1 ? 'Contract Update' : '$count Contract Updates';
       case 'cancellation_request':
-        typeLabel = 'cancellation request';
-        break;
+        return count == 1 ? 'Cancellation Request' : '$count Cancellation Requests';
       case 'cancellation_declined':
-        typeLabel = 'cancellation declined';
-        break;
+        return count == 1 ? 'Cancellation Declined' : '$count Cancellations Declined';
       default:
-        typeLabel = 'notification';
+        return count == 1 ? 'Notification' : '$count Notifications';
     }
-    
-    return '$count ${count == 1 ? 'notification' : 'notifications'} for $typeLabel - $dateLabel';
   }
 
-  /// Get group icon based on type
   IconData _getGroupIcon(String type) {
     switch (type) {
       case 'hiring_requests':
@@ -328,6 +319,8 @@ class NotificationUIBuildMethods {
         return Icons.thumb_down_outlined;
       case 'project_bids_update':
         return Icons.gavel;
+      case 'new_bids':
+        return Icons.monetization_on;
       case 'contract_status':
         return Icons.description_outlined;
       default:

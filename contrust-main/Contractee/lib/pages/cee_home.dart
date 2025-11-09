@@ -501,6 +501,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
   @override
   Widget build(BuildContext context) {
     super.build(context);
+
+    if (isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(color: Colors.amber),
+            SizedBox(height: 16),
+            Text('Loading home...'),
+          ],
+        ),
+      );
+    }
+
     final projectsToShow = projects.isEmpty ? [HomePageBuilder.getPlaceholderProject()] : projects;
     final isMobile = MediaQuery.of(context).size.width < 600;
 
@@ -521,9 +535,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(height: isMobile ? 20 : 20),
-            isLoading
-                ? const Center(child: CircularProgressIndicator(color: Colors.amber))
-                : isMobile
+                isMobile
                     ? Column(
                         children: [
                           HomePageBuilder.buildContractorsSection(

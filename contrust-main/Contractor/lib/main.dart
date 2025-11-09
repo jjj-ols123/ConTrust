@@ -5,7 +5,6 @@ import 'package:contractor/Screen/cor_dashboard.dart';
 import 'package:contractor/Screen/cor_profile.dart';
 import 'package:contractor/Screen/cor_registration.dart';
 import 'package:contractor/Screen/cor_startup.dart';
-import 'package:contractor/Screen/verification_capture.dart';
 import 'package:contractor/Screen/cor_authredirect.dart';
 import 'package:contractor/Screen/cor_forgot_password.dart';
 import 'package:contractor/Screen/cor_bidding.dart';
@@ -105,19 +104,6 @@ class _MyAppState extends State<MyApp> {
           pageBuilder: (context, state) => NoTransitionPage(
             child: const RegisterScreen(),
           ),
-        ),
-        GoRoute(
-          path: '/register/verification',
-          pageBuilder: (context, state) {
-            final extra = state.extra as Map<String, dynamic>?;
-            return NoTransitionPage(
-              child: VerificationCapturePage(
-                initialFiles: extra?['files'] as List<Map<String, dynamic>>? ?? const [],
-                initialPcabQrText: extra?['pcabQrText'] as String?,
-                initialPermitQrText: extra?['permitQrText'] as String?,
-              ),
-            );
-          },
         ),
         
         ShellRoute(

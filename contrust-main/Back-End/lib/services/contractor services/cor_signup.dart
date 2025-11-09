@@ -20,9 +20,11 @@ class SignUpContractor {
     Map<String, dynamic>? data,
     bool Function() validateFields,
   ) async {
+    print('DEBUG: signUpContractor called for email: $email');
     final supabase = Supabase.instance.client;
 
     if (!validateFields()) {
+      print('DEBUG: signUpContractor validation failed, returning false');
       return false;
     }
 
@@ -30,6 +32,7 @@ class SignUpContractor {
         (data?['verificationFiles'] as List<Map<String, dynamic>>? ?? []);
 
     if (verificationFiles.isEmpty) {
+      print('DEBUG: signUpContractor no verification files, returning false');
       if (context.mounted) {
         ConTrustSnackBar.error(context, 'Please upload verification documents before signing up.');
       }
@@ -190,11 +193,13 @@ class SignUpContractor {
           throw Exception("Error saving contractor data");
         }
 
-        for (int i = 0; i < verificationFiles.length; i++) {
-          final fileData = verificationFiles[i];
+        // Upload the first (and typically only) verification file
+        if (verificationFiles.isNotEmpty) {
+          final fileData = verificationFiles.first;
           final fileBytes = fileData['bytes'] as Uint8List;
           final fileName = fileData['name'] as String;
-          final isImage = fileData['isImage'] as bool;
+          final extension = fileData['extension'] as String? ?? '';
+          final isImage = ['jpg', 'jpeg', 'png'].contains(extension.toLowerCase());
 
           final url = await UserService().uploadImage(
             fileBytes,
@@ -206,14 +211,15 @@ class SignUpContractor {
           await supabase.from('Verification').insert({
             'contractor_id': userId,
             'doc_url': url,
-            'uploaded_at': DateTimeHelper.getLocalTimeISOString(),
-            'file_type': isImage ? 'image' : 'document', 
+            'uploaded_at': DateTime.now().toUtc().toIso8601String(),
+            'file_type': isImage ? 'image' : 'document',
           });
         }
       }
 
       if (!context.mounted) return false;
 
+      print('DEBUG: signUpContractor returning true (successful signup)');
       return true;
     } on AuthException catch (e) {
       await _auditService.logAuditEvent(

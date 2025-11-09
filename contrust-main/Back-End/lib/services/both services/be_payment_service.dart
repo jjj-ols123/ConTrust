@@ -955,6 +955,14 @@ class PaymentService {
         return null;
       }
 
+      final contractData = await _supabase
+          .from('Contracts')
+          .select('field_values')
+          .eq('contract_id', contractId)
+          .single();
+
+      final fieldValues = contractData['field_values'] as Map<String, dynamic>? ?? {};
+
       final paymentInfo = await _determinePaymentAmount(
         projectId: projectId,
         contractId: contractId,
@@ -962,7 +970,7 @@ class PaymentService {
       );
 
       if (paymentInfo['payment_structure'] != 'milestone') {
-        return null; 
+        return null;
       }
 
       final projectdata = projectData['projectdata'] as Map<String, dynamic>? ?? {};
@@ -988,6 +996,13 @@ class PaymentService {
         orElse: () => milestones.isNotEmpty ? milestones.last : {},
       );
 
+      final contractInfo = {
+        'total_price': (fieldValues['Payment.Total'] as num?)?.toDouble() ?? 0.0,
+        'down_payment_percentage': (fieldValues['Payment.DownPaymentPercentage'] as num?)?.toDouble() ?? 0.0,
+        'retention_percentage': (fieldValues['Payment.RetentionPercentage'] as num?)?.toDouble() ?? 0.0,
+        'final_payment': (fieldValues['Payment.FinalPayment'] as num?)?.toDouble() ?? 0.0,
+      };
+
       return {
         'milestones': milestones,
         'current_milestone': nextMilestone,
@@ -995,6 +1010,7 @@ class PaymentService {
         'completed_milestones': milestones.where((m) => m['status'] == 'paid').length,
         'total_contract_amount': paymentInfo['total_contract_amount'],
         'payment_structure': 'milestone',
+        'contract_info': contractInfo,
       };
     } catch (e) {
       await _errorService.logError(

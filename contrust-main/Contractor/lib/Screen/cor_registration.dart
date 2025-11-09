@@ -2,12 +2,11 @@
 import 'package:backend/utils/be_validation.dart';
 import 'package:backend/services/contractor services/cor_signup.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'verification_capture.dart';
 import 'package:backend/services/both%20services/be_otp_service.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:file_picker/file_picker.dart';
 import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -30,12 +29,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       TextEditingController();
   final TextEditingController addressController = TextEditingController();
 
-  final TextEditingController pcabLicenseController = TextEditingController();
-  final TextEditingController permitNumberController = TextEditingController();
-  final TextEditingController permitLguController = TextEditingController();
-
-  String? _pcabQrText;
-  String? _permitQrText;
 
   final List<Map<String, dynamic>> _verificationFiles = [];
   final String _profilePhoto = 'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
@@ -207,12 +200,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!_emailVerified) {
       // Check if verification documents are uploaded (no auto verification, manual verification by superadmin)
       final hasFiles = _verificationFiles.isNotEmpty;
-      final hasQrCodes = _pcabQrText != null || _permitQrText != null;
 
-      if (!hasFiles && !hasQrCodes) {
+      if (!hasFiles) {
         ConTrustSnackBar.error(
           context,
-          'Please upload verification documents or scan QR codes before continuing.',
+          'Please upload verification documents before continuing.',
         );
         return;
       }
@@ -272,13 +264,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _completeSignUp() async {
     final hasFiles = _verificationFiles.isNotEmpty;
-    final hasQrCodes = _pcabQrText != null || _permitQrText != null;
     
-    if (!hasFiles && !hasQrCodes) {
+    if (!hasFiles) {
       if (mounted) {
         ConTrustSnackBar.error(
           context,
-          'Please upload verification documents or scan QR codes before completing registration.',
+          'Please upload verification documents before completing registration.',
         );
       }
       return;
@@ -299,7 +290,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           'firmName': firmNameController.text,
           'contactNumber': _formatPhone(contactNumberController.text),
           'address': addressController.text,
-          'specialization': _selectedSpecializations, 
+          'specialization': _selectedSpecializations,
           'verificationFiles': _verificationFiles,
           'profilePhoto': _profilePhoto,
         },
@@ -316,7 +307,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       setState(() => _isSigningUp = false);
 
-      if (success) {
+      // Debug: Check what success value we got
+      print('DEBUG: signUpContractor returned: $success (type: ${success.runtimeType})');
+
+      if (success == true) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).clearSnackBars();
 
@@ -597,6 +591,208 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildFileUploadDialog(BuildContext context) {
+    // Create a local copy of files for the dialog
+    List<Map<String, dynamic>> dialogFiles = List.from(_verificationFiles);
+
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 500),
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.black, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 20,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade700,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Icon(
+                            Icons.upload_file,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text(
+                            'Upload Verification Document',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    child: Container(
+                      constraints: const BoxConstraints(maxHeight: 400),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              'Please upload your identification documents (ID, business permit, etc.) for verification.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 14),
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Display selected file
+                            if (dialogFiles.isNotEmpty) ...[
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey.shade300),
+                                  borderRadius: BorderRadius.circular(8),
+                                  color: Colors.grey.shade50,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      dialogFiles.first['extension']?.toLowerCase() == 'pdf'
+                                          ? Icons.picture_as_pdf
+                                          : Icons.image,
+                                      color: dialogFiles.first['extension']?.toLowerCase() == 'pdf'
+                                          ? Colors.red
+                                          : Colors.blue,
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        dialogFiles.first['name'] as String? ?? 'Unknown file',
+                                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, size: 20, color: Colors.red),
+                                      onPressed: () {
+                                        setState(() {
+                                          dialogFiles.clear();
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+
+                            ElevatedButton.icon(
+                              onPressed: () async {
+                                try {
+                                  final result = await FilePicker.platform.pickFiles(
+                                    type: FileType.custom,
+                                    allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+                                    allowMultiple: false,
+                                  );
+
+                                  if (result != null) {
+                                    final newFiles = result.files.map((file) => {
+                                      'name': file.name,
+                                      'bytes': file.bytes,
+                                      'extension': file.extension,
+                                    }).toList();
+
+                                    setState(() {
+                                      dialogFiles.clear();
+                                      dialogFiles.addAll(newFiles);
+                                    });
+                                  }
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Error picking files: $e')),
+                                  );
+                                }
+                              },
+                              icon: const Icon(Icons.file_upload),
+                              label: const Text('Select File'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.amber.shade600,
+                                foregroundColor: Colors.white,
+                                minimumSize: const Size(double.infinity, 50),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextButton(
+                                    onPressed: () => Navigator.of(context).pop(),
+                                    child: const Text('Cancel'),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: dialogFiles.isNotEmpty
+                                        ? () => Navigator.of(context).pop({'files': dialogFiles})
+                                        : null,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green.shade600,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    child: const Text('Done'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -1058,59 +1254,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     onPressed: _isUploadingVerification
                         ? null
                         : () async {
-                            final isMobile = !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
-                            if (isMobile) {
-                              final result = await Navigator.push<Map<String, dynamic>?>(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => VerificationCapturePage(
-                                    initialFiles: _verificationFiles,
-                                    initialPcabQrText: _pcabQrText,
-                                    initialPermitQrText: _permitQrText,
-                                  ),
-                                ),
-                              );
-                              if (result != null) {
-                                setState(() {
-                                  _verificationFiles
-                                    ..clear()
-                                    ..addAll(List<Map<String, dynamic>>.from(result['files'] ?? []));
-                                  _pcabQrText = result['pcabQrText'] as String?;
-                                  _permitQrText = result['permitQrText'] as String?;
-                                });
-                              }
-                            } else {
-                              final result = await showDialog<Map<String, dynamic>?>(
-                                context: context,
-                                barrierDismissible: false,
-                                builder: (context) => Dialog(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Container(
-                                    width: MediaQuery.of(context).size.width * 0.8,
-                                    height: MediaQuery.of(context).size.height * 0.8,
-                                    constraints: const BoxConstraints(
-                                      maxWidth: 800,
-                                      maxHeight: 600,
-                                    ),
-                                    child: VerificationCapturePage(
-                                      initialFiles: _verificationFiles,
-                                      initialPcabQrText: _pcabQrText,
-                                      initialPermitQrText: _permitQrText,
-                                    ),
-                                  ),
-                                ),
-                              );
-                              if (result != null) {
-                                setState(() {
-                                  _verificationFiles
-                                    ..clear()
-                                    ..addAll(List<Map<String, dynamic>>.from(result['files'] ?? []));
-                                  _pcabQrText = result['pcabQrText'] as String?;
-                                  _permitQrText = result['permitQrText'] as String?;
-                                });
-                              }
+                            final result = await showDialog<Map<String, dynamic>?>(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (context) => _buildFileUploadDialog(context),
+                            );
+                            if (result != null) {
+                              setState(() {
+                                _verificationFiles
+                                  ..clear()
+                                  ..addAll(List<Map<String, dynamic>>.from(result['files'] ?? []));
+                              });
                             }
                           },
                     style: ElevatedButton.styleFrom(
@@ -1176,59 +1330,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     onPressed: _isUploadingVerification
                         ? null
                         : () async {
-                            final isMobile = !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
-                            if (isMobile) {
-                              final result = await Navigator.push<Map<String, dynamic>?>(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => VerificationCapturePage(
-                                    initialFiles: _verificationFiles,
-                                    initialPcabQrText: _pcabQrText,
-                                    initialPermitQrText: _permitQrText,
-                                  ),
-                                ),
-                              );
-                              if (result != null) {
-                                setState(() {
-                                  _verificationFiles
-                                    ..clear()
-                                    ..addAll(List<Map<String, dynamic>>.from(result['files'] ?? []));
-                                  _pcabQrText = result['pcabQrText'] as String?;
-                                  _permitQrText = result['permitQrText'] as String?;
-                                });
-                              }
-                            } else {
-                              final result = await showDialog<Map<String, dynamic>?>(
-                                context: context,
-                                barrierDismissible: false,
-                                builder: (context) => Dialog(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Container(
-                                    width: MediaQuery.of(context).size.width * 0.8,
-                                    height: MediaQuery.of(context).size.height * 0.8,
-                                    constraints: const BoxConstraints(
-                                      maxWidth: 800,
-                                      maxHeight: 600,
-                                    ),
-                                    child: VerificationCapturePage(
-                                      initialFiles: _verificationFiles,
-                                      initialPcabQrText: _pcabQrText,
-                                      initialPermitQrText: _permitQrText,
-                                    ),
-                                  ),
-                                ),
-                              );
-                              if (result != null) {
-                                setState(() {
-                                  _verificationFiles
-                                    ..clear()
-                                    ..addAll(List<Map<String, dynamic>>.from(result['files'] ?? []));
-                                  _pcabQrText = result['pcabQrText'] as String?;
-                                  _permitQrText = result['permitQrText'] as String?;
-                                });
-                              }
+                            final result = await showDialog<Map<String, dynamic>?>(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (context) => _buildFileUploadDialog(context),
+                            );
+                            if (result != null) {
+                              setState(() {
+                                _verificationFiles
+                                  ..clear()
+                                  ..addAll(List<Map<String, dynamic>>.from(result['files'] ?? []));
+                              });
                             }
                           },
                     style: ElevatedButton.styleFrom(
@@ -1370,9 +1482,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     passwordController.dispose();
     confirmPasswordController.dispose();
     addressController.dispose();
-    pcabLicenseController.dispose();
-    permitNumberController.dispose();
-    permitLguController.dispose();
     super.dispose();
   }
 

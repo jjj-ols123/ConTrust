@@ -3,6 +3,7 @@ import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_contract_service.dart';
 import 'package:backend/services/contractor services/cor_biddingservice.dart';
 import 'package:backend/utils/be_status.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/build/buildviewcontract.dart';
 import 'package:backend/services/contractor services/contract/cor_viewcontractservice.dart';
 import 'package:flutter/material.dart';
@@ -497,11 +498,8 @@ class ProjectView extends StatelessWidget {
           return _buildNoContractLabel();
         }
         
-        final shouldShowContract = !isContractee || 
-            contractStatusLower != 'draft' ||
-            projectStatusLower == 'awaiting_agreement' ||
-            projectStatusLower == 'awaiting_signature' ||
-            projectStatusLower == 'awaiting_contract';
+        final shouldShowContract = !isContractee ||
+            contractStatusLower != 'draft';
         
         if (!shouldShowContract) {
           return _buildNoContractLabel();
@@ -1165,20 +1163,14 @@ class ProjectView extends StatelessWidget {
                                       contractId: liveData['contract_id'] as String,
                                       onApproved: () {
                                         Navigator.of(dialogContext).pop();
-                                        ScaffoldMessenger.of(dialogContext).showSnackBar(
-                                          const SnackBar(content: Text('Contract approved')),
-                                        );
+                                        ConTrustSnackBar.contractApproved(dialogContext);
                                       },
                                       onRejected: () {
                                         Navigator.of(dialogContext).pop();
-                                        ScaffoldMessenger.of(dialogContext).showSnackBar(
-                                          const SnackBar(content: Text('Contract rejected')),
-                                        );
+                                        ConTrustSnackBar.contractRejected(dialogContext);
                                       },
                                       onError: (err) {
-                                        ScaffoldMessenger.of(dialogContext).showSnackBar(
-                                          SnackBar(content: Text(err)),
-                                        );
+                                        ConTrustSnackBar.error(dialogContext, err);
                                       },
                                     ),
                                   ),
@@ -1294,9 +1286,7 @@ class ProjectView extends StatelessWidget {
       );
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading contract: $e')),
-        );
+        ConTrustSnackBar.error(context, 'Error loading contract: $e');
       }
     }
   }
