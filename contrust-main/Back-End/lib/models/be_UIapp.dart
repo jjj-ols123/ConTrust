@@ -1073,6 +1073,9 @@ class ProjectView extends StatelessWidget {
 
   Future<void> _showEnhancedContractView(BuildContext context, Map<String, dynamic> contractData) async {
     try {
+      // Fetch fresh contract data to ensure we have the latest signed_pdf_url
+      final freshContractData = await ContractService.getContractById(contractData['contract_id'] as String);
+
       showDialog(
         context: context,
         barrierDismissible: true,
@@ -1121,7 +1124,7 @@ class ProjectView extends StatelessWidget {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            contractData['title'] ?? 'Contract Details',
+                            freshContractData['title'] ?? 'Contract Details',
                             style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -1142,10 +1145,10 @@ class ProjectView extends StatelessWidget {
                   ),
                   Flexible(
                     child: StreamBuilder<Map<String, dynamic>?>(
-                      stream: FetchService().streamContractById(contractData['contract_id'] as String),
-                      initialData: contractData,
+                      stream: FetchService().streamContractById(freshContractData['contract_id'] as String),
+                      initialData: freshContractData,
                       builder: (context, contractSnap) {
-                        final liveData = contractSnap.data ?? contractData;
+                        final liveData = contractSnap.data ?? freshContractData;
                         return StatefulBuilder(
                           builder: (context, setState) {
                         return SingleChildScrollView(

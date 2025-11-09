@@ -1,6 +1,7 @@
 // ignore_for_file: file_names
 
 import 'dart:typed_data';
+import 'package:http/http.dart' as http;
 import 'package:backend/contract_templates/TimeandMaterialsPDF.dart';
 import 'package:backend/contract_templates/LumpSumPDF.dart';
 import 'package:backend/contract_templates/CostPlusPDF.dart';
@@ -179,42 +180,96 @@ class ContractPdfSignatureService {
           .uploadBinary(filePath, pdfBytes, fileOptions: const FileOptions(upsert: true));
       print('✅ SIGNED PDF CREATION: PDF uploaded to storage successfully');
 
-      print('🔍 SIGNED PDF CREATION: Verifying file upload');
-      try {
-        final files = await _supabase.storage
-            .from('contracts')
-            .list(path: contractorId);
+      print('🔍 SIGNED PDF CREATION: Verifying file upload with retries');
+      bool fileVerified = false;
+      String? verificationError;
 
-        final fileExists = files.any((file) => file.name == fileName);
-
-        if (!fileExists) {
-          throw Exception('File was not found in storage after upload (list check failed)');
-        }
-        print('✅ SIGNED PDF CREATION: File verified in storage');
-      } catch (listError) {
-        print('⚠️ SIGNED PDF CREATION: List verification failed, trying download verification');
+      // Try verification multiple times with delays for eventual consistency
+      for (int attempt = 1; attempt <= 3; attempt++) {
+        print('🔍 SIGNED PDF CREATION: Verification attempt $attempt/3');
         try {
-          await _supabase.storage
+          // Wait a bit for eventual consistency
+          if (attempt > 1) {
+            await Future.delayed(Duration(seconds: 2));
+          }
+
+          // First try to list files
+          final files = await _supabase.storage
+              .from('contracts')
+              .list(path: contractorId);
+
+          final fileExists = files.any((file) => file.name == fileName);
+
+          if (fileExists) {
+            print('✅ SIGNED PDF CREATION: File verified via list (attempt $attempt)');
+          } else {
+            throw Exception('File not found in list');
+          }
+
+          // Then try to download and verify content
+          final downloadedBytes = await _supabase.storage
               .from('contracts')
               .download(filePath);
-          print('✅ SIGNED PDF CREATION: File verified via download');
-        } catch (downloadError) {
-          throw Exception('Failed to verify file upload via both list and download: list=$listError, download=$downloadError');
+
+          if (downloadedBytes.isEmpty) {
+            throw Exception('Downloaded file is empty');
+          }
+
+          if (downloadedBytes.length != pdfBytes.length) {
+            throw Exception('Downloaded file size (${downloadedBytes.length}) doesn\'t match uploaded size (${pdfBytes.length})');
+          }
+
+          // Verify PDF header (should start with %PDF-)
+          if (downloadedBytes.length < 4 ||
+              downloadedBytes[0] != 0x25 || // %
+              downloadedBytes[1] != 0x50 || // P
+              downloadedBytes[2] != 0x44 || // D
+              downloadedBytes[3] != 0x46) { // F
+            throw Exception('Downloaded file is not a valid PDF');
+          }
+
+          print('✅ SIGNED PDF CREATION: File content verified (attempt $attempt)');
+          fileVerified = true;
+          break;
+
+        } catch (e) {
+          verificationError = e.toString();
+          print('⚠️ SIGNED PDF CREATION: Verification attempt $attempt failed: $e');
         }
       }
 
-      print('🔗 SIGNED PDF CREATION: Testing signed URL creation');
+      if (!fileVerified) {
+        throw Exception('Failed to verify signed PDF upload after 3 attempts. Last error: $verificationError');
+      }
+
+      print('🔗 SIGNED PDF CREATION: Testing signed URL creation and accessibility');
       try {
+        // Create signed URL with longer expiration for testing
         final testSignedUrl = await _supabase.storage
             .from('contracts')
-            .createSignedUrl(filePath, 60);
+            .createSignedUrl(filePath, 300); // 5 minutes
 
         if (testSignedUrl.isEmpty) {
           throw Exception('Failed to create signed URL for uploaded file');
         }
-        print('✅ SIGNED PDF CREATION: Signed URL created successfully');
+
+        // Actually try to access the signed URL to verify it's working
+        final response = await http.get(Uri.parse(testSignedUrl));
+        if (response.statusCode != 200) {
+          throw Exception('Signed URL returned status ${response.statusCode}');
+        }
+
+        if (response.contentLength == null || response.contentLength! <= 0) {
+          throw Exception('Signed URL returned empty content');
+        }
+
+        if (response.contentLength != pdfBytes.length) {
+          throw Exception('Signed URL content size (${response.contentLength}) doesn\'t match uploaded size (${pdfBytes.length})');
+        }
+
+        print('✅ SIGNED PDF CREATION: Signed URL verified and accessible');
       } catch (e) {
-        throw Exception('Signed PDF uploaded but signed URL creation failed: ');
+        throw Exception('Signed PDF uploaded and verified but signed URL access failed: $e');
       }
 
       print('💾 SIGNED PDF CREATION: Updating contract record with signed PDF URL');
