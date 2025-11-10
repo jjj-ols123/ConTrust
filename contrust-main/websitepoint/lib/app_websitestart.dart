@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:websitepoint/web_redirect.dart';
+import 'package:websitepoint/widgets/footer.dart';
 
 class WebsiteStartPage extends StatelessWidget {
   const WebsiteStartPage({super.key});
@@ -25,6 +26,7 @@ class WebsiteStartPage extends StatelessWidget {
                 _buildNavigationBar(context, isDesktop, false, false),         
                 _buildHeroSection(context, isDesktop, screenWidth),               
                 _buildMainContent(context, isDesktop, screenWidth),
+                const Footer(),
               ],
             ),
           ),
@@ -77,6 +79,25 @@ class WebsiteStartPage extends StatelessWidget {
               color: const Color(0xFF1a1a1a),
               letterSpacing: -0.5,
             ),
+          ),
+          Row(
+            children: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pushNamed('/about'),
+                child: const Text(
+                  'About',
+                  style: TextStyle(color: Color(0xFF1a1a1a), fontWeight: FontWeight.w600),
+                ),
+              ),
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: () => Navigator.of(context).pushNamed('/services'),
+                child: const Text(
+                  'Services',
+                  style: TextStyle(color: Color(0xFF1a1a1a), fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
           ),
         ],
       ),

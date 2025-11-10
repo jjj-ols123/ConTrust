@@ -80,11 +80,31 @@ class AboutPage extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            icon: Icon(Icons.close, size: isMobile ? 24 : 28),
-            onPressed: () => Navigator.of(context).pop(),
-            tooltip: 'Back to Home',
-            padding: EdgeInsets.all(isMobile ? 8 : 12),
+          Row(
+            children: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pushNamed('/about'),
+                child: const Text(
+                  'About',
+                  style: TextStyle(color: Color(0xFF1a1a1a), fontWeight: FontWeight.w600),
+                ),
+              ),
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: () => Navigator.of(context).pushNamed('/services'),
+                child: const Text(
+                  'Services',
+                  style: TextStyle(color: Color(0xFF1a1a1a), fontWeight: FontWeight.w600),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: Icon(Icons.close, size: isMobile ? 24 : 28),
+                onPressed: () => Navigator.of(context).pop(),
+                tooltip: 'Back to Home',
+                padding: EdgeInsets.all(isMobile ? 8 : 12),
+              ),
+            ],
           ),
         ],
       ),
