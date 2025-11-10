@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:contractor/Screen/cor_startup.dart';
 import 'package:contractee/pages/cee_login.dart';
+import 'package:websitepoint/widgets/footer.dart';
 
 class MobileStartPage extends StatefulWidget {
   const MobileStartPage({super.key});
@@ -112,7 +113,7 @@ class _MobileStartPageState extends State<MobileStartPage> {
                   SizedBox(height: isMobile ? 30 : 40),
                   if (_selectedRole != null) _buildSwitchRoleButton(isMobile),
                   SizedBox(height: isMobile ? 20 : 30),
-                  _buildFooter(isDesktop, isTablet, isMobile),
+                  const Footer(),
                 ],
               ),
             ),
@@ -362,63 +363,5 @@ class _MobileStartPageState extends State<MobileStartPage> {
     );
   }
 
-  Widget _buildFooter(bool isDesktop, bool isTablet, bool isMobile) {
-    final double horizontalPadding = isDesktop ? 80 : (isTablet ? 40 : 20);
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(
-        horizontal: horizontalPadding,
-        vertical: isMobile ? 20 : 30,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1a1a1a),
-        border: Border(
-          top: BorderSide(
-            color: Colors.white.withOpacity(0.1),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: isMobile ? 3 : 4,
-                height: isMobile ? 20 : 24,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFA726),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              SizedBox(width: isMobile ? 8 : 10),
-              Text(
-                'ConTrust',
-                style: TextStyle(
-                  fontSize: isMobile ? 20 : 24,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: isMobile ? 12 : 16),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 0),
-            child: Text(
-              'Building trust in construction, one contract at a time.',
-              style: TextStyle(
-                fontSize: isMobile ? 13 : 14,
-                color: Colors.white.withOpacity(0.7),
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 

@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:websitepoint/app_websitestart.dart';
 import 'package:websitepoint/app_mobilestart.dart';
+import 'package:websitepoint/about_page.dart';
+import 'package:websitepoint/services_page.dart';
+import 'package:websitepoint/contact_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,6 +30,9 @@ class MyApp extends StatelessWidget {
         '/': (context) => kIsWeb 
             ? const WebsiteStartPage() 
             : const MobileStartPage(),
+        '/about': (context) => const AboutPage(),
+        '/services': (context) => const ServicesPage(),
+        '/contact': (context) => const ContactPage(),
       },
     );
   }
