@@ -3,6 +3,14 @@
 import 'package:flutter/material.dart';
 import 'package:backend/utils/be_contractformat.dart'; 
 
+String _getMonthNameHelper(int month) {
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  return months[month - 1];
+}
+
 class OngoingBuildMethods {
   static Widget buildProjectHeader({
     required String projectTitle,
@@ -1372,7 +1380,6 @@ class OngoingBuildMethods {
       final taskDone = task['task_done'];
       final isDone = task['done'] == true;
       
-      // Add task_done activity if task was completed (has task_done timestamp)
       if (isDone && taskDone != null && taskDone.toString().isNotEmpty) {
         activities.add({
           'type': 'task_done',
@@ -1383,7 +1390,6 @@ class OngoingBuildMethods {
         });
       }
       
-      // Always add task creation activity
       activities.add({
         'type': 'task_added',
         'title': 'Task added',
@@ -1800,7 +1806,7 @@ class OngoingBuildMethods {
           child: buildCostsList(
             costs: costs,
             onDeleteCost: onDeleteCost,
-            onViewMaterial: (material) => showMaterialDetailsDialog(context, material),
+            onViewMaterial: (material) => OngoingBuildMethods.showMaterialDetailsDialog(context, material),
           ),
         );
         break;
@@ -1863,78 +1869,201 @@ class OngoingBuildMethods {
   }) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: Column(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          buildProjectHeaderWithActivity(
-            projectTitle: projectTitle,
-            clientName: clientName,
-            address: address,
-            startDate: startDate,
-            estimatedCompletion: estimatedCompletion,
-            duration: duration, 
-            isCustomContract: isCustomContract,
-            progress: progress,
-            contractStatusLabel: contractStatusLabel,
-            contractStatusColor: contractStatusColor,
-            tasks: tasks,
-            reports: reports,
-            photos: photos,
-            onViewContract: onViewContract,
-            onRefresh: onRefresh,
-            onEditCompletion: onEditCompletion,
-            onSwitchProject: onSwitchProject,
-          ),
-          const SizedBox(height: 20),
           Expanded(
-            child: Row(
+            flex: 1,
+            child: Column(
+              children: [
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Text(
+                              'Title',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                projectTitle,
+                                style: const TextStyle(fontSize: 13, color: Colors.black87),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Text(
+                              'Client',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              clientName,
+                              style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.calendar_today, color: Colors.grey.shade700, size: 16),
+                            const SizedBox(width: 6),
+                            const Text(
+                              'Calendar',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const Spacer(),
+                            if (onEditCompletion != null)
+                              TextButton.icon(
+                                onPressed: onEditCompletion,
+                                icon: const Icon(Icons.edit, size: 14),
+                                label: const Text('Edit', style: TextStyle(fontSize: 12)),
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  minimumSize: const Size(0, 28),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        _buildSimpleCalendar(context, startDate, estimatedCompletion),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: Container(
+                      width: double.infinity,
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade200,
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(12),
+                                topRight: Radius.circular(12),
+                              ),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.timeline, color: Colors.grey, size: 20),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Recent Activities',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Scrollbar(
+                                thumbVisibility: true,
+                                child: SingleChildScrollView(
+                                  child: buildRecentActivityFeed(
+                                    tasks: tasks,
+                                    reports: reports,
+                                    photos: photos,
+                                    maxItems: 20,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: 1,
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            color: Colors.grey.shade300,
+          ),
+
+          Expanded(
+            flex: 3,
+            child: Column(
               children: [
                 Expanded(
-                  child: Column(
+                  child: Row(
                     children: [
                       Expanded(
                         child: buildGridSectionCard(
-                          title: 'Tasks & Progress',
+                          title: 'To-Dos & Tasks',
                           icon: Icons.checklist,
                           iconColor: Colors.grey,
                           onAdd: onAddTask,
                           addButtonText: 'Add Task',
-                          child: buildDesktopTasksList(
+                          child: buildDesktopTasksListWithExpectFinish(
                             tasks: tasks,
                             onUpdateTaskStatus: onUpdateTaskStatus,
                             onDeleteTask: onDeleteTask,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      Expanded(
-                        child: buildGridSectionCard(
-                          title: 'Project Photos',
-                          icon: Icons.photo_library,
-                          iconColor: Colors.grey,
-                          onAdd: onAddPhoto,
-                          addButtonText: 'Add Photo',
-                          child: buildDesktopPhotosList(
-                            photos: photos,
-                            createSignedUrl: createSignedUrl,
-                            onDeletePhoto: onDeletePhoto,
-                            onViewPhoto: onViewPhoto,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    children: [
+                      const SizedBox(width: 16),
                       Expanded(
                         child: buildGridSectionCard(
                           title: 'Progress Reports',
                           icon: Icons.description,
                           iconColor: Colors.grey,
-                          onAdd: onAddReport,
-                          addButtonText: 'Add Report',
+                          onAdd: () => _generatePDFReport(context, tasks, reports, photos, costs),
+                          addButtonText: 'Make Report',
                           child: buildDesktopReportsList(
                             reports: reports,
                             onDeleteReport: onDeleteReport,
@@ -1942,7 +2071,29 @@ class OngoingBuildMethods {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: buildGridSectionCard(
+                          title: 'Project Photos',
+                          icon: Icons.photo_library,
+                          iconColor: Colors.grey,
+                          onAdd: onAddPhoto,
+                          addButtonText: 'Add Photo',
+                          child: OngoingBuildMethods.buildDesktopPhotosList(
+                            photos: photos,
+                            createSignedUrl: createSignedUrl,
+                            onDeletePhoto: onDeletePhoto,
+                            onViewPhoto: onViewPhoto,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: buildGridSectionCard(
                           title: 'Materials & Costs',
@@ -1950,11 +2101,11 @@ class OngoingBuildMethods {
                           iconColor: Colors.grey,
                           onAdd: onGoToMaterials,
                           addButtonText: 'Manage Materials',
-                          child: buildDesktopCostsList(
+                          child: OngoingBuildMethods.buildDesktopCostsList(
                             costs: costs,
                             onDeleteCost: onDeleteCost,
                             onViewMaterial:
-                                (material) => showMaterialDetailsDialog(
+                                (material) => OngoingBuildMethods.showMaterialDetailsDialog(
                                   context,
                                   material,
                                 ),
@@ -1964,7 +2115,6 @@ class OngoingBuildMethods {
                     ],
                   ),
                 ),
-                const SizedBox(width: 16),
               ],
             ),
           ),
@@ -2130,6 +2280,105 @@ class OngoingBuildMethods {
     );
   }
 
+  static Widget buildDesktopTasksListWithExpectFinish({
+    required List<Map<String, dynamic>> tasks,
+    required Function(String, bool) onUpdateTaskStatus,
+    required Function(String) onDeleteTask,
+  }) {
+    if (tasks.isEmpty) {
+      return const Center(
+        child: Text('No tasks yet', style: TextStyle(color: Colors.grey)),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: tasks.take(10).length,
+      itemBuilder: (context, index) {
+        final task = tasks[index];
+        final expectFinish = task['expect_finish'] ?? task['expected_finish'];
+        String? expectFinishText;
+        if (expectFinish != null) {
+          try {
+            final date = DateTime.parse(expectFinish.toString());
+            expectFinishText = '${date.day}/${date.month}/${date.year}';
+          } catch (_) {
+            expectFinishText = expectFinish.toString();
+          }
+        }
+        
+        return Container(
+          margin: const EdgeInsets.only(bottom: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Row(
+            children: [
+              Checkbox(
+                value: task['done'] == true,
+                onChanged:
+                    (val) => onUpdateTaskStatus(
+                      task['task_id'].toString(),
+                      val ?? false,
+                    ),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      task['task'] ?? '',
+                      style: TextStyle(
+                        decoration:
+                            task['done'] == true
+                                ? TextDecoration.lineThrough
+                                : null,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        if (expectFinishText != null) ...[
+                          Icon(Icons.calendar_today, size: 10, color: Colors.grey.shade600),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Finish: $expectFinishText',
+                            style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                          ),
+                        ],
+                        if (task['created_at'] != null) ...[
+                          if (expectFinishText != null) const SizedBox(width: 8),
+                          Text(
+                            'Created: ${DateTime.parse(task['created_at']).toLocal().toString().split('.')[0].split(' ')[0]}',
+                            style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, size: 16),
+                onPressed: () => onDeleteTask(task['task_id']),
+                constraints: const BoxConstraints(),
+                padding: EdgeInsets.zero,
+                color: Colors.grey.shade600,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   static Widget buildDesktopReportsList({
     required List<Map<String, dynamic>> reports,
     required Function(String) onDeleteReport,
@@ -2177,6 +2426,350 @@ class OngoingBuildMethods {
         );
       },
     );
+  }
+
+  static Widget buildDesktopReportsListWithPDF({
+    required BuildContext context,
+    required List<Map<String, dynamic>> reports,
+    required Function(String) onDeleteReport,
+    Function(Map<String, dynamic>)? onViewReport,
+    required List<Map<String, dynamic>> tasks,
+    required List<Map<String, dynamic>> photos,
+    required List<Map<String, dynamic>> costs,
+  }) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _generatePDFReport(context, tasks, reports, photos, costs),
+              icon: const Icon(Icons.picture_as_pdf, size: 18),
+              label: const Text('Make Report', style: TextStyle(fontSize: 13)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade700,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const Divider(height: 1),
+        Expanded(
+          child: reports.isEmpty
+              ? const Center(
+                  child: Text('No reports yet', style: TextStyle(color: Colors.grey)),
+                )
+              : ListView.builder(
+                  itemCount: reports.take(8).length,
+                  itemBuilder: (context, index) {
+                    final report = reports[index];
+                    return GestureDetector(
+                      onTap: onViewReport != null ? () => onViewReport(report) : null,
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 8, left: 8, right: 8, top: 4),
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                report['content'] ?? '',
+                                style: const TextStyle(fontSize: 13),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, size: 16),
+                              onPressed: () => onDeleteReport(report['report_id']),
+                              constraints: const BoxConstraints(),
+                              padding: EdgeInsets.zero,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  static Widget _buildSimpleCalendar(BuildContext context, String startDate, String? estimatedCompletion) {
+    return _CalendarWidget(startDate: startDate, estimatedCompletion: estimatedCompletion);
+  }
+}
+
+class _CalendarWidget extends StatefulWidget {
+  final String startDate;
+  final String? estimatedCompletion;
+
+  const _CalendarWidget({
+    required this.startDate,
+    this.estimatedCompletion,
+  });
+
+  @override
+  State<_CalendarWidget> createState() => _CalendarWidgetState();
+}
+
+class _CalendarWidgetState extends State<_CalendarWidget> {
+  late DateTime _displayedMonth;
+  DateTime? _start;
+  DateTime? _end;
+
+  @override
+  void initState() {
+    super.initState();
+    _displayedMonth = DateTime.now();
+    
+    try {
+      if (widget.startDate.isNotEmpty) {
+        _start = DateTime.parse(widget.startDate);
+      }
+      if (widget.estimatedCompletion != null && widget.estimatedCompletion!.isNotEmpty) {
+        _end = DateTime.parse(widget.estimatedCompletion!);
+      }
+    } catch (_) {
+    }
+  }
+
+  void _previousMonth() {
+    setState(() {
+      _displayedMonth = DateTime(_displayedMonth.year, _displayedMonth.month - 1, 1);
+    });
+  }
+
+  void _nextMonth() {
+    setState(() {
+      _displayedMonth = DateTime(_displayedMonth.year, _displayedMonth.month + 1, 1);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final firstDay = DateTime(_displayedMonth.year, _displayedMonth.month, 1);
+    final lastDay = DateTime(_displayedMonth.year, _displayedMonth.month + 1, 0);
+    final daysInMonth = lastDay.day;
+    final firstWeekday = firstDay.weekday;
+    final now = DateTime.now();
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.chevron_left, size: 16),
+              onPressed: _previousMonth,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+            ),
+            Text(
+              '${_getMonthNameHelper(_displayedMonth.month)} ${_displayedMonth.year}',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+            IconButton(
+              icon: const Icon(Icons.chevron_right, size: 16),
+              onPressed: _nextMonth,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+              .map((day) => Expanded(
+                    child: Center(
+                      child: Text(
+                        day,
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ),
+                  ))
+              .toList(),
+        ),
+        const SizedBox(height: 8),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 7,
+            childAspectRatio: 1.1,
+            crossAxisSpacing: 1,
+            mainAxisSpacing: 1,
+          ),
+          itemCount: 42, // 6 weeks * 7 days
+          itemBuilder: (context, index) {
+            final day = index - firstWeekday + 1;
+            final isCurrentMonth = day > 0 && day <= daysInMonth;
+            final isToday = isCurrentMonth && 
+                day == now.day && 
+                _displayedMonth.month == now.month && 
+                _displayedMonth.year == now.year;
+            
+            bool isStartDate = false;
+            if (isCurrentMonth && _start != null) {
+              isStartDate = day == _start!.day && 
+                  _displayedMonth.month == _start!.month && 
+                  _displayedMonth.year == _start!.year;
+            }
+            
+            bool isEndDate = false;
+            if (isCurrentMonth && _end != null) {
+              isEndDate = day == _end!.day && 
+                  _displayedMonth.month == _end!.month && 
+                  _displayedMonth.year == _end!.year;
+            }
+            
+            if (!isCurrentMonth) {
+              return const SizedBox.shrink();
+            }
+
+            Color? backgroundColor;
+            Border? border;
+            Color textColor;
+            FontWeight fontWeight = FontWeight.normal;
+            
+            if (isStartDate) {
+              backgroundColor = Colors.green.shade200;
+              border = Border.all(color: Colors.green.shade700, width: 2);
+              textColor = Colors.black87;
+              fontWeight = FontWeight.bold;
+            } else if (isEndDate) {
+              backgroundColor = Colors.orange.shade200;
+              border = Border.all(color: Colors.orange.shade700, width: 2);
+              textColor = Colors.black87;
+              fontWeight = FontWeight.bold;
+            } else if (isToday) {
+              backgroundColor = Colors.blue.shade100;
+              border = Border.all(color: Colors.blue, width: 1.5);
+              textColor = Colors.black87;
+              fontWeight = FontWeight.bold;
+            } else {
+              backgroundColor = Colors.transparent;
+              border = null;
+              textColor = Colors.grey.shade700;
+            }
+
+            return Container(
+              decoration: BoxDecoration(
+                color: backgroundColor,
+                borderRadius: BorderRadius.circular(3),
+                border: border,
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$day',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: fontWeight,
+                        color: textColor,
+                      ),
+                    ),
+                    if (isStartDate)
+                      Container(
+                        margin: const EdgeInsets.only(top: 1),
+                        width: 4,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade700,
+                          shape: BoxShape.circle,
+                        ),
+                      )
+                    else if (isEndDate)
+                      Container(
+                        margin: const EdgeInsets.only(top: 1),
+                        width: 4,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade700,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  static String _getMonthName(int month) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[month - 1];
+  }
+
+  static Future<void> _generatePDFReport(
+    BuildContext context,
+    List<Map<String, dynamic>> tasks,
+    List<Map<String, dynamic>> reports,
+    List<Map<String, dynamic>> photos,
+    List<Map<String, dynamic>> costs,
+  ) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            const Text('Generating PDF Report...'),
+            const SizedBox(height: 8),
+            Text(
+              'This feature will compile:\n'
+              '• Tasks done at dates\n'
+              '• Progress photos uploaded\n'
+              '• Materials added to project costs',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (context.mounted) {
+      Navigator.of(context).pop();
+    }
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('PDF Report generation feature coming soon!'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   static Widget buildDesktopPhotosList({
@@ -2767,3 +3360,4 @@ class OngoingBuildMethods {
     );
   }
 }
+

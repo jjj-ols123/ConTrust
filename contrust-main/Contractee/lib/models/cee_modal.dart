@@ -1415,7 +1415,7 @@ class _BidsModalContentState extends State<_BidsModalContent> {
                                   Row(
                                     children: [
                                       ClipOval(
-                                        child: Container(
+                                        child: SizedBox(
                                           width: 56,
                                           height: 56,
                                           child: Image.network(

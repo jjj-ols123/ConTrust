@@ -395,12 +395,10 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   Future<String?> createSignedPhotoUrl(String? path) async {
     if (path == null || path.isEmpty) return null;
     
-    // Check cache first - return completed future if cached
     if (_photoUrlCache.containsKey(path)) {
       return Future.value(_photoUrlCache[path]);
     }
     
-    // Fetch and cache the URL
     final url = await ongoingService.createSignedPhotoUrl(path);
     if (url != null) {
       _photoUrlCache[path] = url;
@@ -541,7 +539,6 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
           estimatedCompletion: selectedDate,
           context: context,
           onSuccess: () {
-        // Don't call loadData() manually - debounced realtime subscriptions will handle it
       },
         );
       },
@@ -656,18 +653,43 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     final clientName = project['full_name'] ?? 'Client';
     final address = project['location'] ?? '';
     
-    String startDate = project['start_date'] ?? '';
-    if (startDate.isEmpty && _isCustomContract() && contracts.isNotEmpty) {
-      try {
-        final contract = contracts.first;
-        final fieldValues = contract['field_values'];
-        if (fieldValues != null && fieldValues is Map) {
-          final startDateValue = fieldValues['Project.StartDate'];
-          if (startDateValue != null && startDateValue.toString().isNotEmpty) {
-            startDate = startDateValue.toString();
+    // Extract dates based on contract type
+    String startDate = '';
+    String estimatedCompletion = '';
+    
+    if (_isCustomContract()) {
+      // For custom contracts, get dates from Projects table
+      startDate = project['start_date']?.toString() ?? '';
+      estimatedCompletion = project['estimated_completion']?.toString() ?? '';
+    } else {
+      // For non-custom contracts, get dates from contract field_values
+      if (contracts.isNotEmpty) {
+        try {
+          final contract = contracts.first;
+          final fieldValues = contract['field_values'];
+          if (fieldValues != null && fieldValues is Map) {
+            // Get start date from contract field_values
+            final startDateValue = fieldValues['Project.StartDate'];
+            if (startDateValue != null && startDateValue.toString().isNotEmpty) {
+              startDate = startDateValue.toString();
+            }
+            
+            // Get completion date from contract field_values
+            final completionDateValue = fieldValues['Project.CompletionDate'];
+            if (completionDateValue != null && completionDateValue.toString().isNotEmpty) {
+              estimatedCompletion = completionDateValue.toString();
+            }
           }
-        }
-      } catch (_) {}
+        } catch (_) {}
+      }
+      
+      // Fallback to Projects table if contract values are not available
+      if (startDate.isEmpty) {
+        startDate = project['start_date']?.toString() ?? '';
+      }
+      if (estimatedCompletion.isEmpty) {
+        estimatedCompletion = project['estimated_completion']?.toString() ?? '';
+      }
     }
 
     final contractInfo = _extractContractInfo(contracts);
@@ -677,10 +699,6 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
             ? project['duration'] as int
             : int.tryParse(project['duration'].toString()))
         : null;
-
-    final estimatedCompletion = _isCustomContract() 
-        ? (project['estimated_completion'] ?? '') 
-        : (contractInfo['estimateDate'] ?? project['estimated_completion'] ?? '');
 
     String? contractStatus;
     Color? contractStatusColor;
@@ -693,7 +711,6 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
       contractStatusColor = _contractStatusColor(status);
     }
 
-    // Get client name with proper fallback for custom contracts
     final extractedClientName = contractInfo['clientName'];
     final finalClientName = (extractedClientName != null && extractedClientName.toString().isNotEmpty)
         ? extractedClientName.toString()
@@ -760,18 +777,37 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     final clientName = project['full_name'] ?? 'Client';
     final address = project['location'] ?? '';
     
-    String startDate = project['start_date'] ?? '';
-    if (startDate.isEmpty && _isCustomContract() && contracts.isNotEmpty) {
-      try {
-        final contract = contracts.first;
-        final fieldValues = contract['field_values'];
-        if (fieldValues != null && fieldValues is Map) {
-          final startDateValue = fieldValues['Project.StartDate'];
-          if (startDateValue != null && startDateValue.toString().isNotEmpty) {
-            startDate = startDateValue.toString();
+    String startDate = '';
+    String estimatedCompletion = '';
+    
+    if (_isCustomContract()) {
+      startDate = project['start_date']?.toString() ?? '';
+      estimatedCompletion = project['estimated_completion']?.toString() ?? '';
+    } else {
+      if (contracts.isNotEmpty) {
+        try {
+          final contract = contracts.first;
+          final fieldValues = contract['field_values'];
+          if (fieldValues != null && fieldValues is Map) {
+            final startDateValue = fieldValues['Project.StartDate'];
+            if (startDateValue != null && startDateValue.toString().isNotEmpty) {
+              startDate = startDateValue.toString();
+            }
+            
+            final completionDateValue = fieldValues['Project.CompletionDate'];
+            if (completionDateValue != null && completionDateValue.toString().isNotEmpty) {
+              estimatedCompletion = completionDateValue.toString();
+            }
           }
-        }
-      } catch (_) {}
+        } catch (_) {}
+      }
+      
+      if (startDate.isEmpty) {
+        startDate = project['start_date']?.toString() ?? '';
+      }
+      if (estimatedCompletion.isEmpty) {
+        estimatedCompletion = project['estimated_completion']?.toString() ?? '';
+      }
     }
 
     final contractInfo = _extractContractInfo(contracts);
@@ -782,11 +818,6 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
             : int.tryParse(project['duration'].toString()))
         : null;
 
-    final estimatedCompletion = _isCustomContract() 
-        ? (project['estimated_completion'] ?? '') 
-        : (contractInfo['estimateDate'] ?? project['estimated_completion'] ?? '');
-
-    // Determine contract status and availability
     String? contractStatus;
     Color? contractStatusColor;
     String? contractId;
@@ -798,7 +829,6 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
       contractStatusColor = _contractStatusColor(status);
     }
 
-    // Get client name with proper fallback for custom contracts
     final extractedClientName = contractInfo['clientName'];
     final finalClientName = (extractedClientName != null && extractedClientName.toString().isNotEmpty)
         ? extractedClientName.toString()
@@ -963,7 +993,6 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     }
   }
 
-  // Local helpers: status label and color (match Contractee style)
   Color _contractStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'draft':

@@ -3,7 +3,6 @@
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:backend/services/contractor services/cor_productservice.dart';
-import 'package:backend/services/both services/be_project_service.dart';
 
 class ProductBuildMethods {
   static Widget buildProductUI({
@@ -1351,7 +1350,6 @@ class ProductBuildMethods {
 
                                             if (confirmed == true) {
                                               setDialogState(() => materials.removeAt(index));
-                                              ConTrustSnackBar.success(context, 'Material deleted successfully!');
                                             }
                                           },
                                           onTap: () => showMaterialDetailsDialog(context, material),
@@ -1872,7 +1870,6 @@ class _MaterialInputDialogState extends State<MaterialInputDialog> {
 
     widget.onSuccess(materialMap);
     Navigator.pop(context);
-    ConTrustSnackBar.success(context, 'Material added to local inventory');
 
     if (mounted) setState(() => _isSaving = false);
   }
