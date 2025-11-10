@@ -62,10 +62,6 @@ class Footer extends StatelessWidget {
             alignment: WrapAlignment.center,
             children: [
               TextButton(
-                onPressed: () => Navigator.of(context).pushNamed('/'),
-                child: const Text('Home', style: TextStyle(color: Colors.white70)),
-              ),
-              TextButton(
                 onPressed: () => Navigator.of(context).pushNamed('/about'),
                 child: const Text('About', style: TextStyle(color: Colors.white70)),
               ),
