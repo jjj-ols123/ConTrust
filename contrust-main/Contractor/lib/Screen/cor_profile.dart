@@ -307,6 +307,7 @@ class _ContractorUserProfileScreenState
                           context,
                           {'photo_url': profileImage ?? profileUrl},
                         ),
+                        isUploadingProfilePhoto: isUploadingProfile,
                       ),
                     );
                   } else {
@@ -334,6 +335,7 @@ class _ContractorUserProfileScreenState
                         context,
                         {'photo_url': profileImage ?? profileUrl},
                       ),
+                      isUploadingProfilePhoto: isUploadingProfile,
                     );
                   }
                 },

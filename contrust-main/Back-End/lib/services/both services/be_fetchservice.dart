@@ -673,9 +673,16 @@ class FetchService {
 
       return _supabase
           .from('Projects')
-          .stream(primaryKey: ['project_id'])
+          .stream(primaryKey: ['contractor_id', 'project_id'])
+          .handleError((error) {
+            _errorService.logError(
+              errorMessage: 'Realtime stream error for completed projects: $error',
+              module: 'Fetch Service',
+              severity: 'Medium',
+              extraInfo: {'user_id': userId, 'error_type': error.runtimeType.toString()},
+            );
+          })
           .map((List<Map<String, dynamic>> projects) {
-            // Filter completed projects for the current user
             return projects.where((project) => 
               project['contractor_id'] == userId && 
               project['status'] == 'completed'
@@ -708,7 +715,7 @@ class FetchService {
                   };
                 }
               } catch (e) {
-                // If batch fetch fails, contracteeInfoMap remains empty
+                //
               }
             }
             
@@ -742,11 +749,19 @@ class FetchService {
 
   Stream<List<Map<String, dynamic>>> streamContractorActiveProjects(String contractorId) {
     try {
+
       return _supabase
           .from('Projects')
-          .stream(primaryKey: ['project_id'])
+          .stream(primaryKey: ['contractor_id', 'project_id'])
+          .handleError((error) {
+            _errorService.logError(
+              errorMessage: 'Realtime stream error for active projects: $error',
+              module: 'Fetch Service',
+              severity: 'Medium',
+              extraInfo: {'contractor_id': contractorId, 'error_type': error.runtimeType.toString()},
+            );
+          })
           .map((List<Map<String, dynamic>> projects) {
-            // Filter active/ongoing projects for the contractor
             return projects.where((project) => 
               project['contractor_id'] == contractorId && 
               (project['status'] == 'active' || project['status'] == 'ongoing')
@@ -776,7 +791,6 @@ class FetchService {
           .from('Projects')
           .stream(primaryKey: ['project_id'])
           .map((List<Map<String, dynamic>> projects) {
-            // Find the specific project
             final project = projects.firstWhere(
               (p) => p['project_id'] == projectId,
               orElse: () => <String, dynamic>{},
@@ -1165,7 +1179,7 @@ class FetchService {
             contractor_signature_url, contractee_signature_url,
             contractor_signed_at, contractee_signed_at,
             pdf_url, signed_pdf_url, field_values,
-            project:Projects(project_id, type, description, title),
+R            project:Projects!Contracts_project_id_fkey(project_id, type, description, title),
             contractor:Contractor(contractor_id, firm_name, profile_photo),  
             contractee:Contractee(contractee_id, full_name, profile_photo),
             contract_type:ContractTypes(contract_type_id, template_name, template_description)

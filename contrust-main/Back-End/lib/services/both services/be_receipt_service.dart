@@ -11,7 +11,6 @@ class ReceiptService {
   static final SupabaseClient _supabase = Supabase.instance.client;
   static final SuperAdminErrorService _errorService = SuperAdminErrorService();
 
-  /// Generate PDF receipt for a payment
   static Future<Uint8List> generateReceiptPdf({
     required String paymentId,
     required double amount,
@@ -190,33 +189,39 @@ class ReceiptService {
                   ),
                 ),
                 child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.center,
                   children: [
-                    pw.Text(
-                      'Thank you for your payment!',
-                      style: pw.TextStyle(
-                        fontSize: 16,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.black,
+                    pw.Center(
+                      child: pw.Text(
+                        'Thank you for your payment!',
+                        style: pw.TextStyle(
+                          fontSize: 16,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.black,
+                        ),
                       ),
-                      textAlign: pw.TextAlign.center,
                     ),
                     pw.SizedBox(height: 12),
-                    pw.Text(
-                      'This is an electronic receipt. Please keep this for your records.',
-                      style: pw.TextStyle(
-                        fontSize: 10,
-                        color: PdfColors.grey700,
+                    pw.Center(
+                      child: pw.Text(
+                        'This is an electronic receipt. Please keep this for your records.',
+                        style: pw.TextStyle(
+                          fontSize: 10,
+                          color: PdfColors.grey700,
+                        ),
+                        textAlign: pw.TextAlign.center,
                       ),
-                      textAlign: pw.TextAlign.center,
                     ),
                     pw.SizedBox(height: 8),
-                    pw.Text(
-                      'Generated on ${_formatDate(DateTimeHelper.getLocalTimeISOString())}',
-                      style: pw.TextStyle(
-                        fontSize: 9,
-                        color: PdfColors.grey600,
+                    pw.Center(
+                      child: pw.Text(
+                        'Generated on ${_formatDate(DateTimeHelper.getLocalTimeISOString())}',
+                        style: pw.TextStyle(
+                          fontSize: 9,
+                          color: PdfColors.grey600,
+                        ),
+                        textAlign: pw.TextAlign.center,
                       ),
-                      textAlign: pw.TextAlign.center,
                     ),
                   ],
                 ),
@@ -314,7 +319,6 @@ class ReceiptService {
     }
   }
 
-  /// Upload receipt PDF to storage
   static Future<String> uploadReceiptToStorage({
     required Uint8List pdfBytes,
     required String projectId,
@@ -350,7 +354,6 @@ class ReceiptService {
     }
   }
 
-  /// Get signed URL for receipt
   static Future<String?> getReceiptSignedUrl(String receiptPath, {int expirationSeconds = 86400}) async {
     try {
       final response = await _supabase.storage

@@ -77,7 +77,9 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
 
   Future<void> loadContracteeData() async {
     try {
-      setState(() => isLoading = true);
+      if (mounted) {
+        setState(() => isLoading = true);
+      }
 
       final result =
           await CeeProfileService().loadContracteeData(widget.contracteeId);
@@ -125,6 +127,10 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
         return dateB.compareTo(dateA);
       });
 
+      if (!mounted) {
+        return;
+      }
+
       setState(() {
         if (contracteeData != null) {
           // Get data directly from Contractee table (now includes email from Users table)
@@ -150,16 +156,20 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
 
       _updateControllers();
     } catch (e) {
-      setState(() => isLoading = false);
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
 
   Future<void> _loadReviews() async {
     try {
       final reviewsWithNames = await CeeProfileService().loadReviews(widget.contracteeId);
-      setState(() {
-        reviews = reviewsWithNames;
-      });
+      if (mounted) {
+        setState(() {
+          reviews = reviewsWithNames;
+        });
+      }
     } catch (e) {
       //
     }
@@ -245,6 +255,7 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
                     ongoingProjectsCount: ongoingProjectsCount,
                     mainContent: _buildMainContent(),
                     onUploadPhoto: isUploadingPhoto ? null : _uploadProfilePhoto,
+                    isUploadingPhoto: isUploadingPhoto,
                 ),
               ),
             ],
@@ -262,6 +273,7 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
                   ongoingProjectsCount: ongoingProjectsCount,
                   mainContent: _buildMainContent(),
                   onUploadPhoto: isUploadingPhoto ? null : _uploadProfilePhoto,
+                  isUploadingPhoto: isUploadingPhoto,
                 ),
               ),
             ],

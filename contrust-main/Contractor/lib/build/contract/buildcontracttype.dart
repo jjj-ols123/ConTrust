@@ -725,7 +725,7 @@ class ContractTypeBuild {
     try {
       final dateString = dateTimeString.toString().trim();
       DateTime dateTime;
-
+      
       // Handle different date formats more robustly
       if (dateString.endsWith('Z') ||
           dateString.contains('+') ||

@@ -248,7 +248,7 @@ class MessageUIBuildMethods {
                           builder: (context, projectSnapshot) {
                             final project = projectSnapshot.data;
                             final projectStatus = project?['status'] ?? '';
-
+                            
                             return buildChatListItem(
                               chat: chat,
                               userName: userName,

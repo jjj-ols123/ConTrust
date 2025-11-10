@@ -260,7 +260,11 @@ class _MyAppState extends State<MyApp> {
                     builder: (context) {
                       final session = Supabase.instance.client.auth.currentSession;
                       if (session != null) {
-                        return ContractType(contractorId: session.user.id);
+                        final showNoProjectsMessage = state.uri.queryParameters['showNoProjectsMessage'] == 'true';
+                        return ContractType(
+                          contractorId: session.user.id,
+                          showNoProjectsMessage: showNoProjectsMessage,
+                        );
                       }
                       return const ToLoginScreen();
                     },

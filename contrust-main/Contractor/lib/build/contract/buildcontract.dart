@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/utils/be_status.dart';
@@ -144,11 +144,21 @@ class CreateContractBuild {
 
         return StatefulBuilder(
           builder: (context, setDialogState) {
+            // Fetch data if needed
             if (projects.isEmpty) {
               FetchService().fetchContractorProjectInfo(contractorId).then((fetchedProjects) {
+                final filteredProjects = fetchedProjects.where((project) => project['status'] == 'awaiting_contract').toList();
+
+                if (filteredProjects.isEmpty) {
+                  Navigator.of(dialogContext).pop();
+
+                  // Navigate with parameter to show snackbar on the new page
+                  context.go('/contracttypes?showNoProjectsMessage=true');
+                  return;
+                }
+
                 setDialogState(() {
-                  // Filter out cancelled projects
-                  projects = fetchedProjects.where((project) => project['status'] != 'cancelled').toList();
+                  projects = filteredProjects;
                   if (projects.length == 1 && selectedProjectId == null) {
                     selectedProjectId = projects.first['project_id'] as String?;
                   }
@@ -156,6 +166,7 @@ class CreateContractBuild {
               });
             }
 
+            // Main dialog content
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       elevation: 16,
@@ -439,15 +450,38 @@ static Future<Map<String, dynamic>?> showSaveDialog(
                             const SizedBox(width: 12),
                             Expanded(
                               child: ElevatedButton(
-                                onPressed: () {
+                                onPressed: () async {
                                   if (titleController?.text.trim().isEmpty == true || initialProjectId == null) {
                                     ConTrustSnackBar.error(context, 'Please fill all fields');
                                     return;
                                   }
+
+                                  // Validate that the selected project is in "awaiting_contract" status
+                                  try {
+                                    final projects = await FetchService().fetchContractorProjectInfo(contractorId);
+                                    final selectedProject = projects.firstWhere(
+                                      (project) => project['project_id'] == initialProjectId,
+                                      orElse: () => <String, dynamic>{},
+                                    );
+
+                                    if (selectedProject.isEmpty) {
+                                      ConTrustSnackBar.error(context, 'Selected project not found');
+                                      return;
+                                    }
+
+                                    if (selectedProject['status'] != 'awaiting_contract') {
+                                      ConTrustSnackBar.error(context,
+                                        'Cannot create contract for this project. Project status: ${selectedProject['status']?.toString().toUpperCase() ?? 'Unknown'}');
+                                      return;
+                                    }
+
                                   Navigator.of(dialogContext).pop({
                                     'title': titleController?.text.trim() ?? '',
                                     'projectId': initialProjectId,
                                   });
+                                  } catch (e) {
+                                    ConTrustSnackBar.error(context, 'Error validating project status');
+                                  }
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.green[600],
@@ -1546,14 +1580,27 @@ class CreateContractBuildMethods {
               ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9\.]'))]
               : [FilteringTextInputFormatter.digitsOnly])
           : null,
-      validator: isRequired 
-        ? (value) {
-            if (value == null || value.trim().isEmpty) {
+      validator: (value) {
+            if (isRequired && (value == null || value.trim().isEmpty)) {
               return '$label is required';
             }
+
+            // Special validation for milestone amount fields
+            if (key.startsWith('Milestone.') && key.endsWith('.Amount')) {
+              if (value != null && value.trim().isNotEmpty) {
+                try {
+                  final amount = double.parse(value.trim());
+                  if (amount < 100) {
+                    return 'Milestone payment amount must be at least ₱100';
+                  }
+                } catch (e) {
+                  return 'Please enter a valid amount';
+                }
+              }
+            }
+
             return null;
-          }
-        : null,
+          },
       onChanged: (value) {
         // Trigger Lump Sum calculations for payment and milestone fields
         if (key == 'Payment.Total' || key == 'Payment.DownPaymentPercentage' ||

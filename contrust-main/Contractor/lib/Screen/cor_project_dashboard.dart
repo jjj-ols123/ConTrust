@@ -59,8 +59,8 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
   void _extractMilestoneDates(Map<String, dynamic> contract) {
     final contractTypeData = contract['contract_type'] as Map<String, dynamic>?;
     final contractType = contractTypeData?['template_name'] as String?;
-
-    if (contractType?.toLowerCase() == 'lump sum') {
+      
+    if (contractType?.toLowerCase().contains('lump sum') == true) {
       final fieldValues = contract['field_values'] as Map<String, dynamic>?;
       if (fieldValues != null) {
         _milestoneDates = [];
@@ -71,12 +71,11 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               final dateStr = milestoneDateStr.split(' ')[0];
               final parsed = DateTime.parse(dateStr);
               _milestoneDates.add(DateTime(parsed.year, parsed.month, parsed.day));
-            } catch (_) {
+            } catch (e) {
               //
             }
           }
         }
-      }
     } else {
       _milestoneDates = [];
     }
@@ -128,7 +127,9 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
   }
 
   Future<void> _updateContractInfo(Map<String, dynamic>? projectDetails) async {
-    if (projectDetails == null) return;
+    if (projectDetails == null) {
+      return;
+    }
 
     final contracteeId = projectDetails['contractee_id'] as String?;
     if (contracteeId != null) {
@@ -159,31 +160,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       final isCustomContract = _contractType?.toLowerCase() == 'custom';
       
       setState(() {
-        if (isCustomContract) {
-          final startDateStr = projectDetails['start_date'] as String?;
-          if (startDateStr != null && startDateStr.isNotEmpty) {
-            try {
-              final parsed = DateTime.parse(startDateStr);
-              _startDate = DateTime(parsed.year, parsed.month, parsed.day);
-            } catch (_) {
-              _startDate = null;
-            }
-          } else {
-            _startDate = null;
-          }
-
-          final estimatedCompletionStr = projectDetails['estimated_completion'] as String?;
-          if (estimatedCompletionStr != null && estimatedCompletionStr.isNotEmpty) {
-            try {
-              final parsed = DateTime.parse(estimatedCompletionStr);
-              _estimatedCompletion = DateTime(parsed.year, parsed.month, parsed.day);
-            } catch (_) {
-              _estimatedCompletion = null;
-            }
-          } else {
-            _estimatedCompletion = null;
-          }
-        } else if (_contractData != null) {
+        if (_contractData != null && !isCustomContract) {
           final fieldValues = _contractData!['field_values'] as Map<String, dynamic>?;
           if (fieldValues != null) {
             final startDateStr = fieldValues['Project.StartDate'] as String?;
@@ -195,8 +172,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               } catch (_) {
                 _startDate = null;
               }
-            } else {
-              _startDate = null;
             }
 
             final completionDateStr = fieldValues['Project.CompletionDate'] as String?;
@@ -208,35 +183,11 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               } catch (_) {
                 _estimatedCompletion = null;
               }
-            } else {
-              _estimatedCompletion = null;
             }
-          } else {
-            final startDateStr = projectDetails['start_date'] as String?;
-            if (startDateStr != null && startDateStr.isNotEmpty) {
-              try {
-                final parsed = DateTime.parse(startDateStr);
-                _startDate = DateTime(parsed.year, parsed.month, parsed.day);
-              } catch (_) {
-                _startDate = null;
-              }
-            } else {
-              _startDate = null;
             }
+        }
 
-            final estimatedCompletionStr = projectDetails['estimated_completion'] as String?;
-            if (estimatedCompletionStr != null && estimatedCompletionStr.isNotEmpty) {
-              try {
-                final parsed = DateTime.parse(estimatedCompletionStr);
-                _estimatedCompletion = DateTime(parsed.year, parsed.month, parsed.day);
-              } catch (_) {
-                _estimatedCompletion = null;
-              }
-            } else {
-              _estimatedCompletion = null;
-            }
-          }
-        } else {
+        if (_startDate == null) {
           final startDateStr = projectDetails['start_date'] as String?;
           if (startDateStr != null && startDateStr.isNotEmpty) {
             try {
@@ -245,10 +196,10 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             } catch (_) {
               _startDate = null;
             }
-          } else {
-            _startDate = null;
+          }
           }
 
+        if (_estimatedCompletion == null) {
           final estimatedCompletionStr = projectDetails['estimated_completion'] as String?;
           if (estimatedCompletionStr != null && estimatedCompletionStr.isNotEmpty) {
             try {
@@ -257,8 +208,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             } catch (_) {
               _estimatedCompletion = null;
             }
-          } else {
-            _estimatedCompletion = null;
           }
         }
       });
@@ -1108,20 +1057,46 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               ],
             ),
           ),
-          // Switch Project Button
-          TextButton.icon(
-            onPressed: _switchProject,
-            icon: const Icon(Icons.swap_horiz, size: 18),
-            label: const Text('Switch Project'),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.amber.shade700,
-            ),
+          // Action Buttons
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // View Contract Button
+              IconButton(
+                onPressed: _viewContract,
+                icon: const Icon(Icons.description, size: 24),
+                tooltip: 'View Contract',
+                style: IconButton.styleFrom(
+                  foregroundColor: Colors.amber.shade700,
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Switch Project Button
+              IconButton(
+                onPressed: _switchProject,
+                icon: const Icon(Icons.swap_horiz, size: 24),
+                tooltip: 'Switch Project',
+                style: IconButton.styleFrom(
+                  foregroundColor: Colors.amber.shade700,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
   
+  /// View Contract Function
+  Future<void> _viewContract() async {
+    final project = widget.projectData?['projectDetails'] as Map<String, dynamic>?;
+    final contractId = project?['contract_id'] as String?;
+
+    if (contractId != null) {
+      context.go('/viewcontract/$contractId');
+    }
+  }
+
   /// Switch Project Function
   Future<void> _switchProject() async {
     try {
@@ -1271,7 +1246,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     }
   }
 
-  /// Calendar Widget - Compact and interactive
   Widget _buildCalendarWidget() {
     final isCustomContract = _contractType?.toLowerCase() == 'custom';
     
@@ -1286,7 +1260,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with Calendar label, month, and edit button
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1328,7 +1301,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                   ],
                 ),
               ),
-              // Edit button for CUSTOM contracts
               if (isCustomContract)
                 IconButton(
                   icon: const Icon(Icons.edit, size: 20),
@@ -1344,7 +1316,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     );
   }
   
-  /// Edit Estimated Completion for CUSTOM contracts
   Future<void> _editEstimatedCompletion() async {
     OngoingBuildMethods.showEditCompletionDialog(
       context: context,
@@ -1365,7 +1336,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     );
   }
 
-  /// Calendar Grid View
   Widget _buildCalendarGrid() {
     final firstDay = DateTime(_focusedDate.year, _focusedDate.month, 1);
     final lastDay = DateTime(_focusedDate.year, _focusedDate.month + 1, 0);
@@ -1379,7 +1349,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
 
     return Column(
       children: [
-        // Weekday headers
         Row(
           children: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
               .map((day) => Expanded(
@@ -1397,7 +1366,6 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               .toList(),
         ),
         const SizedBox(height: 8),
-        // Calendar days
         ...List.generate(6, (weekIndex) {
           return Row(
             children: List.generate(7, (dayIndex) {
@@ -2542,7 +2510,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                           // Photo takes most of the space
                           Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(4),
                               child: FutureBuilder<String?>(
                                 future: widget.createSignedPhotoUrl(photoUrl),
                                 builder: (context, snapshot) {
@@ -2614,7 +2582,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                           ),
                           // Description section in separate container below
                           Container(
-                            margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                            margin: const EdgeInsets.fromLTRB(8, 0, 8, 16),
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: Colors.grey.shade50,
@@ -2870,13 +2838,11 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Container(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(dialogContext).size.width * 0.9,
-          maxHeight: MediaQuery.of(dialogContext).size.height * 0.8,
-        ),
+        constraints: BoxConstraints(maxWidth: 800, maxHeight: 650),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.black, width: 1.5),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.15),
@@ -2940,19 +2906,30 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Material details
-                    _buildMaterialDetailField('Material Name', name),
-                    if (brand != null && brand.isNotEmpty)
-                      _buildMaterialDetailField('Brand', brand),
-                    _buildMaterialDetailField('Quantity', '${quantity.toStringAsFixed(1)} $unit'),
-                    _buildMaterialDetailField('Unit Price', '₱${unitPrice.toStringAsFixed(2)}'),
-                    _buildMaterialDetailField('Total Cost', '₱${totalCost.toStringAsFixed(2)}'),
-                    if (notes != null && notes.isNotEmpty)
-                      _buildMaterialDetailField('Notes', notes),
-                    if (createdAt != null) ...[
-                      const SizedBox(height: 24),
-                      _buildMaterialDetailField('Created', _formatMaterialDate(createdAt)),
-                    ],
+                    // Material details in vertical column
+                    Column(
+                      children: [
+                        _buildMaterialDetailField('Material Name', name),
+                        const SizedBox(height: 16),
+                        _buildMaterialDetailField('Quantity', '${quantity.toStringAsFixed(1)} $unit'),
+                        const SizedBox(height: 16),
+                        _buildMaterialDetailField('Unit Price', '₱${unitPrice.toStringAsFixed(2)}'),
+                        const SizedBox(height: 16),
+                        _buildMaterialDetailField('Total Cost', '₱${totalCost.toStringAsFixed(2)}'),
+                        if (brand != null && brand.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          _buildMaterialDetailField('Brand', brand),
+                        ],
+                        if (notes != null && notes.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          _buildMaterialDetailField('Notes', notes),
+                        ],
+                        if (createdAt != null) ...[
+                          const SizedBox(height: 16),
+                          _buildMaterialDetailField('Created', _formatMaterialDate(createdAt)),
+                        ],
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -2963,40 +2940,37 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     );
   }
 
-  /// Build Material Detail Field (similar to _buildDetailField in cor_history.dart)
+  /// Build Material Detail Field (for vertical layout)
   Widget _buildMaterialDetailField(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
             style: TextStyle(
-              fontSize: 14,
+            fontSize: 14,
               fontWeight: FontWeight.bold,
               color: Colors.grey.shade700,
             ),
           ),
-          const SizedBox(height: 8),
+        const SizedBox(height: 8),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.grey.shade200),
             ),
             child: Text(
               value,
               style: TextStyle(
-                fontSize: 14,
+              fontSize: 14,
                 color: Colors.grey.shade800,
               ),
             ),
           ),
         ],
-      ),
     );
   }
 
@@ -3308,6 +3282,29 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
         }
       }
 
+      for (final task in _tasks) {
+        if (task['created_at'] != null) {
+          try {
+            final taskDate = DateTime.parse(task['created_at']).toLocal();
+            if (taskDate.isAfter(startDate) || taskDate.isAtSameMomentAs(startDate)) {
+              bool alreadyIncluded = activities.any((activity) =>
+                activity['type'] == 'task_done' &&
+                activity['description'] == (task['task'] ?? 'Task completed'));
+
+              if (!alreadyIncluded) {
+                activities.add({
+                  'type': 'task_added',
+                  'date': task['created_at'],
+                  'description': task['task'] ?? 'Task added',
+                });
+              }
+            }
+          } catch (e) {
+            //
+          }
+        }
+      }
+
       for (final photo in _photos) {
         try {
           final photoDate = DateTime.parse(photo['created_at']).toLocal();
@@ -3404,6 +3401,8 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                   String typeLabel = '';
                   if (type == 'task_done') {
                     typeLabel = 'Task completed at $date';
+                  } else if (type == 'task_added') {
+                    typeLabel = 'Task added at $date';
                   } else if (type == 'photo') {
                     typeLabel = 'Progress photo uploaded at $date';
                   } else if (type == 'material') {

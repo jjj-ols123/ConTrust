@@ -41,6 +41,7 @@ class CeeProfileBuildMethods {
     required int ongoingProjectsCount,
     required Widget mainContent,
     required VoidCallback? onUploadPhoto,
+    required bool isUploadingPhoto,
     String? selectedTab,
     Function(String)? onTabChanged,
   }) {
@@ -129,7 +130,7 @@ class CeeProfileBuildMethods {
                         right: 0,
                         bottom: 0,
                         child: GestureDetector(
-                          onTap: onUploadPhoto,
+                          onTap: isUploadingPhoto ? null : onUploadPhoto,
                           child: Container(
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
@@ -137,7 +138,16 @@ class CeeProfileBuildMethods {
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white, width: 2),
                             ),
-                            child: const Icon(Icons.camera_alt, size: 14, color: Colors.white),
+                            child: isUploadingPhoto
+                                ? SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Icon(Icons.camera_alt, size: 14, color: Colors.white),
                           ),
                         ),
                       ),
@@ -227,6 +237,7 @@ class CeeProfileBuildMethods {
     required int ongoingProjectsCount,
     required Widget mainContent,
     required VoidCallback? onUploadPhoto,
+    required bool isUploadingPhoto,
     String? selectedTab,
     Function(String)? onTabChanged,
   }) {
@@ -302,7 +313,7 @@ class CeeProfileBuildMethods {
                               right: 0,
                               bottom: 0,
                               child: GestureDetector(
-                                onTap: onUploadPhoto,
+                                onTap: isUploadingPhoto ? null : onUploadPhoto,
                                 child: Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
@@ -310,7 +321,16 @@ class CeeProfileBuildMethods {
                                     shape: BoxShape.circle,
                                     border: Border.all(color: Colors.white, width: 2),
                                   ),
-                                  child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                                  child: isUploadingPhoto
+                                      ? SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        )
+                                      : const Icon(Icons.camera_alt, size: 16, color: Colors.white),
                                 ),
                               ),
                             ),

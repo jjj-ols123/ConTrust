@@ -2,9 +2,9 @@
 
 import 'dart:typed_data';
 
-import 'package:backend/services/both%20services/be_user_service.dart';
-import 'package:backend/services/superadmin%20services/auditlogs_service.dart';
-import 'package:backend/services/superadmin%20services/errorlogs_service.dart';
+import 'package:backend/services/both services/be_user_service.dart';
+import 'package:backend/services/superadmin services/auditlogs_service.dart';
+import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:flutter/material.dart';
@@ -384,61 +384,62 @@ class CorProfileService {
 
   Future<List<Map<String, dynamic>>> loadTransactions(String contractorId) async {
     try {
-      final projectsResponse = await Supabase.instance.client
-          .from('Projects')
+      final paymentsResponse = await Supabase.instance.client
+          .from('Payments')
           .select('''
+            payment_id,
             project_id,
-            title,
-            projectdata,
-            contractee_id,
-            Contractee!inner(full_name)
+            amount,
+            payment_type,
+            payment_status,
+            milestone_number,
+            milestone_description,
+            description,
+            paid_at,
+            payment_reference,
+            receipt_path,
+            Projects!inner(
+              title,
+              contractee_id,
+              Contractee!inner(full_name)
+            )
           ''')
           .eq('contractor_id', contractorId)
-          .order('created_at', ascending: false);
+          .eq('payment_status', 'completed')
+          .order('paid_at', ascending: false);
 
       List<Map<String, dynamic>> allTransactions = [];
 
-      for (var project in projectsResponse) {
-        final projectdata =
-            project['projectdata'] as Map<String, dynamic>? ?? {};
-        final payments = projectdata['payments'] as List<dynamic>? ?? [];
-
-        for (var payment in payments) {
-          allTransactions.add({
-            'amount': (payment['amount'] as num?)?.toDouble() ?? 0.0,
-            'payment_type': _getPaymentType(payment['contract_type'] ?? '',
-                payment['payment_structure'] ?? ''),
-            'project_title': project['title'] ?? 'Unknown Project',
-            'client_name':
-                project['Contractee']?['full_name'] ?? 'Unknown Client',
-            'payment_date': payment['date'] ?? DateTimeHelper.getLocalTimeISOString(),
-            'reference': payment['reference'] ?? payment['payment_id'] ?? '',
-          });
+      for (var payment in paymentsResponse) {
+        final project = payment['Projects'] as Map<String, dynamic>? ?? {};
+        final contractee = project['Contractee'] as Map<String, dynamic>? ?? {};
+        
+        String paymentType = 'Payment';
+        if (payment['payment_type'] == 'milestone') {
+          paymentType = 'Milestone ${payment['milestone_number'] ?? ''}';
+        } else if (payment['payment_type'] == 'deposit') {
+          paymentType = 'Deposit';
+        } else if (payment['payment_type'] == 'final') {
+          paymentType = 'Final';
         }
-      }
 
-      allTransactions.sort((a, b) {
-        final dateA = DateTime.parse(a['payment_date']);
-        final dateB = DateTime.parse(b['payment_date']);
-        return dateB.compareTo(dateA);
-      });
+        allTransactions.add({
+          'amount': (payment['amount'] as num?)?.toDouble() ?? 0.0,
+          'payment_type': paymentType,
+          'project_title': project['title'] ?? 'Unknown Project',
+          'client_name': contractee['full_name'] ?? 'Unknown Client',
+          'payment_date': payment['paid_at'] ?? DateTimeHelper.getLocalTimeISOString(),
+          'reference': payment['payment_reference'] ?? payment['payment_id'] ?? '',
+          'receipt_path': payment['receipt_path'],
+          'project_id': payment['project_id'],
+          'payment_id': payment['payment_id'] ?? '',
+        });
+      }
 
       return allTransactions;
     } catch (e) {
       return [];
     }
-  }
-
-  String _getPaymentType(String contractType, String paymentStructure) {
-    if (paymentStructure.toLowerCase().contains('milestone')) {
-      return 'Milestone';
-    } else if (contractType.toLowerCase().contains('deposit') ||
-        paymentStructure.toLowerCase().contains('deposit')) {
-      return 'Deposit';
-    } else if (paymentStructure.toLowerCase().contains('final')) {
-      return 'Final';
-    }
-    return 'Payment';
   }
 
   List<Map<String, dynamic>> filterProjects(

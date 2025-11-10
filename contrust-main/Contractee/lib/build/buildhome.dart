@@ -3,6 +3,7 @@
 import 'package:backend/models/be_UIapp.dart';
 import 'package:backend/services/both services/be_bidding_service.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/services/both services/be_message_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -133,6 +134,72 @@ class HomePageBuilder {
               ),
         ],
       ),
+    );
+  }
+
+  static Future<void> _handleMessageTap(BuildContext context, Map<String, dynamic> bid) async {
+    final contracteeId = Supabase.instance.client.auth.currentUser?.id;
+    if (contracteeId == null) {
+      ConTrustSnackBar.warning(context, 'Please sign in again to start a chat.');
+      return;
+    }
+
+    final contractorId = bid['contractor_id']?.toString();
+    final projectId = bid['project_id']?.toString();
+    if (contractorId == null || contractorId.isEmpty || projectId == null || projectId.isEmpty) {
+      ConTrustSnackBar.error(context, 'Missing contractor or project information.');
+      return;
+    }
+
+    final contractorData = bid['contractor'] as Map<String, dynamic>?;
+    final contractorName = contractorData?['firm_name']?.toString() ?? 'Contractor';
+    final contractorProfile = contractorData?['profile_photo'];
+
+    final navigator = Navigator.of(context, rootNavigator: true);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => const Center(
+        child: CircularProgressIndicator(color: Colors.amber),
+      ),
+    );
+
+    String? chatRoomId;
+    try {
+      chatRoomId = await MessageService().getOrCreateChatRoom(
+        contractorId: contractorId,
+        contracteeId: contracteeId,
+        projectId: projectId,
+      );
+    } catch (e) {
+      chatRoomId = null;
+      if (context.mounted) {
+        ConTrustSnackBar.error(context, 'Failed to start chat: $e');
+      }
+    } finally {
+      if (navigator.mounted && navigator.canPop()) {
+        navigator.pop();
+      }
+    }
+
+    if (chatRoomId == null) {
+      if (context.mounted) {
+        ConTrustSnackBar.error(context, 'Unable to start chat. Please try again.');
+      }
+      return;
+    }
+
+    if (!context.mounted) return;
+
+    final encodedName = Uri.encodeComponent(contractorName);
+    context.go(
+      '/chat/$encodedName',
+      extra: {
+        'chatRoomId': chatRoomId,
+        'contracteeId': contracteeId,
+        'contractorId': contractorId,
+        'contractorProfile': contractorProfile,
+      },
     );
   }
 
@@ -499,6 +566,8 @@ class HomePageBuilder {
     final isRejected = bid['status'] == 'rejected';
     final canAccept = projectStatus == 'pending' && !isAccepted && !isRejected;
     final canReject = projectStatus == 'pending' && !isAccepted && !isRejected;
+    final projectStatusLower = projectStatus?.toLowerCase();
+    final showMessageButton = projectStatusLower == null || projectStatusLower == 'pending';
     
     return Stack(
       children: [
@@ -559,16 +628,29 @@ class HomePageBuilder {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-              IconButton(
-                onPressed: () => _showBidInfoDialog(context, bid),
-                icon: Icon(Icons.info_outline, size: isMobile ? 18 : 20),
-                tooltip: 'More Info',
-                padding: EdgeInsets.all(isMobile ? 3 : 4),
-                constraints: BoxConstraints(
-                  minWidth: isMobile ? 28 : 32, 
-                  minHeight: isMobile ? 28 : 32
-                ),
-              ),
+                  if (showMessageButton)
+                    IconButton(
+                      onPressed: isLoading ? null : () => _handleMessageTap(context, bid),
+                      icon: Icon(Icons.chat_bubble_outline, size: isMobile ? 18 : 20),
+                      tooltip: 'Message Contractor',
+                      padding: EdgeInsets.all(isMobile ? 3 : 4),
+                      constraints: BoxConstraints(
+                        minWidth: isMobile ? 28 : 32,
+                        minHeight: isMobile ? 28 : 32,
+                      ),
+                    ),
+                  if (showMessageButton)
+                    SizedBox(width: isMobile ? 3 : 4),
+                  IconButton(
+                    onPressed: () => _showBidInfoDialog(context, bid),
+                    icon: Icon(Icons.info_outline, size: isMobile ? 18 : 20),
+                    tooltip: 'More Info',
+                    padding: EdgeInsets.all(isMobile ? 3 : 4),
+                    constraints: BoxConstraints(
+                      minWidth: isMobile ? 28 : 32, 
+                      minHeight: isMobile ? 28 : 32
+                    ),
+                  ),
                   if (isAccepted || isRejected) ...[
                     SizedBox(width: isMobile ? 3 : 4),
                     if (isAccepted)

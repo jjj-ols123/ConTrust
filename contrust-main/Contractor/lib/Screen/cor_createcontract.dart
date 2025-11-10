@@ -5,6 +5,7 @@ import 'package:contractor/build/contract/buildcontract.dart';
 import 'package:contractor/build/contract/buildcontracttabs.dart';
 import 'package:backend/services/contractor services/contract/cor_createcontractservice.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -42,6 +43,8 @@ class _CreateContractPageState extends State<CreateContractPage>
   final Map<String, TextEditingController> controllers = {};
   final formKey = GlobalKey<FormState>();
   late TabController tabController;
+
+  Timer? _calculationTimer;
 
   List<ContractField> contractFields = [];
   Map<String, dynamic>? projectData;
@@ -550,7 +553,13 @@ class _CreateContractPageState extends State<CreateContractPage>
   void triggerLumpSumCalculation() {
     if (selectedTemplate != null &&
         selectedTemplate!['template_name']?.toLowerCase().contains('lump sum') == true) {
-      service.calculateLumpSumPayments(controllers);
+      _calculationTimer?.cancel();
+
+      _calculationTimer = Timer(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          service.calculateLumpSumPayments(controllers);
+        }
+      });
     }
   }
 
@@ -590,7 +599,14 @@ class _CreateContractPageState extends State<CreateContractPage>
       double parsePercent(String raw) {
         final cleaned = raw.trim().replaceAll('%', '').replaceAll(',', '');
         final v = double.tryParse(cleaned) ?? 0.0;
-        return v > 1.0 ? (v / 100.0) : v;
+
+        // If input contains decimal point, treat as already decimal (e.g., "0.1" = 10%)
+        // If no decimal point, treat as percentage (e.g., "10" = 10%)
+        if (cleaned.contains('.')) {
+          return v; // Already a decimal like 0.1
+        } else {
+          return v / 100.0; // Convert percentage to decimal like 10 -> 0.1
+        }
       }
 
       if (selectedContractType == 'Lump Sum') {
@@ -647,8 +663,7 @@ class _CreateContractPageState extends State<CreateContractPage>
             return;
           }
         } catch (e) {
-          // If we can't check for duplicates, continue with save but log the error
-          print('Warning: Could not check for duplicate contract titles: $e');
+          // 
         }
 
         ConTrustSnackBar.loading(context, 'Contract saving...');
@@ -972,10 +987,9 @@ class _CreateContractPageState extends State<CreateContractPage>
                 .single();
             contractorEmail = userData['email'] as String?;
           } catch (e) {
-            debugPrint('Failed to fetch contractor email: $e');
+            //
           }
 
-          // Auto-populate contractor form fields if empty
           if (contractorData['firm_name'] != null && (controllers['Contractor.Company']?.text.isEmpty ?? true)) {
             controllers['Contractor.Company']?.text = contractorData['firm_name'] as String;
           }
@@ -992,7 +1006,7 @@ class _CreateContractPageState extends State<CreateContractPage>
             controllers['Contractor.Email']?.text = contractorEmail;
           }
         } catch (e) {
-          debugPrint('Failed to fetch contractor data for auto-populate: $e');
+          //
         }
       }
 
@@ -1005,7 +1019,6 @@ class _CreateContractPageState extends State<CreateContractPage>
               .eq('contractee_id', contracteeId)
               .single();
 
-          // Also fetch contractee email from Users table
           String? contracteeEmail;
           try {
             final userData = await Supabase.instance.client
@@ -1015,12 +1028,10 @@ class _CreateContractPageState extends State<CreateContractPage>
                 .single();
             contracteeEmail = userData['email'] as String?;
           } catch (e) {
-            debugPrint('Failed to fetch contractee email: $e');
+            //
           }
 
-          // Auto-populate contractee form fields if empty
           if (contracteeData['full_name'] != null) {
-            // Split full name into first and last name
             final fullName = contracteeData['full_name'] as String;
             final nameParts = fullName.split(' ');
             if (nameParts.isNotEmpty && (controllers['Contractee.FirstName']?.text.isEmpty ?? true)) {
@@ -1041,11 +1052,11 @@ class _CreateContractPageState extends State<CreateContractPage>
             controllers['Contractee.Email']?.text = contracteeEmail;
           }
         } catch (e) {
-          debugPrint('Failed to fetch contractee data for auto-populate: $e');
+          //
         }
       }
     } catch (e) {
-      debugPrint('Failed to auto-populate contact fields: $e');
+      //
     }
   }
 
@@ -1053,6 +1064,7 @@ class _CreateContractPageState extends State<CreateContractPage>
   void dispose() {
     titleController.dispose();
     tabController.dispose();
+    _calculationTimer?.cancel();
     for (var controller in controllers.values) {
       controller.dispose();
     }

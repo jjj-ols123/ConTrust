@@ -32,6 +32,7 @@ class ProfileBuildMethods {
     required Widget mainContent,
     required VoidCallback? onProfilePhotoUpload,
     required VoidCallback? onViewProfilePhoto,
+    required bool isUploadingProfilePhoto,
   }) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -136,7 +137,7 @@ class ProfileBuildMethods {
                           right: 0,
                           bottom: 0,
                           child: InkWell(
-                            onTap: onProfilePhotoUpload,
+                            onTap: isUploadingProfilePhoto ? null : onProfilePhotoUpload,
                             child: Container(
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
@@ -149,7 +150,16 @@ class ProfileBuildMethods {
                                   ),
                                 ],
                               ),
-                              child: Icon(
+                              child: isUploadingProfilePhoto
+                                  ? SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.amber.shade800),
+                                      ),
+                                    )
+                                  : Icon(
                                 Icons.camera_alt,
                                 size: 18,
                                 color: Colors.amber.shade800,
@@ -194,6 +204,7 @@ class ProfileBuildMethods {
     required Widget mainContent,
     required VoidCallback? onProfilePhotoUpload,
     required VoidCallback? onViewProfilePhoto,
+    required bool isUploadingProfilePhoto,
   }) {
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -287,7 +298,7 @@ class ProfileBuildMethods {
                                 right: 0,
                                 bottom: 0,
                                 child: InkWell(
-                                  onTap: onProfilePhotoUpload,
+                                  onTap: isUploadingProfilePhoto ? null : onProfilePhotoUpload,
                                   child: Container(
                                     padding: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
@@ -300,7 +311,16 @@ class ProfileBuildMethods {
                                         ),
                                       ],
                                     ),
-                                    child: Icon(
+                                    child: isUploadingProfilePhoto
+                                        ? SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor: AlwaysStoppedAnimation<Color>(Colors.amber.shade800),
+                                            ),
+                                          )
+                                        : Icon(
                                       Icons.camera_alt,
                                       size: 18,
                                       color: Colors.amber.shade800,
@@ -325,24 +345,27 @@ class ProfileBuildMethods {
                   ),
                 ),
                 const SizedBox(height: 24),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      buildNavigation('Portfolio', selectedTab == 'Portfolio', () => onTabChanged('Portfolio')),
-                      buildNavigation('About', selectedTab == 'About', () => onTabChanged('About')),
-                      buildNavigation('Reviews', selectedTab == 'Reviews', () => onTabChanged('Reviews')),
-                    ],
+                SizedBox(
+                  width: 280,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        buildNavigation('Portfolio', selectedTab == 'Portfolio', () => onTabChanged('Portfolio')),
+                        buildNavigation('About', selectedTab == 'About', () => onTabChanged('About')),
+                        buildNavigation('Reviews', selectedTab == 'Reviews', () => onTabChanged('Reviews')),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -2072,11 +2095,15 @@ class ProfileBuildMethods {
       onTap: () => onProjectTap(project),
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding: const EdgeInsets.all(14),
+        height: 100, // Fixed height to allow proper alignment
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.grey.shade50,
+          color: statusColor.withOpacity(0.05),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey.shade200, width: 1),
+          border: Border.all(
+            color: statusColor.withOpacity(0.3),
+            width: 1,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2094,44 +2121,46 @@ class ProfileBuildMethods {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                      color: statusColor.withOpacity(0.3),
+                      width: 1,
+                    ),
                   ),
                   child: Text(
                     statusLabel,
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: statusColor),
+                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: statusColor),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               project['type'] ?? 'No type',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-            ),
-            if (project['created_at'] != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                'Created ${getTimeAgo(DateTime.parse(project['created_at']))}',
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
               ),
-            ],
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton.icon(
-                  onPressed: () => onProjectTap(project),
-                  icon: const Icon(Icons.visibility_outlined, size: 14),
-                  label: const Text('View Details', style: TextStyle(fontSize: 12)),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.amber.shade700,
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const Spacer(), // Push button to bottom
+            Align(
+              alignment: Alignment.bottomRight,
+              child: TextButton.icon(
+                onPressed: () => onProjectTap(project),
+                icon: const Icon(Icons.visibility_outlined, size: 14),
+                label: const Text('View Details', style: TextStyle(fontSize: 12)),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.amber.shade700,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-              ],
+              ),
             ),
           ],
         ),
@@ -2230,8 +2259,6 @@ class ProfileBuildMethods {
   }
 
   static Widget _buildSpecializationDisplay(String specialization) {
-    // Handle specialization the same way as in cor_profile.dart
-    // If empty or "No specialization", show text
     if (specialization.isEmpty || specialization == "No specialization") {
       return Text(
         'No specialization',
@@ -2242,8 +2269,6 @@ class ProfileBuildMethods {
       );
     }
     
-    // Split by comma and create chips
-    // This matches the logic in cor_profile.dart where List is joined with ", "
     final specs = specialization.split(", ").where((spec) => spec.trim().isNotEmpty).toList();
     
     if (specs.isEmpty) {

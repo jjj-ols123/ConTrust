@@ -177,7 +177,12 @@ class ContractStyle {
     final cleaned = raw.replaceAll('%', '').replaceAll(',', '');
     final v = double.tryParse(cleaned) ?? 0.0;
     if (v <= 0) return 0.0;
-    return v > 1.0 ? (v / 100.0) : v;
+
+    if (cleaned.contains('.')) {
+      return v; 
+    } else {
+      return v / 100.0; 
+    }
   }
 
   static double computeSubtotal(Map<String, String> fieldValues) {

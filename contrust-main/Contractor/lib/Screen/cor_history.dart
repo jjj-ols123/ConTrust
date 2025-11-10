@@ -1,9 +1,14 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/contractor services/cor_profileservice.dart';
 import 'package:backend/utils/be_status.dart';
+import 'package:backend/services/both services/be_receipt_service.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:html' as html if (dart.library.html) 'dart:html';
+import 'dart:ui_web' as ui_web if (dart.library.html) 'dart:ui_web';
 
 class CorHistoryPage extends StatefulWidget {
   final String contractorId;
@@ -51,22 +56,13 @@ class _CorHistoryPageState extends State<CorHistoryPage> {
       
       final supabase = Supabase.instance.client;
       
-      // Load projects
       final projectsResponse = await supabase
           .from('Projects')
           .select('*')
           .eq('contractor_id', widget.contractorId)
           .order('created_at', ascending: false);
       
-      // Load transactions from service
-      final transactionsData = await CorProfileService().loadTransactions(widget.contractorId);
-      // Map transaction data to match expected format
-      final transactionsResponse = transactionsData.map((transaction) => {
-        'project_title': transaction['project_title'] ?? 'Unknown Project',
-        'payment_type': transaction['payment_type'] ?? 'Payment',
-        'amount': transaction['amount'] ?? 0.0,
-        'date': transaction['payment_date'] ?? DateTime.now().toIso8601String(),
-      }).toList();
+      final transactionsResponse = await CorProfileService().loadTransactions(widget.contractorId);
       
       setState(() {
         projects = List<Map<String, dynamic>>.from(projectsResponse);
@@ -257,10 +253,9 @@ class _CorHistoryPageState extends State<CorHistoryPage> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Project details in 2x2 grid
                     Builder(
                       builder: (context) {
-                        final fields = [
+                        final fields = <Widget>[
                           _buildDetailField('Type', project['type'] ?? 'Not specified'),
                           _buildDetailField('Location', project['location'] ?? 'Not specified'),
                           _buildDetailField('Budget', _formatBudget(project)),
@@ -281,8 +276,7 @@ class _CorHistoryPageState extends State<CorHistoryPage> {
                     ),
 
                     const SizedBox(height: 24),
-                    
-                    // Description (full width)
+
                     SizedBox(
                       width: double.infinity,
                       child: _buildDetailField('Description', project['description'] ?? 'No description provided'),
@@ -298,42 +292,35 @@ class _CorHistoryPageState extends State<CorHistoryPage> {
   }
 
   Widget _buildDetailField(String label, String value) {
-    return Container(
-      height: 80, // Fixed height for consistent 2x2 grid
-      child: Column(
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
             style: TextStyle(
-              fontSize: 12, // Smaller font for compact layout
+            fontSize: 12,
               fontWeight: FontWeight.bold,
               color: Colors.grey.shade700,
             ),
           ),
-          const SizedBox(height: 4), // Reduced spacing
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(8), // Reduced padding
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(6), // Smaller border radius
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Text(
-                value,
-                style: TextStyle(
-                  fontSize: 12, // Smaller font for compact layout
-                  color: Colors.grey.shade800,
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 2,
+        const SizedBox(height: 6),
+          Container(
+            width: double.infinity,
+          padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Text(
+              value,
+              style: TextStyle(
+              fontSize: 12,
+                color: Colors.grey.shade800,
               ),
             ),
           ),
         ],
-      ),
     );
   }
 
@@ -355,15 +342,6 @@ class _CorHistoryPageState extends State<CorHistoryPage> {
     return project['start_date'] != null
         ? _formatDate(project['start_date'])
         : 'Not specified';
-  }
-
-  String _formatDate(String dateString) {
-    try {
-      final date = DateTime.parse(dateString);
-      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-    } catch (e) {
-      return dateString;
-    }
   }
 
   Color _getStatusColor(String? status) {
@@ -695,48 +673,335 @@ class _CorHistoryPageState extends State<CorHistoryPage> {
   }
 
   Widget _buildTransactionCard(Map<String, dynamic> transaction) {
+    return InkWell(
+      onTap: () => _showPaymentDetailsDialog(transaction),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade200, width: 1),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.payment, color: Colors.green.shade700, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    transaction['project_title'] ?? 'Untitled',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1F2937)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    transaction['payment_type'] ?? 'Payment',
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              '₱${transaction['amount'] ?? 0}',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.green.shade700),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPaymentDetailsDialog(Map<String, dynamic> transaction) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => _buildPaymentDetailsDialog(dialogContext, transaction),
+    );
+  }
+
+  Widget _buildPaymentDetailsDialog(BuildContext dialogContext, Map<String, dynamic> transaction) {
+    final receiptPath = transaction['receipt_path'] as String?;
+    final hasReceipt = receiptPath != null && receiptPath.isNotEmpty;
+    final amountValue = (transaction['amount'] as num?)?.toStringAsFixed(2) ?? '0.00';
+    final paymentType = transaction['payment_type'] ?? 'Payment';
+    final reference = transaction['reference'] ?? 'N/A';
+    final clientName = transaction['client_name'] ?? 'Unknown client';
+    final paymentDate = _formatDate(transaction['payment_date']);
+
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 700, maxHeight: 600),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Colors.black.withOpacity(0.5),
+            width: 0.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 20,
+              spreadRadius: 1,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade700,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(
+                      Icons.payments_outlined,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Payment Details',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (hasReceipt) ...[
+                      Text(
+                        'Receipt',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        constraints: const BoxConstraints(minHeight: 320, maxHeight: 480),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: FutureBuilder<String?>(
+                            future: ReceiptService.getReceiptSignedUrl(receiptPath!, expirationSeconds: 3600),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                return const Center(child: CircularProgressIndicator());
+                              }
+
+                              if (snapshot.hasError || snapshot.data == null || snapshot.data!.isEmpty) {
+                                return Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(24),
+                                    child: Text(
+                                      'Unable to load the receipt at this time.',
+                                      style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              return _buildPdfViewer(snapshot.data!);
+                            },
+                          ),
+                        ),
+                      ),
+                    ] else ...[
+                      Text(
+                        'Receipt',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Text(
+                          'No e-receipt was provided for this transaction.',
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    _buildDetailField('Project', transaction['project_title'] ?? 'Unknown project'),
+                    _buildDetailField('Payment Type', paymentType),
+                    _buildDetailField('Amount Received', '₱$amountValue'),
+                    _buildDetailField('Reference', reference),
+                    _buildDetailField('Client', clientName),
+                    _buildDetailField('Payment Date', paymentDate),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 120,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade700,
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF1F2937),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+  
+  String _formatDate(dynamic date) {
+    if (date == null) return 'N/A';
+    try {
+      final dateTime = DateTime.parse(date.toString());
+      return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return date.toString();
+    }
+  }
+
+
+  Widget _buildPdfViewer(String pdfUrl) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      width: double.infinity,
+      height: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        border: Border.all(color: Colors.grey.shade300),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.green.shade50,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(Icons.payment, color: Colors.green.shade700, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  transaction['project_title'] ?? 'Untitled',
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1F2937)),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  transaction['payment_type'] ?? 'Payment',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            '₱${transaction['amount'] ?? 0}',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.green.shade700),
-          ),
-        ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: kIsWeb
+            ? _buildWebPdfViewer(pdfUrl)
+            : _buildMobilePdfViewer(pdfUrl),
       ),
+    );
+  }
+
+  Widget _buildWebPdfViewer(String pdfUrl) {
+    if (!kIsWeb) {
+      return Container(
+        width: double.infinity,
+        height: double.infinity,
+        color: Colors.grey.shade50,
+        child: const Center(
+          child: Text('PDF viewer not available on this platform'),
+        ),
+      );
+    }
+    
+    final viewType = 'pdf-viewer-${pdfUrl.hashCode.abs()}';
+    
+    try {
+      if (kIsWeb) {
+        ui_web.platformViewRegistry.registerViewFactory(viewType, (int viewId) {
+          final iframe = html.IFrameElement()
+            ..src = pdfUrl
+            ..style.border = 'none'
+            ..style.width = '100%'
+            ..style.height = '100%'
+            ..allow = 'fullscreen'
+            ..onError.listen((event) {});
+          
+          return iframe;
+        });
+      }
+    } catch (e) {
+      //
+    }
+    
+    return HtmlElementView(viewType: viewType);
+  }
+
+  Widget _buildMobilePdfViewer(String pdfUrl) {
+    return SfPdfViewer.network(
+      pdfUrl,
+      onDocumentLoadFailed: (PdfDocumentLoadFailedDetails details) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load PDF: ${details.error}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      },
     );
   }
   

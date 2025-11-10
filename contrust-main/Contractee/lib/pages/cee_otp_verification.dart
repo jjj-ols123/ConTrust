@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:backend/services/both%20services/be_otp_service.dart';
+import 'package:backend/services/both services/be_otp_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'dart:async';
 

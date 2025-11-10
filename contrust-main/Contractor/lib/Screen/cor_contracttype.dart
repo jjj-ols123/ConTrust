@@ -1,12 +1,18 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
-import 'package:backend/services/both%20services/be_fetchservice.dart';
+import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/build/contract/buildcontracttype.dart';
 import 'package:flutter/material.dart';
 
 class ContractType extends StatefulWidget {
   final String contractorId;
+  final bool showNoProjectsMessage;
 
-  const ContractType({super.key, required this.contractorId});
+  const ContractType({
+    super.key,
+    required this.contractorId,
+    this.showNoProjectsMessage = false,
+  });
 
   @override
   State<ContractType> createState() => _ContractTypeState();
@@ -23,12 +29,24 @@ class _ContractTypeState extends State<ContractType> {
   void initState() {
     super.initState();
     contractTypesKey = UniqueKey();
+
+    if (widget.showNoProjectsMessage) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ConTrustSnackBar.show(
+          context,
+          'No available projects to create a contract for. Please ensure you have projects awaiting for contract.',
+          type: SnackBarType.info,
+          duration: const Duration(seconds: 2),
+        );
+      });
+    }
   }
 
   Future<List<Map<String, dynamic>>> _fetchContractorProjects(String contractorId) async {
     try {
       final projects = await FetchService().fetchContractorProjectInfo(contractorId);
-      return projects;
+      // Filter to only show projects with status "awaiting_contract"
+      return projects.where((project) => project['status'] == 'awaiting_contract').toList();
     } catch (e) {
       return [];
     }

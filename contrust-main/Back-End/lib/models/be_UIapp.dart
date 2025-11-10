@@ -103,7 +103,7 @@ class ContractorsView extends StatelessWidget {
                       }
                     }),
                   ),
-                SizedBox(height: isMobile ? 4 : 6),
+                SizedBox(height: isMobile ? 5 : 6),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -186,38 +186,34 @@ class ProjectView extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          InkWell(
-            onTap: isHiringRequest ? null : onTap,
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.white, Colors.grey.shade50],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.white, Colors.grey.shade50],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(context, status),
-                  
-                  const SizedBox(height: 16),
-                  _buildProjectDetails(context, isHiringRequest),
-                  
-                  const SizedBox(height: 16),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(context, status),
 
-                  _buildDescription(),
-                  
-                  const SizedBox(height: 16),
+                const SizedBox(height: 16),
+                _buildProjectDetails(context, isHiringRequest),
 
-                  if (!isHiringRequest && project['status'] == 'pending')
-                    _buildBiddingInfo(),
-                  
-                ],
-              ),
+                const SizedBox(height: 16),
+
+                _buildDescription(),
+
+                const SizedBox(height: 16),
+
+                if (!isHiringRequest && project['status'] == 'pending')
+                  _buildBiddingInfo(),
+
+              ],
             ),
           ),
           // Loading overlay
@@ -1073,7 +1069,6 @@ class ProjectView extends StatelessWidget {
 
   Future<void> _showEnhancedContractView(BuildContext context, Map<String, dynamic> contractData) async {
     try {
-      // Fetch fresh contract data to ensure we have the latest signed_pdf_url
       final freshContractData = await ContractService.getContractById(contractData['contract_id'] as String);
 
       showDialog(
@@ -1104,7 +1099,6 @@ class ProjectView extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Header
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(

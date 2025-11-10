@@ -1,7 +1,7 @@
 // ignore_for_file: use_build_context_synchronously, unused_local_variable
 
-import 'package:backend/services/both%20services/be_fetchservice.dart';
-import 'package:backend/services/both%20services/be_project_service.dart';
+import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/services/both services/be_project_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';

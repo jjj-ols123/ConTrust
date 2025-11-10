@@ -6,6 +6,7 @@ import 'package:backend/services/both services/be_payment_service.dart';
 import 'package:backend/models/be_milestone_payment_modal.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class PaymentModal {
   static Future<void> show({
@@ -16,12 +17,32 @@ class PaymentModal {
     required VoidCallback onPaymentSuccess,
     double? customAmount,
   }) async {
+
     final paymentService = PaymentService();
     final isMilestone = await paymentService.isMilestoneContract(projectId);
-    
+
     if (isMilestone) {
       final milestoneInfo = await paymentService.getMilestonePaymentInfo(projectId);
       if (milestoneInfo != null) {
+        try {
+          final supabase = Supabase.instance.client;
+          final projectData = await supabase
+              .from('Projects')
+              .select('contract_id')
+              .eq('project_id', projectId)
+              .single();
+          
+          final contractId = projectData['contract_id'] as String?;
+          if (contractId != null) {
+            await paymentService.initializeMilestones(
+              projectId: projectId,
+              contractId: contractId,
+            );
+          }
+        } catch (e) {
+          //
+        }
+
         final contractInfo = milestoneInfo['contract_info'] as Map<String, dynamic>? ?? {};
 
         await MilestonePaymentModal.show(
@@ -384,6 +405,24 @@ class PaymentModal {
                                   final expMonth = int.parse(expiry[0]);
                                   final expYear = int.parse('20${expiry[1]}');
 
+                                  // Fetch user's email from Users table
+                                  final supabase = Supabase.instance.client;
+                                  final userId = supabase.auth.currentUser?.id;
+                                  String? billingEmail;
+                                  
+                                  if (userId != null) {
+                                    try {
+                                      final userData = await supabase
+                                          .from('Users')
+                                          .select('email')
+                                          .eq('users_id', userId)
+                                          .maybeSingle();
+                                      billingEmail = userData?['email'] as String?;
+                                    } catch (e) {
+                                      //
+                                    }
+                                  }
+
                                   final paymentService = PaymentService();
                                   await paymentService.processPayment(
                                     projectId: projectId,
@@ -392,6 +431,7 @@ class PaymentModal {
                                     expYear: expYear,
                                     cvc: cvcController.text,
                                     cardholderName: nameController.text.trim(),
+                                    billingEmail: billingEmail,
                                     customAmount: customAmount,
                                   );
 
@@ -463,7 +503,6 @@ class PaymentModal {
                                             ElevatedButton(
                                               onPressed: () {
                                                 Navigator.pop(context);
-                                                // Navigate to payment history page
                                                 context.go('/history');
                                               },
                                               style: ElevatedButton.styleFrom(

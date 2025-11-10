@@ -31,8 +31,10 @@ class CreateContractService {
   Future<void> checkForSingleProject(String contractorId, Function(String?) onProjectSelected) async {
     try {
       final projects = await FetchService().fetchContractorProjectInfo(contractorId);
-      if (projects.length == 1) {
-        final projectId = projects.first['project_id'] as String;
+      // Filter to only consider projects with "awaiting_contract" status
+      final awaitingContractProjects = projects.where((project) => project['status'] == 'awaiting_contract').toList();
+      if (awaitingContractProjects.length == 1) {
+        final projectId = awaitingContractProjects.first['project_id'] as String;
         onProjectSelected(projectId);
       }
     } catch (e) {
@@ -452,57 +454,59 @@ class CreateContractService {
 
   void calculateLumpSumPayments(Map<String, TextEditingController> controllers, {int? milestoneCount}) {
     try {
-      // Get total contract price
-      final totalText = controllers['Payment.Total']?.text ?? '0';
-      final total = double.tryParse(totalText.replaceAll(',', '')) ?? 0;
+      final totalText = controllers['Payment.Total']?.text ?? '';
+      final total = double.tryParse(totalText.replaceAll(',', ''));
 
-      if (total <= 0) {
-        controllers['Payment.FinalPayment']?.text = '0.00';
+      if (total == null || total <= 0) {
+        controllers['Payment.FinalPayment']?.text = '';
         return;
       }
 
-      // Calculate down payment
-      final downPaymentPercentText = controllers['Payment.DownPaymentPercentage']?.text ?? '0';
-      final downPaymentPercent = _parsePercent(downPaymentPercentText);
+      final downPaymentPercentText = controllers['Payment.DownPaymentPercentage']?.text ?? '';
+      final downPaymentPercent = downPaymentPercentText.trim().isEmpty ? 0.0 : _parsePercent(downPaymentPercentText);
       final downPayment = total * downPaymentPercent;
 
-      // Calculate retention
-      final retentionPercentText = controllers['Payment.RetentionPercentage']?.text ?? '0';
-      final retentionPercent = _parsePercent(retentionPercentText);
+      final retentionPercentText = controllers['Payment.RetentionPercentage']?.text ?? '';
+      final retentionPercent = retentionPercentText.trim().isEmpty ? 0.0 : _parsePercent(retentionPercentText);
       final retention = total * retentionPercent;
 
-      // Calculate total milestone payments
       double totalMilestonePayments = 0.0;
       final maxMilestones = milestoneCount ?? getMaxMilestoneCountFromControllers(controllers);
 
       for (int i = 1; i <= maxMilestones; i++) {
-        final milestoneAmountText = controllers['Milestone.$i.Amount']?.text ?? '0';
-        final milestoneAmount = double.tryParse(milestoneAmountText.replaceAll(',', '')) ?? 0;
-        totalMilestonePayments += milestoneAmount;
+        final milestoneAmountText = controllers['Milestone.$i.Amount']?.text ?? '';
+        if (milestoneAmountText.trim().isNotEmpty) {
+          final milestoneAmount = double.tryParse(milestoneAmountText.replaceAll(',', '')) ?? 0;
+          totalMilestonePayments += milestoneAmount;
+        }
       }
 
-      // Calculate final payment: Total - Down Payment - Retention - Milestone Payments
       final finalPayment = total - downPayment - retention - totalMilestonePayments;
 
-      // Ensure final payment is not negative
-      controllers['Payment.FinalPayment']?.text = finalPayment > 0 ? finalPayment.toStringAsFixed(2) : '0.00';
+      final result = finalPayment > 0 ? finalPayment.toStringAsFixed(2) : '0.00';
+      controllers['Payment.FinalPayment']?.text = result;
     } catch (e) {
       _errorService.logError(
-        errorMessage: 'Failed to calculate lump sum payments: ',
+        errorMessage: 'Failed to calculate lump sum payments: $e',
         module: 'Create Contract Service',
         severity: 'Low',
         extraInfo: {
           'operation': 'Calculate Lump Sum Payments',
         },
       );
-      controllers['Payment.FinalPayment']?.text = '0.00';
+      controllers['Payment.FinalPayment']?.text = '';
     }
   }
 
   double _parsePercent(String raw) {
     final cleaned = raw.trim().replaceAll('%', '').replaceAll(',', '');
     final v = double.tryParse(cleaned) ?? 0.0;
-    return v > 1.0 ? (v / 100.0) : v;
+
+    if (cleaned.contains('.')) {
+      return v; 
+    } else {
+      return v / 100.0; 
+    }
   }
 
   void calculateTimeAndMaterialsRates(Map<String, TextEditingController> controllers, {int? itemCount}) {
@@ -892,7 +896,6 @@ class CreateContractService {
     required String contractType,
   }) async {
     try {
-      // Auto-fill contractor and contractee information from database
       final enrichedFieldValues = await _enrichFieldValuesWithContactInfo(
         fieldValues,
         projectId,
