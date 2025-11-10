@@ -68,40 +68,6 @@ class _WebsiteStartPageState extends State<WebsiteStartPage> {
     }
   }
 
-  void _forwardOAuthIfPresent(String role) {
-    if (!kIsWeb) {
-      return;
-    }
-    final search = html.window.location.search ?? '';
-    if (search.contains('code=') || search.contains('access_token=')) {
-      final String base = role == 'contractor'
-          ? 'https://contractor.contrust-sjdm.com'
-          : 'https://contractee.contrust-sjdm.com';
-      html.window.location.replace('$base/auth/callback$search');
-    }
-  }
-
-  void _enforceRedirectGuard() {
-    if (!kIsWeb) {
-      return;
-    }
-    try {
-      final String? role = html.window.localStorage['preferredSubdomain'];
-      final String normalized = (role ?? '').toLowerCase();
-      if (normalized == 'contractor' || normalized == 'contractee') {
-        _forwardOAuthIfPresent(normalized);
-        // If no OAuth params, keep users on their chosen subdomain
-        final String base = normalized == 'contractor'
-            ? 'https://contractor.contrust-sjdm.com'
-            : 'https://contractee.contrust-sjdm.com';
-        final String path = normalized == 'contractor' ? '/' : '/login';
-        html.window.location.replace('$base$path');
-      }
-    } catch (_) {
-      // Non-fatal: stay on landing if guard fails
-    }
-  }
-
   Widget _buildNavigationBar(BuildContext context, bool isDesktop, bool isTablet, bool isMobile) {
     final double horizontalPadding = isDesktop ? 60 : (isTablet ? 40 : 16);
     final double logoHeight = isDesktop ? 40 : (isMobile ? 28 : 32);

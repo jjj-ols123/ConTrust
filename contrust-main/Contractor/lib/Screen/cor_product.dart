@@ -73,7 +73,7 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
         });
       }
     } catch (e) {
-      print('Error loading local inventory: $e');
+      //
     }
   }
 
@@ -86,7 +86,7 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
       final encodedData = json.encode(localInventory);
       await prefs.setString(key, encodedData);
     } catch (e) {
-      print('Error saving local inventory: $e');
+      //
     }
   }
 
@@ -278,7 +278,6 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
       localInventory.removeAt(index);
     });
     _saveLocalInventory(); // Save to persistent storage
-    ConTrustSnackBar.success(context, 'Material removed from local inventory');
   }
 
   Future<bool> addLocalInventoryToProject() async {
@@ -326,25 +325,20 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
             notes: material['note'],
           );
           addedCount++;
-          successfullyAddedItems.add(material); // Track successfully added items
+          successfullyAddedItems.add(material); 
         } catch (e) {
-          print('Failed to add material ${material['name']}: $e');
-          // Failed items remain in local inventory
+          //
         }
       }
 
-      // Remove successfully added items and duplicates from local inventory
       setState(() {
-        // Remove all successfully added items
         for (final item in successfullyAddedItems) {
           localInventory.remove(item);
         }
-        // Remove all duplicate items
         for (final item in duplicateItems) {
           localInventory.remove(item);
         }
       });
-      _saveLocalInventory(); // Save updated local inventory (only failed items remain)
 
       if (addedCount > 0) {
         String message = 'Successfully added $addedCount material${addedCount > 1 ? 's' : ''} to project';
