@@ -33,27 +33,31 @@ class Footer extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: logoWidth,
-                height: logoHeight,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFA726),
-                  borderRadius: BorderRadius.circular(2),
+          InkWell(
+            onTap: () => Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false),
+            borderRadius: BorderRadius.circular(4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: logoWidth,
+                  height: logoHeight,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFA726),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-              SizedBox(width: isMobile ? 8 : 10),
-              Text(
-                'ConTrust',
-                style: TextStyle(
-                  fontSize: logoFontSize,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
+                SizedBox(width: isMobile ? 8 : 10),
+                Text(
+                  'ConTrust',
+                  style: TextStyle(
+                    fontSize: logoFontSize,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           SizedBox(height: isMobile ? 12 : 16),
           Wrap(
@@ -68,6 +72,10 @@ class Footer extends StatelessWidget {
               TextButton(
                 onPressed: () => Navigator.of(context).pushNamed('/services'),
                 child: const Text('Services', style: TextStyle(color: Colors.white70)),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pushNamed('/contact'),
+                child: const Text('Contact', style: TextStyle(color: Colors.white70)),
               ),
             ],
           ),

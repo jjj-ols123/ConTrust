@@ -98,9 +98,17 @@ class AboutPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
+              TextButton(
+                onPressed: () => Navigator.of(context).pushNamed('/contact'),
+                child: const Text(
+                  'Contact',
+                  style: TextStyle(color: Color(0xFF1a1a1a), fontWeight: FontWeight.w600),
+                ),
+              ),
+              const SizedBox(width: 8),
               IconButton(
                 icon: Icon(Icons.close, size: isMobile ? 24 : 28),
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () => Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false),
                 tooltip: 'Back to Home',
                 padding: EdgeInsets.all(isMobile ? 8 : 12),
               ),
