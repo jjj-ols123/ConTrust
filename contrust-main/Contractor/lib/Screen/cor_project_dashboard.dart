@@ -76,6 +76,9 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             }
           }
         }
+      } else {
+        _milestoneDates = [];
+      }
     } else {
       _milestoneDates = [];
     }
@@ -158,7 +161,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     }
     if (mounted) {
       final isCustomContract = _contractType?.toLowerCase() == 'custom';
-      
+
       setState(() {
         if (_contractData != null && !isCustomContract) {
           final fieldValues = _contractData!['field_values'] as Map<String, dynamic>?;
@@ -166,7 +169,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             final startDateStr = fieldValues['Project.StartDate'] as String?;
             if (startDateStr != null && startDateStr.isNotEmpty) {
               try {
-                final dateStr = startDateStr.split(' ')[0]; 
+                final dateStr = startDateStr.split(' ')[0];
                 final parsed = DateTime.parse(dateStr);
                 _startDate = DateTime(parsed.year, parsed.month, parsed.day);
               } catch (_) {
@@ -177,14 +180,14 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             final completionDateStr = fieldValues['Project.CompletionDate'] as String?;
             if (completionDateStr != null && completionDateStr.isNotEmpty) {
               try {
-                final dateStr = completionDateStr.split(' ')[0]; 
+                final dateStr = completionDateStr.split(' ')[0];
                 final parsed = DateTime.parse(dateStr);
                 _estimatedCompletion = DateTime(parsed.year, parsed.month, parsed.day);
               } catch (_) {
                 _estimatedCompletion = null;
               }
             }
-            }
+          }
         }
 
         if (_startDate == null) {
@@ -197,7 +200,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               _startDate = null;
             }
           }
-          }
+        }
 
         if (_estimatedCompletion == null) {
           final estimatedCompletionStr = projectDetails['estimated_completion'] as String?;
@@ -1193,9 +1196,9 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                         shrinkWrap: true,
                         padding: const EdgeInsets.all(16),
                         itemCount: projects.length,
-                      itemBuilder: (context, index) {
-                        final project = projects[index];
-                        final isCurrentProject = project['project_id'] == widget.projectId;
+                        itemBuilder: (context, index) {
+                          final project = projects[index];
+                          final isCurrentProject = project['project_id'] == widget.projectId;
                           return Card(
                             margin: const EdgeInsets.only(bottom: 8),
                             color: isCurrentProject ? Colors.amber.shade50 : null,

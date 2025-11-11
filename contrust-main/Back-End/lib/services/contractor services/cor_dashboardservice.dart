@@ -23,7 +23,15 @@ class CorDashboardService {
       final completed = projects.where((p) => p['status'] == 'completed').length;
       final activeStatuses = ['active', 'awaiting_contract', 'awaiting_agreement', 'pending', 'awaiting_signature', 'cancellation_requested_by_contractee'];
       final active = projects.where((p) => activeStatuses.contains(p['status'])).length;
-      final ratingVal = contractorData?['rating'] ?? 0.0;
+      double ratingVal;
+      final rawRating = contractorData?['rating'];
+      if (rawRating is num) {
+        ratingVal = rawRating.toDouble();
+      } else if (rawRating is String) {
+        ratingVal = double.tryParse(rawRating) ?? 0.0;
+      } else {
+        ratingVal = 0.0;
+      }
 
       final activeProjectList = projects.where((p) => activeStatuses.contains(p['status'])).toList();
       
@@ -112,37 +120,57 @@ class CorDashboardService {
         }
       }
 
-      // Calculate total earnings from actual payments
       double totalEarnings = 0.0;
       List<Map<String, dynamic>> allPayments = [];
-      
-      for (var project in projects) {
-        final projectdata = project['projectdata'] as Map<String, dynamic>? ?? {};
-        final payments = projectdata['payments'] as List<dynamic>? ?? [];
-        
-        for (var payment in payments) {
-          final paymentMap = Map<String, dynamic>.from(payment);
-          final amount = (paymentMap['amount'] as num?)?.toDouble() ?? 0.0;
-          if (amount > 0) {
-            allPayments.add({
-              'amount': amount,
-              'date': paymentMap['date'],
-              'reference': paymentMap['reference'],
-              'project_id': project['project_id'],
-              'project_title': project['title'] ?? 'Untitled Project',
-              'contract_type': paymentMap['contract_type'],
-            });
-            totalEarnings += amount;
-          }
+
+      try {
+        final paymentsResponse = await Supabase.instance.client
+            .from('Payments')
+            .select('payment_id, project_id, amount, payment_type, payment_status, paid_at, payment_reference')
+            .eq('contractor_id', contractorId)
+            .eq('payment_status', 'completed')
+            .order('paid_at', ascending: false);
+
+        final paymentsList = List<Map<String, dynamic>>.from(paymentsResponse ?? []);
+
+        final Map<String, Map<String, dynamic>> projectLookup = {
+          for (final project in projects)
+            if (project['project_id'] != null)
+              project['project_id'].toString(): Map<String, dynamic>.from(project),
+        };
+
+        for (final payment in paymentsList) {
+          final amount = (payment['amount'] as num?)?.toDouble() ?? 0.0;
+          if (amount <= 0) continue;
+
+          final projectId = payment['project_id']?.toString();
+          final projectInfo = projectId != null ? projectLookup[projectId] : null;
+          final projectTitle = projectInfo != null ? (projectInfo['title'] ?? 'Untitled Project') : 'Untitled Project';
+          final projectdata = projectInfo != null ? projectInfo['projectdata'] as Map<String, dynamic>? : null;
+
+          allPayments.add({
+            'amount': amount,
+            'date': payment['paid_at'],
+            'reference': payment['payment_reference'],
+            'project_id': projectId,
+            'project_title': projectTitle,
+            'payment_type': payment['payment_type'],
+            'contract_type': projectdata?['contract_type'],
+          });
+
+          totalEarnings += amount;
         }
+      } catch (e) {
+        await _errorService.logError(
+          errorMessage: 'Failed to load contractor payments: $e',
+          module: 'Contractor Dashboard Service',
+          severity: 'Low',
+          extraInfo: {
+            'operation': 'Load Payments for Dashboard',
+            'contractor_id': contractorId,
+          },
+        );
       }
-      
-      // Sort payments by date (newest first)
-      allPayments.sort((a, b) {
-        final dateA = a['date'] as String? ?? '';
-        final dateB = b['date'] as String? ?? '';
-        return dateB.compareTo(dateA);
-      });
       
       final totalClients = projects.map((p) => p['contractee_id']).toSet().length;
 
@@ -190,7 +218,7 @@ class CorDashboardService {
         'contractorData': contractorData,
         'activeProjects': active,
         'completedProjects': completed,
-        'rating': ratingVal.toDouble(),
+        'rating': ratingVal,
         'recentActivities': activeProjectList,
         'totalEarnings': totalEarnings,
         'allPayments': allPayments,

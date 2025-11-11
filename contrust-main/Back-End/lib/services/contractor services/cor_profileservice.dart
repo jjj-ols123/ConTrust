@@ -16,10 +16,40 @@ class CorProfileService {
 
   Future<Map<String, dynamic>> loadContractorData(String contractorId) async {
     try {
+      debugPrint('[CorProfileService] Loading contractor data for: $contractorId');
+
       final contractorData = await UserService().fetchUserData(
         contractorId,
         isContractor: true,
       );
+
+      if (contractorData == null || contractorData.isEmpty) {
+        debugPrint('[CorProfileService] No contractor profile found for $contractorId');
+      } else {
+        debugPrint('[CorProfileService] Contractor profile keys: ${contractorData.keys}');
+      }
+
+      final ratings = await Supabase.instance.client
+          .from('ContractorRatings')
+          .select('rating')
+          .eq('contractor_id', contractorId);
+
+      debugPrint('[CorProfileService] Ratings fetched: ${ratings.length} entries');
+
+      if (ratings.isNotEmpty) {
+        final totalRating = ratings.fold<double>(
+          0,
+          (sum, rating) => sum + _parseToDouble(rating['rating']),
+        );
+        final averageRating = totalRating / ratings.length;
+
+        debugPrint('[CorProfileService] Calculated average rating: $averageRating');
+
+        await Supabase.instance.client
+            .from('Contractor')
+            .update({'rating': averageRating})
+            .eq('contractor_id', contractorId);
+      }
 
       final completedProjects = await Supabase.instance.client
           .from('Projects')
@@ -27,11 +57,15 @@ class CorProfileService {
           .eq('contractor_id', contractorId)
           .eq('status', 'completed');
 
+      debugPrint('[CorProfileService] Completed projects count: ${completedProjects.length}');
+
       final ratingsData = await Supabase.instance.client
           .from('ContractorRatings')
           .select('rating, review, created_at, contractee_id')
           .eq('contractor_id', contractorId)
           .order('created_at', ascending: false);
+
+      debugPrint('[CorProfileService] Detailed ratings fetched: ${ratingsData.length}');
           
       final contracteeIds = ratingsData
           .map((r) => r['contractee_id'] as String?)
@@ -46,44 +80,58 @@ class CorProfileService {
               .from('Contractee')
               .select('contractee_id, full_name')
               .inFilter('contractee_id', contracteeIds);
-          
+
+          debugPrint('[CorProfileService] Contractee names fetched: ${contracteeData.length}');
+
           for (var contractee in contracteeData) {
             contracteeNamesMap[contractee['contractee_id']] = 
                 contractee['full_name'] ?? 'Anonymous Client';
           }
         } catch (e) {
           // Error fetching contractee data - will use defaults
+          debugPrint('[CorProfileService] Error fetching contractee names: $e');
         }
       }
       
       List<Map<String, dynamic>> reviewsWithNames = [];
       for (var rating in ratingsData) {
-        final contracteeId = rating['contractee_id'] as String?;
-        rating['client_name'] = contracteeId != null && contracteeNamesMap.containsKey(contracteeId)
-            ? contracteeNamesMap[contracteeId]!
-            : 'Anonymous Client';
-        reviewsWithNames.add(rating);
+        final rawRating = rating['rating'];
+        final ratingValue = _parseToDouble(rating['rating']).round();
+        if (ratingValue >= 1 && ratingValue <= 5) {
+          rating['rating'] = ratingValue;
+          rating['client_name'] = contracteeIds.contains(rating['contractee_id']) 
+              ? contracteeNamesMap[rating['contractee_id']] ?? 'Anonymous Client'
+              : 'Anonymous Client';
+          reviewsWithNames.add(rating);
+        } else {
+          debugPrint('[CorProfileService] Skipped rating value "$rawRating" for contractee ${rating['contractee_id']}');
+        }
       }
 
       Map<int, int> ratingDistribution = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
       int totalReviews = 0;
       
       for (var ratingData in reviewsWithNames) {
-        final ratingValue = (ratingData['rating'] as num?)?.round() ?? 0;
+        final ratingValue = ratingData['rating'];
         if (ratingValue >= 1 && ratingValue <= 5) {
           ratingDistribution[ratingValue] = (ratingDistribution[ratingValue] ?? 0) + 1;
           totalReviews++;
         }
       }
 
-      return {
+      final result = {
         'contractorData': contractorData,
         'completedProjectsCount': completedProjects.length,
         'allRatings': reviewsWithNames,
         'ratingDistribution': ratingDistribution,
         'totalReviews': totalReviews,
       };
+
+      debugPrint('[CorProfileService] loadContractorData completed for $contractorId');
+
+      return result;
     } catch (e) {
+      debugPrint('[CorProfileService] Error loading contractor data for $contractorId: $e');
       throw Exception('Error loading contractor data: $e ');
     }
   }
@@ -366,6 +414,16 @@ class CorProfileService {
   double getRatingPercentage(int stars, int totalReviews, Map<int, int> ratingDistribution) {
     if (totalReviews == 0) return 0.0;
     return (ratingDistribution[stars] ?? 0) / totalReviews;
+  }
+
+  double _parseToDouble(dynamic value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+    if (value is String) {
+      return double.tryParse(value) ?? 0.0;
+    }
+    return 0.0;
   }
 
   void calculateRatingDistribution(List<Map<String, dynamic>> allRatings, 

@@ -16,10 +16,11 @@ class PaymentModal {
     required double amount,
     required VoidCallback onPaymentSuccess,
     double? customAmount,
+    bool forceRegularModal = false,
   }) async {
 
     final paymentService = PaymentService();
-    final isMilestone = await paymentService.isMilestoneContract(projectId);
+    final isMilestone = !forceRegularModal && await paymentService.isMilestoneContract(projectId);
 
     if (isMilestone) {
       final milestoneInfo = await paymentService.getMilestonePaymentInfo(projectId);
@@ -156,7 +157,9 @@ class PaymentModal {
                         ),
                         if (!isProcessing)
                           IconButton(
-                            onPressed: () => Navigator.pop(context),
+                            onPressed: () {
+                              _closePaymentDialogs(context);
+                            },
                             icon: const Icon(Icons.close, color: Colors.white),
                           ),
                       ],
@@ -436,9 +439,9 @@ class PaymentModal {
                                   );
 
                                   if (context.mounted) {
-                                    Navigator.pop(context);
+                                    _closePaymentDialogs(context);
                                     onPaymentSuccess();
-                                    
+
                                     // Show success dialog with receipt info
                                     if (context.mounted) {
                                       showDialog(
@@ -563,6 +566,11 @@ class PaymentModal {
     expiryController.dispose();
     cvcController.dispose();
     nameController.dispose();
+  }
+
+  static void _closePaymentDialogs(BuildContext context) {
+    final navigator = Navigator.of(context, rootNavigator: true);
+    navigator.popUntil((route) => route is! DialogRoute);
   }
 }
 

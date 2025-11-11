@@ -21,6 +21,10 @@ class HomePageBuilder {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
     
+    final completedCount = projects
+        .where((p) => (p['status']?.toString().toLowerCase() ?? '') == 'ended')
+        .length;
+
     return Container(
       padding: EdgeInsets.all(isMobile ? 12 : 16),
       decoration: BoxDecoration(
@@ -60,75 +64,25 @@ class HomePageBuilder {
           ),
           SizedBox(height: isMobile ? 12 : 16),
           isMobile
-            ? Column(
-                children: [
-                  _buildStatCard(
-                    "Active Projects",
-                    "${projects.where((p) => p['status'] == 'active').length}",
-                    Icons.work,
-                    Colors.black,
-                    isMobile,
-                  ),
-                  const SizedBox(height: 10),
-                  _buildStatCard(
-                    "Pending Projects",
-                    "${projects.where((p) => p['status'] == 'pending').length}",
-                    Icons.pending,
-                    Colors.black,
-                    isMobile,
-                  ),
-                  const SizedBox(height: 10),
-                  _buildStatCard(
-                    "Completed",
-                    "${projects.where((p) => p['status'] == 'ended').length}",
-                    Icons.check_circle,
-                    Colors.black,
-                    isMobile,
-                  ),
-                ],
+            ? _buildStatCard(
+                "Completed Projects",
+                "$completedCount",
+                Icons.check_circle,
+                Colors.grey.shade600,
+                isMobile,
+                subtitle: 'Successfully finished',
               )
-            : Column(
+            : Row(
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          "Active Projects",
-                          "${projects.where((p) => p['status'] == 'active').length}",
-                          Icons.work,
-                          Colors.black,
-                          isMobile,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildStatCard(
-                          "Pending Projects",
-                          "${projects.where((p) => p['status'] == 'pending').length}",
-                          Icons.pending,
-                          Colors.black,
-                          isMobile,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          "Completed",
-                          "${projects.where((p) => p['status'] == 'ended').length}",
-                          Icons.check_circle,
-                          Colors.black,
-                          isMobile,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: SizedBox.shrink(),
-                      ),
-                    ],
+                  Expanded(
+                    child: _buildStatCard(
+                      "Completed Projects",
+                      "$completedCount",
+                      Icons.check_circle,
+                      Colors.black,
+                      isMobile,
+                      subtitle: 'Successfully finished',
+                    ),
                   ),
                 ],
               ),
@@ -203,65 +157,134 @@ class HomePageBuilder {
     );
   }
 
-  static Widget _buildStatCard(String title, String value, IconData icon, Color color, bool isMobile) {
+  static Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+    bool isMobile, {
+    String? subtitle,
+  }) {
+    final double padding = isMobile ? 12 : 16;
+    final double iconPadding = isMobile ? 12 : 14;
+    final double valueFontSize = isMobile ? 22 : 20;
+    final double titleFontSize = isMobile ? 14 : 16;
+    final double subtitleFontSize = isMobile ? 12 : 13;
+
     return Container(
-      width: isMobile ? double.infinity : null,
-      padding: EdgeInsets.all(isMobile ? 12 : 13),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(isMobile ? 12 : 16),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: isMobile
-        ? Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
+      child: Padding(
+        padding: EdgeInsets.all(padding),
+        child: isMobile
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Icon(icon, color: color, size: 22),
-                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(iconPadding),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(icon, color: color, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                title,
+                                style: TextStyle(
+                                  fontSize: titleFontSize,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              if (subtitle != null && subtitle.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  subtitle,
+                                  style: TextStyle(
+                                    fontSize: subtitleFontSize,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   Text(
-                    title,
+                    value,
                     style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[700],
-                      fontWeight: FontWeight.w600,
+                      fontSize: valueFontSize,
+                      fontWeight: FontWeight.bold,
+                      color: color,
                     ),
                   ),
                 ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(iconPadding),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(icon, color: color, size: 22),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: valueFontSize,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: titleFontSize,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  if (subtitle != null && subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: subtitleFontSize,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ],
               ),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-            ],
-          )
-        : Column(
-            children: [
-              Icon(icon, color: color, size: 24),
-              const SizedBox(height: 8),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+      ),
     );
   }
 

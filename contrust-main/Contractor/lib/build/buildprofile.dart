@@ -950,10 +950,19 @@ class ProfileBuildMethods {
     required List<Map<String, dynamic>> allRatings,
     required Function buildReviewCard,
     required Function getTimeAgo,
+    required String selectedFilter,
+    required Function(String) onFilterChanged,
   }) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth < 600;
+        const filterOptions = ['All', '5 Stars', '4 Stars', '3 Stars', '2 Stars', '1 Star'];
+        final filteredReviews = allRatings.where((review) {
+          if (selectedFilter == 'All') return true;
+          final ratingValue = (review['rating'] as num?)?.toDouble() ?? 0.0;
+          final requiredStars = int.tryParse(selectedFilter.split(' ').first) ?? 0;
+          return ratingValue.round() == requiredStars;
+        }).toList();
         
     return Container(
       decoration: BoxDecoration(
@@ -988,6 +997,55 @@ class ProfileBuildMethods {
                     fontWeight: FontWeight.bold,
                         ),
                         overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                SizedBox(width: isMobile ? 12 : 16),
+                Flexible(
+                  child: Wrap(
+                    alignment: WrapAlignment.end,
+                    spacing: isMobile ? 6 : 8,
+                    runSpacing: 6,
+                    children: filterOptions.map((option) {
+                      final isSelected = selectedFilter == option;
+                      Widget label;
+
+                      if (option == 'All') {
+                        label = Text(
+                          'All',
+                          style: TextStyle(
+                            fontSize: isMobile ? 11 : 12,
+                            color: isSelected ? Colors.white : Colors.grey.shade700,
+                          ),
+                        );
+                      } else {
+                        final stars = int.tryParse(option.split(' ').first) ?? 0;
+                        label = Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: List.generate(stars, (_) {
+                            return Icon(
+                              Icons.star,
+                              size: isMobile ? 14 : 16,
+                              color: isSelected ? Colors.white : Colors.amber.shade600,
+                            );
+                          }),
+                        );
+                      }
+
+                      return ChoiceChip(
+                        label: label,
+                        selected: isSelected,
+                        onSelected: (_) => onFilterChanged(option),
+                        selectedColor: Colors.amber.shade700,
+                        backgroundColor: Colors.grey.shade100,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isMobile ? 8 : 12,
+                          vertical: isMobile ? 4 : 6,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ),
               ],
@@ -1135,13 +1193,26 @@ class ProfileBuildMethods {
                   ),
                 ),
               )
+            else if (filteredReviews.isEmpty)
+              Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: isMobile ? 24 : 32),
+                  child: Text(
+                    'No reviews for the selected filter yet.',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: isMobile ? 12 : 14,
+                    ),
+                  ),
+                ),
+              )
             else
               ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: allRatings.length,
+                itemCount: filteredReviews.length,
                 itemBuilder: (context, index) {
-                  final review = allRatings[index];
+                  final review = filteredReviews[index];
                   final reviewText = review['review'] as String? ?? 'No written review provided.';
                   final reviewRating = (review['rating'] as num?)?.toDouble() ?? 0.0;
                   final clientName = review['client_name'] as String? ?? 'Anonymous Client';

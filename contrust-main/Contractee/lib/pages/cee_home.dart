@@ -148,9 +148,36 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
         }
       }
       
-      final fetchedContractors = await FetchService().fetchContractors(
+      List<Map<String, dynamic>> _normalizeContractors(List<Map<String, dynamic>> raw) {
+        return raw.map((contractor) {
+          final normalized = Map<String, dynamic>.from(contractor);
+          final rawRating = normalized['rating'];
+          double ratingValue;
+          if (rawRating is num) {
+            ratingValue = rawRating.toDouble();
+          } else if (rawRating is String) {
+            ratingValue = double.tryParse(rawRating) ?? 0.0;
+          } else {
+            ratingValue = 0.0;
+          }
+          normalized['rating'] = ratingValue;
+          return normalized;
+        }).toList();
+      }
+
+      final fetchedContractorsRaw = await FetchService().fetchContractors(
         projectType: projectTypeForSuggestion,
       );
+
+      var fetchedContractors = _normalizeContractors(fetchedContractorsRaw);
+
+      final usedProjectType = projectTypeForSuggestion != null &&
+          projectTypeForSuggestion.trim().isNotEmpty;
+
+      if (usedProjectType && fetchedContractors.isEmpty) {
+        final fallbackContractorsRaw = await FetchService().fetchContractors();
+        fetchedContractors = _normalizeContractors(fallbackContractorsRaw);
+      }
 
       if (!mounted) return;
       

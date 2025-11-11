@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/contractee services/cee_profileservice.dart';
+import 'package:backend/services/contractee services/cee_torprofileservice.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/services/both services/be_receipt_service.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -189,6 +191,229 @@ class _CeeHistoryPageState extends State<CeeHistoryPage> {
       selectedReviewRating = rating;
     });
     _filterReviews();
+  }
+
+  Future<void> _handleContractorReview(Map<String, dynamic> project) async {
+    final contractorId = project['contractor_id']?.toString();
+    if (contractorId == null || contractorId.isEmpty) {
+      if (mounted) {
+        ConTrustSnackBar.info(context, 'No contractor is associated with this project.');
+      }
+      return;
+    }
+
+    try {
+      final eligibility = await TorProfileService.checkRatingEligibility(
+        contractorId,
+        widget.contracteeId,
+      );
+
+      if (eligibility['canRate'] != true) {
+        if (mounted) {
+          ConTrustSnackBar.info(
+            context,
+            'You can only review contractors after completing a project with them.',
+          );
+        }
+        return;
+      }
+
+      double initialRating = (eligibility['userRating'] as num?)?.toDouble() ?? 5.0;
+      if (initialRating <= 0) {
+        initialRating = 5.0;
+      }
+      final reviewController = TextEditingController();
+
+      final Map<String, dynamic>? result = await showDialog<Map<String, dynamic>>(
+        context: context,
+        builder: (dialogContext) {
+          double tempRating = initialRating;
+
+          Widget buildStars(double rating) {
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(5, (index) {
+                final starNumber = index + 1;
+                final isFull = rating >= starNumber;
+                final isHalf = rating >= starNumber - 0.5 && rating < starNumber;
+                return Icon(
+                  isFull
+                      ? Icons.star
+                      : isHalf
+                          ? Icons.star_half
+                          : Icons.star_border,
+                  color: Colors.amber.shade600,
+                  size: 28,
+                );
+              }),
+            );
+          }
+
+          return Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: StatefulBuilder(
+              builder: (context, setDialogState) {
+                return Container(
+                  constraints: const BoxConstraints(maxWidth: 480),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    color: Colors.white,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade700,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(20),
+                            topRight: Radius.circular(20),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Review this contractor',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              project['title']?.toString() ?? 'Project',
+                              style: const TextStyle(color: Colors.white70, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Center(child: buildStars(tempRating)),
+                            const SizedBox(height: 12),
+                            Slider(
+                              value: tempRating,
+                              min: 1,
+                              max: 5,
+                              divisions: 8,
+                              label: tempRating.toStringAsFixed(1),
+                              activeColor: Colors.amber.shade700,
+                              onChanged: (value) {
+                                setDialogState(() => tempRating = value);
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Share your experience (optional)',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1F2937),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: reviewController,
+                              maxLines: 4,
+                              decoration: InputDecoration(
+                                hintText: 'Tell others about your experience working with this contractor...',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey.shade50,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextButton(
+                                    onPressed: () => Navigator.of(dialogContext).pop(),
+                                    child: const Text('Cancel'),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green.shade600,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                    ),
+                                    onPressed: () {
+                                      Navigator.of(dialogContext).pop({
+                                        'rating': tempRating,
+                                        'review': reviewController.text.trim(),
+                                      });
+                                    },
+                                    child: const Text('Submit Review'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          );
+        },
+      );
+
+      reviewController.dispose();
+
+      if (result == null) {
+        return;
+      }
+
+      final ratingValue = result['rating'];
+      double submittedRating;
+      if (ratingValue is num) {
+        submittedRating = ratingValue.toDouble();
+      } else if (ratingValue is String) {
+        submittedRating = double.tryParse(ratingValue) ?? initialRating;
+      } else {
+        submittedRating = initialRating;
+      }
+      final String submittedReview = (result['review'] as String).trim();
+
+      await TorProfileService.submitRating(
+        contractorId,
+        widget.contracteeId,
+        submittedRating,
+        submittedReview,
+      );
+
+      await _loadData();
+      if (mounted) {
+        _filterProjects();
+        _filterTransactions();
+        _filterReviews();
+        ConTrustSnackBar.success(
+          context,
+          'Review submitted successfully!',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ConTrustSnackBar.error(
+          context,
+          'Unable to process your review. Please try again.',
+        );
+      }
+    }
   }
 
 
@@ -751,6 +976,9 @@ class _CeeHistoryPageState extends State<CeeHistoryPage> {
     final statusIcon = _getStatusIcon(status);
     final statusLabel = _getStatusLabel(status);
     
+    final canReview = status?.toLowerCase() == 'completed' &&
+        (project['contractor_id']?.toString().isNotEmpty ?? false);
+
     return InkWell(
       onTap: () => _onProjectTap(project),
       borderRadius: BorderRadius.circular(8),
@@ -799,6 +1027,28 @@ class _CeeHistoryPageState extends State<CeeHistoryPage> {
               Text(
                 'Created ${_getTimeAgo(DateTime.parse(project['created_at']))}',
                 style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+              ),
+            ],
+            if (canReview) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _handleContractorReview(project),
+                  icon: const Icon(Icons.rate_review_outlined, size: 18),
+                  label: Text(
+                    'Review Contractor',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.amber.shade700,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Colors.amber.shade200),
+                    foregroundColor: Colors.amber.shade700,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
               ),
             ],
           ],

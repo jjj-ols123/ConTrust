@@ -36,19 +36,13 @@ class ViewContractService {
     required BuildContext context,
   }) async {
     try {
-      String? pdfUrl = contractData['pdf_url'] as String?;
-      
+      String? pdfUrl = contractData['signed_pdf_url'] as String?;
+
       if (pdfUrl == null || pdfUrl.isEmpty) {
-        final contractorId = contractData['contractor_id'] as String?;
-        final projectId = contractData['project_id'] as String?;
-        final contracteeId = contractData['contractee_id'] as String?;
-        
-        if (contractorId != null && projectId != null && contracteeId != null) {
-          pdfUrl = '$contractorId/${projectId}_$contracteeId.pdf';
-        }
+        pdfUrl = contractData['pdf_url'] as String?;
       }
-      
-      if (pdfUrl == null) {
+
+      if (pdfUrl == null || pdfUrl.isEmpty) {
         throw Exception('No PDF contract available');
       }
 
@@ -144,18 +138,10 @@ class ViewContractService {
 
   static String? getPdfUrl(Map<String, dynamic> contractData) {
     try {
-      String? pdfUrl = contractData['pdf_url'] as String?;
-      
+      final pdfUrl = contractData['pdf_url'] as String?;
       if (pdfUrl == null || pdfUrl.isEmpty) {
-        final contractorId = contractData['contractor_id'] as String?;
-        final projectId = contractData['project_id'] as String?;
-        final contracteeId = contractData['contractee_id'] as String?;
-        
-        if (contractorId != null && projectId != null && contracteeId != null) {
-          pdfUrl = '$contractorId/${projectId}_$contracteeId.pdf';
-        }
+        return null;
       }
-      
       return pdfUrl;
     } catch (e) {
       _errorService.logError(
@@ -196,7 +182,7 @@ class ViewContractService {
 
       final pdfPath = getPdfUrl(contractData);
 
-      if (pdfPath == null) {
+      if (pdfPath == null || pdfPath.isEmpty) {
         await _errorService.logError(
           errorMessage: 'No PDF path found in contract data',
           module: 'View Contract Service',
@@ -244,11 +230,18 @@ class ViewContractService {
 
   static Future<bool> checkFileExists(String filePath) async {
     try {
-      final response = await Supabase.instance.client.storage
-          .from('contracts')
-          .list(path: filePath.contains('/') ? filePath.split('/').first : '');
-      
-      return response.any((file) => file.name == filePath.split('/').last);
+      final bucket = Supabase.instance.client.storage.from('contracts');
+      final pathParts = filePath.split('/');
+      if (pathParts.length <= 1) {
+        final response = await bucket.list(path: '');
+        return response.any((file) => file.name == filePath);
+      }
+
+      final folderPath = pathParts.take(pathParts.length - 1).join('/');
+      final fileName = pathParts.last;
+
+      final response = await bucket.list(path: folderPath);
+      return response.any((file) => file.name == fileName);
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Failed to check file exists: $e',

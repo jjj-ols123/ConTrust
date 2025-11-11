@@ -95,56 +95,13 @@ class TorProfileBuildMethods {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 6),
                 const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Column(
-                      children: [
-                        Text(
-                          '$completedProjectsCount',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF2D3748),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      children: [
-                        Text(
-                          rating.toStringAsFixed(1),
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF2D3748),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      children: [
-                        Text(
-                          '${pastProjects.length}',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF2D3748),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                buildMobileNavigation(selectedTab, onTabChanged),
+                const SizedBox(height: 16),
+                mainContent,
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          buildMobileNavigation(selectedTab, onTabChanged),
-          const SizedBox(height: 16),
-          mainContent,
         ],
       ),
     );
@@ -231,68 +188,26 @@ class TorProfileBuildMethods {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Column(
-                            children: [
-                              Text(
-                                '$completedProjectsCount',
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF2D3748),
-                                ),
-                              ),
-                            ],
-                          ),
-                          Column(
-                            children: [
-                              Text(
-                                rating.toStringAsFixed(1),
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF2D3748),
-                                ),
-                              ),
-                            ],
-                          ),
-                          Column(
-                            children: [
-                              Text(
-                                '${pastProjects.length}',
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF2D3748),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            buildNavigation('Portfolio', selectedTab == 'Portfolio', () => onTabChanged('Portfolio')),
+                            buildNavigation('About', selectedTab == 'About', () => onTabChanged('About')),
+                            buildNavigation('Reviews', selectedTab == 'Reviews', () => onTabChanged('Reviews')),
+                          ],
+                        ),
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      buildNavigation('Portfolio', selectedTab == 'Portfolio', () => onTabChanged('Portfolio')),
-                      buildNavigation('About', selectedTab == 'About', () => onTabChanged('About')),
-                      buildNavigation('Reviews', selectedTab == 'Reviews', () => onTabChanged('Reviews')),
                     ],
                   ),
                 ),
@@ -626,6 +541,8 @@ class TorProfileBuildMethods {
     required List<Map<String, dynamic>> allRatings,
     required Function buildReviewCard,
     required Function getTimeAgo,
+    String selectedFilter = 'All',
+    required Function(String) onFilterChanged,
     required bool canRate,
     required bool hasRated,
     required double userRating,
@@ -634,7 +551,14 @@ class TorProfileBuildMethods {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth < 600;
-        
+        const filterOptions = ['All', '5 Stars', '4 Stars', '3 Stars', '2 Stars', '1 Star'];
+        final filteredReviews = allRatings.where((review) {
+          if (selectedFilter == 'All') return true;
+          final ratingValue = (review['rating'] as num?)?.toDouble() ?? 0.0;
+          final requiredStars = int.tryParse(selectedFilter.split(' ').first) ?? 0;
+          return ratingValue.round() == requiredStars;
+        }).toList();
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -668,6 +592,62 @@ class TorProfileBuildMethods {
                     fontWeight: FontWeight.bold,
                         ),
                         overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                SizedBox(width: isMobile ? 12 : 16),
+                Flexible(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: filterOptions.map((option) {
+                        final isSelected = selectedFilter == option;
+                        Widget label;
+                        if (option == 'All') {
+                          label = Text(
+                            'All',
+                            style: TextStyle(
+                              fontSize: isMobile ? 11 : 12,
+                              color:
+                                  isSelected ? Colors.white : Colors.grey.shade700,
+                            ),
+                          );
+                        } else {
+                          final starsCount =
+                              int.tryParse(option.split(' ').first) ?? 0;
+                          label = Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: List.generate(starsCount, (_) {
+                              return Icon(
+                                Icons.star,
+                                size: isMobile ? 14 : 16,
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.amber.shade600,
+                              );
+                            }),
+                          );
+                        }
+
+                        return Padding(
+                          padding: EdgeInsets.only(right: isMobile ? 6 : 8),
+                          child: ChoiceChip(
+                            label: label,
+                            selected: isSelected,
+                            onSelected: (_) => onFilterChanged(option),
+                            selectedColor: Colors.amber.shade700,
+                            backgroundColor: Colors.grey.shade100,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isMobile ? 8 : 12,
+                              vertical: isMobile ? 4 : 6,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   ),
                 ),
               ],
@@ -879,13 +859,26 @@ class TorProfileBuildMethods {
                   ),
                 ),
               )
+            else if (filteredReviews.isEmpty)
+              Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: isMobile ? 24 : 32),
+                  child: Text(
+                    'No reviews for the selected filter yet.',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: isMobile ? 12 : 14,
+                    ),
+                  ),
+                ),
+              )
             else
               ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: allRatings.length,
+                itemCount: filteredReviews.length,
                 itemBuilder: (context, index) {
-                  final review = allRatings[index];
+                  final review = filteredReviews[index];
                   final reviewText = review['review'] as String? ?? 'No written review provided.';
                   final reviewRating = (review['rating'] as num?)?.toDouble() ?? 0.0;
                   final clientName = review['client_name'] as String? ?? 'Anonymous Client';

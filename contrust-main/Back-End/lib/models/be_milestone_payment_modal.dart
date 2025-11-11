@@ -43,7 +43,6 @@ class MilestonePaymentModal {
     final cvcController = TextEditingController();
     final nameController = TextEditingController();
     bool isProcessing = false;
-    bool dialogClosed = false;
 
     final milestoneAmount = (currentMilestone['amount'] as num?)?.toDouble() ?? 0.0;
     final milestoneNumber = currentMilestone['milestone_number'] as int? ?? 1;
@@ -124,15 +123,7 @@ class MilestonePaymentModal {
                         if (!isProcessing)
                           IconButton(
                             onPressed: () {
-                              dialogClosed = true;
                               Navigator.pop(context);
-                              // Dispose controllers after dialog closes
-                              Future.microtask(() {
-                                cardNumberController.dispose();
-                                expiryController.dispose();
-                                cvcController.dispose();
-                                nameController.dispose();
-                              });
                             },
                             icon: const Icon(Icons.close, color: Colors.white),
                           ),
@@ -520,15 +511,7 @@ class MilestonePaymentModal {
                                     );
 
                                     if (context.mounted) {
-                                      dialogClosed = true;
                                       Navigator.pop(context);
-                                      // Dispose controllers after dialog closes
-                                      Future.microtask(() {
-                                        cardNumberController.dispose();
-                                        expiryController.dispose();
-                                        cvcController.dispose();
-                                        nameController.dispose();
-                                      });
                                       ConTrustSnackBar.success(
                                         context,
                                         'Milestone payment processed successfully!',
@@ -582,14 +565,10 @@ class MilestonePaymentModal {
       ),
     );
 
-    // Only dispose controllers if dialog was closed without using them
-    // (e.g., user closed dialog without submitting)
-    if (!dialogClosed) {
-      cardNumberController.dispose();
-      expiryController.dispose();
-      cvcController.dispose();
-      nameController.dispose();
-    }
+    cardNumberController.dispose();
+    expiryController.dispose();
+    cvcController.dispose();
+    nameController.dispose();
   }
 
   static Widget _buildPaymentRow(String label, String subtitle, double amount, {bool highlight = false, bool isTotal = false}) {

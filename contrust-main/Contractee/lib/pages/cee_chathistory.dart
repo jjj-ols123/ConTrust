@@ -203,7 +203,8 @@ class _ContracteeChatHistoryPageState
 
   String formatTime(DateTime? time) {
     if (time == null) return '';
-    return DateFormat('hh:mm a').format(time);
+    final localTime = time.isUtc ? time.toLocal() : time;
+    return DateFormat('hh:mm a').format(localTime);
   }
 
   String _computeBatchKey(List<Map<String, dynamic>> chatRooms) {
@@ -367,26 +368,18 @@ class _ContracteeChatHistoryPageState
                       final hasUnread = unreadCount > 0;
                       
                       final lastMessage = chat['last_message'] ?? '';
-                      final lastTime = chat['last_message_time'] != null
-                          ? (() {
-                              final parsed = DateTime.tryParse(chat['last_message_time']);
-                              if (parsed == null) return null;
-                              // Convert to local time if it's UTC
-                              return parsed.isUtc ? parsed.toLocal() : parsed;
-                            })()
-                          : null;
+                      final lastTime = DateTimeHelper.parseToLocal(chat['last_message_time'] as String?);
 
                       return InkWell(
-                        onTap: canChat
-                            ? () {
-                                context.go('/chat/${Uri.encodeComponent(contractorName)}', extra: {
-                                  'chatRoomId': chatRoomId,
-                                  'contracteeId': contracteeId,
-                                  'contractorId': contractorId,
-                                  'contractorProfile': contractorProfile,
-                                });
-                              }
-                            : null,
+                        onTap: () {
+                          context.go('/chat/${Uri.encodeComponent(contractorName)}', extra: {
+                            'chatRoomId': chatRoomId,
+                            'contracteeId': contracteeId,
+                            'contractorId': contractorId,
+                            'contractorProfile': contractorProfile,
+                            'canChat': canChat,
+                          });
+                        },
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.all(14),
@@ -492,13 +485,23 @@ class _ContracteeChatHistoryPageState
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              Text(
-                                formatTime(lastTime),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
+                              if (lastTime != null && screenWidth < 400) ...[
+                                Text(
+                                  DateFormat('h:mm a').format(lastTime),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey.shade600,
+                                  ),
                                 ),
-                              ),
+                              ] else ...[
+                                Text(
+                                  formatTime(lastTime),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),

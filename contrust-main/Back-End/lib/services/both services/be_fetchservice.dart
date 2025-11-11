@@ -223,6 +223,7 @@ class FetchService {
             'project_id, type, title, description, duration, min_budget, max_budget, created_at, status, start_date, location, projectdata',
           )
           .eq('contractee_id', userId)
+          .neq('status', 'completed')
           .neq('status', 'cancelled')
           .neq('status', 'stopped')
           .order('created_at', ascending: false);

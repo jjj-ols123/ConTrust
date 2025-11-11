@@ -75,6 +75,12 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     }
   }
 
+  Future<void> refreshProjectData({VoidCallback? onComplete}) async {
+    await loadData();
+    await _emitAggregatedData();
+    onComplete?.call();
+  }
+
   void _debouncedEmitAggregatedData() {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 300), () {
@@ -322,33 +328,33 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     }
   }
 
-  void loadData() async {
-  try {
-    contractorId ??= Supabase.instance.client.auth.currentUser?.id;
+  Future<void> loadData() async {
+    try {
+      contractorId ??= Supabase.instance.client.auth.currentUser?.id;
 
-    final data = await ongoingService.loadProjectData(
-      widget.projectId,
-      contractorId: contractorId,
-    );
+      final data = await ongoingService.loadProjectData(
+        widget.projectId,
+        contractorId: contractorId,
+      );
 
-    final contractId = data['projectDetails']['contract_id'];
-    if (contractId != null) {
-      final contract = await ongoingService.getContractById(contractId);
-      data['contracts'] = contract != null ? [contract] : [];
-    } else {
-      data['contracts'] = [];
-    }
+      final contractId = data['projectDetails']['contract_id'];
+      if (contractId != null) {
+        final contract = await ongoingService.getContractById(contractId);
+        data['contracts'] = contract != null ? [contract] : [];
+      } else {
+        data['contracts'] = [];
+      }
 
-    if (!(_controller?.isClosed ?? true)) {
-      _controller!.add(data);
-    }
-  } catch (e) {
-    if (mounted) {
-      ConTrustSnackBar.error(
-          context, 'Error loading project data. Please try again. $e');
+      if (!(_controller?.isClosed ?? true)) {
+        _controller!.add(data);
+      }
+    } catch (e) {
+      if (mounted) {
+        ConTrustSnackBar.error(
+            context, 'Error loading project data. Please try again. $e');
+      }
     }
   }
-}
 
   void onTabChanged(String tab) {
     setState(() {
