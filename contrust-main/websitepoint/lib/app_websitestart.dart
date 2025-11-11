@@ -30,24 +30,6 @@ class WebsiteStartPage extends StatelessWidget {
               ],
             ),
           ),
-          Positioned(
-            top: 16,
-            right: 16,
-            child: TextButton.icon(
-              onPressed: () {
-                Navigator.of(context).pushNamed('/superadmin');
-              },
-              icon: const Icon(Icons.admin_panel_settings, color: Colors.black54),
-              label: const Text(
-                'Admin',
-                style: TextStyle(
-                  color: Colors.black54,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -94,6 +76,14 @@ class WebsiteStartPage extends StatelessWidget {
                 onPressed: () => Navigator.of(context).pushNamed('/services'),
                 child: const Text(
                   'Services',
+                  style: TextStyle(color: Color(0xFF1a1a1a), fontWeight: FontWeight.w600),
+                ),
+              ),
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: () => Navigator.of(context).pushNamed('/contact'),
+                child: const Text(
+                  'Contact',
                   style: TextStyle(color: Color(0xFF1a1a1a), fontWeight: FontWeight.w600),
                 ),
               ),
