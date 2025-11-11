@@ -9,12 +9,10 @@ import 'package:backend/services/both services/be_realtime_service.dart';
 import 'package:backend/services/contractee services/cee_checkuser.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/utils/be_constraint.dart';
-import 'package:backend/utils/be_status.dart';
 import 'package:contractee/models/cee_modal.dart';
 import 'package:contractee/build/buildhome.dart';
 import 'package:contractee/build/buildceeprofile.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
   
 class HomePage extends StatefulWidget {
@@ -150,9 +148,36 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
         }
       }
       
-      final fetchedContractors = await FetchService().fetchContractors(
+      List<Map<String, dynamic>> _normalizeContractors(List<Map<String, dynamic>> raw) {
+        return raw.map((contractor) {
+          final normalized = Map<String, dynamic>.from(contractor);
+          final rawRating = normalized['rating'];
+          double ratingValue;
+          if (rawRating is num) {
+            ratingValue = rawRating.toDouble();
+          } else if (rawRating is String) {
+            ratingValue = double.tryParse(rawRating) ?? 0.0;
+          } else {
+            ratingValue = 0.0;
+          }
+          normalized['rating'] = ratingValue;
+          return normalized;
+        }).toList();
+      }
+
+      final fetchedContractorsRaw = await FetchService().fetchContractors(
         projectType: projectTypeForSuggestion,
       );
+
+      var fetchedContractors = _normalizeContractors(fetchedContractorsRaw);
+
+      final usedProjectType = projectTypeForSuggestion != null &&
+          projectTypeForSuggestion.trim().isNotEmpty;
+
+      if (usedProjectType && fetchedContractors.isEmpty) {
+        final fallbackContractorsRaw = await FetchService().fetchContractors();
+        fetchedContractors = _normalizeContractors(fallbackContractorsRaw);
+      }
 
       if (!mounted) return;
       
@@ -294,132 +319,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
     }
   }
 
-  void _navigateToOngoingProject(BuildContext context, Map<String, dynamic> project) async {
-    final projectStatus = project['status']?.toString().toLowerCase();
-    final projectId = project['project_id']?.toString();
-    final projectTitle = project['title']?.toString();
-    
-    if (projectId == null) {
-      ConTrustSnackBar.error(context, 'Invalid project ID');
-      return;
-    }
-    
-    if (projectTitle == null || projectTitle.isEmpty) {
-      ConTrustSnackBar.error(context, 'Invalid project title');
-      return;
-    }
-    
-    final allowedStatuses = ['active'];
-    if (!allowedStatuses.contains(projectStatus)) {
-      ConTrustSnackBar.info(context, 
-        'Only active projects can be viewed in the Ongoing Project page. Current status: ${ProjectStatus().getStatusLabel(projectStatus)}');
-      return;
-    }
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 400),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Colors.white, Colors.grey.shade50],
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.amber.shade700,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.work_outline,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'View Ongoing Project',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      icon: const Icon(Icons.close, color: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'Do you want to go to Ongoing Project Page?',
-                      style: TextStyle(fontSize: 14),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextButton(
-                            onPressed: () => Navigator.of(context).pop(false),
-                            child: const Text('Cancel'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () => Navigator.of(context).pop(true),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green[600],
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                            ),
-                            child: const Text('Confirm'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    if (confirmed == true && context.mounted) {
-      context.push('/ongoing/$projectId');
-    }
-  }
 
   void _postProject() {
     if (isPostingProject) return; // Prevent multiple clicks
@@ -567,7 +466,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
                               itemCount: projectsToShow.length,
                               itemBuilder: (context, index) {
                                 final project = projectsToShow[index];
-                                final isPlaceholder = project['isPlaceholder'] == true;
 
                                 final projectId = project['project_id']?.toString() ?? '';
                                 final highestBid = projectId.isNotEmpty ? (highestBids[projectId] ?? 0.0) : 0.0;
@@ -583,7 +481,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
                                     highestBid: highestBid,
                                     duration: project['duration'] ?? 0,
                                     createdAt: createdAt,
-                                    onTap: isPlaceholder ? () {} : () => _navigateToOngoingProject(context, project),
+                                    onTap: () {},
                                     handleFinalizeBidding: (projectId) {
                                       return BiddingService().finalizeBidding(projectId);
                                     },
@@ -730,7 +628,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
                                     itemCount: projectsToShow.length,
                                     itemBuilder: (context, index) {
                                       final project = projectsToShow[index];
-                                      final isPlaceholder = project['isPlaceholder'] == true;
 
                                       final projectId = project['project_id']?.toString() ?? '';
                                       final highestBid = projectId.isNotEmpty ? (highestBids[projectId] ?? 0.0) : 0.0;
@@ -746,7 +643,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
                                           highestBid: highestBid,
                                           duration: project['duration'] ?? 0,
                                           createdAt: createdAt,
-                                          onTap: isPlaceholder ? () {} : () => _navigateToOngoingProject(context, project),
+                                          onTap: () {},
                                           handleFinalizeBidding: (projectId) {
                                             return BiddingService().finalizeBidding(projectId);
                                           },

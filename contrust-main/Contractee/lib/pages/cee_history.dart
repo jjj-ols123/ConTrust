@@ -1,8 +1,15 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/contractee services/cee_profileservice.dart';
+import 'package:backend/services/contractee services/cee_torprofileservice.dart';
+import 'package:backend/utils/be_snackbar.dart';
+import 'package:backend/services/both services/be_receipt_service.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:html' as html if (dart.library.html) 'dart:html';
+import 'dart:ui_web' as ui_web if (dart.library.html) 'dart:ui_web';
 
 class CeeHistoryPage extends StatefulWidget {
   final String contracteeId;
@@ -56,24 +63,14 @@ class _CeeHistoryPageState extends State<CeeHistoryPage> {
       
       final supabase = Supabase.instance.client;
       
-      // Load projects
       final projectsResponse = await supabase
           .from('Projects')
           .select('*')
           .eq('contractee_id', widget.contracteeId)
           .order('created_at', ascending: false);
       
-      // Load transactions from service
-      final transactionsData = await CeeProfileService().loadTransactions(widget.contracteeId);
-      // Map transaction data to match expected format
-      final transactionsResponse = transactionsData.map((transaction) => {
-        'project_title': transaction['project_title'] ?? 'Unknown Project',
-        'payment_type': transaction['payment_type'] ?? 'Payment',
-        'amount': transaction['amount'] ?? 0.0,
-        'date': transaction['payment_date'] ?? DateTime.now().toIso8601String(),
-      }).toList();
+      final transactionsResponse = await CeeProfileService().loadTransactions(widget.contracteeId);
       
-      // Load reviews - get reviews given by this contractee to contractors
       final reviewsResponse = await supabase
           .from('ContractorRatings')
           .select('''
@@ -196,6 +193,229 @@ class _CeeHistoryPageState extends State<CeeHistoryPage> {
     _filterReviews();
   }
 
+  Future<void> _handleContractorReview(Map<String, dynamic> project) async {
+    final contractorId = project['contractor_id']?.toString();
+    if (contractorId == null || contractorId.isEmpty) {
+      if (mounted) {
+        ConTrustSnackBar.info(context, 'No contractor is associated with this project.');
+      }
+      return;
+    }
+
+    try {
+      final eligibility = await TorProfileService.checkRatingEligibility(
+        contractorId,
+        widget.contracteeId,
+      );
+
+      if (eligibility['canRate'] != true) {
+        if (mounted) {
+          ConTrustSnackBar.info(
+            context,
+            'You can only review contractors after completing a project with them.',
+          );
+        }
+        return;
+      }
+
+      double initialRating = (eligibility['userRating'] as num?)?.toDouble() ?? 5.0;
+      if (initialRating <= 0) {
+        initialRating = 5.0;
+      }
+      final reviewController = TextEditingController();
+
+      final Map<String, dynamic>? result = await showDialog<Map<String, dynamic>>(
+        context: context,
+        builder: (dialogContext) {
+          double tempRating = initialRating;
+
+          Widget buildStars(double rating) {
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(5, (index) {
+                final starNumber = index + 1;
+                final isFull = rating >= starNumber;
+                final isHalf = rating >= starNumber - 0.5 && rating < starNumber;
+                return Icon(
+                  isFull
+                      ? Icons.star
+                      : isHalf
+                          ? Icons.star_half
+                          : Icons.star_border,
+                  color: Colors.amber.shade600,
+                  size: 28,
+                );
+              }),
+            );
+          }
+
+          return Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: StatefulBuilder(
+              builder: (context, setDialogState) {
+                return Container(
+                  constraints: const BoxConstraints(maxWidth: 480),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    color: Colors.white,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade700,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(20),
+                            topRight: Radius.circular(20),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Review this contractor',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              project['title']?.toString() ?? 'Project',
+                              style: const TextStyle(color: Colors.white70, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Center(child: buildStars(tempRating)),
+                            const SizedBox(height: 12),
+                            Slider(
+                              value: tempRating,
+                              min: 1,
+                              max: 5,
+                              divisions: 8,
+                              label: tempRating.toStringAsFixed(1),
+                              activeColor: Colors.amber.shade700,
+                              onChanged: (value) {
+                                setDialogState(() => tempRating = value);
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Share your experience (optional)',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1F2937),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: reviewController,
+                              maxLines: 4,
+                              decoration: InputDecoration(
+                                hintText: 'Tell others about your experience working with this contractor...',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey.shade50,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextButton(
+                                    onPressed: () => Navigator.of(dialogContext).pop(),
+                                    child: const Text('Cancel'),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green.shade600,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                    ),
+                                    onPressed: () {
+                                      Navigator.of(dialogContext).pop({
+                                        'rating': tempRating,
+                                        'review': reviewController.text.trim(),
+                                      });
+                                    },
+                                    child: const Text('Submit Review'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          );
+        },
+      );
+
+      reviewController.dispose();
+
+      if (result == null) {
+        return;
+      }
+
+      final ratingValue = result['rating'];
+      double submittedRating;
+      if (ratingValue is num) {
+        submittedRating = ratingValue.toDouble();
+      } else if (ratingValue is String) {
+        submittedRating = double.tryParse(ratingValue) ?? initialRating;
+      } else {
+        submittedRating = initialRating;
+      }
+      final String submittedReview = (result['review'] as String).trim();
+
+      await TorProfileService.submitRating(
+        contractorId,
+        widget.contracteeId,
+        submittedRating,
+        submittedReview,
+      );
+
+      await _loadData();
+      if (mounted) {
+        _filterProjects();
+        _filterTransactions();
+        _filterReviews();
+        ConTrustSnackBar.success(
+          context,
+          'Review submitted successfully!',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ConTrustSnackBar.error(
+          context,
+          'Unable to process your review. Please try again.',
+        );
+      }
+    }
+  }
+
 
   void _onProjectTap(Map<String, dynamic> project) {
     showDialog(
@@ -234,6 +454,10 @@ class _CeeHistoryPageState extends State<CeeHistoryPage> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Colors.black.withOpacity(0.5),
+            width: 0.5,
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.15),
@@ -246,7 +470,6 @@ class _CeeHistoryPageState extends State<CeeHistoryPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -405,12 +628,13 @@ class _CeeHistoryPageState extends State<CeeHistoryPage> {
         : 'Not specified';
   }
 
-  String _formatDate(String dateString) {
+  String _formatDate(dynamic date) {
+    if (date == null) return 'N/A';
     try {
-      final date = DateTime.parse(dateString);
-      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+      final dateTime = DateTime.parse(date.toString());
+      return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     } catch (e) {
-      return dateString;
+      return date.toString();
     }
   }
 
@@ -752,6 +976,9 @@ class _CeeHistoryPageState extends State<CeeHistoryPage> {
     final statusIcon = _getStatusIcon(status);
     final statusLabel = _getStatusLabel(status);
     
+    final canReview = status?.toLowerCase() == 'completed' &&
+        (project['contractor_id']?.toString().isNotEmpty ?? false);
+
     return InkWell(
       onTap: () => _onProjectTap(project),
       borderRadius: BorderRadius.circular(8),
@@ -802,6 +1029,28 @@ class _CeeHistoryPageState extends State<CeeHistoryPage> {
                 style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
               ),
             ],
+            if (canReview) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _handleContractorReview(project),
+                  icon: const Icon(Icons.rate_review_outlined, size: 18),
+                  label: Text(
+                    'Review Contractor',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.amber.shade700,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Colors.amber.shade200),
+                    foregroundColor: Colors.amber.shade700,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -809,48 +1058,295 @@ class _CeeHistoryPageState extends State<CeeHistoryPage> {
   }
 
   Widget _buildTransactionCard(Map<String, dynamic> transaction) {
+    return InkWell(
+      onTap: () => _showPaymentDetailsDialog(transaction),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade200, width: 1),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.payment, color: Colors.green.shade700, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    transaction['project_title'] ?? 'Untitled',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1F2937)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    transaction['payment_type'] ?? 'Payment',
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              '₱${transaction['amount'] ?? 0}',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.green.shade700),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPaymentDetailsDialog(Map<String, dynamic> transaction) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => _buildPaymentDetailsDialog(dialogContext, transaction),
+    );
+  }
+
+  Widget _buildPaymentDetailsDialog(BuildContext dialogContext, Map<String, dynamic> transaction) {
+    final receiptPath = transaction['receipt_path'] as String?;
+    final hasReceipt = receiptPath != null && receiptPath.isNotEmpty;
+    final amountValue = (transaction['amount'] as num?)?.toStringAsFixed(2) ?? '0.00';
+    final paymentType = transaction['payment_type'] ?? 'Payment';
+    final reference = transaction['reference'] ?? 'N/A';
+    final paymentDate = _formatDate(transaction['payment_date']);
+
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 700, maxHeight: 600),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Colors.black.withOpacity(0.5),
+            width: 0.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 20,
+              spreadRadius: 1,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade700,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(
+                      Icons.payments_outlined,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Payment Details',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (hasReceipt) ...[
+                      Text(
+                        'Receipt',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        constraints: const BoxConstraints(minHeight: 320, maxHeight: 480),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: FutureBuilder<String?>(
+                            future: ReceiptService.getReceiptSignedUrl(receiptPath!, expirationSeconds: 3600),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                return const Center(child: CircularProgressIndicator());
+                              }
+
+                              if (snapshot.hasError || snapshot.data == null || snapshot.data!.isEmpty) {
+                                return Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(24),
+                                    child: Text(
+                                      'Unable to load the receipt at this time.',
+                                      style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              return _buildPdfViewer(snapshot.data!);
+                            },
+                          ),
+                        ),
+                      ),
+                    ] else ...[
+                      Text(
+                        'Receipt',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Text(
+                          'No e-receipt was provided for this transaction.',
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    _buildDetailField('Project', transaction['project_title'] ?? 'Unknown project'),
+                    _buildDetailField('Payment Type', paymentType),
+                    _buildDetailField('Amount Paid', '₱$amountValue'),
+                    _buildDetailField('Reference', reference),
+                    _buildDetailField('Payment Date', paymentDate),
+                    if (transaction['contractor_name'] != null)
+                      _buildDetailField('Contractor', transaction['contractor_name']),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPdfViewer(String pdfUrl) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      width: double.infinity,
+      height: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        border: Border.all(color: Colors.grey.shade300),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.green.shade50,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(Icons.payment, color: Colors.green.shade700, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  transaction['project_title'] ?? 'Untitled',
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1F2937)),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  transaction['payment_type'] ?? 'Payment',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            '₱${transaction['amount'] ?? 0}',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.green.shade700),
-          ),
-        ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: kIsWeb
+            ? _buildWebPdfViewer(pdfUrl)
+            : _buildMobilePdfViewer(pdfUrl),
       ),
+    );
+  }
+
+  Widget _buildWebPdfViewer(String pdfUrl) {
+    if (!kIsWeb) {
+      return Container(
+        width: double.infinity,
+        height: double.infinity,
+        color: Colors.grey.shade50,
+        child: const Center(
+          child: Text('PDF viewer not available on this platform'),
+        ),
+      );
+    }
+    
+    final viewType = 'pdf-viewer-${pdfUrl.hashCode.abs()}';
+    
+    try {
+      if (kIsWeb) {
+        ui_web.platformViewRegistry.registerViewFactory(viewType, (int viewId) {
+          final iframe = html.IFrameElement()
+            ..src = pdfUrl
+            ..style.border = 'none'
+            ..style.width = '100%'
+            ..style.height = '100%'
+            ..allow = 'fullscreen'
+            ..onError.listen((event) {});
+          
+          return iframe;
+        });
+      }
+    } catch (e) {
+      //
+    }
+    
+    return HtmlElementView(viewType: viewType);
+  }
+
+  Widget _buildMobilePdfViewer(String pdfUrl) {
+    return SfPdfViewer.network(
+      pdfUrl,
+      onDocumentLoadFailed: (PdfDocumentLoadFailedDetails details) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load PDF: ${details.error}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      },
     );
   }
 

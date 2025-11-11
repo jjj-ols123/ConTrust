@@ -3,6 +3,7 @@
 import 'package:backend/models/be_UIapp.dart';
 import 'package:backend/services/both services/be_bidding_service.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/services/both services/be_message_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -20,6 +21,10 @@ class HomePageBuilder {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
     
+    final completedCount = projects
+        .where((p) => (p['status']?.toString().toLowerCase() ?? '') == 'ended')
+        .length;
+
     return Container(
       padding: EdgeInsets.all(isMobile ? 12 : 16),
       decoration: BoxDecoration(
@@ -59,75 +64,25 @@ class HomePageBuilder {
           ),
           SizedBox(height: isMobile ? 12 : 16),
           isMobile
-            ? Column(
-                children: [
-                  _buildStatCard(
-                    "Active Projects",
-                    "${projects.where((p) => p['status'] == 'active').length}",
-                    Icons.work,
-                    Colors.black,
-                    isMobile,
-                  ),
-                  const SizedBox(height: 10),
-                  _buildStatCard(
-                    "Pending Projects",
-                    "${projects.where((p) => p['status'] == 'pending').length}",
-                    Icons.pending,
-                    Colors.black,
-                    isMobile,
-                  ),
-                  const SizedBox(height: 10),
-                  _buildStatCard(
-                    "Completed",
-                    "${projects.where((p) => p['status'] == 'ended').length}",
-                    Icons.check_circle,
-                    Colors.black,
-                    isMobile,
-                  ),
-                ],
+            ? _buildStatCard(
+                "Completed Projects",
+                "$completedCount",
+                Icons.check_circle,
+                Colors.grey.shade600,
+                isMobile,
+                subtitle: 'Successfully finished',
               )
-            : Column(
+            : Row(
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          "Active Projects",
-                          "${projects.where((p) => p['status'] == 'active').length}",
-                          Icons.work,
-                          Colors.black,
-                          isMobile,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildStatCard(
-                          "Pending Projects",
-                          "${projects.where((p) => p['status'] == 'pending').length}",
-                          Icons.pending,
-                          Colors.black,
-                          isMobile,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          "Completed",
-                          "${projects.where((p) => p['status'] == 'ended').length}",
-                          Icons.check_circle,
-                          Colors.black,
-                          isMobile,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: SizedBox.shrink(),
-                      ),
-                    ],
+                  Expanded(
+                    child: _buildStatCard(
+                      "Completed Projects",
+                      "$completedCount",
+                      Icons.check_circle,
+                      Colors.black,
+                      isMobile,
+                      subtitle: 'Successfully finished',
+                    ),
                   ),
                 ],
               ),
@@ -136,65 +91,200 @@ class HomePageBuilder {
     );
   }
 
-  static Widget _buildStatCard(String title, String value, IconData icon, Color color, bool isMobile) {
-    return Container(
-      width: isMobile ? double.infinity : null,
-      padding: EdgeInsets.all(isMobile ? 12 : 13),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+  static Future<void> _handleMessageTap(BuildContext context, Map<String, dynamic> bid) async {
+    final contracteeId = Supabase.instance.client.auth.currentUser?.id;
+    if (contracteeId == null) {
+      ConTrustSnackBar.warning(context, 'Please sign in again to start a chat.');
+      return;
+    }
+
+    final contractorId = bid['contractor_id']?.toString();
+    final projectId = bid['project_id']?.toString();
+    if (contractorId == null || contractorId.isEmpty || projectId == null || projectId.isEmpty) {
+      ConTrustSnackBar.error(context, 'Missing contractor or project information.');
+      return;
+    }
+
+    final contractorData = bid['contractor'] as Map<String, dynamic>?;
+    final contractorName = contractorData?['firm_name']?.toString() ?? 'Contractor';
+    final contractorProfile = contractorData?['profile_photo'];
+
+    final navigator = Navigator.of(context, rootNavigator: true);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => const Center(
+        child: CircularProgressIndicator(color: Colors.amber),
       ),
-      child: isMobile
-        ? Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
+    );
+
+    String? chatRoomId;
+    try {
+      chatRoomId = await MessageService().getOrCreateChatRoom(
+        contractorId: contractorId,
+        contracteeId: contracteeId,
+        projectId: projectId,
+      );
+    } catch (e) {
+      chatRoomId = null;
+      if (context.mounted) {
+        ConTrustSnackBar.error(context, 'Failed to start chat: $e');
+      }
+    } finally {
+      if (navigator.mounted && navigator.canPop()) {
+        navigator.pop();
+      }
+    }
+
+    if (chatRoomId == null) {
+      if (context.mounted) {
+        ConTrustSnackBar.error(context, 'Unable to start chat. Please try again.');
+      }
+      return;
+    }
+
+    if (!context.mounted) return;
+
+    final encodedName = Uri.encodeComponent(contractorName);
+    context.go(
+      '/chat/$encodedName',
+      extra: {
+        'chatRoomId': chatRoomId,
+        'contracteeId': contracteeId,
+        'contractorId': contractorId,
+        'contractorProfile': contractorProfile,
+      },
+    );
+  }
+
+  static Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+    bool isMobile, {
+    String? subtitle,
+  }) {
+    final double padding = isMobile ? 12 : 16;
+    final double iconPadding = isMobile ? 12 : 14;
+    final double valueFontSize = isMobile ? 22 : 20;
+    final double titleFontSize = isMobile ? 14 : 16;
+    final double subtitleFontSize = isMobile ? 12 : 13;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(isMobile ? 12 : 16),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(padding),
+        child: isMobile
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Icon(icon, color: color, size: 22),
-                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(iconPadding),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(icon, color: color, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                title,
+                                style: TextStyle(
+                                  fontSize: titleFontSize,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              if (subtitle != null && subtitle.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  subtitle,
+                                  style: TextStyle(
+                                    fontSize: subtitleFontSize,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   Text(
-                    title,
+                    value,
                     style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[700],
-                      fontWeight: FontWeight.w600,
+                      fontSize: valueFontSize,
+                      fontWeight: FontWeight.bold,
+                      color: color,
                     ),
                   ),
                 ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(iconPadding),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(icon, color: color, size: 22),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: valueFontSize,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: titleFontSize,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  if (subtitle != null && subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: subtitleFontSize,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ],
               ),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-            ],
-          )
-        : Column(
-            children: [
-              Icon(icon, color: color, size: 24),
-              const SizedBox(height: 8),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+      ),
     );
   }
 
@@ -499,6 +589,8 @@ class HomePageBuilder {
     final isRejected = bid['status'] == 'rejected';
     final canAccept = projectStatus == 'pending' && !isAccepted && !isRejected;
     final canReject = projectStatus == 'pending' && !isAccepted && !isRejected;
+    final projectStatusLower = projectStatus?.toLowerCase();
+    final showMessageButton = projectStatusLower == null || projectStatusLower == 'pending';
     
     return Stack(
       children: [
@@ -559,16 +651,29 @@ class HomePageBuilder {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-              IconButton(
-                onPressed: () => _showBidInfoDialog(context, bid),
-                icon: Icon(Icons.info_outline, size: isMobile ? 18 : 20),
-                tooltip: 'More Info',
-                padding: EdgeInsets.all(isMobile ? 3 : 4),
-                constraints: BoxConstraints(
-                  minWidth: isMobile ? 28 : 32, 
-                  minHeight: isMobile ? 28 : 32
-                ),
-              ),
+                  if (showMessageButton)
+                    IconButton(
+                      onPressed: isLoading ? null : () => _handleMessageTap(context, bid),
+                      icon: Icon(Icons.chat_bubble_outline, size: isMobile ? 18 : 20),
+                      tooltip: 'Message Contractor',
+                      padding: EdgeInsets.all(isMobile ? 3 : 4),
+                      constraints: BoxConstraints(
+                        minWidth: isMobile ? 28 : 32,
+                        minHeight: isMobile ? 28 : 32,
+                      ),
+                    ),
+                  if (showMessageButton)
+                    SizedBox(width: isMobile ? 3 : 4),
+                  IconButton(
+                    onPressed: () => _showBidInfoDialog(context, bid),
+                    icon: Icon(Icons.info_outline, size: isMobile ? 18 : 20),
+                    tooltip: 'More Info',
+                    padding: EdgeInsets.all(isMobile ? 3 : 4),
+                    constraints: BoxConstraints(
+                      minWidth: isMobile ? 28 : 32, 
+                      minHeight: isMobile ? 28 : 32
+                    ),
+                  ),
                   if (isAccepted || isRejected) ...[
                     SizedBox(width: isMobile ? 3 : 4),
                     if (isAccepted)

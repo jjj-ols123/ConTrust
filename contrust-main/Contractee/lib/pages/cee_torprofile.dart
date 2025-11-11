@@ -45,6 +45,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
   bool hasPendingHireRequest = false;
   bool hasPendingBiddingProject = false;
   late String contractorId;
+  String selectedReviewFilter = 'All';
 
   static const String profileUrl =
       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
@@ -93,7 +94,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
               specialization = "No specialization";
             }
             address = contractorData['address'] ?? "";
-            rating = contractorData['rating']?.toDouble() ?? 0.0;
+            rating = _parseRating(contractorData['rating']);
             final photo = contractorData['profile_photo'];
             profileImage =
                 (photo == null || photo.isEmpty) ? profileUrl : photo;
@@ -101,7 +102,13 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
               contractorData['past_projects'] ?? [],
             );
             completedProjectsCount = completedProjects.length;
-            allRatings = reviews;
+            allRatings = reviews
+                .map((review) {
+                  final parsed = Map<String, dynamic>.from(review);
+                  parsed['rating'] = _parseRating(review['rating']);
+                  return parsed;
+                })
+                .toList();
             totalReviews = reviews.length;
             isLoading = false;
           });
@@ -135,6 +142,14 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
       totalReviews = 0;
       isLoading = false;
     });
+  }
+
+  double _parseRating(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value) ?? 0.0;
+    }
+    return 0.0;
   }
 
   Future<void> _checkAgreementWithContractor() async {
@@ -232,8 +247,8 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
         contractorId, currentUserId);
     setState(() {
       canRate = result['canRate'];
-      hasRated = result['hasRated'];
-      userRating = result['userRating'];
+      hasRated = false;
+      userRating = 0.0;
     });
   }
 
@@ -241,15 +256,18 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
     final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
     try {
       await TorProfileService.submitRating(
-          contractorId, currentUserId, rating, hasRated, reviewText);
+        contractorId,
+        currentUserId,
+        rating,
+        reviewText,
+      );
       await _loadContractorData();
       await _checkRatingEligibility();
       if (mounted) {
         ConTrustSnackBar.success(
-            context,
-            hasRated
-                ? 'Rating updated successfully!'
-                : 'Rating submitted successfully!');
+          context,
+          'Rating submitted successfully!',
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -278,13 +296,13 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
   }
 
   Future<void> _showRatingDialog() async {
-    double tempRating = userRating;
+    double tempRating = userRating > 0 ? userRating : 5.0;
     String reviewText = '';
 
     await showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (innerContext, setDialogState) {
           return Dialog(
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -327,7 +345,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            hasRated ? 'Update Rating' : 'Rate This Contractor',
+                            'Rate This Contractor',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 18,
@@ -336,7 +354,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                           ),
                         ),
                         IconButton(
-                          onPressed: () => Navigator.pop(context),
+                          onPressed: () => Navigator.of(dialogContext).pop(),
                           icon: const Icon(Icons.close, color: Colors.white),
                         ),
                       ],
@@ -349,9 +367,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            hasRated
-                                ? 'Update your rating for $firmName'
-                                : 'How would you rate your experience with $firmName?',
+                            'How would you rate your experience with $firmName?',
                             textAlign: TextAlign.center,
                             style: const TextStyle(fontSize: 16),
                           ),
@@ -406,7 +422,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                             children: [
                               Expanded(
                                 child: TextButton(
-                                  onPressed: () => Navigator.pop(context),
+                                  onPressed: () => Navigator.of(dialogContext).pop(),
                                   child: const Text('Cancel'),
                                 ),
                               ),
@@ -414,7 +430,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                               Expanded(
                                 child: ElevatedButton(
                                   onPressed: () async {
-                                    Navigator.pop(context);
+                                    Navigator.of(dialogContext).pop();
                                     await _submitRating(tempRating, reviewText);
                                   },
                                   style: ElevatedButton.styleFrom(
@@ -527,6 +543,12 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                         allRatings: allRatings,
                         buildReviewCard: TorProfileBuildMethods.buildReviews,
                         getTimeAgo: getTimeAgo,
+                        selectedFilter: selectedReviewFilter,
+                        onFilterChanged: (filter) {
+                          setState(() {
+                            selectedReviewFilter = filter;
+                          });
+                        },
                         canRate: canRate,
                         hasRated: hasRated,
                         userRating: userRating,

@@ -63,6 +63,7 @@ class _ContractorUserProfileScreenState
   Map<int, int> ratingDistribution = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
   int totalReviews = 0;
   String? _error;
+  String selectedReviewFilter = 'All';
   
   String selectedProjectStatus = 'All';
   String selectedPaymentType = 'All';
@@ -307,6 +308,7 @@ class _ContractorUserProfileScreenState
                           context,
                           {'photo_url': profileImage ?? profileUrl},
                         ),
+                        isUploadingProfilePhoto: isUploadingProfile,
                       ),
                     );
                   } else {
@@ -334,6 +336,7 @@ class _ContractorUserProfileScreenState
                         context,
                         {'photo_url': profileImage ?? profileUrl},
                       ),
+                      isUploadingProfilePhoto: isUploadingProfile,
                     );
                   }
                 },
@@ -428,6 +431,12 @@ class _ContractorUserProfileScreenState
       allRatings: allRatings,
       buildReviewCard: _buildReviewCard,
       getTimeAgo: _getTimeAgo,
+      selectedFilter: selectedReviewFilter,
+      onFilterChanged: (filter) {
+        setState(() {
+          selectedReviewFilter = filter;
+        });
+      },
     );
   }
 

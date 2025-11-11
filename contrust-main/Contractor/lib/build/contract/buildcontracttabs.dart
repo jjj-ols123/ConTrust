@@ -23,7 +23,7 @@ class ContractTabsBuild {
             color: Colors.grey.shade200.withOpacity(0.8),
             blurRadius: 12,
             offset: const Offset(0, -2),
-          ),
+        ),
         ],
       ),
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -41,26 +41,26 @@ class ContractTabsBuild {
               border: Border.all(color: Colors.grey.shade200, width: 1),
             ),
             child: TabBar(
-              controller: tabController,
+            controller: tabController,
               labelColor: Colors.white,
-              unselectedLabelColor: Colors.grey.shade600,
-              indicatorSize: TabBarIndicatorSize.tab,
-              isScrollable: false,
-              labelPadding: EdgeInsets.zero,
-              padding: EdgeInsets.zero,
-              indicator: BoxDecoration(
+            unselectedLabelColor: Colors.grey.shade600,
+            indicatorSize: TabBarIndicatorSize.tab,
+            isScrollable: false,
+            labelPadding: EdgeInsets.zero, 
+            padding: EdgeInsets.zero,
+            indicator: BoxDecoration(
                 color: Colors.amber.shade400,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(15),
                   topRight: Radius.circular(15),
-                ),
               ),
-              onTap: (index) {
-                final prevIndex = tabController.index;
-                if (index == previewIndex && !canViewFinalPreview) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    tabController.animateTo(prevIndex);
-                  });
+            ),
+            onTap: (index) {
+              final prevIndex = tabController.index;
+              if (index == previewIndex && !canViewFinalPreview) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  tabController.animateTo(prevIndex);
+                });
                   // Show feedback
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -71,15 +71,15 @@ class ContractTabsBuild {
                       margin: const EdgeInsets.all(16),
                     ),
                   );
-                  return;
-                }
-                if (index == previewIndex) {
-                  onBeforeFinalPreview?.call();
-                }
-              },
-              tabs: [
-                if (showTemplate)
-                  Tab(
+                return;
+              }
+              if (index == previewIndex) {
+                onBeforeFinalPreview?.call();
+              }
+            },
+            tabs: [
+              if (showTemplate)
+                Tab(
                     height: isMobile ? 64 : 72,
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -100,18 +100,18 @@ class ContractTabsBuild {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            isMobile ? "Template" : "Template Preview",
-                            style: TextStyle(
+                    isMobile ? "Template" : "Template Preview",
+                    style: TextStyle(
                               fontSize: isMobile ? 10 : 12,
                               fontWeight: FontWeight.w600,
                               height: 1.2,
                             ),
                           ),
                         ],
-                      ),
                     ),
                   ),
-                Tab(
+                ),
+              Tab(
                   height: isMobile ? 64 : 72,
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 8),
@@ -132,18 +132,18 @@ class ContractTabsBuild {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          isMobile ? "Fill" : "Fill Contract",
-                          style: TextStyle(
+                  isMobile ? "Fill" : "Fill Contract",
+                  style: TextStyle(
                             fontSize: isMobile ? 10 : 12,
                             fontWeight: FontWeight.w600,
                             height: 1.2,
                           ),
                         ),
                       ],
-                    ),
                   ),
                 ),
-                Tab(
+              ),
+              Tab(
                   height: isMobile ? 64 : 72,
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 8),
@@ -159,21 +159,21 @@ class ContractTabsBuild {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(
-                            Icons.preview,
+                  Icons.preview,
                             size: isMobile ? 16 : 20,
                             color: canViewFinalPreview
                                 ? Colors.amber.shade600
                                 : Colors.grey.shade400,
                           ),
-                        ),
+                ),
                         const SizedBox(height: 4),
                         Text(
-                          isMobile ? "Preview" : "Final Preview",
-                          style: TextStyle(
+                  isMobile ? "Preview" : "Final Preview",
+                  style: TextStyle(
                             fontSize: isMobile ? 10 : 12,
                             fontWeight: FontWeight.w600,
                             height: 1.2,
-                            color: canViewFinalPreview ? null : Colors.grey.shade400,
+                    color: canViewFinalPreview ? null : Colors.grey.shade400,
                           ),
                         ),
                       ],
@@ -181,7 +181,7 @@ class ContractTabsBuild {
                   ),
                 ),
               ],
-            ),
+              ),
           );
         },
       ),
@@ -209,9 +209,9 @@ class ContractTabsBuild {
       switchOutCurve: Curves.easeInOut,
       child: TabBarView(
         key: ValueKey(canViewFinalPreview), // Rebuild when preview availability changes
-        controller: tabController,
-        physics: canViewFinalPreview ? null : const NeverScrollableScrollPhysics(),
-        children: children,
+      controller: tabController,
+      physics: canViewFinalPreview ? null : const NeverScrollableScrollPhysics(),
+      children: children,
       ),
     );
   }
@@ -228,9 +228,9 @@ class ContractTabsBuild {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200, width: 2),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
@@ -243,31 +243,31 @@ class ContractTabsBuild {
               size: 48,
               color: Colors.grey.shade500,
             ),
-          ),
+            ),
           const SizedBox(height: 24),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
               children: [
-                Text(
+            Text(
                   'Preview Not Available Yet',
-                  style: TextStyle(
+              style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
                     color: Colors.grey.shade700,
-                  ),
+              ),
                   textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
+            ),
+            const SizedBox(height: 8),
+            Text(
                   'Complete all required fields in the contract form to unlock the final preview and generate your contract.',
-                  style: TextStyle(
+              style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey.shade600,
                     height: 1.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+              ),
+              textAlign: TextAlign.center,
+            ),
               ],
             ),
           ),
@@ -299,9 +299,9 @@ class ContractTabsBuild {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                ),
-              ],
             ),
+          ],
+        ),
           ),
         ],
       ),
@@ -465,7 +465,7 @@ class ContractTabsBuild {
     final percentage = totalFields > 0
         ? (completedFields / totalFields).clamp(0.0, 1.0)
         : 0.0;
-
+    
     final isComplete = percentage == 1.0;
     final isLoading = totalFields == 0;
 
@@ -525,17 +525,17 @@ class ContractTabsBuild {
                       : isLoading
                           ? Colors.grey.shade600
                           : Colors.amber.shade700,
-                  size: 20,
-                ),
+            size: 20,
+          ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+          Text(
                       isLoading
-                          ? 'Loading contract fields...'
+                ? 'Loading contract fields...'
                           : isComplete
                               ? 'Contract Complete! 🎉'
                               : 'Contract Progress',
@@ -556,7 +556,7 @@ class ContractTabsBuild {
                           : isComplete
                               ? 'All fields completed. Ready to preview!'
                               : '$completedFields of $totalFields fields completed',
-                      style: TextStyle(
+            style: TextStyle(
                         fontSize: 12,
                         color: isComplete
                             ? Colors.green.shade600
@@ -577,7 +577,7 @@ class ContractTabsBuild {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
-                    '${(percentage * 100).toInt()}%',
+                  '${(percentage * 100).toInt()}%',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -671,17 +671,17 @@ class ContractTabsBuild {
       countedFields.add(key);
 
       // Check if field has a value
-      final value = controllers[key]?.text.trim() ?? '';
+        final value = controllers[key]?.text.trim() ?? '';
 
       if (autoFilledFields.contains(key) || isCalculatedField(key)) {
         // Auto-filled and calculated fields are always considered complete
         completed++;
       } else if (value.isNotEmpty) {
         // Non-auto-filled fields are complete if they have a value
-        completed++;
+          completed++;
       }
     }
-
+    
     return {
       'completed': completed,
       'total': countedFields.length,

@@ -42,7 +42,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
   bool dialogShown = false;
   bool contractSent = false;
   String? projectStatus;
-  bool _isLoading = true; 
+  bool _isLoading = true;
 
   bool _contractorSigned = false;
   bool _contracteeSigned = false;
@@ -186,26 +186,26 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
 
   Widget _buildLoadingState(bool isMobile, bool isTablet) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        SizedBox(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
           width: isMobile ? 14 : 16,
           height: isMobile ? 14 : 16,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.grey[400]!),
-          ),
-        ),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.grey[400]!),
+                ),
+              ),
         SizedBox(width: isMobile ? 6 : 8),
-        Text(
-          'Loading project status...',
-          style: TextStyle(
-            color: Colors.grey[600],
+              Text(
+                'Loading project status...',
+                style: TextStyle(
+                  color: Colors.grey[600],
             fontSize: isMobile ? 12 : (isTablet ? 13 : 14),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
     );
   }
 
@@ -227,7 +227,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
     Color primaryColor = Colors.grey;
     Color secondaryColor = Colors.grey.shade300;
 
-    if (projectStatus == 'cancelled') {
+      if (projectStatus == 'cancelled') {
       currentStepIndex = -1; 
       progressPercentage = 0;
       statusText = 'Project Cancelled';
@@ -258,7 +258,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
                     ConTrustSnackBar.error(context, 'Project not found');
                   }
                   return;
-                }
+      }
 
                 if (!mounted) return;
                 context.go('/project-management/$projectId');
@@ -279,136 +279,136 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
               }
             }
           : () async {
-              try {
-                final projects = await FetchService().fetchUserProjects();
-                final activeProjects =
-                    projects.where((p) => p['status'] == 'active').toList();
-                if (activeProjects.isEmpty) {
-                  if (mounted) {
-                    ConTrustSnackBar.error(context, 'No active project found');
-                  }
-                  return;
+            try {
+              final projects = await FetchService().fetchUserProjects();
+              final activeProjects =
+                  projects.where((p) => p['status'] == 'active').toList();
+              if (activeProjects.isEmpty) {
+                if (mounted) {
+                  ConTrustSnackBar.error(context, 'No active project found');
                 }
+                return;
+              }
 
-                if (!mounted) return;
+              if (!mounted) return;
 
-                String projectId;
-                if (activeProjects.length > 1) {
-                  projectId = await showDialog<String>(
-                        context: context,
-                        builder: (ctx) => Dialog(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          child: Container(
-                            constraints: const BoxConstraints(maxWidth: 500),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [Colors.white, Colors.grey.shade50],
-                              ),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(20),
-                                  decoration: BoxDecoration(
-                                    color: Colors.amber.shade700,
-                                    borderRadius: const BorderRadius.only(
-                                      topLeft: Radius.circular(20),
-                                      topRight: Radius.circular(20),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(6),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.2),
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                        child: const Icon(
-                                          Icons.apartment,
-                                          color: Colors.white,
-                                          size: 18,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      const Expanded(
-                                        child: Text(
-                                          'Select Active Project',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                      IconButton(
-                                        onPressed: () => Navigator.of(ctx).pop(''),
-                                        icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Flexible(
-                                  child: SingleChildScrollView(
-                                    padding: const EdgeInsets.all(16),
-                                    child: ListView.builder(
-                                      shrinkWrap: true,
-                                      physics: const NeverScrollableScrollPhysics(),
-                                      itemCount: activeProjects.length,
-                                      itemBuilder: (context, index) {
-                                        final p = activeProjects[index];
-                                        return Card(
-                                          margin: const EdgeInsets.only(bottom: 8),
-                                          child: ListTile(
-                                            title: Text(
-                                              p['title'] ?? 'Untitled Project',
-                                              style: const TextStyle(fontWeight: FontWeight.w600),
-                                            ),
-                                            subtitle: Text(p['location'] ?? 'No location'),
-                                            trailing: Icon(Icons.chevron_right, color: Colors.amber.shade700),
-                                            onTap: () => Navigator.of(ctx).pop(p['project_id'] as String),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              ],
+              String projectId;
+              if (activeProjects.length > 1) {
+                projectId = await showDialog<String>(
+                      context: context,
+                      builder: (ctx) => Dialog(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        child: Container(
+                          constraints: const BoxConstraints(maxWidth: 500),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Colors.white, Colors.grey.shade50],
                             ),
                           ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.shade700,
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(20),
+                                    topRight: Radius.circular(20),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Icon(
+                                        Icons.apartment,
+                                        color: Colors.white,
+                                        size: 18,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    const Expanded(
+                                      child: Text(
+                                        'Select Active Project',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      onPressed: () => Navigator.of(ctx).pop(''),
+                                      icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Flexible(
+                                child: SingleChildScrollView(
+                                  padding: const EdgeInsets.all(16),
+                                  child: ListView.builder(
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    itemCount: activeProjects.length,
+                                    itemBuilder: (context, index) {
+                                      final p = activeProjects[index];
+                                      return Card(
+                                        margin: const EdgeInsets.only(bottom: 8),
+                                        child: ListTile(
+                                          title: Text(
+                                            p['title'] ?? 'Untitled Project',
+                                            style: const TextStyle(fontWeight: FontWeight.w600),
+                                          ),
+                                          subtitle: Text(p['location'] ?? 'No location'),
+                                          trailing: Icon(Icons.chevron_right, color: Colors.amber.shade700),
+                                          onTap: () => Navigator.of(ctx).pop(p['project_id'] as String),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ) ??
-                      '';
-                  if (projectId.isEmpty) return;
-                } else {
-                  projectId = activeProjects.first['project_id'];
-                }
-
-                if (!mounted) return;
-                context.go('/ongoing/$projectId');
-              } catch (e) {
-                await _errorService.logError(
-                  errorMessage: 'Failed to navigate to ongoing project: $e',
-                  module: 'Contract Agreement Banner',
-                  severity: 'Medium',
-                  extraInfo: {
-                    'operation': 'Go to Project Management',
-                    'chat_room_id': widget.chatRoomId,
-                    'user_role': widget.userRole,
-                  },
-                );
-                if (mounted) {
-                  ConTrustSnackBar.error(
-                      context, 'Error loading ongoing project');
-                }
+                      ),
+                    ) ??
+                    '';
+                if (projectId.isEmpty) return;
+              } else {
+                projectId = activeProjects.first['project_id'];
               }
-            };
+
+              if (!mounted) return;
+              context.go('/ongoing/$projectId');
+            } catch (e) {
+              await _errorService.logError(
+                errorMessage: 'Failed to navigate to ongoing project: $e',
+                module: 'Contract Agreement Banner',
+                severity: 'Medium',
+                extraInfo: {
+                  'operation': 'Go to Project Management',
+                  'chat_room_id': widget.chatRoomId,
+                  'user_role': widget.userRole,
+                },
+              );
+              if (mounted) {
+                ConTrustSnackBar.error(
+                    context, 'Error loading ongoing project');
+              }
+            }
+          };
     } else if (projectStatus == 'awaiting_signature') {
       currentStepIndex = 2;
       progressPercentage = 75;
@@ -420,7 +420,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
         statusText = widget.userRole == 'contractee'
             ? "You've signed. Waiting for contractor."
             : "Contractee signed. Please sign to activate.";
-      } else {
+        } else {
         statusText = "Waiting for both parties to sign.";
       }
       primaryColor = Colors.amber.shade600;
@@ -451,7 +451,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
         statusText = "Waiting for contractor to send contract.";
         primaryColor = Colors.amber.shade600;
         secondaryColor = Colors.grey.shade300;
-      }
+    }
     } else if (projectStatus == 'cancellation_requested_by_contractee' &&
         widget.userRole == 'contractor') {
       currentStepIndex = 2;
@@ -469,7 +469,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
       primaryColor = Colors.amber.shade600;
       secondaryColor = Colors.grey.shade300;
     }
-
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -477,17 +477,17 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
         if (statusText.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: Column(
-              children: [
-                Text(
+        child: Column(
+          children: [
+            Text(
                   statusText,
-                  style: TextStyle(
+              style: TextStyle(
                     fontWeight: projectStatus == 'cancelled' ? FontWeight.bold : FontWeight.w600,
                     fontSize: isMobile ? 13 : (isTablet ? 14 : 15),
                     color: projectStatus == 'cancelled' ? Colors.grey.shade700 : Colors.grey.shade800,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+              ),
+              textAlign: TextAlign.center,
+            ),
                 if (projectStatus == 'cancelled')
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
@@ -500,7 +500,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                  ),
+                          ),
               ],
             ),
           ),
@@ -520,7 +520,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
                   child: Container(
                     margin: EdgeInsets.only(right: index < steps.length - 1 ? 4 : 0),
                     child: Column(
-                      children: [
+                    children: [
                         // Progress bar segment
                         Container(
                           height: 4,
@@ -554,11 +554,11 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
                             step['icon'] as IconData,
                             color: isCompleted || isCurrent ? Colors.white : Colors.grey.shade400,
                             size: isMobile ? 16 : 18,
-                          ),
-                        ),
+                                      ),
+                                    ),
                         const SizedBox(height: 4),
                         // Step label
-                        Text(
+                                    Text(
                           step['label'] as String,
                           style: TextStyle(
                             fontSize: isMobile ? 9 : 10,
@@ -585,7 +585,7 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
                 fontWeight: FontWeight.w600,
                 color: Colors.grey.shade700,
               ),
-            ),
+                                    ),
           ),
         // Action button below (if exists)
         if (actionText.isNotEmpty && actionCallback != null)
@@ -604,15 +604,15 @@ class _ContractAgreementBannerState extends State<ContractAgreementBanner> {
                   textStyle: TextStyle(
                     fontSize: isMobile ? 12 : 13,
                     fontWeight: FontWeight.w600,
-                  ),
+                          ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
-                  ),
+                      ),
                 ),
                 child: Text(actionText),
               ),
-            ),
-          ),
+        ),
+      ),
       ],
     );
   }
@@ -1572,7 +1572,7 @@ class UIMessage {
           // If signed PDF fails, fall through to message's pdf_url
         }
       }
-
+      
       // Priority 2: Check message's pdf_url (original sent PDF)
       final messagePdfUrl = messageData['pdf_url'] as String?;
       if (messagePdfUrl != null && messagePdfUrl.isNotEmpty) {
@@ -1589,7 +1589,7 @@ class UIMessage {
         }
       }
     }
-
+    
     // Priority 3: Fall back to contract's signed PDF or regular PDF
     return await ViewContractService.getPdfSignedUrl(contractData);
   }
@@ -2105,7 +2105,7 @@ class UIMessage {
                                 if (bothSigned) {
                                   // Close the signature dialog first
                                   Navigator.of(context).pop();
-
+                                  
                                   // Show loading state while waiting for signed PDF
                                   // The contract viewer will handle showing loading until PDF is available
                                   onRefresh();

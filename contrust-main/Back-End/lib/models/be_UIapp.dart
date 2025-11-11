@@ -103,7 +103,7 @@ class ContractorsView extends StatelessWidget {
                       }
                     }),
                   ),
-                SizedBox(height: isMobile ? 4 : 6),
+                SizedBox(height: isMobile ? 5 : 6),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -177,8 +177,13 @@ class ProjectView extends StatelessWidget {
     final hiringType = projectData?['hiring_type'] ?? 'bidding';
     final isHiringRequest = duration == 0 || hiringType == 'direct_hire';
     final status = ProjectStatus();
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    final userType = currentUser?.userMetadata?['user_type']?.toString();
+    final isContractee = userType == 'contractee';
 
-    return Card(
+    final projectCard = Card(
       margin: const EdgeInsets.only(bottom: 20),
       elevation: 4,
       shape: RoundedRectangleBorder(
@@ -186,38 +191,34 @@ class ProjectView extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          InkWell(
-            onTap: isHiringRequest ? null : onTap,
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.white, Colors.grey.shade50],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.white, Colors.grey.shade50],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(context, status),
-                  
-                  const SizedBox(height: 16),
-                  _buildProjectDetails(context, isHiringRequest),
-                  
-                  const SizedBox(height: 16),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(context, status),
 
-                  _buildDescription(),
-                  
-                  const SizedBox(height: 16),
+                const SizedBox(height: 16),
+                _buildProjectDetails(context, isHiringRequest),
 
-                  if (!isHiringRequest && project['status'] == 'pending')
-                    _buildBiddingInfo(),
-                  
-                ],
-              ),
+                const SizedBox(height: 16),
+
+                _buildDescription(),
+
+                const SizedBox(height: 16),
+
+                if (!isHiringRequest && project['status'] == 'pending')
+                  _buildBiddingInfo(),
+
+              ],
             ),
           ),
           // Loading overlay
@@ -251,6 +252,18 @@ class ProjectView extends StatelessWidget {
         ],
       ),
     );
+
+    if (isContractee) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildContractStatusIndicator(),
+          projectCard,
+        ],
+      );
+    }
+
+    return projectCard;
   }
 
   Widget _buildHeader(BuildContext context, ProjectStatus status) {
@@ -265,11 +278,12 @@ class ProjectView extends StatelessWidget {
     if (isMobile) {
       if (isContractee) {
         return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-      children: [
-        Expanded(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
                   child: Text(
                     project['title'] ?? 'No title given',
                     style: const TextStyle(
@@ -277,12 +291,10 @@ class ProjectView extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 8),
-                _buildContractButton(context),
                 const SizedBox(width: 8),
                 if ((onUpdateProject != null || onCancelProject != null) && project['project_id'] != null)
                   _buildActionMenu(context),
@@ -405,6 +417,69 @@ class ProjectView extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildContractStatusIndicator() {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: FetchService().streamContractsForProject(projectId),
+      builder: (context, snapshot) {
+        Widget buildCenteredChip(Widget child) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Center(child: child),
+          );
+        }
+
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return buildCenteredChip(_buildNoContractLabel());
+        }
+
+        final latestContract = snapshot.data!.first;
+        final contractStatus = latestContract['status'] as String?;
+        if (contractStatus == null || contractStatus.isEmpty) {
+          return buildCenteredChip(_buildNoContractLabel());
+        }
+
+        final color = ContractStatus.getStatusColor(contractStatus);
+        final icon = ContractStatus.getStatusIcon(contractStatus);
+        final label = _formatContractStatusLabel(contractStatus);
+
+        return buildCenteredChip(
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: color.withOpacity(0.25)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 16, color: color),
+                const SizedBox(width: 6),
+                Text(
+                  'Contract Status: $label',
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _formatContractStatusLabel(String status) {
+    return status
+        .split('_')
+        .map((word) => word.isEmpty
+            ? ''
+            : word[0].toUpperCase() + word.substring(1).toLowerCase())
+        .join(' ');
   }
 
   Widget _buildActionMenu(BuildContext context) {
@@ -1073,7 +1148,6 @@ class ProjectView extends StatelessWidget {
 
   Future<void> _showEnhancedContractView(BuildContext context, Map<String, dynamic> contractData) async {
     try {
-      // Fetch fresh contract data to ensure we have the latest signed_pdf_url
       final freshContractData = await ContractService.getContractById(contractData['contract_id'] as String);
 
       showDialog(
@@ -1104,7 +1178,6 @@ class ProjectView extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Header
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(

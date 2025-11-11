@@ -337,47 +337,57 @@ class CeeProfileService {
 
   Future<List<Map<String, dynamic>>> loadTransactions(String contracteeId) async {
     try {
-      final projectsResponse = await Supabase.instance.client
-          .from('Projects')
+      final paymentsResponse = await Supabase.instance.client
+          .from('Payments')
           .select('''
+            payment_id,
             project_id,
-            title,
-            projectdata,
-            contractor_id,
-            Contractor!inner(firm_name)
+            amount,
+            payment_type,
+            payment_status,
+            milestone_number,
+            milestone_description,
+            description,
+            paid_at,
+            payment_reference,
+            receipt_path,
+            Projects!inner(
+              title,
+              contractor_id,
+              Contractor!inner(firm_name)
+            )
           ''')
           .eq('contractee_id', contracteeId)
-          .order('created_at', ascending: false);
+          .eq('payment_status', 'completed')
+          .order('paid_at', ascending: false);
 
       List<Map<String, dynamic>> allTransactions = [];
 
-      for (var project in projectsResponse) {
-        final projectdata =
-            project['projectdata'] as Map<String, dynamic>? ?? {};
-        final payments = projectdata['payments'] as List<dynamic>? ?? [];
-
-        for (var payment in payments) {
-          allTransactions.add({
-            'amount': (payment['amount'] as num?)?.toDouble() ?? 0.0,
-            'payment_type': getPaymentType(payment['contract_type'] ?? '',
-                payment['payment_structure'] ?? ''),
-            'project_title': project['title'] ?? 'Unknown Project',
-            'contractor_name':
-                project['Contractor']?['firm_name'] ?? 'Unknown Contractor',
-            'payment_date': payment['date'] ?? DateTimeHelper.getLocalTimeISOString(),
-            'reference': payment['reference'] ?? payment['payment_id'] ?? '',
-            'receipt_path': payment['receipt_path'],
-            'project_id': project['project_id'],
-            'payment_id': payment['payment_id'] ?? payment['reference'] ?? '',
-          });
+      for (var payment in paymentsResponse) {
+        final project = payment['Projects'] as Map<String, dynamic>? ?? {};
+        final contractor = project['Contractor'] as Map<String, dynamic>? ?? {};
+        
+        String paymentType = 'Payment';
+        if (payment['payment_type'] == 'milestone') {
+          paymentType = 'Milestone ${payment['milestone_number'] ?? ''}';
+        } else if (payment['payment_type'] == 'deposit') {
+          paymentType = 'Deposit';
+        } else if (payment['payment_type'] == 'final') {
+          paymentType = 'Final';
         }
-      }
 
-      allTransactions.sort((a, b) {
-        final dateA = DateTime.parse(a['payment_date']);
-        final dateB = DateTime.parse(b['payment_date']);
-        return dateB.compareTo(dateA);
-      });
+        allTransactions.add({
+          'amount': (payment['amount'] as num?)?.toDouble() ?? 0.0,
+          'payment_type': paymentType,
+          'project_title': project['title'] ?? 'Unknown Project',
+          'contractor_name': contractor['firm_name'] ?? 'Unknown Contractor',
+          'payment_date': payment['paid_at'] ?? DateTimeHelper.getLocalTimeISOString(),
+          'reference': payment['payment_reference'] ?? payment['payment_id'] ?? '',
+          'receipt_path': payment['receipt_path'],
+          'project_id': payment['project_id'],
+          'payment_id': payment['payment_id'] ?? '',
+        });
+      }
 
       return allTransactions;
     } catch (e) {

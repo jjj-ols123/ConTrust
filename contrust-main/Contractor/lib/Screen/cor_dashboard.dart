@@ -137,7 +137,6 @@ class _DashboardUIState extends State<DashboardUI>
   Future<void> _setupRealtimeSubscriptions() async {
     if (widget.contractorId == null) return;
 
-    // Debounced load function to prevent multiple rapid calls
     void debouncedFetchData() {
       _debounceTimer?.cancel();
       _debounceTimer = Timer(const Duration(milliseconds: 300), () {

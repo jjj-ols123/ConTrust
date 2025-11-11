@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:backend/services/both services/be_receipt_service.dart';
+import 'package:backend/services/both services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractee/web/html_stub.dart' as html if (dart.library.html) 'dart:html';
 import 'dart:io' if (dart.library.io) 'dart:io';
@@ -11,6 +12,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 
 class CeeProfileBuildMethods {
@@ -41,10 +43,11 @@ class CeeProfileBuildMethods {
     required int ongoingProjectsCount,
     required Widget mainContent,
     required VoidCallback? onUploadPhoto,
+    required bool isUploadingPhoto,
     String? selectedTab,
     Function(String)? onTabChanged,
   }) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
@@ -129,7 +132,7 @@ class CeeProfileBuildMethods {
                         right: 0,
                         bottom: 0,
                         child: GestureDetector(
-                          onTap: onUploadPhoto,
+                          onTap: isUploadingPhoto ? null : onUploadPhoto,
                           child: Container(
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
@@ -137,7 +140,16 @@ class CeeProfileBuildMethods {
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white, width: 2),
                             ),
-                            child: const Icon(Icons.camera_alt, size: 14, color: Colors.white),
+                            child: isUploadingPhoto
+                                ? SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Icon(Icons.camera_alt, size: 14, color: Colors.white),
                           ),
                         ),
                       ),
@@ -161,7 +173,7 @@ class CeeProfileBuildMethods {
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
-              child: mainContent,
+            child: mainContent,
           ),
         ],
       ),
@@ -227,6 +239,7 @@ class CeeProfileBuildMethods {
     required int ongoingProjectsCount,
     required Widget mainContent,
     required VoidCallback? onUploadPhoto,
+    required bool isUploadingPhoto,
     String? selectedTab,
     Function(String)? onTabChanged,
   }) {
@@ -302,7 +315,7 @@ class CeeProfileBuildMethods {
                               right: 0,
                               bottom: 0,
                               child: GestureDetector(
-                                onTap: onUploadPhoto,
+                                onTap: isUploadingPhoto ? null : onUploadPhoto,
                                 child: Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
@@ -310,7 +323,16 @@ class CeeProfileBuildMethods {
                                     shape: BoxShape.circle,
                                     border: Border.all(color: Colors.white, width: 2),
                                   ),
-                                  child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                                  child: isUploadingPhoto
+                                      ? SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        )
+                                      : const Icon(Icons.camera_alt, size: 16, color: Colors.white),
                                 ),
                               ),
                             ),
@@ -557,204 +579,205 @@ class CeeProfileBuildMethods {
               ],
             ),
             const SizedBox(height: 24),
-            // Transactions list
-            Expanded(
-              child: transactions.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.receipt_long, size: 64, color: Colors.grey.shade400),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No payment history found',
-                            style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      itemCount: transactions.length,
-                      itemBuilder: (context, index) {
-                        final transaction = transactions[index];
-                        final amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
-                        final paymentDate = transaction['payment_date'] ?? '';
-                        final projectTitle = transaction['project_title'] ?? 'Unknown Project';
-                        final contractorName = transaction['contractor_name'] ?? 'Unknown Contractor';
-                        final paymentType = transaction['payment_type'] ?? 'Payment';
-                        final receiptPath = transaction['receipt_path'] as String?;
-                        final reference = transaction['reference'] ?? '';
-                        
-                        DateTime? parsedDate;
-                        if (paymentDate is String && paymentDate.isNotEmpty) {
-                          try {
-                            parsedDate = DateTime.parse(paymentDate).toLocal();
-                          } catch (e) {
-                            parsedDate = DateTime.now();
-                          }
-                        } else {
-                          parsedDate = DateTime.now();
-                        }
-                        
-                        final formattedDate = '${parsedDate.day}/${parsedDate.month}/${parsedDate.year} at ${parsedDate.hour.toString().padLeft(2, '0')}:${parsedDate.minute.toString().padLeft(2, '0')}';
-                        
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: InkWell(
-                            onTap: receiptPath != null && receiptPath.isNotEmpty
-                                ? () => _showReceiptDialog(context, receiptPath, reference)
-                                : null,
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade50,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.grey.shade200, width: 1),
-                              ),
-                              child: Row(
+            if (transactions.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.receipt_long, size: 64, color: Colors.grey.shade400),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No payment history found',
+                      style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                    ),
+                  ],
+                ),
+              )
+            else
+              ListView.builder(
+                itemCount: transactions.length,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemBuilder: (context, index) {
+                  final transaction = transactions[index];
+                  final amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
+                  final paymentDate = transaction['payment_date'] ?? '';
+                  final projectTitle = transaction['project_title'] ?? 'Unknown Project';
+                  final contractorName = transaction['contractor_name'] ?? 'Unknown Contractor';
+                  final paymentType = transaction['payment_type'] ?? 'Payment';
+                  final receiptPath = transaction['receipt_path'] as String?;
+                  final reference = transaction['reference'] ?? '';
+
+                  DateTime? parsedDate;
+                  if (paymentDate is String && paymentDate.isNotEmpty) {
+                    try {
+                      parsedDate = DateTime.parse(paymentDate).toLocal();
+                    } catch (e) {
+                      parsedDate = DateTime.now();
+                    }
+                  } else {
+                    parsedDate = DateTime.now();
+                  }
+
+                  final formattedDate = '${parsedDate.day}/${parsedDate.month}/${parsedDate.year} at ${parsedDate.hour.toString().padLeft(2, '0')}:${parsedDate.minute.toString().padLeft(2, '0')}';
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: InkWell(
+                      onTap: receiptPath != null && receiptPath.isNotEmpty
+                          ? () => _showReceiptDialog(context, receiptPath, reference)
+                          : null,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade200, width: 1),
+                        ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: Colors.green.shade100,
+                              radius: 24,
+                              child: Icon(Icons.check_circle, color: Colors.green.shade700, size: 24),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  CircleAvatar(
-                                    backgroundColor: Colors.green.shade100,
-                                    radius: 24,
-                                    child: Icon(Icons.check_circle, color: Colors.green.shade700, size: 24),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          '₱${amount.toStringAsFixed(2)}',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                            color: Color(0xFF1F2937),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          projectTitle,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 14,
-                                            color: Color(0xFF1F2937),
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          'By: $contractorName',
-                                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          formattedDate,
-                                          style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: Colors.amber.shade100,
-                                            borderRadius: BorderRadius.circular(4),
-                                          ),
-                                          child: Text(
-                                            paymentType,
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              color: Colors.amber.shade700,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                  Text(
+                                    '₱${amount.toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: Color(0xFF1F2937),
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      onTap: receiptPath != null && receiptPath.isNotEmpty
-                                          ? () {
-                                              final path = receiptPath;
-                                              if (path.isNotEmpty) {
-                                                _showReceiptDialog(context, path, reference);
-                                              }
-                                            }
-                                          : null,
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: (receiptPath != null && receiptPath.isNotEmpty)
-                                              ? Colors.blue.shade50
-                                              : Colors.grey.shade200,
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(
-                                            color: (receiptPath != null && receiptPath.isNotEmpty)
-                                                ? Colors.blue.shade200
-                                                : Colors.grey.shade300,
-                                            width: 1,
-                                          ),
-                                        ),
-                                        child: Icon(
-                                          Icons.visibility,
-                                          color: (receiptPath != null && receiptPath.isNotEmpty)
-                                              ? Colors.blue
-                                              : Colors.grey.shade400,
-                                          size: 20,
-                                        ),
-                                      ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    projectTitle,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                      color: Color(0xFF1F2937),
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                  const SizedBox(width: 8),
-                                  Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      onTap: receiptPath != null && receiptPath.isNotEmpty
-                                          ? () {
-                                              final path = receiptPath;
-                                              if (path.isNotEmpty) {
-                                                _downloadReceipt(context, path, reference);
-                                              }
-                                            }
-                                          : null,
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: (receiptPath != null && receiptPath.isNotEmpty)
-                                              ? Colors.green.shade50
-                                              : Colors.grey.shade200,
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(
-                                            color: (receiptPath != null && receiptPath.isNotEmpty)
-                                                ? Colors.green.shade200
-                                                : Colors.grey.shade300,
-                                            width: 1,
-                                          ),
-                                        ),
-                                        child: Icon(
-                                          Icons.download,
-                                          color: (receiptPath != null && receiptPath.isNotEmpty)
-                                              ? Colors.green
-                                              : Colors.grey.shade400,
-                                          size: 20,
-                                        ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'By: $contractorName',
+                                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    formattedDate,
+                                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.amber.shade100,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      paymentType,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.amber.shade700,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                          ),
-                        );
-                      },
+                            const SizedBox(width: 8),
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: receiptPath != null && receiptPath.isNotEmpty
+                                    ? () {
+                                        final path = receiptPath;
+                                        if (path.isNotEmpty) {
+                                          _showReceiptDialog(context, path, reference);
+                                        }
+                                      }
+                                    : null,
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: (receiptPath != null && receiptPath.isNotEmpty)
+                                        ? Colors.blue.shade50
+                                        : Colors.grey.shade200,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: (receiptPath != null && receiptPath.isNotEmpty)
+                                          ? Colors.blue.shade200
+                                          : Colors.grey.shade300,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    Icons.visibility,
+                                    color: (receiptPath != null && receiptPath.isNotEmpty)
+                                        ? Colors.blue
+                                        : Colors.grey.shade400,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: receiptPath != null && receiptPath.isNotEmpty
+                                    ? () {
+                                        final path = receiptPath;
+                                        if (path.isNotEmpty) {
+                                          _downloadReceipt(context, path, reference);
+                                        }
+                                      }
+                                    : null,
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: (receiptPath != null && receiptPath.isNotEmpty)
+                                        ? Colors.green.shade50
+                                        : Colors.grey.shade200,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: (receiptPath != null && receiptPath.isNotEmpty)
+                                          ? Colors.green.shade200
+                                          : Colors.grey.shade300,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    Icons.download,
+                                    color: (receiptPath != null && receiptPath.isNotEmpty)
+                                        ? Colors.green
+                                        : Colors.grey.shade400,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-            ),
+                  );
+                },
+              ),
           ],
         ),
       ),
@@ -1177,31 +1200,320 @@ class CeeProfileBuildMethods {
   }
 
   static Widget _buildPasswordField() {
+    return const _PasswordFieldWidget();
+  }
+}
+
+class _PasswordFieldWidget extends StatefulWidget {
+  const _PasswordFieldWidget();
+
+  @override
+  State<_PasswordFieldWidget> createState() => _PasswordFieldWidgetState();
+}
+
+class _PasswordFieldWidgetState extends State<_PasswordFieldWidget> {
+  bool _isEditingPassword = false;
+  bool _currentPasswordVisible = false;
+  bool _newPasswordVisible = false;
+  bool _confirmPasswordVisible = false;
+  bool _isChangingPassword = false;
+
+  final TextEditingController _currentPasswordController = TextEditingController();
+  final TextEditingController _newPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+  final UserService _userService = UserService();
+
+  @override
+  void dispose() {
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleChangePassword() async {
+    FocusScope.of(context).unfocus();
+
+    final currentPassword = _currentPasswordController.text;
+    final newPassword = _newPasswordController.text;
+    final confirmPassword = _confirmPasswordController.text;
+
+    if (currentPassword.isEmpty) {
+      ConTrustSnackBar.error(context, 'Please enter your current password');
+      return;
+    }
+
+    if (newPassword.isEmpty) {
+      ConTrustSnackBar.error(context, 'Please enter a new password');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      ConTrustSnackBar.error(context, 'New password must be at least 6 characters long');
+      return;
+    }
+
+    if (newPassword.length > 15) {
+      ConTrustSnackBar.error(context, 'New password must be no more than 15 characters long');
+      return;
+    }
+
+    final hasUppercase = newPassword.contains(RegExp(r'[A-Z]'));
+    final hasNumber = newPassword.contains(RegExp(r'[0-9]'));
+    final hasSpecialChar = newPassword.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+
+    if (!hasUppercase || !hasNumber || !hasSpecialChar) {
+      ConTrustSnackBar.error(
+        context,
+        'New password must include uppercase, number and special character',
+      );
+      return;
+    }
+
+    if (newPassword != confirmPassword) {
+      ConTrustSnackBar.error(context, 'New passwords do not match');
+      return;
+    }
+
+    if (currentPassword == newPassword) {
+      ConTrustSnackBar.error(
+        context,
+        'New password must be different from current password',
+      );
+      return;
+    }
+
+    try {
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser?.email == null) {
+        ConTrustSnackBar.error(context, 'User not authenticated');
+        return;
+      }
+
+      await Supabase.instance.client.auth.signInWithPassword(
+        email: currentUser!.email!,
+        password: currentPassword,
+      );
+
+      if (!mounted) return;
+
+      setState(() => _isChangingPassword = true);
+
+      final success = await _userService.changePassword(
+        newPassword: newPassword,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        ConTrustSnackBar.success(
+          context,
+          'Password changed successfully!',
+        );
+
+        _currentPasswordController.clear();
+        _newPasswordController.clear();
+        _confirmPasswordController.clear();
+
+        setState(() {
+          _isEditingPassword = false;
+          _isChangingPassword = false;
+        });
+      } else {
+        ConTrustSnackBar.error(context, 'Failed to change password. Please try again.');
+        setState(() => _isChangingPassword = false);
+      }
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      setState(() => _isChangingPassword = false);
+      if (e.message.toLowerCase().contains('invalid') ||
+          e.message.toLowerCase().contains('password')) {
+        ConTrustSnackBar.error(context, 'Current password is incorrect');
+      } else {
+        ConTrustSnackBar.error(context, 'Error: ${e.message}');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isChangingPassword = false);
+      ConTrustSnackBar.error(
+        context,
+        'Failed to change password: ${e.toString()}',
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = Colors.grey.shade200;
+    final labelColor = Colors.grey.shade600;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
+        border: Border.all(color: borderColor, width: 1),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.lock_outline, size: 18, color: Colors.grey.shade600),
-          const SizedBox(width: 8),
-          Text(
-            'Password',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade600),
+          Row(
+            children: [
+              Icon(Icons.lock_outline, size: 18, color: labelColor),
+              const SizedBox(width: 8),
+              Text(
+                'Password',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: labelColor),
+              ),
+              const Spacer(),
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _isEditingPassword = !_isEditingPassword;
+                    if (!_isEditingPassword) {
+                      _currentPasswordController.clear();
+                      _newPasswordController.clear();
+                      _confirmPasswordController.clear();
+                    }
+                  });
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _isEditingPassword ? Icons.close : Icons.edit_outlined,
+                      size: 18,
+                      color: Colors.amber.shade700,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _isEditingPassword ? 'Cancel' : 'Change',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.amber.shade700,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const Spacer(),
-          Text(
-            '••••••••',
-            style: TextStyle(fontSize: 14, color: Colors.black87),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            'Change Password',
-            style: TextStyle(fontSize: 13, color: Colors.amber.shade700, fontWeight: FontWeight.bold),
-          ),
+          if (!_isEditingPassword) ...[
+            const SizedBox(height: 12),
+            const Text(
+              '••••••••',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.black87,
+              ),
+            ),
+          ],
+          if (_isEditingPassword) ...[
+            const SizedBox(height: 16),
+            TextField(
+              controller: _currentPasswordController,
+              obscureText: !_currentPasswordVisible,
+              enabled: !_isChangingPassword,
+              decoration: InputDecoration(
+                labelText: 'Current Password',
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _currentPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () => setState(
+                    () => _currentPasswordVisible = !_currentPasswordVisible,
+                  ),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _newPasswordController,
+              obscureText: !_newPasswordVisible,
+              enabled: !_isChangingPassword,
+              decoration: InputDecoration(
+                labelText: 'New Password',
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _newPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () => setState(
+                    () => _newPasswordVisible = !_newPasswordVisible,
+                  ),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _confirmPasswordController,
+              obscureText: !_confirmPasswordVisible,
+              enabled: !_isChangingPassword,
+              decoration: InputDecoration(
+                labelText: 'Confirm Password',
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _confirmPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () => setState(
+                    () => _confirmPasswordVisible = !_confirmPasswordVisible,
+                  ),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isChangingPassword ? null : _handleChangePassword,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber.shade700,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: _isChangingPassword
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text(
+                        'Change Password',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ),
+            ),
+          ],
         ],
       ),
     );

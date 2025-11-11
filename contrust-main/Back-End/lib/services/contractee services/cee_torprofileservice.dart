@@ -13,17 +13,11 @@ class TorProfileService {
           .inFilter('status', ['active', 'completed']);
 
       if (projects.isNotEmpty) {
-        final existingRating = await Supabase.instance.client
-            .from('ContractorRatings')
-            .select('rating')
-            .eq('contractor_id', contractorId)
-            .eq('contractee_id', contracteeId)
-            .maybeSingle();
-
         return {
           'canRate': true,
-          'hasRated': existingRating != null,
-          'userRating': existingRating?['rating']?.toDouble() ?? 0.0,
+          'hasRated': false,
+          'userRating': 0.0,
+          'review': null,
         };
       } else {
         return {
@@ -41,27 +35,22 @@ class TorProfileService {
     }
   }
 
-  static Future<void> submitRating(String contractorId, String contracteeId,
-      double rating, bool hasRated, String reviewText) async {
+  static Future<void> submitRating(
+    String contractorId,
+    String contracteeId,
+    double rating,
+    String reviewText,
+  ) async {
     try {
-      if (hasRated) {
-        await Supabase.instance.client
-            .from('ContractorRatings')
-            .update({
-              'rating': rating,
-              'review': reviewText,
-            })
-            .eq('contractor_id', contractorId)
-            .eq('contractee_id', contracteeId);
-      } else {
-        await Supabase.instance.client.from('ContractorRatings').insert({
-          'contractor_id': contractorId,
-          'contractee_id': contracteeId,
-          'rating': rating,
-          'review': reviewText,
-          'created_at': DateTimeHelper.getLocalTimeISOString(),
-        });
-      }
+      final timestamp = DateTimeHelper.getLocalTimeISOString();
+      await Supabase.instance.client.from('ContractorRatings').insert({
+        'contractor_id': contractorId,
+        'contractee_id': contracteeId,
+        'rating': rating,
+        'review': reviewText,
+        'created_at': timestamp,
+        'updated_at': timestamp,
+      });
       await updateContractorAverageRating(contractorId);
     } catch (e) {
       rethrow;

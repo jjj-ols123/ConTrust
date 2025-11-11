@@ -2,7 +2,7 @@
 
 import 'dart:async';
 
-import 'package:backend/services/both%20services/be_fetchservice.dart';
+import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/contractor services/cor_ongoingservices.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/build/buildongoing.dart';
@@ -71,8 +71,14 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Error loading contractor firm name: $e');
+      //
     }
+  }
+
+  Future<void> refreshProjectData({VoidCallback? onComplete}) async {
+    await loadData();
+    await _emitAggregatedData();
+    onComplete?.call();
   }
 
   void _debouncedEmitAggregatedData() {
@@ -85,21 +91,15 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
   void _attachRealtimeListeners() {
     final supabase = Supabase.instance.client;
     
-    // Helper function to safely listen with error handling
     void safeListen(Stream stream, String tableName) {
       _subscriptions.add(
         stream.listen(
           (_) => _debouncedEmitAggregatedData(),
           onError: (error) {
-            // Log error but don't crash - realtime subscriptions can fail
-            // and the app should continue working with periodic refreshes
             if (mounted && !_isRetryingRealtime) {
-              debugPrint('Realtime subscription error for $tableName: $error');
-              // Dispose existing subscriptions before retrying to prevent channel buildup
               _isRetryingRealtime = true;
               Future.delayed(const Duration(seconds: 5), () {
                 if (mounted) {
-                  // Dispose all subscriptions before retrying
                   for (final sub in _subscriptions) {
                     sub.cancel();
                   }
@@ -112,7 +112,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
               });
             }
           },
-          cancelOnError: false, // Don't cancel on error, keep trying
+          cancelOnError: false,
         ),
       );
     }
@@ -121,7 +121,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
       safeListen(
         supabase
             .from('Projects')
-            .stream(primaryKey: ['project_id'])
+            .stream(primaryKey: ['contractor_id', 'project_id'])
             .eq('project_id', widget.projectId),
         'Projects',
       );
@@ -161,8 +161,7 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
         'Contracts',
       );
     } catch (e) {
-      debugPrint('Error setting up realtime listeners: $e');
-      // Continue without realtime - data will still load via _loadData
+      //
     }
   }
 
@@ -329,33 +328,33 @@ class _CorOngoingProjectScreenState extends State<CorOngoingProjectScreen> {
     }
   }
 
-  void loadData() async {
-  try {
-    contractorId ??= Supabase.instance.client.auth.currentUser?.id;
+  Future<void> loadData() async {
+    try {
+      contractorId ??= Supabase.instance.client.auth.currentUser?.id;
 
-    final data = await ongoingService.loadProjectData(
-      widget.projectId,
-      contractorId: contractorId,
-    );
+      final data = await ongoingService.loadProjectData(
+        widget.projectId,
+        contractorId: contractorId,
+      );
 
-    final contractId = data['projectDetails']['contract_id'];
-    if (contractId != null) {
-      final contract = await ongoingService.getContractById(contractId);
-      data['contracts'] = contract != null ? [contract] : [];
-    } else {
-      data['contracts'] = [];
-    }
+      final contractId = data['projectDetails']['contract_id'];
+      if (contractId != null) {
+        final contract = await ongoingService.getContractById(contractId);
+        data['contracts'] = contract != null ? [contract] : [];
+      } else {
+        data['contracts'] = [];
+      }
 
-    if (!(_controller?.isClosed ?? true)) {
-      _controller!.add(data);
-    }
-  } catch (e) {
-    if (mounted) {
-      ConTrustSnackBar.error(
-          context, 'Error loading project data. Please try again. $e');
+      if (!(_controller?.isClosed ?? true)) {
+        _controller!.add(data);
+      }
+    } catch (e) {
+      if (mounted) {
+        ConTrustSnackBar.error(
+            context, 'Error loading project data. Please try again. $e');
+      }
     }
   }
-}
 
   void onTabChanged(String tab) {
     setState(() {

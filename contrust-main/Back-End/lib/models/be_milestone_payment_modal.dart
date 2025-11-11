@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:backend/services/both services/be_payment_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MilestonePaymentModal {
   static Future<void> show({
@@ -16,13 +17,13 @@ class MilestonePaymentModal {
   }) async {
     final milestones = List<Map<String, dynamic>>.from(milestoneInfo['milestones'] ?? []);
     final currentMilestone = milestoneInfo['current_milestone'] as Map<String, dynamic>? ?? {};
-
+  
     if (currentMilestone.isEmpty) {
       ConTrustSnackBar.error(context, 'No pending milestones found');
       return;
     }
 
-    // Extract contract information
+    // 
     final totalContractPrice = (contractInfo['total_price'] as num?)?.toDouble() ?? 0.0;
     final downPaymentPercent = (contractInfo['down_payment_percentage'] as num?)?.toDouble() ?? 0.0;
     final retentionPercent = (contractInfo['retention_percentage'] as num?)?.toDouble() ?? 0.0;
@@ -30,7 +31,7 @@ class MilestonePaymentModal {
     final paidMilestoneTotal = paidMilestones.fold<double>(0.0, (sum, m) => sum + ((m['amount'] as num?)?.toDouble() ?? 0.0));
     final currentMilestoneAmount = (currentMilestone['amount'] as num?)?.toDouble() ?? 0.0;
 
-    // Calculate payment components
+    // 
     final downPaymentAmount = totalContractPrice * (downPaymentPercent / 100);
     final retentionAmount = totalContractPrice * (retentionPercent / 100);
     final totalMilestoneAmount = milestones.fold<double>(0.0, (sum, m) => sum + ((m['amount'] as num?)?.toDouble() ?? 0.0));
@@ -42,7 +43,6 @@ class MilestonePaymentModal {
     final cvcController = TextEditingController();
     final nameController = TextEditingController();
     bool isProcessing = false;
-    bool dialogClosed = false;
 
     final milestoneAmount = (currentMilestone['amount'] as num?)?.toDouble() ?? 0.0;
     final milestoneNumber = currentMilestone['milestone_number'] as int? ?? 1;
@@ -123,15 +123,7 @@ class MilestonePaymentModal {
                         if (!isProcessing)
                           IconButton(
                             onPressed: () {
-                              dialogClosed = true;
                               Navigator.pop(context);
-                              // Dispose controllers after dialog closes
-                              Future.microtask(() {
-                                cardNumberController.dispose();
-                                expiryController.dispose();
-                                cvcController.dispose();
-                                nameController.dispose();
-                              });
                             },
                             icon: const Icon(Icons.close, color: Colors.white),
                           ),
@@ -191,7 +183,7 @@ class MilestonePaymentModal {
                                   style: TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.purple.shade900,
+                                    color: Colors.black87,
                                   ),
                                 ),
                               ],
@@ -490,6 +482,23 @@ class MilestonePaymentModal {
                                     final expMonth = int.parse(expiry[0]);
                                     final expYear = 2000 + int.parse(expiry[1]);
 
+                                    final supabase = Supabase.instance.client;
+                                    final userId = supabase.auth.currentUser?.id;
+                                    String? billingEmail;
+                                    
+                                    if (userId != null) {
+                                      try {
+                                        final userData = await supabase
+                                            .from('Users')
+                                            .select('email')
+                                            .eq('users_id', userId)
+                                            .maybeSingle();
+                                        billingEmail = userData?['email'] as String?;
+                                      } catch (e) {
+                                        print('Failed to fetch user email: $e');
+                                      }
+                                    }
+
                                     await PaymentService().processMilestonePayment(
                                       projectId: projectId,
                                       milestoneNumber: milestoneNumber,
@@ -498,18 +507,11 @@ class MilestonePaymentModal {
                                       expYear: expYear,
                                       cvc: cvcController.text,
                                       cardholderName: nameController.text,
+                                      billingEmail: billingEmail,
                                     );
 
                                     if (context.mounted) {
-                                      dialogClosed = true;
                                       Navigator.pop(context);
-                                      // Dispose controllers after dialog closes
-                                      Future.microtask(() {
-                                        cardNumberController.dispose();
-                                        expiryController.dispose();
-                                        cvcController.dispose();
-                                        nameController.dispose();
-                                      });
                                       ConTrustSnackBar.success(
                                         context,
                                         'Milestone payment processed successfully!',
@@ -563,14 +565,10 @@ class MilestonePaymentModal {
       ),
     );
 
-    // Only dispose controllers if dialog was closed without using them
-    // (e.g., user closed dialog without submitting)
-    if (!dialogClosed) {
-      cardNumberController.dispose();
-      expiryController.dispose();
-      cvcController.dispose();
-      nameController.dispose();
-    }
+    cardNumberController.dispose();
+    expiryController.dispose();
+    cvcController.dispose();
+    nameController.dispose();
   }
 
   static Widget _buildPaymentRow(String label, String subtitle, double amount, {bool highlight = false, bool isTotal = false}) {
@@ -585,7 +583,7 @@ class MilestonePaymentModal {
                 label,
                 style: TextStyle(
                   fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
-                  color: highlight ? Colors.purple.shade700 : Colors.black87,
+                  color: highlight ? Colors.green.shade700 : Colors.black87,
                   fontSize: isTotal ? 14 : 13,
                 ),
               ),
@@ -594,7 +592,7 @@ class MilestonePaymentModal {
                   subtitle,
                   style: TextStyle(
                     fontSize: 11,
-                    color: highlight ? Colors.purple.shade600 : Colors.grey.shade600,
+                    color: highlight ? Colors.green.shade600 : Colors.grey.shade600,
                     fontWeight: highlight ? FontWeight.w500 : FontWeight.normal,
                   ),
                 ),
@@ -605,7 +603,7 @@ class MilestonePaymentModal {
           '₱${amount.toStringAsFixed(2)}',
           style: TextStyle(
             fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
-            color: highlight ? Colors.purple.shade700 : (isTotal ? Colors.green.shade700 : Colors.black87),
+            color: highlight ? Colors.green.shade700 : (isTotal ? Colors.green.shade700 : Colors.black87),
             fontSize: isTotal ? 15 : 14,
           ),
         ),
@@ -642,10 +640,10 @@ class MilestonePaymentModal {
                     Container(
                       height: 8,
                       decoration: BoxDecoration(
-                        color: isPaid 
-                            ? Colors.green 
-                            : isCurrent 
-                                ? Colors.purple.shade700 
+                        color: isPaid
+                            ? Colors.green
+                            : isCurrent
+                                ? Colors.green.shade700
                                 : Colors.grey.shade300,
                         borderRadius: BorderRadius.circular(4),
                       ),
@@ -656,10 +654,10 @@ class MilestonePaymentModal {
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
-                        color: isPaid 
-                            ? Colors.green 
-                            : isCurrent 
-                                ? Colors.purple.shade700 
+                        color: isPaid
+                            ? Colors.green
+                            : isCurrent
+                                ? Colors.green.shade700
                                 : Colors.grey.shade600,
                       ),
                     ),

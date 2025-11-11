@@ -184,12 +184,12 @@ class PaymentService {
 
   Map<String, dynamic>? _detectMilestonePayments(String contractType, Map<String, dynamic> fieldValues) {
 
-    final isMilestoneContract = contractType.contains('milestone') || 
+    final isMilestoneContract = contractType.contains('milestone') ||
                                contractType.contains('phased') ||
                                contractType.contains('progressive');
 
-    final hasMilestoneFields = fieldValues.keys.any((key) => 
-        key.toLowerCase().contains('milestone') || 
+    final hasMilestoneFields = fieldValues.keys.any((key) =>
+        key.toLowerCase().contains('milestone') ||
         key.toLowerCase().contains('payment.milestone') ||
         key.toLowerCase().contains('phase'));
 
@@ -212,7 +212,7 @@ class PaymentService {
       }
     }
 
-    for (int i = 1; i <= 10; i++) { 
+    for (int i = 1; i <= 10; i++) {
       final milestoneKeys = [
         'Payment.Milestone$i',
         'Milestone.$i.Amount',
@@ -230,17 +230,16 @@ class PaymentService {
             milestoneAmount = double.parse(fieldValues[key].toString());
             break;
           } catch (e) {
-            // Continue to next key
+            // 
           }
         }
       }
 
-      // Look for description and due date
-      description = fieldValues['Milestone.$i.Description']?.toString() ?? 
+      description = fieldValues['Milestone.$i.Description']?.toString() ??
                    fieldValues['Phase.$i.Description']?.toString() ??
                    'Milestone $i';
 
-      dueDate = fieldValues['Milestone.$i.Date']?.toString() ?? 
+      dueDate = fieldValues['Milestone.$i.Date']?.toString() ??
                fieldValues['Phase.$i.Date']?.toString();
 
       if (milestoneAmount != null && milestoneAmount > 0) {
@@ -258,7 +257,6 @@ class PaymentService {
       return null;
     }
 
-    // Calculate next due milestone
     final nextMilestone = milestones.firstWhere(
       (milestone) => milestone['status'] == 'pending',
       orElse: () => milestones.first,
@@ -500,38 +498,60 @@ class PaymentService {
       final stripePaymentStatus = result['data']['attributes']['status'] as String;
 
       if (stripePaymentStatus == 'succeeded' || stripePaymentStatus == 'awaiting_payment_method') {
-        final updatedProjectdata = Map<String, dynamic>.from(projectdata);
+        final contracteeId = projectData['contractee_id'] as String?;
+        final contractorId = projectData['contractor_id'] as String?;
+        final contractId = projectData['contract_id'] as String?;
         
-        final payments = List<Map<String, dynamic>>.from(
-          updatedProjectdata['payments'] ?? []
-        );
-        
-        payments.add({
-          'payment_id': paymentIntentId,
-          'amount': amount,
-          'date': DateTimeHelper.getLocalTimeISOString(),
-          'reference': paymentIntentId,
-          'contract_type': contractType,
-          'payment_structure': paymentStructure,
-        });
-        
+        if (contracteeId == null || contractorId == null) {
+          throw Exception('Missing contractee or contractor information');
+        }
 
-        final totalPaid = payments.fold<double>(
+        String paymentType;
+        if (contractType == 'lump_sum') {
+          paymentType = 'lump_sum';
+        } else if (contractType == 'cost_plus') {
+          paymentType = 'cost_plus';
+        } else if (contractType == 'time_and_materials') {
+          paymentType = 'time_and_materials';
+        } else {
+          paymentType = 'custom';
+        }
+
+        final paymentRecord = await _supabase.from('Payments').insert({
+          'project_id': projectId,
+          'contract_id': contractId,
+          'contractor_id': contractorId,
+          'contractee_id': contracteeId,
+          'amount': amount,
+          'payment_type': paymentType,
+          'payment_status': 'completed',
+          'payment_intent_id': paymentIntentId,
+          'payment_method': 'card',
+          'payment_reference': paymentIntentId,
+          'description': 'Payment for $projectTitle',
+          'paid_at': DateTimeHelper.getLocalTimeISOString(),
+          'created_by': contracteeId,
+        }).select().single();
+
+        final paymentsData = await _supabase
+            .from('Payments')
+            .select('amount')
+            .eq('project_id', projectId)
+            .eq('payment_status', 'completed');
+        
+        final totalPaid = (paymentsData as List).fold<double>(
           0.0,
           (sum, payment) => sum + ((payment['amount'] as num?)?.toDouble() ?? 0.0),
         );
         
-
-        updatedProjectdata['payments'] = payments;
+        final updatedProjectdata = Map<String, dynamic>.from(projectdata);
         updatedProjectdata['total_paid'] = totalPaid;
         updatedProjectdata['last_payment_date'] = DateTimeHelper.getLocalTimeISOString();
         updatedProjectdata['last_payment_reference'] = paymentIntentId;
         updatedProjectdata['contract_type'] = contractType;
         updatedProjectdata['payment_structure'] = paymentStructure;
         
-   
         if (contractType == 'lump_sum') {
- 
           updatedProjectdata['payment_status'] = 'paid';
         } else {
           updatedProjectdata['payment_status'] = 'partial';
@@ -540,14 +560,10 @@ class PaymentService {
         await _supabase.from('Projects').update({
           'projectdata': updatedProjectdata,
         }).eq('project_id', projectId);
-
-        final contracteeId = projectData['contractee_id'] as String?;
-        final contractorId = projectData['contractor_id'] as String?;
         
-        // Generate and store receipt
-        String? receiptPath;
+        String? receiptPath = paymentRecord['receipt_path'] as String?;
+
         try {
-          // Fetch contractee and contractor details for receipt
           String contracteeName = 'Contractee';
           String contracteeEmail = '';
           String contractorName = 'Contractor';
@@ -572,8 +588,8 @@ class PaymentService {
                 contracteeEmail = userData['email'] ?? '';
               }
             } catch (e) {
-              // Use defaults if fetch fails
-            }
+              //
+            }   
           }
           
           if (contractorId != null) {
@@ -614,14 +630,11 @@ class PaymentService {
               paymentId: paymentIntentId,
             );
             
-            // Update payment with receipt path
-            final lastPayment = payments.last;
-            lastPayment['receipt_path'] = receiptPath;
-            updatedProjectdata['payments'] = payments;
-            
-            await _supabase.from('Projects').update({
-              'projectdata': updatedProjectdata,
-            }).eq('project_id', projectId);
+            // Update payment record with receipt path
+            await _supabase.from('Payments').update({
+              'receipt_path': receiptPath,
+              'receipt_generated_at': DateTimeHelper.getLocalTimeISOString(),
+            }).eq('payment_reference', paymentIntentId);
           }
         } catch (receiptError) {
           // Log error but don't fail payment
@@ -718,15 +731,66 @@ class PaymentService {
     try {
       final projectData = await _supabase
           .from('Projects')
-          .select('projectdata')
+          .select('status')
           .eq('project_id', projectId)
           .single();
 
-      final projectdata = projectData['projectdata'] as Map<String, dynamic>? ?? {};
-      final status = projectdata['payment_status'];
-      // Consider both 'paid' (fully paid) and 'partial' (milestone payments) as paid
-      return status == 'paid' || status == 'partial';
+      final projectStatus = (projectData['status'] as String?)?.toLowerCase();
+      print('[isProjectPaid] projectId=$projectId status=$projectStatus');
+      if (projectStatus == 'completed') {
+        print('[isProjectPaid] Project already completed, returning true');
+        return true;
+      }
+
+      bool isPaid = false;
+
+      final isMilestone = await isMilestoneContract(projectId);
+      print('[isProjectPaid] projectId=$projectId isMilestone=$isMilestone');
+
+      if (isMilestone) {
+        final milestoneInfo = await getMilestonePaymentInfo(projectId);
+        if (milestoneInfo != null) {
+          final completedMilestones = milestoneInfo['completed_milestones'] as int? ?? 0;
+          final totalMilestones = milestoneInfo['total_milestones'] as int? ?? 0;
+          print('[isProjectPaid] milestone info -> completed=$completedMilestones total=$totalMilestones');
+          isPaid = totalMilestones > 0 && completedMilestones >= totalMilestones;
+        }
+      } else {
+        final paymentsData = await _supabase
+            .from('Payments')
+            .select('payment_id')
+            .eq('project_id', projectId)
+            .eq('payment_status', 'completed')
+            .limit(1);
+
+        isPaid = (paymentsData as List).isNotEmpty;
+        print('[isProjectPaid] non-milestone payments found=${(paymentsData as List).length}');
+      }
+
+      print('[isProjectPaid] projectId=$projectId isPaid=$isPaid');
+      if (isPaid && projectStatus != 'completed') {
+        try {
+          await _supabase
+              .from('Projects')
+              .update({'status': 'completed'})
+              .eq('project_id', projectId);
+          print('[isProjectPaid] Auto-updated project status to completed');
+        } catch (updateError) {
+          await _errorService.logError(
+            errorMessage: 'Failed to auto-complete project after payment: $updateError',
+            module: 'Payment Service',
+            severity: 'Low',
+            extraInfo: {
+              'operation': 'Auto-complete project',
+              'project_id': projectId,
+            },
+          );
+        }
+      }
+
+      return isPaid;
     } catch (e) {
+      print('[isProjectPaid] Error: $e');
       await _errorService.logError(
         errorMessage: 'Failed to check payment status: $e',
         module: 'Payment Service',
@@ -806,19 +870,15 @@ class PaymentService {
     }
   }
 
-  /// Gets payment history for a project
   Future<List<Map<String, dynamic>>> getPaymentHistory(String projectId) async {
     try {
-      final projectData = await _supabase
-          .from('Projects')
-          .select('projectdata')
+      final paymentsData = await _supabase
+          .from('Payments')
+          .select('*')
           .eq('project_id', projectId)
-          .single();
-
-      final projectdata = projectData['projectdata'] as Map<String, dynamic>? ?? {};
-      final payments = projectdata['payments'] as List<dynamic>? ?? [];
+          .order('paid_at', ascending: false);
       
-      return List<Map<String, dynamic>>.from(payments);
+      return List<Map<String, dynamic>>.from(paymentsData as List);
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Failed to get payment history: $e',
@@ -843,8 +903,16 @@ class PaymentService {
           .single();
 
       final projectdata = projectData['projectdata'] as Map<String, dynamic>? ?? {};
-      final payments = projectdata['payments'] as List<dynamic>? ?? [];
       final contractType = (projectdata['contract_type'] as String?)?.toLowerCase() ?? '';
+      
+      // Get payments from Payments table
+      final paymentsData = await _supabase
+          .from('Payments')
+          .select('amount')
+          .eq('project_id', projectId)
+          .eq('payment_status', 'completed');
+      
+      final payments = paymentsData as List;
       
       final totalPaid = payments.fold<double>(
         0.0,
@@ -950,68 +1018,126 @@ class PaymentService {
 
       final contractId = projectData['contract_id'] as String?;
       final bidId = projectData['bid_id'] as String?;
-      
+
       if (contractId == null || bidId == null) {
         return null;
       }
 
       final contractData = await _supabase
           .from('Contracts')
-          .select('field_values')
+          .select('field_values, contract_type:ContractTypes(template_name)')
           .eq('contract_id', contractId)
           .single();
 
-      final fieldValues = contractData['field_values'] as Map<String, dynamic>? ?? {};
 
-      final paymentInfo = await _determinePaymentAmount(
-        projectId: projectId,
-        contractId: contractId,
-        bidId: bidId,
-      );
+      final fieldValues = Map<String, dynamic>.from(contractData['field_values'] ?? {});
+      final contractTypeData = contractData['contract_type'] as Map<String, dynamic>?;
+      final contractType = contractTypeData?['template_name'] as String? ?? '';
 
-      if (paymentInfo['payment_structure'] != 'milestone') {
-        return null;
-      }
+      final milestonePaymentInfo = _detectMilestonePayments(contractType, fieldValues);
 
-      final projectdata = projectData['projectdata'] as Map<String, dynamic>? ?? {};
-      final payments = projectdata['payments'] as List<dynamic>? ?? [];
-      final milestones = List<Map<String, dynamic>>.from(paymentInfo['milestones'] ?? []);
-
-      for (var milestone in milestones) {
-        final milestoneNumber = milestone['milestone_number'];
-        final paidPayments = payments.where((payment) => 
-          payment['milestone_number'] == milestoneNumber).toList();
+      if (milestonePaymentInfo != null) {
+        final milestones = List<Map<String, dynamic>>.from(milestonePaymentInfo['milestones'] ?? []);
+ 
+        final milestoneProgressData = await _supabase
+            .from('MilestoneProgress')
+            .select()
+            .eq('contract_id', contractId);
         
-        if (paidPayments.isNotEmpty) {
-          milestone['status'] = 'paid';
-          milestone['paid_amount'] = paidPayments.fold<double>(0.0, 
-            (sum, payment) => sum + ((payment['amount'] as num?)?.toDouble() ?? 0.0));
-          milestone['payment_date'] = paidPayments.last['created_at'];
+        final milestoneProgressList = milestoneProgressData as List;
+        
+        for (var milestone in milestones) {
+          final milestoneNumber = milestone['milestone_number'];
+          final progressRecord = milestoneProgressList.firstWhere(
+            (m) => m['milestone_number'] == milestoneNumber,
+            orElse: () => <String, dynamic>{},
+          );
+
+          final progressStatus = (progressRecord['status'] as String?)?.toLowerCase();
+          final hasBeenPaid = progressRecord.isNotEmpty &&
+              (progressRecord['paid_at'] != null ||
+                  progressStatus == 'completed' ||
+                  progressStatus == 'paid');
+
+          if (hasBeenPaid) {
+            milestone['status'] = 'paid';
+            milestone['paid_amount'] = (progressRecord['amount'] as num?)?.toDouble() ?? 0.0;
+            milestone['payment_date'] = progressRecord['paid_at'];
+          } else if (progressStatus != null) {
+            milestone['status'] = progressStatus;
+          }
         }
+
+        milestones.sort((a, b) => (a['milestone_number'] as int).compareTo(b['milestone_number'] as int));
+
+        final nextMilestone = milestones.firstWhere(
+          (milestone) {
+            final status = (milestone['status'] as String?)?.toLowerCase();
+            return status == null || status == 'pending';
+          },
+          orElse: () => milestones.isNotEmpty ? milestones.last : {},
+        );
+        
+        return {
+          ...milestonePaymentInfo,
+          'milestones': milestones,
+          'current_milestone': nextMilestone,
+          'completed_milestones': milestones
+              .where((m) {
+                final status = (m['status'] as String?)?.toLowerCase();
+                return status == 'paid' || status == 'completed';
+              })
+              .length,
+        };
       }
 
-      // Find next due milestone
-      final nextMilestone = milestones.firstWhere(
-        (milestone) => milestone['status'] == 'pending',
-        orElse: () => milestones.isNotEmpty ? milestones.last : {},
-      );
+      if (contractType.toLowerCase().contains('lump sum')) {
 
-      final contractInfo = {
-        'total_price': (fieldValues['Payment.Total'] as num?)?.toDouble() ?? 0.0,
-        'down_payment_percentage': (fieldValues['Payment.DownPaymentPercentage'] as num?)?.toDouble() ?? 0.0,
-        'retention_percentage': (fieldValues['Payment.RetentionPercentage'] as num?)?.toDouble() ?? 0.0,
-        'final_payment': (fieldValues['Payment.FinalPayment'] as num?)?.toDouble() ?? 0.0,
-      };
+        double? amount;
+        final priceKeys = ['Project.ContractPrice', 'Payment.Total', 'Total.Amount', 'Contract.TotalAmount'];
 
-      return {
-        'milestones': milestones,
-        'current_milestone': nextMilestone,
-        'total_milestones': milestones.length,
-        'completed_milestones': milestones.where((m) => m['status'] == 'paid').length,
-        'total_contract_amount': paymentInfo['total_contract_amount'],
-        'payment_structure': 'milestone',
-        'contract_info': contractInfo,
-      };
+        for (final key in priceKeys) {
+          final value = fieldValues[key];
+
+          if (value != null && value.toString().isNotEmpty) {
+            try {
+              amount = double.parse(value.toString());
+              break;
+            } catch (e) {
+              //
+            }
+          }
+        }
+
+        if (amount == null) {
+          return null;
+        }
+
+        final singleMilestone = {
+          'milestone_number': 1,
+          'description': 'Full Contract Payment',
+          'amount': amount,
+          'status': 'pending',
+          'due_date': null,
+        };
+
+        return {
+          'milestones': [singleMilestone],
+          'current_milestone': singleMilestone,
+          'total_milestones': 1,
+          'completed_milestones': 0,
+          'total_contract_amount': amount,
+          'payment_structure': 'milestone',
+          'contract_info': {
+            'total_price': amount,
+            'down_payment_percentage': 0.0,
+            'retention_percentage': 0.0,
+            'final_payment': 0.0,
+          },
+        };
+      }
+
+      return null;
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Failed to get milestone payment info: $e',
@@ -1034,6 +1160,36 @@ class PaymentService {
     String? billingEmail,
   }) async {
     try {
+      final projectData = await _supabase
+          .from('Projects')
+          .select('contract_id, title, contractor_id, contractee_id, projectdata')
+          .eq('project_id', projectId)
+          .single();
+
+      final contractId = projectData['contract_id'] as String?;
+      final projectTitle = projectData['title'] ?? 'Project';
+      final contractorId = projectData['contractor_id'] as String?;
+      final contracteeId = projectData['contractee_id'] as String?;
+      
+      if (contractId == null) {
+        throw Exception('Project does not have an associated contract');
+      }
+      
+      if (contracteeId == null || contractorId == null) {
+        throw Exception('Missing contractee or contractor information');
+      }
+
+      final existingMilestone = await _supabase
+          .from('MilestoneProgress')
+          .select()
+          .eq('contract_id', contractId)
+          .eq('milestone_number', milestoneNumber)
+          .maybeSingle();
+
+      if (existingMilestone != null && existingMilestone['paid_at'] != null) {
+        throw Exception('Milestone $milestoneNumber has already been paid');
+      }
+
       final milestoneInfo = await getMilestonePaymentInfo(projectId);
       if (milestoneInfo == null) {
         throw Exception('Project does not have milestone-based payments');
@@ -1045,44 +1201,118 @@ class PaymentService {
         orElse: () => throw Exception('Milestone $milestoneNumber not found'),
       );
 
-      if (targetMilestone['status'] == 'paid') {
-        throw Exception('Milestone $milestoneNumber has already been paid');
+      final amount = (targetMilestone['amount'] as num).toDouble();
+      final description = targetMilestone['description'] as String? ?? 'Milestone $milestoneNumber';
+
+      final projectdata = projectData['projectdata'] as Map<String, dynamic>? ?? {};
+      final projectStatus = projectData['status'] as String?;
+      
+      if (projectStatus == 'completed') {
+        throw Exception('This project has already been completed');
       }
 
-      final amount = targetMilestone['amount'] as double;
-
-      await processPayment(
+      final paymentIntent = await createPaymentIntent(
+        amount: amount,
         projectId: projectId,
+        description: 'Milestone $milestoneNumber payment for $projectTitle',
+      );
+
+      final paymentIntentId = paymentIntent['data']['id'] as String;
+
+      final paymentMethodId = await createPaymentMethod(
         cardNumber: cardNumber,
         expMonth: expMonth,
         expYear: expYear,
         cvc: cvc,
         cardholderName: cardholderName,
         billingEmail: billingEmail,
-        customAmount: amount,
       );
 
-      final projectData = await _supabase
-          .from('Projects')
-          .select('projectdata, title, contractor_id, contractee_id')
-          .eq('project_id', projectId)
-          .single();
+      final result = await attachPaymentMethod(
+        paymentIntentId: paymentIntentId,
+        paymentMethodId: paymentMethodId,
+      );
 
-      final projectdata = Map<String, dynamic>.from(projectData['projectdata'] ?? {});
-      final payments = List<Map<String, dynamic>>.from(projectdata['payments'] ?? []);
-      final projectTitle = projectData['title'] ?? 'Project';
-      final contractorId = projectData['contractor_id'] as String?;
-      final contracteeId = projectData['contractee_id'] as String?;
+      final stripePaymentStatus = result['data']['attributes']['status'] as String;
 
-      if (payments.isNotEmpty) {
-        final lastPayment = payments.last;
-        lastPayment['milestone_number'] = milestoneNumber;
-        lastPayment['milestone_description'] = targetMilestone['description'];
+      if (stripePaymentStatus == 'succeeded' || stripePaymentStatus == 'awaiting_payment_method') {
+        final paymentRecord = await _supabase.from('Payments').insert({
+          'project_id': projectId,
+          'contract_id': contractId,
+          'contractor_id': contractorId,
+          'contractee_id': contracteeId,
+          'amount': amount,
+          'payment_type': 'milestone',
+          'payment_status': 'completed',
+          'milestone_number': milestoneNumber,
+          'milestone_description': description,
+          'payment_intent_id': paymentIntentId,
+          'payment_method': 'card',
+          'payment_reference': paymentIntentId,
+          'description': 'Milestone $milestoneNumber: $description',
+          'paid_at': DateTimeHelper.getLocalTimeISOString(),
+          'created_by': contracteeId,
+        }).select().single();
+
+        final paymentId = paymentRecord['payment_id'] as String;
+
+        if (existingMilestone == null) {
+          await _supabase.from('MilestoneProgress').insert({
+            'contract_id': contractId,
+            'project_id': projectId,
+            'milestone_number': milestoneNumber,
+            'description': description,
+            'amount': amount,
+            'status': 'completed',
+            'completion_percentage': 100.0,
+            'completed_at': DateTimeHelper.getLocalTimeISOString(),
+            'payment_id': paymentId,
+            'paid_at': DateTimeHelper.getLocalTimeISOString(),
+          });
+        } else {
+          await _supabase.from('MilestoneProgress').update({
+            'status': 'completed',
+            'completion_percentage': 100.0,
+            'completed_at': DateTimeHelper.getLocalTimeISOString(),
+            'payment_id': paymentId,
+            'paid_at': DateTimeHelper.getLocalTimeISOString(),
+          }).eq('contract_id', contractId).eq('milestone_number', milestoneNumber);
+        }
+
+        final paymentsData = await _supabase
+            .from('Payments')
+            .select('amount')
+            .eq('project_id', projectId)
+            .eq('payment_status', 'completed');
         
-        // Generate and store receipt for milestone payment
-        String? receiptPath;
+        final totalPaid = (paymentsData as List).fold<double>(
+          0.0,
+          (sum, payment) => sum + ((payment['amount'] as num?)?.toDouble() ?? 0.0),
+        );
+        
+        final updatedProjectdata = Map<String, dynamic>.from(projectdata);
+        updatedProjectdata['total_paid'] = totalPaid;
+        updatedProjectdata['last_payment_date'] = DateTimeHelper.getLocalTimeISOString();
+        updatedProjectdata['last_payment_reference'] = paymentIntentId;
+        updatedProjectdata['contract_type'] = 'milestone';
+        updatedProjectdata['payment_structure'] = 'milestone';
+        
+        final allMilestonesData = await _supabase
+            .from('MilestoneProgress')
+            .select('status')
+            .eq('contract_id', contractId);
+        
+        final allMilestones = allMilestonesData as List;
+        final allPaid = allMilestones.isNotEmpty && 
+                       allMilestones.every((m) => m['status'] == 'completed');
+        
+        updatedProjectdata['payment_status'] = allPaid ? 'paid' : 'partial';
+
+        await _supabase.from('Projects').update({
+          'projectdata': updatedProjectdata,
+        }).eq('project_id', projectId);
+        
         try {
-          // Fetch contractee and contractor details for receipt
           String contracteeName = 'Contractee';
           String contracteeEmail = '';
           String contractorName = 'Contractor';
@@ -1107,7 +1337,7 @@ class PaymentService {
                 contracteeEmail = userData['email'] ?? '';
               }
             } catch (e) {
-              // Use defaults if fetch fails
+              //
             }
           }
           
@@ -1126,8 +1356,7 @@ class PaymentService {
             }
           }
           
-          final paymentId = lastPayment['payment_id'] ?? lastPayment['reference'] ?? '';
-          final paymentDate = lastPayment['date'] ?? DateTimeHelper.getLocalTimeISOString();
+          final paymentDate = DateTimeHelper.getLocalTimeISOString();
           
           // Generate receipt PDF
           final receiptPdf = await ReceiptService.generateReceiptPdf(
@@ -1146,17 +1375,18 @@ class PaymentService {
           );
           
           // Upload receipt to storage
-          if (contracteeId != null && paymentId.isNotEmpty) {
-            receiptPath = await ReceiptService.uploadReceiptToStorage(
-              pdfBytes: receiptPdf,
-              projectId: projectId,
-              contracteeId: contracteeId,
-              paymentId: paymentId,
-            );
-            
-            // Update payment with receipt path
-            lastPayment['receipt_path'] = receiptPath;
-          }
+          final receiptPath = await ReceiptService.uploadReceiptToStorage(
+            pdfBytes: receiptPdf,
+            projectId: projectId,
+            contracteeId: contracteeId,
+            paymentId: paymentIntentId,
+          );
+          
+          // Update payment record with receipt path
+          await _supabase.from('Payments').update({
+            'receipt_path': receiptPath,
+            'receipt_generated_at': DateTimeHelper.getLocalTimeISOString(),
+          }).eq('payment_reference', paymentIntentId);
         } catch (receiptError) {
           // Log error but don't fail payment
           await _errorService.logError(
@@ -1170,18 +1400,12 @@ class PaymentService {
             },
           );
         }
+        
+        // Check if all milestones are paid and auto-complete if so
+        await _checkAndCompleteProject(projectId, 'milestone', paymentStatus: updatedProjectdata['payment_status'] as String?);
+      } else {
+        throw Exception('Payment failed with status: $stripePaymentStatus');
       }
-
-      await _supabase
-          .from('Projects')
-          .update({'projectdata': projectdata})
-          .eq('project_id', projectId);
-
-      // Get contract type for completion check
-      final contractType = 'milestone';
-
-      // Check if all milestones are paid and auto-complete if so
-      await _checkAndCompleteProject(projectId, contractType);
 
       await _auditService.logAuditEvent(
         userId: _supabase.auth.currentUser?.id,
@@ -1211,21 +1435,121 @@ class PaymentService {
 
   Future<bool> isMilestoneContract(String projectId) async {
     try {
+      final projectData = await _supabase
+          .from('Projects')
+          .select('contract_id, bid_id, projectdata')
+          .eq('project_id', projectId)
+          .single();
+
+      final contractId = projectData['contract_id'] as String?;
+      final bidId = projectData['bid_id'] as String?;
+      if (contractId == null || bidId == null) {
+        return false;
+      }
+
+      final contractData = await _supabase
+          .from('Contracts')
+          .select('field_values, contract_type:ContractTypes(template_name)')
+          .eq('contract_id', contractId)
+          .single();
+
+      final fieldValues = Map<String, dynamic>.from(contractData['field_values'] ?? {});
+      final contractTypeData = contractData['contract_type'] as Map<String, dynamic>?;
+      final contractType = contractTypeData?['template_name'] as String? ?? '';
+
+      final hasMilestoneFields = fieldValues.keys.any((key) =>
+          key.toLowerCase().contains('milestone') ||
+          key.toLowerCase().contains('payment.milestone') ||
+          key.toLowerCase().contains('phase'));
+
+      final isLumpSumWithMilestones = contractType.toLowerCase().contains('lump sum') && hasMilestoneFields;
+
       final milestoneInfo = await getMilestonePaymentInfo(projectId);
-      return milestoneInfo != null;
+      final result = milestoneInfo != null;
+
+      return result;
     } catch (e) {
       return false;
     }
   }
 
-  /// Check if project is fully paid and auto-complete project and contract
+  Future<void> initializeMilestones({
+    required String projectId,
+    required String contractId,
+  }) async {
+    try {
+      final milestoneInfo = await getMilestonePaymentInfo(projectId);
+      if (milestoneInfo == null) {
+        return;
+      }
+
+      final milestones = List<Map<String, dynamic>>.from(milestoneInfo['milestones'] ?? []);
+
+      final existingMilestones = await _supabase
+          .from('MilestoneProgress')
+          .select('milestone_number')
+          .eq('contract_id', contractId);
+      
+      final existingNumbers = (existingMilestones as List)
+          .map((m) => m['milestone_number'] as int)
+          .toSet();
+
+      for (final milestone in milestones) {
+        final milestoneNumber = milestone['milestone_number'] as int;
+        
+        if (existingNumbers.contains(milestoneNumber)) {
+          continue;
+        }
+
+        final amount = (milestone['amount'] as num).toDouble();
+        final description = milestone['description'] as String? ?? 'Milestone $milestoneNumber';
+        final dueDate = milestone['due_date'] as String?;
+
+        await _supabase.from('MilestoneProgress').insert({
+          'contract_id': contractId,
+          'project_id': projectId,
+          'milestone_number': milestoneNumber,
+          'description': description,
+          'amount': amount,
+          'target_date': dueDate,
+          'status': 'pending',
+          'completion_percentage': 0.0,
+        });
+
+      }
+
+      await _auditService.logAuditEvent(
+        userId: _supabase.auth.currentUser?.id,
+        action: 'MILESTONES_INITIALIZED',
+        details: 'Initialized ${milestones.length} milestones for contract',
+        category: 'Payment',
+        metadata: {
+          'project_id': projectId,
+          'contract_id': contractId,
+          'milestone_count': milestones.length,
+        },
+      );
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to initialize milestones: $e',
+        module: 'Payment Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'Initialize Milestones',
+          'project_id': projectId,
+          'contract_id': contractId,
+        },
+      );
+      // Don't rethrow - this is a background operation
+    }
+  }
+
   Future<void> _checkAndCompleteProject(
     String projectId, 
     String contractType, {
     String? paymentStatus,
   }) async {
     try {
-      // Normalize contract type to handle variations
       final normalizedContractType = contractType.toLowerCase().trim();
       final isLumpSum = normalizedContractType == 'lump_sum' || 
                        (normalizedContractType.contains('lump') && normalizedContractType.contains('sum'));
@@ -1233,8 +1557,6 @@ class PaymentService {
       bool isFullyPaid = false;
 
       if (isLumpSum) {
-        // For lump sum, check if payment_status is 'paid'
-        // Use provided paymentStatus if available, otherwise read from database
         if (paymentStatus != null) {
           isFullyPaid = paymentStatus.toLowerCase() == 'paid';
         } else {
@@ -1249,7 +1571,6 @@ class PaymentService {
           isFullyPaid = (status?.toLowerCase() ?? '') == 'paid';
         }
       } else if (contractType == 'custom' || contractType == 'cost_plus' || contractType == 'time_and_materials') {
-        // For custom, cost-plus, and time & materials contracts, check if total_paid >= contract_total
         final projectData = await _supabase
             .from('Projects')
             .select('projectdata, contract_id, bid_id')
@@ -1257,19 +1578,21 @@ class PaymentService {
             .single();
 
         final projectdata = projectData['projectdata'] as Map<String, dynamic>? ?? {};
-        final payments = projectdata['payments'] as List<dynamic>? ?? [];
         
-        final totalPaid = payments.fold<double>(
+        final paymentsData = await _supabase
+            .from('Payments')
+            .select('amount')
+            .eq('project_id', projectId)
+            .eq('payment_status', 'completed');
+        
+        final totalPaid = (paymentsData as List).fold<double>(
           0.0,
           (sum, payment) => sum + ((payment['amount'] as num?)?.toDouble() ?? 0.0),
         );
 
-        // Get total contract amount
         double? totalAmount;
         
-        // For custom contracts, they are uploaded PDFs without field_values, so use bid amount
         if (contractType == 'custom') {
-          // Custom contracts: use bid amount as the total contract amount
           final bidId = projectData['bid_id'] as String?;
           if (bidId != null) {
             try {
@@ -1280,11 +1603,9 @@ class PaymentService {
                   .single();
               totalAmount = (bidData['bid_amount'] as num?)?.toDouble();
             } catch (_) {
-              // If no bid amount, we can't determine completion for custom contracts
             }
           }
         } else {
-          // For cost-plus and time & materials, try to get from contract field_values first
           final contractId = projectData['contract_id'] as String?;
           if (contractId != null) {
             try {
@@ -1296,20 +1617,15 @@ class PaymentService {
               
               final fieldValues = contractData['field_values'] as Map<String, dynamic>? ?? {};
               
-              // Try to get contract price from different contract types
               if (fieldValues['Payment.Total'] != null) {
-                // Time & Materials contract
                 totalAmount = double.tryParse(fieldValues['Payment.Total'].toString());
               } else if (fieldValues['Estimated Total'] != null) {
-                // Cost Plus contract
                 totalAmount = double.tryParse(fieldValues['Estimated Total'].toString());
               }
             } catch (_) {
-              // Continue to fallback
             }
           }
           
-          // Fallback to bid amount if contract price not found
           if (totalAmount == null) {
             final bidId = projectData['bid_id'] as String?;
             if (bidId != null) {
@@ -1321,17 +1637,14 @@ class PaymentService {
                     .single();
                 totalAmount = (bidData['bid_amount'] as num?)?.toDouble();
               } catch (_) {
-                // If no bid amount, we can't determine completion
               }
             }
           }
         }
 
-        // Check if fully paid (with small tolerance for floating point comparison)
         if (totalAmount != null && totalAmount > 0) {
           isFullyPaid = totalPaid >= (totalAmount - 0.01); // Allow 1 cent tolerance
           
-          // If fully paid, update payment_status to 'paid'
           if (isFullyPaid) {
             final updatedProjectdata = Map<String, dynamic>.from(projectdata);
             updatedProjectdata['payment_status'] = 'paid';
@@ -1342,14 +1655,12 @@ class PaymentService {
           }
         }
       } else if (normalizedContractType.contains('milestone')) {
-        // For milestone payments, check if all milestones are paid
         final milestoneInfo = await getMilestonePaymentInfo(projectId);
         if (milestoneInfo != null) {
           final completedMilestones = milestoneInfo['completed_milestones'] as int? ?? 0;
           final totalMilestones = milestoneInfo['total_milestones'] as int? ?? 0;
           isFullyPaid = totalMilestones > 0 && completedMilestones >= totalMilestones;
           
-          // If all milestones are paid, update payment_status to 'paid'
           if (isFullyPaid) {
             final projectData = await _supabase
                 .from('Projects')
@@ -1367,9 +1678,7 @@ class PaymentService {
         }
       }
 
-      // If fully paid, complete the project and contract
       if (isFullyPaid) {
-        // Get project data to find contract_id
         final projectData = await _supabase
             .from('Projects')
             .select('contract_id, title, contractor_id, contractee_id, status')
@@ -1382,15 +1691,12 @@ class PaymentService {
         final contracteeId = projectData['contractee_id'] as String?;
         final currentStatus = projectData['status'] as String?;
 
-        // Only update if not already completed
         if (currentStatus?.toLowerCase() != 'completed') {
-          // Update project status to completed
           await _supabase.from('Projects').update({
             'status': 'completed',
             'updated_at': DateTimeHelper.getLocalTimeISOString(),
           }).eq('project_id', projectId);
 
-          // Update contract status to completed if contract exists
           if (contractId != null) {
             await _supabase.from('Contracts').update({
               'status': 'completed',
@@ -1399,7 +1705,6 @@ class PaymentService {
           }
         }
 
-        // Log audit event
         if (contracteeId != null) {
           await _auditService.logAuditEvent(
             userId: contracteeId,
@@ -1414,7 +1719,6 @@ class PaymentService {
           );
         }
 
-        // Send notifications
         if (contractorId != null && contracteeId != null) {
           await _notificationService.createNotification(
             receiverId: contractorId,

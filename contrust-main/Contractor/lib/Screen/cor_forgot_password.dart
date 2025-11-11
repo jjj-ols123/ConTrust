@@ -61,8 +61,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         redirectTo = 'contrust://auth/reset-password';
       }
       
-      debugPrint('[ForgotPassword] Using redirect URL: $redirectTo');
-      
       final response = await supabase.functions.invoke(
         'send-password-reset-email',
         body: {
@@ -89,7 +87,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     } catch (e) {
       if (!mounted) return;
       
-      debugPrint('[ForgotPassword] Error sending reset email: $e');
       String errorMessage = 'Failed to send reset email. Please try again later.';
       
       final errorText = e.toString().toLowerCase();
@@ -119,20 +116,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   void initState() {
     super.initState();
-    debugPrint('[ForgotPassword] Screen initialized');
-    debugPrint('[ForgotPassword] Current URL: ${Uri.base}');
     if (kIsWeb) {
       try {
-        debugPrint('[ForgotPassword] Window location: ${html.window.location.href}');
-        debugPrint('[ForgotPassword] Window hash: ${html.window.location.hash}');
-        
-        // Listen for hash changes (in case hash arrives after page load)
         html.window.onHashChange.listen((event) {
-          debugPrint('[ForgotPassword] Hash changed: ${html.window.location.hash}');
           _initRecovery();
         });
       } catch (e) {
-        debugPrint('[ForgotPassword] Error getting window location: $e');
+        //
       }
     }
     _initRecovery();
@@ -140,7 +130,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   Future<void> _initRecovery() async {
     setState(() => _isLoading = true);
-    debugPrint('[ForgotPassword] _initRecovery started');
     
     if (kIsWeb) {
       await Future.delayed(const Duration(milliseconds: 100));
@@ -151,27 +140,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (kIsWeb) {
       try {
         hash = html.window.location.hash;
-        debugPrint('[ForgotPassword] Hash from window.location.hash: $hash');
-        
         url = Uri.parse(html.window.location.href);
-        debugPrint('[ForgotPassword] Full URL from window: ${url.toString()}');
-        
         if (hash.isNotEmpty && url.fragment.isEmpty) {
           final baseUrl = url.toString().split('#')[0];
           url = Uri.parse('$baseUrl$hash');
         }
       } catch (e) {
-        debugPrint('[ForgotPassword] Error parsing window URL: $e');
         url = Uri.base;
         hash = url.fragment;
       }
     } else {
       url = Uri.base;
       hash = url.fragment;
-      
-      debugPrint('[ForgotPassword] Mobile - Uri.base: ${url.toString()}');
-      debugPrint('[ForgotPassword] Mobile - Scheme: ${url.scheme}, Host: ${url.host}, Path: ${url.path}');
-      debugPrint('[ForgotPassword] Mobile - Fragment: ${url.fragment}');
     }
     
     if (hash.isEmpty) {
@@ -184,13 +164,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     
     final queryParams = url.queryParameters;
     
-    debugPrint('[ForgotPassword] Final hash: $hash');
-    debugPrint('[ForgotPassword] Query params: $queryParams');
-
     Map<String, String> hashParams = {};
     if (hash.isNotEmpty) {
       hashParams = Uri.splitQueryString(hash);
-      debugPrint('[ForgotPassword] Hash params: $hashParams');
       
       final error = hashParams['error'];
       final errorCode = hashParams['error_code'];
@@ -206,7 +182,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           errorMessage = Uri.decodeComponent(errorDescription.replaceAll('+', ' '));
         }
         
-        debugPrint('[ForgotPassword] Showing error message: $errorMessage');
         if (mounted) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             ConTrustSnackBar.error(context, errorMessage);
@@ -227,10 +202,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             (queryParams.containsKey('type') && queryParams['type'] == 'recovery') ||
                             queryParams.containsKey('code');
     
-    debugPrint('[ForgotPassword] Has recovery code: $hasRecoveryCode');
- 
     if (!hasRecoveryCode) {
-      debugPrint('[ForgotPassword] No recovery code detected, showing reset form');
       setState(() {
         _isRecoveryMode = false;
         _isLoading = false;
@@ -239,43 +211,32 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
     
     try {
-      debugPrint('[ForgotPassword] Attempting to get session from URL');
-      debugPrint('[ForgotPassword] URL being used: ${url.toString()}');
-      debugPrint('[ForgotPassword] URL fragment: ${url.fragment}');
-      
       Uri finalUrl = url;
       if (kIsWeb && hash.isNotEmpty && url.fragment.isEmpty) {
         try {
           final fullHref = html.window.location.href;
           finalUrl = Uri.parse(fullHref);
-          debugPrint('[ForgotPassword] Using full href: $fullHref');
         } catch (e) {
-          debugPrint('[ForgotPassword] Error parsing full href: $e');
+          //
         }
       } else if (!kIsWeb && hash.isNotEmpty) {
         final urlString = url.toString();
         if (!urlString.contains('#')) {
           finalUrl = Uri.parse('$urlString#$hash');
-          debugPrint('[ForgotPassword] Mobile - Added hash to URL: ${finalUrl.toString()}');
         } else {
           finalUrl = url;
-          debugPrint('[ForgotPassword] Mobile - Using URL with hash: ${finalUrl.toString()}');
         }
       }
       
       await Supabase.instance.client.auth.getSessionFromUrl(finalUrl, storeSession: true);
-      debugPrint('[ForgotPassword] Successfully got session, showing recovery form');
       setState(() {
         _isRecoveryMode = true;
       });
     } catch (e) {
-      debugPrint('[ForgotPassword] Error getting session: $e');
       String errorMessage = 'Unable to process password reset link.';
       if (e is AuthException) {
         final msg = e.message.toLowerCase();
-        debugPrint('[ForgotPassword] AuthException message: ${e.message}');
         if (msg.contains('no code') || msg.contains('code detected')) {
-          debugPrint('[ForgotPassword] No code in URL - might be format issue');
           errorMessage = 'Invalid password reset link format. Please request a new reset email.';
         } else if (msg.contains('expired') || msg.contains('invalid')) {
           errorMessage = 'This password reset link has expired or is invalid. Please request a new one.';

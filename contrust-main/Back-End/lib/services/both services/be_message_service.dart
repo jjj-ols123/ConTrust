@@ -1,5 +1,5 @@
-import 'package:backend/services/superadmin%20services/auditlogs_service.dart';
-import 'package:backend/services/superadmin%20services/errorlogs_service.dart';
+import 'package:backend/services/superadmin services/auditlogs_service.dart';
+import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MessageService {

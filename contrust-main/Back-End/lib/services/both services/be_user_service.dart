@@ -223,10 +223,20 @@ class UserService {
           }
         } catch (_) {}
 
+        double ratingValue;
+        final rawRating = response['rating'];
+        if (rawRating is num) {
+          ratingValue = rawRating.toDouble();
+        } else if (rawRating is String) {
+          ratingValue = double.tryParse(rawRating) ?? 0.0;
+        } else {
+          ratingValue = 0.0;
+        }
+
         return {
           'firm_name': response['firm_name'] ?? "No firm name",
           'bio': response['bio'] ?? "No bio available",
-          'rating': (response['rating'] ?? 0.0).toDouble(),
+          'rating': ratingValue,
           'profile_photo': response['profile_photo'] ?? 'defaultpic.png',
           'past_projects': List<String>.from(response['past_projects'] ?? []),
           'contact_number': response['contact_number'] ?? "No contact number",

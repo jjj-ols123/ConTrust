@@ -23,30 +23,26 @@ class ContractPdfSignatureService {
     Uint8List? contractorSignature,
     Uint8List? contracteeSignature,
   }) async {
-    print('🖨️ SIGNED PDF GENERATION: Starting PDF generation for contract ${contractData['contract_id']}');
     try {
       final contractTypeId = contractData['contract_type_id'] as String?;
-
+      
       if (contractTypeId == null) {
         throw Exception('Contract type ID is missing');
       }
-
-      print('🔍 SIGNED PDF GENERATION: Fetching contract type data');
+      
       final contractTypeData = await _supabase
           .from('ContractTypes')
           .select('template_name')
           .eq('contract_type_id', contractTypeId)
           .single();
-
+      
       final contractType = contractTypeData['template_name'] as String?;
-
+      
       if (contractType == null) {
         throw Exception('Contract type not found for ID: $contractTypeId');
       }
-      print('📄 SIGNED PDF GENERATION: Contract type identified - $contractType');
       
       List<pw.Widget> pdfWidgets;
-      print('🏗️ SIGNED PDF GENERATION: Building PDF widgets for $contractType');
       switch (contractType.toLowerCase()) {
         case 'time and materials contract':
           pdfWidgets = TimeAndMaterialsPDF.buildTimeAndMaterialsPdf(
@@ -72,9 +68,7 @@ class ContractPdfSignatureService {
         default:
           throw Exception('Unsupported contract type: $contractType');
       }
-      print('✅ SIGNED PDF GENERATION: PDF widgets built successfully - ${pdfWidgets.length} widgets');
-
-      print('📄 SIGNED PDF GENERATION: Creating PDF document');
+      
       final pdf = pw.Document();
       pdf.addPage(
         pw.MultiPage(
@@ -84,9 +78,7 @@ class ContractPdfSignatureService {
         ),
       );
 
-      print('💾 SIGNED PDF GENERATION: Saving PDF to bytes');
       final pdfBytes = await pdf.save();
-      print('✅ SIGNED PDF GENERATION: PDF saved successfully - ${pdfBytes.length} bytes');
       return pdfBytes;
     } catch (e) {
       await _errorService.logError(
@@ -132,129 +124,69 @@ class ContractPdfSignatureService {
   static Future<String> createSignedContractPdf({
     required String contractId,
   }) async {
-    print('🔄 SIGNED PDF CREATION: Starting for contract $contractId');
     try {
-      print('📋 SIGNED PDF CREATION: Fetching contract data');
+      print('[ContractPdfSignatureService] Preparing signed PDF for contract: $contractId');
       final contractData = await ContractService.getContractById(contractId);
-      print('✅ SIGNED PDF CREATION: Contract data retrieved successfully');
 
       final contractorId = contractData['contractor_id'] as String?;
       if (contractorId == null) {
         throw Exception('Contractor ID not found in contract data');
       }
-      print('👷 SIGNED PDF CREATION: Contractor ID found - $contractorId');
 
       final rawFieldValues = contractData['field_values'];
       final fieldValues = rawFieldValues is Map
           ? Map<String, String>.from(rawFieldValues.map((key, value) => MapEntry(key.toString(), value.toString())))
           : <String, String>{};
-      print('📝 SIGNED PDF CREATION: Field values processed - ${fieldValues.length} fields');
 
-      print('📥 SIGNED PDF CREATION: Downloading contractor signature');
       final contractorSignature = await downloadSignature(
         contractData['contractor_signature_url'],
       );
-      print('✅ SIGNED PDF CREATION: Contractor signature downloaded - ${contractorSignature != null ? 'Success' : 'Not found'}');
-
-      print('📥 SIGNED PDF CREATION: Downloading contractee signature');
       final contracteeSignature = await downloadSignature(
         contractData['contractee_signature_url'],
       );
-      print('✅ SIGNED PDF CREATION: Contractee signature downloaded - ${contracteeSignature != null ? 'Success' : 'Not found'}');
 
-      print('🎨 SIGNED PDF CREATION: Generating signed PDF with signatures');
       final pdfBytes = await generateSignedPdf(
         contractData: contractData,
         fieldValues: fieldValues,
         contractorSignature: contractorSignature,
         contracteeSignature: contracteeSignature,
       );
-      print('✅ SIGNED PDF CREATION: Signed PDF generated successfully - ${pdfBytes.length} bytes');
 
+      print('[ContractPdfSignatureService] Generated PDF bytes length: ${pdfBytes.length}');
       final fileName = 'signed_${contractId}_${DateTime.now().millisecondsSinceEpoch}.pdf';
-      final filePath = '$contractorId/$fileName';
-      print('☁️ SIGNED PDF CREATION: Uploading PDF to storage - Path: $filePath');
+      final filePath = '$contractorId/signed/$contractId/$fileName';
+      print('[ContractPdfSignatureService] Uploading signed PDF to path: $filePath');
 
-      await _supabase.storage
-          .from('contracts')
-          .uploadBinary(filePath, pdfBytes, fileOptions: const FileOptions(upsert: true));
-      print('✅ SIGNED PDF CREATION: PDF uploaded to storage successfully');
-
-      print('🔍 SIGNED PDF CREATION: Verifying file upload with retries');
-      bool fileVerified = false;
-      String? verificationError;
-
-      // Try verification multiple times with delays for eventual consistency
-      for (int attempt = 1; attempt <= 3; attempt++) {
-        print('🔍 SIGNED PDF CREATION: Verification attempt $attempt/3');
-        try {
-          // Wait a bit for eventual consistency
-          if (attempt > 1) {
-            await Future.delayed(Duration(seconds: 2));
-          }
-
-          // First try to list files
-          final files = await _supabase.storage
-              .from('contracts')
-              .list(path: contractorId);
-
-          final fileExists = files.any((file) => file.name == fileName);
-
-          if (fileExists) {
-            print('✅ SIGNED PDF CREATION: File verified via list (attempt $attempt)');
-          } else {
-            throw Exception('File not found in list');
-          }
-
-          // Then try to download and verify content
-          final downloadedBytes = await _supabase.storage
-              .from('contracts')
-              .download(filePath);
-
-          if (downloadedBytes.isEmpty) {
-            throw Exception('Downloaded file is empty');
-          }
-
-          if (downloadedBytes.length != pdfBytes.length) {
-            throw Exception('Downloaded file size (${downloadedBytes.length}) doesn\'t match uploaded size (${pdfBytes.length})');
-          }
-
-          // Verify PDF header (should start with %PDF-)
-          if (downloadedBytes.length < 4 ||
-              downloadedBytes[0] != 0x25 || // %
-              downloadedBytes[1] != 0x50 || // P
-              downloadedBytes[2] != 0x44 || // D
-              downloadedBytes[3] != 0x46) { // F
-            throw Exception('Downloaded file is not a valid PDF');
-          }
-
-          print('✅ SIGNED PDF CREATION: File content verified (attempt $attempt)');
-          fileVerified = true;
-          break;
-
-        } catch (e) {
-          verificationError = e.toString();
-          print('⚠️ SIGNED PDF CREATION: Verification attempt $attempt failed: $e');
-        }
-      }
-
-      if (!fileVerified) {
-        throw Exception('Failed to verify signed PDF upload after 3 attempts. Last error: $verificationError');
-      }
-
-      print('🔗 SIGNED PDF CREATION: Testing signed URL creation and accessibility');
       try {
-        // Create signed URL with longer expiration for testing
+        await _supabase.storage
+            .from('contracts')
+            .uploadBinary(filePath, pdfBytes, fileOptions: const FileOptions(upsert: true));
+        print('[ContractPdfSignatureService] Upload succeeded for $filePath');
+      } catch (e) {
+        print('[ContractPdfSignatureService] Upload failed for $filePath: $e');
+        rethrow;
+      }
+
+      try {
+        await _supabase.storage.from('contracts').download(filePath);
+        print('[ContractPdfSignatureService] Verified download succeeds for $filePath');
+      } catch (e) {
+        print('[ContractPdfSignatureService] Download verification failed for $filePath: $e');
+        throw Exception('Uploaded signed PDF but could not verify download: $e');
+      } 
+
+      try {
         final testSignedUrl = await _supabase.storage
             .from('contracts')
-            .createSignedUrl(filePath, 300); // 5 minutes
+            .createSignedUrl(filePath, 300); 
+        print('[ContractPdfSignatureService] Created signed URL for $filePath: ${testSignedUrl.isNotEmpty}');
 
         if (testSignedUrl.isEmpty) {
           throw Exception('Failed to create signed URL for uploaded file');
         }
 
-        // Actually try to access the signed URL to verify it's working
         final response = await http.get(Uri.parse(testSignedUrl));
+        print('[ContractPdfSignatureService] Signed URL response status: ${response.statusCode}, length: ${response.contentLength}');
         if (response.statusCode != 200) {
           throw Exception('Signed URL returned status ${response.statusCode}');
         }
@@ -267,12 +199,9 @@ class ContractPdfSignatureService {
           throw Exception('Signed URL content size (${response.contentLength}) doesn\'t match uploaded size (${pdfBytes.length})');
         }
 
-        print('✅ SIGNED PDF CREATION: Signed URL verified and accessible');
       } catch (e) {
         throw Exception('Signed PDF uploaded and verified but signed URL access failed: $e');
       }
-
-      print('💾 SIGNED PDF CREATION: Updating contract record with signed PDF URL');
       try {
         await _supabase
             .from('Contracts')
@@ -296,7 +225,6 @@ class ContractPdfSignatureService {
               .from('Messages')
               .update({'signed_pdf_url': filePath})
               .eq('msg_id', approvedMessage['msg_id']);
-          print('✅ SIGNED PDF CREATION: Updated approved contract message with signed PDF URL');
         }
 
       } catch (dbError) {
@@ -316,13 +244,16 @@ class ContractPdfSignatureService {
         metadata: {
           'contract_id': contractId,
           'contractor_id': contractorId,
+          'contractee_id': contractData['contractee_id'],
+          'project_id': contractData['project_id'],
           'file_path': filePath,
         },
       );
 
-      print('🎉 SIGNED PDF CREATION: COMPLETED SUCCESSFULLY - File: $filePath');
+      print('[ContractPdfSignatureService] Signed PDF ready at $filePath');
       return filePath;
     } catch (e) {
+      print('[ContractPdfSignatureService] Failed to create signed contract PDF: $e');
       await _errorService.logError(
         errorMessage: 'Failed to create signed contract PDF: $e',
         module: 'Contract PDF Signature Service',
@@ -337,7 +268,6 @@ class ContractPdfSignatureService {
   }
 
   static Future<void> checkAndGenerateSignedPdf(String contractId) async {
-    print('🔍 SIGNED PDF CHECK: Checking if signed PDF should be generated for contract $contractId');
     try {
       final contractData = await ContractService.getContractById(contractId);
       
@@ -363,11 +293,10 @@ class ContractPdfSignatureService {
         },
       );
 
-      if (contractorSigned &&
-          contracteeSigned &&
+      if (contractorSigned && 
+          contracteeSigned && 
           !hasSignedPdf) {
-
-        print('🚀 SIGNED PDF CHECK: Both parties signed and no signed PDF exists - Starting creation process');
+        
         await _auditService.logAuditEvent(
           action: 'INITIATING_SIGNED_PDF_CREATION',
           details: 'Both parties have signed, creating signed PDF',
@@ -378,9 +307,7 @@ class ContractPdfSignatureService {
         );
 
         await createSignedContractPdf(contractId: contractId);
-        print('✅ SIGNED PDF CHECK: Signed PDF creation process completed');
       } else {
-        print('ℹ️ SIGNED PDF CHECK: Signed PDF creation not needed - Status: Contractor: $contractorSigned, Contractee: $contracteeSigned, Has PDF: $hasSignedPdf');
       }
     } catch (e) {
       await _errorService.logError(

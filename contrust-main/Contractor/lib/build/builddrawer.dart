@@ -2,9 +2,9 @@
 
 import 'package:backend/build/buildnotification.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
-import 'package:backend/services/both%20services/be_user_service.dart';
-import 'package:backend/services/superadmin%20services/auditlogs_service.dart';
-import 'package:backend/services/superadmin%20services/errorlogs_service.dart';
+import 'package:backend/services/both services/be_user_service.dart';
+import 'package:backend/services/superadmin services/auditlogs_service.dart';
+import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:contractor/Screen/cor_dashboard.dart';
@@ -14,6 +14,170 @@ import 'package:contractor/Screen/cor_bidding.dart';
 import 'package:contractor/Screen/cor_profile.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+class UserDropdownMenu extends StatefulWidget {
+  final String? contractorId;
+
+  const UserDropdownMenu({super.key, this.contractorId});
+
+  @override
+  State<UserDropdownMenu> createState() => _UserDropdownMenuState();
+}
+
+class _UserDropdownMenuState extends State<UserDropdownMenu> {
+  String? _userName;
+  String? _userEmail;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserInfo();
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        String? contractorName = user.userMetadata?['full_name'] ?? 'Contractor';
+
+        try {
+          final contractorData = await Supabase.instance.client
+              .from('Contractor')
+              .select('firm_name')
+              .eq('contractor_id', user.id)
+              .single();
+          contractorName = contractorData['firm_name'] ?? contractorName;
+        } catch (e) {
+          //
+        }
+
+        setState(() {
+          _userName = contractorName;
+          _userEmail = user.email ?? '';
+        });
+      }
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  Future<void> _logout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Confirm Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await UserService().signOut();
+      if (!mounted) return;
+      context.go('/');
+    } catch (e) {
+      if (!mounted) return;
+      ConTrustSnackBar.error(context, 'Error logging out. Please try again.');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      offset: const Offset(0, 50), // Offset to position below the button
+      onSelected: (value) {
+        if (value == 'logout') {
+          _logout();
+        }
+      },
+      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+        PopupMenuItem<String>(
+          enabled: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _userName ?? 'Contractor',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _userEmail ?? '',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        const PopupMenuItem<String>(
+          value: 'logout',
+          child: Row(
+            children: [
+              Icon(Icons.logout, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Logout'),
+            ],
+          ),
+        ),
+      ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        margin: const EdgeInsets.only(right: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 14,
+              backgroundColor: Colors.white,
+              backgroundImage: const AssetImage('assets/images/defaultpic.png'),
+              child: _userName == null ? const Icon(Icons.person, size: 16, color: Colors.grey) : null,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              _userName ?? 'Contractor',
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(
+              Icons.arrow_drop_down,
+              color: Colors.black,
+              size: 18,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 enum ContractorPage {
   dashboard,
@@ -119,23 +283,61 @@ class _ContractorShellState extends State<ContractorShell> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        backgroundColor: Colors.amber,
-        centerTitle: true,
-        elevation: 4,
-        automaticallyImplyLeading: false,
-        leading: !isDesktop
-            ? IconButton(
-                icon: const Icon(Icons.home, color: Colors.black),
-                onPressed: () {
-                  if (widget.currentPage != ContractorPage.dashboard) {
-                    context.go('/dashboard');
-                  }
-                },
-              )
-            : null,
-        actions: const [NotificationButton()],
-      ),
+        appBar: AppBar(
+          backgroundColor: Colors.amber,
+          centerTitle: true,
+          elevation: 4,
+          automaticallyImplyLeading: false,
+          leading: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!isDesktop)
+                IconButton(
+                  icon: const Icon(Icons.home, color: Colors.black),
+                  onPressed: () {
+                    if (widget.currentPage != ContractorPage.dashboard) {
+                      context.go('/dashboard');
+                    }
+                  },
+                ),
+              Container(
+                height: 32,
+                width: 32,
+                margin: const EdgeInsets.only(left: 8),
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(Icons.business, color: Colors.black, size: 24);
+                  },
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.only(left: 8),
+                child: const Text(
+                  'ConTrust',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.8,
+                    shadows: [
+                      Shadow(
+                        color: Colors.white,
+                        offset: Offset(0, 1),
+                        blurRadius: 1,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            UserDropdownMenu(contractorId: widget.contractorId),
+            const NotificationButton(),
+          ],
+        ),
       body: Column(
         children: [
           Expanded(
@@ -156,45 +358,6 @@ class _ContractorShellState extends State<ContractorShell> {
               ),
               child: Column(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.shade50,
-                      border: Border(
-                        bottom: BorderSide(
-                          color: Colors.amber.shade200,
-                          width: 1,
-                        ),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.amber.shade600,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            Icons.construction,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Expanded(
-                          child: Text(
-                            'ConTrust',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF2D3748),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                   Expanded(
                     child: SideDashboardDrawer(
                       contractorId: widget.contractorId,
@@ -524,12 +687,6 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
             onTap: _loadingPM ? null : goProjectManagement,
           ),
           const Divider(), 
-          _SidebarItem(
-            icon: Icons.logout_outlined,
-            label: 'Logout',
-            active: _hasActiveSession, 
-            onTap: _hasActiveSession ? logout : null,
-          ),
         ],
       ),
     );
@@ -1022,61 +1179,6 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
     }
   }
 
-  Future<void> logout() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Confirm Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red.shade600,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    try {
-      await UserService().signOut();
-      if (!mounted) return;
-      context.go('/');
-
-      await _auditService.logAuditEvent(
-        userId: widget.contractorId,
-        action: 'CONTRACTOR_LOGOUT',
-        details: 'Contractor logout',
-        metadata: {
-          'user_type': 'contractor',
-        },
-        category: 'Auth',
-      );
-    } catch (e) {
-      if (!mounted) return;
-        await _errorService.logError(
-          errorMessage: 'Logout failed ',
-          module: 'Logout Button Drawer', 
-          severity: 'Medium', 
-          extraInfo: { 
-            'operation': 'Logout attempt',
-            'error_id': widget.contractorId,
-            'timestamp': DateTime.now().toIso8601String(),
-          },
-        );
-      ConTrustSnackBar.error(context, 'Error logging out. Please try again.');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -1180,14 +1282,6 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
                     fontSize: fontSize,
                     color: Colors.amber.shade700,
                     onTap: _loadingPM ? () {} : goProjectManagement,
-                  ),
-                  DrawerIcon(
-                    icon: Icons.logout,
-                    label: 'Logout',
-                    iconSize: iconSize,
-                    fontSize: fontSize,
-                    color: _hasActiveSession ? Colors.red.shade600 : Colors.grey.shade400,
-                    onTap: _hasActiveSession ? logout : () {},
                   ),
                 ],
               ),
