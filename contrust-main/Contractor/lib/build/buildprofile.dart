@@ -638,6 +638,8 @@ class ProfileBuildMethods {
     required VoidCallback saveSpecialization,
     required VoidCallback saveAddress,
     required String contractorId,
+    required bool isGoogleSignIn,
+    required VoidCallback onSubmitVerification,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -936,6 +938,51 @@ class ProfileBuildMethods {
               toggleEditAddress,
               saveAddress,
             ),
+            const SizedBox(height: 24),
+
+            if (isGoogleSignIn) ...[
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.black, width: 1),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.verified_user, color: Colors.grey.shade800, size: 20),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Verification',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Submit a file for verification (e.g., business license, ID).',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: onSubmitVerification,
+                      child: const Text('Submit File for Verification'),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
           ],
         ),
       ),

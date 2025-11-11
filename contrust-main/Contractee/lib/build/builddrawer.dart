@@ -5,13 +5,13 @@ import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:contractee/pages/cee_home.dart';
 import 'package:contractee/pages/cee_chathistory.dart';
 import 'package:contractee/pages/cee_ai_assistant.dart';
 import 'package:contractee/pages/cee_profile.dart';
 import 'package:contractee/pages/cee_notification.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UserDropdownMenuContractee extends StatefulWidget {
   final String? contracteeId;
@@ -66,7 +66,6 @@ class _ContracteeBottomNavigationBar extends StatelessWidget {
                 child: _ContracteeNavItem(
                   icon: Icons.message_outlined,
                   activeIcon: Icons.message,
-                  label: 'Messages',
                   isActive: currentPage == ContracteePage.messages,
                   onTap: onMessagesTap,
                 ),
@@ -75,7 +74,6 @@ class _ContracteeBottomNavigationBar extends StatelessWidget {
                 child: _ContracteeNavItem(
                   icon: Icons.smart_toy_outlined,
                   activeIcon: Icons.smart_toy,
-                  label: 'AI',
                   isActive: currentPage == ContracteePage.aiAssistant,
                   onTap: onAiTap,
                 ),
@@ -91,7 +89,6 @@ class _ContracteeBottomNavigationBar extends StatelessWidget {
                 child: _ContracteeNavItem(
                   icon: Icons.person_outline,
                   activeIcon: Icons.person,
-                  label: 'Profile',
                   isActive: currentPage == ContracteePage.profile,
                   onTap: onProfileTap,
                 ),
@@ -100,7 +97,6 @@ class _ContracteeBottomNavigationBar extends StatelessWidget {
                 child: _ContracteeNavItem(
                   icon: Icons.history,
                   activeIcon: Icons.history_toggle_off,
-                  label: 'History',
                   isActive: currentPage == ContracteePage.history,
                   onTap: onHistoryTap,
                 ),
@@ -116,14 +112,12 @@ class _ContracteeBottomNavigationBar extends StatelessWidget {
 class _ContracteeNavItem extends StatelessWidget {
   final IconData icon;
   final IconData activeIcon;
-  final String label;
   final bool isActive;
   final VoidCallback onTap;
 
   const _ContracteeNavItem({
     required this.icon,
     required this.activeIcon,
-    required this.label,
     required this.isActive,
     required this.onTap,
   });
@@ -147,15 +141,6 @@ class _ContracteeNavItem extends StatelessWidget {
                 isActive ? activeIcon : icon,
                 color: isActive ? Colors.amber.shade700 : Colors.grey.shade600,
                 size: 22,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                color: isActive ? Colors.amber.shade700 : Colors.grey.shade600,
               ),
             ),
           ],
@@ -190,8 +175,8 @@ class _ContracteeOngoingNavItem extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: isActive
                     ? LinearGradient(
-                        colors: [Colors.amber.shade700, Colors.amber.shade400],
-                        begin: Alignment.topLeft,
+                          colors: [Colors.amber.shade700, Colors.amber.shade400],
+                          begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       )
                     : null,
@@ -224,15 +209,6 @@ class _ContracteeOngoingNavItem extends StatelessWidget {
                       size: 22,
                     ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Ongoing',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                color: isActive ? Colors.amber.shade700 : Colors.grey.shade600,
-              ),
-            ),
           ],
         ),
       ),
@@ -243,6 +219,7 @@ class _ContracteeOngoingNavItem extends StatelessWidget {
 class _UserDropdownMenuContracteeState extends State<UserDropdownMenuContractee> {
   String? _userName;
   String? _userEmail;
+  String? _profilePhotoUrl;
 
   @override
   void initState() {
@@ -254,9 +231,31 @@ class _UserDropdownMenuContracteeState extends State<UserDropdownMenuContractee>
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user != null) {
+        String? profilePhoto;
+        try {
+          final usersRow = await Supabase.instance.client
+              .from('Users')
+              .select('profile_image_url')
+              .eq('users_id', user.id)
+              .maybeSingle();
+
+          profilePhoto = (usersRow?['profile_image_url'] as String?)?.trim();
+        } catch (dbError) {
+          debugPrint('Failed to load profile photo from Users table: $dbError');
+        }
+
+        final metadataPhoto = (user.userMetadata?['profile_photo'] as String?)?.trim() ??
+            (user.userMetadata?['avatar_url'] as String?)?.trim() ??
+            (user.userMetadata?['picture'] as String?)?.trim();
+
         setState(() {
           _userName = user.userMetadata?['full_name'] ?? 'Contractee';
           _userEmail = user.email ?? '';
+          _profilePhotoUrl = (profilePhoto != null && profilePhoto.isNotEmpty)
+              ? profilePhoto
+              : (metadataPhoto != null && metadataPhoto.isNotEmpty)
+                  ? metadataPhoto
+                  : null;
         });
       }
     } catch (e) {
@@ -357,7 +356,9 @@ class _UserDropdownMenuContracteeState extends State<UserDropdownMenuContractee>
             CircleAvatar(
               radius: 14,
               backgroundColor: Colors.white,
-              backgroundImage: const AssetImage('assets/defaultpic.png'),
+              backgroundImage: _profilePhotoUrl != null && _profilePhotoUrl!.isNotEmpty
+                  ? NetworkImage(_profilePhotoUrl!)
+                  : const AssetImage('assets/defaultpic.png') as ImageProvider,
               child: _userName == null ? const Icon(Icons.person, size: 16, color: Colors.grey) : null,
             ),
             const SizedBox(width: 8),
@@ -691,7 +692,7 @@ class _ContracteeShellState extends State<ContracteeShell> {
     return Container(
       color: const Color(0xFFF8F9FA),
       child: Scaffold(
-        resizeToAvoidBottomInset: false,
+        resizeToAvoidBottomInset: true,
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.amber,
@@ -750,59 +751,61 @@ class _ContracteeShellState extends State<ContracteeShell> {
             const NotificationButton(),
           ],
         ),
-        body: Column(
-          children: [
-            Expanded(
-              child: Row(
-                children: [
-                  if (isDesktop)
-                    Container(
-                      width: 280,
-                      decoration: BoxDecoration(
-                        color: Colors.amber[500],
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
-                            blurRadius: 12,
-                            offset: const Offset(3, 0),
-                          ),
-                        ],
-                      ),
-                      child: _DesktopDrawerContent(
-                        contracteeId: widget.contracteeId,
-                        currentPage: widget.currentPage,
-                        onNavigate: _handleDesktopNavigation,
-                        onOngoingTap: _handleDesktopOngoingTap,
-                        isOngoingLoading: _isBottomNavOngoingLoading,
-                      ),
-                    ),
-                  Expanded(
-                    child: Padding(
-                      padding: widget.contentPadding ?? EdgeInsets.zero,
-                      child: widget.currentPage == ContracteePage.ongoing ||
-                              widget.currentPage == ContracteePage.history ||
-                              GoRouter.of(context).routerDelegate.currentConfiguration.uri.path.startsWith('/contractor')
-                          ? widget.child
-                          : IndexedStack(
-                              index: _indexFor(widget.currentPage),
-                              children: _persistentPages,
+        body: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    if (isDesktop)
+                      Container(
+                        width: 280,
+                        decoration: BoxDecoration(
+                          color: Colors.amber[500],
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              blurRadius: 12,
+                              offset: const Offset(3, 0),
                             ),
+                          ],
+                        ),
+                        child: _DesktopDrawerContent(
+                          contracteeId: widget.contracteeId,
+                          currentPage: widget.currentPage,
+                          onNavigate: _handleDesktopNavigation,
+                          onOngoingTap: _handleDesktopOngoingTap,
+                          isOngoingLoading: _isBottomNavOngoingLoading,
+                        ),
+                      ),
+                    Expanded(
+                      child: Padding(
+                        padding: widget.contentPadding ?? EdgeInsets.zero,
+                        child: widget.currentPage == ContracteePage.ongoing ||
+                                widget.currentPage == ContracteePage.history ||
+                                GoRouter.of(context).routerDelegate.currentConfiguration.uri.path.startsWith('/contractor')
+                            ? widget.child
+                            : IndexedStack(
+                                index: _indexFor(widget.currentPage),
+                                children: _persistentPages,
+                              ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            if (!isDesktop)
-              _ContracteeBottomNavigationBar(
-                currentPage: widget.currentPage,
-                onMessagesTap: _navigateToMessages,
-                onAiTap: _navigateToAiAssistant,
-                onOngoingTap: _handleBottomNavOngoingTap,
-                onProfileTap: _navigateToProfile,
-                onHistoryTap: _navigateToHistory,
-                isOngoingLoading: _isBottomNavOngoingLoading,
-              ),
-          ],
+              if (!isDesktop)
+                _ContracteeBottomNavigationBar(
+                  currentPage: widget.currentPage,
+                  onMessagesTap: _navigateToMessages,
+                  onAiTap: _navigateToAiAssistant,
+                  onOngoingTap: _handleBottomNavOngoingTap,
+                  onProfileTap: _navigateToProfile,
+                  onHistoryTap: _navigateToHistory,
+                  isOngoingLoading: _isBottomNavOngoingLoading,
+                ),
+            ],
+          ),
         ),
       ),
     );

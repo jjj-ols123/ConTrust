@@ -1,5 +1,8 @@
 // ignore_for_file: non_constant_identifier_names, use_build_context_synchronously, unnecessary_type_check, deprecated_member_use, depend_on_referenced_packages, unused_local_variable, dead_code, curly_braces_in_flow_control_structures
 
+import 'dart:io' show File;
+import 'dart:typed_data';
+
 import 'package:backend/services/both services/be_bidding_service.dart';
 import 'package:backend/services/both services/be_project_service.dart';
 import 'package:backend/services/both services/be_realtime_service.dart';
@@ -188,11 +191,55 @@ class _ProjectDialogState extends State<ProjectDialog> {
       );
 
       if (pickedFile != null) {
-        final bytes = await pickedFile.readAsBytes();
+        Uint8List? bytes;
+        try {
+          bytes = await pickedFile.readAsBytes();
+        } catch (readError) {
+          bool recovered = false;
+          if (pickedFile.path.isNotEmpty) {
+            try {
+              bytes = await File(pickedFile.path).readAsBytes();
+              recovered = true;
+            } catch (_) {
+              // fall through to stream fallback
+            }
+          }
+
+          if (!recovered) {
+            try {
+              final builder = BytesBuilder();
+              await for (final chunk in pickedFile.openRead()) {
+                builder.add(chunk);
+              }
+              bytes = builder.takeBytes();
+              recovered = true;
+            } catch (streamError) {
+              if (mounted) {
+                ConTrustSnackBar.error(
+                  context,
+                  'Failed to read selected file: $streamError',
+                );
+              }
+              return;
+            }
+          }
+        }
         
         // Check file size (max 10MB)
+        if (bytes == null) {
+          if (mounted) {
+            ConTrustSnackBar.error(
+              context,
+              'Failed to read selected image. Please try again.',
+            );
+          }
+          return;
+        }
+
+        final Uint8List confirmedBytes = bytes;
+
         const maxSizeBytes = 10 * 1024 * 1024; // 10MB
-        if (bytes.length > maxSizeBytes) {
+        if (confirmedBytes.length > maxSizeBytes) {
           if (mounted) {
             ConTrustSnackBar.error(
               context, 
@@ -209,11 +256,11 @@ class _ProjectDialogState extends State<ProjectDialog> {
         bool isValidImage = false;
         if (extension == 'jpg' || extension == 'jpeg' || extension == 'png') {
           isValidImage = true;
-        } else if (bytes.length >= 4) {
-          if (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) {
+        } else if (confirmedBytes.length >= 4) {
+          if (confirmedBytes[0] == 0x89 && confirmedBytes[1] == 0x50 && confirmedBytes[2] == 0x4E && confirmedBytes[3] == 0x47) {
             isValidImage = true;
           }
-          else if (bytes.length >= 3 && bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) {
+          else if (confirmedBytes.length >= 3 && confirmedBytes[0] == 0xFF && confirmedBytes[1] == 0xD8 && confirmedBytes[2] == 0xFF) {
             isValidImage = true;
           }
         }
@@ -229,7 +276,7 @@ class _ProjectDialogState extends State<ProjectDialog> {
         }
         
         setState(() {
-          _selectedPhoto = bytes;
+          _selectedPhoto = confirmedBytes;
           _photoUrl = null;
         });
       }
@@ -382,108 +429,65 @@ class _ProjectDialogState extends State<ProjectDialog> {
 
     return InkWell(
       onTap: () async {
-        final result = await showDialog<String>(
+        final result = await showModalBottomSheet<String>(
           context: context,
-          builder: (context) => Dialog(
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 600, maxHeight: 500),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      const Text(
-                        'Select Construction Type',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                  const Divider(),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 8,
-                          mainAxisSpacing: 8,
-                          childAspectRatio: 3,
-                        ),
-                        itemCount: _availableSpecializations.length + 1,
-                        itemBuilder: (context, index) {
-                          if (index == _availableSpecializations.length) {
-                            // "Other" option
-                            final isSelected = selectedValue?.toLowerCase() == 'other';
-                            return InkWell(
-                              onTap: () => Navigator.pop(context, 'Other'),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: isSelected ? Colors.amber.shade100 : Colors.grey.shade100,
-                                  border: Border.all(
-                                    color: isSelected ? Colors.amber.shade700 : Colors.grey.shade300,
-                                    width: isSelected ? 2 : 1,
-                                  ),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    'Other',
-                                    style: TextStyle(
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                      color: isSelected ? Colors.amber.shade900 : Colors.black87,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }
-                          final spec = _availableSpecializations[index];
-                          final isSelected = selectedValue == spec;
-                          return InkWell(
-                            onTap: () => Navigator.pop(context, spec),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: isSelected ? Colors.amber.shade100 : Colors.grey.shade100,
-                                border: Border.all(
-                                  color: isSelected ? Colors.amber.shade700 : Colors.grey.shade300,
-                                  width: isSelected ? 2 : 1,
-                                ),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                                  child: Text(
-                                    spec,
-                                    textAlign: TextAlign.center,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                      color: isSelected ? Colors.amber.shade900 : Colors.black87,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
+          isScrollControlled: true,
+          backgroundColor: Colors.white,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (context) => Container(
+            constraints: const BoxConstraints(maxHeight: 500),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'Select Construction Type',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const Divider(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ..._availableSpecializations.map((spec) => ChoiceChip(
+                          label: Text(spec, style: const TextStyle(fontSize: 12)),
+                          selected: selectedValue == spec,
+                          selectedColor: Colors.amber.shade100,
+                          checkmarkColor: Colors.amber.shade900,
+                          onSelected: (selected) {
+                            if (selected) Navigator.pop(context, spec);
+                          },
+                        )),
+                        ChoiceChip(
+                          label: const Text('Other', style: TextStyle(fontSize: 12)),
+                          selected: selectedValue?.toLowerCase() == 'other',
+                          selectedColor: Colors.amber.shade100,
+                          checkmarkColor: Colors.amber.shade900,
+                          onSelected: (selected) {
+                            if (selected) Navigator.pop(context, 'Other');
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         );
@@ -522,108 +526,65 @@ class _ProjectDialogState extends State<ProjectDialog> {
   }) {
     return InkWell(
       onTap: () async {
-        final result = await showDialog<String>(
+        final result = await showModalBottomSheet<String>(
           context: context,
-          builder: (context) => Dialog(
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 600, maxHeight: 500),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      const Text(
-                        'Select Construction Type',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                  const Divider(),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 8,
-                          mainAxisSpacing: 8,
-                          childAspectRatio: 3,
-                        ),
-                        itemCount: availableSpecializations.length + 1,
-                        itemBuilder: (context, index) {
-                          if (index == availableSpecializations.length) {
-                            // "Other" option
-                            final isSelected = selectedValue?.toLowerCase() == 'other';
-                            return InkWell(
-                              onTap: () => Navigator.pop(context, 'Other'),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: isSelected ? Colors.amber.shade100 : Colors.grey.shade100,
-                                  border: Border.all(
-                                    color: isSelected ? Colors.amber.shade700 : Colors.grey.shade300,
-                                    width: isSelected ? 2 : 1,
-                                  ),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    'Other',
-                                    style: TextStyle(
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                      color: isSelected ? Colors.amber.shade900 : Colors.black87,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }
-                          final spec = availableSpecializations[index];
-                          final isSelected = selectedValue == spec;
-                          return InkWell(
-                            onTap: () => Navigator.pop(context, spec),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: isSelected ? Colors.amber.shade100 : Colors.grey.shade100,
-                                border: Border.all(
-                                  color: isSelected ? Colors.amber.shade700 : Colors.grey.shade300,
-                                  width: isSelected ? 2 : 1,
-                                ),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                                  child: Text(
-                                    spec,
-                                    textAlign: TextAlign.center,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                      color: isSelected ? Colors.amber.shade900 : Colors.black87,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
+          isScrollControlled: true,
+          backgroundColor: Colors.white,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (context) => Container(
+            constraints: const BoxConstraints(maxHeight: 500),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'Select Construction Type',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const Divider(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ...availableSpecializations.map((spec) => ChoiceChip(
+                          label: Text(spec, style: const TextStyle(fontSize: 12)),
+                          selected: selectedValue == spec,
+                          selectedColor: Colors.amber.shade100,
+                          checkmarkColor: Colors.amber.shade900,
+                          onSelected: (selected) {
+                            if (selected) Navigator.pop(context, spec);
+                          },
+                        )),
+                        ChoiceChip(
+                          label: const Text('Other', style: TextStyle(fontSize: 12)),
+                          selected: selectedValue?.toLowerCase() == 'other',
+                          selectedColor: Colors.amber.shade100,
+                          checkmarkColor: Colors.amber.shade900,
+                          onSelected: (selected) {
+                            if (selected) Navigator.pop(context, 'Other');
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         );
@@ -660,386 +621,392 @@ class _ProjectDialogState extends State<ProjectDialog> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
     
-    return Center(
-      child: Material(
-        color: Colors.transparent,
-        child: Container(
-          constraints: isMobile 
-              ? const BoxConstraints(
-                  maxWidth: double.infinity,
-                  maxHeight: double.infinity,
-                )
-              : const BoxConstraints(maxWidth: 800),
-          margin: isMobile 
-              ? EdgeInsets.zero 
-              : const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: isMobile 
-                ? BorderRadius.zero 
-                : BorderRadius.circular(20),
-            border: Border.all(color: Colors.black, width: 1.5),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.15),
-                blurRadius: 20,
-                spreadRadius: 1,
-                offset: const Offset(0, 8),
+    return Scaffold(
+      backgroundColor: Colors.black.withOpacity(0.5),
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              constraints: isMobile 
+                  ? const BoxConstraints(
+                      maxWidth: double.infinity,
+                      maxHeight: double.infinity,
+                    )
+                  : const BoxConstraints(maxWidth: 800),
+              margin: isMobile 
+                  ? EdgeInsets.zero 
+                  : const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: isMobile 
+                    ? BorderRadius.zero 
+                    : BorderRadius.circular(20),
+                border: Border.all(color: Colors.black, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 20,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.amber.shade700,
-                  borderRadius: isMobile 
-                      ? BorderRadius.zero
-                      : const BorderRadius.only(
-                          topLeft: Radius.circular(20),
-                          topRight: Radius.circular(20)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Icon(
-                        widget.isUpdate ? Icons.edit : Icons.add_business,
-                        color: Colors.white,
-                        size: 18,
-                      ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade700,
+                      borderRadius: isMobile 
+                          ? BorderRadius.zero
+                          : const BorderRadius.only(
+                              topLeft: Radius.circular(20),
+                              topRight: Radius.circular(20)),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        widget.isUpdate
-                            ? "Update Project"
-                            : "Post Construction Request",
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close,
-                          color: Colors.white, size: 20),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
-                ),
-              ),
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                    child: Row(
                       children: [
-                        const SizedBox(height: 16),
-                        _buildLabeledField(
-                            label: 'Project Title',
-                            child: TextFormField(
-                                controller: widget.titleController,
-                                decoration: const InputDecoration(
-                                    labelText: 'Enter project title',
-                                    border: OutlineInputBorder()),
-                                validator: (v) =>
-                                    (v == null || v.trim().isEmpty)
-                                        ? 'Please enter a project title'
-                                        : null)),
-                        const SizedBox(height: 16),
-                        _buildLabeledField(
-                            label: 'Type of Construction',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildTwoColumnDropdown(),
-                                if (_showCustomTypeField) ...[
-                                  const SizedBox(height: 16),
-                                  TextFormField(
-                                    controller: _customTypeController,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Enter custom construction type',
-                                      hintText: 'e.g., Kitchen Renovation',
-                                      border: OutlineInputBorder(),
-                                      prefixIcon: Icon(Icons.edit),
-                                    ),
-                                    textCapitalization: TextCapitalization.words,
-                                    validator: (v) {
-                                      if (_showCustomTypeField &&
-                                          (v == null || v.trim().isEmpty)) {
-                                        return 'Please enter a construction type';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                ],
-                              ],
-                            ),
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(6),
                           ),
-                        const SizedBox(height: 16),
-                        _buildLabeledField(
-                            label: 'Estimated Budget Range',
-                            child: Row(children: [
-                              Expanded(
-                                  child: TextFormField(
-                                      controller: widget.minBudgetController,
-                                      keyboardType: TextInputType.number,
-                                      decoration: const InputDecoration(
-                                          labelText: 'Min Budget',
-                                          prefixText: '₱',
-                                          border: OutlineInputBorder()),
-                                      inputFormatters: [
-                                        FilteringTextInputFormatter.digitsOnly
-                                      ],
-                                      validator: (value) {
-                                        if (value == null ||
-                                            value.trim().isEmpty)
-                                          return 'Please enter minimum budget';
-                                        final n = int.tryParse(value.trim());
-                                        if (n == null || n <= 0)
-                                          return 'Budget must be > 0';
-                                        return null;
-                                      })),
-                              const SizedBox(width: 10),
-                              const Text('-',
-                                  style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold)),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                  child: TextFormField(
-                                      controller: widget.maxBudgetController,
-                                      keyboardType: TextInputType.number,
-                                      decoration: const InputDecoration(
-                                          labelText: 'Max Budget',
-                                          prefixText: '₱',
-                                          border: OutlineInputBorder()),
-                                      inputFormatters: [
-                                        FilteringTextInputFormatter.digitsOnly
-                                      ],
-                                      validator: (value) {
-                                        if (value == null ||
-                                            value.trim().isEmpty)
-                                          return 'Please enter maximum budget';
-                                        final n = int.tryParse(value.trim());
-                                        if (n == null || n <= 0)
-                                          return 'Budget must be > 0';
-                                        final min = int.tryParse(widget
-                                                .minBudgetController.text
-                                                .trim()) ??
-                                            0;
-                                        if (n <= min)
-                                          return 'Max must be greater';
-                                        return null;
-                                      })),
-                            ])),
-                        const SizedBox(height: 16),
-                        _buildLabeledField(
-                            label: 'Location',
-                            child: TextFormField(
-                                controller: widget.locationController,
-                                decoration: const InputDecoration(
-                                    labelText: 'Enter your location',
-                                    border: OutlineInputBorder()),
-                                validator: (v) =>
-                                    (v == null || v.trim().isEmpty)
-                                        ? 'Please enter a location'
-                                        : null)),
-                        const SizedBox(height: 16),
-                        _buildLabeledField(
-                            label: 'Preferred Start Date',
-                            child: TextFormField(
-                                controller: _startDateController,
-                                readOnly: true,
-                                decoration: const InputDecoration(
-                                    labelText: 'Select a start date',
-                                    border: OutlineInputBorder(),
-                                    suffixIcon: Icon(Icons.calendar_today)),
-                                onTap: _selectStartDate,
-                                validator: (v) =>
-                                    (v == null || v.trim().isEmpty)
-                                        ? 'Please select a start date'
-                                        : null)),
-                        const SizedBox(height: 16),
-                        _buildLabeledField(
-                            label: 'Message to Contractor',
-                            child: TextFormField(
-                                controller: widget.descriptionController,
-                                maxLines: 4,
-                                decoration: const InputDecoration(
-                                    labelText: 'Describe your project details',
-                                    border: OutlineInputBorder()),
-                                validator: (v) =>
-                                    (v == null || v.trim().isEmpty)
-                                        ? 'Please describe your project'
-                                        : null)),
-                        const SizedBox(height: 16),
-                        _buildLabeledField(
-                          label: 'Project Photo (Optional)',
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (_selectedPhoto != null || _photoUrl != null)
-                                Container(
-                                  height: 150,
-                                  width: double.infinity,
-                                  margin: const EdgeInsets.only(bottom: 8),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: Colors.grey.shade300),
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: _selectedPhoto != null
-                                        ? Image.memory(
-                                            _selectedPhoto!,
-                                            fit: BoxFit.cover,
-                                          )
-                                        : _photoUrl != null
-                                            ? Image.network(
-                                                _photoUrl!,
-                                                fit: BoxFit.cover,
-                                                errorBuilder: (context, error, stackTrace) {
-                                                  return const Icon(Icons.image, size: 50);
-                                                },
-                                              )
-                                            : const SizedBox(),
-                                  ),
-                                ),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: OutlinedButton.icon(
-                                      onPressed: _isUploadingPhoto ? null : _pickPhoto,
-                                      icon: const Icon(Icons.photo_library),
-                                      label: Text(_selectedPhoto != null ? 'Change Photo' : 'Select Photo'),
-                                      style: OutlinedButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(vertical: 12),
-                                      ),
-                                    ),
-                                  ),
-                                  if (_selectedPhoto != null || _photoUrl != null) ...[
-                                    const SizedBox(width: 8),
-                                    IconButton(
-                                      onPressed: () {
-                                        setState(() {
-                                          _selectedPhoto = null;
-                                          _photoUrl = null;
-                                        });
-                                      },
-                                      icon: const Icon(Icons.delete_outline),
-                                      color: Colors.red,
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ],
+                          child: Icon(
+                            widget.isUpdate ? Icons.edit : Icons.add_business,
+                            color: Colors.white,
+                            size: 18,
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        if (!widget.isUpdate ||
-                            (widget.isUpdate &&
-                                (int.tryParse(widget.bidTimeController.text) ??
-                                        0) >
-                                    0))
-                          _buildLabeledField(
-                              label: 'Bid Duration (in days)',
-                              child: Row(children: [
-                                IconButton(
-                                    icon: const Icon(Icons.remove),
-                                    onPressed: () {
-                                      int current = int.tryParse(
-                                              widget.bidTimeController.text) ??
-                                          1;
-                                      if (current > 1) {
-                                        current--;
-                                        widget.bidTimeController.text =
-                                            current.toString();
-                                        setState(() {});
-                                      }
-                                    }),
-                                Expanded(
-                                    child: TextFormField(
-                                        controller: widget.bidTimeController,
-                                        keyboardType: TextInputType.number,
-                                        decoration: const InputDecoration(
-                                            labelText:
-                                                'Enter number of days (1–20)',
-                                            border: OutlineInputBorder()),
-                                        inputFormatters: [
-                                          FilteringTextInputFormatter.digitsOnly
-                                        ],
-                                        validator: (value) {
-                                          if (value == null ||
-                                              value.trim().isEmpty)
-                                            return 'Please enter bid duration';
-                                          final d = int.tryParse(value.trim());
-                                          if (d == null || d < 1 || d > 20)
-                                            return 'Bid duration 1-20 days';
-                                          return null;
-                                        },
-                                        onChanged: (v) {
-                                          int? n = int.tryParse(v);
-                                          if (n == null || n < 1) {
-                                            widget.bidTimeController.text = '1';
-                                          } else if (n > 20)
-                                            widget.bidTimeController.text =
-                                                '20';
-                                        })),
-                                IconButton(
-                                    icon: const Icon(Icons.add),
-                                    onPressed: () {
-                                      int current = int.tryParse(
-                                              widget.bidTimeController.text) ??
-                                          1;
-                                      if (current < 20) {
-                                        current++;
-                                        widget.bidTimeController.text =
-                                            current.toString();
-                                        setState(() {});
-                                      }
-                                    }),
-                              ])),
-                        const SizedBox(height: 24),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _submit,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFFB300),
-                              foregroundColor: Colors.black,
-                              minimumSize: const Size.fromHeight(50),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8)),
-                            ),
-                            child: _isLoading
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                        color: Colors.black, strokeWidth: 2))
-                                : Text(widget.isUpdate
-                                    ? "Update Project"
-                                    : "Submit Request"),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            widget.isUpdate
+                                ? "Update Project"
+                                : "Post Construction Request",
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold),
                           ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.close,
+                              color: Colors.white, size: 20),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
                         ),
                       ],
                     ),
                   ),
-                ),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const SizedBox(height: 16),
+                            _buildLabeledField(
+                                label: 'Project Title',
+                                child: TextFormField(
+                                    controller: widget.titleController,
+                                    decoration: const InputDecoration(
+                                        labelText: 'Enter project title',
+                                        border: OutlineInputBorder()),
+                                    validator: (v) =>
+                                        (v == null || v.trim().isEmpty)
+                                            ? 'Please enter a project title'
+                                            : null)),
+                            const SizedBox(height: 16),
+                            _buildLabeledField(
+                                label: 'Type of Construction',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildTwoColumnDropdown(),
+                                    if (_showCustomTypeField) ...[
+                                      const SizedBox(height: 16),
+                                      TextFormField(
+                                        controller: _customTypeController,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Enter custom construction type',
+                                          hintText: 'e.g., Kitchen Renovation',
+                                          border: OutlineInputBorder(),
+                                          prefixIcon: Icon(Icons.edit),
+                                        ),
+                                        textCapitalization: TextCapitalization.words,
+                                        validator: (v) {
+                                          if (_showCustomTypeField &&
+                                              (v == null || v.trim().isEmpty)) {
+                                            return 'Please enter a construction type';
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            const SizedBox(height: 16),
+                            _buildLabeledField(
+                                label: 'Estimated Budget Range',
+                                child: Row(children: [
+                                  Expanded(
+                                      child: TextFormField(
+                                          controller: widget.minBudgetController,
+                                          keyboardType: TextInputType.number,
+                                          decoration: const InputDecoration(
+                                              labelText: 'Min Budget',
+                                              prefixText: '₱',
+                                              border: OutlineInputBorder()),
+                                          inputFormatters: [
+                                            FilteringTextInputFormatter.digitsOnly
+                                          ],
+                                          validator: (value) {
+                                            if (value == null ||
+                                                value.trim().isEmpty)
+                                              return 'Please enter minimum budget';
+                                            final n = int.tryParse(value.trim());
+                                            if (n == null || n <= 0)
+                                              return 'Budget must be > 0';
+                                            return null;
+                                          })),
+                                  const SizedBox(width: 10),
+                                  const Text('-',
+                                      style: TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.bold)),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                      child: TextFormField(
+                                          controller: widget.maxBudgetController,
+                                          keyboardType: TextInputType.number,
+                                          decoration: const InputDecoration(
+                                              labelText: 'Max Budget',
+                                              prefixText: '₱',
+                                              border: OutlineInputBorder()),
+                                          inputFormatters: [
+                                            FilteringTextInputFormatter.digitsOnly
+                                          ],
+                                          validator: (value) {
+                                            if (value == null ||
+                                                value.trim().isEmpty)
+                                              return 'Please enter maximum budget';
+                                            final n = int.tryParse(value.trim());
+                                            if (n == null || n <= 0)
+                                              return 'Budget must be > 0';
+                                            final min = int.tryParse(widget
+                                                    .minBudgetController.text
+                                                    .trim()) ??
+                                                0;
+                                            if (n <= min)
+                                              return 'Max must be greater';
+                                            return null;
+                                          })),
+                                ])),
+                            const SizedBox(height: 16),
+                            _buildLabeledField(
+                                label: 'Location',
+                                child: TextFormField(
+                                    controller: widget.locationController,
+                                    decoration: const InputDecoration(
+                                        labelText: 'Enter your location',
+                                        border: OutlineInputBorder()),
+                                    validator: (v) =>
+                                        (v == null || v.trim().isEmpty)
+                                            ? 'Please enter a location'
+                                            : null)),
+                            const SizedBox(height: 16),
+                            _buildLabeledField(
+                                label: 'Preferred Start Date',
+                                child: TextFormField(
+                                    controller: _startDateController,
+                                    readOnly: true,
+                                    decoration: const InputDecoration(
+                                        labelText: 'Select a start date',
+                                        border: OutlineInputBorder(),
+                                        suffixIcon: Icon(Icons.calendar_today)),
+                                    onTap: _selectStartDate,
+                                    validator: (v) =>
+                                        (v == null || v.trim().isEmpty)
+                                            ? 'Please select a start date'
+                                            : null)),
+                            const SizedBox(height: 16),
+                            _buildLabeledField(
+                                label: 'Message to Contractor',
+                                child: TextFormField(
+                                    controller: widget.descriptionController,
+                                    maxLines: 4,
+                                    decoration: const InputDecoration(
+                                        labelText: 'Describe your project details',
+                                        border: OutlineInputBorder()),
+                                    validator: (v) =>
+                                        (v == null || v.trim().isEmpty)
+                                            ? 'Please describe your project'
+                                            : null)),
+                            const SizedBox(height: 16),
+                            _buildLabeledField(
+                              label: 'Project Photo (Optional)',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (_selectedPhoto != null || _photoUrl != null)
+                                    Container(
+                                      height: 150,
+                                      width: double.infinity,
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: Colors.grey.shade300),
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: _selectedPhoto != null
+                                            ? Image.memory(
+                                                _selectedPhoto!,
+                                                fit: BoxFit.cover,
+                                              )
+                                            : _photoUrl != null
+                                                ? Image.network(
+                                                    _photoUrl!,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (context, error, stackTrace) {
+                                                      return const Icon(Icons.image, size: 50);
+                                                    },
+                                                  )
+                                                : const SizedBox(),
+                                      ),
+                                    ),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: OutlinedButton.icon(
+                                          onPressed: _isUploadingPhoto ? null : _pickPhoto,
+                                          icon: const Icon(Icons.photo_library),
+                                          label: Text(_selectedPhoto != null ? 'Change Photo' : 'Select Photo'),
+                                          style: OutlinedButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(vertical: 12),
+                                          ),
+                                        ),
+                                      ),
+                                      if (_selectedPhoto != null || _photoUrl != null) ...[
+                                        const SizedBox(width: 8),
+                                        IconButton(
+                                          onPressed: () {
+                                            setState(() {
+                                              _selectedPhoto = null;
+                                              _photoUrl = null;
+                                            });
+                                          },
+                                          icon: const Icon(Icons.delete_outline),
+                                          color: Colors.red,
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            if (!widget.isUpdate ||
+                                (widget.isUpdate &&
+                                    (int.tryParse(widget.bidTimeController.text) ??
+                                            0) >
+                                        0))
+                              _buildLabeledField(
+                                  label: 'Bid Duration (in days)',
+                                  child: Row(children: [
+                                    IconButton(
+                                        icon: const Icon(Icons.remove),
+                                        onPressed: () {
+                                          int current = int.tryParse(
+                                                  widget.bidTimeController.text) ??
+                                              1;
+                                          if (current > 1) {
+                                            current--;
+                                            widget.bidTimeController.text =
+                                                current.toString();
+                                            setState(() {});
+                                          }
+                                        }),
+                                    Expanded(
+                                        child: TextFormField(
+                                            controller: widget.bidTimeController,
+                                            keyboardType: TextInputType.number,
+                                            decoration: const InputDecoration(
+                                                labelText:
+                                                    'Enter number of days (1–20)',
+                                                border: OutlineInputBorder()),
+                                            inputFormatters: [
+                                              FilteringTextInputFormatter.digitsOnly
+                                            ],
+                                            validator: (value) {
+                                              if (value == null ||
+                                                  value.trim().isEmpty)
+                                                return 'Please enter bid duration';
+                                              final d = int.tryParse(value.trim());
+                                              if (d == null || d < 1 || d > 20)
+                                                return 'Bid duration 1-20 days';
+                                              return null;
+                                            },
+                                            onChanged: (v) {
+                                              int? n = int.tryParse(v);
+                                              if (n == null || n < 1) {
+                                                widget.bidTimeController.text = '1';
+                                              } else if (n > 20)
+                                                widget.bidTimeController.text =
+                                                    '20';
+                                            })),
+                                    IconButton(
+                                        icon: const Icon(Icons.add),
+                                        onPressed: () {
+                                          int current = int.tryParse(
+                                                  widget.bidTimeController.text) ??
+                                              1;
+                                          if (current < 20) {
+                                            current++;
+                                            widget.bidTimeController.text =
+                                                current.toString();
+                                            setState(() {});
+                                          }
+                                        }),
+                                  ])),
+                            const SizedBox(height: 24),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                              child: ElevatedButton(
+                                onPressed: _isLoading ? null : _submit,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFFFB300),
+                                  foregroundColor: Colors.black,
+                                  minimumSize: const Size.fromHeight(50),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8)),
+                                ),
+                                child: _isLoading
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                            color: Colors.black, strokeWidth: 2))
+                                    : Text(widget.isUpdate
+                                        ? "Update Project"
+                                        : "Submit Request"),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -2100,54 +2067,87 @@ class HireModal {
         );
 
         if (pickedFile != null) {
-          final bytes = await pickedFile.readAsBytes();
-          
-          // Check file size (max 10MB)
-          const maxSizeBytes = 10 * 1024 * 1024; // 10MB
-          if (bytes.length > maxSizeBytes) {
-            if (context.mounted) {
-              ConTrustSnackBar.error(
-                context, 
-                'Image size exceeds 10MB limit. Please choose a smaller image.'
-              );
+          Uint8List? bytes;
+          try {
+            bytes = await pickedFile.readAsBytes();
+          } catch (readError) {
+            bool recovered = false;
+            if (pickedFile.path.isNotEmpty) {
+              try {
+                bytes = await File(pickedFile.path).readAsBytes();
+                recovered = true;
+              } catch (_) {
+                // continue to stream fallback
+              }
             }
-            return;
+
+            if (!recovered) {
+              try {
+                final builder = BytesBuilder();
+                await for (final chunk in pickedFile.openRead()) {
+                  builder.add(chunk);
+                }
+                bytes = builder.takeBytes();
+                recovered = true;
+              } catch (streamError) {
+                if (context.mounted) {
+                  ConTrustSnackBar.error(
+                    context,
+                    'Failed to read selected file: $streamError',
+                  );
+                }
+                return;
+              }
+            }
           }
-          
-          // Check file extension or image format (only PNG/JPG)
-          final extension = pickedFile.path.contains('.') 
-              ? pickedFile.path.split('.').last.toLowerCase()
-              : '';
-          
-          // If no extension, check image format from bytes (PNG starts with 89 50 4E 47, JPEG starts with FF D8 FF)
-          bool isValidImage = false;
-          if (extension == 'jpg' || extension == 'jpeg' || extension == 'png') {
+        
+        // Check file size (max 10MB)
+        if (bytes == null) {
+          if (context.mounted) {
+            ConTrustSnackBar.error(
+              context,
+              'Failed to read selected image. Please try again.',
+            );
+          }
+          return;
+        }
+
+        final Uint8List confirmedBytes = bytes;
+
+        // Check file extension or image format (only PNG/JPG)
+        final extension = pickedFile.path.contains('.') 
+            ? pickedFile.path.split('.').last.toLowerCase()
+            : '';
+        
+        // If no extension, check image format from bytes (PNG starts with 89 50 4E 47, JPEG starts with FF D8 FF)
+        bool isValidImage = false;
+        if (extension == 'jpg' || extension == 'jpeg' || extension == 'png') {
+          isValidImage = true;
+        } else if (confirmedBytes.length >= 4) {
+          // Check PNG signature: 89 50 4E 47 (0x89 0x50 0x4E 0x47)
+          if (confirmedBytes[0] == 0x89 && confirmedBytes[1] == 0x50 && confirmedBytes[2] == 0x4E && confirmedBytes[3] == 0x47) {
             isValidImage = true;
-          } else if (bytes.length >= 4) {
-            // Check PNG signature: 89 50 4E 47 (0x89 0x50 0x4E 0x47)
-            if (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) {
-              isValidImage = true;
-            }
-            // Check JPEG signature: FF D8 FF
-            else if (bytes.length >= 3 && bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) {
-              isValidImage = true;
-            }
           }
-          
-          if (!isValidImage) {
-            if (context.mounted) {
-              ConTrustSnackBar.error(
-                context, 
-                'Only PNG and JPG images are allowed.'
-              );
-            }
-            return;
+          // Check JPEG signature: FF D8 FF
+          else if (confirmedBytes.length >= 3 && confirmedBytes[0] == 0xFF && confirmedBytes[1] == 0xD8 && confirmedBytes[2] == 0xFF) {
+            isValidImage = true;
           }
-          
-          setDialogState(() {
-            selectedPhoto = bytes;
-            photoUrl = null;
-          });
+        }
+        
+        if (!isValidImage) {
+          if (context.mounted) {
+            ConTrustSnackBar.error(
+              context, 
+              'Only PNG and JPG images are allowed.'
+            );
+          }
+          return;
+        }
+        
+        setDialogState(() {
+          selectedPhoto = confirmedBytes;
+          photoUrl = null;
+        });
         }
       } catch (e) {
         if (context.mounted) {

@@ -52,7 +52,6 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
         return;
       }
 
-      // For web, we'll use iframe instead of WebView
       if (kIsWeb) {
         if (mounted) {
           setState(() {
@@ -99,7 +98,6 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
                 _isLoading = false;
               });
             }
-            // Inject CSS to hide Hugging Face header and URL elements
             _injectCustomCSS();
           },
           onWebResourceError: (WebResourceError error) {
@@ -261,6 +259,14 @@ Page resource error:
           var style = document.createElement('style');
           style.innerHTML = `$css`;
           document.head.appendChild(style);
+
+          var viewport = document.querySelector('meta[name="viewport"]');
+          if (!viewport) {
+            viewport = document.createElement('meta');
+            viewport.name = 'viewport';
+            document.head.appendChild(viewport);
+          }
+          viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
         }
       ''');
     } catch (e) {
@@ -277,7 +283,6 @@ Page resource error:
       });
     }
     if (kIsWeb) {
-      // For web, just reload the iframe by rebuilding
       setState(() {});
     } else {
       _loadHuggingFaceSpace();
@@ -288,12 +293,10 @@ Page resource error:
     const huggingFaceUrl = 'https://Ryg112-ConTrustAiModel.hf.space/';
     const viewType = 'webview-iframe';
 
-    // Register the platform view for web
     if (!kIsWeb) {
       return const SizedBox.shrink();
     }
 
-    // Create iframe element
     final iframe = html.IFrameElement()
       ..src = huggingFaceUrl
       ..style.border = 'none'
@@ -301,7 +304,6 @@ Page resource error:
       ..style.height = '100%'
       ..allowFullscreen = true;
 
-    // Register platform view (only works on web)
     ui_web.platformViewRegistry.registerViewFactory(
       viewType,
       (int viewId) => iframe,
@@ -320,6 +322,8 @@ Page resource error:
         javaScriptEnabled: true,
         verticalScrollBarEnabled: true,
         displayZoomControls: false,
+        supportZoom: false,
+        builtInZoomControls: false,
         useWideViewPort: true,
         transparentBackground: false,
       ),
@@ -390,44 +394,6 @@ Page resource error:
       body: SafeArea(
         child: Column(
           children: [
-            // Simple header row (non-sticky) to avoid nested scroll conflicts
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (_isLoading)
-                    SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.amber.shade700),
-                      ),
-                    ),
-                  if (_isLoading) const SizedBox(width: 12),
-                  if (_isLoading)
-                    const Text(
-                      'Loading AI Assistant...',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF6B7280),
-                      ),
-                    ),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: _refreshPage,
-                    icon: Icon(
-                      Icons.refresh,
-                      color: Colors.amber.shade700,
-                    ),
-                    tooltip: 'Refresh',
-                  ),
-                ],
-              ),
-            ),
-            // WebView area takes the rest and handles its own scrolling
             Expanded(
               child: _hasError
                   ? _buildErrorWidget()

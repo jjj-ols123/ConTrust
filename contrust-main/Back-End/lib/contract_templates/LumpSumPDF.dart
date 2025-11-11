@@ -197,12 +197,6 @@ class LumpSumPDF {
     );
     widgets.add(
       pw.Bullet(
-        text: 'Final Payment: PHP${ContractStyle.getFieldValue(fieldValues, 'Payment.FinalPayment')} - Due upon final completion and acceptance',
-        style: const pw.TextStyle(fontSize: 10),
-      ),
-    );
-    widgets.add(
-      pw.Bullet(
         text: 'Retention: ${ContractStyle.getFieldValue(fieldValues, 'Payment.RetentionPercentage')}% - Released after ${ContractStyle.getFieldValue(fieldValues, 'Payment.RetentionPeriod')} days from completion',
         style: const pw.TextStyle(fontSize: 10),
       ),

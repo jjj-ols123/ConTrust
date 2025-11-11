@@ -33,6 +33,16 @@ class CorDashboardService {
         ratingVal = 0.0;
       }
 
+      final ratings = await Supabase.instance.client
+          .from('ContractorRatings')
+          .select('rating')
+          .eq('contractor_id', contractorId);
+
+      int totalReviews = 0;
+      if (ratings.isNotEmpty) {
+        totalReviews = ratings.length;
+      }
+
       final activeProjectList = projects.where((p) => activeStatuses.contains(p['status'])).toList();
       
       final contracteeIds = activeProjectList
@@ -219,6 +229,7 @@ class CorDashboardService {
         'activeProjects': active,
         'completedProjects': completed,
         'rating': ratingVal,
+        'totalReviews': totalReviews,
         'recentActivities': activeProjectList,
         'totalEarnings': totalEarnings,
         'allPayments': allPayments,

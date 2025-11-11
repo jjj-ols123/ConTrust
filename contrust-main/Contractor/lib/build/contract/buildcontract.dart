@@ -152,6 +152,12 @@ class CreateContractBuild {
                 if (filteredProjects.isEmpty) {
                   Navigator.of(dialogContext).pop();
 
+                  // Show warning snackbar before navigating
+                  ConTrustSnackBar.warning(
+                    context,
+                    'No projects available for contract creation. You must have projects with "awaiting contract" status to create contracts.',
+                  );
+
                   // Navigate with parameter to show snackbar on the new page
                   context.go('/contracttypes?showNoProjectsMessage=true');
                   return;

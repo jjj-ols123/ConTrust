@@ -8,8 +8,8 @@ import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/services/both services/be_receipt_service.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:html' as html if (dart.library.html) 'dart:html';
-import 'dart:ui_web' as ui_web if (dart.library.html) 'dart:ui_web';
+import 'package:backend/build/html_stub.dart' if (dart.library.html) 'dart:html' as html;
+import 'package:backend/build/ui_web_stub.dart' if (dart.library.html) 'dart:ui_web' as ui_web;
 
 class CeeHistoryPage extends StatefulWidget {
   final String contracteeId;
@@ -226,153 +226,11 @@ class _CeeHistoryPageState extends State<CeeHistoryPage> {
 
       final Map<String, dynamic>? result = await showDialog<Map<String, dynamic>>(
         context: context,
-        builder: (dialogContext) {
-          double tempRating = initialRating;
-
-          Widget buildStars(double rating) {
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(5, (index) {
-                final starNumber = index + 1;
-                final isFull = rating >= starNumber;
-                final isHalf = rating >= starNumber - 0.5 && rating < starNumber;
-                return Icon(
-                  isFull
-                      ? Icons.star
-                      : isHalf
-                          ? Icons.star_half
-                          : Icons.star_border,
-                  color: Colors.amber.shade600,
-                  size: 28,
-                );
-              }),
-            );
-          }
-
-          return Dialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            child: StatefulBuilder(
-              builder: (context, setDialogState) {
-                return Container(
-                  constraints: const BoxConstraints(maxWidth: 480),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    color: Colors.white,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.shade700,
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(20),
-                            topRight: Radius.circular(20),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Review this contractor',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              project['title']?.toString() ?? 'Project',
-                              style: const TextStyle(color: Colors.white70, fontSize: 13),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Center(child: buildStars(tempRating)),
-                            const SizedBox(height: 12),
-                            Slider(
-                              value: tempRating,
-                              min: 1,
-                              max: 5,
-                              divisions: 8,
-                              label: tempRating.toStringAsFixed(1),
-                              activeColor: Colors.amber.shade700,
-                              onChanged: (value) {
-                                setDialogState(() => tempRating = value);
-                              },
-                            ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'Share your experience (optional)',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF1F2937),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: reviewController,
-                              maxLines: 4,
-                              decoration: InputDecoration(
-                                hintText: 'Tell others about your experience working with this contractor...',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                filled: true,
-                                fillColor: Colors.grey.shade50,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextButton(
-                                    onPressed: () => Navigator.of(dialogContext).pop(),
-                                    child: const Text('Cancel'),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.green.shade600,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(vertical: 14),
-                                    ),
-                                    onPressed: () {
-                                      Navigator.of(dialogContext).pop({
-                                        'rating': tempRating,
-                                        'review': reviewController.text.trim(),
-                                      });
-                                    },
-                                    child: const Text('Submit Review'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          );
-        },
+        builder: (dialogContext) => _ReviewDialog(
+          initialRating: initialRating,
+          projectTitle: project['title']?.toString() ?? 'Project',
+        ),
       );
-
-      reviewController.dispose();
 
       if (result == null) {
         return;
@@ -1490,6 +1348,176 @@ class _CeeHistoryPageState extends State<CeeHistoryPage> {
                     ),
                   ],
                 ),
+    );
+  }
+}
+
+class _ReviewDialog extends StatefulWidget {
+  final double initialRating;
+  final String projectTitle;
+
+  const _ReviewDialog({
+    required this.initialRating,
+    required this.projectTitle,
+  });
+
+  @override
+  State<_ReviewDialog> createState() => _ReviewDialogState();
+}
+
+class _ReviewDialogState extends State<_ReviewDialog> {
+  late double tempRating;
+  final TextEditingController reviewController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    tempRating = widget.initialRating;
+  }
+
+  @override
+  void dispose() {
+    reviewController.dispose();
+    super.dispose();
+  }
+
+  Widget buildStars(double rating) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(5, (index) {
+        final starNumber = index + 1;
+        final isFull = rating >= starNumber;
+        final isHalf = rating >= starNumber - 0.5 && rating < starNumber;
+        return Icon(
+          isFull
+              ? Icons.star
+              : isHalf
+                  ? Icons.star_half
+                  : Icons.star_border,
+          color: Colors.amber.shade600,
+          size: 28,
+        );
+      }),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 480),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          color: Colors.white,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade700,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Review this contractor',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.projectTitle,
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Center(child: buildStars(tempRating)),
+                  const SizedBox(height: 12),
+                  Slider(
+                    value: tempRating,
+                    min: 1,
+                    max: 5,
+                    divisions: 8,
+                    label: tempRating.toStringAsFixed(1),
+                    activeColor: Colors.amber.shade700,
+                    onChanged: (value) {
+                      setState(() => tempRating = value);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Share your experience (optional)',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1F2937),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: reviewController,
+                    maxLines: 4,
+                    decoration: InputDecoration(
+                      hintText: 'Tell others about your experience working with this contractor...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Cancel'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green.shade600,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).pop({
+                              'rating': tempRating,
+                              'review': reviewController.text.trim(),
+                            });
+                          },
+                          child: const Text('Submit Review'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

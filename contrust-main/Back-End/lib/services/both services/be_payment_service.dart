@@ -257,6 +257,37 @@ class PaymentService {
       return null;
     }
 
+    // Option 1: Auto-adjust last milestone to ensure total adds up
+    if (totalContractAmount > 0 && milestones.length > 1) {
+      // Calculate what the total should be based on down payment and retention percentages
+      final downPaymentPercent = fieldValues['Payment.DownPaymentPercentage'] ?? 0.0;
+      final retentionPercent = fieldValues['Payment.RetentionPercentage'] ?? 0.0;
+      
+      double downPaymentAmount = 0.0;
+      double retentionAmount = 0.0;
+      
+      try {
+        downPaymentAmount = totalContractAmount * (_parsePercent(downPaymentPercent.toString()) / 100);
+        retentionAmount = totalContractAmount * (_parsePercent(retentionPercent.toString()) / 100);
+      } catch (e) {
+        // Use 0 if parsing fails
+      }
+
+      // Calculate expected milestone total = total contract - down payment - retention
+      final expectedMilestoneTotal = totalContractAmount - downPaymentAmount - retentionAmount;
+      
+      // Sum all milestones except the last one
+      final sumOfMilestonesExceptLast = milestones.take(milestones.length - 1)
+          .fold<double>(0.0, (sum, m) => sum + (m['amount'] as double));
+      
+      // Auto-adjust the last milestone to ensure total adds up
+      if (sumOfMilestonesExceptLast < expectedMilestoneTotal) {
+        final lastMilestone = milestones.last;
+        lastMilestone['amount'] = expectedMilestoneTotal - sumOfMilestonesExceptLast;
+        lastMilestone['description'] = '${lastMilestone['description']} (Adjusted to match contract total)';
+      }
+    }
+
     final nextMilestone = milestones.firstWhere(
       (milestone) => milestone['status'] == 'pending',
       orElse: () => milestones.first,
@@ -1760,6 +1791,17 @@ class PaymentService {
         },
       );
       // Don't rethrow - this is a background operation that shouldn't fail payment
+    }
+  }
+
+  double _parsePercent(String raw) {
+    final cleaned = raw.trim().replaceAll('%', '').replaceAll(',', '');
+    final v = double.tryParse(cleaned) ?? 0.0;
+
+    if (cleaned.contains('.')) {
+      return v; 
+    } else {
+      return v / 100.0; 
     }
   }
 }

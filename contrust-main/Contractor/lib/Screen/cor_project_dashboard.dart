@@ -1073,16 +1073,17 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                   foregroundColor: Colors.amber.shade700,
                 ),
               ),
-              const SizedBox(width: 8),
-              // Switch Project Button
-              IconButton(
-                onPressed: _switchProject,
-                icon: const Icon(Icons.swap_horiz, size: 24),
-                tooltip: 'Switch Project',
-                style: IconButton.styleFrom(
-                  foregroundColor: Colors.amber.shade700,
+              if (_projectStatus != 'completed') ...[
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: _switchProject,
+                  icon: const Icon(Icons.swap_horiz, size: 24),
+                  tooltip: 'Switch Project',
+                  style: IconButton.styleFrom(
+                    foregroundColor: Colors.amber.shade700,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ],

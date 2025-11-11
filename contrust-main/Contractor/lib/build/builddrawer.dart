@@ -27,6 +27,7 @@ class UserDropdownMenu extends StatefulWidget {
 class _UserDropdownMenuState extends State<UserDropdownMenu> {
   String? _userName;
   String? _userEmail;
+  String? _profileImageUrl;
 
   @override
   void initState() {
@@ -39,11 +40,12 @@ class _UserDropdownMenuState extends State<UserDropdownMenu> {
       final user = Supabase.instance.client.auth.currentUser;
       if (user != null) {
         String? contractorName = user.userMetadata?['full_name'] ?? 'Contractor';
+        Map<String, dynamic>? contractorData;
 
         try {
-          final contractorData = await Supabase.instance.client
+          contractorData = await Supabase.instance.client
               .from('Contractor')
-              .select('firm_name')
+              .select('firm_name, profile_photo')
               .eq('contractor_id', user.id)
               .single();
           contractorName = contractorData['firm_name'] ?? contractorName;
@@ -54,6 +56,7 @@ class _UserDropdownMenuState extends State<UserDropdownMenu> {
         setState(() {
           _userName = contractorName;
           _userEmail = user.email ?? '';
+          _profileImageUrl = contractorData?['profile_photo'];
         });
       }
     } catch (e) {
@@ -154,7 +157,7 @@ class _UserDropdownMenuState extends State<UserDropdownMenu> {
             CircleAvatar(
               radius: 14,
               backgroundColor: Colors.white,
-              backgroundImage: const AssetImage('assets/images/defaultpic.png'),
+              backgroundImage: _profileImageUrl != null ? NetworkImage(_profileImageUrl!) : const AssetImage('assets/images/defaultpic.png'),
               child: _userName == null ? const Icon(Icons.person, size: 16, color: Colors.grey) : null,
             ),
             const SizedBox(width: 8),

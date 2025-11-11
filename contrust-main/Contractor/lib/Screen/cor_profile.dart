@@ -1,9 +1,13 @@
 // ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously, deprecated_member_use
 import 'dart:async';
+import 'dart:io';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/contractor services/cor_profileservice.dart';
+import 'package:backend/utils/be_snackbar.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:contractor/build/buildprofile.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ContractorUserProfileScreen extends StatefulWidget {
   final String contractorId;
@@ -30,6 +34,8 @@ class _ContractorUserProfileScreenState
   bool isUploading = false;
   bool isUploadingProfile = false;
   int completedProjectsCount = 0;
+  bool isGoogleSignIn = false;
+  bool isUploadingVerification = false;
 
   static const String profileUrl =
       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
@@ -88,6 +94,21 @@ class _ContractorUserProfileScreenState
     searchController.addListener(_onSearchChanged);
     transactionSearchController.addListener(_filterTransactions);
     _loadTransactions();
+    _checkGoogleSignIn();
+  }
+
+  Future<void> _checkGoogleSignIn() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null && user.identities != null) {
+        final hasGoogle = user.identities!.any((identity) => identity.provider == 'google');
+        setState(() {
+          isGoogleSignIn = hasGoogle;
+        });
+      }
+    } catch (e) {
+      // ignore
+    }
   }
 
   void _initializeStreams() {
@@ -357,9 +378,36 @@ class _ContractorUserProfileScreenState
     }
   }
 
+  Future<void> _submitVerificationFile(BuildContext context) async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      );
 
+      if (result != null && result.files.single.path != null) {
+        setState(() => isUploadingVerification = true);
 
+        final file = File(result.files.single.path!);
+        final fileName = '${widget.contractorId}_verification_${DateTime.now().millisecondsSinceEpoch}.${result.files.single.extension}';
 
+        final supabase = Supabase.instance.client;
+        await supabase.storage.from('verification').upload(fileName, file);
+
+        final fileUrl = supabase.storage.from('verification').getPublicUrl(fileName);
+
+        await supabase.from('Contractor').update({
+          'verification_file': fileUrl,
+        }).eq('contractor_id', widget.contractorId);
+
+        ConTrustSnackBar.show(context, 'Verification file submitted successfully');
+      }
+    } catch (e) {
+      ConTrustSnackBar.error(context, 'Failed to submit verification file: $e');
+    } finally {
+      setState(() => isUploadingVerification = false);
+    }
+  }
 
   Widget _buildMainContent() {
     return ProfileBuildMethods.buildMainContent(
@@ -419,6 +467,8 @@ class _ContractorUserProfileScreenState
       saveSpecialization: () => _saveField('specialization', specializationController.text),
       saveAddress: () => _saveField('address', addressController.text),
       contractorId: widget.contractorId,
+      isGoogleSignIn: isGoogleSignIn,
+      onSubmitVerification: () => _submitVerificationFile(context),
     );
   }
 

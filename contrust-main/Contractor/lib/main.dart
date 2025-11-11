@@ -585,7 +585,7 @@ class _MyAppState extends State<MyApp> {
                               );
                             }
                             final status = project['status']?.toString().toLowerCase();
-                            final allowedStatuses = ['active'];
+                            final allowedStatuses = ['active', 'completed'];
                             if (!allowedStatuses.contains(status)) {
                               WidgetsBinding.instance.addPostFrameCallback((_) {
                                 ScaffoldMessenger.of(context).showSnackBar(

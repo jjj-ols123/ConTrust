@@ -243,12 +243,8 @@ class NotificationUIBuildMethods {
 
               // Extract type and date from key
               final parts = groupKey.split('_');
-              final dateStr = parts.length >= 3 
-                  ? parts.sublist(parts.length - 3).join('-')
-                  : '';
-              final type = parts.length >= 3 
-                  ? parts.sublist(0, parts.length - 3).join('_')
-                  : groupKey;
+              final dateStr = parts.last;
+              final type = parts.sublist(0, parts.length - 1).join('_');
 
               final dateLabel = _getDateLabel(dateStr);
               final title = _getGroupTitle(type, notifications.length, dateLabel);

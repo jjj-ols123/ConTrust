@@ -29,6 +29,9 @@ class MessageUIBuildMethods {
     required this.onSendMessage,
     required this.onScrollToBottom,
     required this.isSending,
+    this.selectedTab = 'Active', // Add selectedTab parameter
+    this.onTabChanged, // Add callback for tab changes
+    this.isFiltering = false, // Add loading state
   });
 
   final BuildContext context;
@@ -46,6 +49,9 @@ class MessageUIBuildMethods {
   final VoidCallback onSendMessage;
   final VoidCallback onScrollToBottom;
   final bool isSending;
+  final String selectedTab; // Add selectedTab property
+  final Function(String)? onTabChanged; // Add callback
+  final bool isFiltering; // Add loading state
 
   Color get accentColor =>
       userRole == 'contractor' ? Colors.amber : Colors.amber;
@@ -129,6 +135,28 @@ class MessageUIBuildMethods {
               ],
             ),
           ),
+          // Add tabs for desktop
+          if (onTabChanged != null && isDesktop)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  bottom: BorderSide(color: Colors.grey.shade200),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildTabButton('Active', selectedTab == 'Active'),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildTabButton('Archived', selectedTab == 'Archived'),
+                  ),
+                ],
+              ),
+            ),
           Expanded(
             child: StreamBuilder<List<Map<String, dynamic>>>(
               stream: supabase
@@ -209,63 +237,78 @@ class MessageUIBuildMethods {
                     
                     final sortedChatRooms = sortedSnapshot.data!;
 
-                    return ListView.separated(
-                      padding: EdgeInsets.symmetric(vertical: isDesktop ? 0 : 4),
-                      itemCount: sortedChatRooms.length,
-                  separatorBuilder: (_, __) => Divider(
-                    height: 0,
-                    indent: avatarRadius + (isDesktop ? 16 : 8),
-                    endIndent: isDesktop ? 16 : 8,
-                  ),
-                      itemBuilder: (context, index) {
-                        final chat = sortedChatRooms[index];
-                    final otherUserId = userRole == 'contractor'
-                        ? chat['contractee_id']
-                        : chat['contractor_id'];
-                    final isSelected =
-                        chatRoomId == chat['chatroom_id'];
+                    return FutureBuilder<List<Map<String, dynamic>>>(
+                      future: _filterChatRoomsByTab(sortedChatRooms, selectedTab),
+                      builder: (context, filterSnapshot) {
+                        if (!filterSnapshot.hasData) {
+                          return Center(
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                            ),
+                          );
+                        }
 
-                    return FutureBuilder<Map<String, dynamic>?>(
-                      future: loadUserData(otherUserId),
-                      builder: (context, userSnapshot) {
-                        final userName = userSnapshot.data?[
-                                userRole == 'contractor'
-                                    ? 'full_name'
-                                    : 'firm_name'] ??
-                            (userRole == 'contractor'
-                                ? 'Client'
-                                : 'Contractor');
-                        final userProfile =
-                            userSnapshot.data?['profile_photo'];
-                        final lastMessage =
-                            chat['last_message'] ?? 'No messages yet';
-                        final lastTime = chat['last_message_time'] != null
-                            ? DateTime.tryParse(chat['last_message_time'])
-                            : null;
+                        final filteredChatRooms = filterSnapshot.data!;
 
-                        return FutureBuilder<Map<String, dynamic>?>(
-                          future: FetchService().fetchProjectDetailsByChatRoom(chat['chatroom_id']),
-                          builder: (context, projectSnapshot) {
-                            final project = projectSnapshot.data;
-                            final projectStatus = project?['status'] ?? '';
-                            
-                            return buildChatListItem(
-                              chat: chat,
-                              userName: userName,
-                              userProfile: userProfile,
-                              projectStatus: projectStatus,
-                              lastMessage: lastMessage,
-                              lastTime: lastTime,
-                              isSelected: isSelected,
-                              canChat: true,
-                              otherUserId: otherUserId,
+                        return ListView.separated(
+                          padding: EdgeInsets.symmetric(vertical: isDesktop ? 0 : 4),
+                          itemCount: filteredChatRooms.length,
+                          separatorBuilder: (_, __) => Divider(
+                            height: 0,
+                            indent: avatarRadius + (isDesktop ? 16 : 8),
+                            endIndent: isDesktop ? 16 : 8,
+                          ),
+                          itemBuilder: (context, index) {
+                            final chat = filteredChatRooms[index];
+                            final otherUserId = userRole == 'contractor'
+                                ? chat['contractee_id']
+                                : chat['contractor_id'];
+                            final isSelected =
+                                chatRoomId == chat['chatroom_id'];
+
+                            return FutureBuilder<Map<String, dynamic>?>(
+                              future: loadUserData(otherUserId),
+                              builder: (context, userSnapshot) {
+                                final userName = userSnapshot.data?[
+                                        userRole == 'contractor'
+                                            ? 'full_name'
+                                            : 'firm_name'] ??
+                                    (userRole == 'contractor'
+                                        ? 'Client'
+                                        : 'Contractor');
+                                final userProfile =
+                                    userSnapshot.data?['profile_photo'];
+                                final lastMessage =
+                                    chat['last_message'] ?? 'No messages yet';
+                                final lastTime = chat['last_message_time'] != null
+                                    ? DateTime.tryParse(chat['last_message_time'])
+                                    : null;
+
+                                return FutureBuilder<Map<String, dynamic>?>(
+                                  future: FetchService().fetchProjectDetailsByChatRoom(chat['chatroom_id']),
+                                  builder: (context, projectSnapshot) {
+                                    final project = projectSnapshot.data;
+                                    final projectStatus = project?['status'] ?? '';
+                                    
+                                    return buildChatListItem(
+                                      chat: chat,
+                                      userName: userName,
+                                      userProfile: userProfile,
+                                      projectStatus: projectStatus,
+                                      lastMessage: lastMessage,
+                                      lastTime: lastTime,
+                                      isSelected: isSelected,
+                                      canChat: true,
+                                      otherUserId: otherUserId,
+                                    );
+                                  },
+                                );
+                              },
                             );
                           },
                         );
                       },
                     );
-                    },
-                  );
                   },
                 );
               },
@@ -627,9 +670,10 @@ class MessageUIBuildMethods {
                   future: projectStatus,
                   builder: (context, statusSnapshot) {
                     final status = statusSnapshot.data;
-                    final isArchived = status == 'cancelled' || status == 'completed';
+                    final isCancelled = status == 'cancelled';
+                    final isCompleted = status == 'completed';
                     
-                    if (isArchived) {
+                    if (isCancelled) {
                       return Container(
                         color: Colors.grey[100],
                         padding: EdgeInsets.all(isDesktop ? 12 : (isTablet ? 10 : 8)),
@@ -637,15 +681,13 @@ class MessageUIBuildMethods {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              status == 'cancelled' ? Icons.archive_outlined : Icons.check_circle_outline,
+                              Icons.archive_outlined,
                               color: Colors.grey[600],
                               size: isDesktop ? 20 : 16,
                             ),
                             SizedBox(width: 8),
                             Text(
-                              status == 'cancelled' 
-                                  ? 'Project cancelled - Messaging disabled'
-                                  : 'Project completed - Messaging disabled',
+                              'Project cancelled - Messaging disabled',
                               style: TextStyle(
                                 color: Colors.grey[600],
                                 fontSize: subtitleFontSize,
@@ -732,6 +774,83 @@ class MessageUIBuildMethods {
                 ),
               ],
             ),
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> _filterChatRoomsByTab(List<Map<String, dynamic>> chatRooms, String tab) async {
+    List<Map<String, dynamic>> filteredChats = [];
+
+    const timeout = Duration(seconds: 5);
+    
+    for (final chat in chatRooms) {
+      try {
+        final project = await FetchService().fetchProjectDetailsByChatRoom(chat['chatroom_id']).timeout(
+          timeout,
+          onTimeout: () => {'status': 'unknown'},
+        );
+        final status = project?['status'] ?? '';
+        bool shouldInclude = false;
+
+        if (tab == 'Active') {
+          // Active chats: show all except confirmed cancelled or completed
+          shouldInclude = status != 'cancelled' && status != 'completed';
+        } else {
+          // Archived chats: only confirmed cancelled or completed
+          shouldInclude = status == 'cancelled' || status == 'completed';
+        }
+
+        if (shouldInclude) {
+          filteredChats.add(chat);
+        }
+      } catch (e) {
+        // If we can't fetch status, show in Active tab (better UX than hiding potentially active chats)
+        if (tab == 'Active') {
+          filteredChats.add(chat);
+        }
+        // Don't add to Archived tab if status can't be determined
+      }
+    }
+
+    return filteredChats;
+  }
+
+  Widget _buildTabButton(String title, bool isSelected) {
+    return InkWell(
+      onTap: isFiltering ? null : () {
+        if (onTabChanged != null) {
+          onTabChanged!(title);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? accentColor.withOpacity(0.1) : Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: isSelected ? accentColor : Colors.grey.shade300,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Center(
+          child: isFiltering && isSelected
+              ? SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                  ),
+                )
+              : Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: isDesktop ? 12 : 11,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    color: isSelected ? accentColor : Colors.grey.shade700,
+                  ),
+                ),
+        ),
+      ),
     );
   }
 
