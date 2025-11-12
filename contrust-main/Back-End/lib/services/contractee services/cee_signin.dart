@@ -162,6 +162,9 @@ class SignInGoogleContractee {
       if (kIsWeb) {
         final origin = Uri.base.origin;
         redirectUrl = '$origin/auth/callback';
+      } else {
+        redirectUrl = 'io.supabase.contrust://login-callback/home';
+      }
 
         await supabase.auth.signInWithOAuth(
           OAuthProvider.google,

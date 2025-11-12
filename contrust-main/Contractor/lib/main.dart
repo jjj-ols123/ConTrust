@@ -73,6 +73,27 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   late final GoRouter _router;
+  bool _handledDeepLink = false;
+
+  Future<void> _handleInitialDeepLink() async {
+    if (kIsWeb) return;
+    if (_handledDeepLink) return;
+    final uri = Uri.base;
+    if (uri.scheme == 'io.supabase.contrust') {
+      try {
+        await Supabase.instance.client.auth.getSessionFromUrl(uri, storeSession: true);
+        _handledDeepLink = true;
+        final session = Supabase.instance.client.auth.currentSession;
+        if (session != null) {
+          _router.go('/dashboard');
+        } else {
+          _router.go('/logincontractor');
+        }
+      } catch (_) {
+        _router.go('/logincontractor');
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -911,6 +932,11 @@ class _MyAppState extends State<MyApp> {
           data.event == AuthChangeEvent.signedOut) {
         _router.refresh();
       }
+    });
+
+    // Handle Android OAuth deep link on cold start
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _handleInitialDeepLink();
     });
   }
 

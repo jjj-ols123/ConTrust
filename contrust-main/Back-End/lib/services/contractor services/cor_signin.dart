@@ -169,7 +169,7 @@ class SignInGoogleContractor {
         String normalizedOrigin = origin.replaceFirst(RegExp(r'^https?://www\.'), 'https://');
         redirectUrl = '$normalizedOrigin/auth/callback';
       } else {
-        redirectUrl = 'io.supabase.contrust://login-callback/dashboard';
+        redirectUrl = 'io.supabase.contrust://login-callback';
       }
 
       await supabase.auth.signInWithOAuth(
