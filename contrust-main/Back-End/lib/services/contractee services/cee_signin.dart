@@ -156,9 +156,9 @@ class SignInGoogleContractee {
   Future<void> signInGoogle(BuildContext context) async {
     try {
       final supabase = Supabase.instance.client;
-      
+
       String? redirectUrl;
-      
+
       if (kIsWeb) {
         final origin = Uri.base.origin;
         redirectUrl = '$origin/auth/callback';
@@ -166,84 +166,15 @@ class SignInGoogleContractee {
         redirectUrl = 'io.supabase.contrust://login-callback/home';
       }
 
-        await supabase.auth.signInWithOAuth(
-          OAuthProvider.google,
-          redirectTo: redirectUrl,
-          authScreenLaunchMode: LaunchMode.platformDefault,
-          queryParams: {
-            'prompt': 'select_account',
-          },
-        );
-        return;
-      }
-
-      try {
-        final googleSignIn = GoogleSignIn.instance;
-        await googleSignIn.initialize(
-          serverClientId: _contracteeGoogleServerClientId.isNotEmpty
-              ? _contracteeGoogleServerClientId
-              : null,
-        );
-
-        final account = await googleSignIn.authenticate();
-        final googleAuth = account.authentication;
-        final idToken = googleAuth.idToken;
-
-        if (idToken == null) {
-          await _errorService.logError(
-            errorMessage: 'Google sign-in returned null ID token for contractee.',
-            module: 'Contractee Google Sign-in',
-            severity: 'High',
-            extraInfo: {
-              'operation': 'Google Sign In Contractee',
-              'timestamp': DateTimeHelper.getLocalTimeISOString(),
-            },
-          );
-          if (context.mounted) {
-            ConTrustSnackBar.error(context, 'Unable to authenticate with Google. Please try again.');
-          }
-          return;
-        }
-
-        try {
-          await supabase.auth.signInWithIdToken(
-            provider: OAuthProvider.google,
-            idToken: idToken,
-          );
-        } catch (idTokenError) {
-          await _errorService.logError(
-            errorMessage: 'Supabase signInWithIdToken failed: $idTokenError',
-            module: 'Contractee Google Sign-in',
-            severity: 'High',
-            extraInfo: {
-              'operation': 'Google Sign In Contractee',
-              'timestamp': DateTimeHelper.getLocalTimeISOString(),
-            },
-          );
-          if (context.mounted) {
-            ConTrustSnackBar.error(context, 'Authentication failed. Please try again.');
-          }
-          return;
-        }
-
-        // Ensure Google session is cleared to avoid stale sessions on next login attempt.
-        await googleSignIn.signOut();
-        await googleSignIn.disconnect();
-      } catch (signInError) {
-        await _errorService.logError(
-          errorMessage: 'Google sign-in failed for contractee: $signInError',
-          module: 'Contractee Google Sign-in',
-          severity: 'High',
-          extraInfo: {
-            'operation': 'Google Sign In Contractee',
-            'timestamp': DateTimeHelper.getLocalTimeISOString(),
-          },
-        );
-        if (context.mounted) {
-          ConTrustSnackBar.error(context, 'Google sign-in failed: $signInError');
-        }
-        return;
-      }
+      await supabase.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: redirectUrl,
+        authScreenLaunchMode: LaunchMode.platformDefault,
+        queryParams: {
+          'prompt': 'select_account',
+        },
+      );
+      return;
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Google sign-in failed for contractee: $e',
