@@ -2298,13 +2298,20 @@ class HomePageBuilder {
   }) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
-    
+    final double baseDialogWidth = screenWidth * 0.55;
+    final double dialogWidth = isMobile
+        ? double.infinity
+        : baseDialogWidth.clamp(560.0, 840.0).toDouble();
+
     showDialog(
       context: context,
       builder: (dialogContext) => Dialog(
-        insetPadding: EdgeInsets.all(isMobile ? 16 : 100),
+        insetPadding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 16 : 72,
+          vertical: isMobile ? 16 : 48,
+        ),
         child: Container(
-          width: isMobile ? double.infinity : (screenWidth * 0.55),
+          width: dialogWidth,
           height: isMobile
               ? MediaQuery.of(context).size.height * 0.8
               : MediaQuery.of(context).size.height * 0.6,
@@ -2350,11 +2357,11 @@ class HomePageBuilder {
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: GridView.builder(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: isMobile ? 2 : 3,
+                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: isMobile ? 180 : 220,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
-                      childAspectRatio: 0.7,
+                      childAspectRatio: isMobile ? 0.65 : 0.85,
                     ),
                     itemCount: contractors.length,
                     itemBuilder: (context, index) {

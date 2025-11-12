@@ -725,6 +725,7 @@ class _ContracteeShellState extends State<ContracteeShell> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= 1000;
     final showBranding = screenWidth >= 700;
+    final showCompactTitle = !showBranding && screenWidth >= 400;
 
     return Container(
       color: const Color(0xFFF8F9FA),
@@ -784,10 +785,13 @@ class _ContracteeShellState extends State<ContracteeShell> {
                     ),
                   ],
                 )
-              : Text(
-                  title(),
-                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w700),
-                ),
+              : showCompactTitle
+                  ? Text(
+                      title(),
+                      style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w700),
+                      overflow: TextOverflow.ellipsis,
+                    )
+                  : const SizedBox.shrink(),
           actions: [
             UserDropdownMenuContractee(contracteeId: widget.contracteeId),
             const NotificationButton(),
