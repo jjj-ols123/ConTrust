@@ -182,11 +182,7 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
       final user = session.user;
       debugPrint('[AuthRedirect Contractee] session user: ${user.id}');
 
-      // Handle sign-in process
-      final signInService = SignInGoogleContractee();
-      debugPrint('[AuthRedirect Contractee] calling handleSignIn...');
-      await signInService.handleSignIn(context, user);
-      debugPrint('[AuthRedirect Contractee] handleSignIn finished');
+      // Proceed directly; backend post-login handling will run server-side
 
       if (!mounted || _hasRedirected) {
         return;

@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:backend/services/both services/be_receipt_service.dart';
 import 'package:backend/services/both services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'dart:html' as html if (dart.library.html) 'dart:html';
+import 'package:contractee/web/html_stub.dart' as html if (dart.library.html) 'dart:html';
 import 'dart:io' if (dart.library.io) 'dart:io';
 import 'package:backend/build/ui_web_stub.dart'
     if (dart.library.html) 'dart:ui_web' as ui_web;
