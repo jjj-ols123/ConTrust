@@ -13,7 +13,7 @@ import 'package:backend/services/superadmin services/auditlogs_service.dart';
 const String _contracteeGoogleServerClientId = String.fromEnvironment(
   'CONTRACTEE_GOOGLE_SERVER_CLIENT_ID',
   defaultValue:
-      '161823324671-i352gglggsdug7ego016j26v2q3mqlta.apps.googleusercontent.com',
+      '484611097293-aem1gaurjh5sp2hbepb4dfslbtq7lqel.apps.googleusercontent.com',
 );
 
 class SignInContractee {
@@ -280,7 +280,13 @@ class SignInGoogleContractee {
         }
 
         if (context.mounted) {
-          ConTrustSnackBar.error(context, errorMessage);
+          final debugDetails = errorString.length > 160
+              ? '${errorString.substring(0, 157)}...'
+              : errorString;
+          ConTrustSnackBar.error(
+            context,
+            '$errorMessage\n[Debug: $debugDetails]',
+          );
         }
         return;
       }

@@ -35,8 +35,10 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
   String? _batchKey;
   List<Map<String, dynamic>> _lastChatsSnapshot = const [];
 
-  String selectedTab = 'Active'; // Add this for tab management
-  bool isFiltering = false; // Add loading state for tab switching
+  String selectedTab = 'Active'; 
+  bool isFiltering = false;
+  Map<String, String>? _cachedProjectStatuses; 
+  String? _cachedStatusKey; 
 
   @override
   void initState() {
@@ -479,39 +481,89 @@ class _ContractorChatHistoryPageState extends State<ContractorChatHistoryPage> {
     );
   }
 
+  String _computeStatusCacheKey(List<Map<String, dynamic>> chats) {
+    final buffer = StringBuffer();
+    for (final chat in chats) {
+      final id = chat['chatroom_id']?.toString() ?? '';
+      final ts = chat['last_message_time']?.toString() ?? '';
+      buffer.write(id);
+      buffer.write('|');
+      buffer.write(ts);
+      buffer.write(';');
+    }
+    return buffer.toString();
+  }
+
+  Future<Map<String, String>> _batchFetchProjectStatuses(List<String> chatRoomIds) async {
+    if (chatRoomIds.isEmpty) return {};
+
+    try {
+      final response = await supabase
+          .from('ChatRoom')
+          .select('''
+            chatroom_id,
+            project:Projects(status)
+          ''')
+          .inFilter('chatroom_id', chatRoomIds);
+
+      final Map<String, String> statusMap = {};
+      for (var chat in response) {
+        final chatRoomId = chat['chatroom_id'] as String?;
+        final project = chat['project'];
+        final status = project?['status'] as String?;
+        if (chatRoomId != null && status != null) {
+          statusMap[chatRoomId] = status;
+        }
+      }
+      return statusMap;
+    } catch (e) {
+      debugPrint('Error batch fetching project statuses: $e');
+      return {};
+    }
+  }
+
   Future<List<Map<String, dynamic>>> _filterChatsByStatus(List<Map<String, dynamic>> chats, String tab) async {
+    if (chats.isEmpty) return [];
+
+    final currentKey = _computeStatusCacheKey(chats);
+
+    // Use cached statuses if available and cache key matches
+    Map<String, String> statusMap;
+    if (_cachedProjectStatuses != null && _cachedStatusKey == currentKey) {
+      statusMap = _cachedProjectStatuses!;
+    } else {
+      // Fetch new statuses and cache them
+      final chatRoomIds = chats
+          .map((chat) => chat['chatroom_id'] as String?)
+          .where((id) => id != null && id.isNotEmpty)
+          .cast<String>()
+          .toList();
+
+      statusMap = await _batchFetchProjectStatuses(chatRoomIds);
+      _cachedProjectStatuses = statusMap;
+      _cachedStatusKey = currentKey;
+    }
+
     List<Map<String, dynamic>> filteredChats = [];
 
-    // Add timeout to prevent infinite loading
-    const timeout = Duration(seconds: 5);
-    
     for (final chat in chats) {
-      try {
-        // Add timeout to each fetch operation
-        final projectStatus = await FetchService().fetchProjectStatus(chat['chatroom_id']).timeout(
-          timeout,
-          onTimeout: () => 'unknown', // Default to unknown status
-        );
-        
-        bool shouldInclude = false;
+      final chatRoomId = chat['chatroom_id'] as String?;
+      if (chatRoomId == null) continue;
 
-        if (tab == 'Active') {
-          // Active chats: show all except confirmed cancelled or completed
-          shouldInclude = projectStatus != 'cancelled' && projectStatus != 'completed';
-        } else {
-          // Archived chats: only confirmed cancelled or completed
-          shouldInclude = projectStatus == 'cancelled' || projectStatus == 'completed';
-        }
+      final projectStatus = statusMap[chatRoomId] ?? 'unknown';
 
-        if (shouldInclude) {
-          filteredChats.add(chat);
-        }
-      } catch (e) {
-        // If we can't fetch status, show in Active tab (better UX than hiding potentially active chats)
-        if (tab == 'Active') {
-          filteredChats.add(chat);
-        }
-        // Don't add to Archived tab if status can't be determined
+      bool shouldInclude = false;
+
+      if (tab == 'Active') {
+        // Active chats: show all except confirmed cancelled or completed
+        shouldInclude = projectStatus != 'cancelled' && projectStatus != 'completed';
+      } else {
+        // Archived chats: only confirmed cancelled or completed
+        shouldInclude = projectStatus == 'cancelled' || projectStatus == 'completed';
+      }
+
+      if (shouldInclude) {
+        filteredChats.add(chat);
       }
     }
 

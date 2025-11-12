@@ -358,7 +358,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ],
                   ),
               content: const Text(
-                    'Account created! Please wait for verification.',
+                    'Account created! You can now login!. Please wait for verification to access some features...',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                   fontSize: 15,
