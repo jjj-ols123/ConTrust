@@ -696,56 +696,61 @@ class _ContracteeShellState extends State<ContracteeShell> {
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.amber,
-          centerTitle: true,
+          centerTitle: false,
           elevation: 0,
           automaticallyImplyLeading: false,
-          leading: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.home, color: Colors.black),
-                tooltip: 'Home',
-                onPressed: () {
-                  if (widget.currentPage != ContracteePage.home) {
-                    context.go('/home');
-                  }
-                },
-              ),
-              if (showBranding) ...[
-                Container(
-                  height: 32,
-                  width: 32,
-                  margin: const EdgeInsets.only(left: 8),
-                  child: Image.asset(
-                    'assets/logo.png',
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(Icons.business, color: Colors.black, size: 24);
-                    },
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.only(left: 8),
-                  child: const Text(
-                    'ConTrust',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.8,
-                      shadows: [
-                        Shadow(
-                          color: Colors.white,
-                          offset: Offset(0, 1),
-                          blurRadius: 1,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ],
+          titleSpacing: 0.0,
+          leading: IconButton(
+            icon: const Icon(Icons.home, color: Colors.black),
+            tooltip: 'Home',
+            onPressed: () {
+              if (widget.currentPage != ContracteePage.home) {
+                context.go('/home');
+              }
+            },
           ),
+          title: showBranding
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      height: 28,
+                      width: 28,
+                      child: Image.asset(
+                        'assets/logo.png',
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(Icons.business, color: Colors.black, size: 20);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Flexible(
+                      child: Text(
+                        'ConTrust',
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.8,
+                          shadows: [
+                            Shadow(
+                              color: Colors.white,
+                              offset: Offset(0, 1),
+                              blurRadius: 1,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : Text(
+                  title(),
+                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w700),
+                ),
           actions: [
             UserDropdownMenuContractee(contracteeId: widget.contracteeId),
             const NotificationButton(),

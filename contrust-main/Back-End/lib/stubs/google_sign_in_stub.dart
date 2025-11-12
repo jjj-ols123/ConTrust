@@ -1,5 +1,5 @@
-// Minimal stubs so non-web builds can compile when google_sign_in is unavailable.
-// These implementations are NO-OPs and should never execute in production.
+// Minimal web stub matching google_sign_in v7.x API surface used in the app.
+// NO-OP implementations; runtime web code paths should not call these.
 
 class GoogleSignInAuthentication {
   const GoogleSignInAuthentication({this.idToken});
@@ -7,7 +7,7 @@ class GoogleSignInAuthentication {
 }
 
 class GoogleSignInAccount {
-  GoogleSignInAuthentication get authentication => const GoogleSignInAuthentication();
+  Future<GoogleSignInAuthentication> get authentication async => const GoogleSignInAuthentication();
 }
 
 class GoogleSignIn {
@@ -15,11 +15,9 @@ class GoogleSignIn {
 
   static final GoogleSignIn instance = GoogleSignIn._();
 
-  Future<void> initialize({String? serverClientId, List<String>? scopes}) async {}
+  Future<void> initialize({String? clientId, String? serverClientId, String? nonce, String? hostedDomain}) async {}
 
-  Future<GoogleSignInAccount> authenticate({List<String> scopeHint = const []}) async {
-    return GoogleSignInAccount();
-  }
+  Future<GoogleSignInAccount> authenticate({List<String>? scopes}) async => GoogleSignInAccount();
 
   Future<void> signOut() async {}
 

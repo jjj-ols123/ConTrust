@@ -4,16 +4,16 @@ import 'package:flutter/services.dart';
 import 'package:backend/services/both services/be_receipt_service.dart';
 import 'package:backend/services/both services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'dart:html' as html if (dart.library.html) 'dart:html';
+import 'package:contractee/web/html_stub.dart' as html if (dart.library.html) 'dart:html';
 import 'dart:io' if (dart.library.io) 'dart:io';
-import 'package:backend/build/ui_web_stub.dart' if (dart.library.html) 'dart:ui_web' as ui_web;
+import 'package:backend/build/ui_web_stub.dart'
+    if (dart.library.html) 'dart:ui_web' as ui_web;
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 
 class CeeProfileBuildMethods {
   static Widget buildHeader(BuildContext context, String title) {
@@ -24,7 +24,8 @@ class CeeProfileBuildMethods {
     return const SliverToBoxAdapter(child: SizedBox.shrink());
   }
 
-  static Widget buildMainContent(String selectedTab, Function buildAboutContent, Function buildPaymentHistoryContent) {
+  static Widget buildMainContent(String selectedTab, Function buildAboutContent,
+      Function buildPaymentHistoryContent) {
     switch (selectedTab) {
       case 'About':
         return buildAboutContent();
@@ -55,8 +56,8 @@ class CeeProfileBuildMethods {
             width: double.infinity,
             child: Container(
               padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
+              decoration: BoxDecoration(
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
@@ -65,106 +66,124 @@ class CeeProfileBuildMethods {
                     offset: const Offset(0, 2),
                   ),
                 ],
-            ),
-            child: Column(
-              children: [
-                Stack(
-                  children: [
-                    Container(
-                      width: 90,
-                      height: 90,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.amber.shade700, width: 2),
-                      ),
-                      child: CircleAvatar(
-                        radius: 45,
-                        backgroundColor: Colors.grey.shade100,
-                        child: ClipOval(
-                          child: (profileImage != null && profileImage.isNotEmpty)
-                              ? Image.network(
-                                  profileImage,
-                                  width: 90,
-                                  height: 90,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Image.network(
-                                      profileUrl,
-                                      width: 90,
-                                      height: 90,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Image(
-                                          image: const AssetImage('assets/defaultpic.png'),
-                                      width: 90,
-                                      height: 90,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Icon(Icons.person, size: 40, color: Colors.grey.shade400);
-                                          },
-                                        );
-                                      },
-                                    );
-                                  },
-                                )
-                              : Image.network(
-                                  profileUrl,
-                                  width: 90,
-                                  height: 90,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Image(
-                                      image: const AssetImage('assets/defaultpic.png'),
-                                  width: 90,
-                                  height: 90,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Icon(Icons.person, size: 40, color: Colors.grey.shade400);
-                                      },
-                                    );
-                                  },
-                                ),
+              ),
+              child: Column(
+                children: [
+                  Stack(
+                    children: [
+                      Container(
+                        width: 90,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: Colors.amber.shade700, width: 2),
                         ),
-                      ),
-                    ),
-                    if (onUploadPhoto != null)
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: GestureDetector(
-                          onTap: isUploadingPhoto ? null : onUploadPhoto,
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: Colors.amber.shade700,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
-                            ),
-                            child: isUploadingPhoto
-                                ? SizedBox(
-                                    width: 14,
-                                    height: 14,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                                    ),
+                        child: CircleAvatar(
+                          radius: 45,
+                          backgroundColor: Colors.grey.shade100,
+                          child: ClipOval(
+                            child: (profileImage != null &&
+                                    profileImage.isNotEmpty)
+                                ? Image.network(
+                                    profileImage,
+                                    width: 90,
+                                    height: 90,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Image.network(
+                                        profileUrl,
+                                        width: 90,
+                                        height: 90,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                          return Image(
+                                            image: const AssetImage(
+                                                'assets/defaultpic.png'),
+                                            width: 90,
+                                            height: 90,
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (context, error, stackTrace) {
+                                              return Icon(Icons.person,
+                                                  size: 40,
+                                                  color: Colors.grey.shade400);
+                                            },
+                                          );
+                                        },
+                                      );
+                                    },
                                   )
-                                : const Icon(Icons.camera_alt, size: 14, color: Colors.white),
+                                : Image.network(
+                                    profileUrl,
+                                    width: 90,
+                                    height: 90,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Image(
+                                        image: const AssetImage(
+                                            'assets/defaultpic.png'),
+                                        width: 90,
+                                        height: 90,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                          return Icon(Icons.person,
+                                              size: 40,
+                                              color: Colors.grey.shade400);
+                                        },
+                                      );
+                                    },
+                                  ),
                           ),
                         ),
                       ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  fullName,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 4),
-              ],
+                      if (onUploadPhoto != null)
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: GestureDetector(
+                            onTap: isUploadingPhoto ? null : onUploadPhoto,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.amber.shade700,
+                                shape: BoxShape.circle,
+                                border:
+                                    Border.all(color: Colors.white, width: 2),
+                              ),
+                              child: isUploadingPhoto
+                                  ? SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            const AlwaysStoppedAnimation<Color>(
+                                                Colors.white),
+                                      ),
+                                    )
+                                  : const Icon(Icons.camera_alt,
+                                      size: 14, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    fullName,
+                    style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1F2937)),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 4),
+                ],
+              ),
             ),
-          ),
           ),
           if (selectedTab != null && onTabChanged != null) ...[
             const SizedBox(height: 16),
@@ -180,9 +199,10 @@ class CeeProfileBuildMethods {
     );
   }
 
-  static Widget buildMobileNavigation(String selectedTab, Function(String) onTabChanged) {
+  static Widget buildMobileNavigation(
+      String selectedTab, Function(String) onTabChanged) {
     final tabs = ['About', 'Payment History'];
-    
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -209,7 +229,7 @@ class CeeProfileBuildMethods {
                   decoration: BoxDecoration(
                     color: isActive ? Colors.amber.shade50 : Colors.transparent,
                     borderRadius: BorderRadius.circular(12),
-                    border: isActive 
+                    border: isActive
                         ? Border.all(color: Colors.amber.shade300, width: 2)
                         : null,
                   ),
@@ -219,7 +239,9 @@ class CeeProfileBuildMethods {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                      color: isActive ? Colors.amber.shade700 : Colors.grey.shade600,
+                      color: isActive
+                          ? Colors.amber.shade700
+                          : Colors.grey.shade600,
                     ),
                   ),
                 ),
@@ -274,26 +296,32 @@ class CeeProfileBuildMethods {
                             height: 110,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.amber.shade700, width: 3),
+                              border: Border.all(
+                                  color: Colors.amber.shade700, width: 3),
                             ),
                             child: CircleAvatar(
                               radius: 55,
                               backgroundColor: Colors.grey.shade100,
                               child: ClipOval(
-                                child: (profileImage != null && profileImage.isNotEmpty)
+                                child: (profileImage != null &&
+                                        profileImage.isNotEmpty)
                                     ? Image.network(
                                         profileImage,
                                         width: 110,
                                         height: 110,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) {
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
                                           return Image.network(
                                             profileUrl,
                                             width: 110,
                                             height: 110,
                                             fit: BoxFit.cover,
-                                            errorBuilder: (context, error, stackTrace) {
-                                              return Icon(Icons.person, size: 45, color: Colors.grey.shade400);
+                                            errorBuilder:
+                                                (context, error, stackTrace) {
+                                              return Icon(Icons.person,
+                                                  size: 45,
+                                                  color: Colors.grey.shade400);
                                             },
                                           );
                                         },
@@ -303,8 +331,11 @@ class CeeProfileBuildMethods {
                                         width: 110,
                                         height: 110,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          return Icon(Icons.person, size: 45, color: Colors.grey.shade400);
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                          return Icon(Icons.person,
+                                              size: 45,
+                                              color: Colors.grey.shade400);
                                         },
                                       ),
                               ),
@@ -321,7 +352,8 @@ class CeeProfileBuildMethods {
                                   decoration: BoxDecoration(
                                     color: Colors.amber.shade700,
                                     shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white, width: 2),
+                                    border: Border.all(
+                                        color: Colors.white, width: 2),
                                   ),
                                   child: isUploadingPhoto
                                       ? SizedBox(
@@ -329,10 +361,13 @@ class CeeProfileBuildMethods {
                                           height: 16,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
-                                            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                                            valueColor:
+                                                const AlwaysStoppedAnimation<
+                                                    Color>(Colors.white),
                                           ),
                                         )
-                                      : const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                                      : const Icon(Icons.camera_alt,
+                                          size: 16, color: Colors.white),
                                 ),
                               ),
                             ),
@@ -341,7 +376,10 @@ class CeeProfileBuildMethods {
                       const SizedBox(height: 20),
                       Text(
                         fullName,
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+                        style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1F2937)),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 6)
@@ -372,9 +410,10 @@ class CeeProfileBuildMethods {
     );
   }
 
-  static Widget buildDesktopNavigation(String selectedTab, Function(String) onTabChanged) {
+  static Widget buildDesktopNavigation(
+      String selectedTab, Function(String) onTabChanged) {
     final tabs = ['About', 'Payment History'];
-    
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -401,7 +440,7 @@ class CeeProfileBuildMethods {
                   decoration: BoxDecoration(
                     color: isActive ? Colors.amber.shade50 : Colors.transparent,
                     borderRadius: BorderRadius.circular(12),
-                    border: isActive 
+                    border: isActive
                         ? Border.all(color: Colors.amber.shade300, width: 2)
                         : null,
                   ),
@@ -411,7 +450,9 @@ class CeeProfileBuildMethods {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                      color: isActive ? Colors.amber.shade700 : Colors.grey.shade600,
+                      color: isActive
+                          ? Colors.amber.shade700
+                          : Colors.grey.shade600,
                     ),
                   ),
                 ),
@@ -480,7 +521,8 @@ class CeeProfileBuildMethods {
                       runSpacing: 8,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Icon(Icons.info_outline, color: Colors.amber.shade700, size: 24),
+                        Icon(Icons.info_outline,
+                            color: Colors.amber.shade700, size: 24),
                         const Text(
                           'Personal Information',
                           style: TextStyle(
@@ -569,7 +611,10 @@ class CeeProfileBuildMethods {
                 const SizedBox(width: 12),
                 const Text(
                   'Payment History',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1F2937)),
                 ),
               ],
             ),
@@ -594,8 +639,16 @@ class CeeProfileBuildMethods {
                 const SizedBox(width: 12),
                 DropdownButton<String>(
                   value: selectedPaymentType,
-                  items: ['All', 'Full Payment', 'Milestone Payment', 'Down Payment', 'Final Payment', 'Contract Payment']
-                      .map((type) => DropdownMenuItem(value: type, child: Text(type)))
+                  items: [
+                    'All',
+                    'Full Payment',
+                    'Milestone Payment',
+                    'Down Payment',
+                    'Final Payment',
+                    'Contract Payment'
+                  ]
+                      .map((type) =>
+                          DropdownMenuItem(value: type, child: Text(type)))
                       .toList(),
                   onChanged: (value) {
                     if (value != null) onPaymentTypeChanged(value);
@@ -610,11 +663,13 @@ class CeeProfileBuildMethods {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.receipt_long, size: 64, color: Colors.grey.shade400),
+                    Icon(Icons.receipt_long,
+                        size: 64, color: Colors.grey.shade400),
                     const SizedBox(height: 16),
                     Text(
                       'No payment history found',
-                      style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                      style:
+                          TextStyle(fontSize: 16, color: Colors.grey.shade600),
                     ),
                   ],
                 ),
@@ -626,10 +681,13 @@ class CeeProfileBuildMethods {
                 physics: const NeverScrollableScrollPhysics(),
                 itemBuilder: (context, index) {
                   final transaction = transactions[index];
-                  final amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
+                  final amount =
+                      (transaction['amount'] as num?)?.toDouble() ?? 0.0;
                   final paymentDate = transaction['payment_date'] ?? '';
-                  final projectTitle = transaction['project_title'] ?? 'Unknown Project';
-                  final contractorName = transaction['contractor_name'] ?? 'Unknown Contractor';
+                  final projectTitle =
+                      transaction['project_title'] ?? 'Unknown Project';
+                  final contractorName =
+                      transaction['contractor_name'] ?? 'Unknown Contractor';
                   final paymentType = transaction['payment_type'] ?? 'Payment';
                   final receiptPath = transaction['receipt_path'] as String?;
                   final reference = transaction['reference'] ?? '';
@@ -645,13 +703,15 @@ class CeeProfileBuildMethods {
                     parsedDate = DateTime.now();
                   }
 
-                  final formattedDate = '${parsedDate.day}/${parsedDate.month}/${parsedDate.year} at ${parsedDate.hour.toString().padLeft(2, '0')}:${parsedDate.minute.toString().padLeft(2, '0')}';
+                  final formattedDate =
+                      '${parsedDate.day}/${parsedDate.month}/${parsedDate.year} at ${parsedDate.hour.toString().padLeft(2, '0')}:${parsedDate.minute.toString().padLeft(2, '0')}';
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     child: InkWell(
                       onTap: receiptPath != null && receiptPath.isNotEmpty
-                          ? () => _showReceiptDialog(context, receiptPath, reference)
+                          ? () => _showReceiptDialog(
+                              context, receiptPath, reference)
                           : null,
                       borderRadius: BorderRadius.circular(12),
                       child: Container(
@@ -659,14 +719,16 @@ class CeeProfileBuildMethods {
                         decoration: BoxDecoration(
                           color: Colors.grey.shade50,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade200, width: 1),
+                          border:
+                              Border.all(color: Colors.grey.shade200, width: 1),
                         ),
                         child: Row(
                           children: [
                             CircleAvatar(
                               backgroundColor: Colors.green.shade100,
                               radius: 24,
-                              child: Icon(Icons.check_circle, color: Colors.green.shade700, size: 24),
+                              child: Icon(Icons.check_circle,
+                                  color: Colors.green.shade700, size: 24),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -696,16 +758,21 @@ class CeeProfileBuildMethods {
                                   const SizedBox(height: 2),
                                   Text(
                                     'By: $contractorName',
-                                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     formattedDate,
-                                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey.shade500),
                                   ),
                                   const SizedBox(height: 2),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
                                       color: Colors.amber.shade100,
                                       borderRadius: BorderRadius.circular(4),
@@ -726,11 +793,13 @@ class CeeProfileBuildMethods {
                             Material(
                               color: Colors.transparent,
                               child: InkWell(
-                                onTap: receiptPath != null && receiptPath.isNotEmpty
+                                onTap: receiptPath != null &&
+                                        receiptPath.isNotEmpty
                                     ? () {
                                         final path = receiptPath;
                                         if (path.isNotEmpty) {
-                                          _showReceiptDialog(context, path, reference);
+                                          _showReceiptDialog(
+                                              context, path, reference);
                                         }
                                       }
                                     : null,
@@ -738,12 +807,14 @@ class CeeProfileBuildMethods {
                                 child: Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: (receiptPath != null && receiptPath.isNotEmpty)
+                                    color: (receiptPath != null &&
+                                            receiptPath.isNotEmpty)
                                         ? Colors.blue.shade50
                                         : Colors.grey.shade200,
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                      color: (receiptPath != null && receiptPath.isNotEmpty)
+                                      color: (receiptPath != null &&
+                                              receiptPath.isNotEmpty)
                                           ? Colors.blue.shade200
                                           : Colors.grey.shade300,
                                       width: 1,
@@ -751,7 +822,8 @@ class CeeProfileBuildMethods {
                                   ),
                                   child: Icon(
                                     Icons.visibility,
-                                    color: (receiptPath != null && receiptPath.isNotEmpty)
+                                    color: (receiptPath != null &&
+                                            receiptPath.isNotEmpty)
                                         ? Colors.blue
                                         : Colors.grey.shade400,
                                     size: 20,
@@ -763,11 +835,13 @@ class CeeProfileBuildMethods {
                             Material(
                               color: Colors.transparent,
                               child: InkWell(
-                                onTap: receiptPath != null && receiptPath.isNotEmpty
+                                onTap: receiptPath != null &&
+                                        receiptPath.isNotEmpty
                                     ? () {
                                         final path = receiptPath;
                                         if (path.isNotEmpty) {
-                                          _downloadReceipt(context, path, reference);
+                                          _downloadReceipt(
+                                              context, path, reference);
                                         }
                                       }
                                     : null,
@@ -775,12 +849,14 @@ class CeeProfileBuildMethods {
                                 child: Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: (receiptPath != null && receiptPath.isNotEmpty)
+                                    color: (receiptPath != null &&
+                                            receiptPath.isNotEmpty)
                                         ? Colors.green.shade50
                                         : Colors.grey.shade200,
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                      color: (receiptPath != null && receiptPath.isNotEmpty)
+                                      color: (receiptPath != null &&
+                                              receiptPath.isNotEmpty)
                                           ? Colors.green.shade200
                                           : Colors.grey.shade300,
                                       width: 1,
@@ -788,7 +864,8 @@ class CeeProfileBuildMethods {
                                   ),
                                   child: Icon(
                                     Icons.download,
-                                    color: (receiptPath != null && receiptPath.isNotEmpty)
+                                    color: (receiptPath != null &&
+                                            receiptPath.isNotEmpty)
                                         ? Colors.green
                                         : Colors.grey.shade400,
                                     size: 20,
@@ -809,10 +886,11 @@ class CeeProfileBuildMethods {
     );
   }
 
-  static Future<void> _showReceiptDialog(BuildContext context, String receiptPath, String reference) async {
+  static Future<void> _showReceiptDialog(
+      BuildContext context, String receiptPath, String reference) async {
     try {
       final receiptUrl = await ReceiptService.getReceiptSignedUrl(receiptPath);
-      
+
       if (receiptUrl == null) {
         if (context.mounted) {
           ConTrustSnackBar.error(context, 'Failed to load receipt');
@@ -825,7 +903,8 @@ class CeeProfileBuildMethods {
       showDialog(
         context: context,
         builder: (context) => Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           insetPadding: const EdgeInsets.all(10),
           child: Container(
             width: MediaQuery.of(context).size.width * 0.95,
@@ -847,7 +926,8 @@ class CeeProfileBuildMethods {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.receipt_long, color: Colors.white, size: 24),
+                      const Icon(Icons.receipt_long,
+                          color: Colors.white, size: 24),
                       const SizedBox(width: 12),
                       const Expanded(
                         child: Text(
@@ -860,7 +940,8 @@ class CeeProfileBuildMethods {
                         ),
                       ),
                       IconButton(
-                        onPressed: () => _downloadReceipt(context, receiptPath, reference),
+                        onPressed: () =>
+                            _downloadReceipt(context, receiptPath, reference),
                         icon: const Icon(Icons.download, color: Colors.white),
                         tooltip: 'Download Receipt',
                       ),
@@ -888,13 +969,16 @@ class CeeProfileBuildMethods {
     }
   }
 
-  static Future<void> _downloadReceipt(BuildContext context, String receiptPath, String reference) async {
+  static Future<void> _downloadReceipt(
+      BuildContext context, String receiptPath, String reference) async {
     try {
-      final receiptUrl = await ReceiptService.getReceiptSignedUrl(receiptPath, expirationSeconds: 86400);
-      
+      final receiptUrl = await ReceiptService.getReceiptSignedUrl(receiptPath,
+          expirationSeconds: 86400);
+
       if (receiptUrl == null) {
         if (context.mounted) {
-          ConTrustSnackBar.error(context, 'Failed to get receipt download link');
+          ConTrustSnackBar.error(
+              context, 'Failed to get receipt download link');
         }
         return;
       }
@@ -906,7 +990,7 @@ class CeeProfileBuildMethods {
         html.document.body?.append(anchor);
         anchor.click();
         anchor.remove();
-        
+
         if (context.mounted) {
           ConTrustSnackBar.success(context, 'Receipt download started');
         }
@@ -920,9 +1004,10 @@ class CeeProfileBuildMethods {
             final fileName = 'receipt_$reference.pdf';
             final file = File('${directory.path}/$fileName');
             await file.writeAsBytes(bytes);
-            
+
             if (context.mounted) {
-              ConTrustSnackBar.success(context, 'Receipt downloaded to: ${file.path}');
+              ConTrustSnackBar.success(
+                  context, 'Receipt downloaded to: ${file.path}');
             }
           } else {
             if (context.mounted) {
@@ -944,7 +1029,7 @@ class CeeProfileBuildMethods {
 
   static Widget _buildWebPdfViewer(String pdfUrl) {
     final viewType = 'pdf-viewer-${pdfUrl.hashCode.abs()}';
-    
+
     try {
       ui_web.platformViewRegistry.registerViewFactory(viewType, (int viewId) {
         final iframe = html.IFrameElement()
@@ -954,13 +1039,13 @@ class CeeProfileBuildMethods {
           ..style.height = '100%'
           ..allow = 'fullscreen'
           ..onError.listen((event) {});
-        
+
         return iframe;
       });
     } catch (e) {
       // Continue if registration fails
     }
-    
+
     return SizedBox(
       width: double.infinity,
       height: double.infinity,
@@ -1025,7 +1110,8 @@ class CeeProfileBuildMethods {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.amber,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
                   ),
                 ),
               ],
@@ -1079,7 +1165,8 @@ class CeeProfileBuildMethods {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.amber,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
                   ),
                 ),
               ],
@@ -1093,7 +1180,7 @@ class CeeProfileBuildMethods {
   static Future<Uint8List?> _downloadPdfBytes(String pdfUrl) async {
     try {
       final response = await http.get(Uri.parse(pdfUrl));
-      
+
       if (response.statusCode == 200) {
         final bytes = response.bodyBytes;
         if (bytes.isEmpty) {
@@ -1151,7 +1238,9 @@ class CeeProfileBuildMethods {
             children: [
               InkWell(
                 onTap: onEdit,
-                child: Text('Cancel', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                child: Text('Cancel',
+                    style:
+                        TextStyle(fontSize: 13, color: Colors.grey.shade600)),
               ),
               InkWell(
                 onTap: onSave,
@@ -1223,14 +1312,17 @@ class CeeProfileBuildMethods {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 12),
                       ),
                     )
                   : Text(
                       value.isEmpty ? 'Not provided' : value,
                       style: TextStyle(
                         fontSize: 14,
-                        color: value.isEmpty ? Colors.grey.shade400 : Colors.black87,
+                        color: value.isEmpty
+                            ? Colors.grey.shade400
+                            : Colors.black87,
                       ),
                     ),
             ],
@@ -1270,7 +1362,9 @@ class CeeProfileBuildMethods {
                   value,
                   style: TextStyle(
                     fontSize: 14,
-                    color: value == 'No email provided' ? Colors.grey.shade400 : Colors.black87,
+                    color: value == 'No email provided'
+                        ? Colors.grey.shade400
+                        : Colors.black87,
                   ),
                   softWrap: true,
                   maxLines: null,
@@ -1302,9 +1396,11 @@ class _PasswordFieldWidgetState extends State<_PasswordFieldWidget> {
   bool _confirmPasswordVisible = false;
   bool _isChangingPassword = false;
 
-  final TextEditingController _currentPasswordController = TextEditingController();
+  final TextEditingController _currentPasswordController =
+      TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   final UserService _userService = UserService();
 
   @override
@@ -1333,18 +1429,21 @@ class _PasswordFieldWidgetState extends State<_PasswordFieldWidget> {
     }
 
     if (newPassword.length < 6) {
-      ConTrustSnackBar.error(context, 'New password must be at least 6 characters long');
+      ConTrustSnackBar.error(
+          context, 'New password must be at least 6 characters long');
       return;
     }
 
     if (newPassword.length > 15) {
-      ConTrustSnackBar.error(context, 'New password must be no more than 15 characters long');
+      ConTrustSnackBar.error(
+          context, 'New password must be no more than 15 characters long');
       return;
     }
 
     final hasUppercase = newPassword.contains(RegExp(r'[A-Z]'));
     final hasNumber = newPassword.contains(RegExp(r'[0-9]'));
-    final hasSpecialChar = newPassword.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+    final hasSpecialChar =
+        newPassword.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
 
     if (!hasUppercase || !hasNumber || !hasSpecialChar) {
       ConTrustSnackBar.error(
@@ -1404,7 +1503,8 @@ class _PasswordFieldWidgetState extends State<_PasswordFieldWidget> {
           _isChangingPassword = false;
         });
       } else {
-        ConTrustSnackBar.error(context, 'Failed to change password. Please try again.');
+        ConTrustSnackBar.error(
+            context, 'Failed to change password. Please try again.');
         setState(() => _isChangingPassword = false);
       }
     } on AuthException catch (e) {
@@ -1447,7 +1547,10 @@ class _PasswordFieldWidgetState extends State<_PasswordFieldWidget> {
               const SizedBox(width: 8),
               Text(
                 'Password',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: labelColor),
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: labelColor),
               ),
               const Spacer(),
               InkWell(
@@ -1504,7 +1607,9 @@ class _PasswordFieldWidgetState extends State<_PasswordFieldWidget> {
                 prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
                   icon: Icon(
-                    _currentPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                    _currentPasswordVisible
+                        ? Icons.visibility
+                        : Icons.visibility_off,
                   ),
                   onPressed: () => setState(
                     () => _currentPasswordVisible = !_currentPasswordVisible,
@@ -1528,7 +1633,9 @@ class _PasswordFieldWidgetState extends State<_PasswordFieldWidget> {
                 prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
                   icon: Icon(
-                    _newPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                    _newPasswordVisible
+                        ? Icons.visibility
+                        : Icons.visibility_off,
                   ),
                   onPressed: () => setState(
                     () => _newPasswordVisible = !_newPasswordVisible,
@@ -1552,7 +1659,9 @@ class _PasswordFieldWidgetState extends State<_PasswordFieldWidget> {
                 prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
                   icon: Icon(
-                    _confirmPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                    _confirmPasswordVisible
+                        ? Icons.visibility
+                        : Icons.visibility_off,
                   ),
                   onPressed: () => setState(
                     () => _confirmPasswordVisible = !_confirmPasswordVisible,
@@ -1585,7 +1694,8 @@ class _PasswordFieldWidgetState extends State<_PasswordFieldWidget> {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       )
                     : const Text(

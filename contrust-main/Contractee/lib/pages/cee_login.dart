@@ -20,7 +20,7 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   bool _isLoggingIn = false;
   bool _passwordVisible = false;
-  final AssetImage _bgImage = const AssetImage('assets/bgloginscreen.jpg');
+  final String _bgImagePath = 'assets/bgloginscreen.jpg';
 
   bool isValidEmail(String email) {
     return RegExp(r'^[^@]+@gmail\.com$').hasMatch(email);
@@ -70,7 +70,16 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    precacheImage(_bgImage, context);
+    final size = MediaQuery.of(context).size;
+    final dpr = MediaQuery.of(context).devicePixelRatio;
+    final targetWidth = (size.width * dpr).clamp(360, 1440).round();
+    final targetHeight = (size.height * dpr).clamp(640, 2960).round();
+    final provider = ResizeImage(
+      AssetImage(_bgImagePath),
+      width: targetWidth,
+      height: targetHeight,
+    );
+    precacheImage(provider, context);
   }
 
   @override
@@ -89,10 +98,20 @@ class _LoginPageState extends State<LoginPage> {
         child: Stack(
           children: [
             Positioned.fill(
-              child: Image(
-                image: _bgImage,
-                fit: BoxFit.cover,
-              ),
+              child: Builder(builder: (context) {
+                final screenSize = MediaQuery.of(context).size;
+                final dpr = MediaQuery.of(context).devicePixelRatio;
+                final cacheW = (screenSize.width * dpr).round();
+                final cacheH = (screenSize.height * dpr).round();
+                return Image.asset(
+                  _bgImagePath,
+                  fit: BoxFit.cover,
+                  cacheWidth: cacheW,
+                  cacheHeight: cacheH,
+                  filterQuality: FilterQuality.low,
+                  gaplessPlayback: true,
+                );
+              }),
             ),
             Column(
               children: [

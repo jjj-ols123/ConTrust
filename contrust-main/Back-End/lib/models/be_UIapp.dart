@@ -33,7 +33,8 @@ class ContractorsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return SizedBox.expand(
+      child: Card(
         elevation: 6,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -41,14 +42,14 @@ class ContractorsView extends StatelessWidget {
         shadowColor: Colors.amber.shade200,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.max,
           children: [
             ClipRRect(
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(16)),
               child: Image.network(
                 (profileImage.isNotEmpty) ? profileImage : profileUrl,
-              height: isMobile ? 90 : 140,
+              height: isMobile ? 90 : 170,
                 fit: BoxFit.cover,
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
@@ -57,89 +58,99 @@ class ContractorsView extends StatelessWidget {
                 errorBuilder: (context, error, stackTrace) {
                   return Image.network(
                     profileUrl,
-                  height: isMobile ? 90 : 140,
+                  height: isMobile ? 90 : 170,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
-                        height: isMobile ? 90 : 140,
+                        height: isMobile ? 90 : 170,
                         color: Colors.grey.shade300,
-                        child: Icon(Icons.person, size: isMobile ? 45 : 70, color: Colors.grey.shade600),
+                        child: Icon(Icons.person, size: isMobile ? 45 : 84, color: Colors.grey.shade600),
                       );
                     },
                   );
                 },
               ),
             ),
-            Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: isMobile ? 8 : 12,
-              vertical: isMobile ? 6 : 8,
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 8 : 14,
+                  vertical: isMobile ? 6 : 10,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    Text(
+                      name,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: isMobile ? 12 : 18,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: isMobile ? 2 : 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: List.generate(5, (index) {
+                        final starSize = isMobile ? 14.0 : 18.0;
+                        if (index < rating.floor()) {
+                          return Icon(Icons.star, color: Colors.amber, size: starSize);
+                        } else if (index < rating.ceil() && rating % 1 != 0) {
+                          return Icon(Icons.star_half, color: Colors.amber, size: starSize);
+                        } else {
+                          return Icon(Icons.star_border, color: Colors.grey, size: starSize);
+                        }
+                      }),
+                    ),
+                  ],
+                ),
+              ),
             ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    name,
-                    textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                    fontSize: isMobile ? 12 : 16,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                SizedBox(height: isMobile ? 2 : 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: List.generate(5, (index) {
-                    final starSize = isMobile ? 14.0 : 18.0;
-                      if (index < rating.floor()) {
-                      return Icon(Icons.star, color: Colors.amber, size: starSize);
-                      } else if (index < rating.ceil() && rating % 1 != 0) {
-                      return Icon(Icons.star_half, color: Colors.amber, size: starSize);
-                      } else {
-                      return Icon(Icons.star_border, color: Colors.grey, size: starSize);
-                      }
-                    }),
-                  ),
-                SizedBox(height: isMobile ? 5 : 6),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        CheckUserLogin.isLoggedIn(
-                          context: context,
-                          onAuthenticated: () async {
-                            if (!context.mounted) return;
-                            final encodedName = Uri.encodeComponent(name);
-                            context.go('/contractor/$encodedName');
-                          },
-                        );
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                isMobile ? 8 : 14,
+                0,
+                isMobile ? 8 : 14,
+                isMobile ? 8 : 10,
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    CheckUserLogin.isLoggedIn(
+                      context: context,
+                      onAuthenticated: () async {
+                        if (!context.mounted) return;
+                        final encodedName = Uri.encodeComponent(name);
+                        context.go('/contractor/$encodedName');
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.amber[700],
-                        foregroundColor: Colors.black,
-                      padding: EdgeInsets.symmetric(
-                        vertical: isMobile ? 4 : 10,
-                        horizontal: isMobile ? 8 : 16,
-                      ),
-                      minimumSize: Size(0, isMobile ? 32 : 40),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 4,
-                      ),
-                    child: Text(
-                      "View",
-                      style: TextStyle(fontSize: isMobile ? 11 : 14),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.amber[700],
+                    foregroundColor: Colors.black,
+                    padding: EdgeInsets.symmetric(
+                      vertical: isMobile ? 4 : 10,
+                      horizontal: isMobile ? 8 : 16,
                     ),
+                    minimumSize: Size(0, isMobile ? 32 : 44),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
+                    elevation: 4,
                   ),
-                ],
+                  child: Text(
+                    "View",
+                    style: TextStyle(fontSize: isMobile ? 11 : 16),
+                  ),
+                ),
               ),
             ),
           ],
+        ),
       ),
     );
   }

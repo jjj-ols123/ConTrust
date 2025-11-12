@@ -1869,7 +1869,7 @@ class HomePageBuilder {
     final isMobile = screenWidth < 600;
     
     return Container(
-      padding: EdgeInsets.all(isMobile ? 16 : 20),
+      padding: EdgeInsets.all(isMobile ? 16 : 24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -1893,7 +1893,7 @@ class HomePageBuilder {
                 child: Text(
                   "Suggested Contractor Firms",
                   style: TextStyle(
-                    fontSize: isMobile ? 18 : 20,
+                    fontSize: isMobile ? 18 : 22,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
@@ -1904,7 +1904,7 @@ class HomePageBuilder {
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
-            height: 45,
+            height: isMobile ? 45 : 54,
             child: TextField(
               controller: searchController,
               decoration: InputDecoration(
@@ -1933,7 +1933,7 @@ class HomePageBuilder {
           Column(
             children: [
               SizedBox(
-                height: isMobile ? 200 : 260,
+                height: isMobile ? 200 : 340,
                 child: isLoading
                     ? const Center(child: CircularProgressIndicator(color: Colors.amber))
                     : filteredContractors.isEmpty
@@ -1954,9 +1954,9 @@ class HomePageBuilder {
                                   onSelect(index);
                                 },
                                 child: Container(
-                                  width: isMobile ? 160 : 200,
+                                  width: isMobile ? 160 : 260,
                                   margin: EdgeInsets.symmetric(
-                                    horizontal: isMobile ? 6 : 10,
+                                    horizontal: isMobile ? 6 : 16,
                                   ),
                                   decoration: BoxDecoration(
                                     border: Border.all(
@@ -2141,11 +2141,16 @@ class HomePageBuilder {
                   size: isTablet ? 24 : 20,
                 ),
                 SizedBox(width: isTablet ? 12 : 8),
-                Text(
-                  'Current Contractor',
-                  style: TextStyle(
-                    fontSize: isTablet ? 18 : 16,
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    'Current Contractor',
+                    style: TextStyle(
+                      fontSize: isTablet ? 18 : 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    softWrap: false,
                   ),
                 ),
               ],
@@ -2297,10 +2302,12 @@ class HomePageBuilder {
     showDialog(
       context: context,
       builder: (dialogContext) => Dialog(
-        insetPadding: EdgeInsets.all(isMobile ? 16 : 40),
+        insetPadding: EdgeInsets.all(isMobile ? 16 : 100),
         child: Container(
-          width: isMobile ? double.infinity : screenWidth * 0.8,
-          height: isMobile ? MediaQuery.of(context).size.height * 0.8 : MediaQuery.of(context).size.height * 0.85,
+          width: isMobile ? double.infinity : (screenWidth * 0.55),
+          height: isMobile
+              ? MediaQuery.of(context).size.height * 0.8
+              : MediaQuery.of(context).size.height * 0.6,
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
@@ -2309,7 +2316,7 @@ class HomePageBuilder {
             children: [
               // Header
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 decoration: BoxDecoration(
                   color: Colors.amber[700],
                   borderRadius: const BorderRadius.only(
@@ -2325,7 +2332,7 @@ class HomePageBuilder {
                       child: Text(
                         'All Contractor Firms',
                         style: TextStyle(
-                          fontSize: isMobile ? 20 : 24,
+                          fontSize: isMobile ? 18 : 22,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
@@ -2341,9 +2348,14 @@ class HomePageBuilder {
               // Scrollable content
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.all(16),
+                  child: GridView.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: isMobile ? 2 : 3,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 0.7,
+                    ),
                     itemCount: contractors.length,
                     itemBuilder: (context, index) {
                       final contractor = contractors[index];
@@ -2359,10 +2371,6 @@ class HomePageBuilder {
                           Navigator.of(dialogContext).pop();
                         },
                         child: Container(
-                          width: isMobile ? 160 : 220,
-                          margin: EdgeInsets.symmetric(
-                            horizontal: isMobile ? 8 : 12,
-                          ),
                           decoration: BoxDecoration(
                             border: Border.all(
                               color: isSelected
@@ -2377,7 +2385,8 @@ class HomePageBuilder {
                             name: contractor['firm_name'] ?? 'Unknown',
                             profileImage: profileImage,
                             rating: (contractor['rating'] ?? 0.0).toDouble(),
-                            isMobile: isMobile,
+                            // Force compact card rendering in the dialog
+                            isMobile: true,
                           ),
                         ),
                       );

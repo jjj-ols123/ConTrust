@@ -265,7 +265,6 @@ class _ContracteeChatHistoryPageState
 
    @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
     
     if (contracteeId == null) {
       return const Scaffold(
@@ -309,305 +308,242 @@ class _ContracteeChatHistoryPageState
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      body: screenWidth > 1200 
-        ? Row(
-            children: [
-              messageUIBuilder.buildChatHistoryUI(),
-              messageUIBuilder.buildMessagesUI(),
-              messageUIBuilder.buildProjectInfoUI(),
-            ],
-          )
-        : Column(
-            children: [
-              // Add tabs for mobile
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border(
-                    bottom: BorderSide(color: Colors.grey.shade200),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _buildTabButton('Active', selectedTab == 'Active'),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildTabButton('Archived', selectedTab == 'Archived'),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: StreamBuilder<List<Map<String, dynamic>>>(
-                  stream: supabase
-                      .from('ChatRoom')
-                      .stream(primaryKey: ['chatroom_id'])
-                      .eq('contractee_id', contracteeId as Object)
-                      .order('last_message_time', ascending: false),
-                  builder: (context, snapshot) {
-              // Show loading while waiting for initial data
-              if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator(color: Colors.amber));
-              }
-              
-              // Show empty state only after data has been received
-              if (snapshot.hasData && snapshot.data!.isEmpty) {
-                return const Center(
-                  child: Text(
-                    'No conversations yet.',
-                    style: TextStyle(fontSize: 18, color: Colors.grey),
-                  ),
-                );
-              }
-              
-              // If still no data but connection is active, show loading
-              if (!snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator(color: Colors.amber));
-              }
-              
-              final chatRooms = snapshot.data!;
-              
-              // Batch fetch all data for all chat rooms with caching to avoid flicker
-              return FutureBuilder<Map<String, dynamic>>(
-                future: _ensureBatchFuture(chatRooms, contracteeId!),
-                builder: (context, batchSnap) {
-                  Map<String, dynamic> batchData;
-                  if (batchSnap.connectionState == ConnectionState.waiting) {
-                    // Show last good data while updating to avoid flicker
-                    if (_lastBatchData != null) {
-                      batchData = _lastBatchData!;
-                    } else {
-                      return const Center(child: CircularProgressIndicator(color: Colors.amber));
-                    }
-                  } else {
-                    batchData = batchSnap.data ?? _lastBatchData ?? {};
-                  }
-                  final contractorDataCache = batchData['contractors'] as Map<String, Map<String, dynamic>>? ?? {};
-                  final chatPermissionsCache = batchData['permissions'] as Map<String, bool>? ?? {};
-                  final unreadCountsCache = batchData['unreadCounts'] as Map<String, int>? ?? {};
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final isXL = width >= 1400;
+          final isLG = width >= 1200;
+          final isMD = width >= 900 && width < 1200;
 
-                  // Filter chats based on selected tab
-                  return FutureBuilder<List<Map<String, dynamic>>>(
-                    future: _filterChatsByStatus(chatRooms, selectedTab),
-                    builder: (context, filterSnapshot) {
-                      if (filterSnapshot.connectionState == ConnectionState.waiting) {
+          Widget content;
+          if (isLG || isXL) {
+            content = Row(
+              children: [
+                Expanded(flex: 3, child: messageUIBuilder.buildChatHistoryUI()),
+                Expanded(flex: 5, child: messageUIBuilder.buildMessagesUI()),
+                Expanded(flex: 3, child: messageUIBuilder.buildProjectInfoUI()),
+              ],
+            );
+          } else if (isMD) {
+            content = Row(
+              children: [
+                Expanded(flex: 4, child: messageUIBuilder.buildChatHistoryUI()),
+                Expanded(flex: 6, child: messageUIBuilder.buildMessagesUI()),
+              ],
+            );
+          } else {
+            content = Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.shade200),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(child: _buildTabButton('Active', selectedTab == 'Active')),
+                      const SizedBox(width: 8),
+                      Expanded(child: _buildTabButton('Archived', selectedTab == 'Archived')),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: StreamBuilder<List<Map<String, dynamic>>>(
+                    stream: supabase
+                        .from('ChatRoom')
+                        .stream(primaryKey: ['chatroom_id'])
+                        .eq('contractee_id', contracteeId as Object)
+                        .order('last_message_time', ascending: false),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
                         return const Center(child: CircularProgressIndicator(color: Colors.amber));
                       }
-
-                      // Filtering complete, clear loading state
-                      if (isFiltering) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (mounted) {
-                            setState(() => isFiltering = false);
-                          }
-                        });
-                      }
-
-                      final filteredChats = filterSnapshot.data ?? [];
-
-                      // Show empty state only after data has been received
-                      if (snapshot.hasData && filteredChats.isEmpty) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                selectedTab == 'Active' ? Icons.chat_bubble_outline : Icons.archive_outlined,
-                                size: 64,
-                                color: Colors.grey,
-                              ),
-                              SizedBox(height: 16),
-                              Text(
-                                selectedTab == 'Active' ? 'No active conversations' : 'No archived conversations',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                selectedTab == 'Active' 
-                                    ? 'Start chatting with contractors' 
-                                    : 'Completed and cancelled projects appear here',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ],
-                          ),
+                      if (snapshot.hasData && snapshot.data!.isEmpty) {
+                        return const Center(
+                          child: Text('No conversations yet.', style: TextStyle(fontSize: 18, color: Colors.grey)),
                         );
                       }
-
-                      return ListView.builder(
-                        padding: const EdgeInsets.all(12),
-                        itemCount: filteredChats.length,
-                        itemBuilder: (context, index) {
-                          final chat = filteredChats[index];
-                          final contractorId = chat['contractor_id'] as String?;
-                          final chatRoomId = chat['chatroom_id'] as String?;
-                          
-                          if (contractorId == null || chatRoomId == null) {
-                            return const SizedBox.shrink();
+                      if (!snapshot.hasData) {
+                        return const Center(child: CircularProgressIndicator(color: Colors.amber));
+                      }
+                      final chatRooms = snapshot.data!;
+                      return FutureBuilder<Map<String, dynamic>>(
+                        future: _ensureBatchFuture(chatRooms, contracteeId!),
+                        builder: (context, batchSnap) {
+                          Map<String, dynamic> batchData;
+                          if (batchSnap.connectionState == ConnectionState.waiting) {
+                            if (_lastBatchData != null) {
+                              batchData = _lastBatchData!;
+                            } else {
+                              return const Center(child: CircularProgressIndicator(color: Colors.amber));
+                            }
+                          } else {
+                            batchData = batchSnap.data ?? _lastBatchData ?? {};
                           }
-                          
-                          final contractorData = contractorDataCache[contractorId];
-                          final contractorName = contractorData?['firm_name'] ?? 'Contractor';
-                          final contractorProfile = contractorData?['profile_photo'];
-                          final canChat = chatPermissionsCache[contractorId] ?? false;
-                          final unreadCount = unreadCountsCache[chatRoomId] ?? 0;
-                          final hasUnread = unreadCount > 0;
-                          
-                          final lastMessage = chat['last_message'] ?? '';
-                          final lastTime = DateTimeHelper.parseToLocal(chat['last_message_time'] as String?);
-
-                          return InkWell(
-                            onTap: () {
-                              context.go('/chat/${Uri.encodeComponent(contractorName)}', extra: {
-                                'chatRoomId': chatRoomId,
-                                'contracteeId': contracteeId,
-                                'contractorId': contractorId,
-                                'contractorProfile': contractorProfile,
-                                'canChat': canChat,
-                              });
-                            },
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 1.5,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.grey.withOpacity(0.1),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 4),
-                                  )
-                                ],
-                              ),
-                              child: Row(
-                                children: [
-                                  Stack(
-                                    children: [
-                                      ClipOval(
-                                        child: Container(
-                                          width: 56,
-                                          height: 56,
-                                          color: Colors.blue.shade600,
-                                          child: Image.network(
-                                            contractorProfile ??
-                                                'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
-                                            width: 56,
-                                            height: 56,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (context, error, stackTrace) {
-                                              return Image(
-                                                image: const AssetImage('assets/defaultpic.png'),
-                                                width: 56,
-                                                height: 56,
-                                                fit: BoxFit.cover,
-                                                errorBuilder: (context, error, stackTrace) {
-                                                  return Container(
-                                                    color: Colors.blue.shade600,
-                                                    child: Icon(Icons.business, size: 28, color: Colors.white),
-                                                  );
-                                                },
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                      ),
-                                      if (hasUnread)
-                                        Positioned(
-                                          right: 0,
-                                          top: 0,
-                                          child: Container(
-                                            padding: const EdgeInsets.all(4),
-                                            decoration: const BoxDecoration(
-                                              color: Colors.red,
-                                              shape: BoxShape.circle,
-                                            ),
-                                            constraints: const BoxConstraints(
-                                              minWidth: 16,
-                                              minHeight: 16,
-                                            ),
-                                            child: Text(
-                                              unreadCount > 99 ? '99+' : unreadCount.toString(),
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                          ),
-                                        ),
+                          final contractorDataCache = batchData['contractors'] as Map<String, Map<String, dynamic>>? ?? {};
+                          final chatPermissionsCache = batchData['permissions'] as Map<String, bool>? ?? {};
+                          final unreadCountsCache = batchData['unreadCounts'] as Map<String, int>? ?? {};
+                          return FutureBuilder<List<Map<String, dynamic>>>(
+                            future: _filterChatsByStatus(chatRooms, selectedTab),
+                            builder: (context, filterSnapshot) {
+                              if (filterSnapshot.connectionState == ConnectionState.waiting) {
+                                return const Center(child: CircularProgressIndicator(color: Colors.amber));
+                              }
+                              if (isFiltering) {
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  if (mounted) {
+                                    setState(() => isFiltering = false);
+                                  }
+                                });
+                              }
+                              final filteredChats = filterSnapshot.data ?? [];
+                              if (snapshot.hasData && filteredChats.isEmpty) {
+                                return Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: const [
+                                      Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey),
+                                      SizedBox(height: 16),
+                                      Text('No conversations yet.', style: TextStyle(fontSize: 18, color: Colors.grey)),
                                     ],
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          contractorName,
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 18,
-                                            color: Colors.blue.shade800,
+                                );
+                              }
+                              return ListView.builder(
+                                padding: const EdgeInsets.all(12),
+                                itemCount: filteredChats.length,
+                                itemBuilder: (context, index) {
+                                  final chat = filteredChats[index];
+                                  final contractorId = chat['contractor_id'] as String?;
+                                  final chatRoomId = chat['chatroom_id'] as String?;
+                                  if (contractorId == null || chatRoomId == null) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  final contractorData = contractorDataCache[contractorId];
+                                  final contractorName = contractorData?['firm_name'] ?? 'Contractor';
+                                  final contractorProfile = contractorData?['profile_photo'];
+                                  final canChat = chatPermissionsCache[contractorId] ?? false;
+                                  final unreadCount = unreadCountsCache[chatRoomId] ?? 0;
+                                  final hasUnread = unreadCount > 0;
+                                  final lastMessage = chat['last_message'] ?? '';
+                                  final lastTime = DateTimeHelper.parseToLocal(chat['last_message_time'] as String?);
+                                  return InkWell(
+                                    onTap: () {
+                                      context.go('/chat/${Uri.encodeComponent(contractorName)}', extra: {
+                                        'chatRoomId': chatRoomId,
+                                        'contracteeId': contracteeId,
+                                        'contractorId': contractorId,
+                                        'contractorProfile': contractorProfile,
+                                        'canChat': canChat,
+                                      });
+                                    },
+                                    child: Container(
+                                      margin: const EdgeInsets.only(bottom: 12),
+                                      padding: const EdgeInsets.all(14),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(color: Colors.white, width: 1.5),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.grey.withOpacity(0.1),
+                                            blurRadius: 6,
+                                            offset: const Offset(0, 4),
                                           ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          lastMessage,
-                                          style: TextStyle(
-                                            color: hasUnread ? Colors.black87 : Colors.grey.shade700,
-                                            fontSize: 14,
-                                            fontWeight: hasUnread ? FontWeight.w500 : FontWeight.normal,
+                                        ],
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Stack(
+                                            children: [
+                                              ClipOval(
+                                                child: Container(
+                                                  width: 56,
+                                                  height: 56,
+                                                  color: Colors.blue.shade600,
+                                                  child: Image.network(
+                                                    contractorProfile ?? 'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
+                                                    width: 56,
+                                                    height: 56,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (context, error, stackTrace) {
+                                                      return const Image(
+                                                        image: AssetImage('assets/defaultpic.png'),
+                                                        width: 56,
+                                                        height: 56,
+                                                        fit: BoxFit.cover,
+                                                      );
+                                                    },
+                                                  ),
+                                                ),
+                                              ),
+                                              if (hasUnread)
+                                                Positioned(
+                                                  right: 0,
+                                                  top: 0,
+                                                  child: Container(
+                                                    padding: const EdgeInsets.all(4),
+                                                    decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                                                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                                                    child: Text(
+                                                      unreadCount > 99 ? '99+' : unreadCount.toString(),
+                                                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                                      textAlign: TextAlign.center,
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
                                           ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  if (lastTime != null && screenWidth < 400) ...[
-                                    Text(
-                                      DateFormat('h:mm a').format(lastTime),
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: Colors.grey.shade600,
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  contractorName,
+                                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.blue.shade800),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  lastMessage,
+                                                  style: TextStyle(color: hasUnread ? Colors.black87 : Colors.grey.shade700, fontSize: 14, fontWeight: hasUnread ? FontWeight.w500 : FontWeight.normal),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          if (lastTime != null && constraints.maxWidth < 400) ...[
+                                            Text(DateFormat('h:mm a').format(lastTime), style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+                                          ] else ...[
+                                            Text(formatTime(lastTime), style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                                          ],
+                                        ],
                                       ),
                                     ),
-                                  ] else ...[
-                                    Text(
-                                      formatTime(lastTime),
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
+                                  );
+                                },
+                              );
+                            },
                           );
                         },
                       );
                     },
-                  );
-                },
-              );
-            },
-          ),
+                  ),
+                ),
+              ],
+            );
+          }
+
+          return SafeArea(
+            child: content,
+          );
+        },
+      ),
     );
   }
 

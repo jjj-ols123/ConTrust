@@ -36,10 +36,11 @@ class WebsiteStartPage extends StatelessWidget {
   }
 
   Widget _buildNavigationBar(BuildContext context, bool isDesktop, bool isTablet, bool isMobile) {
-    
+    final double sw = MediaQuery.of(context).size.width;
+    final bool isNarrow = sw < 420;
     return Container(
       height: 80,
-      padding: EdgeInsets.symmetric(horizontal: isDesktop ? 60 : 20),
+      padding: EdgeInsets.symmetric(horizontal: isDesktop ? 60 : 12),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -53,42 +54,76 @@ class WebsiteStartPage extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'ConTrust',
-            style: TextStyle(
-              fontSize: isDesktop ? 32 : 24,
-              fontWeight: FontWeight.w900,
-              color: const Color(0xFF1a1a1a),
-              letterSpacing: -0.5,
+          Expanded(
+            child: Text(
+              'ConTrust',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: isDesktop ? 32 : (isNarrow ? 20 : 22),
+                fontWeight: FontWeight.w900,
+                color: const Color(0xFF1a1a1a),
+                letterSpacing: -0.5,
+              ),
             ),
           ),
-          Row(
-            children: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pushNamed('/about'),
-                child: const Text(
-                  'About',
-                  style: TextStyle(color: Color(0xFF1a1a1a), fontWeight: FontWeight.w600),
+          const SizedBox(width: 8),
+          if (!isNarrow)
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Row(
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pushNamed('/about'),
+                      child: const Text(
+                        'About',
+                        style: TextStyle(color: Color(0xFF1a1a1a), fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pushNamed('/services'),
+                      child: const Text(
+                        'Services',
+                        style: TextStyle(color: Color(0xFF1a1a1a), fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pushNamed('/contact'),
+                      child: const Text(
+                        'Contact',
+                        style: TextStyle(color: Color(0xFF1a1a1a), fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: () => Navigator.of(context).pushNamed('/services'),
-                child: const Text(
-                  'Services',
-                  style: TextStyle(color: Color(0xFF1a1a1a), fontWeight: FontWeight.w600),
-                ),
-              ),
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: () => Navigator.of(context).pushNamed('/contact'),
-                child: const Text(
-                  'Contact',
-                  style: TextStyle(color: Color(0xFF1a1a1a), fontWeight: FontWeight.w600),
-                ),
-              ),
-            ],
-          ),
+            )
+          else
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.menu, color: Color(0xFF1a1a1a)),
+              onSelected: (value) {
+                switch (value) {
+                  case 'about':
+                    Navigator.of(context).pushNamed('/about');
+                    break;
+                  case 'services':
+                    Navigator.of(context).pushNamed('/services');
+                    break;
+                  case 'contact':
+                    Navigator.of(context).pushNamed('/contact');
+                    break;
+                }
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(value: 'about', child: Text('About')),
+                PopupMenuItem(value: 'services', child: Text('Services')),
+                PopupMenuItem(value: 'contact', child: Text('Contact')),
+              ],
+            ),
         ],
       ),
     );
