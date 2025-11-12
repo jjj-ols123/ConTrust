@@ -17,6 +17,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CeeProfileBuildMethods {
+  static const List<String> _profileTabs = ['About'];
+
   static Widget buildHeader(BuildContext context, String title) {
     return const SizedBox.shrink();
   }
@@ -31,31 +33,34 @@ class CeeProfileBuildMethods {
     Widget Function() buildAboutContent,
     Widget Function() buildPaymentHistoryContent,
   ) {
+    final String normalizedTab =
+        _profileTabs.contains(selectedTab) ? selectedTab : _profileTabs.first;
+    final String normalizedPrevious =
+        _profileTabs.contains(previousTab) ? previousTab : _profileTabs.first;
+
     Widget content;
-    switch (selectedTab) {
-      case 'Payment History':
-        content = buildPaymentHistoryContent();
-        break;
+    switch (normalizedTab) {
       case 'About':
       default:
         content = buildAboutContent();
         break;
     }
 
-    final bool isForward = _isForwardTransition(previousTab, selectedTab);
+    final bool isForward =
+        _isForwardTransition(normalizedPrevious, normalizedTab);
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 260),
       switchInCurve: Curves.easeOutCubic,
       switchOutCurve: Curves.easeInCubic,
       child: KeyedSubtree(
-        key: ValueKey<String>(selectedTab),
+        key: ValueKey<String>(normalizedTab),
         child: content,
       ),
       transitionBuilder: (child, animation) {
         final key = child.key;
         final isCurrentChild =
-            key is ValueKey<String> && key.value == selectedTab;
+            key is ValueKey<String> && key.value == normalizedTab;
 
         final Offset incomingOffset =
             isForward ? const Offset(0.08, 0) : const Offset(-0.08, 0);
@@ -84,12 +89,6 @@ class CeeProfileBuildMethods {
 
   static bool _isForwardTransition(String previousTab, String currentTab) {
     if (previousTab == currentTab) return true;
-    if (previousTab == 'About' && currentTab == 'Payment History') {
-      return true;
-    }
-    if (previousTab == 'Payment History' && currentTab == 'About') {
-      return false;
-    }
     return true;
   }
 
@@ -109,6 +108,9 @@ class CeeProfileBuildMethods {
     required VoidCallback toggleEditFullName,
     required VoidCallback saveFullName,
   }) {
+    final bool showNavigation =
+        selectedTab != null && onTabChanged != null && _profileTabs.length > 1;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -143,7 +145,7 @@ class CeeProfileBuildMethods {
               ],
             ),
           ),
-          if (selectedTab != null && onTabChanged != null) ...[
+          if (showNavigation) ...[
             const SizedBox(height: 16),
             buildMobileNavigation(selectedTab, onTabChanged),
           ],
@@ -262,6 +264,9 @@ class CeeProfileBuildMethods {
     required VoidCallback toggleEditFullName,
     required VoidCallback saveFullName,
   }) {
+    final bool showNavigation =
+        selectedTab != null && onTabChanged != null && _profileTabs.length > 1;
+
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Row(
@@ -357,7 +362,7 @@ class CeeProfileBuildMethods {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (selectedTab != null && onTabChanged != null) ...[
+                if (showNavigation) ...[
                   buildDesktopNavigation(selectedTab, onTabChanged),
                   const SizedBox(height: 20),
                 ],
@@ -392,7 +397,11 @@ class CeeProfileBuildMethods {
 
   static Widget buildMobileNavigation(
       String selectedTab, Function(String) onTabChanged) {
-    final tabs = ['About', 'Payment History'];
+    if (_profileTabs.length <= 1) {
+      return const SizedBox.shrink();
+    }
+
+    final tabs = _profileTabs;
 
     return Container(
       decoration: BoxDecoration(
@@ -437,7 +446,11 @@ class CeeProfileBuildMethods {
 
   static Widget buildDesktopNavigation(
       String selectedTab, Function(String) onTabChanged) {
-    final tabs = ['About', 'Payment History'];
+    if (_profileTabs.length <= 1) {
+      return const SizedBox.shrink();
+    }
+
+    final tabs = _profileTabs;
 
     return Container(
       decoration: BoxDecoration(
