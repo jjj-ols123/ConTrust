@@ -7,7 +7,8 @@ class GoogleSignInAuthentication {
 }
 
 class GoogleSignInAccount {
-  Future<GoogleSignInAuthentication> get authentication async => const GoogleSignInAuthentication();
+  Future<GoogleSignInAuthentication> get authentication async =>
+      const GoogleSignInAuthentication();
 }
 
 class GoogleSignIn {
@@ -15,9 +16,15 @@ class GoogleSignIn {
 
   static final GoogleSignIn instance = GoogleSignIn._();
 
-  Future<void> initialize({String? clientId, String? serverClientId, String? nonce, String? hostedDomain}) async {}
+  Future<void> initialize({
+    String? clientId,
+    String? serverClientId,
+    String? nonce,
+    String? hostedDomain,
+  }) async {}
 
-  Future<GoogleSignInAccount> authenticate({List<String>? scopes}) async => GoogleSignInAccount();
+  Future<GoogleSignInAccount> authenticate({List<String>? scopes}) async =>
+      GoogleSignInAccount();
 
   Future<void> signOut() async {}
 
