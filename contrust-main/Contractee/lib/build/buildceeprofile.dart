@@ -619,6 +619,11 @@ class CeeProfileBuildMethods {
     required String selectedPaymentType,
     required Function(String) onPaymentTypeChanged,
   }) {
+    // Hide payment history on mobile
+    if (!kIsWeb) {
+      return const SizedBox.shrink();
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,

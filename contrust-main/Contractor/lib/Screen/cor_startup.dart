@@ -373,19 +373,6 @@ Widget _buildLoginForm(BuildContext context) {
           ),
         ),
       ),
-      SizedBox(height: isMobile ? 12 : 20),
-      TextButton(
-        onPressed: () {
-          context.go('/auth/reset-password');
-        },
-        child: Text(
-          'Forgot Password?',
-          style: TextStyle(
-            color: Colors.amber.shade700,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
       SizedBox(height: isMobile ? 6 : 10),
       InkWell(
         onTap: () {
