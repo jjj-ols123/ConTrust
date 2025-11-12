@@ -1007,10 +1007,22 @@ class ProductBuildMethods {
     required BuildContext context,
     required List<Map<String, dynamic>> filteredCatalog,
     required int crossAxisCount,
-    required Function(Map<String, dynamic>, {int? editIndex})
-    openMaterialDialog,
+    required Function(Map<String, dynamic>) openMaterialDialog,
     required bool isDesktop,
   }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final double cardAspectRatio;
+
+    if (screenWidth < 460) {
+      cardAspectRatio = 0.78;
+    } else if (screenWidth < 720) {
+      cardAspectRatio = 0.85;
+    } else if (isDesktop) {
+      cardAspectRatio = 1.05;
+    } else {
+      cardAspectRatio = 0.92;
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1048,7 +1060,7 @@ class ProductBuildMethods {
             crossAxisCount: crossAxisCount,
             mainAxisSpacing: 20,
             crossAxisSpacing: 20,
-            childAspectRatio: 0.9,
+            childAspectRatio: cardAspectRatio,
           ),
           itemCount: filteredCatalog.length,
           itemBuilder: (context, index) {
@@ -1071,81 +1083,94 @@ class ProductBuildMethods {
   }) {
     final isSpecify = material['name'] == 'Specify';
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: 
-            isSpecify
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 150 || constraints.maxHeight < 170;
+        final iconSize = isCompact ? 28.0 : 32.0;
+        final iconPadding = isCompact ? 14.0 : 16.0;
+        final labelSpacing = isCompact ? 12.0 : 16.0;
+        final capsuleSpacing = isCompact ? 6.0 : 8.0;
+        final labelStyle = TextStyle(
+          fontSize: isCompact ? 14 : 16,
+          fontWeight: FontWeight.w600,
+          color: isSpecify ? Colors.amber.shade700 : const Color(0xFF2D3748),
+        );
+
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: isSpecify
                 ? Border.all(color: Colors.amber.shade300, width: 2)
                 : Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isSpecify ? Colors.amber.shade50 : Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  material['icon'] as IconData,
-                  size: 32,
-                  color:
-                      isSpecify ? Colors.amber.shade600 : Colors.grey.shade600,
-                ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-              const SizedBox(height: 16),
-              Text(
-                material['name'] as String,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color:
-                      isSpecify
-                          ? Colors.amber.shade700
-                          : const Color(0xFF2D3748),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              if (isSpecify) ...[
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'Custom',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.amber.shade700,
-                    ),
-                  ),
-                ),
-              ],
             ],
           ),
-        ),
-      ),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(iconPadding),
+                    decoration: BoxDecoration(
+                      color: isSpecify ? Colors.amber.shade50 : Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(
+                      material['icon'] as IconData,
+                      size: iconSize,
+                      color: isSpecify
+                          ? Colors.amber.shade600
+                          : Colors.grey.shade600,
+                    ),
+                  ),
+                  SizedBox(height: labelSpacing),
+                  Text(
+                    material['name'] as String,
+                    style: labelStyle,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (isSpecify) ...[
+                    SizedBox(height: capsuleSpacing),
+                    FittedBox(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Custom',
+                          style: TextStyle(
+                            fontSize: isCompact ? 11 : 12,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.amber.shade700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
