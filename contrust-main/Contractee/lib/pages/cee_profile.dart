@@ -32,6 +32,7 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
 
   String selectedTab = 'About';
+  String _previousTab = 'About';
 
   bool isEditingFullName = false;
   bool isEditingContact = false;
@@ -293,7 +294,7 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
                     onUploadPhoto: isUploadingPhoto ? null : _uploadProfilePhoto,
                     isUploadingPhoto: isUploadingPhoto,
                     selectedTab: selectedTab,
-                    onTabChanged: (tab) => setState(() => selectedTab = tab),
+                    onTabChanged: _onTabChanged,
                     isEditingFullName: isEditingFullName,
                     fullNameController: fullNameController,
                     toggleEditFullName: () => _toggleEdit('fullName'),
@@ -334,9 +335,18 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
   Widget _buildMainContent() {
     return CeeProfileBuildMethods.buildMainContent(
       selectedTab,
+      _previousTab,
       _buildAboutContent,
       _buildPaymentHistoryContent,
     );
+  }
+
+  void _onTabChanged(String tab) {
+    if (tab == selectedTab) return;
+    setState(() {
+      _previousTab = selectedTab;
+      selectedTab = tab;
+    });
   }
 
   Widget _buildPaymentHistoryContent() {

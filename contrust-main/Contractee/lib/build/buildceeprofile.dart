@@ -24,16 +24,72 @@ class CeeProfileBuildMethods {
     return const SliverToBoxAdapter(child: SizedBox.shrink());
   }
 
-  static Widget buildMainContent(String selectedTab, Function buildAboutContent,
-      Function buildPaymentHistoryContent) {
+  static Widget buildMainContent(
+    String selectedTab,
+    String previousTab,
+    Widget Function() buildAboutContent,
+    Widget Function() buildPaymentHistoryContent,
+  ) {
+    Widget content;
     switch (selectedTab) {
-      case 'About':
-        return buildAboutContent();
       case 'Payment History':
-        return buildPaymentHistoryContent();
+        content = buildPaymentHistoryContent();
+        break;
+      case 'About':
       default:
-        return buildAboutContent();
+        content = buildAboutContent();
+        break;
     }
+
+    final bool isForward = _isForwardTransition(previousTab, selectedTab);
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 260),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      child: KeyedSubtree(
+        key: ValueKey<String>(selectedTab),
+        child: content,
+      ),
+      transitionBuilder: (child, animation) {
+        final key = child.key;
+        final isCurrentChild =
+            key is ValueKey<String> && key.value == selectedTab;
+
+        final Offset incomingOffset =
+            isForward ? const Offset(0.08, 0) : const Offset(-0.08, 0);
+        final Offset outgoingOffset =
+            isForward ? const Offset(-0.08, 0) : const Offset(0.08, 0);
+
+        final offsetTween = Tween<Offset>(
+          begin: isCurrentChild ? incomingOffset : Offset.zero,
+          end: isCurrentChild ? Offset.zero : outgoingOffset,
+        );
+
+        final Animation<Offset> slideAnimation = isCurrentChild
+            ? animation.drive(offsetTween)
+            : ReverseAnimation(animation).drive(offsetTween);
+
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: slideAnimation,
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+
+  static bool _isForwardTransition(String previousTab, String currentTab) {
+    if (previousTab == currentTab) return true;
+    if (previousTab == 'About' && currentTab == 'Payment History') {
+      return true;
+    }
+    if (previousTab == 'Payment History' && currentTab == 'About') {
+      return false;
+    }
+    return true;
   }
 
   static Widget buildMobileLayout({
