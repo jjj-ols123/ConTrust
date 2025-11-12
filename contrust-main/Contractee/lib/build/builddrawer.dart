@@ -258,7 +258,6 @@ class _ContracteeOngoingNavItem extends StatelessWidget {
 class _UserDropdownMenuContracteeState extends State<UserDropdownMenuContractee> {
   String? _userName;
   String? _userEmail;
-  String? _profilePhotoUrl;
 
   @override
   void initState() {
@@ -270,31 +269,9 @@ class _UserDropdownMenuContracteeState extends State<UserDropdownMenuContractee>
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user != null) {
-        String? profilePhoto;
-        try {
-          final usersRow = await Supabase.instance.client
-              .from('Users')
-              .select('profile_image_url')
-              .eq('users_id', user.id)
-              .maybeSingle();
-
-          profilePhoto = (usersRow?['profile_image_url'] as String?)?.trim();
-        } catch (dbError) {
-          debugPrint('Failed to load profile photo from Users table: $dbError');
-        }
-
-        final metadataPhoto = (user.userMetadata?['profile_photo'] as String?)?.trim() ??
-            (user.userMetadata?['avatar_url'] as String?)?.trim() ??
-            (user.userMetadata?['picture'] as String?)?.trim();
-
         setState(() {
           _userName = user.userMetadata?['full_name'] ?? 'Contractee';
           _userEmail = user.email ?? '';
-          _profilePhotoUrl = (profilePhoto != null && profilePhoto.isNotEmpty)
-              ? profilePhoto
-              : (metadataPhoto != null && metadataPhoto.isNotEmpty)
-                  ? metadataPhoto
-                  : null;
         });
       }
     } catch (e) {
@@ -392,15 +369,8 @@ class _UserDropdownMenuContracteeState extends State<UserDropdownMenuContractee>
         ),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 14,
-              backgroundColor: Colors.white,
-              backgroundImage: _profilePhotoUrl != null && _profilePhotoUrl!.isNotEmpty
-                  ? NetworkImage(_profilePhotoUrl!)
-                  : const AssetImage('assets/defaultpic.png') as ImageProvider,
-              child: _userName == null ? const Icon(Icons.person, size: 16, color: Colors.grey) : null,
-            ),
-            const SizedBox(width: 8),
+            const Icon(Icons.person_outline, color: Colors.black, size: 18),
+            const SizedBox(width: 6),
             Text(
               _userName ?? 'Contractee',
               style: const TextStyle(
@@ -409,7 +379,7 @@ class _UserDropdownMenuContracteeState extends State<UserDropdownMenuContractee>
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 2),
             const Icon(
               Icons.arrow_drop_down,
               color: Colors.black,

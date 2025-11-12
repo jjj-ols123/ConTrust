@@ -18,6 +18,7 @@ class ContractorsView extends StatelessWidget {
   final String profileImage;
   final double rating;
   final bool isMobile;
+  final VoidCallback? onViewPressed;
 
   static const String profileUrl =
       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
@@ -29,6 +30,7 @@ class ContractorsView extends StatelessWidget {
     required this.profileImage,
     required this.rating,
     this.isMobile = false,
+    this.onViewPressed,
   }) : super(key: key);
 
   @override
@@ -87,7 +89,7 @@ class ContractorsView extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                         fontSize: isMobile ? 12 : 18,
                       ),
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: isMobile ? 2 : 4),
@@ -119,7 +121,7 @@ class ContractorsView extends StatelessWidget {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: onViewPressed ?? () {
                     CheckUserLogin.isLoggedIn(
                       context: context,
                       onAuthenticated: () async {

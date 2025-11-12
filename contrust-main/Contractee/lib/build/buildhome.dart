@@ -2086,7 +2086,7 @@ class HomePageBuilder {
           Column(
             children: [
               SizedBox(
-                height: isMobile ? 200 : 340,
+                height: isMobile ? 210 : 420,
                 child: isLoading
                     ? const Center(child: CircularProgressIndicator(color: Colors.amber))
                     : filteredContractors.isEmpty
@@ -2510,7 +2510,7 @@ class HomePageBuilder {
                       childAspectRatio: 0.7,
                     ),
                     itemCount: contractors.length,
-                    itemBuilder: (context, index) {
+                    itemBuilder: (gridContext, index) {
                       final contractor = contractors[index];
                       final profilePhoto = contractor['profile_photo'];
                       final profileImage =
@@ -2540,6 +2540,17 @@ class HomePageBuilder {
                             rating: (contractor['rating'] ?? 0.0).toDouble(),
                             // Force compact card rendering in the dialog
                             isMobile: true,
+                            onViewPressed: () {
+                              // Get contractor info and navigate immediately
+                              final contractorName = contractor['firm_name'] ?? 'Unknown';
+                              final encodedName = Uri.encodeComponent(contractorName);
+
+                              // Navigate directly - user is already authenticated to see this dialog
+                              GoRouter.of(context).go('/contractor/$encodedName');
+
+                              // Close dialog immediately after navigation
+                              Navigator.of(dialogContext).pop();
+                            },
                           ),
                         ),
                       );
