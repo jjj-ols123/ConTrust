@@ -13,6 +13,8 @@ import 'package:contractee/pages/cee_profile.dart';
 import 'package:contractee/pages/cee_notification.dart';
 import 'package:go_router/go_router.dart';
 
+const _kNavAnimDuration = Duration(milliseconds: 220);
+
 class UserDropdownMenuContractee extends StatefulWidget {
   final String? contracteeId;
 
@@ -131,16 +133,37 @@ class _ContracteeNavItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(6),
+            AnimatedContainer(
+              duration: _kNavAnimDuration,
+              curve: Curves.easeOut,
+              padding: EdgeInsets.all(isActive ? 8 : 6),
               decoration: BoxDecoration(
                 color: isActive ? Colors.amber.shade100 : Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(isActive ? 16 : 12),
+                boxShadow: isActive
+                    ? [
+                        BoxShadow(
+                          color: Colors.amber.shade200,
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ]
+                    : null,
               ),
-              child: Icon(
-                isActive ? activeIcon : icon,
-                color: isActive ? Colors.amber.shade700 : Colors.grey.shade600,
-                size: 22,
+              child: AnimatedSwitcher(
+                duration: _kNavAnimDuration,
+                switchInCurve: Curves.easeOut,
+                switchOutCurve: Curves.easeIn,
+                transitionBuilder: (child, animation) => ScaleTransition(
+                  scale: CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+                  child: child,
+                ),
+                child: Icon(
+                  isActive ? activeIcon : icon,
+                  key: ValueKey(isActive),
+                  color: isActive ? Colors.amber.shade700 : Colors.grey.shade600,
+                  size: isActive ? 24 : 22,
+                ),
               ),
             ),
           ],
@@ -170,44 +193,60 @@ class _ContracteeOngoingNavItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
+            AnimatedContainer(
+              duration: _kNavAnimDuration,
+              curve: Curves.easeOut,
+              padding: EdgeInsets.all(isActive ? 12 : 10),
               decoration: BoxDecoration(
                 gradient: isActive
                     ? LinearGradient(
-                          colors: [Colors.amber.shade700, Colors.amber.shade400],
-                          begin: Alignment.topLeft,
+                        colors: [Colors.amber.shade700, Colors.amber.shade400],
+                        begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       )
                     : null,
                 color: isActive ? null : Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(isActive ? 20 : 18),
                 boxShadow: isActive
                     ? [
                         BoxShadow(
                           color: Colors.amber.shade200,
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                          blurRadius: 14,
+                          offset: const Offset(0, 6),
                         ),
                       ]
                     : null,
               ),
-              child: isLoading
-                  ? SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          isActive ? Colors.white : Colors.amber.shade700,
+              child: AnimatedSwitcher(
+                duration: _kNavAnimDuration,
+                switchInCurve: Curves.easeOut,
+                switchOutCurve: Curves.easeIn,
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(
+                    scale: animation,
+                    child: child,
+                  ),
+                ),
+                child: isLoading
+                    ? SizedBox(
+                        key: const ValueKey('loading'),
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            isActive ? Colors.white : Colors.amber.shade700,
+                          ),
                         ),
+                      )
+                    : Icon(
+                        Icons.work_outline,
+                        key: ValueKey(isActive),
+                        color: isActive ? Colors.white : Colors.amber.shade700,
+                        size: isActive ? 24 : 22,
                       ),
-                    )
-                  : Icon(
-                      Icons.work_outline,
-                      color: isActive ? Colors.white : Colors.amber.shade700,
-                      size: 22,
-                    ),
+              ),
             ),
           ],
         ),
