@@ -45,13 +45,13 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
   List<Map<String, dynamic>> _photos = [];
   List<Map<String, dynamic>> _materials = [];
   bool _isLoading = true;
-  
+
   String? _contracteeName;
   String? _contractType;
   DateTime? _startDate;
   DateTime? _estimatedCompletion;
-  List<DateTime> _milestoneDates = []; 
-  Map<String, dynamic>? _contractData; 
+  List<DateTime> _milestoneDates = [];
+  Map<String, dynamic>? _contractData;
   String? _projectStatus;
   final FetchService _fetchService = FetchService();
   final TextEditingController _reportController = TextEditingController();
@@ -59,7 +59,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
   void _extractMilestoneDates(Map<String, dynamic> contract) {
     final contractTypeData = contract['contract_type'] as Map<String, dynamic>?;
     final contractType = contractTypeData?['template_name'] as String?;
-      
+
     if (contractType?.toLowerCase().contains('lump sum') == true) {
       final fieldValues = contract['field_values'] as Map<String, dynamic>?;
       if (fieldValues != null) {
@@ -70,7 +70,9 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             try {
               final dateStr = milestoneDateStr.split(' ')[0];
               final parsed = DateTime.parse(dateStr);
-              _milestoneDates.add(DateTime(parsed.year, parsed.month, parsed.day));
+              _milestoneDates.add(
+                DateTime(parsed.year, parsed.month, parsed.day),
+              );
             } catch (e) {
               //
             }
@@ -83,7 +85,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       _milestoneDates = [];
     }
   }
-  
+
   String _selectedTab = 'Tasks';
   PageController? _activitiesPageController;
   PageController? _calendarActivitiesPageController;
@@ -101,7 +103,8 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
   @override
   void didUpdateWidget(CorProjectDashboard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.projectData != null && widget.projectData != oldWidget.projectData) {
+    if (widget.projectData != null &&
+        widget.projectData != oldWidget.projectData) {
       _updateFromProjectData(widget.projectData!);
     }
   }
@@ -116,7 +119,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
 
   void _updateFromProjectData(Map<String, dynamic> data) {
     final projectDetails = data['projectDetails'] as Map<String, dynamic>?;
-    
+
     setState(() {
       _tasks = List<Map<String, dynamic>>.from(data['tasks'] ?? []);
       _reports = List<Map<String, dynamic>>.from(data['reports'] ?? []);
@@ -136,7 +139,9 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
 
     final contracteeId = projectDetails['contractee_id'] as String?;
     if (contracteeId != null) {
-      final contracteeData = await _fetchService.fetchContracteeData(contracteeId);
+      final contracteeData = await _fetchService.fetchContracteeData(
+        contracteeId,
+      );
       if (mounted) {
         setState(() {
           _contracteeName = contracteeData?['full_name'] as String?;
@@ -153,7 +158,8 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       if (contract != null && mounted) {
         setState(() {
           _contractData = contract;
-          final contractTypeData = contract['contract_type'] as Map<String, dynamic>?;
+          final contractTypeData =
+              contract['contract_type'] as Map<String, dynamic>?;
           _contractType = contractTypeData?['template_name'] as String?;
         });
         _extractMilestoneDates(contract);
@@ -164,7 +170,8 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
 
       setState(() {
         if (_contractData != null && !isCustomContract) {
-          final fieldValues = _contractData!['field_values'] as Map<String, dynamic>?;
+          final fieldValues =
+              _contractData!['field_values'] as Map<String, dynamic>?;
           if (fieldValues != null) {
             final startDateStr = fieldValues['Project.StartDate'] as String?;
             if (startDateStr != null && startDateStr.isNotEmpty) {
@@ -177,12 +184,17 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               }
             }
 
-            final completionDateStr = fieldValues['Project.CompletionDate'] as String?;
+            final completionDateStr =
+                fieldValues['Project.CompletionDate'] as String?;
             if (completionDateStr != null && completionDateStr.isNotEmpty) {
               try {
                 final dateStr = completionDateStr.split(' ')[0];
                 final parsed = DateTime.parse(dateStr);
-                _estimatedCompletion = DateTime(parsed.year, parsed.month, parsed.day);
+                _estimatedCompletion = DateTime(
+                  parsed.year,
+                  parsed.month,
+                  parsed.day,
+                );
               } catch (_) {
                 _estimatedCompletion = null;
               }
@@ -203,11 +215,17 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
         }
 
         if (_estimatedCompletion == null) {
-          final estimatedCompletionStr = projectDetails['estimated_completion'] as String?;
-          if (estimatedCompletionStr != null && estimatedCompletionStr.isNotEmpty) {
+          final estimatedCompletionStr =
+              projectDetails['estimated_completion'] as String?;
+          if (estimatedCompletionStr != null &&
+              estimatedCompletionStr.isNotEmpty) {
             try {
               final parsed = DateTime.parse(estimatedCompletionStr);
-              _estimatedCompletion = DateTime(parsed.year, parsed.month, parsed.day);
+              _estimatedCompletion = DateTime(
+                parsed.year,
+                parsed.month,
+                parsed.day,
+              );
             } catch (_) {
               _estimatedCompletion = null;
             }
@@ -227,12 +245,14 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
 
       final projectDetails = data['projectDetails'] as Map<String, dynamic>?;
       final contracteeId = projectDetails?['contractee_id'] as String?;
-      
+
       if (contracteeId != null) {
-        final contracteeData = await _fetchService.fetchContracteeData(contracteeId);
+        final contracteeData = await _fetchService.fetchContracteeData(
+          contracteeId,
+        );
         _contracteeName = contracteeData?['full_name'] as String?;
       }
-      
+
       final contractId = projectDetails?['contract_id'] as String?;
       if (contractId != null) {
         final contract = await _fetchService.fetchContractWithDetails(
@@ -241,15 +261,16 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
         );
         if (contract != null) {
           _contractData = contract;
-          final contractTypeData = contract['contract_type'] as Map<String, dynamic>?;
+          final contractTypeData =
+              contract['contract_type'] as Map<String, dynamic>?;
           _contractType = contractTypeData?['template_name'] as String?;
           _extractMilestoneDates(contract);
         }
       }
-      
+
       if (projectDetails != null) {
         final isCustomContract = _contractType?.toLowerCase() == 'custom';
-        
+
         if (isCustomContract) {
           final startDateStr = projectDetails['start_date'] as String?;
           if (startDateStr != null && startDateStr.isNotEmpty) {
@@ -262,12 +283,18 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
           } else {
             _startDate = null;
           }
-          
-          final estimatedCompletionStr = projectDetails['estimated_completion'] as String?;
-          if (estimatedCompletionStr != null && estimatedCompletionStr.isNotEmpty) {
+
+          final estimatedCompletionStr =
+              projectDetails['estimated_completion'] as String?;
+          if (estimatedCompletionStr != null &&
+              estimatedCompletionStr.isNotEmpty) {
             try {
               final parsed = DateTime.parse(estimatedCompletionStr);
-              _estimatedCompletion = DateTime(parsed.year, parsed.month, parsed.day);
+              _estimatedCompletion = DateTime(
+                parsed.year,
+                parsed.month,
+                parsed.day,
+              );
             } catch (_) {
               _estimatedCompletion = null;
             }
@@ -275,12 +302,13 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             _estimatedCompletion = null;
           }
         } else if (_contractData != null) {
-          final fieldValues = _contractData!['field_values'] as Map<String, dynamic>?;
+          final fieldValues =
+              _contractData!['field_values'] as Map<String, dynamic>?;
           if (fieldValues != null) {
             final startDateStr = fieldValues['Project.StartDate'] as String?;
             if (startDateStr != null && startDateStr.isNotEmpty) {
               try {
-                final dateStr = startDateStr.split(' ')[0]; 
+                final dateStr = startDateStr.split(' ')[0];
                 final parsed = DateTime.parse(dateStr);
                 _startDate = DateTime(parsed.year, parsed.month, parsed.day);
               } catch (_) {
@@ -290,12 +318,17 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               _startDate = null;
             }
 
-            final completionDateStr = fieldValues['Project.CompletionDate'] as String?;
+            final completionDateStr =
+                fieldValues['Project.CompletionDate'] as String?;
             if (completionDateStr != null && completionDateStr.isNotEmpty) {
               try {
-                final dateStr = completionDateStr.split(' ')[0]; 
+                final dateStr = completionDateStr.split(' ')[0];
                 final parsed = DateTime.parse(dateStr);
-                _estimatedCompletion = DateTime(parsed.year, parsed.month, parsed.day);
+                _estimatedCompletion = DateTime(
+                  parsed.year,
+                  parsed.month,
+                  parsed.day,
+                );
               } catch (_) {
                 _estimatedCompletion = null;
               }
@@ -315,11 +348,17 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               _startDate = null;
             }
 
-            final estimatedCompletionStr = projectDetails['estimated_completion'] as String?;
-            if (estimatedCompletionStr != null && estimatedCompletionStr.isNotEmpty) {
+            final estimatedCompletionStr =
+                projectDetails['estimated_completion'] as String?;
+            if (estimatedCompletionStr != null &&
+                estimatedCompletionStr.isNotEmpty) {
               try {
                 final parsed = DateTime.parse(estimatedCompletionStr);
-                _estimatedCompletion = DateTime(parsed.year, parsed.month, parsed.day);
+                _estimatedCompletion = DateTime(
+                  parsed.year,
+                  parsed.month,
+                  parsed.day,
+                );
               } catch (_) {
                 _estimatedCompletion = null;
               }
@@ -340,11 +379,17 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             _startDate = null;
           }
 
-          final estimatedCompletionStr = projectDetails['estimated_completion'] as String?;
-          if (estimatedCompletionStr != null && estimatedCompletionStr.isNotEmpty) {
+          final estimatedCompletionStr =
+              projectDetails['estimated_completion'] as String?;
+          if (estimatedCompletionStr != null &&
+              estimatedCompletionStr.isNotEmpty) {
             try {
               final parsed = DateTime.parse(estimatedCompletionStr);
-              _estimatedCompletion = DateTime(parsed.year, parsed.month, parsed.day);
+              _estimatedCompletion = DateTime(
+                parsed.year,
+                parsed.month,
+                parsed.day,
+              );
             } catch (_) {
               _estimatedCompletion = null;
             }
@@ -376,7 +421,9 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Colors.amber));
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.amber),
+      );
     }
 
     final screenWidth = MediaQuery.of(context).size.width;
@@ -391,7 +438,8 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
 
   /// Mobile Layout
   Widget _buildMobileLayout() {
-    final project = widget.projectData?['projectDetails'] as Map<String, dynamic>?;
+    final project =
+        widget.projectData?['projectDetails'] as Map<String, dynamic>?;
     final projectTitle = project?['title'] ?? 'Project';
 
     return Scaffold(
@@ -401,12 +449,19 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
           child: Column(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.info_outline, color: Colors.amber, size: 28),
+                      icon: const Icon(
+                        Icons.info_outline,
+                        color: Colors.amber,
+                        size: 28,
+                      ),
                       onPressed: () => _showProjectInfoDialog(projectTitle),
                       tooltip: 'Project Information',
                     ),
@@ -441,7 +496,10 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       builder: (dialogContext) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 24,
+          ),
           child: Material(
             color: Colors.transparent,
             child: ConstrainedBox(
@@ -503,7 +561,11 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                           ),
                           IconButton(
                             onPressed: () => Navigator.of(dialogContext).pop(),
-                            icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                            icon: const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                           ),
@@ -528,7 +590,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
 
   Widget _buildMobileCalendarAndActivities() {
     _calendarActivitiesPageController ??= PageController();
-    
+
     int currentPage = 0;
 
     return StatefulBuilder(
@@ -563,27 +625,31 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                     const Spacer(),
                     IconButton(
                       icon: const Icon(Icons.chevron_left, size: 24),
-                      onPressed: currentPage > 0
-                          ? () {
-                              _calendarActivitiesPageController!.previousPage(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                              );
-                            }
-                          : null,
-                      color: currentPage > 0 ? Colors.amber.shade700 : Colors.grey,
+                      onPressed:
+                          currentPage > 0
+                              ? () {
+                                _calendarActivitiesPageController!.previousPage(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
+                              }
+                              : null,
+                      color:
+                          currentPage > 0 ? Colors.amber.shade700 : Colors.grey,
                     ),
                     IconButton(
                       icon: const Icon(Icons.chevron_right, size: 24),
-                      onPressed: currentPage < 1
-                          ? () {
-                              _calendarActivitiesPageController!.nextPage(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                              );
-                            }
-                          : null,
-                      color: currentPage < 1 ? Colors.amber.shade700 : Colors.grey,
+                      onPressed:
+                          currentPage < 1
+                              ? () {
+                                _calendarActivitiesPageController!.nextPage(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
+                              }
+                              : null,
+                      color:
+                          currentPage < 1 ? Colors.amber.shade700 : Colors.grey,
                     ),
                   ],
                 ),
@@ -600,7 +666,10 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                   children: [
                     // Calendar Page
                     SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       child: _buildCalendarWidget(),
                     ),
                     // Recent Activities Page
@@ -620,9 +689,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     final activities = _tasks.isEmpty && _reports.isEmpty && _photos.isEmpty;
 
     if (activities) {
-      return const Center(
-        child: Text('No recent activities'),
-      );
+      return const Center(child: Text('No recent activities'));
     }
 
     return SingleChildScrollView(
@@ -637,7 +704,10 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
   }
 
   /// Mobile Tab Navigation
-  Widget _buildMobileTabNavigation(String selectedTab, Function(String) onTabChanged) {
+  Widget _buildMobileTabNavigation(
+    String selectedTab,
+    Function(String) onTabChanged,
+  ) {
     final tabs = ['Tasks', 'Reports', 'Photos', 'Materials'];
 
     return Container(
@@ -654,31 +724,37 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
         ],
       ),
       child: Row(
-        children: tabs.map((tab) {
-          final isActive = selectedTab == tab;
-          return Expanded(
-            child: InkWell(
-              onTap: () => onTabChanged(tab),
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  color: isActive ? Colors.amber.shade50 : Colors.transparent,
+        children:
+            tabs.map((tab) {
+              final isActive = selectedTab == tab;
+              return Expanded(
+                child: InkWell(
+                  onTap: () => onTabChanged(tab),
                   borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  tab,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                    color: isActive ? Colors.amber.shade700 : Colors.grey.shade600,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      color:
+                          isActive ? Colors.amber.shade50 : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      tab,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight:
+                            isActive ? FontWeight.w600 : FontWeight.w500,
+                        color:
+                            isActive
+                                ? Colors.amber.shade700
+                                : Colors.grey.shade600,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-          );
-        }).toList(),
+              );
+            }).toList(),
       ),
     );
   }
@@ -717,12 +793,19 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.task, color: Colors.black87, size: MediaQuery.of(context).size.width < 400 ? 20 : 24),
-                  SizedBox(width: MediaQuery.of(context).size.width < 400 ? 8 : 12),
+                  Icon(
+                    Icons.task,
+                    color: Colors.black87,
+                    size: MediaQuery.of(context).size.width < 400 ? 20 : 24,
+                  ),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width < 400 ? 8 : 12,
+                  ),
                   Text(
                     'To-Dos & Tasks',
                     style: TextStyle(
-                      fontSize: MediaQuery.of(context).size.width < 400 ? 14 : 18,
+                      fontSize:
+                          MediaQuery.of(context).size.width < 400 ? 14 : 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
@@ -739,15 +822,17 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: _tasks.isEmpty
-                ? const Center(
-                    child: Text('No tasks added yet'),
-                  )
-                : SingleChildScrollView(
-                    child: Column(
-                      children: _getSortedTasks().map((task) => _buildTaskItem(task)).toList(),
+            child:
+                _tasks.isEmpty
+                    ? const Center(child: Text('No tasks added yet'))
+                    : SingleChildScrollView(
+                      child: Column(
+                        children:
+                            _getSortedTasks()
+                                .map((task) => _buildTaskItem(task))
+                                .toList(),
+                      ),
                     ),
-                  ),
           ),
         ],
       ),
@@ -772,12 +857,19 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.description, color: Colors.black87, size: MediaQuery.of(context).size.width < 400 ? 20 : 24),
-                  SizedBox(width: MediaQuery.of(context).size.width < 400 ? 8 : 12),
+                  Icon(
+                    Icons.description,
+                    color: Colors.black87,
+                    size: MediaQuery.of(context).size.width < 400 ? 20 : 24,
+                  ),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width < 400 ? 8 : 12,
+                  ),
                   Text(
                     'Progress Reports',
                     style: TextStyle(
-                      fontSize: MediaQuery.of(context).size.width < 400 ? 14 : 18,
+                      fontSize:
+                          MediaQuery.of(context).size.width < 400 ? 14 : 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
@@ -794,15 +886,17 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: _reports.isEmpty
-                ? const Center(
-                    child: Text('No reports added yet'),
-                  )
-                : SingleChildScrollView(
-                    child: Column(
-                      children: _reports.map((report) => _buildReportItem(report)).toList(),
+            child:
+                _reports.isEmpty
+                    ? const Center(child: Text('No reports added yet'))
+                    : SingleChildScrollView(
+                      child: Column(
+                        children:
+                            _reports
+                                .map((report) => _buildReportItem(report))
+                                .toList(),
+                      ),
                     ),
-                  ),
           ),
         ],
       ),
@@ -827,12 +921,19 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.photo_library, color: Colors.black87, size: MediaQuery.of(context).size.width < 400 ? 20 : 24),
-                  SizedBox(width: MediaQuery.of(context).size.width < 400 ? 8 : 12),
+                  Icon(
+                    Icons.photo_library,
+                    color: Colors.black87,
+                    size: MediaQuery.of(context).size.width < 400 ? 20 : 24,
+                  ),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width < 400 ? 8 : 12,
+                  ),
                   Text(
                     'Project Photos',
                     style: TextStyle(
-                      fontSize: MediaQuery.of(context).size.width < 400 ? 14 : 18,
+                      fontSize:
+                          MediaQuery.of(context).size.width < 400 ? 14 : 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
@@ -849,15 +950,17 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: _photos.isEmpty
-                ? const Center(
-                    child: Text('No photos added yet'),
-                  )
-                : SingleChildScrollView(
-                    child: Column(
-                      children: _photos.map((photo) => _buildPhotoListItem(photo)).toList(),
+            child:
+                _photos.isEmpty
+                    ? const Center(child: Text('No photos added yet'))
+                    : SingleChildScrollView(
+                      child: Column(
+                        children:
+                            _photos
+                                .map((photo) => _buildPhotoListItem(photo))
+                                .toList(),
+                      ),
                     ),
-                  ),
           ),
         ],
       ),
@@ -889,12 +992,19 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.inventory, color: Colors.black87, size: MediaQuery.of(context).size.width < 400 ? 20 : 24),
-                  SizedBox(width: MediaQuery.of(context).size.width < 400 ? 8 : 12),
+                  Icon(
+                    Icons.inventory,
+                    color: Colors.black87,
+                    size: MediaQuery.of(context).size.width < 400 ? 20 : 24,
+                  ),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width < 400 ? 8 : 12,
+                  ),
                   Text(
                     'Materials & Costs',
                     style: TextStyle(
-                      fontSize: MediaQuery.of(context).size.width < 400 ? 14 : 18,
+                      fontSize:
+                          MediaQuery.of(context).size.width < 400 ? 14 : 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
@@ -911,62 +1021,76 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: _materials.isEmpty
-                ? const Center(
-                    child: Text('No materials added yet'),
-                  )
-                : Stack(
-                    children: [
-                      SingleChildScrollView(
-                        padding: const EdgeInsets.only(bottom: 70),
-                        child: Column(
-                          children: _materials.map((material) => _buildMaterialItem(material)).toList(),
+            child:
+                _materials.isEmpty
+                    ? const Center(child: Text('No materials added yet'))
+                    : Stack(
+                      children: [
+                        SingleChildScrollView(
+                          padding: const EdgeInsets.only(bottom: 70),
+                          child: Column(
+                            children:
+                                _materials
+                                    .map(
+                                      (material) =>
+                                          _buildMaterialItem(material),
+                                    )
+                                    .toList(),
+                          ),
                         ),
-                      ),
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            border: Border(
-                              top: BorderSide(color: Colors.grey.shade300, width: 1),
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border(
+                                top: BorderSide(
+                                  color: Colors.grey.shade300,
+                                  width: 1,
+                                ),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, -2),
+                                ),
+                              ],
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 4,
-                                offset: const Offset(0, -2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Total Cost:',
-                                style: TextStyle(
-                                  fontSize: MediaQuery.of(context).size.width < 400 ? 14 : 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Total Cost:',
+                                  style: TextStyle(
+                                    fontSize:
+                                        MediaQuery.of(context).size.width < 400
+                                            ? 14
+                                            : 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                '₱${totalCost.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontSize: MediaQuery.of(context).size.width < 400 ? 14 : 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green,
+                                Text(
+                                  '₱${totalCost.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    fontSize:
+                                        MediaQuery.of(context).size.width < 400
+                                            ? 14
+                                            : 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
           ),
         ],
       ),
@@ -976,27 +1100,19 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
   /// Main two-column layout with flex 1 (left) and flex 3 (right)
   Widget _buildTwoColumnLayout() {
     return SizedBox(
-      height: MediaQuery.of(context).size.height - 
-              MediaQuery.of(context).padding.top - 
-              MediaQuery.of(context).padding.bottom,
+      height:
+          MediaQuery.of(context).size.height -
+          MediaQuery.of(context).padding.top -
+          MediaQuery.of(context).padding.bottom,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Left Column - flex 1
-          Expanded(
-            flex: 1,
-            child: _buildLeftColumn(),
-          ),
+          Expanded(flex: 1, child: _buildLeftColumn()),
           // Vertical Divider
-          Container(
-            width: 1,
-            color: Colors.grey.shade300,
-          ),
+          Container(width: 1, color: Colors.grey.shade300),
           // Right Column - flex 3
-          Expanded(
-            flex: 3,
-            child: _buildRightColumn(),
-          ),
+          Expanded(flex: 3, child: _buildRightColumn()),
         ],
       ),
     );
@@ -1004,7 +1120,8 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
 
   /// Left Column: Title Container, Calendar, Recent Activities
   Widget _buildLeftColumn() {
-    final project = widget.projectData?['projectDetails'] as Map<String, dynamic>?;
+    final project =
+        widget.projectData?['projectDetails'] as Map<String, dynamic>?;
     final projectTitle = project?['title'] ?? 'Project';
 
     return Container(
@@ -1052,10 +1169,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                 const SizedBox(height: 4),
                 Text(
                   'By: ${_contracteeName ?? 'Client'}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade700,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
                 ),
               ],
             ),
@@ -1090,10 +1204,11 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       ),
     );
   }
-  
+
   /// View Contract Function
   Future<void> _viewContract() async {
-    final project = widget.projectData?['projectDetails'] as Map<String, dynamic>?;
+    final project =
+        widget.projectData?['projectDetails'] as Map<String, dynamic>?;
     final contractId = project?['contract_id'] as String?;
 
     if (contractId != null) {
@@ -1107,7 +1222,8 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       final contractorId = Supabase.instance.client.auth.currentUser?.id;
       if (contractorId == null) return;
 
-      final projects = await _fetchService.fetchContractorProjectsIncludingCompleted(contractorId);
+      final projects = await _fetchService
+          .fetchContractorProjectsIncludingCompleted(contractorId);
 
       if (projects.isEmpty) {
         if (mounted) {
@@ -1125,117 +1241,147 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
 
       final selectedProjectId = await showDialog<String>(
         context: context,
-        builder: (dialogContext) => Center(
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 500),
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.black, width: 1.5),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
-                    blurRadius: 20,
-                    spreadRadius: 1,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.shade700,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
+        builder:
+            (dialogContext) => Center(
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 500),
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.black, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 20,
+                        spreadRadius: 1,
+                        offset: const Offset(0, 8),
                       ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Icon(
-                            Icons.swap_horiz,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        const Expanded(
-                          child: Text(
-                            'Switch Project',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.of(dialogContext).pop(),
-                          icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                      ],
-                    ),
+                    ],
                   ),
-                  Flexible(
-                    child: Container(
-                      constraints: const BoxConstraints(maxHeight: 400),
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        padding: const EdgeInsets.all(16),
-                        itemCount: projects.length,
-                        itemBuilder: (context, index) {
-                          final project = projects[index];
-                          final isCurrentProject = project['project_id'] == widget.projectId;
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            color: isCurrentProject ? Colors.amber.shade50 : null,
-                            child: ListTile(
-                              selected: isCurrentProject,
-                              title: Text(
-                                project['title'] ?? 'Untitled Project',
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade700,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(20),
+                            topRight: Radius.circular(20),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Icon(
+                                Icons.swap_horiz,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            const Expanded(
+                              child: Text(
+                                'Switch Project',
                                 style: TextStyle(
-                                  fontWeight: isCurrentProject ? FontWeight.bold : FontWeight.normal,
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              subtitle: Text(isCurrentProject 
-                                ? 'Current Project • ${project['status'] ?? 'N/A'}' 
-                                : 'Status: ${project['status'] ?? 'N/A'}'),
-                              leading: isCurrentProject 
-                                ? const Icon(Icons.check_circle, color: Colors.green)
-                                : Icon(Icons.folder, color: Colors.amber.shade700),
-                              trailing: isCurrentProject 
-                                ? null 
-                                : Icon(Icons.arrow_forward_ios, size: 16, color: Colors.amber.shade700),
-                              onTap: isCurrentProject 
-                                ? null 
-                                : () {
-                                    Navigator.of(dialogContext).pop(project['project_id']);
-                                  },
                             ),
-                          );
-                        },
+                            IconButton(
+                              onPressed:
+                                  () => Navigator.of(dialogContext).pop(),
+                              icon: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                      Flexible(
+                        child: Container(
+                          constraints: const BoxConstraints(maxHeight: 400),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            padding: const EdgeInsets.all(16),
+                            itemCount: projects.length,
+                            itemBuilder: (context, index) {
+                              final project = projects[index];
+                              final isCurrentProject =
+                                  project['project_id'] == widget.projectId;
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: 8),
+                                color:
+                                    isCurrentProject
+                                        ? Colors.amber.shade50
+                                        : null,
+                                child: ListTile(
+                                  selected: isCurrentProject,
+                                  title: Text(
+                                    project['title'] ?? 'Untitled Project',
+                                    style: TextStyle(
+                                      fontWeight:
+                                          isCurrentProject
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    isCurrentProject
+                                        ? 'Current Project • ${project['status'] ?? 'N/A'}'
+                                        : 'Status: ${project['status'] ?? 'N/A'}',
+                                  ),
+                                  leading:
+                                      isCurrentProject
+                                          ? const Icon(
+                                            Icons.check_circle,
+                                            color: Colors.green,
+                                          )
+                                          : Icon(
+                                            Icons.folder,
+                                            color: Colors.amber.shade700,
+                                          ),
+                                  trailing:
+                                      isCurrentProject
+                                          ? null
+                                          : Icon(
+                                            Icons.arrow_forward_ios,
+                                            size: 16,
+                                            color: Colors.amber.shade700,
+                                          ),
+                                  onTap:
+                                      isCurrentProject
+                                          ? null
+                                          : () {
+                                            Navigator.of(
+                                              dialogContext,
+                                            ).pop(project['project_id']);
+                                          },
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
       );
 
       if (selectedProjectId != null && selectedProjectId != widget.projectId) {
@@ -1252,7 +1398,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
 
   Widget _buildCalendarWidget() {
     final isCustomContract = _contractType?.toLowerCase() == 'custom';
-    
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -1283,7 +1429,10 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                       icon: const Icon(Icons.chevron_left, size: 20),
                       onPressed: () {
                         setState(() {
-                          _focusedDate = DateTime(_focusedDate.year, _focusedDate.month - 1);
+                          _focusedDate = DateTime(
+                            _focusedDate.year,
+                            _focusedDate.month - 1,
+                          );
                         });
                       },
                     ),
@@ -1298,7 +1447,10 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                       icon: const Icon(Icons.chevron_right, size: 20),
                       onPressed: () {
                         setState(() {
-                          _focusedDate = DateTime(_focusedDate.year, _focusedDate.month + 1);
+                          _focusedDate = DateTime(
+                            _focusedDate.year,
+                            _focusedDate.month + 1,
+                          );
                         });
                       },
                     ),
@@ -1319,7 +1471,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       ),
     );
   }
-  
+
   Future<void> _editEstimatedCompletion() async {
     OngoingBuildMethods.showEditCompletionDialog(
       context: context,
@@ -1331,7 +1483,11 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
           context: context,
           onSuccess: () {
             setState(() {
-              _estimatedCompletion = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+              _estimatedCompletion = DateTime(
+                selectedDate.year,
+                selectedDate.month,
+                selectedDate.day,
+              );
             });
             // Real-time subscription will update the data automatically
           },
@@ -1349,25 +1505,29 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     // Calculate days from previous month to show
     final daysBefore = firstDayWeekday - 1;
     final prevMonth = DateTime(_focusedDate.year, _focusedDate.month - 1);
-    final daysInPrevMonth = DateTime(prevMonth.year, prevMonth.month + 1, 0).day;
+    final daysInPrevMonth =
+        DateTime(prevMonth.year, prevMonth.month + 1, 0).day;
 
     return Column(
       children: [
         Row(
-          children: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-              .map((day) => Expanded(
-                    child: Center(
-                      child: Text(
-                        day,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade700,
+          children:
+              ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                  .map(
+                    (day) => Expanded(
+                      child: Center(
+                        child: Text(
+                          day,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade700,
+                          ),
                         ),
                       ),
                     ),
-                  ))
-              .toList(),
+                  )
+                  .toList(),
         ),
         const SizedBox(height: 8),
         ...List.generate(6, (weekIndex) {
@@ -1379,46 +1539,73 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               late DateTime dayDate;
               if (dayNumber <= 0) {
                 // Previous month
-                dayDate = DateTime(prevMonth.year, prevMonth.month, daysInPrevMonth + dayNumber);
+                dayDate = DateTime(
+                  prevMonth.year,
+                  prevMonth.month,
+                  daysInPrevMonth + dayNumber,
+                );
                 isCurrentMonth = false;
               } else if (dayNumber > daysInMonth) {
                 // Next month
-                dayDate = DateTime(_focusedDate.year, _focusedDate.month + 1, dayNumber - daysInMonth);
+                dayDate = DateTime(
+                  _focusedDate.year,
+                  _focusedDate.month + 1,
+                  dayNumber - daysInMonth,
+                );
                 isCurrentMonth = false;
               } else {
-                dayDate = DateTime(_focusedDate.year, _focusedDate.month, dayNumber);
+                dayDate = DateTime(
+                  _focusedDate.year,
+                  _focusedDate.month,
+                  dayNumber,
+                );
               }
 
-              final isSelected = dayDate.year == _selectedDate.year &&
+              final isSelected =
+                  dayDate.year == _selectedDate.year &&
                   dayDate.month == _selectedDate.month &&
                   dayDate.day == _selectedDate.day;
-              final isToday = dayDate.year == DateTime.now().year &&
+              final isToday =
+                  dayDate.year == DateTime.now().year &&
                   dayDate.month == DateTime.now().month &&
                   dayDate.day == DateTime.now().day;
-              
+
               // Check if this date is start_date or estimated_completion
               // Normalize dayDate to only compare date parts (ignore time)
-              final normalizedDayDate = DateTime(dayDate.year, dayDate.month, dayDate.day);
-              
+              final normalizedDayDate = DateTime(
+                dayDate.year,
+                dayDate.month,
+                dayDate.day,
+              );
+
               bool isStartDate = false;
               bool isCompletionDate = false;
               bool isMilestoneDate = false;
               if (_startDate != null) {
-                final normalizedStartDate = DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
+                final normalizedStartDate = DateTime(
+                  _startDate!.year,
+                  _startDate!.month,
+                  _startDate!.day,
+                );
                 isStartDate = normalizedDayDate == normalizedStartDate;
               }
               if (_estimatedCompletion != null) {
                 final normalizedCompletionDate = DateTime(
                   _estimatedCompletion!.year,
                   _estimatedCompletion!.month,
-                  _estimatedCompletion!.day
+                  _estimatedCompletion!.day,
                 );
-                isCompletionDate = normalizedDayDate == normalizedCompletionDate;
+                isCompletionDate =
+                    normalizedDayDate == normalizedCompletionDate;
               }
               // Check if this date is a milestone date
               if (_milestoneDates.isNotEmpty) {
                 for (final milestoneDate in _milestoneDates) {
-                  final normalizedMilestoneDate = DateTime(milestoneDate.year, milestoneDate.month, milestoneDate.day);
+                  final normalizedMilestoneDate = DateTime(
+                    milestoneDate.year,
+                    milestoneDate.month,
+                    milestoneDate.day,
+                  );
                   if (normalizedDayDate == normalizedMilestoneDate) {
                     isMilestoneDate = true;
                     break;
@@ -1441,7 +1628,8 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                       expectFinishDate.day,
                     );
                     if (normalizedDayDate == normalizedExpectFinish) {
-                      final taskName = task['task'] as String? ?? 'Untitled Task';
+                      final taskName =
+                          task['task'] as String? ?? 'Untitled Task';
                       taskNamesForDate.add(taskName);
                       if (isDone) {
                         doneTaskNamesForDate.add(taskName);
@@ -1471,7 +1659,9 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                   tooltipParts.add('Done: ${doneTaskNamesForDate.join(', ')}');
                 }
                 if (hasUndoneTasks) {
-                  tooltipParts.add('Pending: ${undoneTaskNamesForDate.join(', ')}');
+                  tooltipParts.add(
+                    'Pending: ${undoneTaskNamesForDate.join(', ')}',
+                  );
                 }
                 tooltipText = tooltipParts.join(' | ');
               } else if (isToday) {
@@ -1494,65 +1684,87 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                       margin: const EdgeInsets.all(2),
                       height: 32,
                       decoration: BoxDecoration(
-                        color: isSelected
-                            ? Colors.amber.shade700
-                            : isStartDate
+                        color:
+                            isSelected
+                                ? Colors.amber.shade700
+                                : isStartDate
                                 ? Colors.blue.shade100
                                 : isCompletionDate
-                                    ? Colors.green.shade100
-                                    : isMilestoneDate
-                                        ? Colors.purple.shade100
-                                        : isTaskDueDate
-                                        ? (hasUndoneTasks && !hasDoneTasks
-                                            ? Colors.red.shade200
-                                            : hasDoneTasks && !hasUndoneTasks
-                                                ? Colors.green.shade200
-                                                : Colors.orange.shade200) 
-                                        : isToday
-                                            ? Colors.amber.shade50
-                                            : Colors.transparent,
+                                ? Colors.green.shade100
+                                : isMilestoneDate
+                                ? Colors.purple.shade100
+                                : isTaskDueDate
+                                ? (hasUndoneTasks && !hasDoneTasks
+                                    ? Colors.red.shade200
+                                    : hasDoneTasks && !hasUndoneTasks
+                                    ? Colors.green.shade200
+                                    : Colors.orange.shade200)
+                                : isToday
+                                ? Colors.amber.shade50
+                                : Colors.transparent,
                         borderRadius: BorderRadius.circular(4),
-                        border: isToday && !isSelected
-                            ? Border.all(color: Colors.amber.shade700, width: 1)
-                            : isStartDate && !isSelected
-                                ? Border.all(color: Colors.blue.shade700, width: 1.5)
+                        border:
+                            isToday && !isSelected
+                                ? Border.all(
+                                  color: Colors.amber.shade700,
+                                  width: 1,
+                                )
+                                : isStartDate && !isSelected
+                                ? Border.all(
+                                  color: Colors.blue.shade700,
+                                  width: 1.5,
+                                )
                                 : isCompletionDate && !isSelected
-                                    ? Border.all(color: Colors.green.shade700, width: 1.5)
-                                    : isMilestoneDate && !isSelected
-                                        ? Border.all(color: Colors.purple.shade700, width: 1.5)
-                                        : isTaskDueDate && !isSelected
-                                        ? Border.all(
-                                            color: hasUndoneTasks && !hasDoneTasks
-                                                ? Colors.red.shade700
-                                                : hasDoneTasks && !hasUndoneTasks
-                                                    ? Colors.green.shade700
-                                                    : Colors.orange.shade700,
-                                            width: 1.5)
-                                        : null,
+                                ? Border.all(
+                                  color: Colors.green.shade700,
+                                  width: 1.5,
+                                )
+                                : isMilestoneDate && !isSelected
+                                ? Border.all(
+                                  color: Colors.purple.shade700,
+                                  width: 1.5,
+                                )
+                                : isTaskDueDate && !isSelected
+                                ? Border.all(
+                                  color:
+                                      hasUndoneTasks && !hasDoneTasks
+                                          ? Colors.red.shade700
+                                          : hasDoneTasks && !hasUndoneTasks
+                                          ? Colors.green.shade700
+                                          : Colors.orange.shade700,
+                                  width: 1.5,
+                                )
+                                : null,
                       ),
                       child: Center(
                         child: Text(
                           dayDate.day.toString(),
                           style: TextStyle(
                             fontSize: 12,
-                            fontWeight: isSelected || isToday || isStartDate || isCompletionDate || isTaskDueDate
-                                ? FontWeight.bold 
-                                : FontWeight.normal,
-                            color: isSelected
-                                ? Colors.white
-                                : isStartDate
+                            fontWeight:
+                                isSelected ||
+                                        isToday ||
+                                        isStartDate ||
+                                        isCompletionDate ||
+                                        isTaskDueDate
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                            color:
+                                isSelected
+                                    ? Colors.white
+                                    : isStartDate
                                     ? Colors.blue.shade900
                                     : isCompletionDate
+                                    ? Colors.green.shade900
+                                    : isTaskDueDate
+                                    ? (hasUndoneTasks && !hasDoneTasks
+                                        ? Colors.red.shade900
+                                        : hasDoneTasks && !hasUndoneTasks
                                         ? Colors.green.shade900
-                                        : isTaskDueDate
-                                            ? (hasUndoneTasks && !hasDoneTasks
-                                                ? Colors.red.shade900
-                                                : hasDoneTasks && !hasUndoneTasks
-                                                    ? Colors.green.shade900
-                                                    : Colors.orange.shade900)
-                                            : !isCurrentMonth
-                                                ? Colors.grey.shade400
-                                                : Colors.black87,
+                                        : Colors.orange.shade900)
+                                    : !isCurrentMonth
+                                    ? Colors.grey.shade400
+                                    : Colors.black87,
                           ),
                         ),
                       ),
@@ -1591,18 +1803,17 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             ),
             const SizedBox(height: 12),
             Expanded(
-              child: (_tasks.isEmpty && _reports.isEmpty && _photos.isEmpty)
-                  ? const Center(
-                      child: Text('No recent activities'),
-                    )
-                  : SingleChildScrollView(
-                      child: OngoingBuildMethods.buildRecentActivityFeed(
-                        tasks: _tasks,
-                        reports: _reports,
-                        photos: _photos,
-                        maxItems: 10,
+              child:
+                  (_tasks.isEmpty && _reports.isEmpty && _photos.isEmpty)
+                      ? const Center(child: Text('No recent activities'))
+                      : SingleChildScrollView(
+                        child: OngoingBuildMethods.buildRecentActivityFeed(
+                          tasks: _tasks,
+                          reports: _reports,
+                          photos: _photos,
+                          maxItems: 10,
+                        ),
                       ),
-                    ),
             ),
           ],
         ),
@@ -1623,13 +1834,9 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               Expanded(
                 child: Column(
                   children: [
-                    Expanded(
-                      child: _buildTasksContainer(),
-                    ),
+                    Expanded(child: _buildTasksContainer()),
                     const SizedBox(height: 16),
-                    Expanded(
-                      child: _buildProgressReportsContainer(),
-                    ),
+                    Expanded(child: _buildProgressReportsContainer()),
                   ],
                 ),
               ),
@@ -1638,13 +1845,9 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               Expanded(
                 child: Column(
                   children: [
-                    Expanded(
-                      child: _buildProjectPhotosContainer(),
-                    ),
+                    Expanded(child: _buildProjectPhotosContainer()),
                     const SizedBox(height: 16),
-                    Expanded(
-                      child: _buildMaterialsContainer(),
-                    ),
+                    Expanded(child: _buildMaterialsContainer()),
                   ],
                 ),
               ),
@@ -1672,12 +1875,19 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.task, color: Colors.black87, size: MediaQuery.of(context).size.width < 700 ? 20 : 24),
-                  SizedBox(width: MediaQuery.of(context).size.width < 700 ? 8 : 12),
+                  Icon(
+                    Icons.task,
+                    color: Colors.black87,
+                    size: MediaQuery.of(context).size.width < 700 ? 20 : 24,
+                  ),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width < 700 ? 8 : 12,
+                  ),
                   Text(
                     'To-Dos & Tasks',
                     style: TextStyle(
-                      fontSize: MediaQuery.of(context).size.width < 700 ? 14 : 18,
+                      fontSize:
+                          MediaQuery.of(context).size.width < 700 ? 14 : 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
@@ -1694,15 +1904,17 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: _tasks.isEmpty
-                ? const Center(
-                    child: Text('No tasks added yet'),
-                  )
-                : SingleChildScrollView(
-                    child: Column(
-                      children: _getSortedTasks().map((task) => _buildTaskItem(task)).toList(),
+            child:
+                _tasks.isEmpty
+                    ? const Center(child: Text('No tasks added yet'))
+                    : SingleChildScrollView(
+                      child: Column(
+                        children:
+                            _getSortedTasks()
+                                .map((task) => _buildTaskItem(task))
+                                .toList(),
+                      ),
                     ),
-                  ),
           ),
         ],
       ),
@@ -1755,10 +1967,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                   const SizedBox(height: 4),
                   Text(
                     'Expected: ${_formatDate(expectFinish)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   ),
                 ],
                 if (isDone && taskDone != null && taskDone.isNotEmpty) ...[
@@ -1786,11 +1995,11 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     sortedTasks.sort((a, b) {
       final aDone = a['done'] == true;
       final bDone = b['done'] == true;
-      
+
       // Undone tasks come first (return -1 if a is undone and b is done)
       if (!aDone && bDone) return -1;
       if (aDone && !bDone) return 1;
-      
+
       // If both have same status, maintain original order (or sort by creation date)
       return 0;
     });
@@ -1802,7 +2011,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     if (done) {
       // Marking as done - show multi-select dialog if there are multiple undone tasks
       final undoneTasks = _tasks.where((t) => t['done'] != true).toList();
-      
+
       if (undoneTasks.length > 1) {
         // Show multi-select dialog for marking multiple tasks as done
         await OngoingBuildMethods.showMarkTasksDoneDialog(
@@ -1861,12 +2070,19 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.description, color: Colors.black87, size: MediaQuery.of(context).size.width < 700 ? 20 : 24),
-                  SizedBox(width: MediaQuery.of(context).size.width < 700 ? 8 : 12),
+                  Icon(
+                    Icons.description,
+                    color: Colors.black87,
+                    size: MediaQuery.of(context).size.width < 700 ? 20 : 24,
+                  ),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width < 700 ? 8 : 12,
+                  ),
                   Text(
                     'Progress Reports',
                     style: TextStyle(
-                      fontSize: MediaQuery.of(context).size.width < 700 ? 14 : 18,
+                      fontSize:
+                          MediaQuery.of(context).size.width < 700 ? 14 : 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
@@ -1883,15 +2099,17 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: _reports.isEmpty
-                ? const Center(
-                    child: Text('No reports added yet'),
-                  )
-                : SingleChildScrollView(
-                    child: Column(
-                      children: _reports.map((report) => _buildReportItem(report)).toList(),
+            child:
+                _reports.isEmpty
+                    ? const Center(child: Text('No reports added yet'))
+                    : SingleChildScrollView(
+                      child: Column(
+                        children:
+                            _reports
+                                .map((report) => _buildReportItem(report))
+                                .toList(),
+                      ),
                     ),
-                  ),
           ),
         ],
       ),
@@ -1932,7 +2150,11 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               if (pdfUrl != null)
                 IconButton(
                   onPressed: () => _showPdfDialog(pdfUrl, title),
-                  icon: const Icon(Icons.visibility, color: Colors.amber, size: 24),
+                  icon: const Icon(
+                    Icons.visibility,
+                    color: Colors.amber,
+                    size: 24,
+                  ),
                   tooltip: 'View PDF',
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -1965,7 +2187,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
         signedUrl = pdfUrl;
       } else {
         signedUrl = await widget.ongoingService.getSignedReportUrl(pdfUrl);
-        
+
         if (signedUrl == null) {
           try {
             final publicUrl = Supabase.instance.client.storage
@@ -1977,7 +2199,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
           }
         }
       }
-      
+
       if (signedUrl == null || signedUrl.isEmpty || !mounted) {
         if (mounted) {
           ConTrustSnackBar.error(
@@ -1996,7 +2218,10 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
         builder: (dialogContext) {
           return Dialog(
             backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 24,
+            ),
             child: Material(
               color: Colors.transparent,
               child: ConstrainedBox(
@@ -2057,8 +2282,13 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                               ),
                             ),
                             IconButton(
-                              onPressed: () => Navigator.of(dialogContext).pop(),
-                              icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                              onPressed:
+                                  () => Navigator.of(dialogContext).pop(),
+                              icon: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 20,
+                              ),
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                             ),
@@ -2084,10 +2314,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       );
     } catch (e) {
       if (mounted) {
-        ConTrustSnackBar.error(
-          context,
-          'Error opening PDF: $e',
-        );
+        ConTrustSnackBar.error(context, 'Error opening PDF: $e');
       }
     }
   }
@@ -2102,9 +2329,8 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: kIsWeb
-            ? _buildWebPdfViewer(pdfUrl)
-            : _buildMobilePdfViewer(pdfUrl),
+        child:
+            kIsWeb ? _buildWebPdfViewer(pdfUrl) : _buildMobilePdfViewer(pdfUrl),
       ),
     );
   }
@@ -2121,27 +2347,28 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
         ),
       );
     }
-    
+
     final viewType = 'pdf-viewer-${pdfUrl.hashCode.abs()}';
-    
+
     try {
       if (kIsWeb) {
         ui_web.platformViewRegistry.registerViewFactory(viewType, (int viewId) {
-          final iframe = html.IFrameElement()
-            ..src = pdfUrl
-            ..style.border = 'none'
-            ..style.width = '100%'
-            ..style.height = '100%'
-            ..allow = 'fullscreen'
-            ..onError.listen((event) {});
-          
+          final iframe =
+              html.IFrameElement()
+                ..src = pdfUrl
+                ..style.border = 'none'
+                ..style.width = '100%'
+                ..style.height = '100%'
+                ..allow = 'fullscreen'
+                ..onError.listen((event) {});
+
           return iframe;
         });
       }
     } catch (e) {
       // Continue
     }
-    
+
     if (!kIsWeb) {
       return Container(
         width: double.infinity,
@@ -2152,7 +2379,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
         ),
       );
     }
-    
+
     return SizedBox(
       width: double.infinity,
       height: double.infinity,
@@ -2195,18 +2422,12 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                 const SizedBox(height: 16),
                 const Text(
                   'Error loading PDF',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 const Text(
                   'Tap the button below to open in external app',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
@@ -2217,7 +2438,10 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.amber,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
                   ),
                 ),
               ],
@@ -2241,7 +2465,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
   Future<Uint8List?> _downloadPdfBytes(String pdfUrl) async {
     try {
       final response = await http.get(Uri.parse(pdfUrl));
-      
+
       if (response.statusCode == 200) {
         return response.bodyBytes;
       } else {
@@ -2259,18 +2483,12 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         if (mounted) {
-          ConTrustSnackBar.error(
-            context,
-            'Could not open PDF URL',
-          );
+          ConTrustSnackBar.error(context, 'Could not open PDF URL');
         }
       }
     } catch (e) {
       if (mounted) {
-        ConTrustSnackBar.error(
-          context,
-          'Error opening PDF: $e',
-        );
+        ConTrustSnackBar.error(context, 'Error opening PDF: $e');
       }
     }
   }
@@ -2292,12 +2510,19 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.photo_library, color: Colors.black87, size: MediaQuery.of(context).size.width < 700 ? 20 : 24),
-                  SizedBox(width: MediaQuery.of(context).size.width < 700 ? 8 : 12),
+                  Icon(
+                    Icons.photo_library,
+                    color: Colors.black87,
+                    size: MediaQuery.of(context).size.width < 700 ? 20 : 24,
+                  ),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width < 700 ? 8 : 12,
+                  ),
                   Text(
                     'Project Photos',
                     style: TextStyle(
-                      fontSize: MediaQuery.of(context).size.width < 700 ? 14 : 18,
+                      fontSize:
+                          MediaQuery.of(context).size.width < 700 ? 14 : 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
@@ -2314,15 +2539,17 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: _photos.isEmpty
-                ? const Center(
-                    child: Text('No photos added yet'),
-                  )
-                : SingleChildScrollView(
-                    child: Column(
-                      children: _photos.map((photo) => _buildPhotoListItem(photo)).toList(),
+            child:
+                _photos.isEmpty
+                    ? const Center(child: Text('No photos added yet'))
+                    : SingleChildScrollView(
+                      child: Column(
+                        children:
+                            _photos
+                                .map((photo) => _buildPhotoListItem(photo))
+                                .toList(),
+                      ),
                     ),
-                  ),
           ),
         ],
       ),
@@ -2332,7 +2559,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
   /// Photo List Item (like task items)
   Widget _buildPhotoListItem(Map<String, dynamic> photo) {
     final description = photo['description'] as String?;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -2359,30 +2586,39 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                     child: SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(color: Colors.amber, strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        color: Colors.amber,
+                        strokeWidth: 2,
+                      ),
                     ),
                   ),
                 );
               }
-              
+
               return Container(
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
-                  image: snapshot.hasData && snapshot.data != null
-                      ? DecorationImage(
-                          image: NetworkImage(snapshot.data!),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
+                  image:
+                      snapshot.hasData && snapshot.data != null
+                          ? DecorationImage(
+                            image: NetworkImage(snapshot.data!),
+                            fit: BoxFit.cover,
+                          )
+                          : null,
                   color: Colors.grey[200],
                 ),
-                child: snapshot.hasData && snapshot.data != null
-                    ? null
-                    : const Center(
-                        child: Icon(Icons.image, color: Colors.grey, size: 24),
-                      ),
+                child:
+                    snapshot.hasData && snapshot.data != null
+                        ? null
+                        : const Center(
+                          child: Icon(
+                            Icons.image,
+                            color: Colors.grey,
+                            size: 24,
+                          ),
+                        ),
               );
             },
           ),
@@ -2403,11 +2639,10 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                 if (description != null && description.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
-                    description.length > 50 ? '${description.substring(0, 50)}...' : description,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
+                    description.length > 50
+                        ? '${description.substring(0, 50)}...'
+                        : description,
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -2430,7 +2665,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
   Future<void> _showPhotoInfoDialog(Map<String, dynamic> photo) async {
     final photoUrl = photo['photo_url'];
     final description = photo['description'] as String?;
-    
+
     await showDialog(
       context: context,
       barrierColor: Colors.black54,
@@ -2439,7 +2674,10 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       builder: (dialogContext) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 24,
+          ),
           child: Material(
             color: Colors.transparent,
             child: ConstrainedBox(
@@ -2501,7 +2739,11 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                           ),
                           IconButton(
                             onPressed: () => Navigator.of(dialogContext).pop(),
-                            icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                            icon: const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                           ),
@@ -2518,7 +2760,8 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                               child: FutureBuilder<String?>(
                                 future: widget.createSignedPhotoUrl(photoUrl),
                                 builder: (context, snapshot) {
-                                  if (snapshot.connectionState == ConnectionState.waiting) {
+                                  if (snapshot.connectionState ==
+                                      ConnectionState.waiting) {
                                     return Container(
                                       width: double.infinity,
                                       decoration: BoxDecoration(
@@ -2526,12 +2769,15 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: const Center(
-                                        child: CircularProgressIndicator(color: Colors.amber),
+                                        child: CircularProgressIndicator(
+                                          color: Colors.amber,
+                                        ),
                                       ),
                                     );
                                   }
-                                  
-                                  if (snapshot.hasData && snapshot.data != null) {
+
+                                  if (snapshot.hasData &&
+                                      snapshot.data != null) {
                                     return Container(
                                       width: double.infinity,
                                       decoration: BoxDecoration(
@@ -2543,25 +2789,45 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                                         child: InteractiveViewer(
                                           minScale: 0.5,
                                           maxScale: 4.0,
-                                          boundaryMargin: const EdgeInsets.all(20),
+                                          boundaryMargin: const EdgeInsets.all(
+                                            20,
+                                          ),
                                           child: Image.network(
                                             snapshot.data!,
                                             fit: BoxFit.contain,
-                                            loadingBuilder: (context, child, loadingProgress) {
-                                              if (loadingProgress == null) return child;
+                                            loadingBuilder: (
+                                              context,
+                                              child,
+                                              loadingProgress,
+                                            ) {
+                                              if (loadingProgress == null)
+                                                return child;
                                               return Center(
                                                 child: CircularProgressIndicator(
-                                                  value: loadingProgress.expectedTotalBytes != null
-                                                      ? loadingProgress.cumulativeBytesLoaded /
-                                                          loadingProgress.expectedTotalBytes!
-                                                      : null,
+                                                  value:
+                                                      loadingProgress
+                                                                  .expectedTotalBytes !=
+                                                              null
+                                                          ? loadingProgress
+                                                                  .cumulativeBytesLoaded /
+                                                              loadingProgress
+                                                                  .expectedTotalBytes!
+                                                          : null,
                                                   color: Colors.amber,
                                                 ),
                                               );
                                             },
-                                            errorBuilder: (context, error, stackTrace) {
+                                            errorBuilder: (
+                                              context,
+                                              error,
+                                              stackTrace,
+                                            ) {
                                               return const Center(
-                                                child: Icon(Icons.error, size: 64, color: Colors.red),
+                                                child: Icon(
+                                                  Icons.error,
+                                                  size: 64,
+                                                  color: Colors.red,
+                                                ),
                                               );
                                             },
                                           ),
@@ -2569,7 +2835,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                                       ),
                                     );
                                   }
-                                  
+
                                   return Container(
                                     width: double.infinity,
                                     decoration: BoxDecoration(
@@ -2577,7 +2843,11 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                                       color: Colors.grey[200],
                                     ),
                                     child: const Center(
-                                      child: Icon(Icons.image, size: 64, color: Colors.grey),
+                                      child: Icon(
+                                        Icons.image,
+                                        size: 64,
+                                        color: Colors.grey,
+                                      ),
                                     ),
                                   );
                                 },
@@ -2598,7 +2868,11 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                               children: [
                                 Row(
                                   children: [
-                                    Icon(Icons.description, size: 18, color: Colors.grey.shade700),
+                                    Icon(
+                                      Icons.description,
+                                      size: 18,
+                                      color: Colors.grey.shade700,
+                                    ),
                                     const SizedBox(width: 8),
                                     Text(
                                       'Description',
@@ -2611,7 +2885,8 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                                   ],
                                 ),
                                 const SizedBox(height: 12),
-                                if (description != null && description.isNotEmpty)
+                                if (description != null &&
+                                    description.isNotEmpty)
                                   Text(
                                     description,
                                     style: const TextStyle(
@@ -2669,12 +2944,19 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.inventory, color: Colors.black87, size: MediaQuery.of(context).size.width < 700 ? 20 : 24),
-                  SizedBox(width: MediaQuery.of(context).size.width < 700 ? 8 : 12),
+                  Icon(
+                    Icons.inventory,
+                    color: Colors.black87,
+                    size: MediaQuery.of(context).size.width < 700 ? 20 : 24,
+                  ),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width < 700 ? 8 : 12,
+                  ),
                   Text(
                     'Materials & Costs',
                     style: TextStyle(
-                      fontSize: MediaQuery.of(context).size.width < 700 ? 14 : 18,
+                      fontSize:
+                          MediaQuery.of(context).size.width < 700 ? 14 : 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
@@ -2691,63 +2973,73 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: _materials.isEmpty
-                ? const Center(
-                    child: Text('No materials added yet'),
-                  )
-                : Stack(
-                    children: [
-                      SingleChildScrollView(
-                        padding: const EdgeInsets.only(bottom: 70), // Space for sticky total
-                        child: Column(
-                          children: _materials.map((material) => _buildMaterialItem(material)).toList(),
+            child:
+                _materials.isEmpty
+                    ? const Center(child: Text('No materials added yet'))
+                    : Stack(
+                      children: [
+                        SingleChildScrollView(
+                          padding: const EdgeInsets.only(
+                            bottom: 70,
+                          ), // Space for sticky total
+                          child: Column(
+                            children:
+                                _materials
+                                    .map(
+                                      (material) =>
+                                          _buildMaterialItem(material),
+                                    )
+                                    .toList(),
+                          ),
                         ),
-                      ),
-                      // Sticky total container at bottom
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            border: Border(
-                              top: BorderSide(color: Colors.grey.shade300, width: 1),
+                        // Sticky total container at bottom
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border(
+                                top: BorderSide(
+                                  color: Colors.grey.shade300,
+                                  width: 1,
+                                ),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, -2),
+                                ),
+                              ],
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 4,
-                                offset: const Offset(0, -2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'Total Cost:',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Total Cost:',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                '₱${totalCost.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green,
+                                Text(
+                                  '₱${totalCost.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
           ),
         ],
       ),
@@ -2798,10 +3090,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
           // Unit price x quantity text
           Text(
             '₱${unitPrice.toStringAsFixed(2)} × ${quantity.toStringAsFixed(1)} $unit',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
           ),
           const SizedBox(width: 8),
           // Eye icon at the far end
@@ -2822,12 +3111,17 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     await showDialog(
       context: context,
       barrierDismissible: true,
-      builder: (dialogContext) => _buildMaterialDetailsDialog(dialogContext, material),
+      builder:
+          (dialogContext) =>
+              _buildMaterialDetailsDialog(dialogContext, material),
     );
   }
 
   /// Build Material Details Dialog (similar to project details dialog)
-  Widget _buildMaterialDetailsDialog(BuildContext dialogContext, Map<String, dynamic> material) {
+  Widget _buildMaterialDetailsDialog(
+    BuildContext dialogContext,
+    Map<String, dynamic> material,
+  ) {
     final name = material['material_name'] ?? 'Unknown Material';
     final quantity = (material['quantity'] as num?)?.toDouble() ?? 0.0;
     final unitPrice = (material['unit_price'] as num?)?.toDouble() ?? 0.0;
@@ -2838,9 +3132,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     final createdAt = material['created_at'] as String?;
 
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
         constraints: BoxConstraints(maxWidth: 800, maxHeight: 650),
         decoration: BoxDecoration(
@@ -2896,7 +3188,11 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(dialogContext),
-                    icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                    icon: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                   ),
@@ -2915,11 +3211,20 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                       children: [
                         _buildMaterialDetailField('Material Name', name),
                         const SizedBox(height: 16),
-                        _buildMaterialDetailField('Quantity', '${quantity.toStringAsFixed(1)} $unit'),
+                        _buildMaterialDetailField(
+                          'Quantity',
+                          '${quantity.toStringAsFixed(1)} $unit',
+                        ),
                         const SizedBox(height: 16),
-                        _buildMaterialDetailField('Unit Price', '₱${unitPrice.toStringAsFixed(2)}'),
+                        _buildMaterialDetailField(
+                          'Unit Price',
+                          '₱${unitPrice.toStringAsFixed(2)}',
+                        ),
                         const SizedBox(height: 16),
-                        _buildMaterialDetailField('Total Cost', '₱${totalCost.toStringAsFixed(2)}'),
+                        _buildMaterialDetailField(
+                          'Total Cost',
+                          '₱${totalCost.toStringAsFixed(2)}',
+                        ),
                         if (brand != null && brand.isNotEmpty) ...[
                           const SizedBox(height: 16),
                           _buildMaterialDetailField('Brand', brand),
@@ -2930,7 +3235,10 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                         ],
                         if (createdAt != null) ...[
                           const SizedBox(height: 16),
-                          _buildMaterialDetailField('Created', _formatMaterialDate(createdAt)),
+                          _buildMaterialDetailField(
+                            'Created',
+                            _formatMaterialDate(createdAt),
+                          ),
                         ],
                       ],
                     ),
@@ -2947,34 +3255,31 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
   /// Build Material Detail Field (for vertical layout)
   Widget _buildMaterialDetailField(String label, String value) {
     return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
             fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
-            ),
+            fontWeight: FontWeight.bold,
+            color: Colors.grey.shade700,
           ),
+        ),
         const SizedBox(height: 8),
-          Container(
-            width: double.infinity,
+        Container(
+          width: double.infinity,
           padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
             borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Text(
-              value,
-              style: TextStyle(
-              fontSize: 14,
-                color: Colors.grey.shade800,
-              ),
-            ),
+            border: Border.all(color: Colors.grey.shade200),
           ),
-        ],
+          child: Text(
+            value,
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade800),
+          ),
+        ),
+      ],
     );
   }
 
@@ -3009,7 +3314,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       onAdd: (taskList) async {
         int successCount = 0;
         int errorCount = 0;
-        
+
         for (final taskData in taskList) {
           final task = taskData['task'] as String;
           final expectFinish = taskData['expect_finish'] as DateTime?;
@@ -3019,7 +3324,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               task: task,
               context: context,
               expectFinish: expectFinish,
-              showSuccessMessage: false, 
+              showSuccessMessage: false,
               onSuccess: () {},
             );
             successCount++;
@@ -3027,12 +3332,12 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             errorCount++;
           }
         }
-        
+
         if (context.mounted) {
           if (successCount > 0 && errorCount == 0) {
             ConTrustSnackBar.success(
               context,
-              successCount == 1 
+              successCount == 1
                   ? 'Task added successfully!'
                   : '$successCount tasks added successfully!',
             );
@@ -3043,7 +3348,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             );
           }
         }
-        
+
         _loadData();
       },
     );
@@ -3051,7 +3356,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
 
   Future<void> _addReport() async {
     final titleController = TextEditingController();
-    
+
     await showDialog(
       context: context,
       barrierColor: Colors.black54,
@@ -3060,7 +3365,10 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       builder: (dialogContext) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 24,
+          ),
           child: Material(
             color: Colors.transparent,
             child: ConstrainedBox(
@@ -3119,7 +3427,11 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                           ),
                           IconButton(
                             onPressed: () => Navigator.of(dialogContext).pop(),
-                            icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                            icon: const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                           ),
@@ -3150,13 +3462,21 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                                   hintText: 'Enter report title...',
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide(color: Colors.grey.shade300),
+                                    borderSide: BorderSide(
+                                      color: Colors.grey.shade300,
+                                    ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide(color: Colors.amber.shade700, width: 2),
+                                    borderSide: BorderSide(
+                                      color: Colors.amber.shade700,
+                                      width: 2,
+                                    ),
                                   ),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 12,
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 24),
@@ -3168,15 +3488,45 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                                 ),
                               ),
                               const SizedBox(height: 16),
-                              _buildPeriodOption(dialogContext, titleController, 'hour', 'Last Hour', Icons.access_time),
+                              _buildPeriodOption(
+                                dialogContext,
+                                titleController,
+                                'hour',
+                                'Last Hour',
+                                Icons.access_time,
+                              ),
                               const SizedBox(height: 8),
-                              _buildPeriodOption(dialogContext, titleController, 'today', 'Today', Icons.today),
+                              _buildPeriodOption(
+                                dialogContext,
+                                titleController,
+                                'today',
+                                'Today',
+                                Icons.today,
+                              ),
                               const SizedBox(height: 8),
-                              _buildPeriodOption(dialogContext, titleController, 'week', 'This Week', Icons.date_range),
+                              _buildPeriodOption(
+                                dialogContext,
+                                titleController,
+                                'week',
+                                'This Week',
+                                Icons.date_range,
+                              ),
                               const SizedBox(height: 8),
-                              _buildPeriodOption(dialogContext, titleController, 'month', 'This Month', Icons.calendar_month),
+                              _buildPeriodOption(
+                                dialogContext,
+                                titleController,
+                                'month',
+                                'This Month',
+                                Icons.calendar_month,
+                              ),
                               const SizedBox(height: 8),
-                              _buildPeriodOption(dialogContext, titleController, 'year', 'This Year', Icons.calendar_today),
+                              _buildPeriodOption(
+                                dialogContext,
+                                titleController,
+                                'year',
+                                'This Year',
+                                Icons.calendar_today,
+                              ),
                             ],
                           ),
                         ),
@@ -3194,7 +3544,13 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     });
   }
 
-  Widget _buildPeriodOption(BuildContext dialogContext, TextEditingController titleController, String period, String label, IconData icon) {
+  Widget _buildPeriodOption(
+    BuildContext dialogContext,
+    TextEditingController titleController,
+    String period,
+    String label,
+    IconData icon,
+  ) {
     return ElevatedButton(
       onPressed: () {
         final title = titleController.text.trim();
@@ -3224,17 +3580,17 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
           const SizedBox(width: 12),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _generateAndSaveReport(String periodType, String reportTitle) async {
+  Future<void> _generateAndSaveReport(
+    String periodType,
+    String reportTitle,
+  ) async {
     try {
       final now = DateTime.now();
       DateTime startDate;
@@ -3273,7 +3629,8 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
         if (task['done'] == true && task['task_done'] != null) {
           try {
             final taskDate = DateTime.parse(task['task_done']).toLocal();
-            if (taskDate.isAfter(startDate) || taskDate.isAtSameMomentAs(startDate)) {
+            if (taskDate.isAfter(startDate) ||
+                taskDate.isAtSameMomentAs(startDate)) {
               activities.add({
                 'type': 'task_done',
                 'date': task['task_done'],
@@ -3290,10 +3647,14 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
         if (task['created_at'] != null) {
           try {
             final taskDate = DateTime.parse(task['created_at']).toLocal();
-            if (taskDate.isAfter(startDate) || taskDate.isAtSameMomentAs(startDate)) {
-              bool alreadyIncluded = activities.any((activity) =>
-                activity['type'] == 'task_done' &&
-                activity['description'] == (task['task'] ?? 'Task completed'));
+            if (taskDate.isAfter(startDate) ||
+                taskDate.isAtSameMomentAs(startDate)) {
+              bool alreadyIncluded = activities.any(
+                (activity) =>
+                    activity['type'] == 'task_done' &&
+                    activity['description'] ==
+                        (task['task'] ?? 'Task completed'),
+              );
 
               if (!alreadyIncluded) {
                 activities.add({
@@ -3312,7 +3673,8 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       for (final photo in _photos) {
         try {
           final photoDate = DateTime.parse(photo['created_at']).toLocal();
-          if (photoDate.isAfter(startDate) || photoDate.isAtSameMomentAs(startDate)) {
+          if (photoDate.isAfter(startDate) ||
+              photoDate.isAtSameMomentAs(startDate)) {
             activities.add({
               'type': 'photo',
               'date': photo['created_at'],
@@ -3326,14 +3688,18 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
 
       for (final material in _materials) {
         try {
-          final materialDate = material['created_at'] != null
-              ? DateTime.parse(material['created_at']).toLocal()
-              : DateTime.now();
-          if (materialDate.isAfter(startDate) || materialDate.isAtSameMomentAs(startDate)) {
+          final materialDate =
+              material['created_at'] != null
+                  ? DateTime.parse(material['created_at']).toLocal()
+                  : DateTime.now();
+          if (materialDate.isAfter(startDate) ||
+              materialDate.isAtSameMomentAs(startDate)) {
             activities.add({
               'type': 'material',
-              'date': material['created_at'] ?? DateTime.now().toIso8601String(),
-              'description': 'Material added: ${material['material_name'] ?? 'Unknown'}',
+              'date':
+                  material['created_at'] ?? DateTime.now().toIso8601String(),
+              'description':
+                  'Material added: ${material['material_name'] ?? 'Unknown'}',
             });
           }
         } catch (e) {
@@ -3362,7 +3728,8 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       }
 
       final pdf = pw.Document();
-      final project = widget.projectData?['projectDetails'] as Map<String, dynamic>?;
+      final project =
+          widget.projectData?['projectDetails'] as Map<String, dynamic>?;
       final projectTitle = project?['title'] ?? 'Project';
 
       pdf.addPage(
@@ -3384,12 +3751,18 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               pw.SizedBox(height: 20),
               pw.Text(
                 'Project: $projectTitle',
-                style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
+                style: pw.TextStyle(
+                  fontSize: 16,
+                  fontWeight: pw.FontWeight.bold,
+                ),
               ),
               pw.SizedBox(height: 10),
               pw.Text(
                 'Period: $periodLabel',
-                style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+                style: pw.TextStyle(
+                  fontSize: 14,
+                  fontWeight: pw.FontWeight.bold,
+                ),
               ),
               pw.SizedBox(height: 10),
               pw.Text(
@@ -3398,42 +3771,39 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
               ),
               pw.SizedBox(height: 30),
               ...activities.map((activity) {
-                  final date = _formatDate(activity['date']);
-                  final type = activity['type'] as String;
-                  final description = activity['description'] as String;
+                final date = _formatDate(activity['date']);
+                final type = activity['type'] as String;
+                final description = activity['description'] as String;
 
-                  String typeLabel = '';
-                  if (type == 'task_done') {
-                    typeLabel = 'Task completed at $date';
-                  } else if (type == 'task_added') {
-                    typeLabel = 'Task added at $date';
-                  } else if (type == 'photo') {
-                    typeLabel = 'Progress photo uploaded at $date';
-                  } else if (type == 'material') {
-                    typeLabel = 'Material added at $date';
-                  }
+                String typeLabel = '';
+                if (type == 'task_done') {
+                  typeLabel = 'Task completed at $date';
+                } else if (type == 'task_added') {
+                  typeLabel = 'Task added at $date';
+                } else if (type == 'photo') {
+                  typeLabel = 'Progress photo uploaded at $date';
+                } else if (type == 'material') {
+                  typeLabel = 'Material added at $date';
+                }
 
-                  return pw.Padding(
-                    padding: const pw.EdgeInsets.only(bottom: 16),
-                    child: pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        pw.Text(
-                          typeLabel,
-                          style: pw.TextStyle(
-                            fontSize: 12,
-                            fontWeight: pw.FontWeight.bold,
-                          ),
+                return pw.Padding(
+                  padding: const pw.EdgeInsets.only(bottom: 16),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        typeLabel,
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          fontWeight: pw.FontWeight.bold,
                         ),
-                        pw.SizedBox(height: 4),
-                        pw.Text(
-                          description,
-                          style: pw.TextStyle(fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
+                      ),
+                      pw.SizedBox(height: 4),
+                      pw.Text(description, style: pw.TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                );
+              }),
             ];
           },
         ),
@@ -3446,7 +3816,8 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       await widget.ongoingService.addReportWithPdf(
         projectId: widget.projectId,
         title: reportTitle,
-        content: 'Progress Report - $periodLabel (${activities.length} activities)',
+        content:
+            'Progress Report - $periodLabel (${activities.length} activities)',
         pdfBytes: pdfBytes,
         periodType: periodType,
         context: context,
@@ -3456,17 +3827,14 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       );
     } catch (e) {
       if (mounted) {
-        ConTrustSnackBar.error(
-          context,
-          'Error generating report: $e',
-        );
+        ConTrustSnackBar.error(context, 'Error generating report: $e');
       }
     }
   }
 
   Future<void> _addPhoto() async {
     final descriptionController = TextEditingController();
-    
+
     await showDialog(
       context: context,
       barrierColor: Colors.black54,
@@ -3475,7 +3843,10 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       builder: (dialogContext) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 24,
+          ),
           child: Material(
             color: Colors.transparent,
             child: ConstrainedBox(
@@ -3534,7 +3905,11 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                           ),
                           IconButton(
                             onPressed: () => Navigator.of(dialogContext).pop(),
-                            icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                            icon: const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                           ),
@@ -3559,9 +3934,14 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                               ),
                               const SizedBox(height: 16),
                               Container(
-                                constraints: const BoxConstraints(minHeight: 100, maxHeight: 150),
+                                constraints: const BoxConstraints(
+                                  minHeight: 100,
+                                  maxHeight: 150,
+                                ),
                                 decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey.shade300),
+                                  border: Border.all(
+                                    color: Colors.grey.shade300,
+                                  ),
                                   borderRadius: BorderRadius.circular(12),
                                   color: Colors.grey.shade50,
                                 ),
@@ -3582,7 +3962,8 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
                                   TextButton(
-                                    onPressed: () => Navigator.of(dialogContext).pop(),
+                                    onPressed:
+                                        () => Navigator.of(dialogContext).pop(),
                                     style: TextButton.styleFrom(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 20,
@@ -3591,19 +3972,26 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                                     ),
                                     child: Text(
                                       'Cancel',
-                                      style: TextStyle(color: Colors.grey.shade600),
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(width: 12),
                                   ElevatedButton(
                                     onPressed: () {
                                       Navigator.of(dialogContext).pop();
-                                      _uploadPhotoWithDescription(descriptionController.text.trim());
+                                      _uploadPhotoWithDescription(
+                                        descriptionController.text.trim(),
+                                      );
                                     },
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: const Color(0xFFFFB300),
                                       foregroundColor: Colors.black,
-                                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 24,
+                                        vertical: 12,
+                                      ),
                                       minimumSize: const Size(0, 50),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(8),
@@ -3645,4 +4033,3 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     context.go('/project-management/${widget.projectId}/materials');
   }
 }
-

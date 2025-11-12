@@ -171,13 +171,9 @@ class SignInGoogleContractee {
 
     try {
       final supabase = Supabase.instance.client;
-
-<<<<<<< HEAD
-      // Determine redirect URL for web; use deep link for mobile
-      if (kIsWeb) {
-        final origin = Uri.base.origin;
-        redirectUrl = '$origin/auth/callback';
-=======
+      
+      String? redirectUrl;
+      
       if (kIsWeb) {
         final origin = Uri.base.origin;
         redirectUrl = '$origin/auth/callback';
@@ -185,8 +181,6 @@ class SignInGoogleContractee {
         redirectUrl = 'io.supabase.contrust://login-callback/home';
       }
 
-      if (kIsWeb) {
->>>>>>> 97a892a42930c12889778ee4b14d0932b28ed46e
         await supabase.auth.signInWithOAuth(
           OAuthProvider.google,
           redirectTo: redirectUrl,
@@ -204,21 +198,9 @@ class SignInGoogleContractee {
               : null,
         );
 
-        final account = await googleSignIn.signIn();
-<<<<<<< HEAD
-        if (account == null) {
-          if (context.mounted) {
-            ConTrustSnackBar.error(context, 'Google sign-in was cancelled.');
-          }
-          return;
-        }
-
-        final googleAuth = await account.authentication;
+        final account = await googleSignIn.authenticate();
+        final googleAuth = account.authentication;
         final idToken = googleAuth.idToken;
-=======
-        final googleAuth = await account?.authentication;
-        final idToken = googleAuth?.idToken;
->>>>>>> 97a892a42930c12889778ee4b14d0932b28ed46e
 
         if (idToken == null) {
           await _errorService.logError(
@@ -305,19 +287,7 @@ class SignInGoogleContractee {
         }
 
         if (context.mounted) {
-<<<<<<< HEAD
-          ConTrustSnackBar.error(
-            context,
-            'Google sign-in failed: $signInError',
-=======
-          final debugDetails = errorString.length > 160
-              ? '${errorString.substring(0, 157)}...'
-              : errorString;
-          ConTrustSnackBar.error(
-            context,
-            '$errorMessage\n[Debug: $debugDetails]',
->>>>>>> 97a892a42930c12889778ee4b14d0932b28ed46e
-          );
+          ConTrustSnackBar.error(context, 'Google sign-in failed: $signInError');
         }
         return;
       }
@@ -336,14 +306,7 @@ class SignInGoogleContractee {
         },
       );
       if (context.mounted) {
-<<<<<<< HEAD
-        ConTrustSnackBar.error(
-          context,
-          'Google sign-in failed. Please try again.',
-        );
-=======
-        ConTrustSnackBar.error(context, 'Sign-in failed: $e');
->>>>>>> 97a892a42930c12889778ee4b14d0932b28ed46e
+        ConTrustSnackBar.error(context, errorMessage);
       }
     }
   }
@@ -394,22 +357,12 @@ class SignInGoogleContractee {
           .eq('users_id', user.id)
           .maybeSingle();
 
-<<<<<<< HEAD
-      debugPrint(
-        '[Google Contractee] existingContractee: ${existingContractee != null}, existingUser: ${existingUser != null}',
-      );
+      debugPrint('[Google Contractee] existingContractee: ${existingContractee != null}, existingUser: ${existingUser != null}');
 
-=======
->>>>>>> 97a892a42930c12889778ee4b14d0932b28ed46e
       if (existingContractee == null) {
         await setupContractee(context, user);
       } else if (existingUser == null) {
-<<<<<<< HEAD
-        debugPrint(
-          '[Google Contractee] Users missing; upserting from Contractee data',
-        );
-=======
->>>>>>> 97a892a42930c12889778ee4b14d0932b28ed46e
+        debugPrint('[Google Contractee] Users missing; upserting from Contractee data');
         final contracteeData = await supabase
             .from('Contractee')
             .select('full_name, phone_number, profile_photo')
@@ -430,16 +383,8 @@ class SignInGoogleContractee {
           'verified': true,
         }, onConflict: 'users_id');
       } else {
-<<<<<<< HEAD
-        debugPrint(
-          '[Google Contractee] Both rows exist; updating verified/last_login',
-        );
-        final userType = user.userMetadata != null
-            ? user.userMetadata!['user_type']
-            : null;
-=======
+        debugPrint('[Google Contractee] Both rows exist; updating verified/last_login');
         final userType = user.userMetadata != null ? user.userMetadata!['user_type'] : null;
->>>>>>> 97a892a42930c12889778ee4b14d0932b28ed46e
         if (userType == null || userType.toLowerCase() != 'contractee') {
           await _auditService.logAuditEvent(
             userId: user.id,
@@ -461,23 +406,12 @@ class SignInGoogleContractee {
           await supabase.auth.signOut();
           return;
         }
-<<<<<<< HEAD
+      } else if (existingContractee != null && existingUser != null) {
+        debugPrint('[Google Contractee] Both Contractee and User records exist, proceeding with login');
+        debugPrint('[Google Contractee] Full user metadata: ${user.userMetadata}');
+        debugPrint('[Google Contractee] Platform: ${kIsWeb ? 'web' : 'mobile'}');
 
-        debugPrint(
-          '[Google Contractee] Both Contractee and User records exist, proceeding with login',
-        );
-        debugPrint(
-          '[Google Contractee] Full user metadata: ${user.userMetadata}',
-        );
-        debugPrint(
-          '[Google Contractee] Platform: ${kIsWeb ? 'web' : 'mobile'}',
-        );
-
-        debugPrint(
-          '[Google Contractee] Valid contractee records found, proceeding with login',
-        );
-=======
->>>>>>> 97a892a42930c12889778ee4b14d0932b28ed46e
+        debugPrint('[Google Contractee] Valid contractee records found, proceeding with login');
 
         await _auditService.logAuditEvent(
           userId: user.id,
@@ -518,12 +452,8 @@ class SignInGoogleContractee {
             'last_login': DateTimeHelper.getLocalTimeISOString(),
           };
 
-          if (shouldApplyGooglePhoto(
-<<<<<<< HEAD
+          if (_shouldApplyGooglePhoto(
             (existingUser?['profile_image_url'] as String?),
-=======
-            (existingUser['profile_image_url'] as String?),
->>>>>>> 97a892a42930c12889778ee4b14d0932b28ed46e
             googlePhoto,
           )) {
             userUpdates['profile_image_url'] = googlePhoto;
@@ -535,12 +465,7 @@ class SignInGoogleContractee {
               .eq('users_id', user.id);
         } catch (updateError) {
           await _errorService.logError(
-<<<<<<< HEAD
-            errorMessage:
-                'Failed to update Users for contractee Google login: $updateError',
-=======
-            errorMessage: 'Failed to update Users for contractee Google login: $updateError',
->>>>>>> 97a892a42930c12889778ee4b14d0932b28ed46e
+            errorMessage: 'Failed to update Users for contractee Google login: $e',
             module: 'Contractee Google Sign-in',
             severity: 'Medium',
             extraInfo: {
@@ -558,10 +483,8 @@ class SignInGoogleContractee {
           // Don't rethrow for login updates - allow login to succeed even if update fails
         }
 
-<<<<<<< HEAD
-        if (context.mounted) {}
-=======
->>>>>>> 97a892a42930c12889778ee4b14d0932b28ed46e
+        if (context.mounted) {
+        }
       }
     } catch (e) {
       await _errorService.logError(
@@ -608,25 +531,11 @@ class SignInGoogleContractee {
       String? profilePhoto =
           user.userMetadata?['avatar_url'] ?? user.userMetadata?['picture'];
 
-<<<<<<< HEAD
       debugPrint(
         '[Google Contractee] Profile photo sources - avatar_url: ${user.userMetadata?['avatar_url']}, picture: ${user.userMetadata?['picture']}, final: $profilePhoto',
       );
 
-      try {
-        await supabase.auth.updateUser(
-          UserAttributes(
-            data: {
-              'user_type': 'contractee',
-              'full_name': user.userMetadata?['full_name'] ?? 'User',
-              'email': user.email,
-              'profile_photo': profilePhoto,
-            },
-          ),
-        );
-=======
-      try {
-        await supabase.auth.updateUser(
+      await supabase.auth.updateUser(
         UserAttributes(
           data: {
             'user_type': 'contractee',
@@ -636,7 +545,7 @@ class SignInGoogleContractee {
           },
         ),
       );
->>>>>>> 97a892a42930c12889778ee4b14d0932b28ed46e
+
       } catch (authError) {
         await _errorService.logError(
           errorMessage: 'Auth updateUser failed: $authError',
