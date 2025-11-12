@@ -254,17 +254,24 @@ class _DashboardUIState extends State<DashboardUI>
   }
 
   Widget _buildVerificationBanner() {
-    return FutureBuilder<bool>(
+    return FutureBuilder<Map<String, bool>>(
       future: _checkVerificationStatus(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const SizedBox.shrink();
         }
         
-        final isVerified = snapshot.data ?? false;
+        final result = snapshot.data ?? {'verified': false, 'hasSubmitted': false};
+        final isVerified = result['verified']!;
         if (isVerified) {
           return const SizedBox.shrink();
         }
+
+        final status = result['hasSubmitted']! ? 'submitted' : 'pending';
+        final title = status == 'submitted' ? 'Verification Submitted' : 'Account Pending Verification';
+        final description = status == 'submitted' 
+            ? 'Your documents are under review. You can resubmit if needed.'
+            : 'Your account is being reviewed. Please submit verification documents to complete your registration.';
 
         return Container(
           width: double.infinity,
@@ -284,7 +291,7 @@ class _DashboardUIState extends State<DashboardUI>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Account Pending Verification',
+                      title,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.orange.shade900,
@@ -293,29 +300,28 @@ class _DashboardUIState extends State<DashboardUI>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Your account is being reviewed. Please submit verification documents to complete your registration.',
+                      description,
                       style: TextStyle(
                         color: Colors.orange.shade800,
                         fontSize: 12,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      height: 32,
-                      child: ElevatedButton(
-                        onPressed: () => _showVerificationDialog(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.amber.shade600,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                          minimumSize: const Size(0, 32),
-                        ),
-                        child: const Text('Submit Verification'),
-                      ),
-                    ),
                   ],
                 ),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton(
+                onPressed: () => _showVerificationDialog(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber.shade600,
+                  foregroundColor: Colors.white,
+                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  minimumSize: const Size(0, 32),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                child: const Text('Submit Verification'),
               ),
             ],
           ),
@@ -324,10 +330,10 @@ class _DashboardUIState extends State<DashboardUI>
     );
   }
 
-  Future<bool> _checkVerificationStatus() async {
+  Future<Map<String, bool>> _checkVerificationStatus() async {
     try {
       final session = Supabase.instance.client.auth.currentSession;
-      if (session == null) return false;
+      if (session == null) return {'verified': false, 'hasSubmitted': false};
 
       final userResp = await Supabase.instance.client
           .from('Users')
@@ -337,22 +343,17 @@ class _DashboardUIState extends State<DashboardUI>
 
       final userVerified = userResp != null && (userResp['verified'] == true);
 
-      if (userVerified) return true;
-
-      final contractorResp = await Supabase.instance.client
-          .from('Contractor')
-          .select('verification_status')
+      final verificationResp = await Supabase.instance.client
+          .from('Verification')
+          .select('verification_id')
           .eq('contractor_id', session.user.id)
           .maybeSingle();
 
-      final contractorStatus = contractorResp?['verification_status'];
-      if (contractorStatus == 'submitted' || contractorStatus == 'approved') {
-        return true;
-      }
+      final hasSubmitted = verificationResp != null;
 
-      return false;
+      return {'verified': userVerified, 'hasSubmitted': hasSubmitted};
     } catch (e) {
-      return false;
+      return {'verified': false, 'hasSubmitted': false};
     }
   }
 
@@ -662,6 +663,19 @@ class _DashboardUIState extends State<DashboardUI>
 
       if (contractorId == null) {
         throw Exception('Contractor ID is null');
+      }
+
+      final existing = await supabase
+          .from('Verification')
+          .select('verify_id')
+          .eq('contractor_id', contractorId)
+          .maybeSingle();
+
+      if (existing != null) {
+        if (mounted) {
+          ConTrustSnackBar.error(context, 'You have already submitted verification documents. Please wait for review or contact support if needed.');
+        }
+        return;
       }
 
       final uploadResults = <Map<String, dynamic>>[];

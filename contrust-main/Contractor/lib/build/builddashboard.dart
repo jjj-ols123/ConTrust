@@ -97,19 +97,18 @@ class DashboardBuildMethods {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    SizedBox(
-                      height: 32,
-                      child: ElevatedButton(
-                        onPressed: () => onShowVerificationDialog(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.amber.shade600,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                          minimumSize: const Size(0, 32),
+                    ElevatedButton(
+                      onPressed: () => onShowVerificationDialog(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber.shade600,
+                        foregroundColor: Colors.white,
+                        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        minimumSize: const Size(double.infinity, 32),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Text('Submit Verification'),
                       ),
+                      child: const Text('Submit Verification'),
                     ),
                   ],
                 ),
