@@ -308,7 +308,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       setState(() => _isSigningUp = false);
 
       // Debug: Check what success value we got
-      print('DEBUG: signUpContractor returned: $success (type: ${success.runtimeType})');
 
       if (success == true) {
         if (!mounted) return;

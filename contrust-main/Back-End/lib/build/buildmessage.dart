@@ -671,7 +671,6 @@ class MessageUIBuildMethods {
                   builder: (context, statusSnapshot) {
                     final status = statusSnapshot.data;
                     final isCancelled = status == 'cancelled';
-                    final isCompleted = status == 'completed';
                     
                     if (isCancelled) {
                       return Container(

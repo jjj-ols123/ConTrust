@@ -784,8 +784,6 @@ class ViewContractBuild {
         contractData?['contractee_signature_url'] != null &&
         (contractData!['contractee_signature_url'] as String).isNotEmpty;
     final bothSigned = contractorSigned && contracteeSigned;
-    final signedPdfUrl = contractData?['signed_pdf_url'] as String?;
-    final hasSignedPdf = signedPdfUrl != null && signedPdfUrl.isNotEmpty;
 
     final status = contractStatus ?? contractData?['status'] as String? ?? '';
     final canSign = contractData != null

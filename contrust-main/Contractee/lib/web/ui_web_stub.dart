@@ -1,4 +1,4 @@
-library ui_web;
+library;
 
 class _PlatformViewRegistry {
   void registerViewFactory(String viewType, dynamic Function(int) viewFactory) {}

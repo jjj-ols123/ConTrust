@@ -495,7 +495,7 @@ class MilestonePaymentModal {
                                             .maybeSingle();
                                         billingEmail = userData?['email'] as String?;
                                       } catch (e) {
-                                        print('Failed to fetch user email: $e');
+                                        //
                                       }
                                     }
 

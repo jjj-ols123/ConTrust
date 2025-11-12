@@ -140,6 +140,7 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
     final bool isDesktop = screenWidth >= 900;
     final bool isTablet = screenWidth >= 600 && screenWidth < 900;
     final bool isMobile = screenWidth < 600;
+    final bool keyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -222,7 +223,8 @@ class _ToLoginScreenState extends State<ToLoginScreen> {
                     ),
                   ),
                 ),
-                _buildFooter(context, isDesktop, isTablet, isMobile),
+                if (!keyboardVisible || !isMobile)
+                  _buildFooter(context, isDesktop, isTablet, isMobile),
               ],
             ),
           ],

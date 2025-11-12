@@ -13,7 +13,7 @@ import 'package:backend/services/superadmin services/auditlogs_service.dart';
 const String _contracteeGoogleServerClientId = String.fromEnvironment(
   'CONTRACTEE_GOOGLE_SERVER_CLIENT_ID',
   defaultValue:
-      '706082803745-fc3t6v7h1iea088p8obbu3a3ig2369k7.apps.googleusercontent.com',
+      '161823324671-i352gglggsdug7ego016j26v2q3mqlta.apps.googleusercontent.com',
 );
 
 class SignInContractee {
@@ -171,9 +171,7 @@ class SignInGoogleContractee {
 
     try {
       final supabase = Supabase.instance.client;
-      
-      String? redirectUrl;
-      
+
       if (kIsWeb) {
         final origin = Uri.base.origin;
         redirectUrl = '$origin/auth/callback';
@@ -181,6 +179,7 @@ class SignInGoogleContractee {
         redirectUrl = 'io.supabase.contrust://login-callback/home';
       }
 
+      if (kIsWeb) {
         await supabase.auth.signInWithOAuth(
           OAuthProvider.google,
           redirectTo: redirectUrl,
@@ -193,16 +192,15 @@ class SignInGoogleContractee {
       }
 
       try {
-        final googleSignIn = GoogleSignIn.instance;
-        await googleSignIn.initialize(
+        final googleSignIn = GoogleSignIn(
           serverClientId: _contracteeGoogleServerClientId.isNotEmpty
               ? _contracteeGoogleServerClientId
               : null,
         );
 
-        final account = await googleSignIn.authenticate();
-        final googleAuth = account.authentication;
-        final idToken = googleAuth.idToken;
+        final account = await googleSignIn.signIn();
+        final googleAuth = await account?.authentication;
+        final idToken = googleAuth?.idToken;
 
         if (idToken == null) {
           await _errorService.logError(
@@ -252,10 +250,37 @@ class SignInGoogleContractee {
           extraInfo: {
             'operation': 'Google Sign In Contractee',
             'timestamp': DateTimeHelper.getLocalTimeISOString(),
+            'error_details': signInError.toString(),
           },
         );
+
+        String errorMessage = 'Google sign-in failed. Please try again.';
+
+        // Handle specific Google Sign In errors
+        final errorString = signInError.toString();
+        if (errorString.contains('ApiException: 19') ||
+            errorString.contains('SIGN_IN_FAILED') ||
+            errorString.contains('API_NOT_CONNECTED')) {
+          errorMessage = 'Google Play Services error. Please update Google Play Services or check your device settings.';
+        } else if (errorString.contains('ApiException: 10') ||
+                   errorString.contains('DEVELOPER_ERROR')) {
+          errorMessage = 'Google Sign In configuration error. Please contact support.';
+        } else if (errorString.contains('ApiException: 8') ||
+                   errorString.contains('INTERNAL_ERROR')) {
+          errorMessage = 'Internal Google Sign In error. Please try again later.';
+        } else if (errorString.contains('ApiException: 7') ||
+                   errorString.contains('NETWORK_ERROR')) {
+          errorMessage = 'Network error during Google Sign In. Please check your internet connection.';
+        } else if (errorString.contains('ApiException: 4') ||
+                   errorString.contains('SIGN_IN_REQUIRED')) {
+          errorMessage = 'Google Sign In required. Please sign in to your Google account.';
+        } else if (errorString.contains('ApiException: 5') ||
+                   errorString.contains('INVALID_ACCOUNT')) {
+          errorMessage = 'Invalid Google account. Please try with a different account.';
+        }
+
         if (context.mounted) {
-          ConTrustSnackBar.error(context, 'Google sign-in failed: $signInError');
+          ConTrustSnackBar.error(context, errorMessage);
         }
         return;
       }
@@ -274,7 +299,7 @@ class SignInGoogleContractee {
         },
       );
       if (context.mounted) {
-        ConTrustSnackBar.error(context, errorMessage);
+        ConTrustSnackBar.error(context, 'Sign-in failed: $e');
       }
     }
   }
@@ -322,13 +347,9 @@ class SignInGoogleContractee {
           .eq('users_id', user.id)
           .maybeSingle();
 
-      debugPrint('[Google Contractee] existingContractee: ${existingContractee != null}, existingUser: ${existingUser != null}');
-
       if (existingContractee == null) {
-        debugPrint('[Google Contractee] creating new Contractee + Users rows');
         await setupContractee(context, user);
       } else if (existingUser == null) {
-        debugPrint('[Google Contractee] Users missing; upserting from Contractee data');
         final contracteeData = await supabase
             .from('Contractee')
             .select('full_name, phone_number, profile_photo')
@@ -348,7 +369,6 @@ class SignInGoogleContractee {
           'verified': true,
         }, onConflict: 'users_id');
       } else {
-        debugPrint('[Google Contractee] Both rows exist; updating verified/last_login');
         final userType = user.userMetadata != null ? user.userMetadata!['user_type'] : null;
         if (userType == null || userType.toLowerCase() != 'contractee') {
           await _auditService.logAuditEvent(
@@ -369,12 +389,6 @@ class SignInGoogleContractee {
           await supabase.auth.signOut();
           return;
         }
-      } else if (existingContractee != null && existingUser != null) {
-        debugPrint('[Google Contractee] Both Contractee and User records exist, proceeding with login');
-        debugPrint('[Google Contractee] Full user metadata: ${user.userMetadata}');
-        debugPrint('[Google Contractee] Platform: ${kIsWeb ? 'web' : 'mobile'}');
-
-        debugPrint('[Google Contractee] Valid contractee records found, proceeding with login');
 
         await _auditService.logAuditEvent(
           userId: user.id,
@@ -415,8 +429,8 @@ class SignInGoogleContractee {
             'last_login': DateTimeHelper.getLocalTimeISOString(),
           };
 
-          if (_shouldApplyGooglePhoto(
-            (existingUser?['profile_image_url'] as String?),
+          if (shouldApplyGooglePhoto(
+            (existingUser['profile_image_url'] as String?),
             googlePhoto,
           )) {
             userUpdates['profile_image_url'] = googlePhoto;
@@ -429,7 +443,7 @@ class SignInGoogleContractee {
 
         } catch (updateError) {
           await _errorService.logError(
-            errorMessage: 'Failed to update Users for contractee Google login: $e',
+            errorMessage: 'Failed to update Users for contractee Google login: $updateError',
             module: 'Contractee Google Sign-in',
             severity: 'Medium',
             extraInfo: {
@@ -445,8 +459,6 @@ class SignInGoogleContractee {
           // Don't rethrow for login updates - allow login to succeed even if update fails
         }
 
-        if (context.mounted) {
-        }
       }
 
     } catch (e) {
@@ -497,7 +509,8 @@ class SignInGoogleContractee {
       
       debugPrint('[Google Contractee] Profile photo sources - avatar_url: ${user.userMetadata?['avatar_url']}, picture: ${user.userMetadata?['picture']}, final: $profilePhoto');
 
-      await supabase.auth.updateUser(
+      try {
+        await supabase.auth.updateUser(
         UserAttributes(
           data: {
             'user_type': 'contractee',
@@ -507,7 +520,6 @@ class SignInGoogleContractee {
           },
         ),
       );
-
       } catch (authError) {
         await _errorService.logError(
           errorMessage: 'Auth updateUser failed: $authError',

@@ -39,6 +39,7 @@ class _ContracteeChatHistoryPageState
 
   String selectedTab = 'Active'; // Add this for tab management
   bool isFiltering = false; // Add loading state for tab switching
+  double screenWidth = 0; // Screen width for responsive design
 
   @override
   void initState() {
@@ -343,7 +344,8 @@ class _ContracteeChatHistoryPageState
 
    @override
   Widget build(BuildContext context) {
-    
+    screenWidth = MediaQuery.of(context).size.width;
+
     if (contracteeId == null) {
       return const Scaffold(
         backgroundColor: Colors.transparent,
@@ -685,8 +687,11 @@ class _ContracteeChatHistoryPageState
               );
             },
           ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   
 }

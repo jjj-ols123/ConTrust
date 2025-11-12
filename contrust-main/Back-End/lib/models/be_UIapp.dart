@@ -188,8 +188,6 @@ class ProjectView extends StatelessWidget {
     final hiringType = projectData?['hiring_type'] ?? 'bidding';
     final isHiringRequest = duration == 0 || hiringType == 'direct_hire';
     final status = ProjectStatus();
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
     final currentUser = Supabase.instance.client.auth.currentUser;
     final userType = currentUser?.userMetadata?['user_type']?.toString();
     final isContractee = userType == 'contractee';
