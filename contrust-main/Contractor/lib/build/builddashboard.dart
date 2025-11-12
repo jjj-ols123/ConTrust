@@ -842,8 +842,10 @@ class DashboardBuildMethods {
             ),
           ),
           SizedBox(width: isMobile ? 10 : 12),
-          
-          Expanded(
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: isMobile ? 120 : 200,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -864,6 +866,8 @@ class DashboardBuildMethods {
                     fontSize: isMobile ? 11 : 12,
                     color: Colors.grey.shade600,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 
               ],
@@ -1086,12 +1090,14 @@ class DashboardBuildMethods {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        info['full_name'] ?? 'Unknown Client',
+                                        info['full_name'] ?? 'Unknown Contractee',
                                         style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.black87,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF2C3E50),
                                         ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                       const SizedBox(height: 4),
                                       Text(

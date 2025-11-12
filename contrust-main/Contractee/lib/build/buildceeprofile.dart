@@ -46,6 +46,10 @@ class CeeProfileBuildMethods {
     required bool isUploadingPhoto,
     String? selectedTab,
     Function(String)? onTabChanged,
+    required bool isEditingFullName,
+    required TextEditingController fullNameController,
+    required VoidCallback toggleEditFullName,
+    required VoidCallback saveFullName,
   }) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -156,11 +160,31 @@ class CeeProfileBuildMethods {
                   ],
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  fullName,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
-                  textAlign: TextAlign.center,
-                ),
+                if (isEditingFullName)
+                  TextField(
+                    controller: fullNameController,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1F2937),
+                    ),
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(vertical: 8),
+                    ),
+                    maxLines: 2,
+                    maxLength: 50,
+                  )
+                else
+                  GestureDetector(
+                    onTap: toggleEditFullName,
+                    child: Text(
+                      fullName,
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 const SizedBox(height: 4),
               ],
             ),
@@ -242,6 +266,10 @@ class CeeProfileBuildMethods {
     required bool isUploadingPhoto,
     String? selectedTab,
     Function(String)? onTabChanged,
+    required bool isEditingFullName,
+    required TextEditingController fullNameController,
+    required VoidCallback toggleEditFullName,
+    required VoidCallback saveFullName,
   }) {
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -339,11 +367,31 @@ class CeeProfileBuildMethods {
                         ],
                       ),
                       const SizedBox(height: 20),
-                      Text(
-                        fullName,
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
-                        textAlign: TextAlign.center,
-                      ),
+                      if (isEditingFullName)
+                        TextField(
+                          controller: fullNameController,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1F2937),
+                          ),
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(vertical: 8),
+                          ),
+                          maxLines: 2,
+                          maxLength: 50,
+                        )
+                      else
+                        GestureDetector(
+                          onTap: toggleEditFullName,
+                          child: Text(
+                            fullName,
+                            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
                       const SizedBox(height: 6)
                     ],
                   ),
