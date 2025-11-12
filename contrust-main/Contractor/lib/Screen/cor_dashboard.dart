@@ -367,6 +367,7 @@ class _DashboardUIState extends State<DashboardUI>
       rating,
       totalReviews,
       onDataRefresh: fetchDashboardData,
+      onShowVerificationDialog: _showVerificationDialog,
     );
     buildMethods.contractorData = contractorData;
     buildMethods.allPayments = allPayments;
@@ -384,6 +385,7 @@ class _DashboardUIState extends State<DashboardUI>
       rating,
       totalReviews,
       onDataRefresh: fetchDashboardData,
+      onShowVerificationDialog: _showVerificationDialog,
     );
     buildMethods.allPayments = allPayments;
     return buildMethods.buildStatsGrid();
@@ -400,6 +402,7 @@ class _DashboardUIState extends State<DashboardUI>
       rating,
       totalReviews,
       onDataRefresh: fetchDashboardData,
+      onShowVerificationDialog: _showVerificationDialog,
     );
     buildMethods.contractorData = contractorData;
     buildMethods.allPayments = allPayments;
@@ -418,6 +421,7 @@ class _DashboardUIState extends State<DashboardUI>
       rating,
       totalReviews,
       onDataRefresh: fetchDashboardData,
+      onShowVerificationDialog: _showVerificationDialog,
     );
     return buildMethods.buildHiringRequestContainer();
   }
@@ -433,6 +437,7 @@ class _DashboardUIState extends State<DashboardUI>
       rating,
       totalReviews,
       onDataRefresh: fetchDashboardData,
+      onShowVerificationDialog: _showVerificationDialog,
     );
     buildMethods.contractorData = contractorData;
     buildMethods.allPayments = allPayments;

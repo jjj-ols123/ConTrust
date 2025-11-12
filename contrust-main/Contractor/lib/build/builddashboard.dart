@@ -23,10 +23,12 @@ class DashboardBuildMethods {
     this.rating,
     this.totalReviews, {
     this.onDataRefresh,
+    required this.onShowVerificationDialog,
   });
 
   final BuildContext context;
   final VoidCallback? onDataRefresh;
+  final Function(BuildContext) onShowVerificationDialog;
   final ProjectStatus status = ProjectStatus();
   final CorDashboardService dashboardservice = CorDashboardService();
 
@@ -92,6 +94,21 @@ class DashboardBuildMethods {
                       style: TextStyle(
                         color: Colors.orange.shade800,
                         fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 32,
+                      child: ElevatedButton(
+                        onPressed: () => onShowVerificationDialog(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber.shade600,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                          minimumSize: const Size(0, 32),
+                        ),
+                        child: const Text('Submit Verification'),
                       ),
                     ),
                   ],

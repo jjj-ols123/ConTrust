@@ -196,6 +196,33 @@ class SignInGoogleContractee {
       final supabase = Supabase.instance.client;
       debugPrint('[Google Contractee] handleSignIn start for ${user.id}');
 
+      if (user.email != null) {
+        final existingEmailUser = await supabase
+            .from('Users')
+            .select('users_id')
+            .eq('email', user.email!)
+            .maybeSingle();
+
+        if (existingEmailUser != null) {
+          await _auditService.logAuditEvent(
+            action: 'USER_LOGIN_FAILED',
+            details: 'Google login blocked - email already in use',
+            metadata: {
+              'user_type': 'contractee',
+              'email': user.email,
+              'login_method': 'google_oauth',
+              'failure_reason': 'email_already_used',
+            },
+          );
+
+          if (context.mounted) {
+            ConTrustSnackBar.error(context, 'This email is already associated with an account.');
+          }
+          await supabase.auth.signOut();
+          return;
+        }
+      }
+
       final existingContractee = await supabase
           .from('Contractee')
           .select()

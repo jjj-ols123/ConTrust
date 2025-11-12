@@ -157,8 +157,35 @@ class _UserDropdownMenuState extends State<UserDropdownMenu> {
             CircleAvatar(
               radius: 14,
               backgroundColor: Colors.white,
-              backgroundImage: _profileImageUrl != null ? NetworkImage(_profileImageUrl!) : const AssetImage('assets/images/defaultpic.png'),
-              child: _userName == null ? const Icon(Icons.person, size: 16, color: Colors.grey) : null,
+              child: ClipOval(
+                child: _profileImageUrl != null
+                    ? Image.network(
+                        _profileImageUrl!,
+                        width: 28,
+                        height: 28,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Image(
+                            image: const AssetImage('assets/images/defaultpic.png'),
+                            width: 28,
+                            height: 28,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(Icons.person, size: 14, color: Colors.grey);
+                            },
+                          );
+                        },
+                      )
+                    : Image(
+                        image: const AssetImage('assets/images/defaultpic.png'),
+                        width: 28,
+                        height: 28,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(Icons.person, size: 14, color: Colors.grey);
+                        },
+                      ),
+              ),
             ),
             const SizedBox(width: 8),
             Text(

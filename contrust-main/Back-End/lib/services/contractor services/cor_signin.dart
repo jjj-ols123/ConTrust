@@ -169,7 +169,7 @@ class SignInGoogleContractor {
         String normalizedOrigin = origin.replaceFirst(RegExp(r'^https?://www\.'), 'https://');
         redirectUrl = '$normalizedOrigin/auth/callback';
       } else {
-        redirectUrl = 'io.supabase.contrust://login-callback';
+        redirectUrl = 'io.supabase.contrust://auth/callback';
       }
 
       await supabase.auth.signInWithOAuth(
@@ -209,7 +209,7 @@ class SignInGoogleContractor {
             .eq('email', user.email!)
             .maybeSingle();
 
-        if (existingEmailUser != null && existingEmailUser['users_id'] != user.id) {
+        if (existingEmailUser != null) {
           await _auditService.logAuditEvent(
             action: 'USER_LOGIN_FAILED',
             details: 'Google login blocked - email already in use',
@@ -222,7 +222,7 @@ class SignInGoogleContractor {
           );
 
           if (context.mounted) {
-            ConTrustSnackBar.error(context, 'This email is already associated with an account. Please use email/password login.');
+            ConTrustSnackBar.error(context, 'This email is already associated with an account.');
           }
           await supabase.auth.signOut();
           return;
