@@ -185,12 +185,6 @@ class LumpSumContract extends StatelessWidget {
 
           ContractStyle.bulletList([
             ContractStyle.textResolver != null 
-                ? 'Down Payment: ${ContractStyle.textResolver!('[Payment.DownPaymentPercentage]')}% of total contract price - Due upon contract signing'
-                : 'Down Payment: [Payment.DownPaymentPercentage]% of total contract price - Due upon contract signing',
-            ContractStyle.textResolver != null 
-                ? 'Retention: ${ContractStyle.textResolver!('[Payment.RetentionPercentage]')}% - Released after ${ContractStyle.textResolver!('[Payment.RetentionPeriod]')} days from completion'
-                : 'Retention: [Payment.RetentionPercentage]% - Released after [Payment.RetentionPeriod] days from completion',
-            ContractStyle.textResolver != null 
                 ? 'Payment Terms: Net ${ContractStyle.textResolver!('[Payment.DueDays]')} days from invoice date'
                 : 'Payment Terms: Net [Payment.DueDays] days from invoice date',
             ContractStyle.textResolver != null 

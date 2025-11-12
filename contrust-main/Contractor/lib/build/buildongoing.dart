@@ -1878,6 +1878,7 @@ class OngoingBuildMethods {
     required List<Map<String, dynamic>> reports,
     required List<Map<String, dynamic>> photos,
     List<Map<String, dynamic>>? payments,
+    List<Map<String, dynamic>>? materials,
     int maxItems = 5,
   }) {
     List<Map<String, dynamic>> activities = [];
@@ -1897,7 +1898,6 @@ class OngoingBuildMethods {
         });
       }
       
-      // Always add task creation activity
       activities.add({
         'type': 'task_added',
         'title': 'Task added',
@@ -1959,6 +1959,16 @@ class OngoingBuildMethods {
         'description': 'Project photo uploaded',
         'timestamp': photo['created_at'] ?? DateTime.now().toIso8601String(),
         'icon': Icons.photo_camera,
+      });
+    }
+
+    for (var material in materials ?? const []) {
+      activities.add({
+        'type': 'material',
+        'title': 'Material added',
+        'description': 'Material added: ${material['material_name'] ?? 'Unknown'}',
+        'timestamp': material['created_at'] ?? DateTime.now().toIso8601String(),
+        'icon': Icons.inventory_2,
       });
     }
 
@@ -2124,6 +2134,7 @@ class OngoingBuildMethods {
     required List<Map<String, dynamic>> tasks,
     required List<Map<String, dynamic>> reports,
     required List<Map<String, dynamic>> photos,
+    List<Map<String, dynamic>>? materials,
     VoidCallback? onRefresh,
     VoidCallback? onEditCompletion,
     VoidCallback? onSwitchProject,
@@ -2200,6 +2211,7 @@ class OngoingBuildMethods {
                             tasks: tasks,
                             reports: reports,
                             photos: photos,
+                            materials: materials,
                             maxItems: 20,
                           ),
                         ),
@@ -2233,6 +2245,7 @@ class OngoingBuildMethods {
     required List<Map<String, dynamic>> tasks,
     required List<Map<String, dynamic>> reports,
     required List<Map<String, dynamic>> photos,
+    List<Map<String, dynamic>>? materials,
     VoidCallback? onRefresh,
     VoidCallback? onEditCompletion, 
     VoidCallback? onSwitchProject,
@@ -2255,6 +2268,7 @@ class OngoingBuildMethods {
             tasks: tasks,
             reports: reports,
             photos: photos,
+            materials: materials,
             onRefresh: onRefresh,
             onEditCompletion: onEditCompletion,
             onSwitchProject: onSwitchProject,
@@ -2391,6 +2405,7 @@ class OngoingBuildMethods {
     required List<Map<String, dynamic>> reports,
     required List<Map<String, dynamic>> photos,
     required List<Map<String, dynamic>> costs,
+    List<Map<String, dynamic>>? materials,
     required Function(String, bool) onUpdateTaskStatus,
     required Function(String) onDeleteTask,
     required Function(String) onDeleteReport,
@@ -2426,6 +2441,7 @@ class OngoingBuildMethods {
             tasks: tasks,
             reports: reports,
             photos: photos,
+            materials: materials,
             onViewContract: onViewContract,
             onRefresh: onRefresh,
             onEditCompletion: onEditCompletion,

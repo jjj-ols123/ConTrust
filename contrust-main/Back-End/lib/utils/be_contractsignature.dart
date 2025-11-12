@@ -42,10 +42,10 @@ class SignatureCompletionHandler {
         final contracteeSigned = updatedContractData['contractee_signature_url'] != null &&
             (updatedContractData['contractee_signature_url'] as String).isNotEmpty;
         
-        if (contractorSigned && contracteeSigned) {
-          final hasSignedPdf = updatedContractData['signed_pdf_url'] != null && 
+        if (contractorSigned || contracteeSigned) {
+          final hasSignedPdf = updatedContractData['signed_pdf_url'] != null &&
                (updatedContractData['signed_pdf_url'] as String).isNotEmpty;
-          
+
           if (!hasSignedPdf) {
             await Supabase.instance.client
                 .from('Contracts')

@@ -185,7 +185,7 @@ class PaymentService {
       if (sumOfMilestonesExceptLast < expectedMilestoneTotal) {
         final lastMilestone = milestones.last;
         lastMilestone['amount'] = expectedMilestoneTotal - sumOfMilestonesExceptLast;
-        lastMilestone['description'] = '${lastMilestone['description']} (Adjusted to match contract total)';
+        lastMilestone['description'] = '${lastMilestone['description']}';
       }
     }
 

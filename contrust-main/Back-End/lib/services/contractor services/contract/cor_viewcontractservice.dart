@@ -325,17 +325,18 @@ class ViewContractService {
       );
 
       if (kIsWeb) {
-        ConTrustSnackBar.success(context, 'Contract download started');
+        ConTrustSnackBar.success(context, 'Contract download started - check your Downloads folder');
       } else {
         try {
           final filePath = result?.path ?? '';
           if (filePath.isNotEmpty) {
-            ConTrustSnackBar.success(context, 'Contract downloaded to: $filePath');
+            final fileName = filePath.split('/').last;
+            ConTrustSnackBar.success(context, 'Contract saved as "$fileName"');
           } else {
-            ConTrustSnackBar.success(context, 'Contract downloaded successfully');
+            ConTrustSnackBar.success(context, 'Contract saved to Downloads folder');
           }
         } catch (_) {
-          ConTrustSnackBar.success(context, 'Contract downloaded successfully');
+          ConTrustSnackBar.success(context, 'Contract saved successfully');
         }
       }
     } catch (e) {

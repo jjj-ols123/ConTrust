@@ -397,6 +397,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
     );
   }
 
+  void _handleCompletedProjectsClick() {
+    HomePageBuilder.showCompletedProjectsSelector(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -414,7 +418,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
       );
     }
 
-    final projectsToShow = projects.isEmpty ? [HomePageBuilder.getPlaceholderProject()] : projects;
+    final activeProjects = projects.where((project) {
+      final status = (project['status']?.toString().toLowerCase() ?? '');
+      return status != 'completed' && status != 'ended';
+    }).toList();
+
+    final projectsToShow = activeProjects.isEmpty
+        ? [HomePageBuilder.getPlaceholderProject()]
+        : activeProjects;
     final isMobile = MediaQuery.of(context).size.width < 600;
 
     return RefreshIndicator(
@@ -493,8 +504,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
                             ),
                           ),
                           const SizedBox(height: 16),
-                          if (projects.isNotEmpty)
-                            ...projects.map((project) {
+                          if (activeProjects.isNotEmpty)
+                            ...activeProjects.map((project) {
                               final projectId = project['project_id'].toString();
                               final projectTitle = project['title'] ?? 'Untitled Project';
                               final projectData = project['projectdata'] as Map<String, dynamic>?;
@@ -572,7 +583,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
                               children: [
                                 HomePageBuilder.buildHiringBidsEmptyStateContainer(
                                   context: context,
-                                  projects: projects,
+                                  projects: activeProjects,
                                   acceptBidding: _loadAcceptBidding,
                                   rejectBidding: _loadRejectBidding,
                                 ),
@@ -588,6 +599,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
                             context: context,
                             projects: projects,
                             contractors: contractors,
+                            onCompletedProjectsClick: _handleCompletedProjectsClick,
                             ),
                         ],
                       )
@@ -667,17 +679,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
                                   context: context,
                                   projects: projects,
                                   contractors: contractors,
+                                  onCompletedProjectsClick: _handleCompletedProjectsClick,
                                 ),
                                 const SizedBox(height: 20),
                                 HomePageBuilder.buildHiringBidsEmptyStateContainer(
                                   context: context,
-                                  projects: projects,
+                                  projects: activeProjects,
                                   acceptBidding: _loadAcceptBidding,
                                   rejectBidding: _loadRejectBidding,
                                 ),
                                 const SizedBox(height: 20),
-                                if (projects.isNotEmpty)
-                                  ...projects.map((project) {
+                                if (activeProjects.isNotEmpty)
+                                  ...activeProjects.map((project) {
                                     final projectId = project['project_id'].toString();
                                     return HomePageBuilder.buildCurrentContractorContainer(
                                       context: context,

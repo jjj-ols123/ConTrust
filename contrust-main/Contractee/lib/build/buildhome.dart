@@ -17,12 +17,16 @@ class HomePageBuilder {
     required List<Map<String, dynamic>> projects,
     required List<Map<String, dynamic>> contractors,
     required BuildContext context,
+    VoidCallback? onCompletedProjectsClick,
   }) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
     
     final completedCount = projects
-        .where((p) => (p['status']?.toString().toLowerCase() ?? '') == 'ended')
+        .where((project) {
+          final status = (project['status']?.toString().toLowerCase() ?? '');
+          return status == 'completed' || status == 'ended';
+        })
         .length;
 
     return Container(
@@ -71,6 +75,9 @@ class HomePageBuilder {
                 Colors.grey.shade600,
                 isMobile,
                 subtitle: 'Successfully finished',
+                onTap: completedCount > 0
+                    ? (onCompletedProjectsClick ?? () => showCompletedProjectsSelector(context))
+                    : null,
               )
             : Row(
                 children: [
@@ -82,6 +89,9 @@ class HomePageBuilder {
                       Colors.black,
                       isMobile,
                       subtitle: 'Successfully finished',
+                      onTap: completedCount > 0
+                          ? (onCompletedProjectsClick ?? () => showCompletedProjectsSelector(context))
+                          : null,
                     ),
                   ),
                 ],
@@ -157,6 +167,145 @@ class HomePageBuilder {
     );
   }
 
+  static Future<void> showCompletedProjectsSelector(BuildContext context) async {
+    try {
+      final contracteeId = Supabase.instance.client.auth.currentUser?.id;
+      if (contracteeId == null) {
+        ConTrustSnackBar.warning(context, 'Please sign in again.');
+        return;
+      }
+
+      // Fetch all projects for the contractee
+      final allProjects = await FetchService().fetchUserProjects();
+
+      // Filter for completed projects (status = 'ended')
+      final completedProjects = allProjects
+          .where((project) {
+            final status = (project['status']?.toString().toLowerCase() ?? '');
+            return status == 'completed' || status == 'ended';
+          })
+          .toList();
+
+      if (completedProjects.isEmpty) {
+        ConTrustSnackBar.info(context, 'No completed projects found.');
+        return;
+      }
+
+      final selectedProjectId = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 500),
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.black, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 20,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.amber, 
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Icon(
+                            Icons.check_circle, // Check circle icon for completed
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text(
+                            'Completed Projects',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(dialogContext).pop(),
+                          icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    child: Container(
+                      constraints: const BoxConstraints(maxHeight: 400),
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        padding: const EdgeInsets.all(16),
+                        itemCount: completedProjects.length,
+                        itemBuilder: (context, index) {
+                          final project = completedProjects[index];
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            child: ListTile(
+                              title: Text(
+                                project['title'] ?? 'Untitled Project',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.normal,
+                                ),
+                              ),
+                              subtitle: Text('Status: Completed'),
+                              leading: Icon(Icons.check_circle, color: Colors.green.shade700),
+                              trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.green.shade700),
+                              onTap: () {
+                                Navigator.of(dialogContext).pop(project['project_id']);
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      if (selectedProjectId != null && selectedProjectId.isNotEmpty) {
+        if (!context.mounted) return;
+        context.go('/ongoing/$selectedProjectId');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ConTrustSnackBar.error(context, 'Failed to load completed projects');
+      }
+    }
+  }
+
   static Widget _buildStatCard(
     String title,
     String value,
@@ -164,6 +313,7 @@ class HomePageBuilder {
     Color color,
     bool isMobile, {
     String? subtitle,
+    VoidCallback? onTap,
   }) {
     final double padding = isMobile ? 12 : 16;
     final double iconPadding = isMobile ? 12 : 14;
@@ -171,119 +321,122 @@ class HomePageBuilder {
     final double titleFontSize = isMobile ? 14 : 16;
     final double subtitleFontSize = isMobile ? 12 : 13;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(isMobile ? 12 : 16),
-        border: Border.all(color: Colors.grey.shade300, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(padding),
-        child: isMobile
-            ? Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(iconPadding),
-                          decoration: BoxDecoration(
-                            color: color.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(isMobile ? 12 : 16),
+          border: Border.all(color: Colors.grey.shade300, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(padding),
+          child: isMobile
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(iconPadding),
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(icon, color: color, size: 20),
                           ),
-                          child: Icon(icon, color: color, size: 20),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                title,
-                                style: TextStyle(
-                                  fontSize: titleFontSize,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              if (subtitle != null && subtitle.isNotEmpty) ...[
-                                const SizedBox(height: 2),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
                                 Text(
-                                  subtitle,
+                                  title,
                                   style: TextStyle(
-                                    fontSize: subtitleFontSize,
-                                    color: Colors.grey.shade600,
+                                    fontSize: titleFontSize,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
                                   ),
                                 ),
+                                if (subtitle != null && subtitle.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    subtitle,
+                                    style: TextStyle(
+                                      fontSize: subtitleFontSize,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: valueFontSize,
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-                  ),
-                ],
-              )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(iconPadding),
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(icon, color: color, size: 22),
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: valueFontSize,
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: titleFontSize,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  if (subtitle != null && subtitle.isNotEmpty) ...[
-                    const SizedBox(height: 2),
                     Text(
-                      subtitle,
+                      value,
                       style: TextStyle(
-                        fontSize: subtitleFontSize,
-                        color: Colors.grey.shade600,
+                        fontSize: valueFontSize,
+                        fontWeight: FontWeight.bold,
+                        color: color,
                       ),
                     ),
                   ],
-                ],
-              ),
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(iconPadding),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(icon, color: color, size: 22),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      value,
+                      style: TextStyle(
+                        fontSize: valueFontSize,
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: titleFontSize,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    if (subtitle != null && subtitle.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: subtitleFontSize,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+        ),
       ),
     );
   }
@@ -2298,20 +2451,13 @@ class HomePageBuilder {
   }) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
-    final double baseDialogWidth = screenWidth * 0.55;
-    final double dialogWidth = isMobile
-        ? double.infinity
-        : baseDialogWidth.clamp(560.0, 840.0).toDouble();
-
+    
     showDialog(
       context: context,
       builder: (dialogContext) => Dialog(
-        insetPadding: EdgeInsets.symmetric(
-          horizontal: isMobile ? 16 : 72,
-          vertical: isMobile ? 16 : 48,
-        ),
+        insetPadding: EdgeInsets.all(isMobile ? 16 : 100),
         child: Container(
-          width: dialogWidth,
+          width: isMobile ? double.infinity : (screenWidth * 0.55),
           height: isMobile
               ? MediaQuery.of(context).size.height * 0.8
               : MediaQuery.of(context).size.height * 0.6,
@@ -2357,11 +2503,11 @@ class HomePageBuilder {
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: GridView.builder(
-                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: isMobile ? 180 : 220,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: isMobile ? 2 : 3,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
-                      childAspectRatio: isMobile ? 0.65 : 0.85,
+                      childAspectRatio: 0.7,
                     ),
                     itemCount: contractors.length,
                     itemBuilder: (context, index) {

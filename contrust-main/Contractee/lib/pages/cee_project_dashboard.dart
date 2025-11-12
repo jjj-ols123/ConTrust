@@ -1054,6 +1054,9 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
   }
 
   Widget _buildTitleContainer(String title) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 700;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -1065,52 +1068,53 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+          if (isMobile && widget.isPaid) ...[
+            // Mobile layout for completed payments - two rows
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'By: ${_contractorName ?? 'Contractor'}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade700,
+                      const SizedBox(height: 4),
+                      Text(
+                        'By: ${_contractorName ?? 'Contractor'}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade700,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildContractButton(widget.projectId),
-                  if (widget.isPaid && widget.onViewPaymentHistory != null) ...[
-                    const SizedBox(width: 8),
-                    ElevatedButton.icon(
-                      onPressed: widget.onViewPaymentHistory,
-                      icon: const Icon(Icons.history, size: 16),
-                      label: const Text('Payment History', style: TextStyle(fontSize: 12)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Second row - payment history and paid label stacked for better visibility
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (widget.onViewPaymentHistory != null) ...[
+                  ElevatedButton.icon(
+                    onPressed: widget.onViewPaymentHistory,
+                    icon: const Icon(Icons.history, size: 16),
+                    label: const Text('Payment History', style: TextStyle(fontSize: 12)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     ),
-                  ],
+                  ),
+                  const SizedBox(height: 8),
                 ],
-              ),
-              const SizedBox(width: 8),
-              if (widget.isPaid)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
@@ -1133,32 +1137,106 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
                       ),
                     ],
                   ),
-                )
-              else if (widget.onPayment != null)
-                ElevatedButton.icon(
-                  onPressed: widget.isPaymentLoading ? null : widget.onPayment,
-                  icon: widget.isPaymentLoading
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Icon(Icons.payment, size: 16),
-                  label: Text(
-                    widget.isPaymentLoading ? 'Loading...' : (widget.paymentButtonText ?? 'Pay Now'),
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+              ],
+            ),
+          ] else ...[
+            // Desktop layout or mobile non-completed payments - single row
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'By: ${_contractorName ?? 'Contractor'}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-            ],
-          ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildContractButton(widget.projectId),
+                    if (widget.isPaid && widget.onViewPaymentHistory != null) ...[
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: widget.onViewPaymentHistory,
+                        icon: const Icon(Icons.history, size: 16),
+                        label: const Text('Payment History', style: TextStyle(fontSize: 12)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(width: 8),
+                if (widget.isPaid)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green.shade300),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_circle, color: Colors.green.shade700, size: 16),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Paid',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else if (widget.onPayment != null)
+                  ElevatedButton.icon(
+                    onPressed: widget.isPaymentLoading ? null : widget.onPayment,
+                    icon: widget.isPaymentLoading
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Icon(Icons.payment, size: 16),
+                    label: Text(
+                      widget.isPaymentLoading ? 'Loading...' : (widget.paymentButtonText ?? 'Pay Now'),
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -2898,7 +2976,7 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
       stream: _fetchService.streamContractsForProject(projectId),
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Icon(Icons.description, size: 24, color: Colors.amber);
+          return const SizedBox.shrink();
         }
 
         final contracts = snapshot.data!;

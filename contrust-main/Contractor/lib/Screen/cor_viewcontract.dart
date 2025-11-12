@@ -100,7 +100,7 @@ class _ContractorViewContractPageState extends State<ContractorViewContractPage>
           await ContractPdfService.saveToDevice(Uint8List.fromList(pdfBytes), fileName);
           
           if (mounted) {
-            ConTrustSnackBar.success(context, 'Signed contract downloaded successfully');
+            ConTrustSnackBar.success(context, 'Signed contract saved successfully');
           }
         } catch (downloadError) {
           await ViewContractService.handleDownload(
@@ -153,7 +153,7 @@ class _ContractorViewContractPageState extends State<ContractorViewContractPage>
           await ContractPdfService.saveToDevice(Uint8List.fromList(pdfBytes), fileName);
           
           if (mounted) {
-            ConTrustSnackBar.success(context, 'Signed contract downloaded successfully');
+            ConTrustSnackBar.success(context, 'Signed contract saved successfully');
           }
         } catch (downloadError) {
           await ViewContractService.handleDownload(
@@ -239,7 +239,10 @@ class _ContractorViewContractPageState extends State<ContractorViewContractPage>
                             }
 
                             return SingleChildScrollView(
-                              padding: const EdgeInsets.all(24),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: constraints.maxWidth < 700 ? 8 : 24,
+                                vertical: 24,
+                              ),
                               child: ConstrainedBox(
                                 constraints: BoxConstraints(
                                   minHeight: constraints.maxHeight > 0
@@ -266,7 +269,7 @@ class _ContractorViewContractPageState extends State<ContractorViewContractPage>
                                         return ViewContractBuild.buildPdfViewer(
                                           pdfUrl: snapshot.data,
                                           onDownload: () => _downloadContractWithData(liveData),
-                                          height: 600,
+                                          height: constraints.maxWidth < 700 ? 500 : 600,
                                           isSignedContract: (liveData['signed_pdf_url'] as String?)?.isNotEmpty == true,
                                         );
                                       },

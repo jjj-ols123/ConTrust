@@ -25,17 +25,12 @@ class MilestonePaymentModal {
 
     // 
     final totalContractPrice = (contractInfo['total_price'] as num?)?.toDouble() ?? 0.0;
-    final downPaymentPercent = (contractInfo['down_payment_percentage'] as num?)?.toDouble() ?? 0.0;
-    final retentionPercent = (contractInfo['retention_percentage'] as num?)?.toDouble() ?? 0.0;
     final paidMilestones = milestones.where((m) => m['status'] == 'paid').toList();
     final paidMilestoneTotal = paidMilestones.fold<double>(0.0, (sum, m) => sum + ((m['amount'] as num?)?.toDouble() ?? 0.0));
     final currentMilestoneAmount = (currentMilestone['amount'] as num?)?.toDouble() ?? 0.0;
 
-    // 
-    final downPaymentAmount = totalContractPrice * (downPaymentPercent / 100);
-    final retentionAmount = totalContractPrice * (retentionPercent / 100);
+    // Calculate remaining milestone payments
     final totalMilestoneAmount = milestones.fold<double>(0.0, (sum, m) => sum + ((m['amount'] as num?)?.toDouble() ?? 0.0));
-    final finalPaymentAmount = totalContractPrice - downPaymentAmount - retentionAmount - totalMilestoneAmount;
 
     final formKey = GlobalKey<FormState>();
     final cardNumberController = TextEditingController();
@@ -262,16 +257,6 @@ class MilestonePaymentModal {
                           ),
                           child: Column(
                             children: [
-                              // Down Payment
-                              _buildPaymentRow('Down Payment', '${downPaymentPercent.toStringAsFixed(1)}%', downPaymentAmount),
-
-                              const Divider(height: 12),
-
-                              // Retention
-                              _buildPaymentRow('Retention', '${retentionPercent.toStringAsFixed(1)}%', retentionAmount),
-
-                              const Divider(height: 12),
-
                               // Milestones Paid
                               _buildPaymentRow('Milestones Paid', '${paidMilestones.length}/${milestones.length}', paidMilestoneTotal),
 
@@ -287,7 +272,7 @@ class MilestonePaymentModal {
 
                               const Divider(height: 12),
 
-                              // Final Payment
+                              // Final Payment (Remaining milestones)
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
@@ -296,9 +281,9 @@ class MilestonePaymentModal {
                                   border: Border.all(color: Colors.green.shade200),
                                 ),
                                 child: _buildPaymentRow(
-                                  'Final Payment',
-                                  'After completion',
-                                  finalPaymentAmount,
+                                  'Remaining Milestones',
+                                  '${milestones.length - paidMilestones.length - 1} milestones left',
+                                  totalMilestoneAmount - paidMilestoneTotal - currentMilestoneAmount,
                                   isTotal: true,
                                 ),
                               ),
@@ -322,7 +307,7 @@ class MilestonePaymentModal {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  'All payments will total ₱${totalContractPrice.toStringAsFixed(2)} when completed',
+                                  'Paying this milestone brings total payments to ₱${(paidMilestoneTotal + currentMilestoneAmount).toStringAsFixed(2)}',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.amber.shade800,

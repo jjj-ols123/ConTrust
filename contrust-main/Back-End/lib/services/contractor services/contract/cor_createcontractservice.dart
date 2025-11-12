@@ -131,9 +131,6 @@ class CreateContractService {
         ContractField(key: 'Project.WorkingHours', label: 'Working Hours (e.g., 8:00 AM - 5:00 PM)', isRequired: true),
         
         ContractField(key: 'Payment.Total', label: 'Total Contract Price (₱)', inputType: TextInputType.number, isEnabled: false),
-        ContractField(key: 'Payment.DownPaymentPercentage', label: 'Down Payment Percentage (%)', inputType: TextInputType.number),
-        ContractField(key: 'Payment.RetentionPercentage', label: 'Retention Percentage (%)', inputType: TextInputType.number),
-        ContractField(key: 'Payment.RetentionPeriod', label: 'Retention Period (days)', inputType: TextInputType.number),
         ContractField(key: 'Payment.DueDays', label: 'Payment Due Days from Invoice', inputType: TextInputType.number),
         ContractField(key: 'Payment.LateFeePercentage', label: 'Late Payment Fee Percentage (%)', inputType: TextInputType.number),
       ];
@@ -470,23 +467,8 @@ class CreateContractService {
         return;
       }
 
-      final downPaymentPercentText = controllers['Payment.DownPaymentPercentage']?.text ?? '';
-      final downPaymentPercent = downPaymentPercentText.trim().isEmpty ? 0.0 : _parsePercent(downPaymentPercentText);
-
-      final retentionPercentText = controllers['Payment.RetentionPercentage']?.text ?? '';
-      final retentionPercent = retentionPercentText.trim().isEmpty ? 0.0 : _parsePercent(retentionPercentText);
-
-      // Calculate total contract price = milestone payments / (1 - down payment % - retention %)
-      final denominator = 1 - downPaymentPercent - retentionPercent;
-      if (denominator <= 0) {
-        controllers['Payment.Total']?.text = 'Invalid percentages';
-        return;
-      }
-
-      final total = totalMilestonePayments / denominator;
-
-      final result = total > 0 ? total.toStringAsFixed(2) : '0.00';
-      controllers['Payment.Total']?.text = result;
+      // Set total contract price equal to sum of milestone payments
+      controllers['Payment.Total']?.text = totalMilestonePayments.toStringAsFixed(2);
     } catch (e) {
       _errorService.logError(
         errorMessage: 'Failed to calculate lump sum payments: $e',
@@ -497,17 +479,6 @@ class CreateContractService {
         },
       );
       controllers['Payment.Total']?.text = '';
-    }
-  }
-
-  double _parsePercent(String raw) {
-    final cleaned = raw.trim().replaceAll('%', '').replaceAll(',', '');
-    final v = double.tryParse(cleaned) ?? 0.0;
-
-    if (cleaned.contains('.')) {
-      return v; 
-    } else {
-      return v / 100.0; 
     }
   }
 
@@ -809,7 +780,6 @@ class CreateContractService {
       controllers['Estimated Total']?.clear();
       controllers['Payment.Total']?.clear();
       
-      controllers['Payment.DownPaymentPercentage']?.clear();
       controllers['Payment.ProgressPayment1Percentage']?.clear();
       controllers['Payment.ProgressPayment2Percentage']?.clear();
       controllers['Payment.FinalPaymentPercentage']?.clear();

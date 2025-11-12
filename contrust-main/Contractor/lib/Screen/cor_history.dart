@@ -962,16 +962,31 @@ class _CorHistoryPageState extends State<CorHistoryPage> {
   }
 
   Widget _buildMobilePdfViewer(String pdfUrl) {
-    return SfPdfViewer.network(
-      pdfUrl,
-      onDocumentLoadFailed: (PdfDocumentLoadFailedDetails details) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to load PDF: ${details.error}'),
-            backgroundColor: Colors.red,
+    return Stack(
+      children: [
+        SfPdfViewer.network(
+          pdfUrl,
+          onDocumentLoadFailed: (PdfDocumentLoadFailedDetails details) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to load PDF: ${details.error}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          },
+        ),
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 60, // Cover bottom area where page indicator typically appears
+          child: AbsorbPointer(
+            child: Container(
+              color: Colors.transparent,
+            ),
           ),
-        );
-      },
+        ),
+      ],
     );
   }
   

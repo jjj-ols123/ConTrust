@@ -63,16 +63,6 @@ class ContractTabsBuild {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   tabController.animateTo(prevIndex);
                 });
-                  // Show feedback
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Complete all required fields first'),
-                      backgroundColor: Colors.orange.shade700,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      margin: const EdgeInsets.all(16),
-                    ),
-                  );
                 return;
               }
               if (index == previewIndex) {
@@ -654,11 +644,16 @@ class ContractTabsBuild {
       'Contractee.Email',
       'Project.StartDate',
       'Payment.FinalPayment', // Calculated field
+      'Payment.Total', // Calculated field for lump sum
+      'Payment.Subtotal', // Calculated field for time and materials
     };
 
     // Check if field key matches calculated patterns
     bool isCalculatedField(String key) {
-      return key.startsWith('Milestone.') && key.endsWith('.Duration'); // Milestone duration fields
+      return key.startsWith('Milestone.') && key.endsWith('.Duration') || // Milestone duration fields
+             key.startsWith('Item.') && key.endsWith('.Subtotal') || // Item subtotal fields
+             key.endsWith('.Total') && key.startsWith('Payment.') || // Payment totals (additional check)
+             key == 'Payment.Subtotal'; // Payment subtotal
     }
 
     for (final field in contractFields) {

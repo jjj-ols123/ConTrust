@@ -282,13 +282,11 @@ class ContractPdfSignatureService {
         },
       );
 
-      if (contractorSigned && 
-          contracteeSigned && 
-          !hasSignedPdf) {
-        
+      if ((contractorSigned || contracteeSigned) && !hasSignedPdf) {
+
         await _auditService.logAuditEvent(
           action: 'INITIATING_SIGNED_PDF_CREATION',
-          details: 'Both parties have signed, creating signed PDF',
+          details: 'At least one party has signed, creating signed PDF - Contractor signed: $contractorSigned, Contractee signed: $contracteeSigned',
           category: 'Contract',
           metadata: {
             'contract_id': contractId,

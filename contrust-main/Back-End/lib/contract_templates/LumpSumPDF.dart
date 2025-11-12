@@ -191,18 +191,6 @@ class LumpSumPDF {
 
     widgets.add(
       pw.Bullet(
-        text: 'Down Payment: ${ContractStyle.getFieldValue(fieldValues, 'Payment.DownPaymentPercentage')}% of total contract price - Due upon contract signing',
-        style: const pw.TextStyle(fontSize: 10),
-      ),
-    );
-    widgets.add(
-      pw.Bullet(
-        text: 'Retention: ${ContractStyle.getFieldValue(fieldValues, 'Payment.RetentionPercentage')}% - Released after ${ContractStyle.getFieldValue(fieldValues, 'Payment.RetentionPeriod')} days from completion',
-        style: const pw.TextStyle(fontSize: 10),
-      ),
-    );
-    widgets.add(
-      pw.Bullet(
         text: 'Payment Terms: Net ${ContractStyle.getFieldValue(fieldValues, 'Payment.DueDays')} days from invoice date',
         style: const pw.TextStyle(fontSize: 10),
       ),

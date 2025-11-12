@@ -7,6 +7,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../contract_templates/TimeandMaterialsPDF.dart';
 import '../../contract_templates/LumpSumPDF.dart';
 import '../../contract_templates/CostPlusPDF.dart';
@@ -140,25 +141,44 @@ class ContractPdfService {
 
   static Future<dynamic> saveToDevice(Uint8List pdfBytes, String fileName) async {
     try {
+      // Try file picker for both mobile and web
+      String? selectedPath = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save PDF Contract',
+        fileName: fileName,
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+      );
+
+      if (selectedPath != null) {
+        // File picker succeeded - save to selected location
+        final file = File(selectedPath);
+        await file.writeAsBytes(pdfBytes);
+        return file;
+      }
+
+      // File picker was cancelled or failed - fallback behavior
       if (kIsWeb) {
-        return downloadFileWeb(pdfBytes, fileName);
+        // On web, trigger direct download to browser's default download location
+        downloadFileWeb(pdfBytes, fileName);
+        return null; // Web downloads don't return a file object
       } else {
+        // On mobile, save to app documents directory
         final directory = await getApplicationDocumentsDirectory();
         final file = File('${directory.path}/$fileName');
         await file.writeAsBytes(pdfBytes);
         return file;
       }
     } catch (e) {
-      await _errorService.logError(
-        errorMessage: 'Failed to save contract PDF to device: ',
-        module: 'Contract PDF Service',
-        severity: 'Medium',
-        extraInfo: {
-          'operation': 'Save to Device',
-          'file_name': fileName,
-        },
-      );
-      rethrow;
+      // If file picker fails completely, fallback to web download or app directory
+      if (kIsWeb) {
+        downloadFileWeb(pdfBytes, fileName);
+        return null;
+      } else {
+        final directory = await getApplicationDocumentsDirectory();
+        final file = File('${directory.path}/$fileName');
+        await file.writeAsBytes(pdfBytes);
+        return file;
+      }
     }
   }
 

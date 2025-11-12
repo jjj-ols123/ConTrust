@@ -1,4 +1,5 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use, avoid_web_libraries_in_flutter
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
@@ -90,13 +91,117 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
   PageController? _activitiesPageController;
   PageController? _calendarActivitiesPageController;
 
+  List<StreamSubscription> _subscriptions = [];
+  bool _isRetryingRealtime = false;
+
   @override
   void initState() {
     super.initState();
+    _setupRealtimeSubscriptions();
     if (widget.projectData != null) {
       _updateFromProjectData(widget.projectData!);
     } else {
       _loadData();
+    }
+  }
+
+  void _setupRealtimeSubscriptions() {
+    _disposeRealtime();
+    _attachRealtimeListeners();
+  }
+
+  void _disposeRealtime() {
+    for (final sub in _subscriptions) {
+      sub.cancel();
+    }
+    _subscriptions.clear();
+    _isRetryingRealtime = false;
+  }
+
+  void _attachRealtimeListeners() {
+    final supabase = Supabase.instance.client;
+    
+    void safeListen(Stream stream, String tableName) {
+      _subscriptions.add(
+        stream.listen(
+          (_) => _refreshData(),
+          onError: (error) {
+            if (mounted && !_isRetryingRealtime) {
+              debugPrint('Realtime subscription error for $tableName: $error');
+              _isRetryingRealtime = true;
+              Future.delayed(const Duration(seconds: 5), () {
+                if (mounted) {
+                  for (final sub in _subscriptions) {
+                    sub.cancel();
+                  }
+                  _subscriptions.clear();
+                  _isRetryingRealtime = false;
+                  _attachRealtimeListeners();
+                } else {
+                  _isRetryingRealtime = false;
+                }
+              });
+            }
+          },
+          cancelOnError: false,
+        ),
+      );
+    }
+    
+    try {
+      safeListen(
+        supabase
+            .from('ProjectTasks')
+            .stream(primaryKey: ['task_id'])
+            .eq('project_id', widget.projectId),
+        'ProjectTasks',
+      );
+      safeListen(
+        supabase
+            .from('ProjectReports')
+            .stream(primaryKey: ['report_id'])
+            .eq('project_id', widget.projectId),
+        'ProjectReports',
+      );
+      safeListen(
+        supabase
+            .from('ProjectPhotos')
+            .stream(primaryKey: ['photo_id'])
+            .eq('project_id', widget.projectId),
+        'ProjectPhotos',
+      );
+      safeListen(
+        supabase
+            .from('ProjectMaterials')
+            .stream(primaryKey: ['material_id'])
+            .eq('project_id', widget.projectId),
+        'ProjectMaterials',
+      );
+    } catch (e) {
+      debugPrint('Error setting up realtime listeners: $e');
+    }
+  }
+
+  Future<void> _refreshData() async {
+    try {
+      final data = await widget.ongoingService.loadProjectData(
+        widget.projectId,
+        contractorId: Supabase.instance.client.auth.currentUser?.id,
+      );
+
+      final projectDetails = data['projectDetails'] as Map<String, dynamic>?;
+
+      if (mounted) {
+        setState(() {
+          _tasks = List<Map<String, dynamic>>.from(data['tasks'] ?? []);
+          _reports = List<Map<String, dynamic>>.from(data['reports'] ?? []);
+          _photos = List<Map<String, dynamic>>.from(data['photos'] ?? []);
+          _materials = List<Map<String, dynamic>>.from(data['costs'] ?? []);
+          _projectStatus = projectDetails?['status'] as String?;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error refreshing data: $e');
     }
   }
 
@@ -111,6 +216,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
 
   @override
   void dispose() {
+    _disposeRealtime();
     _reportController.dispose();
     _activitiesPageController?.dispose();
     _calendarActivitiesPageController?.dispose();
