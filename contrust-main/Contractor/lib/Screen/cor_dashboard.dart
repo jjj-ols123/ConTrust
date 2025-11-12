@@ -154,6 +154,15 @@ class _DashboardUIState extends State<DashboardUI>
       });
     }
 
+    void debouncedVerificationCheck() {
+      _debounceTimer?.cancel();
+      _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          setState(() {});
+        }
+      });
+    }
+
     realtimeService.subscribeToNotifications(
       userId: widget.contractorId!,
       onUpdate: debouncedFetchData,
@@ -167,6 +176,16 @@ class _DashboardUIState extends State<DashboardUI>
     realtimeService.subscribeToContractorBids(
       userId: widget.contractorId!,
       onUpdate: debouncedFetchData,
+    );
+
+    realtimeService.subscribeToContractorVerification(
+      contractorId: widget.contractorId!,
+      onUpdate: debouncedVerificationCheck,
+    );
+
+    realtimeService.subscribeToUserVerification(
+      userId: widget.contractorId!,
+      onUpdate: debouncedVerificationCheck,
     );
   }
 
