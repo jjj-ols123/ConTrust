@@ -833,7 +833,7 @@ class _CorHistoryPageState extends State<CorHistoryPage> {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: FutureBuilder<String?>(
-                            future: ReceiptService.getReceiptSignedUrl(receiptPath!, expirationSeconds: 3600),
+                            future: ReceiptService.getReceiptSignedUrl(receiptPath, expirationSeconds: 3600),
                             builder: (context, snapshot) {
                               if (snapshot.connectionState == ConnectionState.waiting) {
                                 return const Center(child: CircularProgressIndicator());
@@ -895,35 +895,6 @@ class _CorHistoryPageState extends State<CorHistoryPage> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 120,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF1F2937),
-            ),
-          ),
-        ),
-      ],
     );
   }
   

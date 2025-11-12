@@ -551,17 +551,15 @@ class _ContracteeShellState extends State<ContracteeShell> {
 
     try {
       final projectsData = await _fetchService.fetchUserProjects();
-      final projectsList = projectsData is List ? projectsData : <dynamic>[];
+      final projectsList = projectsData;
       final activeProjects = <Map<String, dynamic>>[];
 
       for (final project in projectsList) {
-        if (project is Map<String, dynamic>) {
-          final status = project['status']?.toString().toLowerCase();
-          if (status == 'active') {
-            activeProjects.add(project);
-          }
+        final status = project['status']?.toString().toLowerCase();
+        if (status == 'active') {
+          activeProjects.add(project);
         }
-      }
+            }
 
       if (!mounted) return;
 

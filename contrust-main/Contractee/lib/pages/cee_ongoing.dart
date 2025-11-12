@@ -595,12 +595,12 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
 
       if (!mounted) return;
 
-      final onPaymentSuccess = () async {
+      Future<void> onPaymentSuccess() async {
         await Future.delayed(const Duration(milliseconds: 800));
         if (mounted) {
           await refreshProjectData();
         }
-      };
+      }
 
       if (isMilestone) {
         final milestoneInfo = await paymentService.getMilestonePaymentInfo(widget.projectId);

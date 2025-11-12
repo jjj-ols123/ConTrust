@@ -141,7 +141,7 @@ class CorDashboardService {
             .eq('payment_status', 'completed')
             .order('paid_at', ascending: false);
 
-        final paymentsList = List<Map<String, dynamic>>.from(paymentsResponse ?? []);
+        final paymentsList = List<Map<String, dynamic>>.from(paymentsResponse);
 
         final Map<String, Map<String, dynamic>> projectLookup = {
           for (final project in projects)

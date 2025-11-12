@@ -5,6 +5,7 @@ import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/build/buildviewcontract.dart';
 import 'package:backend/services/contractor services/contract/cor_viewcontractservice.dart';
 import 'package:backend/services/both services/be_contract_pdf_service.dart';
+import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -37,24 +38,6 @@ class _ContractorViewContractPageState extends State<ContractorViewContractPage>
     super.initState();
     _controller = QuillController.basic();
     loadContract();
-  }
-
-  String? _getContractTitle() {
-    final title = contractData?['title'] as String?;
-    final signedPdfUrl = contractData?['signed_pdf_url'] as String?;
-    final hasSignedPdf = signedPdfUrl != null && signedPdfUrl.isNotEmpty;
-    
-    if (hasSignedPdf) {
-      return '$title (Signed)';
-    }
-    return title;
-  }
-
-  String _getDownloadButtonText() {
-    final signedPdfUrl = contractData?['signed_pdf_url'] as String?;
-    final hasSignedPdf = signedPdfUrl != null && signedPdfUrl.isNotEmpty;
-    
-    return hasSignedPdf ? 'Download Signed' : 'Download';
   }
 
   Future<void> loadContract() async {
@@ -156,63 +139,146 @@ class _ContractorViewContractPageState extends State<ContractorViewContractPage>
     return await ViewContractService.getPdfSignedUrl(contractData!);
   }
 
+  Future<void> _downloadContractWithData(Map<String, dynamic> data) async {
+    try {
+      final signedPdfUrl = data['signed_pdf_url'] as String?;
+      
+      if (signedPdfUrl != null && signedPdfUrl.isNotEmpty) {
+        try {
+          final pdfBytes = await Supabase.instance.client.storage
+              .from('contracts')
+              .download(signedPdfUrl);
+          
+          final fileName = 'Signed_Contract_${data['title']?.replaceAll(' ', '_') ?? 'Document'}.pdf';
+          await ContractPdfService.saveToDevice(Uint8List.fromList(pdfBytes), fileName);
+          
+          if (mounted) {
+            ConTrustSnackBar.success(context, 'Signed contract downloaded successfully');
+          }
+        } catch (downloadError) {
+          await ViewContractService.handleDownload(
+            contractData: data,
+            context: context,
+          );
+        }
+      } else {
+        await ViewContractService.handleDownload(
+          contractData: data,
+          context: context,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ConTrustSnackBar.error(context, 'Download failed: ');
+      }
+    }
+  }
+
+  Future<String?> _getPdfUrlWithData(Map<String, dynamic> data) async {
+    final signedPdfUrl = data['signed_pdf_url'] as String?;
+    if (signedPdfUrl != null && signedPdfUrl.isNotEmpty) {
+      try {
+        final signedUrl = await ViewContractService.getSignedContractUrl(signedPdfUrl);
+        if (signedUrl != null && signedUrl.isNotEmpty) {
+          return signedUrl;
+        }
+      } catch (e) {
+        rethrow;
+      }
+    }
+    
+    return await ViewContractService.getPdfSignedUrl(data);
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         return Column(
           children: [
-            ViewContractBuild.buildHeader(
-              context, 
-              _getContractTitle(), 
-              onDownload: downloadContract,
-              downloadButtonText: _getDownloadButtonText(),
+            StreamBuilder<Map<String, dynamic>?>(
+              stream: FetchService().streamContractById(widget.contractId),
+              initialData: contractData,
+              builder: (context, contractSnap) {
+                final liveData = contractSnap.data ?? contractData;
+                if (liveData == null) {
+                  return ViewContractBuild.buildHeader(
+                    context,
+                    'Loading...',
+                    onDownload: () {},
+                    downloadButtonText: 'Download',
+                  );
+                }
+
+                final title = liveData['title'] as String?;
+                final signedPdfUrl = liveData['signed_pdf_url'] as String?;
+                final hasSignedPdf = signedPdfUrl != null && signedPdfUrl.isNotEmpty;
+                final displayTitle = hasSignedPdf ? '$title (Signed)' : title;
+                final downloadText = hasSignedPdf ? 'Download Signed' : 'Download';
+
+                return ViewContractBuild.buildHeader(
+                  context,
+                  displayTitle ?? 'Contract',
+                  onDownload: () => _downloadContractWithData(liveData),
+                  downloadButtonText: downloadText,
+                );
+              },
             ),
             Expanded(
               child: isLoading
                   ? ViewContractBuild.buildLoadingState()
                   : errorMessage != null
                       ? ViewContractBuild.buildErrorState(errorMessage!, loadContract)
-                      : SingleChildScrollView(
-                          padding: const EdgeInsets.all(24),
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              minHeight: constraints.maxHeight > 0 
-                                  ? constraints.maxHeight - 100 
-                                  : 0,
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                FutureBuilder<String?>(
-                                  future: _getPdfUrlWithSignedPriority(),
-                                  builder: (context, snapshot) {
-                                    if (snapshot.connectionState == ConnectionState.waiting) {
-                                      return Card(
-                                        child: SizedBox(
-                                          height: 400,
-                                          child: const Center(
-                                            child: CircularProgressIndicator(color: Colors.amber),
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                    
-                                    return ViewContractBuild.buildPdfViewer(
-                                      pdfUrl: snapshot.data,
-                                      onDownload: downloadContract,
-                                      height: 600,
-                                      isSignedContract: contractData?['signed_pdf_url'] != null && 
-                                                       (contractData!['signed_pdf_url'] as String).isNotEmpty,
-                                    );
-                                  },
-                                ),            
-                                const SizedBox(height: 24),
-                                
-                                ViewContractBuild.buildEnhancedSignaturesSection(contractData),
-                              ],
-                            ),
-                          ),
+                      : StreamBuilder<Map<String, dynamic>?>(
+                          stream: FetchService().streamContractById(widget.contractId),
+                          initialData: contractData,
+                          builder: (context, contractSnap) {
+                            final liveData = contractSnap.data ?? contractData;
+                            if (liveData == null) {
+                              return ViewContractBuild.buildLoadingState();
+                            }
+
+                            return SingleChildScrollView(
+                              padding: const EdgeInsets.all(24),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minHeight: constraints.maxHeight > 0
+                                      ? constraints.maxHeight - 100
+                                      : 0,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    FutureBuilder<String?>(
+                                      future: _getPdfUrlWithData(liveData),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.connectionState == ConnectionState.waiting) {
+                                          return Card(
+                                            child: SizedBox(
+                                              height: 400,
+                                              child: const Center(
+                                                child: CircularProgressIndicator(color: Colors.amber),
+                                              ),
+                                            ),
+                                          );
+                                        }
+
+                                        return ViewContractBuild.buildPdfViewer(
+                                          pdfUrl: snapshot.data,
+                                          onDownload: () => _downloadContractWithData(liveData),
+                                          height: 600,
+                                          isSignedContract: (liveData['signed_pdf_url'] as String?)?.isNotEmpty == true,
+                                        );
+                                      },
+                                    ),
+                                    const SizedBox(height: 24),
+
+                                    ViewContractBuild.buildEnhancedSignaturesSection(liveData),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
                         ),
             ),
           ],

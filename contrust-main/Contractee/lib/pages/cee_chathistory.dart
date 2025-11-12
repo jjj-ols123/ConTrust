@@ -36,8 +36,11 @@ class _ContracteeChatHistoryPageState extends State<ContracteeChatHistoryPage> {
   Map<String, dynamic>? _lastBatchData;
   String? _batchKey;
 
-  String selectedTab = 'Active'; // Add this for tab management
-  bool isFiltering = false; // Add loading state for tab switching
+  String selectedTab = 'Active';
+  bool isFiltering = false;
+  double screenWidth = 0;
+  Map<String, String>? _cachedProjectStatuses; 
+  String? _cachedStatusKey; 
 
   @override
   void initState() {
@@ -261,42 +264,91 @@ class _ContracteeChatHistoryPageState extends State<ContracteeChatHistoryPage> {
     };
   }
 
+  Future<Map<String, String>> _batchFetchProjectStatuses(
+      List<String> chatRoomIds) async {
+    if (chatRoomIds.isEmpty) return {};
+
+    try {
+      final response = await supabase
+          .from('ChatRoom')
+          .select('''
+            chatroom_id,
+            project:Projects(status)
+          ''')
+          .inFilter('chatroom_id', chatRoomIds);
+
+      final Map<String, String> statusMap = {};
+      for (var chat in response) {
+        final chatRoomId = chat['chatroom_id'] as String?;
+        final project = chat['project'];
+        final status = project?['status'] as String?;
+        if (chatRoomId != null && status != null) {
+          statusMap[chatRoomId] = status;
+        }
+      }
+      return statusMap;
+    } catch (e) {
+      debugPrint('Error batch fetching project statuses: $e');
+      return {};
+    }
+  }
+
+  String _computeStatusCacheKey(List<Map<String, dynamic>> chats) {
+    final buffer = StringBuffer();
+    for (final chat in chats) {
+      final id = chat['chatroom_id']?.toString() ?? '';
+      final ts = chat['last_message_time']?.toString() ?? '';
+      buffer.write(id);
+      buffer.write('|');
+      buffer.write(ts);
+      buffer.write(';');
+    }
+    return buffer.toString();
+  }
+
   Future<List<Map<String, dynamic>>> _filterChatsByStatus(
       List<Map<String, dynamic>> chats, String tab) async {
+    if (chats.isEmpty) return [];
+
+    final currentKey = _computeStatusCacheKey(chats);
+
+    // Use cached statuses if available and cache key matches
+    Map<String, String> statusMap;
+    if (_cachedProjectStatuses != null && _cachedStatusKey == currentKey) {
+      statusMap = _cachedProjectStatuses!;
+    } else {
+      // Fetch new statuses and cache them
+      final chatRoomIds = chats
+          .map((chat) => chat['chatroom_id'] as String?)
+          .where((id) => id != null && id.isNotEmpty)
+          .cast<String>()
+          .toList();
+
+      statusMap = await _batchFetchProjectStatuses(chatRoomIds);
+      _cachedProjectStatuses = statusMap;
+      _cachedStatusKey = currentKey;
+    }
+
     List<Map<String, dynamic>> filteredChats = [];
 
-    const timeout = Duration(seconds: 5);
-
     for (final chat in chats) {
-      try {
-        final projectStatus = await FetchService()
-            .fetchProjectStatus(chat['chatroom_id'])
-            .timeout(
-              timeout,
-              onTimeout: () => 'unknown',
-            );
+      final chatRoomId = chat['chatroom_id'] as String?;
+      if (chatRoomId == null) continue;
 
-        bool shouldInclude = false;
+      final projectStatus = statusMap[chatRoomId] ?? 'unknown';
 
-        if (tab == 'Active') {
-          // Active chats: show all except confirmed cancelled or completed
-          shouldInclude =
-              projectStatus != 'cancelled' && projectStatus != 'completed';
-        } else {
-          // Archived chats: only confirmed cancelled or completed
-          shouldInclude =
-              projectStatus == 'cancelled' || projectStatus == 'completed';
-        }
+      bool shouldInclude = false;
 
-        if (shouldInclude) {
-          filteredChats.add(chat);
-        }
-      } catch (e) {
-        // If we can't fetch status, show in Active tab (better UX than hiding potentially active chats)
-        if (tab == 'Active') {
-          filteredChats.add(chat);
-        }
-        // Don't add to Archived tab if status can't be determined
+      if (tab == 'Active') {
+        // Active chats: show all except confirmed cancelled or completed
+        shouldInclude = projectStatus != 'cancelled' && projectStatus != 'completed';
+      } else {
+        // Archived chats: only confirmed cancelled or completed
+        shouldInclude = projectStatus == 'cancelled' || projectStatus == 'completed';
+      }
+
+      if (shouldInclude) {
+        filteredChats.add(chat);
       }
     }
 
@@ -351,8 +403,7 @@ class _ContracteeChatHistoryPageState extends State<ContracteeChatHistoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
+    
     if (contracteeId == null) {
       return const Scaffold(
         backgroundColor: Colors.transparent,
@@ -576,175 +627,155 @@ class _ContracteeChatHistoryPageState extends State<ContracteeChatHistoryPage> {
                                   final lastTime = DateTimeHelper.parseToLocal(
                                       chat['last_message_time'] as String?);
 
-                                  return InkWell(
-                                    onTap: () {
-                                      context.go(
-                                          '/chat/${Uri.encodeComponent(contractorName)}',
-                                          extra: {
-                                            'chatRoomId': chatRoomId,
-                                            'contracteeId': contracteeId,
-                                            'contractorId': contractorId,
-                                            'contractorProfile':
-                                                contractorProfile,
-                                            'canChat': canChat,
-                                          });
-                                    },
-                                    child: Container(
-                                      margin: const EdgeInsets.only(bottom: 12),
-                                      padding: const EdgeInsets.all(14),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                                          color: Colors.white,
-                                          width: 1.5,
+                          return InkWell(
+                            onTap: () {
+                              context.go('/chat/${Uri.encodeComponent(contractorName)}', extra: {
+                                'chatRoomId': chatRoomId,
+                                'contracteeId': contracteeId,
+                                'contractorId': contractorId,
+                                'contractorProfile': contractorProfile,
+                                'canChat': canChat,
+                              });
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 1.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withOpacity(0.1),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 4),
+                                  )
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Stack(
+                                    children: [
+                                      ClipOval(
+                                        child: Container(
+                                          width: 56,
+                                          height: 56,
+                                          color: Colors.blue.shade600,
+                                          child: Image.network(
+                                            contractorProfile ??
+                                                'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
+                                            width: 56,
+                                            height: 56,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Image(
+                                                image: const AssetImage('assets/defaultpic.png'),
+                                                width: 56,
+                                                height: 56,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (context, error, stackTrace) {
+                                                  return Container(
+                                                    color: Colors.blue.shade600,
+                                                    child: Icon(Icons.business, size: 28, color: Colors.white),
+                                                  );
+                                                },
+                                              );
+                                            },
+                                          ),
                                         ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.grey.withOpacity(0.1),
-                                            blurRadius: 6,
-                                            offset: const Offset(0, 4),
-                                          )
-                                        ],
                                       ),
-                                      child: Row(
-                                        children: [
-                                          Stack(
-                                            children: [
-                                              ClipOval(
-                                                child: Container(
-                                                  width: 56,
-                                                  height: 56,
-                                                  color: Colors.blue.shade600,
-                                                  child: Image.network(
-                                                    contractorProfile ??
-                                                        'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
-                                                    width: 56,
-                                                    height: 56,
-                                                    fit: BoxFit.cover,
-                                                    errorBuilder: (context,
-                                                        error, stackTrace) {
-                                                      return Image(
-                                                        image: const AssetImage(
-                                                            'assets/defaultpic.png'),
-                                                        width: 56,
-                                                        height: 56,
-                                                        fit: BoxFit.cover,
-                                                        errorBuilder: (context,
-                                                            error, stackTrace) {
-                                                          return Container(
-                                                            color: Colors
-                                                                .blue.shade600,
-                                                            child: Icon(
-                                                                Icons.business,
-                                                                size: 28,
-                                                                color: Colors
-                                                                    .white),
-                                                          );
-                                                        },
-                                                      );
-                                                    },
-                                                  ),
-                                                ),
+                                      if (hasUnread)
+                                        Positioned(
+                                          right: 0,
+                                          top: 0,
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: const BoxDecoration(
+                                              color: Colors.red,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            constraints: const BoxConstraints(
+                                              minWidth: 16,
+                                              minHeight: 16,
+                                            ),
+                                            child: Text(
+                                              unreadCount > 99 ? '99+' : unreadCount.toString(),
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
                                               ),
-                                              if (hasUnread)
-                                                Positioned(
-                                                  right: 0,
-                                                  top: 0,
-                                                  child: Container(
-                                                    padding:
-                                                        const EdgeInsets.all(4),
-                                                    decoration:
-                                                        const BoxDecoration(
-                                                      color: Colors.red,
-                                                      shape: BoxShape.circle,
-                                                    ),
-                                                    constraints:
-                                                        const BoxConstraints(
-                                                      minWidth: 16,
-                                                      minHeight: 16,
-                                                    ),
-                                                    child: Text(
-                                                      unreadCount > 99
-                                                          ? '99+'
-                                                          : unreadCount
-                                                              .toString(),
-                                                      style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 10,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                      ),
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                    ),
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  contractorName,
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 18,
-                                                    color: Colors.blue.shade800,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  lastMessage,
-                                                  style: TextStyle(
-                                                    color: hasUnread
-                                                        ? Colors.black87
-                                                        : Colors.grey.shade700,
-                                                    fontSize: 14,
-                                                    fontWeight: hasUnread
-                                                        ? FontWeight.w500
-                                                        : FontWeight.normal,
-                                                  ),
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ),
-                                              ],
+                                              textAlign: TextAlign.center,
                                             ),
                                           ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            (lastTime != null &&
-                                                    screenWidth < 400)
-                                                ? DateFormat('h:mm a')
-                                                    .format(lastTime)
-                                                : formatTime(lastTime),
-                                            style: TextStyle(
-                                              fontSize: lastTime != null &&
-                                                      screenWidth < 400
-                                                  ? 10
-                                                  : 12,
-                                              color: Colors.grey.shade600,
-                                            ),
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          contractorName,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 18,
+                                            color: Colors.blue.shade800,
                                           ),
-                                        ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          lastMessage,
+                                          style: TextStyle(
+                                            color: hasUnread ? Colors.black87 : Colors.grey.shade700,
+                                            fontSize: 14,
+                                            fontWeight: hasUnread ? FontWeight.w500 : FontWeight.normal,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  if (lastTime != null && screenWidth < 400) ...[
+                                    Text(
+                                      DateFormat('h:mm a').format(lastTime),
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.grey.shade600,
                                       ),
                                     ),
-                                  );
-                                },
-                              );
-                            },
+                                  ] else ...[
+                                    Text(
+                                      formatTime(lastTime),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
                           );
                         },
                       );
                     },
-                  ),
+                  );
+                },
+              );
+            },
+          ),
                 )
-              ],
-            ),
-    );
+              ]
+          )
+          );
   }
+
+  
 }

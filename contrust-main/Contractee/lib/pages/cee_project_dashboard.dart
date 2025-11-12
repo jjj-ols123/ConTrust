@@ -1442,16 +1442,16 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
               Widget gestureChild = GestureDetector(
                 onTap: () {
                   handleDayTap();
-                  if (isMobile && tooltipText != null && tooltipText!.isNotEmpty) {
+                  if (isMobile && tooltipText != null && tooltipText.isNotEmpty) {
                     _showMobileCalendarDetail(dayDate, tooltipText);
                   }
                 },
                 child: container,
               );
 
-              if (!isMobile && tooltipText != null && tooltipText!.isNotEmpty) {
+              if (!isMobile && tooltipText != null && tooltipText.isNotEmpty) {
                 gestureChild = Tooltip(
-                  message: tooltipText!,
+                  message: tooltipText,
                   child: gestureChild,
                 );
               }

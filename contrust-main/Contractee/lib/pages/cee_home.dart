@@ -148,7 +148,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
         }
       }
       
-      List<Map<String, dynamic>> _normalizeContractors(List<Map<String, dynamic>> raw) {
+      List<Map<String, dynamic>> normalizeContractors(List<Map<String, dynamic>> raw) {
         return raw.map((contractor) {
           final normalized = Map<String, dynamic>.from(contractor);
           final rawRating = normalized['rating'];
@@ -169,14 +169,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
         projectType: projectTypeForSuggestion,
       );
 
-      var fetchedContractors = _normalizeContractors(fetchedContractorsRaw);
+      var fetchedContractors = normalizeContractors(fetchedContractorsRaw);
 
       final usedProjectType = projectTypeForSuggestion != null &&
           projectTypeForSuggestion.trim().isNotEmpty;
 
       if (usedProjectType && fetchedContractors.isEmpty) {
         final fallbackContractorsRaw = await FetchService().fetchContractors();
-        fetchedContractors = _normalizeContractors(fallbackContractorsRaw);
+        fetchedContractors = normalizeContractors(fallbackContractorsRaw);
       }
 
       if (!mounted) return;

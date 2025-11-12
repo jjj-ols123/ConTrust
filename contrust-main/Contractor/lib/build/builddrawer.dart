@@ -447,7 +447,7 @@ class SideDashboardDrawer extends StatefulWidget {
 
 class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
   bool _loadingPM = false;
-  bool _hasActiveSession = false;
+  bool hasActiveSession = false;
   final SuperAdminAuditService _auditService = SuperAdminAuditService();
   final SuperAdminErrorService _errorService = SuperAdminErrorService();
 
@@ -460,7 +460,7 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
   void _checkSession() {
     final session = Supabase.instance.client.auth.currentSession;
     setState(() {
-      _hasActiveSession = session != null;
+      hasActiveSession = session != null;
     });
   }
 
@@ -1074,9 +1074,7 @@ class DashboardDrawer extends StatefulWidget {
 
 class _DashboardDrawerState extends State<DashboardDrawer> {
   bool _loadingPM = false;
-  bool _hasActiveSession = false;
-  final SuperAdminAuditService _auditService = SuperAdminAuditService();
-  final SuperAdminErrorService _errorService = SuperAdminErrorService();
+  bool hasActiveSession = false;
 
   @override
   void initState() {
@@ -1087,7 +1085,7 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
   void _checkSession() {
     final session = Supabase.instance.client.auth.currentSession;
     setState(() {
-      _hasActiveSession = session != null;
+      hasActiveSession = session != null;
     });
   }
 

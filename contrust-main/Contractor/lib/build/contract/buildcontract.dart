@@ -236,10 +236,10 @@ class CreateContractBuild {
                             letterSpacing: 0.5,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text(
                           "Choose a project to create your contract",
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Color(0xE6FFFFFF), // White with 0.9 opacity
                             fontSize: 14,
                             fontWeight: FontWeight.w400,

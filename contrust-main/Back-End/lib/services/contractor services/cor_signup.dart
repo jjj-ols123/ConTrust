@@ -20,11 +20,9 @@ class SignUpContractor {
     Map<String, dynamic>? data,
     bool Function() validateFields,
   ) async {
-    print('DEBUG: signUpContractor called for email: $email');
     final supabase = Supabase.instance.client;
 
     if (!validateFields()) {
-      print('DEBUG: signUpContractor validation failed, returning false');
       return false;
     }
 
@@ -32,7 +30,6 @@ class SignUpContractor {
         (data?['verificationFiles'] as List<Map<String, dynamic>>? ?? []);
 
     if (verificationFiles.isEmpty) {
-      print('DEBUG: signUpContractor no verification files, returning false');
       if (context.mounted) {
         ConTrustSnackBar.error(context, 'Please upload verification documents before signing up.');
       }
@@ -219,7 +216,6 @@ class SignUpContractor {
 
       if (!context.mounted) return false;
 
-      print('DEBUG: signUpContractor returning true (successful signup)');
       return true;
     } on AuthException catch (e) {
       await _auditService.logAuditEvent(

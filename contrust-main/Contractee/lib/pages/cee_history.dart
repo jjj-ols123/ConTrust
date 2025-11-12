@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter
+// ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -222,7 +222,6 @@ class _CeeHistoryPageState extends State<CeeHistoryPage> {
       if (initialRating <= 0) {
         initialRating = 5.0;
       }
-      final reviewController = TextEditingController();
 
       final Map<String, dynamic>? result = await showDialog<Map<String, dynamic>>(
         context: context,
@@ -1076,7 +1075,7 @@ class _CeeHistoryPageState extends State<CeeHistoryPage> {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: FutureBuilder<String?>(
-                            future: ReceiptService.getReceiptSignedUrl(receiptPath!, expirationSeconds: 3600),
+                            future: ReceiptService.getReceiptSignedUrl(receiptPath, expirationSeconds: 3600),
                             builder: (context, snapshot) {
                               if (snapshot.connectionState == ConnectionState.waiting) {
                                 return const Center(child: CircularProgressIndicator());

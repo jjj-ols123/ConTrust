@@ -83,105 +83,6 @@ class PaymentService {
     }
   }
 
-  Future<Map<String, dynamic>> _determinePaymentAmount({
-    required String projectId,
-    required String? contractId,
-    required String bidId,
-    double? customAmount,
-  }) async {
-    try { 
-      if (contractId == null) {
-        final bidData = await _supabase
-            .from('Bids')
-            .select('bid_amount')
-            .eq('bid_id', bidId)
-            .single();
-        
-        return {
-          'amount': (bidData['bid_amount'] as num).toDouble(),
-          'contract_type': 'bid_based',
-          'payment_structure': 'single',
-        };
-      }
-
-      final contractData = await _supabase
-          .from('Contracts')
-          .select('contract_type_id, field_values')
-          .eq('contract_id', contractId)
-          .single();
-
-    final contractTypeData = await _supabase
-      .from('ContractTypes')
-      .select('template_name')
-      .eq('contract_type_id', contractData['contract_type_id'])
-      .maybeSingle();
-
-    final String contractType = ((contractTypeData?['template_name'])?.toString() ?? 'custom').toLowerCase();
-      final fieldValues = contractData['field_values'] as Map<String, dynamic>? ?? {};
-
-
-      final milestonePaymentInfo = _detectMilestonePayments(contractType, fieldValues);
-      if (milestonePaymentInfo != null) {
-        return milestonePaymentInfo;
-      }
-
-      if (contractType.contains('lump sum')) {
-        final contractPrice = fieldValues['Project.ContractPrice'];
-        if (contractPrice == null || contractPrice.toString().isEmpty) {
-          throw Exception('Contract price not found in Lump Sum contract');
-        }
-        
-        return {
-          'amount': double.parse(contractPrice.toString()),
-          'contract_type': 'lump_sum',
-          'payment_structure': 'single',
-        };
-      } else if (contractType.contains('time and materials')) {
-        if (customAmount == null) {
-          throw Exception('Time & Materials contracts require a custom payment amount. Please specify the amount to pay.');
-        }
-        
-        return {
-          'amount': customAmount,
-          'contract_type': 'time_and_materials',
-          'payment_structure': 'variable',
-        };
-      } else if (contractType.contains('cost-plus') || contractType.contains('cost plus')) {
-        if (customAmount == null) {
-          throw Exception('Cost Plus contracts require a custom payment amount. Please specify the amount to pay.');
-        }
-        
-        return {
-          'amount': customAmount,
-          'contract_type': 'cost_plus',
-          'payment_structure': 'variable',
-        };
-      } else {
-        if (customAmount == null) {
-          throw Exception('Custom contracts require a custom payment amount. Please specify the amount to pay.');
-        }
-        
-        return {
-          'amount': customAmount,
-          'contract_type': 'custom',
-          'payment_structure': 'custom',
-        };
-      }
-    } catch (e) {
-      await _errorService.logError(
-        errorMessage: 'Failed to determine payment amount: $e',
-        module: 'Payment Service',
-        severity: 'High',
-        extraInfo: {
-          'operation': 'Determine Payment Amount',
-          'project_id': projectId,
-          'contract_id': contractId,
-        },
-      );
-      rethrow;
-    }
-  }
-
   Map<String, dynamic>? _detectMilestonePayments(String contractType, Map<String, dynamic> fieldValues) {
 
     final isMilestoneContract = contractType.contains('milestone') ||
@@ -426,11 +327,11 @@ class PaymentService {
       if (email == null) {
         try {
           final contracteeId = projectData['contractee_id'] as String?;
-          if (contracteeId != null) {
+          {
             final contracteeData = await _supabase
                 .from('Contractee')
                 .select('email')
-                .eq('contractee_id', contracteeId)
+                .eq('contractee_id', contracteeId!)
                 .single();
             email = contracteeData['email'] as String?;
           }
@@ -599,7 +500,7 @@ class PaymentService {
           String contracteeEmail = '';
           String contractorName = 'Contractor';
           
-          if (contracteeId != null) {
+          {
             try {
               final contracteeData = await _supabase
                   .from('Contractee')
@@ -623,7 +524,7 @@ class PaymentService {
             }   
           }
           
-          if (contractorId != null) {
+          {
             try {
               final contractorData = await _supabase
                   .from('Contractor')
@@ -653,7 +554,7 @@ class PaymentService {
           );
           
           // Upload receipt to storage
-          if (contracteeId != null) {
+          {
             receiptPath = await ReceiptService.uploadReceiptToStorage(
               pdfBytes: receiptPdf,
               projectId: projectId,
@@ -680,8 +581,8 @@ class PaymentService {
             },
           );
         }
-        
-        if (contracteeId != null) {
+
+        {
           await _auditService.logAuditEvent(
             userId: contracteeId,
             action: 'PAYMENT_COMPLETED',
@@ -698,7 +599,7 @@ class PaymentService {
           );
         }
 
-        if (contractorId != null && contracteeId != null) {
+        {
           await _notificationService.createNotification(
             receiverId: contractorId,
             receiverType: 'contractor',
@@ -767,23 +668,19 @@ class PaymentService {
           .single();
 
       final projectStatus = (projectData['status'] as String?)?.toLowerCase();
-      print('[isProjectPaid] projectId=$projectId status=$projectStatus');
       if (projectStatus == 'completed') {
-        print('[isProjectPaid] Project already completed, returning true');
         return true;
       }
 
       bool isPaid = false;
 
       final isMilestone = await isMilestoneContract(projectId);
-      print('[isProjectPaid] projectId=$projectId isMilestone=$isMilestone');
 
       if (isMilestone) {
         final milestoneInfo = await getMilestonePaymentInfo(projectId);
         if (milestoneInfo != null) {
           final completedMilestones = milestoneInfo['completed_milestones'] as int? ?? 0;
           final totalMilestones = milestoneInfo['total_milestones'] as int? ?? 0;
-          print('[isProjectPaid] milestone info -> completed=$completedMilestones total=$totalMilestones');
           isPaid = totalMilestones > 0 && completedMilestones >= totalMilestones;
         }
       } else {
@@ -795,17 +692,14 @@ class PaymentService {
             .limit(1);
 
         isPaid = (paymentsData as List).isNotEmpty;
-        print('[isProjectPaid] non-milestone payments found=${(paymentsData as List).length}');
       }
 
-      print('[isProjectPaid] projectId=$projectId isPaid=$isPaid');
       if (isPaid && projectStatus != 'completed') {
         try {
           await _supabase
               .from('Projects')
               .update({'status': 'completed'})
               .eq('project_id', projectId);
-          print('[isProjectPaid] Auto-updated project status to completed');
         } catch (updateError) {
           await _errorService.logError(
             errorMessage: 'Failed to auto-complete project after payment: $updateError',
@@ -821,7 +715,6 @@ class PaymentService {
 
       return isPaid;
     } catch (e) {
-      print('[isProjectPaid] Error: $e');
       await _errorService.logError(
         errorMessage: 'Failed to check payment status: $e',
         module: 'Payment Service',
@@ -1348,7 +1241,7 @@ class PaymentService {
           String contracteeEmail = '';
           String contractorName = 'Contractor';
           
-          if (contracteeId != null) {
+          {
             try {
               final contracteeData = await _supabase
                   .from('Contractee')
@@ -1372,7 +1265,7 @@ class PaymentService {
             }
           }
           
-          if (contractorId != null) {
+          {
             try {
               final contractorData = await _supabase
                   .from('Contractor')
@@ -1477,23 +1370,6 @@ class PaymentService {
       if (contractId == null || bidId == null) {
         return false;
       }
-
-      final contractData = await _supabase
-          .from('Contracts')
-          .select('field_values, contract_type:ContractTypes(template_name)')
-          .eq('contract_id', contractId)
-          .single();
-
-      final fieldValues = Map<String, dynamic>.from(contractData['field_values'] ?? {});
-      final contractTypeData = contractData['contract_type'] as Map<String, dynamic>?;
-      final contractType = contractTypeData?['template_name'] as String? ?? '';
-
-      final hasMilestoneFields = fieldValues.keys.any((key) =>
-          key.toLowerCase().contains('milestone') ||
-          key.toLowerCase().contains('payment.milestone') ||
-          key.toLowerCase().contains('phase'));
-
-      final isLumpSumWithMilestones = contractType.toLowerCase().contains('lump sum') && hasMilestoneFields;
 
       final milestoneInfo = await getMilestonePaymentInfo(projectId);
       final result = milestoneInfo != null;
