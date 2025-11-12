@@ -130,70 +130,119 @@ class ProductBuildMethods {
     required Function(String) onSearchChanged,
     required bool isDesktop,
   }) {
-    return Padding(
-      padding: EdgeInsets.all(isDesktop ? 24 : 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 420;
+        final titleSize = isDesktop ? 24.0 : (isNarrow ? 19.0 : 21.0);
+        final subtitleSize = isDesktop ? 16.0 : (isNarrow ? 13.0 : 14.0);
+        final horizontalPadding = isDesktop ? 24.0 : 16.0;
+        final verticalPadding = isDesktop ? 24.0 : 18.0;
+
+        return Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: horizontalPadding,
+            vertical: verticalPadding,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                Icons.inventory_2,
-                color: Colors.black,
-                size: isDesktop ? 32 : 28,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(isDesktop ? 10 : 8),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.inventory_2,
+                      color: Colors.amber.shade600,
+                      size: isDesktop ? 30 : 26,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Materials Management',
+                          style: TextStyle(
+                            color: const Color(0xFF1F2937),
+                            fontSize: titleSize,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Track, manage, and organize your project materials',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: subtitleSize,
+                            height: 1.3,
+                          ),
+                          maxLines: isNarrow ? 2 : 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 16),
-              Text(
-                'Materials Management',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
+              const SizedBox(height: 16),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                  boxShadow: [
+                    if (isDesktop)
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      )
+                    else
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                  ],
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: TextField(
+                  onChanged: onSearchChanged,
+                  decoration: InputDecoration(
+                    hintText: 'Search materials...',
+                    prefixIcon: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      child: Icon(Icons.search, color: Colors.amber.shade600),
+                    ),
+                    prefixIconConstraints: const BoxConstraints(minHeight: 0, minWidth: 0),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: isNarrow ? 12 : 16,
+                      vertical: isNarrow ? 12 : 14,
+                    ),
+                    hintStyle: TextStyle(
+                      color: Colors.grey.shade500,
+                      fontSize: isNarrow ? 14 : 15,
+                    ),
+                  ),
+                  style: TextStyle(
+                    fontSize: isNarrow ? 14 : 15,
+                    color: const Color(0xFF1F2937),
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Track, manage, and organize your project materials',
-            style: TextStyle(
-              color: Colors.black.withOpacity(0.9),
-              fontSize: isDesktop ? 16 : 14,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: TextField(
-              onChanged: onSearchChanged,
-              decoration: InputDecoration(
-                hintText: 'Search materials...',
-                prefixIcon: const Icon(Icons.search, color: Colors.amber),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
-                ),
-                hintStyle: TextStyle(
-                  color: Colors.grey.shade500,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -1095,6 +1144,13 @@ class ProductBuildMethods {
           fontWeight: FontWeight.w600,
           color: isSpecify ? Colors.amber.shade700 : const Color(0xFF2D3748),
         );
+        final capsuleHorizontalPadding = isCompact ? 10.0 : 12.0;
+        final capsuleVerticalPadding = isCompact ? 3.0 : 4.0;
+        final capsuleTextStyle = TextStyle(
+          fontSize: isCompact ? 11 : 12,
+          fontWeight: FontWeight.w500,
+          color: Colors.amber.shade700,
+        );
 
         return Container(
           decoration: BoxDecoration(
@@ -1144,11 +1200,12 @@ class ProductBuildMethods {
                   ),
                   if (isSpecify) ...[
                     SizedBox(height: capsuleSpacing),
-                    FittedBox(
+                    Align(
+                      alignment: Alignment.center,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 4,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: capsuleHorizontalPadding,
+                          vertical: capsuleVerticalPadding,
                         ),
                         decoration: BoxDecoration(
                           color: Colors.amber.shade100,
@@ -1156,11 +1213,9 @@ class ProductBuildMethods {
                         ),
                         child: Text(
                           'Custom',
-                          style: TextStyle(
-                            fontSize: isCompact ? 11 : 12,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.amber.shade700,
-                          ),
+                          style: capsuleTextStyle,
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ),
