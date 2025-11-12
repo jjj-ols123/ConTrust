@@ -319,10 +319,27 @@ class _MyAppState extends State<MyApp> {
                           existingContract ??= {'contract_id': identifier};
                         }
 
-                        // If template deep link, verify contractor before allowing creation
                         if (mode == 'template' && existingContract == null) {
-                          return FutureBuilder<Map<String, dynamic>?>(
-                            future: FetchService().fetchContractorData(contractorId),
+                          Future<Map<String, bool>> checkUserVerification() async {
+                            try {
+                              final session = Supabase.instance.client.auth.currentSession;
+                              if (session == null) return {'verified': false};
+
+                              final userResp = await Supabase.instance.client
+                                  .from('Users')
+                                  .select('verified')
+                                  .eq('users_id', session.user.id)
+                                  .maybeSingle();
+
+                              final userVerified = userResp != null && (userResp['verified'] == true);
+                              return {'verified': userVerified};
+                            } catch (e) {
+                              return {'verified': false};
+                            }
+                          }
+
+                          return FutureBuilder<Map<String, bool>>(
+                            future: checkUserVerification(),
                             builder: (context, snapshot) {
                               if (snapshot.connectionState == ConnectionState.waiting) {
                                 return const Scaffold(
@@ -331,8 +348,10 @@ class _MyAppState extends State<MyApp> {
                                   ),
                                 );
                               }
-                              final contractorData = snapshot.data;
-                              final isVerified = contractorData?['verified'] == true;
+                              
+                              final result = snapshot.data ?? {'verified': false};
+                              final isVerified = result['verified']!;
+                              
                               if (!isVerified) {
                                 WidgetsBinding.instance.addPostFrameCallback((_) {
                                   context.go('/contracttypes');
@@ -462,8 +481,30 @@ class _MyAppState extends State<MyApp> {
                         
                         // Check if contractor is verified (only for new templates, not editing existing contracts)
                         if (mode == 'template' && existingContract == null) {
-                          return FutureBuilder<Map<String, dynamic>?>(
-                            future: FetchService().fetchContractorData(contractorId),
+                          Future<Map<String, bool>> checkUserVerification() async {
+                            try {
+                              final session = Supabase.instance.client.auth.currentSession;
+                              debugPrint('[ContractCreation] Session check: ${session != null}');
+                              if (session == null) return {'verified': false};
+
+                              final userResp = await Supabase.instance.client
+                                  .from('Users')
+                                  .select('verified')
+                                  .eq('users_id', session.user.id)
+                                  .maybeSingle();
+
+                              debugPrint('[ContractCreation] User response: $userResp');
+                              final userVerified = userResp != null && (userResp['verified'] == true);
+                              debugPrint('[ContractCreation] User verified: $userVerified');
+                              return {'verified': userVerified};
+                            } catch (e) {
+                              debugPrint('[ContractCreation] Error: $e');
+                              return {'verified': false};
+                            }
+                          }
+
+                          return FutureBuilder<Map<String, bool>>(
+                            future: checkUserVerification(),
                             builder: (context, snapshot) {
                               if (snapshot.connectionState == ConnectionState.waiting) {
                                 return const Scaffold(
@@ -472,8 +513,9 @@ class _MyAppState extends State<MyApp> {
                                   ),
                                 );
                               }
-                              final contractorData = snapshot.data;
-                              final isVerified = contractorData?['verified'] == true;
+                              
+                              final result = snapshot.data ?? {'verified': false};
+                              final isVerified = result['verified']!;
                               
                               if (!isVerified) {
                                 WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -796,8 +838,26 @@ class _MyAppState extends State<MyApp> {
 
                       // Check if contractor is verified (only for new templates, not editing existing contracts)
                       if (mode == 'template' && existingContract == null) {
-                        return FutureBuilder<Map<String, dynamic>?>(
-                          future: FetchService().fetchContractorData(session.user.id),
+                        Future<Map<String, bool>> checkUserVerification() async {
+                          try {
+                            final session = Supabase.instance.client.auth.currentSession;
+                            if (session == null) return {'verified': false};
+
+                            final userResp = await Supabase.instance.client
+                                .from('Users')
+                                .select('verified')
+                                .eq('users_id', session.user.id)
+                                .maybeSingle();
+
+                            final userVerified = userResp != null && (userResp['verified'] == true);
+                            return {'verified': userVerified};
+                          } catch (e) {
+                            return {'verified': false};
+                          }
+                        }
+
+                        return FutureBuilder<Map<String, bool>>(
+                          future: checkUserVerification(),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState == ConnectionState.waiting) {
                               return const Scaffold(
@@ -806,8 +866,9 @@ class _MyAppState extends State<MyApp> {
                                 ),
                               );
                             }
-                            final contractorData = snapshot.data;
-                            final isVerified = contractorData?['verified'] == true;
+                            
+                            final result = snapshot.data ?? {'verified': false};
+                            final isVerified = result['verified']!;
                             
                             if (!isVerified) {
                               WidgetsBinding.instance.addPostFrameCallback((_) {

@@ -8,6 +8,7 @@ import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/build/buildviewcontract.dart';
 import 'package:backend/services/contractor services/contract/cor_viewcontractservice.dart';
 import 'package:contractor/build/builddashboardtabs.dart';
+import 'package:contractor/Screen/cor_verification.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -51,17 +52,24 @@ class DashboardBuildMethods {
   bool get isMobile => screenWidth < 700;
 
   Widget _buildVerificationBanner() {
-    return FutureBuilder<bool>(
+    return FutureBuilder<Map<String, bool>>(
       future: _checkVerificationStatus(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const SizedBox.shrink();
         }
         
-        final isVerified = snapshot.data ?? false;
+        final result = snapshot.data ?? {'verified': false, 'hasSubmitted': false};
+        final isVerified = result['verified']!;
         if (isVerified) {
           return const SizedBox.shrink();
         }
+
+        final status = result['hasSubmitted']! ? 'submitted' : 'pending';
+        final title = status == 'submitted' ? 'Verification Submitted' : 'Account Pending Verification';
+        final description = status == 'submitted' 
+            ? 'Your documents are under review. You can resubmit if needed.'
+            : 'Your account is being reviewed. Please submit verification documents to complete your registration.';
 
         return Container(
           width: double.infinity,
@@ -81,7 +89,7 @@ class DashboardBuildMethods {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Account Pending Verification',
+                      title,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.orange.shade900,
@@ -90,13 +98,20 @@ class DashboardBuildMethods {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Your account is being reviewed. Some features are disabled until verification is complete.',
+                      description,
                       style: TextStyle(
                         color: Colors.orange.shade800,
                         fontSize: 12,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     ElevatedButton(
                       onPressed: () => onShowVerificationDialog(context),
                       style: ElevatedButton.styleFrom(
@@ -108,7 +123,48 @@ class DashboardBuildMethods {
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
-                      child: const Text('Submit Verification'),
+                      child: const Text('Manual'),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Wait for the Super Admin to verify your account',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.orange,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        // Navigate to verification page
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const VerificationPage(),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue.shade600,
+                        foregroundColor: Colors.white,
+                        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        minimumSize: const Size(double.infinity, 32),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      child: const Text('Automatic'),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Make sure your name is the same as the one in the photo',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.blue,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
@@ -120,20 +176,34 @@ class DashboardBuildMethods {
     );
   }
 
-  Future<bool> _checkVerificationStatus() async {
+  Future<Map<String, bool>> _checkVerificationStatus() async {
     try {
       final session = Supabase.instance.client.auth.currentSession;
-      if (session == null) return false;
+      if (session == null) return {'verified': false, 'hasSubmitted': false};
 
-      final resp = await Supabase.instance.client
+      final userResp = await Supabase.instance.client
           .from('Users')
           .select('verified')
           .eq('users_id', session.user.id)
           .maybeSingle();
 
-      return resp != null && (resp['verified'] == true);
+      debugPrint('[VerificationBanner] User response: $userResp');
+      final userVerified = userResp != null && (userResp['verified'] == true);
+      debugPrint('[VerificationBanner] User verified: $userVerified');
+
+      final verificationResp = await Supabase.instance.client
+          .from('Verification')
+          .select('verify_id')
+          .eq('contractor_id', session.user.id)
+          .maybeSingle();
+
+      final hasSubmitted = verificationResp != null;
+      debugPrint('[VerificationBanner] Has submitted: $hasSubmitted');
+
+      return {'verified': userVerified, 'hasSubmitted': hasSubmitted};
     } catch (e) {
-      return false;
+      debugPrint('[VerificationBanner] Error: $e');
+      return {'verified': false, 'hasSubmitted': false};
     }
   }
 

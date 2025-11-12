@@ -8,6 +8,7 @@ import 'package:backend/utils/be_snackbar.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ContractTypeBuild {
   static Future<Map<String, dynamic>> _fetchContractData(String contractorId) async {
@@ -46,33 +47,56 @@ class ContractTypeBuild {
             );
           }
           final allContractTypes = snapshot.data!['contractTypes'] as List<Map<String, dynamic>>;
-          final contractorData = snapshot.data!['contractorData'] as Map<String, dynamic>?;
-          final isVerified = contractorData?['verified'] == true;
+          
+          Future<Map<String, bool>> checkUserVerification() async {
+            try {
+              final session = Supabase.instance.client.auth.currentSession;
+              if (session == null) return {'verified': false};
 
-          // Filter contract types based on search and category
-          final filteredContractTypes = allContractTypes.where((template) {
-            final templateName = template['template_name']?.toString().toLowerCase() ?? '';
-            final templateDescription = template['template_description']?.toString().toLowerCase() ?? '';
+              final userResp = await Supabase.instance.client
+                  .from('Users')
+                  .select('verified')
+                  .eq('users_id', session.user.id)
+                  .maybeSingle();
 
-            // Search filter
-            final matchesSearch = searchQuery.isEmpty ||
-                templateName.contains(searchQuery) ||
-                templateDescription.contains(searchQuery);
+              final userVerified = userResp != null && (userResp['verified'] == true);
+              return {'verified': userVerified};
+            } catch (e) {
+              return {'verified': false};
+            }
+          }
 
-            // Category filter
-            final matchesCategory = selectedCategory == 'All' ||
-                (selectedCategory == 'Standard' && !templateName.toLowerCase().contains('specialized') && !templateName.toLowerCase().contains('custom')) ||
-                (selectedCategory == 'Specialized' && templateName.toLowerCase().contains('specialized')) ||
-                (selectedCategory == 'Custom' && (templateName.toLowerCase().contains('custom') || templateName.toLowerCase().contains('upload')));
+          return FutureBuilder<Map<String, bool>>(
+            future: checkUserVerification(),
+            builder: (context, verificationSnapshot) {
+              final isVerified = verificationSnapshot.data?['verified'] ?? false;
 
-            return matchesSearch && matchesCategory;
-          }).toList();
+              // Filter contract types based on search and category
+              final filteredContractTypes = allContractTypes.where((template) {
+                final templateName = template['template_name']?.toString().toLowerCase() ?? '';
+                final templateDescription = template['template_description']?.toString().toLowerCase() ?? '';
 
-          return buildContractTypesList(
-            context: context,
-            contractTypes: filteredContractTypes,
-            contractorId: contractorId,
-            isVerified: isVerified,
+                // Search filter
+                final matchesSearch = searchQuery.isEmpty ||
+                    templateName.contains(searchQuery) ||
+                    templateDescription.contains(searchQuery);
+
+                // Category filter
+                final matchesCategory = selectedCategory == 'All' ||
+                    (selectedCategory == 'Standard' && !templateName.toLowerCase().contains('specialized') && !templateName.toLowerCase().contains('custom')) ||
+                    (selectedCategory == 'Specialized' && templateName.toLowerCase().contains('specialized')) ||
+                    (selectedCategory == 'Custom' && (templateName.toLowerCase().contains('custom') || templateName.toLowerCase().contains('upload')));
+
+                return matchesSearch && matchesCategory;
+              }).toList();
+
+              return buildContractTypesList(
+                context: context,
+                contractTypes: filteredContractTypes,
+                contractorId: contractorId,
+                isVerified: isVerified,
+              );
+            },
           );
         },
       ),
@@ -419,8 +443,22 @@ class ContractTypeBuild {
     final fetchService = FetchService();
     
     // Check if contractor is verified
-    final contractorData = await fetchService.fetchContractorData(contractorId);
-    final isVerified = contractorData?['verified'] == true;
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session == null) {
+      ConTrustSnackBar.warning(
+        context,
+        'You need to be logged in to create contracts.',
+      );
+      return;
+    }
+
+    final userResp = await Supabase.instance.client
+        .from('Users')
+        .select('verified')
+        .eq('users_id', session.user.id)
+        .maybeSingle();
+    
+    final isVerified = userResp != null && (userResp['verified'] == true);
     
     if (!isVerified) {
       ConTrustSnackBar.warning(

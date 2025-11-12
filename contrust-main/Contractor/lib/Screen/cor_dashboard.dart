@@ -11,6 +11,8 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:file_picker/file_picker.dart';
 
+import 'cor_verification.dart';
+
 class DashboardScreen extends StatefulWidget {
   final String contractorId;
   const DashboardScreen({super.key, required this.contractorId});
@@ -310,18 +312,66 @@ class _DashboardUIState extends State<DashboardUI>
                 ),
               ),
               const SizedBox(width: 12),
-              ElevatedButton(
-                onPressed: () => _showVerificationDialog(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber.shade600,
-                  foregroundColor: Colors.white,
-                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                  minimumSize: const Size(0, 32),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
-                  ),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => _showVerificationDialog(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber.shade600,
+                        foregroundColor: Colors.white,
+                        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        minimumSize: const Size(double.infinity, 32),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      child: const Text('Manual'),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'manual\nwait for the Super Admin to verify your account',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.orange,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        // Navigate to verification page
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const VerificationPage(),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue.shade600,
+                        foregroundColor: Colors.white,
+                        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        minimumSize: const Size(double.infinity, 32),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      child: const Text('Automatic'),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'automatic\nmake sure your name is the same as the one in the photo',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.blue,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-                child: const Text('Submit Verification'),
               ),
             ],
           ),
@@ -345,7 +395,7 @@ class _DashboardUIState extends State<DashboardUI>
 
       final verificationResp = await Supabase.instance.client
           .from('Verification')
-          .select('verification_id')
+          .select('verify_id')
           .eq('contractor_id', session.user.id)
           .maybeSingle();
 

@@ -337,7 +337,6 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
       selectedTab,
       _previousTab,
       _buildAboutContent,
-      _buildPaymentHistoryContent,
     );
   }
 
@@ -347,21 +346,6 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
       _previousTab = selectedTab;
       selectedTab = tab;
     });
-  }
-
-  Widget _buildPaymentHistoryContent() {
-    return CeeProfileBuildMethods.buildPaymentHistory(
-      context: context,
-      transactions: filteredTransactions,
-      transactionSearchController: transactionSearchController,
-      selectedPaymentType: selectedPaymentType,
-      onPaymentTypeChanged: (type) {
-        setState(() {
-          selectedPaymentType = type;
-          _filterTransactions();
-        });
-      },
-    );
   }
 
   Widget _buildAboutContent() {
