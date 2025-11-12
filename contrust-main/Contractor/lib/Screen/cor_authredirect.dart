@@ -37,9 +37,11 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
       final hashParams = hash.isNotEmpty ? Uri.splitQueryString(hash) : <String, String>{};
       final queryParams = uri.queryParameters;
       
-      final isPasswordReset = hashParams['type'] == 'recovery' || 
-                             queryParams['type'] == 'recovery' ||
-                             hashParams.containsKey('access_token') && hashParams['type'] == 'recovery';
+      final isPasswordReset = hashParams['type'] == 'recovery' && 
+                             !hashParams.containsKey('refresh_token') ||
+                             queryParams['type'] == 'recovery' && 
+                             !queryParams.containsKey('refresh_token') ||
+                             (hashParams.containsKey('access_token') && hashParams['type'] == 'recovery' && !hashParams.containsKey('refresh_token'));
       
       if (isPasswordReset) {
         if (mounted && !_hasRedirected) {

@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:backend/services/both services/be_receipt_service.dart';
 import 'package:backend/services/both services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractee/web/html_stub.dart' as html if (dart.library.html) 'dart:html';
+import 'dart:html' as html if (dart.library.html) 'dart:html';
 import 'dart:io' if (dart.library.io) 'dart:io';
 import 'package:backend/build/ui_web_stub.dart'
     if (dart.library.html) 'dart:ui_web' as ui_web;
@@ -47,6 +47,10 @@ class CeeProfileBuildMethods {
     required bool isUploadingPhoto,
     String? selectedTab,
     Function(String)? onTabChanged,
+    required bool isEditingFullName,
+    required TextEditingController fullNameController,
+    required VoidCallback toggleEditFullName,
+    required VoidCallback saveFullName,
   }) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -264,6 +268,10 @@ class CeeProfileBuildMethods {
     required bool isUploadingPhoto,
     String? selectedTab,
     Function(String)? onTabChanged,
+    required bool isEditingFullName,
+    required TextEditingController fullNameController,
+    required VoidCallback toggleEditFullName,
+    required VoidCallback saveFullName,
   }) {
     return Padding(
       padding: const EdgeInsets.all(24.0),

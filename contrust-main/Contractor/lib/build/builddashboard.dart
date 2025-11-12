@@ -23,10 +23,12 @@ class DashboardBuildMethods {
     this.rating,
     this.totalReviews, {
     this.onDataRefresh,
+    required this.onShowVerificationDialog,
   });
 
   final BuildContext context;
   final VoidCallback? onDataRefresh;
+  final Function(BuildContext) onShowVerificationDialog;
   final ProjectStatus status = ProjectStatus();
   final CorDashboardService dashboardservice = CorDashboardService();
 
@@ -93,6 +95,20 @@ class DashboardBuildMethods {
                         color: Colors.orange.shade800,
                         fontSize: 12,
                       ),
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: () => onShowVerificationDialog(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber.shade600,
+                        foregroundColor: Colors.white,
+                        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        minimumSize: const Size(double.infinity, 32),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      child: const Text('Submit Verification'),
                     ),
                   ],
                 ),
@@ -826,8 +842,10 @@ class DashboardBuildMethods {
             ),
           ),
           SizedBox(width: isMobile ? 10 : 12),
-          
-          Expanded(
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: isMobile ? 120 : 200,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -848,6 +866,8 @@ class DashboardBuildMethods {
                     fontSize: isMobile ? 11 : 12,
                     color: Colors.grey.shade600,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 
               ],
@@ -1070,12 +1090,14 @@ class DashboardBuildMethods {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        info['full_name'] ?? 'Unknown Client',
+                                        info['full_name'] ?? 'Unknown Contractee',
                                         style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.black87,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF2C3E50),
                                         ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                       const SizedBox(height: 4),
                                       Text(

@@ -406,10 +406,15 @@ class BiddingUIBuildMethods {
                           child: Text('No bids found'),
                         ),
                       )
-                    : ListView.separated(
+                    : GridView.builder(
                         padding: const EdgeInsets.all(16),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 1.0,
+                        ),
                         itemCount: allBids.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           return buildBidItem(allBids[index]);
                         },

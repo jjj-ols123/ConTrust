@@ -141,6 +141,7 @@ class CreateContractBuild {
       builder: (BuildContext dialogContext) {
         String? selectedProjectId = initialProjectId;
         List<Map<String, dynamic>> projects = [];
+        bool isLoadingProjects = true; // Track loading state
 
         return StatefulBuilder(
           builder: (context, setDialogState) {
@@ -150,21 +151,17 @@ class CreateContractBuild {
                 final filteredProjects = fetchedProjects.where((project) => project['status'] == 'awaiting_contract').toList();
 
                 if (filteredProjects.isEmpty) {
-                  Navigator.of(dialogContext).pop();
-
-                  // Show warning snackbar before navigating
-                  ConTrustSnackBar.warning(
-                    context,
-                    'No projects available for contract creation. You must have projects with "awaiting contract" status to create contracts.',
-                  );
-
-                  // Navigate with parameter to show snackbar on the new page
-                  context.go('/contracttypes?showNoProjectsMessage=true');
+                  // Don't navigate back - just show empty state in dialog
+                  setDialogState(() {
+                    projects = []; // Keep empty to show "no projects" message
+                    isLoadingProjects = false;
+                  });
                   return;
                 }
 
                 setDialogState(() {
                   projects = filteredProjects;
+                  isLoadingProjects = false;
                   if (projects.length == 1 && selectedProjectId == null) {
                     selectedProjectId = projects.first['project_id'] as String?;
                   }
@@ -269,11 +266,37 @@ class CreateContractBuild {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          if (projects.isEmpty)
+                          if (isLoadingProjects)
                             const Center(
                               child: Padding(
                                 padding: EdgeInsets.all(20),
                                 child: CircularProgressIndicator(color: Color(0xFFFFB300)),
+                              ),
+                            )
+                          else if (projects.isEmpty)
+                            Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.folder_off_outlined,
+                                      size: 48,
+                                      color: Colors.grey,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'No Projects Available',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey[700],
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
                               ),
                             )
                           else

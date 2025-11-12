@@ -151,6 +151,45 @@ class _ContractorUserProfileScreenState
       final result = await CorProfileService().loadContractorData(widget.contractorId);
       final contractorData = result['contractorData'];
       
+      // Get profile photo from multiple sources with priority
+      String? profilePhoto = contractorData?['profile_photo'];
+      
+      // Fallback to avatar_url from auth.users if not found in Contractor table
+      if (profilePhoto == null || profilePhoto.isEmpty || profilePhoto == 'assets/defaultpic.png') {
+        try {
+          final user = Supabase.instance.client.auth.currentUser;
+          if (user != null && user.userMetadata != null) {
+            final avatarUrl = user.userMetadata?['avatar_url'] ?? user.userMetadata?['picture'];
+            if (avatarUrl != null && avatarUrl.isNotEmpty) {
+              profilePhoto = avatarUrl;
+            }
+          }
+        } catch (e) {
+          // Ignore auth errors
+        }
+      }
+      
+      // Fallback to profile_image_url from Users table if still not found
+      if (profilePhoto == null || profilePhoto.isEmpty || profilePhoto == 'assets/defaultpic.png') {
+        try {
+          final userData = await Supabase.instance.client
+              .from('Users')
+              .select('profile_image_url')
+              .eq('users_id', widget.contractorId)
+              .maybeSingle();
+          if (userData != null && userData['profile_image_url'] != null) {
+            final profileImageUrl = userData['profile_image_url'] as String;
+            if (profileImageUrl.isNotEmpty && profileImageUrl != 'assets/defaultpic.png') {
+              profilePhoto = profileImageUrl;
+            }
+          }
+        } catch (e) {
+          // Ignore database errors
+        }
+      }
+      
+      _updateControllers();
+      
       if (mounted) {
         setState(() {
           if (contractorData != null) {
@@ -170,7 +209,7 @@ class _ContractorUserProfileScreenState
             address = contractorData['address'] ?? "No address provided";
             email = contractorData['email'] ?? "";
             rating = contractorData['rating']?.toDouble() ?? 0.0;
-            profileImage = contractorData['profile_photo'];
+            profileImage = profilePhoto;  // Use the resolved profile photo from multiple sources
             pastProjects = List<String>.from(
               contractorData['past_projects'] ?? [],
             );
@@ -183,8 +222,7 @@ class _ContractorUserProfileScreenState
           isLoading = false;
         });
       }
-      
-      _updateControllers();
+
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -330,6 +368,10 @@ class _ContractorUserProfileScreenState
                           {'photo_url': profileImage ?? profileUrl},
                         ),
                         isUploadingProfilePhoto: isUploadingProfile,
+                        isEditingFirmName: isEditingFirmName,
+                        firmNameController: firmNameController,
+                        toggleEditFirmName: () => _toggleEdit('firmName'),
+                        saveFirmName: () => _saveField('firmName', firmNameController.text),
                       ),
                     );
                   } else {
@@ -358,6 +400,10 @@ class _ContractorUserProfileScreenState
                         {'photo_url': profileImage ?? profileUrl},
                       ),
                       isUploadingProfilePhoto: isUploadingProfile,
+                      isEditingFirmName: isEditingFirmName,
+                      firmNameController: firmNameController,
+                      toggleEditFirmName: () => _toggleEdit('firmName'),
+                      saveFirmName: () => _saveField('firmName', firmNameController.text),
                     );
                   }
                 },
@@ -499,12 +545,22 @@ class _ContractorUserProfileScreenState
           completedProjects = response;
           allProjects = response;
           filteredProjects = response;
-          _applySearchFilter();
         });
       }
     } catch (e) {
       //  
     }
+  }
+
+  void _filterTransactions() {
+    final query = transactionSearchController.text;
+    setState(() {
+      filteredTransactions = CorProfileService().filterTransactions(
+        transactions,
+        query,
+        selectedPaymentType,
+      );
+    });
   }
 
   Future<void> _loadTransactions() async {
@@ -528,17 +584,6 @@ class _ContractorUserProfileScreenState
         allProjects,
         query,
         selectedProjectStatus,
-      );
-    });
-  }
-
-  void _filterTransactions() {
-    final query = transactionSearchController.text;
-    setState(() {
-      filteredTransactions = CorProfileService().filterTransactions(
-        transactions,
-        query,
-        selectedPaymentType,
       );
     });
   }

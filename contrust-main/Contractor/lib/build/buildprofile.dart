@@ -33,6 +33,10 @@ class ProfileBuildMethods {
     required VoidCallback? onProfilePhotoUpload,
     required VoidCallback? onViewProfilePhoto,
     required bool isUploadingProfilePhoto,
+    required bool isEditingFirmName,
+    required TextEditingController firmNameController,
+    required VoidCallback toggleEditFirmName,
+    required VoidCallback saveFirmName,
   }) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -171,15 +175,35 @@ class ProfileBuildMethods {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  firmName,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2D3748),
+                if (isEditingFirmName)
+                  TextField(
+                    controller: firmNameController,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2D3748),
+                    ),
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(vertical: 8),
+                    ),
+                    maxLines: 2,
+                    maxLength: 50,
+                  )
+                else
+                  GestureDetector(
+                    onTap: toggleEditFirmName,
+                    child: Text(
+                      firmName,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2D3748),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
-                  textAlign: TextAlign.center,
-                ),
               ],
             ),
           ),
@@ -205,6 +229,10 @@ class ProfileBuildMethods {
     required VoidCallback? onProfilePhotoUpload,
     required VoidCallback? onViewProfilePhoto,
     required bool isUploadingProfilePhoto,
+    required bool isEditingFirmName,
+    required TextEditingController firmNameController,
+    required VoidCallback toggleEditFirmName,
+    required VoidCallback saveFirmName,
   }) {
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -332,15 +360,35 @@ class ProfileBuildMethods {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      Text(
-                        firmName,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF2D3748),
+                      if (isEditingFirmName)
+                        TextField(
+                          controller: firmNameController,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF2D3748),
+                          ),
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(vertical: 8),
+                          ),
+                          maxLines: 2,
+                          maxLength: 50,
+                        )
+                      else
+                        GestureDetector(
+                          onTap: toggleEditFirmName,
+                          child: Text(
+                            firmName,
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF2D3748),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
-                        textAlign: TextAlign.center,
-                      ),
                     ],
                   ),
                 ),
@@ -839,7 +887,7 @@ class ProfileBuildMethods {
                                   Expanded(
                                     child: Text(
                                       selected.isEmpty
-                                          ? 'Select Specializations'
+                                          ? ''
                                           : '${selected.length} specialization(s) selected',
                                       style: TextStyle(
                                         color: selected.isEmpty ? Colors.grey.shade600 : Colors.black87,
@@ -939,50 +987,6 @@ class ProfileBuildMethods {
               saveAddress,
             ),
             const SizedBox(height: 24),
-
-            if (isGoogleSignIn) ...[
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.black, width: 1),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.verified_user, color: Colors.grey.shade800, size: 20),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Verification',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Submit a file for verification (e.g., business license, ID).',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    ElevatedButton(
-                      onPressed: onSubmitVerification,
-                      child: const Text('Submit File for Verification'),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
           ],
         ),
       ),

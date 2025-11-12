@@ -84,8 +84,7 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
       final result =
           await CeeProfileService().loadContracteeData(widget.contracteeId);
       final contracteeData = result['contracteeData'];
-
-      // Fetch all projects (including cancelled)
+      
       final allProjectsData = await supabase
           .from('Projects')
           .select(
@@ -127,6 +126,43 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
         return dateB.compareTo(dateA);
       });
 
+      // Get profile photo from multiple sources with priority
+      String? profilePhoto = contracteeData?['profile_photo'];
+      
+      // Fallback to avatar_url from auth.users if not found in Contractee table
+      if (profilePhoto == null || profilePhoto.isEmpty || profilePhoto == 'assets/defaultpic.png') {
+        try {
+          final user = Supabase.instance.client.auth.currentUser;
+          if (user != null && user.userMetadata != null) {
+            final avatarUrl = user.userMetadata?['avatar_url'] ?? user.userMetadata?['picture'];
+            if (avatarUrl != null && avatarUrl.isNotEmpty) {
+              profilePhoto = avatarUrl;
+            }
+          }
+        } catch (e) {
+          // Ignore auth errors
+        }
+      }
+      
+      // Fallback to profile_image_url from Users table if still not found
+      if (profilePhoto == null || profilePhoto.isEmpty || profilePhoto == 'assets/defaultpic.png') {
+        try {
+          final userData = await supabase
+              .from('Users')
+              .select('profile_image_url')
+              .eq('users_id', widget.contracteeId)
+              .maybeSingle();
+          if (userData != null && userData['profile_image_url'] != null) {
+            final profileImageUrl = userData['profile_image_url'] as String;
+            if (profileImageUrl.isNotEmpty && profileImageUrl != 'assets/defaultpic.png') {
+              profilePhoto = profileImageUrl;
+            }
+          }
+        } catch (e) {
+          // Ignore database errors
+        }
+      }
+
       if (!mounted) {
         return;
       }
@@ -139,8 +175,8 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
           address = contracteeData['address'] ?? "";
           email = contracteeData['email'] ?? "";
 
-          // Get profile image directly without cache-busting (like contractor profile)
-          profileImage = contracteeData['profile_photo'];
+          // Get profile image from multiple sources
+          profileImage = profilePhoto;
         }
 
         completedProjectsCount = result['completedProjectsCount'];
@@ -256,8 +292,14 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
                     mainContent: _buildMainContent(),
                     onUploadPhoto: isUploadingPhoto ? null : _uploadProfilePhoto,
                     isUploadingPhoto: isUploadingPhoto,
+                    selectedTab: selectedTab,
+                    onTabChanged: (tab) => setState(() => selectedTab = tab),
+                    isEditingFullName: isEditingFullName,
+                    fullNameController: fullNameController,
+                    toggleEditFullName: () => _toggleEdit('fullName'),
+                    saveFullName: () => _saveField('fullName', fullNameController.text),
+                  ),
                 ),
-              ),
             ],
           );
         } else {
@@ -274,6 +316,12 @@ class _CeeProfilePageState extends State<CeeProfilePage> {
                   mainContent: _buildMainContent(),
                   onUploadPhoto: isUploadingPhoto ? null : _uploadProfilePhoto,
                   isUploadingPhoto: isUploadingPhoto,
+                  selectedTab: selectedTab,
+                  onTabChanged: (tab) => setState(() => selectedTab = tab),
+                  isEditingFullName: isEditingFullName,
+                  fullNameController: fullNameController,
+                  toggleEditFullName: () => _toggleEdit('fullName'),
+                  saveFullName: () => _saveField('fullName', fullNameController.text),
                 ),
               ),
             ],

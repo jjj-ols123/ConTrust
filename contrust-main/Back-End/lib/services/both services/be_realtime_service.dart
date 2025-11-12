@@ -364,6 +364,63 @@ class RealtimeSubscriptionService {
     return channel;
   }
 
+  RealtimeChannel? subscribeToContractorVerification({
+    required String contractorId,
+    required VoidCallback onUpdate,
+  }) {
+    final channelKey = 'contractor_verification_$contractorId';
+
+    // Unsubscribe existing channel if exists
+    _channels[channelKey]?.unsubscribe();
+
+    final channel = _supabase
+        .channel('contractor_verification:$contractorId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'Contractor',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'contractor_id',
+            value: contractorId,
+          ),
+          callback: (payload) => onUpdate(),
+        )
+        .subscribe();
+
+    _channels[channelKey] = channel;
+    return channel;
+  }
+
+  /// Subscribe to user verification status changes
+  RealtimeChannel? subscribeToUserVerification({
+    required String userId,
+    required VoidCallback onUpdate,
+  }) {
+    final channelKey = 'user_verification_$userId';
+
+    // Unsubscribe existing channel if exists
+    _channels[channelKey]?.unsubscribe();
+
+    final channel = _supabase
+        .channel('user_verification:$userId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'Users',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'users_id',
+            value: userId,
+          ),
+          callback: (payload) => onUpdate(),
+        )
+        .subscribe();
+
+    _channels[channelKey] = channel;
+    return channel;
+  }
+
   void unsubscribeFromChannel(String channelKey) {
     _channels[channelKey]?.unsubscribe();
     _channels.remove(channelKey);

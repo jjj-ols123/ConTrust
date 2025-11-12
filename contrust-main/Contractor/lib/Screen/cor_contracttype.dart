@@ -32,11 +32,10 @@ class _ContractTypeState extends State<ContractType> {
 
     if (widget.showNoProjectsMessage) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        ConTrustSnackBar.show(
+        ConTrustSnackBar.warning(
           context,
-          'No available projects to create a contract for. Please ensure you have projects awaiting for contract.',
-          type: SnackBarType.info,
-          duration: const Duration(seconds: 2),
+          'No projects available for contract creation. You must have projects with "awaiting contract" status to create contracts.',
+          duration: const Duration(seconds: 4),
         );
       });
     }
