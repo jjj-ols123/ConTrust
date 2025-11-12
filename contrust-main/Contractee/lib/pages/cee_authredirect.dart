@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/build/html_stub.dart' if (dart.library.html) 'dart:html' as html show window;
+import '../services/cee_google_signin.dart';
 
 class AuthRedirectPage extends StatefulWidget {
   const AuthRedirectPage({super.key});
@@ -212,15 +213,38 @@ class _AuthRedirectPageState extends State<AuthRedirectPage> {
           .maybeSingle();
       debugPrint('[AuthRedirect Contractee] contractee row exists: ${contracteeData != null}');
 
+      // If contractee data doesn't exist, create it (for OAuth users)
+      if (contracteeData == null) {
+        debugPrint('[AuthRedirect Contractee] contractee data missing, calling handleSignIn');
+        try {
+          await SignInGoogleContractee().handleSignIn(context, currentUser);
+          debugPrint('[AuthRedirect Contractee] handleSignIn completed successfully, checking session after handleSignIn');
+          
+          // Double-check session is still valid after handleSignIn
+          final postHandleSignInSession = supabase.auth.currentSession;
+          if (postHandleSignInSession == null) {
+            debugPrint('[AuthRedirect Contractee] Session became null after handleSignIn - redirecting to login');
+            if (mounted && !_hasRedirected) {
+              _hasRedirected = true;
+              context.go('/login');
+            }
+            return;
+          }
+        } catch (e) {
+          debugPrint('[AuthRedirect Contractee] handleSignIn failed: $e');
+          // If handleSignIn fails, redirect to login
+          if (mounted && !_hasRedirected) {
+            _hasRedirected = true;
+            context.go('/login');
+          }
+          return;
+        }
+      }
+
       if (mounted && !_hasRedirected) {
         _hasRedirected = true;
-        if (contracteeData != null) {
-          debugPrint('[AuthRedirect Contractee] navigate -> /home');
-          context.go('/home');
-        } else {
-          debugPrint('[AuthRedirect Contractee] navigate -> /login');
-          context.go('/login');
-        }
+        debugPrint('[AuthRedirect Contractee] navigate -> /home');
+        context.go('/home');
       }
     } catch (e) {
       debugPrint('[AuthRedirect Contractee] Error in contractee auth redirect: $e');

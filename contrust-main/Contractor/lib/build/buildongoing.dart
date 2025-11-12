@@ -1913,7 +1913,7 @@ class OngoingBuildMethods {
           ? createdAtRaw.toIso8601String()
           : (createdAtRaw?.toString() ?? DateTime.now().toIso8601String());
       final amount = (payment['amount'] as num?)?.toDouble();
-      final formattedAmount = amount != null ? amount.toStringAsFixed(2) : null;
+      final formattedAmount = amount?.toStringAsFixed(2);
       final paymentType = (payment['payment_type'] ?? payment['type'] ?? 'payment').toString();
       final isMilestone = paymentType.toLowerCase().contains('milestone');
       final milestoneLabel = payment['milestone_description'] ?? payment['description'];

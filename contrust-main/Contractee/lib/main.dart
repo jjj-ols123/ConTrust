@@ -184,10 +184,7 @@ class _MyAppState extends State<MyApp> {
                   if (session == null) {
                     return const LoginPage();
                   }
-
-                  // TEMPORARY WORKAROUND: Skip user type check for testing
-                  // TODO: Fix auth metadata persistence
-                  final effectiveUserType = 'contractee'; // Force allow access
+                  final effectiveUserType = 'contractee'; 
                   
                   if (effectiveUserType != 'contractee') {
                         WidgetsBinding.instance.addPostFrameCallback((_) {

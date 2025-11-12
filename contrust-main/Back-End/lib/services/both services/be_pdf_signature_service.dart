@@ -125,7 +125,6 @@ class ContractPdfSignatureService {
     required String contractId,
   }) async {
     try {
-      print('[ContractPdfSignatureService] Preparing signed PDF for contract: $contractId');
       final contractData = await ContractService.getContractById(contractId);
 
       final contractorId = contractData['contractor_id'] as String?;
@@ -152,26 +151,20 @@ class ContractPdfSignatureService {
         contracteeSignature: contracteeSignature,
       );
 
-      print('[ContractPdfSignatureService] Generated PDF bytes length: ${pdfBytes.length}');
       final fileName = 'signed_${contractId}_${DateTime.now().millisecondsSinceEpoch}.pdf';
       final filePath = '$contractorId/signed/$contractId/$fileName';
-      print('[ContractPdfSignatureService] Uploading signed PDF to path: $filePath');
 
       try {
         await _supabase.storage
             .from('contracts')
             .uploadBinary(filePath, pdfBytes, fileOptions: const FileOptions(upsert: true));
-        print('[ContractPdfSignatureService] Upload succeeded for $filePath');
       } catch (e) {
-        print('[ContractPdfSignatureService] Upload failed for $filePath: $e');
         rethrow;
       }
 
       try {
         await _supabase.storage.from('contracts').download(filePath);
-        print('[ContractPdfSignatureService] Verified download succeeds for $filePath');
       } catch (e) {
-        print('[ContractPdfSignatureService] Download verification failed for $filePath: $e');
         throw Exception('Uploaded signed PDF but could not verify download: $e');
       } 
 
@@ -179,14 +172,12 @@ class ContractPdfSignatureService {
         final testSignedUrl = await _supabase.storage
             .from('contracts')
             .createSignedUrl(filePath, 300); 
-        print('[ContractPdfSignatureService] Created signed URL for $filePath: ${testSignedUrl.isNotEmpty}');
 
         if (testSignedUrl.isEmpty) {
           throw Exception('Failed to create signed URL for uploaded file');
         }
 
         final response = await http.get(Uri.parse(testSignedUrl));
-        print('[ContractPdfSignatureService] Signed URL response status: ${response.statusCode}, length: ${response.contentLength}');
         if (response.statusCode != 200) {
           throw Exception('Signed URL returned status ${response.statusCode}');
         }
@@ -250,10 +241,8 @@ class ContractPdfSignatureService {
         },
       );
 
-      print('[ContractPdfSignatureService] Signed PDF ready at $filePath');
       return filePath;
     } catch (e) {
-      print('[ContractPdfSignatureService] Failed to create signed contract PDF: $e');
       await _errorService.logError(
         errorMessage: 'Failed to create signed contract PDF: $e',
         module: 'Contract PDF Signature Service',

@@ -1,4 +1,4 @@
-library html;
+library;
 
 class _Location {
   String origin = '';

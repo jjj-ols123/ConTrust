@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use, use_super_parameters, file_names
+// ignore_for_file: deprecated_member_use, use_super_parameters, file_names, use_build_context_synchronously
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_contract_service.dart';
 import 'package:backend/services/contractor services/cor_biddingservice.dart';

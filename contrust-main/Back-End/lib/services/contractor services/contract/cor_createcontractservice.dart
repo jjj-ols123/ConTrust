@@ -413,7 +413,7 @@ class CreateContractService {
       }
 
       // Now calculate durations based on consecutive valid dates
-      DateTime? previousValidDate = null;
+      DateTime? previousValidDate;
 
       for (int i = 0; i < milestoneDates.length; i++) {
         if (i == 0) {

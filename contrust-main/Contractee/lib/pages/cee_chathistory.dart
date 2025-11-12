@@ -8,7 +8,6 @@ import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_message_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ContracteeChatHistoryPage extends StatefulWidget {
@@ -79,8 +78,9 @@ class _ContracteeChatHistoryPageState extends State<ContracteeChatHistoryPage> {
   }
 
   Future<void> sendMessage() async {
-    if (selectedChatRoomId == null || selectedContractorId == null || isSending)
+    if (selectedChatRoomId == null || selectedContractorId == null || isSending) {
       return;
+    }
 
     final text = messageController.text.trim();
     if (text.isEmpty) return;
@@ -206,8 +206,7 @@ class _ContracteeChatHistoryPageState extends State<ContracteeChatHistoryPage> {
 
   String formatTime(DateTime? time) {
     if (time == null) return '';
-    final localTime = time.isUtc ? time.toLocal() : time;
-    return DateFormat('hh:mm a').format(localTime);
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
   String _computeBatchKey(List<Map<String, dynamic>> chatRooms) {
@@ -672,7 +671,7 @@ class _ContracteeChatHistoryPageState extends State<ContracteeChatHistoryPage> {
                                             fit: BoxFit.cover,
                                             errorBuilder: (context, error, stackTrace) {
                                               return Image(
-                                                image: const AssetImage('assets/defaultpic.png'),
+                                                image: const AssetImage('assets/images/defaultpic.png'),
                                                 width: 56,
                                                 height: 56,
                                                 fit: BoxFit.cover,
@@ -742,15 +741,7 @@ class _ContracteeChatHistoryPageState extends State<ContracteeChatHistoryPage> {
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  if (lastTime != null && screenWidth < 400) ...[
-                                    Text(
-                                      DateFormat('h:mm a').format(lastTime),
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                    ),
-                                  ] else ...[
+                                  if (lastTime != null)
                                     Text(
                                       formatTime(lastTime),
                                       style: TextStyle(
@@ -758,7 +749,6 @@ class _ContracteeChatHistoryPageState extends State<ContracteeChatHistoryPage> {
                                         color: Colors.grey.shade600,
                                       ),
                                     ),
-                                  ],
                                 ],
                               ),
                             ),

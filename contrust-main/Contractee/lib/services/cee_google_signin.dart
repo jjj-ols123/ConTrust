@@ -53,6 +53,7 @@
           final account = await googleSignIn.signIn();
           final googleAuth = await account?.authentication;
           final idToken = googleAuth?.idToken;
+          final email = account?.email;
 
           if (idToken == null) {
             await _errorService.logError(
@@ -68,6 +69,38 @@
               ConTrustSnackBar.error(context, 'Unable to authenticate with Google. Please try again.');
             }
             return;
+          }
+
+          // Check if email is already registered as contractor
+          if (email != null) {
+            final supabase = Supabase.instance.client;
+            final existingUser = await supabase
+                .from('Users')
+                .select('role')
+                .eq('email', email)
+                .maybeSingle();
+
+            if (existingUser != null && existingUser['role'] == 'contractor') {
+              await _auditService.logAuditEvent(
+                action: 'USER_LOGIN_FAILED',
+                details: 'Google login blocked - email already registered as contractor',
+                metadata: {
+                  'attempted_user_type': 'contractee',
+                  'existing_user_type': 'contractor',
+                  'email': email,
+                  'login_method': 'google_oauth',
+                  'failure_reason': 'cross_role_attempt',
+                },
+              );
+
+              if (context.mounted) {
+                ConTrustSnackBar.error(context, 'This email is already registered as a contractor account. Please use a different email or log in with the contractor app.');
+              }
+              // Sign out from Google
+              await googleSignIn.signOut();
+              await googleSignIn.disconnect();
+              return;
+            }
           }
 
           try {
@@ -231,26 +264,6 @@
             'verified': true,
           }, onConflict: 'users_id');
         } else {
-          final userType = user.userMetadata != null ? user.userMetadata!['user_type'] : null;
-          if (userType == null || userType.toLowerCase() != 'contractee') {
-            await _auditService.logAuditEvent(
-              userId: user.id,
-              action: 'USER_LOGIN_FAILED',
-              details: 'Google login attempt with wrong user type',
-              metadata: {
-                'user_type': userType,
-                'expected_type': 'contractee',
-                'email': user.email,
-                'login_method': 'google_oauth',
-                'failure_reason': 'wrong_user_type',
-              },
-            );
-
-            ConTrustSnackBar.error(
-                context, 'This Google account is not registered as a contractee');
-            await supabase.auth.signOut();
-            return;
-          }
 
           await _auditService.logAuditEvent(
             userId: user.id,

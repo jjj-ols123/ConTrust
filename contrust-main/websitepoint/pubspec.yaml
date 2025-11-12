@@ -81,7 +81,7 @@ flutter:
       - assets/bgloginscreen.jpg
       - assets/gary.png
       - assets/jm.jpg
-      - assets/pau.jpg
+      - assets/pau.png  
       
 
   # An image asset can refer to one or more resolution-specific "variants", see

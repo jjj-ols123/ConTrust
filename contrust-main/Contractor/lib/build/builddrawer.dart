@@ -947,6 +947,18 @@ class _ModernNavItem extends StatelessWidget {
                 color: isActive ? Colors.amber.shade700 : Colors.grey.shade600,
               ),
             ),
+            const SizedBox(height: 2),
+            Text(
+              label, 
+              style: TextStyle(
+                fontSize: 8,
+                fontWeight: FontWeight.w500,
+                color: isActive ? Colors.amber.shade600 : Colors.grey.shade500,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
         ),
       ),
