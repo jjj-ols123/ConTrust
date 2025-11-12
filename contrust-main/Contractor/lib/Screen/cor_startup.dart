@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:backend/build/html_stub.dart' if (dart.library.html) 'dart:html' as html;
-import 'cor_forgot_password.dart';
 
 class ToLoginScreen extends StatefulWidget {
   const ToLoginScreen({super.key});
@@ -375,12 +374,7 @@ Widget _buildLoginForm(BuildContext context) {
       SizedBox(height: isMobile ? 12 : 20),
       TextButton(
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const ForgotPasswordScreen(),
-            ),
-          );
+          context.go('/auth/reset-password');
         },
         child: Text(
           'Forgot Password?',

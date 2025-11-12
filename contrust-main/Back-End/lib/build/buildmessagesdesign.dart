@@ -863,6 +863,7 @@ class UIMessage {
 
       if (!context.mounted) return;
 
+      final BuildContext rootContext = context;
       final isContractee = currentUserId != null &&
           contractData['contractee_id'] == currentUserId;
 
@@ -878,7 +879,7 @@ class UIMessage {
                       contractData = updatedData;
                     });
                   } catch (e) {
-                    ConTrustSnackBar.error(context, 'Failed to refresh contract data'); 
+                    ConTrustSnackBar.error(rootContext, 'Failed to refresh contract data'); 
                   }
                 }
 
@@ -957,7 +958,7 @@ class UIMessage {
                               ),
                             ),
                             IconButton(
-                              onPressed: () => Navigator.of(context).pop(),
+                              onPressed: () => Navigator.of(dialogContext).pop(),
                               icon: const Icon(Icons.close, color: Colors.white),
                             ),
                           ],
@@ -985,17 +986,17 @@ class UIMessage {
                                     child: _ContractApprovalButtons(
                                       contractId: contractId,
                                       onApproved: () async {
-                                        Navigator.of(context).pop();
+                                        Navigator.of(dialogContext).pop();
                                         ConTrustSnackBar.contractApproved(
-                                            context);
+                                            rootContext);
                                       },
                                       onRejected: () async {
-                                        Navigator.of(context).pop();
+                                        Navigator.of(dialogContext).pop();
                                         ConTrustSnackBar.contractRejected(
-                                            context);
+                                            rootContext);
                                       },
                                       onError: (error) {
-                                        ConTrustSnackBar.error(context, error);
+                                        ConTrustSnackBar.error(rootContext, error);
                                       },
                                     ),
                                   ),
@@ -1189,8 +1190,7 @@ class UIMessage {
                                       child: SizedBox(
                                         height: 400,
                                         child: Center(
-                                          child: CircularProgressIndicator(
-                                              color: Colors.amber),
+                                          child: CircularProgressIndicator(color: Colors.amber),
                                         ),
                                       ),
                                     );
@@ -1324,7 +1324,8 @@ class UIMessage {
                                             context,
                                             _canUserSign(data,
                                                 currentUserId, displayStatus),
-                                            onRefresh),
+                                            onRefresh,
+                                            parentDialogContext: dialogContext),
                                       ],
                                     ],
                                   ),

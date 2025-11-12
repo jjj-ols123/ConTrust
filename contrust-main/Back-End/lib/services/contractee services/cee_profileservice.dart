@@ -188,6 +188,7 @@ class CeeProfileService {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.image,
         allowMultiple: false,
+        withData: true,
       );
 
       if (result == null || result.files.isEmpty) {
@@ -195,8 +196,15 @@ class CeeProfileService {
       }
 
       final file = result.files.first;
-      final Uint8List? fileBytes = file.bytes;
-      final String fileName = file.name;
+      Uint8List? fileBytes = file.bytes;
+
+      if (fileBytes == null && file.readStream != null) {
+        final builder = BytesBuilder();
+        await for (final chunk in file.readStream!) {
+          builder.add(chunk);
+        }
+        fileBytes = builder.takeBytes();
+      }
 
       if (fileBytes == null) {
         if (context.mounted) {
@@ -245,7 +253,11 @@ class CeeProfileService {
         return null;
       }
 
-      final String uniqueFileName = '${contracteeId}_${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      final fallbackExtension = extension.isNotEmpty ? extension : 'jpg';
+      final baseName = file.name.isNotEmpty ? file.name : 'profile.$fallbackExtension';
+      final sanitizedFileName = baseName.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+      final String uniqueFileName = '${contracteeId}_${DateTime.now().millisecondsSinceEpoch}_$sanitizedFileName';
+      final contentType = extension == 'png' ? 'image/png' : 'image/jpeg';
       
       await Supabase.instance.client.storage
           .from('profilephotos')
@@ -253,7 +265,7 @@ class CeeProfileService {
             uniqueFileName,
             fileBytes,
             fileOptions: FileOptions(
-              contentType: file.extension != null ? 'image/${file.extension}' : 'image/jpeg',
+              contentType: contentType,
               upsert: true,
             ),
           );

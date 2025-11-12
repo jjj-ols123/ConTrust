@@ -54,6 +54,7 @@ class _DashboardUIState extends State<DashboardUI>
   int activeProjects = 0;
   int completedProjects = 0;
   double rating = 0.0;
+  int totalReviews = 0;
   bool loading = true;
   List<Map<String, dynamic>> recentActivities = [];
   List<Map<String, dynamic>> localTasks = [];
@@ -116,6 +117,7 @@ class _DashboardUIState extends State<DashboardUI>
         activeProjects = data['activeProjects'];
         completedProjects = data['completedProjects'];
         rating = data['rating'];
+        totalReviews = data['totalReviews'] ?? 0;
         recentActivities = data['recentActivities'];
         totalEarnings = data['totalEarnings'];
         allPayments = List<Map<String, dynamic>>.from(data['allPayments'] ?? []);
@@ -308,6 +310,7 @@ class _DashboardUIState extends State<DashboardUI>
       totalEarnings,
       totalClients,
       rating,
+      totalReviews,
       onDataRefresh: fetchDashboardData,
     );
     buildMethods.contractorData = contractorData;
@@ -324,6 +327,7 @@ class _DashboardUIState extends State<DashboardUI>
       totalEarnings,
       totalClients,
       rating,
+      totalReviews,
       onDataRefresh: fetchDashboardData,
     );
     buildMethods.allPayments = allPayments;
@@ -339,6 +343,7 @@ class _DashboardUIState extends State<DashboardUI>
       totalEarnings,
       totalClients,
       rating,
+      totalReviews,
       onDataRefresh: fetchDashboardData,
     );
     buildMethods.contractorData = contractorData;
@@ -356,6 +361,7 @@ class _DashboardUIState extends State<DashboardUI>
       totalEarnings,
       totalClients,
       rating,
+      totalReviews,
       onDataRefresh: fetchDashboardData,
     );
     return buildMethods.buildHiringRequestContainer();
@@ -370,6 +376,7 @@ class _DashboardUIState extends State<DashboardUI>
       totalEarnings,
       totalClients,
       rating,
+      totalReviews,
       onDataRefresh: fetchDashboardData,
     );
     buildMethods.contractorData = contractorData;

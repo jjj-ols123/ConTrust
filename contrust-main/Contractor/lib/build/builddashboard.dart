@@ -20,7 +20,8 @@ class DashboardBuildMethods {
     this.completedProjects,
     this.totalEarnings,
     this.totalClients,
-    this.rating, {
+    this.rating,
+    this.totalReviews, {
     this.onDataRefresh,
   });
 
@@ -40,6 +41,7 @@ class DashboardBuildMethods {
   List<Map<String, dynamic>> allPayments = [];
   int totalClients = 0;
   double rating = 0.0;
+  int totalReviews = 0;
 
   double get screenWidth => MediaQuery.of(context).size.width;
   bool get isDesktop => screenWidth >= 1200;
@@ -494,6 +496,7 @@ class DashboardBuildMethods {
                       Icons.check_circle,
                       Colors.black,
                       'Successfully finished',
+                      onTap: () => _showCompletedProjectsSelector(context),
                     ),
                   ),
                 ],
@@ -744,7 +747,7 @@ class DashboardBuildMethods {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '($completedProjects reviews)',
+                        '($totalReviews reviews)',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.8),
                           fontSize: isTablet ? 16 : 14,
@@ -1343,14 +1346,14 @@ class DashboardBuildMethods {
     double childAspectRatio;
     double spacing;
 
-    if (isTablet) {
-      crossAxisCount = 2;
-      childAspectRatio = 2.5;
-      spacing = 16;
+    if (isDesktop) {
+      crossAxisCount = 4;
+      childAspectRatio = 1.0;
+      spacing = 12;
     } else {
       crossAxisCount = 2;
       childAspectRatio = 1.1;
-      spacing = 12;
+      spacing = 8;
     }
 
     return Container(
@@ -1413,6 +1416,7 @@ class DashboardBuildMethods {
                 Icons.check_circle,
                 Colors.black,
                 'Successfully finished',
+                onTap: () => _showCompletedProjectsSelector(context),
               ),
               _buildEarningsCard(),
               buildStatCard(
@@ -1421,6 +1425,7 @@ class DashboardBuildMethods {
                 Icons.people,
                 Colors.black,
                 'Satisfied customers',
+                onTap: () => context.go('/history'),
               ),
             ],
           ),
@@ -1434,86 +1439,168 @@ class DashboardBuildMethods {
     String value,
     IconData icon,
     Color color,
-    String subtitle,
-  ) {
+    String subtitle, {
+    VoidCallback? onTap,
+  }) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= 1200;
     final isTablet = screenWidth >= 900 && screenWidth < 1200;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(
-          isDesktop ? 20 : (isTablet ? 10 : 12),
-        ),
-        border: Border.all(
-          color: Colors.grey.shade300,
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(isDesktop ? 15.2 : (isTablet ? 14 : 12)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(
-                    isDesktop ? 14 : (isTablet ? 14 : 12),
+    return onTap != null
+        ? InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(
+              isDesktop ? 20 : (isTablet ? 10 : 12),
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(
+                  isDesktop ? 20 : (isTablet ? 10 : 12),
+                ),
+                border: Border.all(
+                  color: Colors.grey.shade300,
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(
-                      isDesktop ? 12 : (isTablet ? 16 : 8),
+                ],
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(isDesktop ? 15.2 : (isTablet ? 14 : 12)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(
+                            isDesktop ? 14 : (isTablet ? 14 : 12),
+                          ),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(
+                              isDesktop ? 12 : (isTablet ? 16 : 8),
+                            ),
+                          ),
+                          child: Icon(
+                            icon,
+                            color: color,
+                            size: isDesktop ? 22 : (isTablet ? 22 : 20),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: color,
-                    size: isDesktop ? 22 : (isTablet ? 22 : 20),
-                  ),
+                    SizedBox(height: isDesktop ? 23 : (isTablet ? 20 : 8)),
+                    Text(
+                      value,
+                      style: TextStyle(
+                        fontSize: isDesktop ? 17 : (isTablet ? 15 : 18),
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: isDesktop ? 16 : (isTablet ? 14 : 12),
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: isTablet ? 14 : 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )
+        : Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(
+                isDesktop ? 20 : (isTablet ? 10 : 12),
+              ),
+              border: Border.all(
+                color: Colors.grey.shade300,
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
-            SizedBox(height: isDesktop ? 23 : (isTablet ? 20 : 8)),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: isDesktop ? 17 : (isTablet ? 15 : 18),
-                fontWeight: FontWeight.bold,
-                color: color,
+            child: Padding(
+              padding: EdgeInsets.all(isDesktop ? 15.2 : (isTablet ? 14 : 12)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(
+                          isDesktop ? 14 : (isTablet ? 14 : 12),
+                        ),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(
+                            isDesktop ? 12 : (isTablet ? 16 : 8),
+                          ),
+                        ),
+                        child: Icon(
+                          icon,
+                          color: color,
+                          size: isDesktop ? 22 : (isTablet ? 22 : 20),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: isDesktop ? 23 : (isTablet ? 20 : 8)),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: isDesktop ? 17 : (isTablet ? 15 : 18),
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: isDesktop ? 16 : (isTablet ? 14 : 12),
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: isTablet ? 14 : 12,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: isDesktop ? 16 : (isTablet ? 14 : 12),
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: isTablet ? 14 : 12,
-                color: Colors.grey.shade600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+          );
   }
 
   Widget buildRecentProjects() {
@@ -1985,16 +2072,123 @@ class DashboardBuildMethods {
       }
     }
   }
-  Map<String, dynamic> _getPlaceholderProject() {
-    return {
-      'title': 'N/A',
-      'description': 'You have no active projects at the moment.',
-      'type': 'N/A',
-      'contractee_name': 'No Contractee',
-      'contractee_photo': null,
-      'status': 'inactive',
-      'isPlaceholder': true,
-    };
+  Future<void> _showCompletedProjectsSelector(BuildContext context) async {
+    final contractorId = Supabase.instance.client.auth.currentUser?.id;
+    if (contractorId == null) return;
+
+    try {
+      final completedProjects = await FetchService().fetchContractorCompletedProjects(contractorId);
+
+      if (completedProjects.isEmpty) {
+        ConTrustSnackBar.infoToast(context, 'No completed projects found');
+        return;
+      }
+
+      String? projectId;
+      if (completedProjects.length > 1) {
+        projectId = await showDialog<String>(
+          context: context,
+          builder: (dialogContext) => Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 500),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.white, Colors.grey.shade50],
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade700,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.check_circle,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Select Completed Project',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(dialogContext).pop(),
+                          icon: const Icon(Icons.close, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    child: Container(
+                      constraints: const BoxConstraints(maxHeight: 400),
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        padding: const EdgeInsets.all(16),
+                        itemCount: completedProjects.length,
+                        itemBuilder: (context, index) {
+                          final project = completedProjects[index];
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            child: ListTile(
+                              title: Text(project['title'] ?? 'Untitled Project'),
+                              subtitle: Text('Status: ${project['status'] ?? 'Completed'}'),
+                              trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.amber.shade700),
+                              onTap: () {
+                                Navigator.of(dialogContext).pop(project['project_id']);
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        if (projectId == null) return;
+      } else {
+        projectId = completedProjects.first['project_id'];
+      }
+
+      if (context.mounted) {
+        // Navigate to project management page for the completed project
+        // This will be in read-only mode since the project is completed
+        context.go('/project-management/$projectId');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ConTrustSnackBar.error(context, 'Failed to load completed projects');
+      }
+    }
   }
 
   Widget projectView(BuildContext context, Map<String, dynamic> project) {
@@ -2671,79 +2865,97 @@ class DashboardBuildMethods {
     final isDesktop = screenWidth >= 1200;
     final isTablet = screenWidth >= 900 && screenWidth < 1200;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(
-          isDesktop ? 20 : (isTablet ? 10 : 12),
-        ),
-        border: Border.all(
-          color: Colors.grey.shade300,
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+    return InkWell(
+      onTap: () => context.go('/history'),
+      borderRadius: BorderRadius.circular(
+        isDesktop ? 20 : (isTablet ? 10 : 12),
       ),
-      child: Padding(
-        padding: EdgeInsets.all(isDesktop ? 15.2 : (isTablet ? 14 : 12)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(
-                    isDesktop ? 14 : (isTablet ? 14 : 12),
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(
-                      isDesktop ? 12 : (isTablet ? 16 : 8),
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.money,
-                    color: Colors.black,
-                    size: isDesktop ? 22 : (isTablet ? 22 : 20),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: isDesktop ? 23 : (isTablet ? 20 : 8)),
-            Text(
-              '₱${totalEarnings.toStringAsFixed(0)}',
-              style: TextStyle(
-                fontSize: isDesktop ? 17 : (isTablet ? 15 : 18),
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Total Earning',
-              style: TextStyle(
-                fontSize: isDesktop ? 16 : (isTablet ? 14 : 12),
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              'From all projects',
-              style: TextStyle(
-                fontSize: isTablet ? 14 : 12,
-                color: Colors.grey.shade600,
-              ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(
+            isDesktop ? 20 : (isTablet ? 10 : 12),
+          ),
+          border: Border.all(
+            color: Colors.grey.shade300,
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
+        child: Padding(
+          padding: EdgeInsets.all(isDesktop ? 15.2 : (isTablet ? 14 : 12)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(
+                      isDesktop ? 14 : (isTablet ? 14 : 12),
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(
+                        isDesktop ? 12 : (isTablet ? 16 : 8),
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.money,
+                      color: Colors.black,
+                      size: isDesktop ? 22 : (isTablet ? 22 : 20),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: isDesktop ? 23 : (isTablet ? 20 : 8)),
+              Text(
+                '₱${totalEarnings.toStringAsFixed(0)}',
+                style: TextStyle(
+                  fontSize: isDesktop ? 17 : (isTablet ? 15 : 18),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Total Earning',
+                style: TextStyle(
+                  fontSize: isDesktop ? 16 : (isTablet ? 14 : 12),
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'From all projects',
+                style: TextStyle(
+                  fontSize: isTablet ? 14 : 12,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
+  }
+
+  Map<String, dynamic> _getPlaceholderProject() {
+    return {
+      'title': 'N/A',
+      'description': 'You have no active projects at the moment.',
+      'type': 'N/A',
+      'contractee_name': 'No Contractee',
+      'contractee_photo': null,
+      'status': 'inactive',
+      'isPlaceholder': true,
+    };
   }
 }

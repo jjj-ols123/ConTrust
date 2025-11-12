@@ -1058,6 +1058,29 @@ class FetchService {
     }
   }
 
+  Future<List<Map<String, dynamic>>> fetchContractorCompletedProjects(String contractorId) async {
+    try {
+      final res = await _supabase
+          .from('Projects')
+          .select('project_id,title,status')
+          .eq('contractor_id', contractorId)
+          .eq('status', 'completed') 
+          .order('created_at', ascending: false);
+      return List<Map<String, dynamic>>.from(res);
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to fetch contractor completed projects: $e',
+        module: 'Fetch Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'Fetch Contractor Completed Projects',
+          'contractor_id': contractorId,
+        },
+      );
+      return [];
+    }
+  }
+
   Future<List<Map<String, dynamic>>> fetchContractorProjectsIncludingCompleted(String contractorId) async {
     try {
       final res = await _supabase
@@ -1075,29 +1098,6 @@ class FetchService {
         extraInfo: {
           'operation': 'Fetch Contractor Projects Including Completed',
           'contractor_id': contractorId,
-        },
-      );
-      return [];
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> fetchContracteeActiveProjects(String contracteeId) async {
-    try {
-      final res = await _supabase
-          .from('Projects')
-          .select('project_id,title,status')
-          .eq('contractee_id', contracteeId)
-          .inFilter('status', ['active', 'ongoing'])  
-          .order('created_at', ascending: false);
-      return List<Map<String, dynamic>>.from(res);
-    } catch (e) {
-      await _errorService.logError(
-        errorMessage: 'Failed to fetch contractee active projects: $e',
-        module: 'Fetch Service',
-        severity: 'Low',
-        extraInfo: {
-          'operation': 'Fetch Contractee Active Projects',
-          'contractee_id': contracteeId,
         },
       );
       return [];

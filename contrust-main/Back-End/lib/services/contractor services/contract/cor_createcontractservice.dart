@@ -130,9 +130,8 @@ class CreateContractService {
         ContractField(key: 'Project.WorkingDays', label: 'Working Days (e.g., Monday through Friday)', isRequired: true),
         ContractField(key: 'Project.WorkingHours', label: 'Working Hours (e.g., 8:00 AM - 5:00 PM)', isRequired: true),
         
-        ContractField(key: 'Payment.Total', label: 'Total Contract Price (₱)', isRequired: true, inputType: TextInputType.number),
+        ContractField(key: 'Payment.Total', label: 'Total Contract Price (₱)', inputType: TextInputType.number, isEnabled: false),
         ContractField(key: 'Payment.DownPaymentPercentage', label: 'Down Payment Percentage (%)', inputType: TextInputType.number),
-        ContractField(key: 'Payment.FinalPayment', label: 'Final Payment Amount (₱)', inputType: TextInputType.number, isEnabled: false),
         ContractField(key: 'Payment.RetentionPercentage', label: 'Retention Percentage (%)', inputType: TextInputType.number),
         ContractField(key: 'Payment.RetentionPeriod', label: 'Retention Period (days)', inputType: TextInputType.number),
         ContractField(key: 'Payment.DueDays', label: 'Payment Due Days from Invoice', inputType: TextInputType.number),
@@ -454,25 +453,10 @@ class CreateContractService {
 
   void calculateLumpSumPayments(Map<String, TextEditingController> controllers, {int? milestoneCount}) {
     try {
-      final totalText = controllers['Payment.Total']?.text ?? '';
-      final total = double.tryParse(totalText.replaceAll(',', ''));
-
-      if (total == null || total <= 0) {
-        controllers['Payment.FinalPayment']?.text = '';
-        return;
-      }
-
-      final downPaymentPercentText = controllers['Payment.DownPaymentPercentage']?.text ?? '';
-      final downPaymentPercent = downPaymentPercentText.trim().isEmpty ? 0.0 : _parsePercent(downPaymentPercentText);
-      final downPayment = total * downPaymentPercent;
-
-      final retentionPercentText = controllers['Payment.RetentionPercentage']?.text ?? '';
-      final retentionPercent = retentionPercentText.trim().isEmpty ? 0.0 : _parsePercent(retentionPercentText);
-      final retention = total * retentionPercent;
-
       double totalMilestonePayments = 0.0;
       final maxMilestones = milestoneCount ?? getMaxMilestoneCountFromControllers(controllers);
 
+      // Sum all milestone payments
       for (int i = 1; i <= maxMilestones; i++) {
         final milestoneAmountText = controllers['Milestone.$i.Amount']?.text ?? '';
         if (milestoneAmountText.trim().isNotEmpty) {
@@ -481,10 +465,28 @@ class CreateContractService {
         }
       }
 
-      final finalPayment = total - downPayment - retention - totalMilestonePayments;
+      if (totalMilestonePayments <= 0) {
+        controllers['Payment.Total']?.text = '';
+        return;
+      }
 
-      final result = finalPayment > 0 ? finalPayment.toStringAsFixed(2) : '0.00';
-      controllers['Payment.FinalPayment']?.text = result;
+      final downPaymentPercentText = controllers['Payment.DownPaymentPercentage']?.text ?? '';
+      final downPaymentPercent = downPaymentPercentText.trim().isEmpty ? 0.0 : _parsePercent(downPaymentPercentText);
+
+      final retentionPercentText = controllers['Payment.RetentionPercentage']?.text ?? '';
+      final retentionPercent = retentionPercentText.trim().isEmpty ? 0.0 : _parsePercent(retentionPercentText);
+
+      // Calculate total contract price = milestone payments / (1 - down payment % - retention %)
+      final denominator = 1 - downPaymentPercent - retentionPercent;
+      if (denominator <= 0) {
+        controllers['Payment.Total']?.text = 'Invalid percentages';
+        return;
+      }
+
+      final total = totalMilestonePayments / denominator;
+
+      final result = total > 0 ? total.toStringAsFixed(2) : '0.00';
+      controllers['Payment.Total']?.text = result;
     } catch (e) {
       _errorService.logError(
         errorMessage: 'Failed to calculate lump sum payments: $e',
@@ -494,7 +496,7 @@ class CreateContractService {
           'operation': 'Calculate Lump Sum Payments',
         },
       );
-      controllers['Payment.FinalPayment']?.text = '';
+      controllers['Payment.Total']?.text = '';
     }
   }
 

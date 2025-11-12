@@ -4,9 +4,17 @@ import 'package:backend/utils/be_snackbar.dart';
 import 'package:backend/utils/be_datetime_helper.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart'; 
+import 'package:google_sign_in/google_sign_in.dart'
+    if (dart.library.html) 'package:backend/stubs/google_sign_in_stub.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:backend/services/superadmin services/auditlogs_service.dart';
+
+const String _contracteeGoogleServerClientId = String.fromEnvironment(
+  'CONTRACTEE_GOOGLE_SERVER_CLIENT_ID',
+  defaultValue:
+      '706082803745-fc3t6v7h1iea088p8obbu3a3ig2369k7.apps.googleusercontent.com',
+);
 
 class SignInContractee {
   final SuperAdminErrorService _errorService = SuperAdminErrorService();
@@ -155,17 +163,87 @@ class SignInGoogleContractee {
         final origin = Uri.base.origin;
         redirectUrl = '$origin/auth/callback';
       } else {
-        redirectUrl = 'io.supabase.contrust://login-callback';
+        redirectUrl = 'io.supabase.contrust://login-callback/home';
       }
 
-      await supabase.auth.signInWithOAuth(
-        OAuthProvider.google,
-        redirectTo: redirectUrl,
-        authScreenLaunchMode: LaunchMode.platformDefault,
-        queryParams: {
-          'prompt': 'select_account',
-        },
-      );
+        await supabase.auth.signInWithOAuth(
+          OAuthProvider.google,
+          redirectTo: redirectUrl,
+          authScreenLaunchMode: LaunchMode.platformDefault,
+          queryParams: {
+            'prompt': 'select_account',
+          },
+        );
+        return;
+      }
+
+      try {
+        final googleSignIn = GoogleSignIn.instance;
+        await googleSignIn.initialize(
+          serverClientId: _contracteeGoogleServerClientId.isNotEmpty
+              ? _contracteeGoogleServerClientId
+              : null,
+        );
+
+        final account = await googleSignIn.authenticate();
+        final googleAuth = account.authentication;
+        final idToken = googleAuth.idToken;
+
+        if (idToken == null) {
+          await _errorService.logError(
+            errorMessage: 'Google sign-in returned null ID token for contractee.',
+            module: 'Contractee Google Sign-in',
+            severity: 'High',
+            extraInfo: {
+              'operation': 'Google Sign In Contractee',
+              'timestamp': DateTimeHelper.getLocalTimeISOString(),
+            },
+          );
+          if (context.mounted) {
+            ConTrustSnackBar.error(context, 'Unable to authenticate with Google. Please try again.');
+          }
+          return;
+        }
+
+        try {
+          await supabase.auth.signInWithIdToken(
+            provider: OAuthProvider.google,
+            idToken: idToken,
+          );
+        } catch (idTokenError) {
+          await _errorService.logError(
+            errorMessage: 'Supabase signInWithIdToken failed: $idTokenError',
+            module: 'Contractee Google Sign-in',
+            severity: 'High',
+            extraInfo: {
+              'operation': 'Google Sign In Contractee',
+              'timestamp': DateTimeHelper.getLocalTimeISOString(),
+            },
+          );
+          if (context.mounted) {
+            ConTrustSnackBar.error(context, 'Authentication failed. Please try again.');
+          }
+          return;
+        }
+
+        // Ensure Google session is cleared to avoid stale sessions on next login attempt.
+        await googleSignIn.signOut();
+        await googleSignIn.disconnect();
+      } catch (signInError) {
+        await _errorService.logError(
+          errorMessage: 'Google sign-in failed for contractee: $signInError',
+          module: 'Contractee Google Sign-in',
+          severity: 'High',
+          extraInfo: {
+            'operation': 'Google Sign In Contractee',
+            'timestamp': DateTimeHelper.getLocalTimeISOString(),
+          },
+        );
+        if (context.mounted) {
+          ConTrustSnackBar.error(context, 'Google sign-in failed: $signInError');
+        }
+        return;
+      }
     } catch (e) {
       await _errorService.logError(
         errorMessage: 'Google sign-in failed for contractee: $e',
@@ -195,7 +273,7 @@ class SignInGoogleContractee {
 
       final existingUser = await supabase
           .from('Users')
-          .select('users_id')
+          .select('users_id, profile_image_url')
           .eq('users_id', user.id)
           .maybeSingle();
 
@@ -259,31 +337,41 @@ class SignInGoogleContractee {
         );
 
         try {
-          String? googlePhoto = user.userMetadata?['avatar_url'] ?? 
+          String? googlePhoto = user.userMetadata?['avatar_url'] ??
                                user.userMetadata?['picture'];
-          
-          if (googlePhoto != null && googlePhoto.toString().isNotEmpty) {
+
+          bool _shouldApplyGooglePhoto(String? currentPhoto, String? newPhoto) {
+            if (newPhoto == null || newPhoto.isEmpty) return false;
+            if (currentPhoto == null || currentPhoto.isEmpty) return true;
+            final normalized = currentPhoto.toLowerCase();
+            if (normalized.contains('defaultpic')) return true;
+            return currentPhoto == newPhoto;
+          }
+
+          if (_shouldApplyGooglePhoto(existingContractee['profile_photo'] as String?, googlePhoto)) {
             await supabase
                 .from('Contractee')
                 .update({
-                  'profile_photo': googlePhoto.toString(),
+                  'profile_photo': googlePhoto,
                 })
                 .eq('contractee_id', user.id);
-            
-            await supabase
-                .from('Users')
-                .update({
-                  'profile_image_url': googlePhoto.toString(),
-                })
-                .eq('users_id', user.id);
           }
-          
+
+          final Map<String, dynamic> userUpdates = {
+            'verified': true,
+            'last_login': DateTimeHelper.getLocalTimeISOString(),
+          };
+
+          if (_shouldApplyGooglePhoto(
+            (existingUser?['profile_image_url'] as String?),
+            googlePhoto,
+          )) {
+            userUpdates['profile_image_url'] = googlePhoto;
+          }
+
           await supabase
               .from('Users')
-              .update({
-                'verified': true,
-                'last_login': DateTimeHelper.getLocalTimeISOString(),
-              })
+              .update(userUpdates)
               .eq('users_id', user.id);
         } catch (e) {
           await _errorService.logError(

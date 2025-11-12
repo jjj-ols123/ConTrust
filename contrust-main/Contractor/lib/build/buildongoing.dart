@@ -1877,6 +1877,7 @@ class OngoingBuildMethods {
     required List<Map<String, dynamic>> tasks,
     required List<Map<String, dynamic>> reports,
     required List<Map<String, dynamic>> photos,
+    List<Map<String, dynamic>>? payments,
     int maxItems = 5,
   }) {
     List<Map<String, dynamic>> activities = [];
@@ -1886,7 +1887,6 @@ class OngoingBuildMethods {
       final taskDone = task['task_done'];
       final isDone = task['done'] == true;
       
-      // Add task_done activity if task was completed (has task_done timestamp)
       if (isDone && taskDone != null && taskDone.toString().isNotEmpty) {
         activities.add({
           'type': 'task_done',
@@ -1904,6 +1904,39 @@ class OngoingBuildMethods {
         'description': task['task'] ?? 'New task',
         'timestamp': createdAt,
         'icon': Icons.playlist_add,
+      });
+    }
+
+    for (var payment in payments ?? const []) {
+      final createdAtRaw = payment['paid_at'] ?? payment['created_at'];
+      final createdAt = createdAtRaw is DateTime
+          ? createdAtRaw.toIso8601String()
+          : (createdAtRaw?.toString() ?? DateTime.now().toIso8601String());
+      final amount = (payment['amount'] as num?)?.toDouble();
+      final formattedAmount = amount != null ? amount.toStringAsFixed(2) : null;
+      final paymentType = (payment['payment_type'] ?? payment['type'] ?? 'payment').toString();
+      final isMilestone = paymentType.toLowerCase().contains('milestone');
+      final milestoneLabel = payment['milestone_description'] ?? payment['description'];
+
+      String description;
+      if (isMilestone && milestoneLabel != null && milestoneLabel.toString().trim().isNotEmpty) {
+        description = milestoneLabel.toString();
+      } else if (payment['description'] != null && payment['description'].toString().trim().isNotEmpty) {
+        description = payment['description'].toString().trim();
+      } else {
+        description = isMilestone ? 'Milestone payment received' : 'Payment received';
+      }
+
+      final subtitle = formattedAmount != null
+          ? '₱$formattedAmount${isMilestone ? ' • $description' : ''}'
+          : description;
+
+      activities.add({
+        'type': 'payment',
+        'title': isMilestone ? 'Milestone payment received' : 'Payment received',
+        'description': subtitle,
+        'timestamp': createdAt,
+        'icon': isMilestone ? Icons.payments : Icons.account_balance_wallet,
       });
     }
 

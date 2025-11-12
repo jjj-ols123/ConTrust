@@ -13,8 +13,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:http/http.dart' as http;
-import 'package:contractee/web/html_stub.dart' as html if (dart.library.html) 'dart:html';
-import 'package:contractee/web/ui_web_stub.dart' as ui_web if (dart.library.html) 'dart:ui_web';
+import 'package:backend/build/html_stub.dart' if (dart.library.html) 'dart:html' as html;
+import 'package:backend/build/ui_web_stub.dart' if (dart.library.html) 'dart:ui_web' as ui_web;
 
 
 class CeeProjectDashboard extends StatefulWidget {
@@ -1443,7 +1443,7 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
                 onTap: () {
                   handleDayTap();
                   if (isMobile && tooltipText != null && tooltipText!.isNotEmpty) {
-                    _showMobileCalendarDetail(dayDate, tooltipText!);
+                    _showMobileCalendarDetail(dayDate, tooltipText);
                   }
                 },
                 child: container,

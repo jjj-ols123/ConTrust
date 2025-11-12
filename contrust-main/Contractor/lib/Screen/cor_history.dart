@@ -156,10 +156,14 @@ class _CorHistoryPageState extends State<CorHistoryPage> {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 800, maxHeight: 650),
+        constraints: const BoxConstraints(maxWidth: 700, maxHeight: 600),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Colors.black.withOpacity(0.5),
+            width: 0.5,
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.15),
@@ -264,12 +268,7 @@ class _CorHistoryPageState extends State<CorHistoryPage> {
                             _buildDetailField('Created', _getTimeAgo(DateTime.parse(project['created_at']))),
                         ];
 
-                        return GridView.count(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
+                        return Column(
                           children: fields,
                         );
                       },

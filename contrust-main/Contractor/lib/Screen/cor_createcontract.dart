@@ -591,6 +591,12 @@ class _CreateContractPageState extends State<CreateContractPage>
     });
 
     try {
+      if (selectedContractType == 'Lump Sum') {
+        service.calculateLumpSumPayments(controllers);
+      } else if (selectedContractType == 'Time and Materials') {
+        service.calculateTimeAndMaterialsRates(controllers);
+      }
+
       final fieldValues = <String, String>{};
       for (var field in contractFields) {
         fieldValues[field.key] = controllers[field.key]?.text ?? '';
@@ -600,39 +606,14 @@ class _CreateContractPageState extends State<CreateContractPage>
         final cleaned = raw.trim().replaceAll('%', '').replaceAll(',', '');
         final v = double.tryParse(cleaned) ?? 0.0;
 
-        // If input contains decimal point, treat as already decimal (e.g., "0.1" = 10%)
-        // If no decimal point, treat as percentage (e.g., "10" = 10%)
         if (cleaned.contains('.')) {
-          return v; // Already a decimal like 0.1
+          return v; 
         } else {
-          return v / 100.0; // Convert percentage to decimal like 10 -> 0.1
+          return v / 100.0; 
         }
       }
 
-      if (selectedContractType == 'Lump Sum') {
-        final totalText = fieldValues['Payment.Total'] ?? '0';
-        final downPaymentPercentText = fieldValues['Payment.DownPaymentPercentage'] ?? '0';
-        final retentionPercentText = fieldValues['Payment.RetentionPercentage'] ?? '0';
-
-        final total = double.tryParse(totalText) ?? 0;
-        final downPaymentPercent = parsePercent(downPaymentPercentText);
-        final retentionPercent = parsePercent(retentionPercentText);
-
-        final downPayment = total * downPaymentPercent;
-        final retention = total * retentionPercent;
-
-        double totalMilestonePayments = 0.0;
-        final milestoneKeys = fieldValues.keys.where((key) => key.startsWith('Milestone.') && key.endsWith('.Amount'));
-        for (final key in milestoneKeys) {
-          final milestoneAmountText = fieldValues[key] ?? '0';
-          final milestoneAmount = double.tryParse(milestoneAmountText) ?? 0;
-          totalMilestonePayments += milestoneAmount;
-        }
-
-        final finalPayment = total - downPayment - retention - totalMilestonePayments;
-
-        fieldValues['Payment.FinalPayment'] = finalPayment.toStringAsFixed(2);
-      } else if (selectedContractType == 'Cost Plus') {
+      if (selectedContractType == 'Cost Plus') {
         final overheadPercentText = fieldValues['Overhead.Percentage'] ?? '0';
         final lateFeePercentText = fieldValues['Late.Fee.Percentage'] ?? '0';
 

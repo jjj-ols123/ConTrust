@@ -4,9 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:backend/services/both services/be_receipt_service.dart';
 import 'package:backend/services/both services/be_user_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
-import 'package:contractee/web/html_stub.dart' as html if (dart.library.html) 'dart:html';
+import 'dart:html' as html if (dart.library.html) 'dart:html';
 import 'dart:io' if (dart.library.io) 'dart:io';
-import 'package:contractee/web/ui_web_stub.dart' as ui_web if (dart.library.html) 'dart:ui_web';
+import 'package:backend/build/ui_web_stub.dart' if (dart.library.html) 'dart:ui_web' as ui_web;
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
@@ -443,74 +443,99 @@ class CeeProfileBuildMethods {
     required VoidCallback saveAddress,
     required String contracteeId,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.info_outline, color: Colors.amber.shade700, size: 24),
-              const SizedBox(width: 12),
-              const Text(
-                'Personal Information',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isCompact = constraints.maxWidth < 600;
+        final EdgeInsets padding = EdgeInsets.symmetric(
+          horizontal: isCompact ? 20 : 32,
+          vertical: isCompact ? 24 : 32,
+        );
+        final double headerSpacing = isCompact ? 16 : 24;
+        final double fieldSpacing = isCompact ? 12 : 16;
+        final double maxFormWidth = isCompact ? double.infinity : 720;
+
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
-          const SizedBox(height: 24),
-          _buildReadOnlyField(
-            'Email',
-            email.isEmpty ? 'No email provided' : email,
-            Icons.email_outlined,
+          child: Padding(
+            padding: padding,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxFormWidth),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.amber.shade700, size: 24),
+                        const Text(
+                          'Personal Information',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1F2937),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: headerSpacing),
+                    _buildReadOnlyField(
+                      'Email',
+                      email.isEmpty ? 'No email provided' : email,
+                      Icons.email_outlined,
+                    ),
+                    SizedBox(height: fieldSpacing),
+                    _buildPasswordField(),
+                    SizedBox(height: fieldSpacing),
+                    _buildInfoField(
+                      'Full Name',
+                      fullName,
+                      Icons.person_outline,
+                      isEditingFullName,
+                      fullNameController,
+                      toggleEditFullName,
+                      saveFullName,
+                    ),
+                    SizedBox(height: fieldSpacing),
+                    _buildInfoField(
+                      'Contact Number',
+                      contactNumber,
+                      Icons.phone_outlined,
+                      isEditingContact,
+                      contactController,
+                      toggleEditContact,
+                      saveContact,
+                    ),
+                    SizedBox(height: fieldSpacing),
+                    _buildInfoField(
+                      'Address',
+                      address,
+                      Icons.location_on_outlined,
+                      isEditingAddress,
+                      addressController,
+                      toggleEditAddress,
+                      saveAddress,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
-          const SizedBox(height: 16),
-          _buildPasswordField(),
-          const SizedBox(height: 16),
-          _buildInfoField(
-            'Full Name',
-            fullName,
-            Icons.person_outline,
-            isEditingFullName,
-            fullNameController,
-            toggleEditFullName,
-            saveFullName,
-          ),
-          const SizedBox(height: 16),
-          _buildInfoField(
-            'Contact Number',
-            contactNumber,
-            Icons.phone_outlined,
-            isEditingContact,
-            contactController,
-            toggleEditContact,
-            saveContact,
-          ),
-          const SizedBox(height: 16),
-          _buildInfoField(
-            'Address',
-            address,
-            Icons.location_on_outlined,
-            isEditingAddress,
-            addressController,
-            toggleEditAddress,
-            saveAddress,
-          ),
-        ],
-      ),
-      ),
+        );
+      },
     );
   }
 
@@ -1113,63 +1138,105 @@ class CeeProfileBuildMethods {
     VoidCallback onEdit,
     VoidCallback onSave,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isCompact = constraints.maxWidth < 420;
+
+        Widget actionArea;
+        if (isEditing) {
+          actionArea = Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            alignment: WrapAlignment.end,
             children: [
-              Icon(icon, size: 18, color: Colors.grey.shade600),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade600),
+              InkWell(
+                onTap: onEdit,
+                child: Text('Cancel', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
               ),
-              const Spacer(),
-              if (isEditing)
-                Row(
-                  children: [
-                    InkWell(
-                      onTap: onEdit,
-                      child: Text('Cancel', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
-                    ),
-                    const SizedBox(width: 12),
-                    InkWell(
-                      onTap: onSave,
-                      child: Text('Save', style: TextStyle(fontSize: 13, color: Colors.amber.shade700, fontWeight: FontWeight.bold)),
-                    ),
-                  ],
-                )
-              else
-                InkWell(
-                  onTap: onEdit,
-                  child: Icon(Icons.edit, size: 18, color: Colors.amber.shade700),
+              InkWell(
+                onTap: onSave,
+                child: Text(
+                  'Save',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.amber.shade700,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
+              ),
+            ],
+          );
+        } else {
+          actionArea = InkWell(
+            onTap: onEdit,
+            child: Icon(Icons.edit, size: 18, color: Colors.amber.shade700),
+          );
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.shade200, width: 1),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(icon, size: 18, color: Colors.grey.shade600),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ),
+                  if (!isCompact)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: actionArea,
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              if (isCompact) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: actionArea,
+                ),
+              ],
+              const SizedBox(height: 8),
+              isEditing
+                  ? TextField(
+                      controller: controller,
+                      minLines: label == 'Address' ? 2 : 1,
+                      maxLines: label == 'Address' ? null : 1,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      ),
+                    )
+                  : Text(
+                      value.isEmpty ? 'Not provided' : value,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: value.isEmpty ? Colors.grey.shade400 : Colors.black87,
+                      ),
+                    ),
             ],
           ),
-          const SizedBox(height: 8),
-          isEditing
-              ? TextField(
-                  controller: controller,
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                  ),
-                )
-              : Text(
-                  value.isEmpty ? 'Not provided' : value,
-                  style: TextStyle(fontSize: 14, color: value.isEmpty ? Colors.grey.shade400 : Colors.black87),
-                ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -1182,17 +1249,34 @@ class CeeProfileBuildMethods {
         border: Border.all(color: Colors.grey.shade200, width: 1),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 18, color: Colors.grey.shade600),
           const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade600),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: TextStyle(fontSize: 14, color: value == 'No email provided' ? Colors.grey.shade400 : Colors.black87),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: value == 'No email provided' ? Colors.grey.shade400 : Colors.black87,
+                  ),
+                  softWrap: true,
+                  maxLines: null,
+                ),
+              ],
+            ),
           ),
         ],
       ),

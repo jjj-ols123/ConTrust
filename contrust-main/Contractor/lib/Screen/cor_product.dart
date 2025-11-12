@@ -320,6 +320,8 @@ class _ProductPanelScreenState extends State<ProductPanelScreen> {
         }
       });
 
+      _saveLocalInventory();
+
       if (addedCount > 0) {
         String message = 'Successfully added $addedCount material${addedCount > 1 ? 's' : ''} to project';
         if (localInventory.isNotEmpty) {
