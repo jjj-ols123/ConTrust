@@ -263,6 +263,84 @@ class _ContracteeChatHistoryPageState
     };
   }
 
+  Future<List<Map<String, dynamic>>> _filterChatsByStatus(List<Map<String, dynamic>> chats, String tab) async {
+    List<Map<String, dynamic>> filteredChats = [];
+
+    const timeout = Duration(seconds: 5);
+    
+    for (final chat in chats) {
+      try {
+        final projectStatus = await FetchService().fetchProjectStatus(chat['chatroom_id']).timeout(
+          timeout,
+          onTimeout: () => 'unknown',
+        );
+        
+        bool shouldInclude = false;
+
+        if (tab == 'Active') {
+          // Active chats: show all except confirmed cancelled or completed
+          shouldInclude = projectStatus != 'cancelled' && projectStatus != 'completed';
+        } else {
+          // Archived chats: only confirmed cancelled or completed
+          shouldInclude = projectStatus == 'cancelled' || projectStatus == 'completed';
+        }
+
+        if (shouldInclude) {
+          filteredChats.add(chat);
+        }
+      } catch (e) {
+        // If we can't fetch status, show in Active tab (better UX than hiding potentially active chats)
+        if (tab == 'Active') {
+          filteredChats.add(chat);
+        }
+        // Don't add to Archived tab if status can't be determined
+      }
+    }
+
+    return filteredChats;
+  }
+
+  Widget _buildTabButton(String title, bool isSelected) {
+    return InkWell(
+      onTap: isFiltering ? null : () {
+        setState(() {
+          selectedTab = title;
+          isFiltering = true; // Show loading immediately
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.amber.shade100 : Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? Colors.amber.shade300 : Colors.grey.shade300,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Center(
+          child: isFiltering && isSelected
+              ? SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.amber.shade700),
+                  ),
+                )
+              : Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    color: isSelected ? Colors.amber.shade800 : Colors.grey.shade700,
+                  ),
+                ),
+        ),
+      ),
+    );
+  }
+
    @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -345,7 +423,7 @@ class _ContracteeChatHistoryPageState
                   stream: supabase
                       .from('ChatRoom')
                       .stream(primaryKey: ['chatroom_id'])
-                      .eq('contractee_id', contracteeId as Object)
+                      .eq('contractee_id', contracteeId!)
                       .order('last_message_time', ascending: false),
                   builder: (context, snapshot) {
               // Show loading while waiting for initial data
@@ -607,86 +685,9 @@ class _ContracteeChatHistoryPageState
                 },
               );
             },
-          ),
-    );
-  }
-
-  Future<List<Map<String, dynamic>>> _filterChatsByStatus(List<Map<String, dynamic>> chats, String tab) async {
-    List<Map<String, dynamic>> filteredChats = [];
-
-    // Add timeout to prevent infinite loading
-    const timeout = Duration(seconds: 5);
-    
-    for (final chat in chats) {
-      try {
-        // Add timeout to each fetch operation
-        final projectStatus = await FetchService().fetchProjectStatus(chat['chatroom_id']).timeout(
-          timeout,
-          onTimeout: () => 'unknown', // Default to unknown status
-        );
-        
-        bool shouldInclude = false;
-
-        if (tab == 'Active') {
-          // Active chats: show all except confirmed cancelled or completed
-          shouldInclude = projectStatus != 'cancelled' && projectStatus != 'completed';
-        } else {
-          // Archived chats: only confirmed cancelled or completed
-          shouldInclude = projectStatus == 'cancelled' || projectStatus == 'completed';
-        }
-
-        if (shouldInclude) {
-          filteredChats.add(chat);
-        }
-      } catch (e) {
-        // If we can't fetch status, show in Active tab (better UX than hiding potentially active chats)
-        if (tab == 'Active') {
-          filteredChats.add(chat);
-        }
-        // Don't add to Archived tab if status can't be determined
-      }
-    }
-
-    return filteredChats;
-  }
-
-  Widget _buildTabButton(String title, bool isSelected) {
-    return InkWell(
-      onTap: isFiltering ? null : () {
-        setState(() {
-          selectedTab = title;
-          isFiltering = true; // Show loading immediately
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.amber.shade100 : Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected ? Colors.amber.shade300 : Colors.grey.shade300,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Center(
-          child: isFiltering && isSelected
-              ? SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.amber.shade700),
-                  ),
-                )
-              : Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    color: isSelected ? Colors.amber.shade800 : Colors.grey.shade700,
-                  ),
                 ),
-        ),
+              ),
+        ],
       ),
     );
   }

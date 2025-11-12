@@ -201,6 +201,34 @@ class SignInGoogleContractor {
       final supabase = Supabase.instance.client;
       debugPrint('[Google Contractor] handleSignIn start for ${user.id}');
 
+      // Check if email is already used by another account
+      if (user.email != null) {
+        final existingEmailUser = await supabase
+            .from('Users')
+            .select('users_id')
+            .eq('email', user.email!)
+            .maybeSingle();
+
+        if (existingEmailUser != null && existingEmailUser['users_id'] != user.id) {
+          await _auditService.logAuditEvent(
+            action: 'USER_LOGIN_FAILED',
+            details: 'Google login blocked - email already in use',
+            metadata: {
+              'user_type': 'contractor',
+              'email': user.email,
+              'login_method': 'google_oauth',
+              'failure_reason': 'email_already_used',
+            },
+          );
+
+          if (context.mounted) {
+            ConTrustSnackBar.error(context, 'This email is already associated with an account. Please use email/password login.');
+          }
+          await supabase.auth.signOut();
+          return;
+        }
+      }
+
       final existingContractor = await supabase
           .from('Contractor')
           .select()
@@ -368,6 +396,7 @@ class SignInGoogleContractor {
         'firm_name': user.userMetadata?['full_name'] ?? 'Contractor Firm',
         'profile_photo': profilePhoto ?? 'assets/defaultpic.png',
         'created_at': DateTimeHelper.getLocalTimeISOString(),
+        'verification_status': 'pending',
       });
 
       await _auditService.logAuditEvent(
@@ -384,7 +413,7 @@ class SignInGoogleContractor {
 
       ConTrustSnackBar.show(
         context,
-        'Account created! Your account is pending verification. Some features will be limited until approved.',
+        'Account created! You can now login. Wait for verification. Some features will be limited until approved.',
         type: SnackBarType.info,
       );
 

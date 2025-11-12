@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:backend/build/html_stub.dart' if (dart.library.html) 'dart:html' as html show window;
+import 'package:go_router/go_router.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -290,7 +291,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       ConTrustSnackBar.success(context, 'Password updated. Please sign in.');
       await Supabase.instance.client.auth.signOut();
       if (mounted) {
-        Navigator.pop(context);
+        context.go('/logincontractor');
       }
     } on AuthException catch (e) {
       ConTrustSnackBar.error(context, e.message);
@@ -373,7 +374,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         bottom: 0,
                         child: Center(
                           child: InkWell(
-                            onTap: () => Navigator.pop(context),
+                            onTap: () => context.go('/logincontractor'),
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
@@ -522,7 +523,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ),
         const SizedBox(height: 16),
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.go('/logincontractor'),
           child: Text(
             'Back to Login',
             style: TextStyle(
@@ -616,7 +617,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => context.go('/logincontractor'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.amber.shade700,
               foregroundColor: Colors.white,
@@ -737,7 +738,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ),
         const SizedBox(height: 12),
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.go('/logincontractor'),
           child: Text(
             'Back',
             style: TextStyle(

@@ -417,11 +417,6 @@ class AboutPage extends StatelessWidget {
         'description': 'Stay informed with live updates on project milestones and status.',
       },
       {
-        'icon': Icons.edit_outlined,
-        'title': 'Visual Contract Editor',
-        'description': 'Intuitive tools to create and customize contract terms visually.',
-      },
-      {
         'icon': Icons.people_outline,
         'title': 'Contractor-Contractee Bridge',
         'description': 'Seamless communication and collaboration between all parties.',

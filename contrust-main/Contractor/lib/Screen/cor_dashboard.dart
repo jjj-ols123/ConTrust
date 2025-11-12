@@ -1,5 +1,7 @@
 // ignore_for_file: use_build_context_synchronously, avoid_print, deprecated_member_use
 import 'dart:async';
+import 'dart:typed_data';
+import 'package:backend/services/both services/be_user_service.dart';
 import 'package:backend/services/contractor services/cor_dashboardservice.dart';
 import 'package:backend/services/both services/be_realtime_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
@@ -7,6 +9,7 @@ import 'package:contractor/build/builddashboard.dart';
 import 'package:flutter/material.dart' hide BottomNavigationBar;
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:file_picker/file_picker.dart';
 
 class DashboardScreen extends StatefulWidget {
   final String contractorId;
@@ -66,6 +69,9 @@ class _DashboardUIState extends State<DashboardUI>
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+
+  // Verification state
+  final List<Map<String, dynamic>> _verificationFiles = [];
 
   @override
   void initState() {
@@ -268,10 +274,25 @@ class _DashboardUIState extends State<DashboardUI>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Your account is being reviewed. Some features are disabled until verification is complete.',
+                      'Your account is being reviewed. Please submit verification documents to complete your registration.',
                       style: TextStyle(
                         color: Colors.orange.shade800,
                         fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 32,
+                      child: ElevatedButton(
+                        onPressed: () => _showVerificationDialog(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber.shade600,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                          minimumSize: const Size(0, 32),
+                        ),
+                        child: const Text('Submit Verification'),
                       ),
                     ),
                   ],
@@ -289,13 +310,28 @@ class _DashboardUIState extends State<DashboardUI>
       final session = Supabase.instance.client.auth.currentSession;
       if (session == null) return false;
 
-      final resp = await Supabase.instance.client
+      final userResp = await Supabase.instance.client
           .from('Users')
           .select('verified')
           .eq('users_id', session.user.id)
           .maybeSingle();
 
-      return resp != null && (resp['verified'] == true);
+      final userVerified = userResp != null && (userResp['verified'] == true);
+
+      if (userVerified) return true;
+
+      final contractorResp = await Supabase.instance.client
+          .from('Contractor')
+          .select('verification_status')
+          .eq('contractor_id', session.user.id)
+          .maybeSingle();
+
+      final contractorStatus = contractorResp?['verification_status'];
+      if (contractorStatus == 'submitted' || contractorStatus == 'approved') {
+        return true;
+      }
+
+      return false;
     } catch (e) {
       return false;
     }
@@ -383,5 +419,279 @@ class _DashboardUIState extends State<DashboardUI>
     buildMethods.allPayments = allPayments;
     buildMethods.localTasks = localTasks;
     return buildMethods.buildMobileProjectsAndTasks();
+  }
+
+  void _showVerificationDialog(BuildContext context) async {
+    // Create a local copy of files for the dialog
+    List<Map<String, dynamic>> dialogFiles = List.from(_verificationFiles);
+
+    final result = await showDialog<Map<String, dynamic>?>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 500),
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.black, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 20,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade700,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Icon(
+                            Icons.upload_file,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text(
+                            'Upload Verification Document',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    child: Container(
+                      constraints: const BoxConstraints(maxHeight: 400),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              'Please upload your identification documents (ID, business permit, etc.) for verification.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 14),
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Display selected file
+                            if (dialogFiles.isNotEmpty) ...[
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey.shade300),
+                                  borderRadius: BorderRadius.circular(8),
+                                  color: Colors.grey.shade50,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      dialogFiles.first['extension']?.toLowerCase() == 'pdf'
+                                          ? Icons.picture_as_pdf
+                                          : Icons.image,
+                                      color: dialogFiles.first['extension']?.toLowerCase() == 'pdf'
+                                          ? Colors.red
+                                          : Colors.blue,
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        dialogFiles.first['name'] as String? ?? 'Unknown file',
+                                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, size: 20, color: Colors.red),
+                                      onPressed: () {
+                                        setState(() {
+                                          dialogFiles.clear();
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+
+                            ElevatedButton.icon(
+                              onPressed: () async {
+                                try {
+                                  final result = await FilePicker.platform.pickFiles(
+                                    type: FileType.custom,
+                                    allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+                                    allowMultiple: false,
+                                  );
+
+                                  if (result != null) {
+                                    final newFiles = result.files.map((file) => {
+                                      'name': file.name,
+                                      'bytes': file.bytes,
+                                      'extension': file.extension,
+                                    }).toList();
+
+                                    setState(() {
+                                      dialogFiles.clear();
+                                      dialogFiles.addAll(newFiles);
+                                    });
+                                  }
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Error picking files: $e')),
+                                  );
+                                }
+                              },
+                              icon: const Icon(Icons.file_upload),
+                              label: const Text('Select File'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.amber.shade600,
+                                foregroundColor: Colors.white,
+                                minimumSize: const Size(double.infinity, 50),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextButton(
+                                    onPressed: () => Navigator.of(context).pop(),
+                                    child: const Text('Cancel'),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: dialogFiles.isNotEmpty
+                                        ? () => Navigator.of(context).pop({'files': dialogFiles})
+                                        : null,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green.shade600,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    child: const Text('Done'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (result != null) {
+      await _handleVerificationSubmission(List<Map<String, dynamic>>.from(result['files'] ?? []));
+    }
+  }
+
+  Future<void> _handleVerificationSubmission(List<Map<String, dynamic>> files) async {
+    if (files.isEmpty) return;
+
+    try {
+      final supabase = Supabase.instance.client;
+      final contractorId = widget.contractorId;
+
+      if (contractorId == null) {
+        throw Exception('Contractor ID is null');
+      }
+
+      final uploadResults = <Map<String, dynamic>>[];
+
+      for (final file in files) {
+        final fileData = file;
+        final fileBytes = fileData['bytes'] as Uint8List;
+        final fileName = fileData['name'] as String;
+        final extension = fileData['extension'] as String? ?? '';
+        final isImage = ['jpg', 'jpeg', 'png'].contains(extension.toLowerCase());
+
+        final url = await UserService().uploadImage(
+          fileBytes,
+          'verification',
+          folderPath: contractorId,
+          fileName: fileName,
+        );
+
+        uploadResults.add({
+          'file_name': file['name'],
+          'file_path': url,
+          'file_type': isImage ? 'image' : 'document',
+          'uploaded_at': DateTime.now().toIso8601String(),
+        });
+      }
+
+      // Insert verification records
+      for (final uploadResult in uploadResults) {
+        await supabase.from('Verification').insert({
+          'contractor_id': contractorId,
+          'doc_url': uploadResult['file_path'],
+          'uploaded_at': DateTime.now().toUtc().toIso8601String(),
+          'file_type': uploadResult['file_type'],
+        });
+      }
+
+      await supabase.from('Contractor').update({
+        'verification_status': 'submitted',
+      }).eq('contractor_id', contractorId);
+
+      if (mounted) {
+        ConTrustSnackBar.show(
+          context,
+          'Verification documents submitted successfully! Your account will be reviewed shortly.',
+          type: SnackBarType.success,
+        );
+
+        // Refresh dashboard data
+        await fetchDashboardData();
+      }
+    } catch (e) {
+      if (mounted) {
+        ConTrustSnackBar.error(context, 'Failed to submit verification documents: $e');
+      }
+    }
   }
 }
