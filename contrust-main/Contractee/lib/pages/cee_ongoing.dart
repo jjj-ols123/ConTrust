@@ -491,7 +491,8 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                               Builder(
                                 builder: (context) {
                                   final contractType = _paymentSummary?['contract_type'] as String? ?? '';
-                                  final isMilestone = contractType.toLowerCase().contains('milestone');
+                                  final isMilestone = contractType.toLowerCase().contains('milestone') || 
+                                                         contractType.toLowerCase() == 'lump_sum';
                                   return Text(
                                     '₱${(_paymentSummary!['remaining'] as num).toStringAsFixed(2)}',
                                     style: TextStyle(
@@ -772,7 +773,8 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                         final contractType = _paymentSummary?['contract_type'] as String? ?? '';
                         final isLumpSum = contractType.toLowerCase().contains('lump') || 
                                          contractType.toLowerCase() == 'lump_sum';
-                        final isMilestone = contractType.toLowerCase().contains('milestone');
+                        final isMilestone = contractType.toLowerCase().contains('milestone') || 
+                                              contractType.toLowerCase() == 'lump_sum';
                         
                         if (!isLumpSum && _paymentSummary != null && _paymentSummary!['remaining'] != null) {
                           return Column(

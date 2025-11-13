@@ -196,7 +196,7 @@ class PaymentService {
 
     return {
       'amount': nextMilestone['amount'],
-      'contract_type': 'milestone_based',
+      'contract_type': 'lump_sum',
       'payment_structure': 'milestone',
       'total_contract_amount': totalContractAmount,
       'milestones': milestones,
@@ -399,9 +399,9 @@ class PaymentService {
       }
       
       // Check if project is already fully paid (only for non-milestone contracts)
-      // Milestone contracts can have partial payments, so allow payment even if status is 'partial'
+      // Milestone contracts and lump_sum contracts can have partial payments, so allow payment even if status is 'partial'
       final currentPaymentStatus = projectdata['payment_status'] as String?;
-      if (currentPaymentStatus == 'paid' && !contractType.toLowerCase().contains('milestone')) {
+      if (currentPaymentStatus == 'paid' && !contractType.toLowerCase().contains('milestone') && contractType != 'lump_sum') {
         throw Exception('This project has already been paid');
       }
 
@@ -1015,7 +1015,7 @@ class PaymentService {
         };
       }
 
-      if (contractType.toLowerCase().contains('lump sum')) {
+      if (contractType.toLowerCase().contains('lump')) {
 
         double? amount;
         final priceKeys = ['Project.ContractPrice', 'Payment.Total', 'Total.Amount', 'Contract.TotalAmount'];
@@ -1218,7 +1218,7 @@ class PaymentService {
         updatedProjectdata['total_paid'] = totalPaid;
         updatedProjectdata['last_payment_date'] = DateTimeHelper.getLocalTimeISOString();
         updatedProjectdata['last_payment_reference'] = paymentIntentId;
-        updatedProjectdata['contract_type'] = 'milestone';
+        updatedProjectdata['contract_type'] = 'lump_sum';
         updatedProjectdata['payment_structure'] = 'milestone';
         
         final allMilestonesData = await _supabase
@@ -1292,7 +1292,7 @@ class PaymentService {
             contracteeEmail: contracteeEmail,
             paymentDate: paymentDate,
             paymentReference: paymentId,
-            contractType: 'milestone',
+            contractType: 'lump_sum',
             paymentStructure: 'milestone',
             milestoneNumber: milestoneNumber,
             milestoneDescription: targetMilestone['description'],
@@ -1326,7 +1326,7 @@ class PaymentService {
         }
         
         // Check if all milestones are paid and auto-complete if so
-        await _checkAndCompleteProject(projectId, 'milestone', paymentStatus: updatedProjectdata['payment_status'] as String?);
+        await _checkAndCompleteProject(projectId, 'lump_sum', paymentStatus: updatedProjectdata['payment_status'] as String?);
       } else {
         throw Exception('Payment failed with status: $stripePaymentStatus');
       }
@@ -1561,7 +1561,7 @@ class PaymentService {
             }).eq('project_id', projectId);
           }
         }
-      } else if (normalizedContractType.contains('milestone')) {
+      } else if (normalizedContractType == 'lump_sum') {
         final milestoneInfo = await getMilestonePaymentInfo(projectId);
         if (milestoneInfo != null) {
           final completedMilestones = milestoneInfo['completed_milestones'] as int? ?? 0;
