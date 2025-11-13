@@ -69,6 +69,9 @@ class ContractTypeBuild {
           return FutureBuilder<Map<String, bool>>(
             future: checkUserVerification(),
             builder: (context, verificationSnapshot) {
+              if (verificationSnapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator(color: Colors.amber));
+              }
               final isVerified = verificationSnapshot.data?['verified'] ?? false;
 
               // Filter contract types based on search and category

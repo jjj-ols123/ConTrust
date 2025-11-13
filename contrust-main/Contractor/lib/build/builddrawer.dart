@@ -27,7 +27,6 @@ class UserDropdownMenu extends StatefulWidget {
 class _UserDropdownMenuState extends State<UserDropdownMenu> {
   String? _userName;
   String? _userEmail;
-  String? _profileImageUrl;
 
   @override
   void initState() {
@@ -56,7 +55,6 @@ class _UserDropdownMenuState extends State<UserDropdownMenu> {
         setState(() {
           _userName = contractorName;
           _userEmail = user.email ?? '';
-          _profileImageUrl = contractorData?['profile_photo'];
         });
       }
     } catch (e) {
@@ -154,40 +152,6 @@ class _UserDropdownMenuState extends State<UserDropdownMenu> {
         ),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 14,
-              backgroundColor: Colors.white,
-              child: ClipOval(
-                child: _profileImageUrl != null
-                    ? Image.network(
-                        _profileImageUrl!,
-                        width: 28,
-                        height: 28,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Image(
-                            image: const AssetImage('assets/images/defaultpic.png'),
-                            width: 28,
-                            height: 28,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Icon(Icons.person, size: 14, color: Colors.grey);
-                            },
-                          );
-                        },
-                      )
-                    : Image(
-                        image: const AssetImage('assets/images/defaultpic.png'),
-                        width: 28,
-                        height: 28,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Icon(Icons.person, size: 14, color: Colors.grey);
-                        },
-                      ),
-              ),
-            ),
-            const SizedBox(width: 8),
             Text(
               _userName ?? 'Contractor',
               style: const TextStyle(
