@@ -165,7 +165,6 @@ class MessageUIBuildMethods {
                   .eq(chatStreamColumn, userId as Object)
                   .order('last_message_time', ascending: false),
               builder: (context, snapshot) {
-                // Show loading while waiting for initial data
                 if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
                   return Center(
                     child: CircularProgressIndicator(

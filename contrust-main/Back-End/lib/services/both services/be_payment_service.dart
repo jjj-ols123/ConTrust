@@ -393,16 +393,8 @@ class PaymentService {
         }
       }
       
-      // Check if project is already completed
       if (projectStatus == 'completed') {
         throw Exception('This project has already been completed');
-      }
-      
-      // Check if project is already fully paid (only for non-milestone contracts)
-      // Milestone contracts and lump_sum contracts can have partial payments, so allow payment even if status is 'partial'
-      final currentPaymentStatus = projectdata['payment_status'] as String?;
-      if (currentPaymentStatus == 'paid' && !contractType.toLowerCase().contains('milestone') && contractType != 'lump_sum') {
-        throw Exception('This project has already been paid');
       }
 
       final paymentIntent = await createPaymentIntent(
@@ -615,6 +607,19 @@ class PaymentService {
           );
         }
 
+        {
+          await _notificationService.sendEmailNotification(
+            receiverId: contractorId,
+            type: 'Payment Received',
+            message:
+                'Payment of ₱${amount.toStringAsFixed(2)} has been received for "$projectTitle".',
+            subject: 'ConTrust - Payment Received',
+            title: 'Payment Received for "$projectTitle"',
+            previewText:
+                'Payment of ₱${amount.toStringAsFixed(2)} has been received for "$projectTitle".',
+          );
+        }
+
         // Check and complete project after payment (pass the updated payment_status)
         // Ensure we use the correct contract type and payment status
         final finalContractType = updatedProjectdata['contract_type'] as String? ?? contractType;
@@ -692,25 +697,6 @@ class PaymentService {
             .limit(1);
 
         isPaid = (paymentsData as List).isNotEmpty;
-      }
-
-      if (isPaid && projectStatus != 'completed') {
-        try {
-          await _supabase
-              .from('Projects')
-              .update({'status': 'completed'})
-              .eq('project_id', projectId);
-        } catch (updateError) {
-          await _errorService.logError(
-            errorMessage: 'Failed to auto-complete project after payment: $updateError',
-            module: 'Payment Service',
-            severity: 'Low',
-            extraInfo: {
-              'operation': 'Auto-complete project',
-              'project_id': projectId,
-            },
-          );
-        }
       }
 
       return isPaid;
@@ -829,7 +815,6 @@ class PaymentService {
       final projectdata = projectData['projectdata'] as Map<String, dynamic>? ?? {};
       final contractType = (projectdata['contract_type'] as String?)?.toLowerCase() ?? '';
       
-      // Get payments from Payments table
       final paymentsData = await _supabase
           .from('Payments')
           .select('amount')
@@ -843,10 +828,8 @@ class PaymentService {
         (sum, payment) => sum + ((payment['amount'] as num?)?.toDouble() ?? 0.0),
       );
       
-      // Get total contract amount
       double? totalAmount;
       
-      // For custom contracts, use bid amount directly (no field_values)
       if (contractType == 'custom') {
         final bidId = projectData['bid_id'] as String?;
         if (bidId != null) {
@@ -860,7 +843,6 @@ class PaymentService {
           } catch (_) {}
         }
       } else {
-        // For other contract types, try to get from contract field_values first
         final contractId = projectData['contract_id'] as String?;
         if (contractId != null) {
           try {
@@ -872,21 +854,16 @@ class PaymentService {
             
             final fieldValues = contractData['field_values'] as Map<String, dynamic>? ?? {};
             
-            // Try to get contract price from different contract types
             if (fieldValues['Project.ContractPrice'] != null) {
-              // Lump Sum contract
               totalAmount = double.tryParse(fieldValues['Project.ContractPrice'].toString());
             } else if (fieldValues['Payment.Total'] != null) {
-              // Time & Materials contract
               totalAmount = double.tryParse(fieldValues['Payment.Total'].toString());
-            } else if (fieldValues['Estimated Total'] != null) {
-              // Cost Plus contract
-              totalAmount = double.tryParse(fieldValues['Estimated Total'].toString());
+            } else if (fieldValues['Estimated.Total'] != null) {
+              totalAmount = double.tryParse(fieldValues['Estimated.Total'].toString());
             }
           } catch (_) {}
         }
         
-        // Fallback to bid amount if contract price not found
         if (totalAmount == null) {
           final bidId = projectData['bid_id'] as String?;
           if (bidId != null) {
@@ -1324,8 +1301,7 @@ class PaymentService {
             },
           );
         }
-        
-        // Check if all milestones are paid and auto-complete if so
+  
         await _checkAndCompleteProject(projectId, 'lump_sum', paymentStatus: updatedProjectdata['payment_status'] as String?);
       } else {
         throw Exception('Payment failed with status: $stripePaymentStatus');
@@ -1526,8 +1502,8 @@ class PaymentService {
               
               if (fieldValues['Payment.Total'] != null) {
                 totalAmount = double.tryParse(fieldValues['Payment.Total'].toString());
-              } else if (fieldValues['Estimated Total'] != null) {
-                totalAmount = double.tryParse(fieldValues['Estimated Total'].toString());
+              } else if (fieldValues['Estimated.Total'] != null) {
+                totalAmount = double.tryParse(fieldValues['Estimated.Total'].toString());
               }
             } catch (_) {
             }
@@ -1582,78 +1558,6 @@ class PaymentService {
               'projectdata': projectdata,
             }).eq('project_id', projectId);
           }
-        }
-      }
-
-      if (isFullyPaid) {
-        final projectData = await _supabase
-            .from('Projects')
-            .select('contract_id, title, contractor_id, contractee_id, status')
-            .eq('project_id', projectId)
-            .single();
-
-        final contractId = projectData['contract_id'] as String?;
-        final projectTitle = projectData['title'] as String? ?? 'Project';
-        final contractorId = projectData['contractor_id'] as String?;
-        final contracteeId = projectData['contractee_id'] as String?;
-        final currentStatus = projectData['status'] as String?;
-
-        if (currentStatus?.toLowerCase() != 'completed') {
-          await _supabase.from('Projects').update({
-            'status': 'completed',
-            'updated_at': DateTimeHelper.getLocalTimeISOString(),
-          }).eq('project_id', projectId);
-
-          if (contractId != null) {
-            await _supabase.from('Contracts').update({
-              'status': 'completed',
-              'updated_at': DateTimeHelper.getLocalTimeISOString(),
-            }).eq('contract_id', contractId);
-          }
-        }
-
-        if (contracteeId != null) {
-          await _auditService.logAuditEvent(
-            userId: contracteeId,
-            action: 'PROJECT_COMPLETED',
-            details: 'Project automatically completed after full payment',
-            category: 'Project',
-            metadata: {
-              'project_id': projectId,
-              'contract_id': contractId,
-              'contract_type': contractType,
-            },
-          );
-        }
-
-        if (contractorId != null && contracteeId != null) {
-          await _notificationService.createNotification(
-            receiverId: contractorId,
-            receiverType: 'contractor',
-            senderId: 'system',
-            senderType: 'system',
-            type: 'Project Completed',
-            message: 'Project "$projectTitle" has been automatically completed after full payment.',
-            information: {
-              'project_id': projectId,
-              'contract_id': contractId,
-              'completion_date': DateTimeHelper.getLocalTimeISOString(),
-            },
-          );
-
-          await _notificationService.createNotification(
-            receiverId: contracteeId,
-            receiverType: 'contractee',
-            senderId: 'system',
-            senderType: 'system',
-            type: 'Project Completed',
-            message: 'Project "$projectTitle" has been automatically completed after full payment.',
-            information: {
-              'project_id': projectId,
-              'contract_id': contractId,
-              'completion_date': DateTimeHelper.getLocalTimeISOString(),
-            },
-          );
         }
       }
     } catch (e) {

@@ -130,6 +130,17 @@ class VerifyService {
             type: 'Account Verified',
             message: 'Congratulations! Your contractor account "$firmName" has been verified and approved. You can now access all platform features.',
           );
+
+          await NotificationService().sendEmailNotification(
+            receiverId: contractorId,
+            type: 'Account Verified',
+            message:
+                'Congratulations! Your contractor account "$firmName" has been verified and approved. You can now access all platform features.',
+            subject: 'ConTrust - Account Verified',
+            title: 'Your Contractor Account Has Been Verified',
+            previewText:
+                'Your contractor account "$firmName" has been verified and approved.',
+          );
         } catch (e) {
           // Log notification error but don't fail the verification
           await _errorService.logError(
@@ -153,6 +164,17 @@ class VerifyService {
             senderType: 'system',
             type: 'Account Verification Rejected',
             message: 'Your contractor account verification has been rejected. Please review your submitted documents and contact support if you have questions.',
+          );
+
+          await NotificationService().sendEmailNotification(
+            receiverId: contractorId,
+            type: 'Account Verification Rejected',
+            message:
+                'Your contractor account verification has been rejected. Please review your submitted documents and contact support if you have questions.',
+            subject: 'ConTrust - Account Verification Result',
+            title: 'Your Account Verification Was Rejected',
+            previewText:
+                'Your contractor account verification has been rejected. Please review your submitted documents.',
           );
         } catch (e) {
           // Log notification error but don't fail the verification

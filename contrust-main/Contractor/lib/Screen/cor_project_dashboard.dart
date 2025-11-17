@@ -7,6 +7,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:backend/services/contractor services/cor_ongoingservices.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/services/both services/be_payment_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:contractor/build/buildongoing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -792,9 +793,10 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
 
   /// Mobile Recent Activities Content
   Widget _buildMobileRecentActivitiesContent() {
-    final activities = _tasks.isEmpty && _reports.isEmpty && _photos.isEmpty;
+    final hasNoActivities =
+        _tasks.isEmpty && _reports.isEmpty && _photos.isEmpty && _materials.isEmpty;
 
-    if (activities) {
+    if (hasNoActivities) {
       return const Center(child: Text('No recent activities'));
     }
 
@@ -804,6 +806,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
         tasks: _tasks,
         reports: _reports,
         photos: _photos,
+        materials: _materials,
         maxItems: 20,
       ),
     );
@@ -817,50 +820,51 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
     final tabs = ['Tasks', 'Reports', 'Photos', 'Materials'];
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
       ),
       child: Row(
-        children:
-            tabs.map((tab) {
-              final isActive = selectedTab == tab;
-              return Expanded(
-                child: InkWell(
-                  onTap: () => onTabChanged(tab),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      color:
-                          isActive ? Colors.amber.shade50 : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      tab,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight:
-                            isActive ? FontWeight.w600 : FontWeight.w500,
-                        color:
-                            isActive
-                                ? Colors.amber.shade700
-                                : Colors.grey.shade600,
-                      ),
-                    ),
+        children: tabs.asMap().entries.map((entry) {
+          final index = entry.key;
+          final tab = entry.value;
+          final isActive = selectedTab == tab;
+          final isFirst = index == 0;
+          final isLast = index == tabs.length - 1;
+
+          return Expanded(
+            child: InkWell(
+              onTap: () => onTabChanged(tab),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: isActive ? Colors.amber.shade700 : Colors.transparent,
+                  borderRadius: BorderRadius.only(
+                    topLeft: isFirst ? const Radius.circular(8) : Radius.zero,
+                    bottomLeft:
+                        isFirst ? const Radius.circular(8) : Radius.zero,
+                    topRight: isLast ? const Radius.circular(8) : Radius.zero,
+                    bottomRight:
+                        isLast ? const Radius.circular(8) : Radius.zero,
                   ),
                 ),
-              );
-            }).toList(),
+                child: Text(
+                  tab,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight:
+                        isActive ? FontWeight.w600 : FontWeight.normal,
+                    color:
+                        isActive ? Colors.white : const Color(0xFF4B5563),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -1293,6 +1297,15 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                   foregroundColor: Colors.amber.shade700,
                 ),
               ),
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: _showPaymentHistory,
+                icon: const Icon(Icons.history, size: 24),
+                tooltip: 'Payment History',
+                style: IconButton.styleFrom(
+                  foregroundColor: Colors.blue.shade700,
+                ),
+              ),
               if (_projectStatus != 'completed') ...[
                 const SizedBox(width: 8),
                 IconButton(
@@ -1309,6 +1322,204 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
         ],
       ),
     );
+  }
+
+  Future<void> _showPaymentHistory() async {
+    try {
+      final paymentService = PaymentService();
+      final paymentSummary = await paymentService.getPaymentSummary(widget.projectId);
+      final payments = await paymentService.getPaymentHistory(widget.projectId);
+
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.9,
+            constraints: const BoxConstraints(maxWidth: 600),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: Colors.white,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade700,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.history, color: Colors.white, size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Payment History',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Total Paid:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                          Text(
+                            '₱${(paymentSummary['total_paid'] as num).toStringAsFixed(2)}',
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+                          ),
+                        ],
+                      ),
+                      if (paymentSummary['total_amount'] != null) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Contract Amount:', style: TextStyle(fontSize: 14)),
+                            Text(
+                              '₱${(paymentSummary['total_amount'] as num).toStringAsFixed(2)}',
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Remaining:', style: TextStyle(fontSize: 14)),
+                            Text(
+                              '₱${(paymentSummary['remaining'] as num).toStringAsFixed(2)}',
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.orange),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        LinearProgressIndicator(
+                          value: double.parse(paymentSummary['percentage_paid'] ?? '0') / 100,
+                          backgroundColor: Colors.grey.shade300,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.amber.shade700),
+                          minHeight: 8,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${paymentSummary['percentage_paid']}% Paid',
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: payments.isEmpty
+                        ? const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Text('No payments have been recorded for this project.'),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: payments.length,
+                            itemBuilder: (context, index) {
+                              final payment = payments[index];
+                              final amount = (payment['amount'] as num?)?.toDouble() ?? 0.0;
+                              final paidAtRaw = payment['paid_at'] ?? payment['payment_date'] ?? payment['date'] ?? payment['created_at'];
+                              DateTime? paidAt;
+                              if (paidAtRaw is String && paidAtRaw.isNotEmpty) {
+                                paidAt = DateTime.tryParse(paidAtRaw);
+                              } else if (paidAtRaw is DateTime) {
+                                paidAt = paidAtRaw;
+                              }
+
+                              final paymentType = payment['payment_type']?.toString() ?? 'payment';
+                              final status = payment['payment_status']?.toString().toUpperCase() ?? 'COMPLETED';
+
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: 8),
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor: Colors.amber.shade100,
+                                    child: Icon(
+                                      paymentType == 'milestone' ? Icons.flag : Icons.payments,
+                                      color: Colors.amber.shade800,
+                                      size: 18,
+                                    ),
+                                  ),
+                                  title: Text(
+                                    '₱${amount.toStringAsFixed(2)}',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  ),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      if (paidAt != null)
+                                        Text(
+                                          DateFormat('MMM d, yyyy • h:mm a').format(paidAt),
+                                          style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                                        ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        paymentType == 'milestone'
+                                            ? (payment['milestone_description']?.toString() ?? 'Milestone payment')
+                                            : (payment['description']?.toString() ?? 'Project payment'),
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
+                                    ],
+                                  ),
+                                  trailing: Text(
+                                    status,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: status == 'COMPLETED' ? Colors.green.shade700 : Colors.orange.shade700,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ConTrustSnackBar.error(context, 'Error loading payment history: $e');
+      }
+    }
   }
 
   /// View Contract Function
@@ -1909,17 +2120,17 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
             ),
             const SizedBox(height: 12),
             Expanded(
-              child:
-                  (_tasks.isEmpty && _reports.isEmpty && _photos.isEmpty)
-                      ? const Center(child: Text('No recent activities'))
-                      : SingleChildScrollView(
-                        child: OngoingBuildMethods.buildRecentActivityFeed(
-                          tasks: _tasks,
-                          reports: _reports,
-                          photos: _photos,
-                          maxItems: 10,
-                        ),
+              child: (_tasks.isEmpty && _reports.isEmpty && _photos.isEmpty && _materials.isEmpty)
+                  ? const Center(child: Text('No recent activities'))
+                  : SingleChildScrollView(
+                      child: OngoingBuildMethods.buildRecentActivityFeed(
+                        tasks: _tasks,
+                        reports: _reports,
+                        photos: _photos,
+                        materials: _materials,
+                        maxItems: 10,
                       ),
+                    ),
             ),
           ],
         ),

@@ -216,6 +216,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
 
       await BiddingService().acceptProjectBid(projectId, bidId);
       if (mounted) {
+        await _loadData();
         ConTrustSnackBar.success(context, 'The bid has been accepted successfully!');
       }
     } catch (e) {
@@ -293,7 +294,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
 
   Future<void> _handleCancelProject(String projectId, String reason) async {
     try {
-      await ProjectService().cancelProject(projectId, reason: reason);
+      await ProjectService().cancelProject(
+        projectId,
+        reason: reason.isNotEmpty ? reason : null,
+      );
 
       if (mounted) {
 

@@ -649,6 +649,103 @@ class ProjectService {
     }
   }
 
+  Future<void> signOffProject(String projectId, String userId) async {
+    try {
+      final projectData = await _supabase
+          .from('Projects')
+          .select('contractor_id, contractee_id, title, status, contract_id')
+          .eq('project_id', projectId)
+          .single();
+
+      final contractorId = projectData['contractor_id'] as String?;
+      final contracteeId = projectData['contractee_id'] as String?;
+      final projectTitle = projectData['title'] as String? ?? 'Untitled Project';
+      final currentStatus = projectData['status'] as String?;
+      final contractId = projectData['contract_id'] as String?;
+
+      if (contracteeId == null) {
+        throw Exception('No contractee assigned to this project');
+      }
+
+      if (userId != contracteeId) {
+        throw Exception('Only the contractee can sign off this project');
+      }
+
+      if (currentStatus == 'completed') {
+        throw Exception('This project has already been completed');
+      }
+
+      await _supabase.from('Projects').update({
+        'status': 'completed',
+        'updated_at': DateTimeHelper.getLocalTimeISOString(),
+      }).eq('project_id', projectId);
+
+      if (contractId != null) {
+        await _supabase.from('Contracts').update({
+          'status': 'completed',
+          'updated_at': DateTimeHelper.getLocalTimeISOString(),
+        }).eq('contract_id', contractId);
+      }
+
+      await _auditService.logAuditEvent(
+        userId: userId,
+        action: 'PROJECT_SIGNED_OFF',
+        details: 'Project signed off by contractee',
+        category: 'Project',
+        metadata: {
+          'project_id': projectId,
+          'contract_id': contractId,
+        },
+      );
+
+      final notificationService = NotificationService();
+
+      if (contractorId != null) {
+        await notificationService.createNotification(
+          receiverId: contractorId,
+          receiverType: 'contractor',
+          senderId: contracteeId,
+          senderType: 'contractee',
+          type: 'Project Completed',
+          message: 'The project "$projectTitle" has been marked as completed by the client.',
+          information: {
+            'project_id': projectId,
+            'contract_id': contractId,
+            'completion_date': DateTimeHelper.getLocalTimeISOString(),
+            'completed_by': 'contractee',
+          },
+        );
+      }
+
+      await notificationService.createNotification(
+        receiverId: contracteeId,
+        receiverType: 'contractee',
+        senderId: 'system',
+        senderType: 'system',
+        type: 'Project Completed',
+        message: 'You have successfully signed off the project "$projectTitle".',
+        information: {
+          'project_id': projectId,
+          'contract_id': contractId,
+          'completion_date': DateTimeHelper.getLocalTimeISOString(),
+          'completed_by': 'contractee',
+        },
+      );
+    } catch (e) {
+      await _errorService.logError(
+        errorMessage: 'Failed to sign off project: $e',
+        module: 'Project Service',
+        severity: 'High',
+        extraInfo: {
+          'operation': 'Sign Off Project',
+          'project_id': projectId,
+          'user_id': userId,
+        },
+      );
+      throw Exception('Failed to sign off project: $e');
+    }
+  }
+
   Future<void> declineCancelAgreement(String projectId, String userId) async {
     try {
       final projectData = await _supabase
@@ -876,6 +973,7 @@ class ProjectService {
       final contractorData =
           await FetchService().fetchContractorData(contractorId);
       final contractorName = contractorData?['firm_name'] ?? 'A contractor';
+      final contractorPhoto = contractorData?['profile_photo'] ?? '';
 
       await NotificationService().createNotification(
         receiverId: contractorId,
@@ -890,7 +988,10 @@ class ProjectService {
           'firm_name': contractorName,
           'contractor_id': contractorId,
           'full_name': contracteeName,
-          'profile_photo': contracteePhoto,
+          'profile_photo': contractorPhoto,
+          // Explicit photos for each side
+          'contractor_photo': contractorPhoto,
+          'contractee_photo': contracteePhoto,
           'project_id': projectId,
           'project_title': title,
           'project_type': type,
@@ -935,8 +1036,9 @@ class ProjectService {
 
   Future<Map<String, dynamic>?> cancelAgreement(
     String projectId,
-    String requestingUserId,
-  ) async {
+    String requestingUserId, {
+    String? reason,
+  }) async {
     try {
       final project = await _supabase
           .from('Projects')
@@ -954,13 +1056,17 @@ class ProjectService {
         receiverType = 'contractee';
         senderId = project['contractor_id'];
         senderType = 'contractor';
-        message = 'The contractor has requested to cancel the project';
+        message = (reason != null && reason.isNotEmpty)
+            ? 'The contractor has requested to cancel the project. Reason: $reason'
+            : 'The contractor has requested to cancel the project';
       } else {
         receiverId = project['contractor_id'];
         receiverType = 'contractor';
         senderId = project['contractee_id'];
         senderType = 'contractee';
-        message = 'The contractee has requested to cancel the project';
+        message = (reason != null && reason.isNotEmpty)
+            ? 'The contractee has requested to cancel the project. Reason: $reason'
+            : 'The contractee has requested to cancel the project';
       }
 
       final status = userType == 'contractor'
@@ -997,6 +1103,7 @@ class ProjectService {
           'timestamp': DateTimeHelper.getLocalTimeISOString(),
           'sender_name': senderName,
           'sender_photo': senderPhoto,
+          if (reason != null && reason.isNotEmpty) 'cancellation_reason': reason,
         },
       );
 

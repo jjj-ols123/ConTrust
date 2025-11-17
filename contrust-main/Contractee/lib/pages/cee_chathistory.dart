@@ -623,8 +623,15 @@ class _ContracteeChatHistoryPageState extends State<ContracteeChatHistoryPage> {
 
                                   final lastMessage =
                                       chat['last_message'] ?? '';
-                                  final lastTime = DateTimeHelper.parseToLocal(
-                                      chat['last_message_time'] as String?);
+                                  final dynamic rawLastTime =
+                                      chat['last_message_time'];
+                                  final DateTime? lastTime = rawLastTime != null
+                                      ? (rawLastTime is String
+                                          ? DateTime.tryParse(rawLastTime)
+                                          : rawLastTime is DateTime
+                                              ? rawLastTime
+                                              : null)
+                                      : null;
 
                           return InkWell(
                             onTap: () {

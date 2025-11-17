@@ -743,8 +743,9 @@ class HomePageBuilder {
     final canAccept = projectStatus == 'pending' && !isAccepted && !isRejected;
     final canReject = projectStatus == 'pending' && !isAccepted && !isRejected;
     final projectStatusLower = projectStatus?.toLowerCase();
-    final showMessageButton = projectStatusLower == null || projectStatusLower == 'pending';
-    
+    final showMessageButton =
+        projectStatusLower == null || projectStatusLower == 'pending';
+
     return Stack(
       children: [
         Container(
@@ -764,7 +765,11 @@ class HomePageBuilder {
                 radius: isMobile ? 18 : 20,
                 child: ClipOval(
                   child: Image.network(
-                    contractor != null && contractor['profile_photo'] != null && contractor['profile_photo'].toString().isNotEmpty
+                    contractor != null &&
+                            contractor['profile_photo'] != null &&
+                            contractor['profile_photo']
+                                .toString()
+                                .isNotEmpty
                         ? contractor['profile_photo']
                         : profileUrl,
                     width: (isMobile ? 18 : 20) * 2,
@@ -781,7 +786,6 @@ class HomePageBuilder {
                 ),
               ),
               SizedBox(width: isMobile ? 10 : 12),
-              
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -789,49 +793,56 @@ class HomePageBuilder {
                     Text(
                       'by ${contractor?['firm_name'] ?? 'Unknown Contractor'}',
                       style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: isMobile ? 13 : 14,
-                    color: Colors.grey.shade800,
+                        fontWeight: FontWeight.w600,
+                        fontSize: isMobile ? 13 : 14,
+                        color: Colors.grey.shade800,
                       ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    
-                  ],  
+                  ],
                 ),
               ),
-              
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (showMessageButton)
                     IconButton(
-                      onPressed: isLoading ? null : () => _handleMessageTap(context, bid),
-                      icon: Icon(Icons.chat_bubble_outline, size: isMobile ? 18 : 20),
+                      onPressed: isLoading
+                          ? null
+                          : () => _handleMessageTap(context, bid),
+                      icon: Icon(
+                        Icons.chat_bubble_outline,
+                        size: isMobile ? 18 : 20,
+                      ),
                       tooltip: 'Message Contractor',
-                      padding: EdgeInsets.all(isMobile ? 3 : 4),
+                      padding: EdgeInsets.zero,
                       constraints: BoxConstraints(
-                        minWidth: isMobile ? 28 : 32,
-                        minHeight: isMobile ? 28 : 32,
+                        minWidth: isMobile ? 20 : 22,
+                        minHeight: isMobile ? 20 : 22,
                       ),
                     ),
                   if (showMessageButton)
-                    SizedBox(width: isMobile ? 3 : 4),
+                    SizedBox(width: isMobile ? 1 : 2),
                   IconButton(
                     onPressed: () => _showBidInfoDialog(context, bid),
-                    icon: Icon(Icons.info_outline, size: isMobile ? 18 : 20),
+                    icon: Icon(
+                      Icons.info_outline,
+                      size: isMobile ? 18 : 20,
+                    ),
                     tooltip: 'More Info',
-                    padding: EdgeInsets.all(isMobile ? 3 : 4),
+                    padding: EdgeInsets.zero,
                     constraints: BoxConstraints(
-                      minWidth: isMobile ? 28 : 32, 
-                      minHeight: isMobile ? 28 : 32
+                      minWidth: isMobile ? 20 : 22,
+                      minHeight: isMobile ? 20 : 22,
                     ),
                   ),
                   if (isAccepted || isRejected) ...[
                     SizedBox(width: isMobile ? 3 : 4),
                     if (isAccepted)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
                           color: Colors.green.shade600,
                           borderRadius: BorderRadius.circular(12),
@@ -847,7 +858,8 @@ class HomePageBuilder {
                       )
                     else
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
                           color: Colors.red.shade600,
                           borderRadius: BorderRadius.circular(12),
@@ -861,19 +873,24 @@ class HomePageBuilder {
                           ),
                         ),
                       ),
-                  ]
-                  else if (canAccept || canReject) ...[
+                  ] else if (canAccept || canReject) ...[
                     SizedBox(width: isMobile ? 3 : 4),
                     IconButton(
-                      onPressed: isLoading ? null : () {
-                        _showRejectBidDialog(context, bid, (String? reason) => onReject(reason));
-                      },
-                      icon: Icon(Icons.close, size: isMobile ? 16 : 18),
+                      onPressed: isLoading
+                          ? null
+                          : () {
+                              _showRejectBidDialog(
+                                  context,
+                                  bid,
+                                  (String? reason) => onReject(reason));
+                            },
+                      icon:
+                          Icon(Icons.close, size: isMobile ? 16 : 18),
                       tooltip: 'Decline',
                       padding: EdgeInsets.all(isMobile ? 3 : 4),
                       constraints: BoxConstraints(
-                        minWidth: isMobile ? 28 : 32, 
-                        minHeight: isMobile ? 28 : 32
+                        minWidth: isMobile ? 28 : 32,
+                        minHeight: isMobile ? 28 : 32,
                       ),
                       style: IconButton.styleFrom(
                         backgroundColor: Colors.red.shade100,
@@ -882,15 +899,18 @@ class HomePageBuilder {
                     ),
                     SizedBox(width: isMobile ? 3 : 4),
                     IconButton(
-                      onPressed: isLoading ? null : () {
-                        _showAcceptBidDialog(context, bid, onAccept);
-                      },
-                      icon: Icon(Icons.check, size: isMobile ? 16 : 18),
+                      onPressed: isLoading
+                          ? null
+                          : () {
+                              _showAcceptBidDialog(context, bid, onAccept);
+                            },
+                      icon:
+                          Icon(Icons.check, size: isMobile ? 16 : 18),
                       tooltip: 'Accept',
                       padding: EdgeInsets.all(isMobile ? 3 : 4),
                       constraints: BoxConstraints(
-                        minWidth: isMobile ? 28 : 32, 
-                        minHeight: isMobile ? 28 : 32
+                        minWidth: isMobile ? 28 : 32,
+                        minHeight: isMobile ? 28 : 32,
                       ),
                       style: IconButton.styleFrom(
                         backgroundColor: Colors.green.shade100,
@@ -935,7 +955,7 @@ class HomePageBuilder {
     
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (BuildContext context) {
         final screenWidth = MediaQuery.of(context).size.width;
         final isDesktop = screenWidth >= 1000;
@@ -1709,6 +1729,8 @@ class HomePageBuilder {
     final firmName = infoMap['firm_name'] ?? 'Unknown Contractor';
     final status = (infoMap['status'] ?? 'pending').toString().toLowerCase();
     final isRejected = status == 'rejected' || status == 'declined' || status == 'cancelled';
+    final projectId = infoMap['project_id']?.toString();
+    final contractorId = request['receiver_id']?.toString();
     
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -1775,20 +1797,48 @@ class HomePageBuilder {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (contractorId != null && contractorId.isNotEmpty &&
+                  projectId != null && projectId.isNotEmpty)
+                IconButton(
+                  onPressed: () {
+                    final pseudoBid = <String, dynamic>{
+                      'contractor_id': contractorId,
+                      'project_id': projectId,
+                      'contractor': {
+                        'firm_name': firmName,
+                        'profile_photo': infoMap['profile_photo'],
+                      },
+                    };
+                    _handleMessageTap(context, pseudoBid);
+                  },
+                  icon: Icon(Icons.chat_bubble_outline,
+                      size: isMobile ? 18 : 20),
+                  tooltip: 'Message Contractor',
+                  padding: EdgeInsets.all(isMobile ? 3 : 4),
+                  constraints: BoxConstraints(
+                    minWidth: isMobile ? 28 : 32,
+                    minHeight: isMobile ? 28 : 32,
+                  ),
+                ),
+              if (contractorId != null && contractorId.isNotEmpty &&
+                  projectId != null && projectId.isNotEmpty)
+                SizedBox(width: isMobile ? 3 : 4),
               IconButton(
-                onPressed: () => _showHiringRequestInfoDialog(context, request),
+                onPressed: () =>
+                    _showHiringRequestInfoDialog(context, request),
                 icon: Icon(Icons.info_outline, size: isMobile ? 18 : 20),
                 tooltip: 'More Info',
                 padding: EdgeInsets.all(isMobile ? 3 : 4),
                 constraints: BoxConstraints(
-                  minWidth: isMobile ? 28 : 32, 
-                  minHeight: isMobile ? 28 : 32
+                  minWidth: isMobile ? 28 : 32,
+                  minHeight: isMobile ? 28 : 32,
                 ),
               ),
               if (isAccepted || status == 'accepted') ...[
                 SizedBox(width: isMobile ? 3 : 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.green.shade600,
                     borderRadius: BorderRadius.circular(12),
@@ -1802,11 +1852,11 @@ class HomePageBuilder {
                     ),
                   ),
                 ),
-              ]
-              else if (isRejected) ...[
+              ] else if (isRejected) ...[
                 SizedBox(width: isMobile ? 3 : 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.red.shade600,
                     borderRadius: BorderRadius.circular(12),
@@ -2450,6 +2500,7 @@ class HomePageBuilder {
     required String profileUrl,
   }) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final router = GoRouter.of(context);
     final isMobile = screenWidth < 600;
     
     showDialog(
@@ -2459,8 +2510,8 @@ class HomePageBuilder {
         child: Container(
           width: isMobile ? double.infinity : (screenWidth * 0.55),
           height: isMobile
-              ? MediaQuery.of(context).size.height * 0.8
-              : MediaQuery.of(context).size.height * 0.6,
+              ? MediaQuery.of(dialogContext).size.height * 0.8
+              : MediaQuery.of(dialogContext).size.height * 0.6,
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
@@ -2498,7 +2549,6 @@ class HomePageBuilder {
                   ],
                 ),
               ),
-              // Scrollable content
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -2538,18 +2588,15 @@ class HomePageBuilder {
                             name: contractor['firm_name'] ?? 'Unknown',
                             profileImage: profileImage,
                             rating: (contractor['rating'] ?? 0.0).toDouble(),
-                            // Force compact card rendering in the dialog
                             isMobile: true,
                             onViewPressed: () {
-                              // Get contractor info and navigate immediately
-                              final contractorName = contractor['firm_name'] ?? 'Unknown';
-                              final encodedName = Uri.encodeComponent(contractorName);
+                              final contractorName =
+                                  contractor['firm_name'] ?? 'Unknown';
+                              final encodedName =
+                                  Uri.encodeComponent(contractorName);
 
-                              // Navigate directly - user is already authenticated to see this dialog
-                              GoRouter.of(context).go('/contractor/$encodedName');
-
-                              // Close dialog immediately after navigation
                               Navigator.of(dialogContext).pop();
+                              router.go('/contractor/$encodedName');
                             },
                           ),
                         ),

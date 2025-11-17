@@ -139,6 +139,79 @@ class NotificationService {
     }
   }
 
+  Future<void> markAllAsRead(String receiverId) async {
+    try {
+      await _supabase
+          .from('Notifications')
+          .update({'is_read': true})
+          .eq('receiver_id', receiverId)
+          .eq('is_read', false);
+    } catch (e) {
+      throw Exception('Failed to mark notifications as read');
+    }
+  }
+
+  Future<void> sendEmailNotification({
+    required String receiverId,
+    required String type,
+    required String message,
+    String? subject,
+    String? title,
+    String? previewText,
+  }) async {
+    try {
+      final user = await _supabase
+          .from('Users')
+          .select('email')
+          .eq('users_id', receiverId)
+          .maybeSingle();
+
+      final email = user?['email'] as String?;
+      if (email == null || email.isEmpty) {
+        return;
+      }
+
+      final response = await _supabase.functions.invoke(
+        'send-notification-email',
+        body: {
+          'email': email,
+          'subject': subject ?? 'ConTrust - $type',
+          'title': title ?? type,
+          'message': message,
+          'notificationType': type,
+          if (previewText != null) 'previewText': previewText,
+        },
+      );
+
+      if (response.status != 200) {
+        await _errorService.logError(
+          errorMessage:
+              'Failed to send notification email: ${response.data}',
+          module: 'Notification Service',
+          severity: 'Low',
+          extraInfo: {
+            'operation': 'sendEmailNotification',
+            'receiver_id': receiverId,
+            'type': type,
+            'status': response.status,
+          },
+        );
+      }
+    } catch (e, st) {
+      await _errorService.logError(
+        errorMessage: 'Error sending notification email: $e',
+        module: 'Notification Service',
+        severity: 'Low',
+        extraInfo: {
+          'operation': 'sendEmailNotification',
+          'receiver_id': receiverId,
+          'type': type,
+          'stack': st.toString(),
+        },
+      );
+    }
+  }
+
   //For Contractors
 
   Future<void> createProjectNotification({
@@ -208,35 +281,6 @@ class NotificationService {
     required String message,
   }) async {
     try {
-      if (type.toLowerCase() == 'new bid' && receiverType.toLowerCase() == 'contractee') {
-        final bidRow = await _supabase
-            .from('Bids')
-            .select('bid_amount, contractor_id, project_id')
-            .eq('bid_id', bidId)
-            .maybeSingle();
-
-        final double bidAmount = bidRow != null && bidRow['bid_amount'] != null
-            ? (bidRow['bid_amount'] as num).toDouble()
-            : 0.0;
-
-        final String contractorId = bidRow != null && bidRow['contractor_id'] != null
-            ? bidRow['contractor_id'].toString()
-            : senderId;
-
-        final String projId = bidRow != null && bidRow['project_id'] != null
-            ? bidRow['project_id'].toString()
-            : projectId;
-
-        await notifyNewBid(
-          contracteeId: receiverId,
-          contractorId: contractorId,
-          projectId: projId,
-          bidId: bidId,
-          bidAmount: bidAmount,
-        );
-        return;
-      }
-
       await createNotification(
         receiverId: receiverId,
         receiverType: receiverType,

@@ -6,11 +6,12 @@ import 'package:backend/services/both%20services/be_notification_service.dart';
 import 'package:backend/services/both%20services/be_user_service.dart';
 import 'package:backend/services/both%20services/be_fetchservice.dart';
 import 'package:backend/services/superadmin%20services/errorlogs_service.dart';
+import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// Shared helper to format timestamps as relative time
+
 String formatTimeAgo(String? timestamp) {
   if (timestamp == null || timestamp.isEmpty) return '';
   try {
@@ -31,11 +32,16 @@ String formatLocalTime(String? timestamp) {
   if (timestamp == null || timestamp.isEmpty) return '';
   try {
     final dt = DateTime.parse(timestamp).toLocal();
+    final year = dt.year;
+    final month = dt.month.toString().padLeft(2, '0');
+    final day = dt.day.toString().padLeft(2, '0');
+
     int hour = dt.hour % 12;
     if (hour == 0) hour = 12;
     final minute = dt.minute.toString().padLeft(2, '0');
     final period = dt.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $period';
+
+    return '$year-$month-$day $hour:$minute $period';
   } catch (_) {
     return formatTimeAgo(timestamp);
   }
@@ -49,6 +55,9 @@ class NotificationUIBuildMethods {
 
   final BuildContext context;
   final String receiverId;
+
+  final Set<String> _seenNotificationIds = {};
+  bool _initialized = false;
 
   double get screenWidth => MediaQuery.of(context).size.width;
   bool get isDesktop => screenWidth > 1200;
@@ -155,7 +164,8 @@ class NotificationUIBuildMethods {
         groupType = 'hiring_requests_declined';
       } else if ((headline == 'Contract Signed' ||
                   headline == 'Contract Activated' ||
-                  headline == 'Contract Rejected') &&
+                  headline == 'Contract Rejected' ||
+                  headline == 'Contract Approved') &&
           createdAt != null) {
         dateStr = _getDateString(createdAt);
         groupType = 'contract_status';
@@ -172,13 +182,25 @@ class NotificationUIBuildMethods {
           dateStr = _getDateString(updatedAt);
           groupType = 'cancellation_declined';
         } else {
-        final isPending = status == null || status == 'pending' || status == '';
-        final isSystemNotification = senderType == null || senderType == 'system';
+          final isPending = status == null || status == 'pending' || status == '';
+          final isSystemNotification = senderType == null || senderType == 'system';
         
           if ((isPending || isSystemNotification) && createdAt != null) {
             dateStr = _getDateString(createdAt);
             groupType = 'cancellation_request';
           }
+        }
+      } else if (headline == 'Cancellation Declined') {
+        final rawInfo = notification['information'];
+        final info = rawInfo is String
+            ? Map<String, dynamic>.from(jsonDecode(rawInfo))
+            : Map<String, dynamic>.from(rawInfo ?? {});
+        final declinedAt = info['declined_at'] as String?;
+        final ts = declinedAt ?? createdAt;
+
+        if (ts != null && ts.isNotEmpty) {
+          dateStr = _getDateString(ts);
+          groupType = 'cancellation_declined';
         }
       }
 
@@ -216,39 +238,140 @@ class NotificationUIBuildMethods {
           return const Center(child: Text("No notifications yet"));
         }
 
-        final groups = _groupNotifications(snapshot.data!);
-        final otherNotifications = groups['other'] ?? [];
+        final List<Map<String, dynamic>> sortedNotifications =
+            List<Map<String, dynamic>>.from(snapshot.data!);
 
-        // Sort groups by date (newest first) and type
-        final sortedGroupKeys = groups.keys.where((key) => key != 'other').toList();
-        sortedGroupKeys.sort((a, b) {
-          // Extract date from key (format: 'type_YYYY-MM-DD')
-          final partsA = a.split('_');
-          final partsB = b.split('_');
-          
-          if (partsA.length < 3 || partsB.length < 3) return 0;
-          
-          final dateA = partsA.sublist(partsA.length - 3).join('-');
-          final dateB = partsB.sublist(partsB.length - 3).join('-');
-          
-          if (dateA.isEmpty || dateB.isEmpty) return 0;
-          return dateB.compareTo(dateA); // Newest first
+        if (!_initialized) {
+          for (final n in sortedNotifications) {
+            final id = n['notification_id']?.toString();
+            if (id != null) {
+              _seenNotificationIds.add(id);
+            }
+          }
+          _initialized = true;
+        } else {
+          final List<Map<String, dynamic>> newContractStatusNotifications = [];
+          for (final n in sortedNotifications) {
+            final id = n['notification_id']?.toString();
+            if (id == null || _seenNotificationIds.contains(id)) {
+              continue;
+            }
+            _seenNotificationIds.add(id);
+
+            final headline = (n['headline'] ?? '').toString();
+            if (headline == 'Contract Approved' || headline == 'Contract Rejected') {
+              newContractStatusNotifications.add(n);
+            }
+          }
+
+          for (final notif in newContractStatusNotifications) {
+            try {
+              dynamic rawInfo = notif['information'];
+              if (rawInfo is String) {
+                rawInfo = jsonDecode(rawInfo);
+              }
+              final infoMap = Map<String, dynamic>.from(rawInfo ?? {});
+              final message = (infoMap['message'] ?? notif['message'] ?? '').toString();
+              if (message.isNotEmpty) {
+                ConTrustSnackBar.notificationToast(context, message);
+              }
+            } catch (_) {}
+          }
+        }
+
+        sortedNotifications.sort((a, b) {
+          final aCreated = a['created_at']?.toString();
+          final bCreated = b['created_at']?.toString();
+          if (aCreated == null || aCreated.isEmpty) return 1;
+          if (bCreated == null || bCreated.isEmpty) return -1;
+          return bCreated.compareTo(aCreated);
+        });
+
+        final groups = _groupNotifications(sortedNotifications);
+
+        final List<Map<String, dynamic>> listItems = [];
+
+        // 1) Add grouped notifications (by type + date)
+        groups.forEach((groupKey, notifications) {
+          if (groupKey == 'other') {
+            return;
+          }
+
+          final List<Map<String, dynamic>> groupNotifications =
+              List<Map<String, dynamic>>.from(notifications);
+
+          // Order notifications inside each group (latest first)
+          groupNotifications.sort((a, b) {
+            final aCreated = a['created_at']?.toString();
+            final bCreated = b['created_at']?.toString();
+            if (aCreated == null || aCreated.isEmpty) return 1;
+            if (bCreated == null || bCreated.isEmpty) return -1;
+            return bCreated.compareTo(aCreated);
+          });
+
+          // Determine the most recent created_at in this group
+          String? latestCreated;
+          for (final n in groupNotifications) {
+            final created = n['created_at']?.toString();
+            if (created == null || created.isEmpty) continue;
+            if (latestCreated == null || created.compareTo(latestCreated) > 0) {
+              latestCreated = created;
+            }
+          }
+
+          listItems.add({
+            'type': 'group',
+            'groupKey': groupKey,
+            'notifications': groupNotifications,
+            'latestCreated': latestCreated ?? '',
+          });
+        });
+
+        // 2) Add "other" notifications as individual items
+        final otherNotifications =
+            List<Map<String, dynamic>>.from(groups['other'] ?? []);
+        for (final notif in otherNotifications) {
+          final created = notif['created_at']?.toString();
+          listItems.add({
+            'type': 'single',
+            'notification': notif,
+            'latestCreated': created ?? '',
+          });
+        }
+
+        // 3) Sort all items by their most recent created_at (newest first)
+        listItems.sort((a, b) {
+          final aCreated = a['latestCreated'] as String?;
+          final bCreated = b['latestCreated'] as String?;
+          if (aCreated == null || aCreated.isEmpty) return 1;
+          if (bCreated == null || bCreated.isEmpty) return -1;
+          return bCreated.compareTo(aCreated);
         });
 
         return ListView(
-          children: [
-            ...sortedGroupKeys.map((groupKey) {
-              final notifications = groups[groupKey]!;
-              if (notifications.isEmpty) return const SizedBox.shrink();
+          children: listItems.map((item) {
+            final type = item['type'] as String?;
 
-              // Extract type and date from key
+            if (type == 'group') {
+              final groupKey = item['groupKey'] as String;
+              final notifications =
+                  (item['notifications'] as List).cast<Map<String, dynamic>>();
+
+              if (notifications.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              if (notifications.length == 1) {
+                return _buildSingleNotification(notifications.first);
+              }
+
               final parts = groupKey.split('_');
               final dateStr = parts.last;
-              final type = parts.sublist(0, parts.length - 1).join('_');
+              final groupType = parts.sublist(0, parts.length - 1).join('_');
 
               final dateLabel = _getDateLabel(dateStr);
-              final title = _getGroupTitle(type, notifications.length, dateLabel);
-              final icon = _getGroupIcon(type);
+              final title =
+                  _getGroupTitle(groupType, notifications.length, dateLabel);
+              final icon = _getGroupIcon(groupType);
 
               return _buildGroupedNotification(
                 title: title,
@@ -256,11 +379,11 @@ class NotificationUIBuildMethods {
                 notifications: notifications,
                 groupKey: groupKey,
               );
-            }),
-            ...otherNotifications.map((notification) {
-              return _buildSingleNotification(notification);
-            }),
-          ],
+            } else {
+              final notif = item['notification'] as Map<String, dynamic>;
+              return _buildSingleNotification(notif);
+            }
+          }).toList(),
         );
       },
     );
@@ -566,7 +689,6 @@ class NotificationUIBuildMethods {
 
   Widget _buildCancellationRequestActions(
       Map<String, dynamic> notification, Map<String, dynamic> info) {
-    final cancellationReason = info['cancellation_reason'] as String?;
     final status = info['status'] as String?;
 
     if (status == 'cancellation_requested_by_contractee' || status == 'pending') {
@@ -580,40 +702,6 @@ class NotificationUIBuildMethods {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  'Cancellation Request',
-                  style: TextStyle(
-                    color: Colors.orange.shade700,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'The contractee has requested to cancel this project.',
-              style: TextStyle(
-                color: Colors.orange.shade800,
-                fontSize: 13,
-              ),
-            ),
-            if (cancellationReason != null && cancellationReason.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Reason: $cancellationReason',
-                style: TextStyle(
-                  color: Colors.orange.shade800,
-                  fontSize: 13,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ],
-            const SizedBox(height: 8),
             Text(
               'Please check your project dashboard to approve or reject this request.',
               style: TextStyle(
@@ -849,6 +937,8 @@ class _NotificationButtonState extends State<NotificationButton> {
   int _unreadCount = 0;
   String? _receiverId;
   String? _userType;
+  StreamSubscription<List<Map<String, dynamic>>>? _notificationSub;
+  final Set<String> _seenNotificationIds = <String>{};
 
   @override
   void initState() {
@@ -874,6 +964,8 @@ class _NotificationButtonState extends State<NotificationButton> {
 
       _refreshBadge();
 
+      _startNotificationListener(id);
+
       _badgeTimer = Timer.periodic(const Duration(seconds: 10), (_) {
         _refreshBadge();
       });
@@ -891,6 +983,52 @@ class _NotificationButtonState extends State<NotificationButton> {
     } catch (e) {
       rethrow;
     }
+  }
+
+  void _startNotificationListener(String receiverId) {
+    _notificationSub?.cancel();
+
+    bool initialized = false;
+
+    _notificationSub = NotificationService()
+        .listenToNotifications(receiverId)
+        .listen((notifications) {
+      if (!mounted) return;
+      if (notifications.isEmpty) return;
+
+      if (!initialized) {
+        for (final n in notifications) {
+          final id = n['notification_id']?.toString();
+          if (id != null) {
+            _seenNotificationIds.add(id);
+          }
+        }
+        initialized = true;
+        return;
+      }
+
+      for (final n in notifications) {
+        final id = n['notification_id']?.toString();
+        if (id == null || _seenNotificationIds.contains(id)) continue;
+        _seenNotificationIds.add(id);
+
+        final rawInfo = n['information'];
+        Map<String, dynamic> info = {};
+        if (rawInfo is String) {
+          try {
+            info = Map<String, dynamic>.from(jsonDecode(rawInfo));
+          } catch (_) {}
+        } else if (rawInfo is Map<String, dynamic>) {
+          info = Map<String, dynamic>.from(rawInfo);
+        }
+
+        final dynamic rawMessage = info['message'] ?? n['message'];
+        final message = rawMessage is String ? rawMessage.trim() : '';
+        if (message.isEmpty) continue;
+
+        ConTrustSnackBar.notificationToast(context, message);
+      }
+    });
   }
 
   Future<void> _refreshBadge() async {
@@ -915,6 +1053,7 @@ class _NotificationButtonState extends State<NotificationButton> {
   @override
   void dispose() {
     _badgeTimer?.cancel();
+    _notificationSub?.cancel();
     super.dispose();
   }
 
@@ -929,8 +1068,16 @@ class _NotificationButtonState extends State<NotificationButton> {
 
             if (userType == null) return;
 
+            if (_receiverId != null) {
+              try {
+                await NotificationService().markAllAsRead(_receiverId!);
+                await _refreshBadge();
+              } catch (_) {
+                // 
+              }
+            }
+
             if (_isMobile(context)) {
-              // Route within each app using GoRouter; both apps register '/notifications'.
               context.go('/notifications');
             } else {
               NotificationOverlay.show(context, userType);

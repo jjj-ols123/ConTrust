@@ -1,4 +1,5 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
@@ -27,6 +28,7 @@ class CeeProjectDashboard extends StatefulWidget {
   final String? paymentButtonText;
   final Set<DateTime>? paidMilestoneDates;
   final bool isPaymentLoading;
+  final Future<void> Function()? onSignOff;
 
   const CeeProjectDashboard({
     super.key,
@@ -39,6 +41,7 @@ class CeeProjectDashboard extends StatefulWidget {
     this.paymentButtonText,
     this.paidMilestoneDates,
     this.isPaymentLoading = false,
+    this.onSignOff,
   });
 
   @override
@@ -65,6 +68,7 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
   final FetchService _fetchService = FetchService();
 
   String _selectedTab = 'Tasks';
+  StreamSubscription<List<Map<String, dynamic>>>? _materialsSubscription;
 
   void _extractMilestoneDates(Map<String, dynamic> contract) {
     final fieldValues = contract['field_values'] as Map<String, dynamic>?;
@@ -120,6 +124,7 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
     } else {
       _loadData();
     }
+    _setupMaterialsRealtime();
   }
 
   @override
@@ -140,8 +145,30 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
 
   @override
   void dispose() {
+    _materialsSubscription?.cancel();
     _calendarActivitiesPageController?.dispose();
     super.dispose();
+  }
+
+  void _setupMaterialsRealtime() {
+    _materialsSubscription?.cancel();
+
+    try {
+      final supabase = Supabase.instance.client;
+      _materialsSubscription = supabase
+          .from('ProjectMaterials')
+          .stream(primaryKey: ['material_id'])
+          .eq('project_id', widget.projectId)
+          .listen((event) async {
+        try {
+          final costs = await _fetchService.fetchProjectCosts(widget.projectId);
+          if (!mounted) return;
+          setState(() {
+            _materials = costs;
+          });
+        } catch (_) {}
+      });
+    } catch (_) {}
   }
 
   void _updateFromProjectData(Map<String, dynamic> data) {
@@ -704,38 +731,41 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
     final tabs = ['Tasks', 'Reports', 'Photos', 'Materials'];
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
       ),
       child: Row(
-        children: tabs.map((tab) {
+        children: tabs.asMap().entries.map((entry) {
+          final index = entry.key;
+          final tab = entry.value;
           final isActive = selectedTab == tab;
+          final isFirst = index == 0;
+          final isLast = index == tabs.length - 1;
+
           return Expanded(
             child: InkWell(
               onTap: () => onTabChanged(tab),
-              borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: isActive ? Colors.amber.shade50 : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
+                  color: isActive ? Colors.amber.shade700 : Colors.transparent,
+                  borderRadius: BorderRadius.only(
+                    topLeft: isFirst ? const Radius.circular(8) : Radius.zero,
+                    bottomLeft: isFirst ? const Radius.circular(8) : Radius.zero,
+                    topRight: isLast ? const Radius.circular(8) : Radius.zero,
+                    bottomRight: isLast ? const Radius.circular(8) : Radius.zero,
+                  ),
                 ),
                 child: Text(
                   tab,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                    color: isActive ? Colors.amber.shade700 : Colors.grey.shade600,
+                    fontSize: 14,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                    color: isActive ? Colors.white : const Color(0xFF4B5563),
                   ),
                 ),
               ),
@@ -1056,6 +1086,10 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
   Widget _buildTitleContainer(String title) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 700;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final canShowSignOffButton = widget.onSignOff != null &&
+        (_startDate == null || !_startDate!.isAfter(today));
 
     return Container(
       width: double.infinity,
@@ -1068,125 +1102,41 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isMobile && widget.isPaid) ...[
+          if (isMobile) ...[
             // Mobile layout for completed payments - two rows
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'By: ${_contractorName ?? 'Contractor'}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'By: ${_contractorName ?? 'Contractor'}',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade700,
+              ),
             ),
             const SizedBox(height: 12),
-            // Second row - payment history and paid label stacked for better visibility
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            // Third row - action buttons: sign off, pay / paid, payment history
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                if (widget.onViewPaymentHistory != null) ...[
+                if (canShowSignOffButton)
                   ElevatedButton.icon(
-                    onPressed: widget.onViewPaymentHistory,
-                    icon: const Icon(Icons.history, size: 16),
-                    label: const Text('Payment History', style: TextStyle(fontSize: 12)),
+                    onPressed: widget.onSignOff,
+                    icon: const Icon(Icons.check_circle_outline, size: 16),
+                    label: const Text('Sign off', style: TextStyle(fontSize: 12)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.amber.shade700,
+                      foregroundColor: Colors.black,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                ],
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.green.shade300),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.check_circle, color: Colors.green.shade700, size: 16),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Paid',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ] else ...[
-            // Desktop layout or mobile non-completed payments - single row
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'By: ${_contractorName ?? 'Contractor'}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildContractButton(widget.projectId),
-                    if (widget.isPaid && widget.onViewPaymentHistory != null) ...[
-                      const SizedBox(width: 8),
-                      ElevatedButton.icon(
-                        onPressed: widget.onViewPaymentHistory,
-                        icon: const Icon(Icons.history, size: 16),
-                        label: const Text('Payment History', style: TextStyle(fontSize: 12)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                const SizedBox(width: 8),
                 if (widget.isPaid)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1225,13 +1175,162 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
                           )
                         : const Icon(Icons.payment, size: 16),
                     label: Text(
-                      widget.isPaymentLoading ? 'Loading...' : (widget.paymentButtonText ?? 'Pay Now'),
+                      widget.isPaymentLoading
+                          ? 'Loading...'
+                          : (widget.paymentButtonText ?? 'Pay Now'),
                       style: const TextStyle(fontSize: 12),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ),
+                if (widget.onViewPaymentHistory != null)
+                  ElevatedButton.icon(
+                    onPressed: widget.onViewPaymentHistory,
+                    icon: const Icon(Icons.history, size: 16),
+                    label:
+                        const Text('Payment History', style: TextStyle(fontSize: 12)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ] else ...[
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'By: ${_contractorName ?? 'Contractor'}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildContractButton(widget.projectId),
+                    if (canShowSignOffButton) ...[
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: widget.onSignOff,
+                        icon: const Icon(Icons.check_circle_outline, size: 16),
+                        label:
+                            const Text('Sign off', style: TextStyle(fontSize: 12)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber.shade700,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                        ),
+                      ),
+                    ],
+                    if (widget.onViewPaymentHistory != null) ...[
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: widget.onViewPaymentHistory,
+                        icon: const Icon(Icons.history, size: 16),
+                        label: const Text('Payment History',
+                            style: TextStyle(fontSize: 12)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(width: 8),
+                if (widget.isPaid)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green.shade300),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_circle,
+                            color: Colors.green.shade700, size: 16),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Paid',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else if (widget.onPayment != null)
+                  ElevatedButton.icon(
+                    onPressed: widget.isPaymentLoading ? null : widget.onPayment,
+                    icon: widget.isPaymentLoading
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Icon(Icons.payment, size: 16),
+                    label: Text(
+                      widget.isPaymentLoading
+                          ? 'Loading...'
+                          : (widget.paymentButtonText ?? 'Pay Now'),
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
                     ),
                   ),
               ],

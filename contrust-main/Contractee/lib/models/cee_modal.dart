@@ -109,10 +109,12 @@ class _ProjectDialogState extends State<ProjectDialog> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _startDateController = TextEditingController();
   final TextEditingController _customTypeController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
   Uint8List? _selectedPhoto;
   String? _photoUrl;
   bool _isUploadingPhoto = false;
-  
+  String? _selectedBarangay;
+
   static const List<String> _availableSpecializations = [
     'General Construction',
     'Residential Construction',
@@ -148,7 +150,72 @@ class _ProjectDialogState extends State<ProjectDialog> {
     'Solar Installation',
     'Smart Home Integration',
   ];
-  
+
+  static const List<String> _barangays = [
+    'Minuyan Proper',
+    'Minuyan I',
+    'Minuyan II',
+    'Minuyan III',
+    'Minuyan IV',
+    'Minuyan V',
+    'Bagong Buhay I',
+    'Bagong Buhay II',
+    'Bagong Buhay III',
+    'San Martin I',
+    'San Martin II',
+    'San Martin III',
+    'San Martin IV',
+    'Sta. Cruz I',
+    'Sta. Cruz II',
+    'Sta. Cruz III',
+    'Sta. Cruz IV',
+    'Sta. Cruz V',
+    'Fatima I',
+    'Fatima II',
+    'Fatima III',
+    'Fatima IV',
+    'Fatima V',
+    'Citrus',
+    'San Pedro',
+    'Sapang Palay Proper',
+    'San Martin De Porres',
+    'Assumption',
+    'Sto. Nino I',
+    'Sto. Nino II',
+    'Lawang Pare',
+    'San Rafael I',
+    'San Rafael II',
+    'San Rafael III',
+    'San Rafael IV',
+    'San Rafael V',
+    'Poblacion',
+    'Poblacion 1',
+    'Francisco Homes - Narra',
+    'Francisco Homes - Mulawin',
+    'Francisco Homes - Yakall',
+    'Francisco Homes - Guijo',
+    'Gumaok East',
+    'Gumaok West',
+    'Gumaok Central',
+    'Graceville',
+    'Gaya-gaya',
+    'Sto. Cristo',
+    'Tungkong Mangga',
+    'Dulong Bayan',
+    'Ciudad Real',
+    'Maharlika',
+    'San Manuel',
+    'Kaypian',
+    'San Isidro',
+    'San Roque',
+    'Kaybanban',
+    'Paradise III',
+    'Muzon Proper',
+    'Muzon East',
+    'Muzon West',
+    'Muzon South',
+  ];
+
   bool _showCustomTypeField = false;
 
   @override
@@ -163,7 +230,7 @@ class _ProjectDialogState extends State<ProjectDialog> {
         _startDateController.text = widget.initialStartDate!;
       }
     }
-    
+
     // Check if current type is custom
     if (widget.constructionTypeController.text.isNotEmpty) {
       final currentType = widget.constructionTypeController.text;
@@ -174,6 +241,34 @@ class _ProjectDialogState extends State<ProjectDialog> {
           _customTypeController.text = currentType;
           widget.constructionTypeController.text = 'Other';
         });
+      }
+    }
+
+    final existingLocation = widget.locationController.text.trim();
+    if (existingLocation.isNotEmpty) {
+      const citySuffix = 'SJDM, Bulacan';
+      String withoutCity = existingLocation;
+      if (withoutCity.toLowerCase().endsWith(citySuffix.toLowerCase())) {
+        withoutCity = withoutCity
+            .substring(0, withoutCity.length - citySuffix.length)
+            .trim();
+        if (withoutCity.endsWith(',')) {
+          withoutCity =
+              withoutCity.substring(0, withoutCity.length - 1).trim();
+        }
+      }
+      final parts = withoutCity.split(',');
+      if (parts.length >= 2) {
+        final barangayCandidate = parts.last.trim();
+        if (_barangays.contains(barangayCandidate)) {
+          _selectedBarangay = barangayCandidate;
+          _addressController.text =
+              parts.sublist(0, parts.length - 1).join(',').trim();
+        } else {
+          _addressController.text = withoutCity;
+        }
+      } else {
+        _addressController.text = withoutCity;
       }
     }
   }
@@ -324,11 +419,16 @@ class _ProjectDialogState extends State<ProjectDialog> {
   }
 
   Future<void> _selectStartDate() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final minStartDate = today.add(const Duration(days: 30));
+    final maxStartDate = today.add(const Duration(days: 365));
+
     final DateTime? picked = await showThemedDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 3650)),
+      initialDate: minStartDate,
+      firstDate: minStartDate,
+      lastDate: maxStartDate,
     );
     if (picked != null) {
       _startDateController.text = DateFormat('yyyy-MM-dd').format(picked);
@@ -341,7 +441,24 @@ class _ProjectDialogState extends State<ProjectDialog> {
     setState(() => _isLoading = true);
 
     try {
-      final startdate_format = DateTime.parse(_startDateController.text.trim());
+      final startdate_format =
+          DateTime.parse(_startDateController.text.trim());
+
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final minAllowed = today.add(const Duration(days: 30));
+      if (startdate_format.isBefore(minAllowed)) {
+        setState(() => _isLoading = false);
+        ConTrustSnackBar.error(
+          widget.parentContext,
+          'Start date must be at least 30 days from today.',
+        );
+        return;
+      }
+
+      final composedLocation =
+          '${_addressController.text.trim()}, ${_selectedBarangay ?? ''}, SJDM, Bulacan';
+      widget.locationController.text = composedLocation;
 
       final isValid = validateFieldsPostRequest(
         widget.parentContext,
@@ -350,7 +467,7 @@ class _ProjectDialogState extends State<ProjectDialog> {
         widget.minBudgetController.text.trim(),
         widget.maxBudgetController.text.trim(),
         _startDateController.text.trim(),
-        widget.locationController.text.trim(),
+        composedLocation,
         widget.descriptionController.text.trim(),
         widget.bidTimeController.text.trim(),
       );
@@ -383,7 +500,7 @@ class _ProjectDialogState extends State<ProjectDialog> {
           title: widget.titleController.text.trim(),
           type: finalProjectType,
           description: widget.descriptionController.text.trim(),
-          location: widget.locationController.text.trim(),
+          location: composedLocation,
           minBudget: double.tryParse(widget.minBudgetController.text.trim()),
           maxBudget: double.tryParse(widget.maxBudgetController.text.trim()),
           duration: int.tryParse(widget.bidTimeController.text.trim()) ?? 7,
@@ -396,7 +513,7 @@ class _ProjectDialogState extends State<ProjectDialog> {
           title: widget.titleController.text.trim(),
           type: finalProjectType,
           description: widget.descriptionController.text.trim(),
-          location: widget.locationController.text.trim(),
+          location: composedLocation,
           minBudget: widget.minBudgetController.text.trim(),
           maxBudget: widget.maxBudgetController.text.trim(),
           duration: widget.bidTimeController.text.trim(),
@@ -613,6 +730,7 @@ class _ProjectDialogState extends State<ProjectDialog> {
   void dispose() {
     _startDateController.dispose();
     _customTypeController.dispose();
+    _addressController.dispose();
     super.dispose();
   }
 
@@ -812,15 +930,57 @@ class _ProjectDialogState extends State<ProjectDialog> {
                             const SizedBox(height: 16),
                             _buildLabeledField(
                                 label: 'Location',
-                                child: TextFormField(
-                                    controller: widget.locationController,
-                                    decoration: const InputDecoration(
-                                        labelText: 'Enter your location',
-                                        border: OutlineInputBorder()),
-                                    validator: (v) =>
-                                        (v == null || v.trim().isEmpty)
-                                            ? 'Please enter a location'
-                                            : null)),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    TextFormField(
+                                      controller: _addressController,
+                                      decoration: const InputDecoration(
+                                        labelText:
+                                            'Home address / Street / Subdivision',
+                                        border: OutlineInputBorder(),
+                                      ),
+                                      validator: (v) =>
+                                          (v == null || v.trim().isEmpty)
+                                              ? 'Please enter your home address, street, and subdivision'
+                                              : null,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    DropdownButtonFormField<String>(
+                                      value: _selectedBarangay,
+                                      items: _barangays
+                                          .map(
+                                            (b) => DropdownMenuItem<String>(
+                                              value: b,
+                                              child: Text(b),
+                                            ),
+                                          )
+                                          .toList(),
+                                      decoration: const InputDecoration(
+                                        labelText: 'Select Barangay',
+                                        border: OutlineInputBorder(),
+                                      ),
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _selectedBarangay = value;
+                                        });
+                                      },
+                                      validator: (value) =>
+                                          (value == null || value.isEmpty)
+                                              ? 'Please select a barangay'
+                                              : null,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    TextFormField(
+                                      enabled: false,
+                                      initialValue: 'SJDM, Bulacan',
+                                      decoration: const InputDecoration(
+                                        labelText: 'City',
+                                        border: OutlineInputBorder(),
+                                      ),
+                                    ),
+                                  ],
+                                )),
                             const SizedBox(height: 16),
                             _buildLabeledField(
                                 label: 'Preferred Start Date',
@@ -1696,10 +1856,12 @@ class _BidsModalContentState extends State<_BidsModalContent> {
                                                   final reasonController = TextEditingController();
                                                   final reason = await showDialog<String>(
                                                     context: context,
-                                                    builder: (dialogContext) => Center(
-                                                      child: Material(
-                                                        color: Colors.transparent,
-                                                        child: Container(
+                                                    builder: (dialogContext) => Scaffold(
+                                                      backgroundColor: Colors.black.withOpacity(0.5),
+                                                      body: Center(
+                                                        child: Material(
+                                                          color: Colors.transparent,
+                                                          child: Container(
                                                           constraints: const BoxConstraints(maxWidth: 500),
                                                           margin: const EdgeInsets.symmetric(horizontal: 16),
                                                           decoration: BoxDecoration(
@@ -1826,6 +1988,7 @@ class _BidsModalContentState extends State<_BidsModalContent> {
                                                         ),
                                                       ),
                                                     ),
+                                                    )
                                                   );
                                                   
                                                   if (!mounted) return;
@@ -1946,9 +2109,11 @@ class HireModal {
     TextEditingController customTypeController = TextEditingController();
     TextEditingController descriptionController = TextEditingController();
     TextEditingController locationController = TextEditingController();
+    TextEditingController addressController = TextEditingController();
     TextEditingController minBudgetController = TextEditingController();
     TextEditingController maxBudgetController = TextEditingController();
     DateTime? selectedStartDate;
+    String? selectedBarangay;
 
     // Photo-related variables for auto-fill
     Uint8List? selectedPhoto;
@@ -2413,24 +2578,87 @@ class HireModal {
                                 HireModal._buildLabeledField(
                                   context: context,
                                   label: 'Location',
-                                  child: TextFormField(
-                                    controller: locationController,
-                                    enabled: !hasAutoFilledProject,
-                                    decoration: InputDecoration(
-                                      labelText: hasAutoFilledProject
-                                        ? 'Project location'
-                                        : 'Enter project location',
-                                      border: const OutlineInputBorder(),
-                                      filled: hasAutoFilledProject,
-                                      fillColor: hasAutoFilledProject 
-                                        ? Colors.grey.shade100 
-                                        : null,
-                                    ),
-                                    validator: (value) =>
-                                        (value == null || value.trim().isEmpty)
-                                            ? 'Please enter a location'
-                                            : null,
-                                  ),
+                                  child: hasAutoFilledProject
+                                      ? TextFormField(
+                                          controller: locationController,
+                                          enabled: false,
+                                          decoration: const InputDecoration(
+                                            labelText: 'Project location',
+                                            border: OutlineInputBorder(),
+                                            filled: true,
+                                            fillColor: Colors.grey,
+                                          ),
+                                          validator: (value) =>
+                                              (value == null ||
+                                                      value.trim().isEmpty)
+                                                  ? 'Please enter a location'
+                                                  : null,
+                                        )
+                                      : Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            TextFormField(
+                                              controller: addressController,
+                                              decoration:
+                                                  const InputDecoration(
+                                                labelText:
+                                                    'Home address / Street / Subdivision',
+                                                border:
+                                                    OutlineInputBorder(),
+                                              ),
+                                              validator: (value) =>
+                                                  (value == null ||
+                                                          value
+                                                              .trim()
+                                                              .isEmpty)
+                                                      ? 'Please enter your home address, street, and subdivision'
+                                                      : null,
+                                            ),
+                                            const SizedBox(height: 8),
+                                            DropdownButtonFormField<String>(
+                                              value: selectedBarangay,
+                                              items: _ProjectDialogState
+                                                  ._barangays
+                                                  .map(
+                                                    (b) =>
+                                                        DropdownMenuItem<
+                                                            String>(
+                                                      value: b,
+                                                      child: Text(b),
+                                                    ),
+                                                  )
+                                                  .toList(),
+                                              decoration:
+                                                  const InputDecoration(
+                                                labelText: 'Select Barangay',
+                                                border:
+                                                    OutlineInputBorder(),
+                                              ),
+                                              onChanged: (value) {
+                                                setDialogState(() {
+                                                  selectedBarangay = value;
+                                                });
+                                              },
+                                              validator: (value) =>
+                                                  (value == null ||
+                                                          value.isEmpty)
+                                                      ? 'Please select a barangay'
+                                                      : null,
+                                            ),
+                                            const SizedBox(height: 8),
+                                            TextFormField(
+                                              enabled: false,
+                                              initialValue: 'SJDM, Bulacan',
+                                              decoration:
+                                                  const InputDecoration(
+                                                labelText: 'City',
+                                                border:
+                                                    OutlineInputBorder(),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                 ),
                                 const SizedBox(height: 16),
                                 HireModal._buildLabeledField(
@@ -2441,6 +2669,17 @@ class HireModal {
                                       if (selectedStartDate == null) {
                                         return 'Please select a start date';
                                       }
+                                      if (!hasAutoFilledProject) {
+                                        final now = DateTime.now();
+                                        final today =
+                                            DateTime(now.year, now.month, now.day);
+                                        final minAllowed = today
+                                            .add(const Duration(days: 30));
+                                        if (selectedStartDate!
+                                            .isBefore(minAllowed)) {
+                                          return 'Start date must be at least 30 days from today';
+                                        }
+                                      }
                                       return null;
                                     },
                                     builder: (FormFieldState<DateTime> field) {
@@ -2448,15 +2687,30 @@ class HireModal {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           InkWell(
-                                            onTap: hasAutoFilledProject ? null : () async {
-                                              final DateTime? picked =
-                                                  await showThemedDatePicker(
-                                                context: context,
-                                                initialDate:
-                                                    selectedStartDate ?? DateTime.now(),
-                                                firstDate: DateTime.now(),
-                                                lastDate: DateTime.now().add(const Duration(days: 365)),
-                                              );
+                                            onTap: hasAutoFilledProject
+                                                ? null
+                                                : () async {
+                                                    final now = DateTime.now();
+                                                    final today = DateTime(
+                                                        now.year,
+                                                        now.month,
+                                                        now.day);
+                                                    final minStartDate = today
+                                                        .add(const Duration(
+                                                            days: 30));
+                                                    final maxStartDate = today
+                                                        .add(const Duration(
+                                                            days: 365));
+
+                                                    final DateTime? picked =
+                                                        await showThemedDatePicker(
+                                                      context: context,
+                                                      initialDate:
+                                                          selectedStartDate ??
+                                                              minStartDate,
+                                                      firstDate: minStartDate,
+                                                      lastDate: maxStartDate,
+                                                    );
                                               if (picked != null) {
                                                 setDialogState(() {
                                                   selectedStartDate = picked;
@@ -2540,6 +2794,9 @@ class HireModal {
                                                 .digitsOnly,
                                           ],
                                           validator: (value) {
+                                            if (hasAutoFilledProject) {
+                                              return null;
+                                            }
                                             if (value == null ||
                                                 value.trim().isEmpty) {
                                               return 'Please enter minimum budget';
@@ -2573,6 +2830,9 @@ class HireModal {
                                                 .digitsOnly,
                                           ],
                                           validator: (value) {
+                                            if (hasAutoFilledProject) {
+                                              return null;
+                                            }
                                             if (value == null ||
                                                 value.trim().isEmpty) {
                                               return 'Please enter maximum budget';
@@ -2717,6 +2977,16 @@ class HireModal {
                                           finalProjectType = typeController.text.trim();
                                         }
                                         
+                                        String finalLocation;
+                                        if (hasAutoFilledProject) {
+                                          finalLocation =
+                                              locationController.text.trim();
+                                        } else {
+                                          finalLocation =
+                                              '${addressController.text.trim()}, ${selectedBarangay ?? ''}, SJDM, Bulacan';
+                                          locationController.text = finalLocation;
+                                        }
+                                        
                                         String? uploadedPhotoUrl = photoUrl;
                                         if (selectedPhoto != null && photoUrl == null) {
                                           uploadedPhotoUrl = await uploadPhoto();
@@ -2729,8 +2999,7 @@ class HireModal {
                                           type: finalProjectType,
                                           description:
                                               descriptionController.text.trim(),
-                                          location:
-                                              locationController.text.trim(),
+                                          location: finalLocation,
                                           minBudget:
                                               minBudgetController.text.trim(),
                                           maxBudget:

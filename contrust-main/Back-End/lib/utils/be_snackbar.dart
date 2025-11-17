@@ -1,5 +1,6 @@
 // ignore_for_file: library_private_types_in_public_api, deprecated_member_use, use_build_context_synchronously
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 enum SnackBarType {
@@ -11,6 +12,9 @@ enum SnackBarType {
 }
 
 class ConTrustSnackBar {
+  static OverlayEntry? _activeToastEntry;
+  static Timer? _activeToastTimer;
+
   static void show(
     BuildContext context,
     String message, {
@@ -315,6 +319,100 @@ class ConTrustSnackBar {
 
   static void profileError(BuildContext context, String errorMessage) {
     error(context, 'Failed to update profile: ');
+  }
+
+  static void notificationToast(
+    BuildContext context,
+    String message, {
+    Duration duration = const Duration(seconds: 2),
+  }) {
+    final overlay = Overlay.maybeOf(context);
+    if (overlay == null) {
+      info(context, message, duration: duration);
+      return;
+    }
+
+    // Clear any existing toast before showing a new one
+    _activeToastTimer?.cancel();
+    _activeToastTimer = null;
+    if (_activeToastEntry != null && _activeToastEntry!.mounted) {
+      _activeToastEntry!.remove();
+    }
+    _activeToastEntry = null;
+
+    final mediaQuery = MediaQuery.of(context);
+    final isMobile = mediaQuery.size.width < 700;
+
+    late OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (ctx) {
+        return Positioned(
+          top: mediaQuery.padding.top + 16,
+          left: isMobile ? 16 : null,
+          right: isMobile ? 16 : 16,
+          child: Material
+          (
+            color: Colors.transparent,
+            child: GestureDetector(
+              onTap: () {
+                if (entry.mounted) {
+                  entry.remove();
+                }
+                if (_activeToastEntry == entry) {
+                  _activeToastEntry = null;
+                }
+                _activeToastTimer?.cancel();
+                _activeToastTimer = null;
+              },
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 360),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.amber.shade700, width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.notifications, color: Colors.amber.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        message,
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 13,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    _activeToastEntry = entry;
+    overlay.insert(entry);
+
+    _activeToastTimer = Timer(duration, () {
+      if (_activeToastEntry == entry && entry.mounted) {
+        entry.remove();
+        _activeToastEntry = null;
+      }
+    });
   }
 }
 

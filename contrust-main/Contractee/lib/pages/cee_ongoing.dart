@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_payment_service.dart';
+import 'package:backend/services/both services/be_project_service.dart';
 import 'package:backend/models/be_payment_modal.dart';
 import 'package:backend/utils/be_constraint.dart';
 import 'package:backend/utils/be_snackbar.dart';
@@ -33,7 +34,6 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
 
   Map<String, dynamic>? projectData;
   bool isLoading = true;
-  bool _isPaid = false;
   Map<String, dynamic>? _paymentSummary;
   Set<DateTime> _paidMilestoneDates = {};
   final List<StreamSubscription> _subscriptions = [];
@@ -275,15 +275,13 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
       
       final results = await Future.wait<dynamic>([
         _loadProjectData(),
-        _paymentService.isProjectPaid(widget.projectId),
         _paymentService.getPaymentSummary(widget.projectId),
         _paymentService.getPaymentHistory(widget.projectId),
       ]);
       
       final data = results[0] as Map<String, dynamic>;
-      final isPaid = results[1] as bool;
-      final paymentSummary = results[2] as Map<String, dynamic>;
-      final paymentHistoryRaw = results[3] as List;
+      final paymentSummary = results[1] as Map<String, dynamic>;
+      final paymentHistoryRaw = results[2] as List;
       final paymentHistory = List<Map<String, dynamic>>.from(paymentHistoryRaw);
       final paidMilestoneDates = _calculatePaidMilestoneDates(paymentHistory);
       
@@ -306,7 +304,6 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
       if (mounted) {
         setState(() {
           projectData = projectDetails;
-          _isPaid = isPaid;
           _paymentSummary = paymentSummary;
           _paidMilestoneDates = paidMilestoneDates;
           isLoading = false;
@@ -559,7 +556,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                                   style: const TextStyle(fontSize: 12),
                                 ),
                                 trailing: Text(
-                                  'Payment #${payments.length - index}',
+                                  'Payment #${index + 1}',
                                   style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                                 ),
                               ),
@@ -604,36 +601,6 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
       }
 
       if (isMilestone) {
-        final milestoneInfo = await paymentService.getMilestonePaymentInfo(widget.projectId);
-        if (!mounted) return;
-
-        final totalMilestones = (milestoneInfo?['total_milestones'] as int?) ??
-            ((milestoneInfo?['milestones'] as List?)?.length ?? 0);
-        final completedMilestones = (milestoneInfo?['completed_milestones'] as int?) ?? 0;
-        final allMilestonesCompleted = totalMilestones > 0 && completedMilestones >= totalMilestones;
-
-        if (allMilestonesCompleted) {
-          final remainingAmount = (paymentSummary['remaining'] as num?)?.toDouble() ?? 0.0;
-
-          if (remainingAmount <= 0) {
-            if (mounted) {
-              ConTrustSnackBar.info(context, 'All milestone payments have already been settled.');
-            }
-            return;
-          }
-
-          await PaymentModal.show(
-            context: context,
-            projectId: widget.projectId,
-            projectTitle: projectTitle,
-            amount: remainingAmount,
-            customAmount: remainingAmount,
-            onPaymentSuccess: onPaymentSuccess,
-            forceRegularModal: true,
-          );
-          return;
-        }
-
         await PaymentModal.show(
           context: context,
           projectId: widget.projectId,
@@ -665,6 +632,54 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
     } finally {
       if (mounted) {
         setState(() => _isPaymentLoading = false);
+      }
+    }
+  }
+
+  Future<void> _handleSignOff() async {
+    try {
+      final userId = supabase.auth.currentUser?.id;
+      if (userId == null) {
+        if (mounted) {
+          ConTrustSnackBar.error(context, 'Please sign in again to sign off the project.');
+        }
+        return;
+      }
+
+      final confirm = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: const Text('Sign off project?'),
+            content: const Text(
+              'This will mark the project as completed. You can still make payments afterwards if needed.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('Sign off'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (confirm != true) return;
+
+      await ProjectService().signOffProject(widget.projectId, userId);
+
+      if (mounted) {
+        ConTrustSnackBar.success(context, 'Project signed off successfully.');
+        await refreshProjectData();
+      }
+    } catch (e) {
+      if (mounted) {
+        ConTrustSnackBar.error(context, 'Failed to sign off project: $e');
       }
     }
   }
@@ -846,9 +861,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                         ),
                         filled: true,
                         fillColor: Colors.grey.shade50,
-                        helperText: allowsVariableAmount
-                            ? 'Minimum: ₱100.00'
-                            : 'Must match the remaining balance shown above',
+                        helperText: 'Minimum: ₱100.00',
                         helperStyle: TextStyle(color: Colors.grey.shade600),
                       ),
                       autofocus: true,
@@ -883,17 +896,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                                 return;
                               }
 
-                              final remainingAmount = (_paymentSummary?['remaining'] as num?)?.toDouble();
-                              if (!allowsVariableAmount && remainingAmount != null) {
-                                final difference = (amount - remainingAmount).abs();
-                                if (difference > 0.01) {
-                                  ConTrustSnackBar.error(
-                                    context,
-                                    'Amount must match the remaining balance of ₱${remainingAmount.toStringAsFixed(2)}',
-                                  );
-                                  return;
-                                }
-                              }
+                              // No longer require amount to exactly match remaining balance
                               
                               Navigator.pop(context, amount);
                             },
@@ -1017,11 +1020,7 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
   Widget _buildDesktopContent() {
     final projectDetails = projectData!['projectDetails'] as Map<String, dynamic>? ?? projectData!;
     final projectStatus = projectDetails['status'] ?? '';
-    final paymentStatus = _paymentSummary?['payment_status']?.toString().toLowerCase();
-    final remainingAmount = (_paymentSummary?['remaining'] as num?)?.toDouble();
-    final isFullyPaid = _isPaid || paymentStatus == 'paid' || (remainingAmount != null && remainingAmount <= 0);
-
-    final canMakePayment = projectStatus == 'active' && !isFullyPaid;
+    final canMakePayment = projectStatus != 'completed';
     
     return RefreshIndicator(
       onRefresh: () async {
@@ -1041,16 +1040,19 @@ class _CeeOngoingProjectScreenState extends State<CeeOngoingProjectScreen> {
                     await refreshProjectData();
                   }
                 : null,
-            isPaid: isFullyPaid,
-            onViewPaymentHistory: isFullyPaid
-                ? () async {
-                    await _showPaymentHistory();
-                    await refreshProjectData();
-                  }
-                : null,
-            paymentButtonText: _paymentSummary?['payment_status'] == 'partial' ? 'Make Payment' : null,
+            isPaid: false,
+            onViewPaymentHistory: () async {
+              await _showPaymentHistory();
+              await refreshProjectData();
+            },
+            paymentButtonText: null,
             paidMilestoneDates: _paidMilestoneDates,
             isPaymentLoading: _isPaymentLoading,
+            onSignOff: projectStatus != 'completed'
+                ? () async {
+                    await _handleSignOff();
+                  }
+                : null,
           ),
         ),
       ),

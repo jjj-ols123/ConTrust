@@ -1,7 +1,10 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
+import 'dart:convert';
+
 import 'package:backend/build/buildnotification.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
+import 'package:backend/services/both services/be_notification_service.dart';
 import 'package:backend/services/both services/be_user_service.dart';
 import 'package:backend/services/superadmin services/auditlogs_service.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
@@ -173,6 +176,169 @@ class _UserDropdownMenuState extends State<UserDropdownMenu> {
   }
 }
 
+class ContractorInfoIcon extends StatefulWidget {
+  final String contractorId;
+
+  const ContractorInfoIcon({super.key, required this.contractorId});
+
+  @override
+  State<ContractorInfoIcon> createState() => _ContractorInfoIconState();
+}
+
+class _ContractorInfoIconState extends State<ContractorInfoIcon> {
+  late final Stream<List<Map<String, dynamic>>> _notificationStream;
+  List<Map<String, dynamic>> _latestRelevant = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _notificationStream =
+        NotificationService().listenToNotifications(widget.contractorId);
+  }
+
+  bool _isRelevant(Map<String, dynamic> notification) {
+    final headline = (notification['headline'] as String?) ?? '';
+    return headline == 'Bid Rejected' ||
+        headline == 'Account Verified' ||
+        headline == 'Account Verification Rejected';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: _notificationStream,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final relevant = snapshot.data!
+            .where((n) => _isRelevant(n) && (n['is_read'] != true))
+            .toList();
+        _latestRelevant = relevant;
+        if (relevant.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        // Show red info icon with a compact dropdown of important notifications
+        return PopupMenuButton<int>(
+          tooltip: 'Important updates',
+          offset: const Offset(0, 40),
+          position: PopupMenuPosition.under,
+          icon: Icon(Icons.info_outline, color: Colors.red.shade900),
+          onCanceled: _markSeenNotifications,
+          itemBuilder: (ctx) {
+            return [
+              PopupMenuItem<int>(
+                value: 0,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Important updates',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ...relevant.take(5).map((n) {
+                      final rawInfo = n['information'];
+                      Map<String, dynamic> info = {};
+                      if (rawInfo is String) {
+                        try {
+                          info = Map<String, dynamic>.from(jsonDecode(rawInfo));
+                        } catch (_) {}
+                      } else if (rawInfo is Map<String, dynamic>) {
+                        info = Map<String, dynamic>.from(rawInfo);
+                      }
+
+                      final message = (info['message'] ?? n['message'] ?? '')
+                              as String? ??
+                          '';
+                      final createdAt = n['created_at']?.toString();
+                      final timeDisplay = formatTimeAgo(createdAt);
+                      final headline = (n['headline'] as String?) ?? '';
+
+                      IconData icon;
+                      if (headline == 'Bid Rejected') {
+                        icon = Icons.gavel;
+                      } else if (headline == 'Account Verified') {
+                        icon = Icons.verified_user;
+                      } else {
+                        icon = Icons.report_problem_outlined;
+                      }
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(icon, size: 18, color: Colors.red.shade600),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    headline,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                  if (message.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      message,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.black87,
+                                      ),
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                  if (timeDisplay.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      timeDisplay,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.red.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+            ];
+          },
+        );
+      },
+    );
+  }
+
+  void _markSeenNotifications() {
+    for (final n in _latestRelevant) {
+      final id = n['notification_id'];
+      if (id is String) {
+        NotificationService().markAsRead(id);
+      }
+    }
+  }
+}
+
 enum ContractorPage {
   dashboard,
   messages,
@@ -328,6 +494,7 @@ class _ContractorShellState extends State<ContractorShell> {
             ],
           ),
           actions: [
+            ContractorInfoIcon(contractorId: widget.contractorId),
             UserDropdownMenu(contractorId: widget.contractorId),
             const NotificationButton(),
           ],

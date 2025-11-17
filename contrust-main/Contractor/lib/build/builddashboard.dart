@@ -887,9 +887,14 @@ class DashboardBuildMethods {
             radius: isMobile ? 18 : 20,
             child: ClipOval(
               child: Image.network(
-                info['profile_photo'] != null && info['profile_photo'].isNotEmpty
-                    ? info['profile_photo']
-                    : 'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png',
+                // Prefer the contractee's photo for contractor-side hiring requests.
+                (info['contractee_photo'] != null &&
+                        info['contractee_photo'].toString().isNotEmpty)
+                    ? info['contractee_photo']
+                    : (info['profile_photo'] != null &&
+                            info['profile_photo'].toString().isNotEmpty
+                        ? info['profile_photo']
+                        : 'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png'),
                 width: (isMobile ? 18 : 20) * 2,
                 height: (isMobile ? 18 : 20) * 2,
                 fit: BoxFit.cover,
@@ -943,6 +948,8 @@ class DashboardBuildMethods {
               ],
             ),
           ),
+          const Spacer(),
+
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -956,6 +963,7 @@ class DashboardBuildMethods {
                   minHeight: isMobile ? 28 : 32
                 ),
               ),
+              SizedBox(width: isMobile ? 8 : 12),
               Builder(
                 builder: (context) {
                   final status = (info['status'] as String? ?? 'pending').toLowerCase();

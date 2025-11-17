@@ -3,9 +3,11 @@
 import 'dart:typed_data';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_project_service.dart';
+import 'package:backend/services/both services/be_notification_service.dart';
 import 'package:backend/services/superadmin services/auditlogs_service.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -17,6 +19,7 @@ class CorOngoingService {
   final SupabaseClient _supabase = Supabase.instance.client;
   final SuperAdminAuditService _auditService = SuperAdminAuditService();
   final SuperAdminErrorService _errorService = SuperAdminErrorService();
+  final NotificationService _notificationService = NotificationService();
 
   static const String kCustomContractTypeId = 'd9d78420-7765-44d5-966c-6f0e0297c07d';
 
@@ -534,6 +537,38 @@ class CorOngoingService {
           'new_progress': newProgress,
         },
       );
+
+      if (done) {
+        try {
+          final projectDetails = await _fetchService.fetchProjectDetails(projectId);
+          final contracteeId = projectDetails?['contractee_id'] as String?;
+          final projectTitle = (projectDetails?['title'] as String?) ?? 'Project';
+          final contractorId = _supabase.auth.currentUser?.id;
+
+          if (contracteeId != null && contractorId != null) {
+            final bool allTasksCompleted = newProgress >= 0.999;
+            final message = allTasksCompleted
+                ? 'All tasks for "$projectTitle" have been completed by your contractor.'
+                : 'A task for "$projectTitle" has been marked as completed by your contractor.';
+
+            await _notificationService.createNotification(
+              receiverId: contracteeId,
+              receiverType: 'contractee',
+              senderId: contractorId,
+              senderType: 'contractor',
+              type: 'Task Completed',
+              message: message,
+              information: {
+                'project_id': projectId,
+                'task_id': taskId,
+                'progress': newProgress,
+              },
+            );
+          }
+        } catch (_) {
+          // Swallow notification errors; task update itself should not fail
+        }
+      }
 
     } catch (e) {
       await _errorService.logError(

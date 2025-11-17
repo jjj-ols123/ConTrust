@@ -44,7 +44,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
   bool hasActiveProject = false;
   bool hasPendingHireRequest = false;
   bool hasPendingBiddingProject = false;
-  late String contractorId;
+  String? contractorId;
   String selectedReviewFilter = 'All';
 
   static const String profileUrl =
@@ -54,7 +54,6 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
   void initState() {
     super.initState();
     _loadContractorData();
-    _checkAgreementWithContractor();
     _checkOngoingProjects();
     _checkPendingBiddingProject();
   }
@@ -67,16 +66,17 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
       if (contractorData != null) {
         final fetchedContractorId = contractorData['contractor_id'];
         if (fetchedContractorId != null) {
-          contractorId = fetchedContractorId;
+          final String id = fetchedContractorId as String;
+          contractorId = id;
 
           final completedProjects = await Supabase.instance.client
               .from('Projects')
               .select('project_id')
-              .eq('contractor_id', contractorId)
+              .eq('contractor_id', id)
               .eq('status', 'completed');
 
           final reviews =
-              await TorProfileService.getContractorReviews(contractorId);
+              await TorProfileService.getContractorReviews(id);
 
           setState(() {
             firmName = contractorData['firm_name'] ?? "No firm name";
@@ -112,7 +112,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
             totalReviews = reviews.length;
             isLoading = false;
           });
-          await _checkPendingHireRequest();
+          await _checkAgreementWithContractor();
         } else {
           _setFailedToLoadState();
         }
@@ -153,9 +153,10 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
   }
 
   Future<void> _checkAgreementWithContractor() async {
+    if (contractorId == null) return;
     final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final existingProject =
-        await hasExistingProjectWithContractor(currentUserId, contractorId);
+        await hasExistingProjectWithContractor(currentUserId, contractorId!);
     setState(() {
       hasAgreementWithThisContractor = existingProject != null;
       existingProjectId = existingProject?['project_id'];
@@ -171,10 +172,16 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
     try {
       final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
 
+      if (contractorId == null) {
+        ConTrustSnackBar.error(
+            context, 'Contractor information is not available.');
+        return;
+      }
+
       final actionTaken = await HireModal.show(
         context: context,
         contracteeId: currentUserId,
-        contractorId: contractorId,
+        contractorId: contractorId!,
       );
 
       if (actionTaken && mounted) {
@@ -199,6 +206,12 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
   }
 
   Future<void> _checkPendingHireRequest() async {
+    if (contractorId == null) {
+      setState(() {
+        hasPendingHireRequest = false;
+      });
+      return;
+    }
     final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
     try {
       final notifications = await Supabase.instance.client
@@ -206,7 +219,7 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
           .select('notification_id, information')
           .eq('headline', 'Hiring Request')
           .eq('sender_id', currentUserId)
-          .eq('receiver_id', contractorId)
+          .eq('receiver_id', contractorId!)
           .filter('information->>status', 'eq', 'pending');
 
       setState(() {
@@ -242,9 +255,10 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
   }
 
   Future<void> _checkRatingEligibility() async {
+    if (contractorId == null) return;
     final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
     final result = await TorProfileService.checkRatingEligibility(
-        contractorId, currentUserId);
+        contractorId!, currentUserId);
     setState(() {
       canRate = result['canRate'];
       hasRated = false;
@@ -253,10 +267,15 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
   }
 
   Future<void> _submitRating(double rating, String reviewText) async {
+    if (contractorId == null) {
+      ConTrustSnackBar.error(
+          context, 'Contractor information is not available.');
+      return;
+    }
     final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
     try {
       await TorProfileService.submitRating(
-        contractorId,
+        contractorId!,
         currentUserId,
         rating,
         reviewText,
@@ -455,6 +474,123 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Future<String?> _showCancelAgreementReasonDialog() async {
+    final TextEditingController reasonController = TextEditingController();
+
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 500),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.white, Colors.grey.shade50],
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade700,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Icon(
+                        Icons.warning,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
+                        'Cancel Agreement',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Please provide a reason for cancelling (optional):',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: reasonController,
+                        decoration: const InputDecoration(
+                          hintText: 'Enter your reason...',
+                          border: OutlineInputBorder(),
+                        ),
+                        maxLines: 3,
+                        maxLength: 200,
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(dialogContext).pop(),
+                            child: const Text('Cancel'),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: () => Navigator.of(dialogContext)
+                                .pop(reasonController.text.trim()),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.amber.shade700,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Confirm'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -728,9 +864,13 @@ class _ContractorProfileScreenState extends State<ContractorProfileScreen> {
                             ),
                           );
                           if (confirm == true && existingProjectId != null) {
+                            final reason = await _showCancelAgreementReasonDialog();
+                            if (reason == null) return;
+
                             await ProjectService().cancelAgreement(
                               existingProjectId!,
                               Supabase.instance.client.auth.currentUser!.id,
+                              reason: reason.isNotEmpty ? reason : null,
                             );
                             ConTrustSnackBar.success(
                                 context, 'Cancellation request sent.');

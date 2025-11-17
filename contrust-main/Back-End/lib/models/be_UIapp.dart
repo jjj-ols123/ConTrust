@@ -133,7 +133,7 @@ class ContractorsView extends StatelessWidget {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.amber[700],
-                    foregroundColor: Colors.black,
+                    foregroundColor: Colors.white,
                     padding: EdgeInsets.symmetric(
                       vertical: isMobile ? 4 : 10,
                       horizontal: isMobile ? 8 : 16,
@@ -760,36 +760,48 @@ class ProjectView extends StatelessWidget {
       builder: (context, constraints) {
         final screenWidth = MediaQuery.of(context).size.width;
         final isMobile = screenWidth < 600;
-        
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 16, color: Colors.grey.shade600),
-        const SizedBox(width: 6),
-        Expanded(
-              child: isMobile ? Row(
+
+        if (isMobile) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '$label:',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                  color: Colors.grey.shade700,
-                ),
-              ),
-                  const Spacer(),
-                  Expanded(
-                    child: Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black87,
+              Icon(icon, size: 16, color: Colors.grey.shade600),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$label:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: Colors.grey.shade700,
                       ),
-                      textAlign: TextAlign.end,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
-              ) : RichText(
+          );
+        }
+
+        // Desktop / wider screens keep the compact label + value in one line
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 16, color: Colors.grey.shade600),
+            const SizedBox(width: 6),
+            Expanded(
+              child: RichText(
                 text: TextSpan(
                   children: [
                     TextSpan(
@@ -809,9 +821,9 @@ class ProjectView extends StatelessWidget {
                     ),
                   ],
                 ),
-          ),
-        ),
-      ],
+              ),
+            ),
+          ],
         );
       },
     );
@@ -998,11 +1010,6 @@ class ProjectView extends StatelessWidget {
     if (value == 'update' && onUpdateProject != null) {
       onUpdateProject!(projectId);
     } else if (value == 'cancel' && onCancelProject != null) {
-      final contractorId = project['contractor_id'];
-      if (contractorId == null || contractorId.toString().isEmpty) {
-        onCancelProject!(projectId, '');
-        return;
-      }
       final reason = await _showCancelReasonDialog(context);
       if (reason != null && reason.isNotEmpty) {
         onCancelProject!(projectId, reason);
@@ -1139,7 +1146,6 @@ class ProjectView extends StatelessWidget {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFFFFB300),
                                   foregroundColor: Colors.black,
-                                  minimumSize: const Size.fromHeight(50),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),

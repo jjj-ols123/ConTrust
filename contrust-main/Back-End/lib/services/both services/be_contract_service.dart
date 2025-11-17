@@ -329,7 +329,7 @@ class ContractService {
       if (status == 'approved') {
         final contractData = await _supabase
             .from('Contracts')
-            .select('project_id')
+            .select('project_id, contractor_id, contractee_id')
             .eq('contract_id', contractId)
             .single();
 
@@ -382,6 +382,35 @@ class ContractService {
           'status': 'awaiting_signature',
           'contract_id': contractId,  
         }).eq('project_id', projectId);
+
+        try {
+          final contractee = await _supabase
+              .from('Contractee')
+              .select('full_name')
+              .eq('contractee_id', contractData['contractee_id'])
+              .maybeSingle();
+          final contracteeName = contractee?['full_name'] ?? 'Contractee';
+
+          final project = await _supabase
+              .from('Projects')
+              .select('title')
+              .eq('project_id', projectId)
+              .maybeSingle();
+          final projectTitle = project?['title'] ?? 'Project';
+
+          await NotificationService().createContractNotification(
+            receiverId: contractData['contractor_id'],
+            receiverType: 'contractor',
+            senderId: contractData['contractee_id'],
+            senderType: 'contractee',
+            contractId: contractId,
+            type: 'Contract Approved',
+            message:
+                '$contracteeName has approved your contract for "$projectTitle". The project is now awaiting signatures.',
+          );
+        } catch (notificationError) {
+          rethrow;
+        }
 
       } else if (status == 'rejected') {
         final contractData = await _supabase
@@ -518,8 +547,8 @@ class ContractService {
         throw Exception('Cannot sign a $contractStatus contract');
       }
 
-      final contractorId = contractData['contractor_id'] as String?;
-      final contracteeId = contractData['contractee_id'] as String?;
+      final contractorId = contractData['contractor_id'] as String;
+      final contracteeId = contractData['contractee_id'] as String;
 
       if (userType.toLowerCase() == 'contractor' && contractorId != userId) {
         throw Exception('User not authorized to sign as contractor');
@@ -587,6 +616,15 @@ class ContractService {
           type: 'Contract Signed',
           message: notifInfo['message']!,
         );
+
+        await NotificationService().sendEmailNotification(
+          receiverId: notifInfo['receiverId']!,
+          type: 'Contract Signed',
+          message: notifInfo['message']!,
+          subject: 'ConTrust - Contract Signed',
+          title: 'Your Contract Has Been Signed',
+          previewText: notifInfo['message']!,
+        );
       } catch (notificationError) {}
 
       await Future.delayed(const Duration(milliseconds: 200));
@@ -643,7 +681,7 @@ class ContractService {
             final projectTitle = project?['title'] ?? 'Project';
 
             await NotificationService().createContractNotification(
-              receiverId: contractorId!,
+              receiverId: contractorId,
               receiverType: 'contractor',
               senderId: 'system',
               senderType: 'system',
@@ -653,14 +691,36 @@ class ContractService {
                   'The project "$projectTitle" is now active. Proceed to Project Management Page.',
             );
 
+            await NotificationService().sendEmailNotification(
+              receiverId: contractorId,
+              type: 'Contract Activated',
+              message:
+                  'The project "$projectTitle" is now active. Proceed to Project Management Page.',
+              subject: 'ConTrust - Contract Activated',
+              title: 'Your Project Is Now Active',
+              previewText:
+                  'The project "$projectTitle" is now active. Proceed to Project Management Page.',
+            );
+
             await NotificationService().createContractNotification(
-              receiverId: contracteeId!,
+              receiverId: contracteeId,
               receiverType: 'contractee',
               senderId: 'system',
               senderType: 'system',
               contractId: contractId,
               type: 'Contract Activated',
               message:
+                  'The project "$projectTitle" is now active. Proceed to Project Management Page.',
+            );
+
+            await NotificationService().sendEmailNotification(
+              receiverId: contracteeId,
+              type: 'Contract Activated',
+              message:
+                  'The project "$projectTitle" is now active. Proceed to Project Management Page.',
+              subject: 'ConTrust - Contract Activated',
+              title: 'Your Project Is Now Active',
+              previewText:
                   'The project "$projectTitle" is now active. Proceed to Project Management Page.',
             );
           } catch (activationNotifError) {

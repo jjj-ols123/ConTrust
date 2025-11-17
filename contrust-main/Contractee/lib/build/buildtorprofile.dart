@@ -1048,7 +1048,7 @@ class TorProfileBuildMethods {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          color: isActive ? Colors.amber.shade50 : Colors.transparent,
+          color: isActive ? Colors.amber.shade700 : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
@@ -1057,8 +1057,8 @@ class TorProfileBuildMethods {
               title,
               style: TextStyle(
                 fontSize: 14,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                color: isActive ? Colors.amber.shade700 : Colors.grey.shade600,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                color: isActive ? Colors.white : const Color(0xFF4B5563),
               ),
             ),
             const Spacer(),
@@ -1066,7 +1066,7 @@ class TorProfileBuildMethods {
               Icon(
                 Icons.chevron_right,
                 size: 16,
-                color: Colors.amber.shade700,
+                color: Colors.white,
               ),
           ],
         ),
@@ -1080,14 +1080,8 @@ class TorProfileBuildMethods {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
       ),
       child: Row(
         children: tabs.asMap().entries.map((entry) {
@@ -1098,45 +1092,28 @@ class TorProfileBuildMethods {
           final isLast = index == tabs.length - 1;
           
           return Expanded(
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => onTabChanged(tab),
-                borderRadius: BorderRadius.only(
-                  topLeft: isFirst ? const Radius.circular(12) : Radius.zero,
-                  bottomLeft: isFirst ? const Radius.circular(12) : Radius.zero,
-                  topRight: isLast ? const Radius.circular(12) : Radius.zero,
-                  bottomRight: isLast ? const Radius.circular(12) : Radius.zero,
-                ),
-                child: Ink(
-                  decoration: BoxDecoration(
-                    color: isActive ? Colors.amber.shade50 : Colors.transparent,
-                    borderRadius: BorderRadius.only(
-                      topLeft: isFirst ? const Radius.circular(12) : Radius.zero,
-                      bottomLeft: isFirst ? const Radius.circular(12) : Radius.zero,
-                      topRight: isLast ? const Radius.circular(12) : Radius.zero,
-                      bottomRight: isLast ? const Radius.circular(12) : Radius.zero,
-                    ),
-                    border: isActive 
-                        ? Border.all(color: Colors.amber.shade300, width: 2)
-                        : null,
+            child: InkWell(
+              onTap: () => onTabChanged(tab),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: isActive ? Colors.amber.shade700 : Colors.transparent,
+                  borderRadius: BorderRadius.only(
+                    topLeft: isFirst ? const Radius.circular(8) : Radius.zero,
+                    bottomLeft: isFirst ? const Radius.circular(8) : Radius.zero,
+                    topRight: isLast ? const Radius.circular(8) : Radius.zero,
+                    bottomRight: isLast ? const Radius.circular(8) : Radius.zero,
                   ),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-                    child: Center(
-                      child: Text(
-                        tab,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                          color: isActive ? Colors.amber.shade700 : Colors.grey.shade600,
-                          height: 1.2,
-                        ),
-                      ),
-                    ),
+                ),
+                child: Text(
+                  tab,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                    color: isActive ? Colors.white : const Color(0xFF4B5563),
                   ),
                 ),
               ),

@@ -628,10 +628,13 @@ class ContractTabsBuild {
     Map<String, TextEditingController> controllers,
   ) {
     int completed = 0;
-    final countedFields = <String>{}; // Track unique field keys
+    final countedFields = <String>{};
 
-    // Fields that are auto-filled or calculated - these should be counted but are always considered complete
     const autoFilledFields = {
+      'Contract.CreationDate',
+      'Project.Description',
+      'Project.Address',
+      'Project.StartDate',
       'Contractor.Company',
       'Contractor.Phone',
       'Contractor.Address',
@@ -642,40 +645,42 @@ class ContractTabsBuild {
       'Contractee.Phone',
       'Contractee.Address',
       'Contractee.Email',
-      'Project.StartDate',
-      'Payment.FinalPayment', // Calculated field
-      'Payment.Total', // Calculated field for lump sum
-      'Payment.Subtotal', // Calculated field for time and materials
+      'Payment.FinalPayment',
+      'Payment.Total',
+      'Payment.Subtotal',
     };
 
-    // Check if field key matches calculated patterns
+    const excludedFromProgressFields = {
+      'Project.Duration',
+    };
+
     bool isCalculatedField(String key) {
-      return key.startsWith('Milestone.') && key.endsWith('.Duration') || // Milestone duration fields
-             key.startsWith('Item.') && key.endsWith('.Subtotal') || // Item subtotal fields
-             key.endsWith('.Total') && key.startsWith('Payment.') || // Payment totals (additional check)
-             key == 'Payment.Subtotal'; // Payment subtotal
+      return key.startsWith('Milestone.') && key.endsWith('.Duration') ||
+             key.startsWith('Item.') && key.endsWith('.Subtotal') ||
+             key.endsWith('.Total') && key.startsWith('Payment.') ||
+             key == 'Payment.Subtotal';
     }
 
     for (final field in contractFields) {
       final f = field as dynamic;
       final key = f.key as String;
 
-      // Skip if we've already counted this field key
+      if (excludedFromProgressFields.contains(key)) {
+        continue;
+      }
+
       if (countedFields.contains(key)) {
         continue;
       }
 
       countedFields.add(key);
 
-      // Check if field has a value
-        final value = controllers[key]?.text.trim() ?? '';
+      final value = controllers[key]?.text.trim() ?? '';
 
       if (autoFilledFields.contains(key) || isCalculatedField(key)) {
-        // Auto-filled and calculated fields are always considered complete
         completed++;
       } else if (value.isNotEmpty) {
-        // Non-auto-filled fields are complete if they have a value
-          completed++;
+        completed++;
       }
     }
     

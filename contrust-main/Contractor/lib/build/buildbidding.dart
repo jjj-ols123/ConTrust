@@ -56,6 +56,7 @@ class BiddingUIBuildMethods {
   final List<Map<String, dynamic>> contractorBids;
   final TextEditingController bidController;
   final TextEditingController messageController;
+  final ValueNotifier<bool> isSubmittingBid = ValueNotifier<bool>(false);
   final ValueNotifier<String> searchQuery = ValueNotifier<String>('');
   // Filters
   final ValueNotifier<String> filterType = ValueNotifier<String>('');
@@ -1230,64 +1231,93 @@ class BiddingUIBuildMethods {
           ),
         ),
         const SizedBox(height: 20),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isVerified ? Colors.amber[600] : Colors.grey.shade400,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+        ValueListenableBuilder<bool>(
+          valueListenable: isSubmittingBid,
+          builder: (context, submitting, _) {
+            return SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isVerified && !submitting
+                      ? Colors.amber[600]
+                      : Colors.grey.shade400,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 3,
+                ),
+                onPressed: isVerified && !submitting
+                    ? () async {
+                        final user =
+                            Supabase.instance.client.auth.currentUser?.id;
+
+                        if (user == null ||
+                            projectToUse == null ||
+                            projectToUse['contractee_id'] == null) {
+                          ConTrustSnackBar.error(context, 'Missing IDs');
+                          return;
+                        }
+
+                        final already = await hasAlreadyBid(
+                          user,
+                          projectToUse['project_id'].toString(),
+                        );
+                        if (already) {
+                          ConTrustSnackBar.warning(context,
+                              'You have already placed a bid on this project.');
+                          return;
+                        }
+                        final bidAmount =
+                            int.tryParse(bidController.text.trim()) ?? 0;
+                        final message = messageController.text.trim();
+                        if (!validateBidRequest(
+                          context,
+                          bidController.text.trim(),
+                          message,
+                        )) {
+                          return;
+                        }
+
+                        try {
+                          isSubmittingBid.value = true;
+                          await _service.postBid(
+                            contractorId: user,
+                            projectId:
+                                projectToUse['project_id'].toString(),
+                            bidAmount: bidAmount,
+                            message: message,
+                            context: context,
+                          );
+                          bidController.clear();
+                          messageController.clear();
+                          onProjectSelected(null);
+                        } catch (e) {
+                          // Error handled by service
+                        } finally {
+                          isSubmittingBid.value = false;
+                        }
+                      }
+                    : null,
+                child: submitting
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text(
+                        'Submit Bid',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
               ),
-              elevation: 3,
-            ),
-            onPressed: isVerified ? () async {
-              final user = Supabase.instance.client.auth.currentUser?.id;
-              
-              if (user == null || projectToUse == null || projectToUse['contractee_id'] == null) {
-                ConTrustSnackBar.error(context, 'Missing IDs');
-                return;
-              }
-              
-              final already = await hasAlreadyBid(
-                user,
-                projectToUse['project_id'].toString(),
-              );
-              if (already) {
-                ConTrustSnackBar.warning(context, 'You have already placed a bid on this project.');
-                return;
-              }
-              final bidAmount = int.tryParse(bidController.text.trim()) ?? 0;
-              final message = messageController.text.trim();
-              if (!validateBidRequest(
-                context,
-                bidController.text.trim(),
-                message,
-              )) {
-                return;
-              }
-              
-              try {
-                await _service.postBid(
-                  contractorId: user,
-                  projectId: projectToUse['project_id'].toString(),
-                  bidAmount: bidAmount,
-                  message: message,
-                  context: context,
-                );
-                bidController.clear();
-                messageController.clear();
-                onProjectSelected(null);
-              } catch (e) {
-                // Error handled by service
-              }
-            } : null,
-            child: const Text(
-              'Submit Bid',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ),
+            );
+          },
         ),
       ],
     );
@@ -1338,16 +1368,22 @@ class BiddingUIBuildMethods {
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: isVerified ? const Color(0xFFFFB300) : Colors.grey.shade400,
-                              foregroundColor: Colors.black,
-                              minimumSize: const Size.fromHeight(50),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            onPressed: isVerified ? () async {
+            child: ValueListenableBuilder<bool>(
+              valueListenable: isSubmittingBid,
+              builder: (context, submitting, _) {
+                return ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isVerified && !submitting
+                        ? const Color(0xFFFFB300)
+                        : Colors.grey.shade400,
+                    foregroundColor: Colors.black,
+                    minimumSize: const Size.fromHeight(50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: isVerified && !submitting
+                      ? () async {
                             final user = Supabase.instance.client.auth.currentUser?.id;
                             
                             if (user == null || projectToUse == null || projectToUse['contractee_id'] == null) {
@@ -1379,6 +1415,7 @@ class BiddingUIBuildMethods {
                             }
                             
                             try {
+                              isSubmittingBid.value = true;
                               await _service.postBid(
                                 contractorId: user,
                                 projectId: projectToUse['project_id'].toString(),
@@ -1437,9 +1474,24 @@ class BiddingUIBuildMethods {
                                   ConTrustSnackBar.warning(context, errorMessage);
                                 }
                               }
+                            } finally {
+                              isSubmittingBid.value = false;
                             }
-                          } : null,
-                            child: const Text('Submit Bid'),
+                          }
+                      : null,
+                  child: submitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.black),
+                          ),
+                        )
+                      : const Text('Submit Bid'),
+                );
+              },
             ),
           ),
         ],

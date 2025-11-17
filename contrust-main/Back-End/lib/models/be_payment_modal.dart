@@ -442,80 +442,176 @@ class PaymentModal {
                                     _closePaymentDialogs(context);
                                     onPaymentSuccess();
 
-                                    // Show success dialog with receipt info
+                                    // Show success dialog with receipt info styled like project modal
                                     if (context.mounted) {
                                       showDialog(
                                         context: context,
-                                        builder: (context) => AlertDialog(
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(20),
-                                          ),
-                                          title: Row(
-                                            children: [
-                                              Icon(Icons.check_circle, color: Colors.green.shade700, size: 28),
-                                              const SizedBox(width: 12),
-                                              const Expanded(
-                                                child: Text(
-                                                  'Payment Successful!',
-                                                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          content: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                'Your payment of ₱${paymentAmount.toStringAsFixed(2)} has been processed successfully.',
-                                                style: const TextStyle(fontSize: 16),
-                                              ),
-                                              const SizedBox(height: 16),
-                                              Container(
-                                                padding: const EdgeInsets.all(12),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.amber.shade50,
-                                                  borderRadius: BorderRadius.circular(8),
-                                                  border: Border.all(color: Colors.amber.shade200),
-                                                ),
-                                                child: Row(
-                                                  children: [
-                                                    Icon(Icons.receipt_long, color: Colors.amber.shade700, size: 20),
-                                                    const SizedBox(width: 8),
-                                                    const Expanded(
-                                                      child: Text(
-                                                        'E-receipt has been created!',
-                                                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                                        barrierDismissible: true,
+                                        builder: (dialogContext) {
+                                          final screenWidth = MediaQuery.of(dialogContext).size.width;
+                                          final isMobile = screenWidth < 600;
+
+                                          return Scaffold(
+                                            backgroundColor: Colors.black.withOpacity(0.5),
+                                            body: Center(
+                                              child: Material(
+                                                color: Colors.transparent,
+                                                child: Container(
+                                                  constraints: isMobile
+                                                      ? const BoxConstraints(
+                                                          maxWidth: double.infinity,
+                                                          maxHeight: double.infinity,
+                                                        )
+                                                      : const BoxConstraints(maxWidth: 500),
+                                                  margin: isMobile
+                                                      ? EdgeInsets.zero
+                                                      : const EdgeInsets.symmetric(horizontal: 16),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white,
+                                                    borderRadius: isMobile
+                                                        ? BorderRadius.zero
+                                                        : BorderRadius.circular(20),
+                                                    border: Border.all(color: Colors.black, width: 1.5),
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: Colors.black.withOpacity(0.15),
+                                                        blurRadius: 20,
+                                                        spreadRadius: 1,
+                                                        offset: const Offset(0, 8),
                                                       ),
-                                                    ),
-                                                  ],
+                                                    ],
+                                                  ),
+                                                  child: Column(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Container(
+                                                        padding: const EdgeInsets.all(20),
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.amber.shade700,
+                                                          borderRadius: isMobile
+                                                              ? BorderRadius.zero
+                                                              : const BorderRadius.only(
+                                                                  topLeft: Radius.circular(20),
+                                                                  topRight: Radius.circular(20),
+                                                                ),
+                                                        ),
+                                                        child: Row(
+                                                          children: [
+                                                            Container(
+                                                              padding: const EdgeInsets.all(6),
+                                                              decoration: BoxDecoration(
+                                                                color: Colors.white.withOpacity(0.2),
+                                                                borderRadius: BorderRadius.circular(6),
+                                                              ),
+                                                              child: Icon(
+                                                                Icons.check_circle,
+                                                                color: Colors.white,
+                                                                size: 18,
+                                                              ),
+                                                            ),
+                                                            const SizedBox(width: 10),
+                                                            const Expanded(
+                                                              child: Text(
+                                                                'Payment Successful!',
+                                                                style: TextStyle(
+                                                                  color: Colors.white,
+                                                                  fontSize: 16,
+                                                                  fontWeight: FontWeight.bold,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                            IconButton(
+                                                              onPressed: () => Navigator.of(dialogContext).pop(),
+                                                              icon: const Icon(
+                                                                Icons.close,
+                                                                color: Colors.white,
+                                                                size: 20,
+                                                              ),
+                                                              padding: EdgeInsets.zero,
+                                                              constraints: const BoxConstraints(),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      Flexible(
+                                                        child: SingleChildScrollView(
+                                                          padding: const EdgeInsets.all(16),
+                                                          child: Column(
+                                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            children: [
+                                                              Text(
+                                                                'Your payment of ₱${paymentAmount.toStringAsFixed(2)} has been processed successfully.',
+                                                                style: const TextStyle(fontSize: 16),
+                                                              ),
+                                                              const SizedBox(height: 16),
+                                                              Container(
+                                                                padding: const EdgeInsets.all(12),
+                                                                decoration: BoxDecoration(
+                                                                  color: Colors.amber.shade50,
+                                                                  borderRadius: BorderRadius.circular(8),
+                                                                  border: Border.all(color: Colors.amber.shade200),
+                                                                ),
+                                                                child: Row(
+                                                                  children: [
+                                                                    Icon(
+                                                                      Icons.receipt_long,
+                                                                      color: Colors.amber.shade700,
+                                                                      size: 20,
+                                                                    ),
+                                                                    const SizedBox(width: 8),
+                                                                    const Expanded(
+                                                                      child: Text(
+                                                                        'E-receipt has been created!',
+                                                                        style: TextStyle(
+                                                                          fontSize: 14,
+                                                                          fontWeight: FontWeight.w500,
+                                                                        ),
+                                                                      ),
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                              ),
+                                                              const SizedBox(height: 12),
+                                                              const Text(
+                                                                'You can view and download your receipt from the Payment History.',
+                                                                style: TextStyle(fontSize: 13, color: Colors.grey),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      Padding(
+                                                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                                        child: Row(
+                                                          mainAxisAlignment: MainAxisAlignment.end,
+                                                          children: [
+                                                            TextButton(
+                                                              onPressed: () => Navigator.of(dialogContext).pop(),
+                                                              child: const Text('Close'),
+                                                            ),
+                                                            const SizedBox(width: 8),
+                                                            ElevatedButton(
+                                                              onPressed: () {
+                                                                Navigator.of(dialogContext).pop();
+                                                                context.go('/history');
+                                                              },
+                                                              style: ElevatedButton.styleFrom(
+                                                                backgroundColor: Colors.amber.shade700,
+                                                                foregroundColor: Colors.white,
+                                                              ),
+                                                              child: const Text('View Payment History'),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
                                                 ),
                                               ),
-                                              const SizedBox(height: 12),
-                                              const Text(
-                                                'You can view and download your receipt from the Payment History.',
-                                                style: TextStyle(fontSize: 13, color: Colors.grey),
-                                              ),
-                                            ],
-                                          ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () => Navigator.pop(context),
-                                              child: const Text('Close'),
                                             ),
-                                            ElevatedButton(
-                                              onPressed: () {
-                                                Navigator.pop(context);
-                                                context.go('/history');
-                                              },
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.amber.shade700,
-                                                foregroundColor: Colors.white,
-                                              ),
-                                              child: const Text('View Payment History'),
-                                            ),
-                                          ],
-                                        ),
+                                          );
+                                        },
                                       );
                                     }
                                   }

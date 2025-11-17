@@ -29,7 +29,7 @@ Future<bool> hasAlreadyBid(String contractorId, String projectId) async {
 Future<Map<String, dynamic>?> hasExistingProjectWithContractor(String contracteeId, String contractorId) async {
   final existingProjectWithContractor = await Supabase.instance.client
       .from('Projects')
-      .select('project_id, title, type, description, location, status, contractor_id, min_budget, max_budget, start_date, projectdata')
+      .select('project_id, title, type, description, location, status, contractor_id, min_budget, max_budget, start_date, projectdata, photo_url')
       .eq('contractee_id', contracteeId)
       .eq('contractor_id', contractorId)
       .inFilter('status', ['awaiting_contract', 'active', 'awaiting_agreement', 'awaiting_signature', 'cancellation_requested_by_contractee'])
@@ -68,7 +68,7 @@ Future<Map<String, dynamic>?> hasOngoingProjectAsContractor(String contractorId)
 Future<Map<String, dynamic>?> hasPendingProject(String contracteeId) async {
   final pendingProject = await Supabase.instance.client
       .from('Projects')
-      .select('project_id, title, type, description, location, min_budget, max_budget, start_date, duration, projectdata')
+      .select('project_id, title, type, description, location, min_budget, max_budget, start_date, duration, projectdata, photo_url')
       .eq('contractee_id', contracteeId)
       .eq('status', 'pending')
       .limit(1)
@@ -96,7 +96,7 @@ Future<Map<String, dynamic>?> hasPendingHireRequest(String contracteeId, String 
         // Get the project details
         final project = await Supabase.instance.client
             .from('Projects')
-            .select('project_id, title, type, description, location, min_budget, max_budget, start_date, projectdata')
+            .select('project_id, title, type, description, location, min_budget, max_budget, start_date, projectdata, photo_url')
             .eq('project_id', projectId)
             .eq('status', 'pending')
             .filter('projectdata->>hiring_type', 'eq', 'direct_hire')

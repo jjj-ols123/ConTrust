@@ -50,6 +50,13 @@ class FetchService {
           };
         }).toList();
         
+        double parseRating(dynamic value) {
+          if (value == null) return 0.0;
+          if (value is num) return value.toDouble();
+          final parsed = double.tryParse(value.toString());
+          return parsed ?? 0.0;
+        }
+
         scoredContractors.sort((a, b) {
           final scoreA = a['_matchScore'] as int;
           final scoreB = b['_matchScore'] as int;
@@ -58,8 +65,8 @@ class FetchService {
             return scoreB.compareTo(scoreA);
           }
           
-          final ratingA = (a['rating'] as num?)?.toDouble() ?? 0.0;
-          final ratingB = (b['rating'] as num?)?.toDouble() ?? 0.0;
+          final ratingA = parseRating(a['rating']);
+          final ratingB = parseRating(b['rating']);
           return ratingB.compareTo(ratingA);
         });
         
@@ -952,42 +959,42 @@ class FetchService {
 
       final requests = List<Map<String, dynamic>>.from(response);
 
-      final contracteeIds = requests
-          .map((r) => r['sender_id'] as String?)
+      final contractorIds = requests
+          .map((r) => r['receiver_id'] as String?)
           .whereType<String>()
           .toSet()
           .toList();
       
       final Map<String, String> emailMap = {};
-      if (contracteeIds.isNotEmpty) {
+      if (contractorIds.isNotEmpty) {
         try {
           final users = await _supabase
               .from('Users')
               .select('users_id, email')
-              .inFilter('users_id', contracteeIds);
+              .inFilter('users_id', contractorIds);
           
           for (var user in users) {
             emailMap[user['users_id']] = user['email'] ?? '';
           }
         } catch (e) {
           await _errorService.logError(
-            errorMessage: 'Error batch fetching contractee emails: $e',
+            errorMessage: 'Error batch fetching contractor emails for hiring requests: $e',
             module: 'Fetch Service',
             severity: 'Low',
             extraInfo: {
-              'operation': 'Batch Fetch Contractee Emails for Hiring Requests',
-              'contractee_ids': contracteeIds,
+              'operation': 'Batch Fetch Contractor Emails for Hiring Requests',
+              'contractor_ids': contractorIds,
             },
           );
         }
       }
       
-      // Add email to each request's information
+      // Add contractor email to each request's information
       for (var request in requests) {
-        final senderId = request['sender_id'] as String?;
-        if (senderId != null && emailMap.containsKey(senderId)) {
+        final contractorId = request['receiver_id'] as String?;
+        if (contractorId != null && emailMap.containsKey(contractorId)) {
           final info = Map<String, dynamic>.from(request['information'] ?? {});
-          info['email'] = emailMap[senderId];
+          info['email'] = emailMap[contractorId];
           request['information'] = info;
         }
       }
