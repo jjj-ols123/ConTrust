@@ -210,10 +210,10 @@
               .eq('email', user.email!)
               .maybeSingle();
 
-          if (existingEmailUser != null) {
+          if (existingEmailUser != null && existingEmailUser['users_id'] != user.id) {
             await _auditService.logAuditEvent(
               action: 'USER_LOGIN_FAILED',
-              details: 'Google login blocked - email already in use',
+              details: 'Google login blocked - email already in use by another account',
               metadata: {
                 'user_type': 'contractee',
                 'email': user.email,
@@ -223,7 +223,7 @@
             );
 
             if (context.mounted) {
-              ConTrustSnackBar.error(context, 'This email is already associated with an account.');
+              ConTrustSnackBar.error(context, 'This email is already associated with another account.');
             }
             await supabase.auth.signOut();
             return;

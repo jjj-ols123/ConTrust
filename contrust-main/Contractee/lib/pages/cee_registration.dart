@@ -40,6 +40,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
   bool _pwHasSpecial = false;
   bool _isEmailGmail = false;
   bool _isAgreed = false;
+  String? _selectedBarangay;
   final FocusNode _emailFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
   bool _isPasswordFocused = false;
@@ -65,6 +66,71 @@ class _RegistrationPageState extends State<RegistrationPage> {
       });
     });
   }
+
+  static const List<String> _barangays = [
+    'Minuyan Proper',
+    'Minuyan I',
+    'Minuyan II',
+    'Minuyan III',
+    'Minuyan IV',
+    'Minuyan V',
+    'Bagong Buhay I',
+    'Bagong Buhay II',
+    'Bagong Buhay III',
+    'San Martin I',
+    'San Martin II',
+    'San Martin III',
+    'San Martin IV',
+    'Sta. Cruz I',
+    'Sta. Cruz II',
+    'Sta. Cruz III',
+    'Sta. Cruz IV',
+    'Sta. Cruz V',
+    'Fatima I',
+    'Fatima II',
+    'Fatima III',
+    'Fatima IV',
+    'Fatima V',
+    'Citrus',
+    'San Pedro',
+    'Sapang Palay Proper',
+    'San Martin De Porres',
+    'Assumption',
+    'Sto. Nino I',
+    'Sto. Nino II',
+    'Lawang Pare',
+    'San Rafael I',
+    'San Rafael II',
+    'San Rafael III',
+    'San Rafael IV',
+    'San Rafael V',
+    'Poblacion',
+    'Poblacion 1',
+    'Francisco Homes - Narra',
+    'Francisco Homes - Mulawin',
+    'Francisco Homes - Yakall',
+    'Francisco Homes - Guijo',
+    'Gumaok East',
+    'Gumaok West',
+    'Gumaok Central',
+    'Graceville',
+    'Gaya-gaya',
+    'Sto. Cristo',
+    'Tungkong Mangga',
+    'Dulong Bayan',
+    'Ciudad Real',
+    'Maharlika',
+    'San Manuel',
+    'Kaypian',
+    'San Isidro',
+    'San Roque',
+    'Kaybanban',
+    'Paradise III',
+    'Muzon Proper',
+    'Muzon East',
+    'Muzon West',
+    'Muzon South',
+  ];
 
   @override
   void dispose() {
@@ -120,6 +186,10 @@ class _RegistrationPageState extends State<RegistrationPage> {
     });
   }
 
+  String _composeFullAddress() {
+    return '${_addressController.text}, ${_selectedBarangay}, SJDM, Bulacan';
+  }
+
   Future<void> _handleSignUp() async {
     if (!isValidEmail(_emailController.text)) {
       ConTrustSnackBar.error(context, 'Please enter a valid Gmail address (example@gmail.com).');
@@ -141,6 +211,15 @@ class _RegistrationPageState extends State<RegistrationPage> {
     
     if (!hasUppercase || !hasNumber || !hasSpecialChar) {
       ConTrustSnackBar.error(context, 'Password must include uppercase, number and special character.');
+      return;
+    }
+    if (_addressController.text.trim().isEmpty) {
+      ConTrustSnackBar.error(context, 'Please enter your home address, street, and subdivision.');
+      return;
+    }
+
+    if (_selectedBarangay == null || _selectedBarangay!.isEmpty) {
+      ConTrustSnackBar.error(context, 'Please select a barangay.');
       return;
     }
     if (_passwordController.text != _confirmPasswordController.text) {
@@ -177,7 +256,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 'user_type': 'contractee',
                 'full_name': _fullName,
                 'phone_number': _formatPhone(_phoneController.text),
-                'address': _addressController.text,
+                'address': _composeFullAddress(),
                 'profilePhoto': _profilePhoto,
               },
             ),
@@ -219,7 +298,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
           'user_type': "contractee",
           'full_name': _fullName,
           'phone_number': _formatPhone(_phoneController.text),
-          'address': _addressController.text,
+          'address': _composeFullAddress(),
           'profilePhoto': _profilePhoto,
         },
         () => validateFieldsContractee(
@@ -539,6 +618,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
       );
     }
 
+    final sortedBarangays = List<String>.from(_barangays)..sort();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -585,9 +666,45 @@ class _RegistrationPageState extends State<RegistrationPage> {
           ),
         ),
         const SizedBox(height: 12),
-        TextField(
-          controller: _addressController,
-          decoration: inputStyle('Address', Icons.home_outlined),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _addressController,
+              decoration: inputStyle('Home address / Street / Subdivision', Icons.home_outlined),
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: _selectedBarangay,
+              items: sortedBarangays
+                  .map(
+                    (b) => DropdownMenuItem<String>(
+                      value: b,
+                      child: Text(b),
+                    ),
+                  )
+                  .toList(),
+              isExpanded: true,
+              decoration: InputDecoration(
+                labelText: 'Select Barangay',
+                prefixIcon: isPhone ? null : const Icon(Icons.location_city),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _selectedBarangay = value;
+                });
+              },
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              enabled: false,
+              initialValue: 'SJDM, Bulacan',
+              decoration: inputStyle('City', Icons.location_city),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
         TextField(

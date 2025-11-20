@@ -856,7 +856,7 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.description, color: Colors.amber, size: MediaQuery.of(context).size.width < 400 ? 20 : 24),
+                  Icon(Icons.description, color: Colors.black, size: MediaQuery.of(context).size.width < 400 ? 20 : 24),
                   SizedBox(width: MediaQuery.of(context).size.width < 400 ? 8 : 12),
                   Text(
                     'Progress Reports',
@@ -1103,7 +1103,6 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (isMobile) ...[
-            // Mobile layout for completed payments - two rows
             Text(
               title,
               style: const TextStyle(
@@ -1121,86 +1120,126 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
               ),
             ),
             const SizedBox(height: 12),
-            // Third row - action buttons: sign off, pay / paid, payment history
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (canShowSignOffButton)
-                  ElevatedButton.icon(
-                    onPressed: widget.onSignOff,
-                    icon: const Icon(Icons.check_circle_outline, size: 16),
-                    label: const Text('Sign off', style: TextStyle(fontSize: 12)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.amber.shade700,
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: widget.onSignOff,
+                      icon: const Icon(Icons.check_circle_outline, size: 16),
+                      label:
+                          const Text('Sign off', style: TextStyle(fontSize: 12)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber.shade700,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
                     ),
                   ),
                 if (widget.isPaid)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.green.shade300),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.check_circle, color: Colors.green.shade700, size: 16),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Paid',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.green.shade300),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.check_circle,
                             color: Colors.green.shade700,
+                            size: 16,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 6),
+                          Text(
+                            'Paid',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   )
                 else if (widget.onPayment != null)
-                  ElevatedButton.icon(
-                    onPressed: widget.isPaymentLoading ? null : widget.onPayment,
-                    icon: widget.isPaymentLoading
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : const Icon(Icons.payment, size: 16),
-                    label: Text(
-                      widget.isPaymentLoading
-                          ? 'Loading...'
-                          : (widget.paymentButtonText ?? 'Pay Now'),
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed:
+                            widget.isPaymentLoading ? null : widget.onPayment,
+                        icon: widget.isPaymentLoading
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor:
+                                      AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Icon(Icons.payment, size: 16),
+                        label: Text(
+                          widget.isPaymentLoading
+                              ? 'Loading...'
+                              : (widget.paymentButtonText ?? 'Pay Now'),
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 if (widget.onViewPaymentHistory != null)
-                  ElevatedButton.icon(
-                    onPressed: widget.onViewPaymentHistory,
-                    icon: const Icon(Icons.history, size: 16),
-                    label:
-                        const Text('Payment History', style: TextStyle(fontSize: 12)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: widget.onViewPaymentHistory,
+                        icon: const Icon(Icons.history, size: 16),
+                        label: const Text(
+                          'Payment History',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -1250,6 +1289,9 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
                             horizontal: 12,
                             vertical: 8,
                           ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
                         ),
                       ),
                     ],
@@ -1286,6 +1328,7 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.check_circle,
                             color: Colors.green.shade700, size: 16),
@@ -1354,45 +1397,30 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
-                'Calendar',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+              IconButton(
+                icon: const Icon(Icons.chevron_left, size: 20),
+                onPressed: () {
+                  setState(() {
+                    _focusedDate = DateTime(_focusedDate.year, _focusedDate.month - 1);
+                  });
+                },
+              ),
+              Text(
+                DateFormat('MMMM yyyy').format(_focusedDate),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.chevron_left, size: 20),
-                      onPressed: () {
-                        setState(() {
-                          _focusedDate = DateTime(_focusedDate.year, _focusedDate.month - 1);
-                        });
-                      },
-                    ),
-                    Text(
-                      DateFormat('MMMM yyyy').format(_focusedDate),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.chevron_right, size: 20),
-                      onPressed: () {
-                        setState(() {
-                          _focusedDate = DateTime(_focusedDate.year, _focusedDate.month + 1);
-                        });
-                      },
-                    ),
-                  ],
-                ),
+              IconButton(
+                icon: const Icon(Icons.chevron_right, size: 20),
+                onPressed: () {
+                  setState(() {
+                    _focusedDate = DateTime(_focusedDate.year, _focusedDate.month + 1);
+                  });
+                },
               ),
             ],
           ),
@@ -1980,14 +2008,14 @@ class _CeeProjectDashboardState extends State<CeeProjectDashboard> {
         children: [
           const Row(
             children: [
-              Icon(Icons.description, color: Colors.black87, size: 24),
+              Icon(Icons.description, color: Colors.black, size: 24),
               SizedBox(width: 12),
               Text(
                 'Progress Reports',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: Colors.black,
                 ),
               ),
             ],

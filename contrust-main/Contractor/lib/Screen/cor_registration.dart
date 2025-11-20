@@ -38,7 +38,72 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   final List<String> _selectedSpecializations = [];
   bool _showSpecializationDropdown = false;
-  
+  String? _selectedBarangay;
+
+  static const List<String> _barangays = [
+    'Minuyan Proper',
+    'Minuyan I',
+    'Minuyan II',
+    'Minuyan III',
+    'Minuyan IV',
+    'Minuyan V',
+    'Bagong Buhay I',
+    'Bagong Buhay II',
+    'Bagong Buhay III',
+    'San Martin I',
+    'San Martin II',
+    'San Martin III',
+    'San Martin IV',
+    'Sta. Cruz I',
+    'Sta. Cruz II',
+    'Sta. Cruz III',
+    'Sta. Cruz IV',
+    'Sta. Cruz V',
+    'Fatima I',
+    'Fatima II',
+    'Fatima III',
+    'Fatima IV',
+    'Fatima V',
+    'Citrus',
+    'San Pedro',
+    'Sapang Palay Proper',
+    'San Martin De Porres',
+    'Assumption',
+    'Sto. Nino I',
+    'Sto. Nino II',
+    'Lawang Pare',
+    'San Rafael I',
+    'San Rafael II',
+    'San Rafael III',
+    'San Rafael IV',
+    'San Rafael V',
+    'Poblacion',
+    'Poblacion 1',
+    'Francisco Homes - Narra',
+    'Francisco Homes - Mulawin',
+    'Francisco Homes - Yakall',
+    'Francisco Homes - Guijo',
+    'Gumaok East',
+    'Gumaok West',
+    'Gumaok Central',
+    'Graceville',
+    'Gaya-gaya',
+    'Sto. Cristo',
+    'Tungkong Mangga',
+    'Dulong Bayan',
+    'Ciudad Real',
+    'Maharlika',
+    'San Manuel',
+    'Kaypian',
+    'San Isidro',
+    'San Roque',
+    'Kaybanban',
+    'Paradise III',
+    'Muzon Proper',
+    'Muzon East',
+    'Muzon West',
+    'Muzon South',
+  ];
 
   final List<String> _availableSpecializations = [
     'General Construction',
@@ -181,6 +246,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    if (addressController.text.trim().isEmpty) {
+      ConTrustSnackBar.error(
+        context,
+        'Please enter your home address, street, and subdivision.',
+      );
+      return;
+    }
+
+    if (_selectedBarangay == null || _selectedBarangay!.isEmpty) {
+      ConTrustSnackBar.error(
+        context,
+        'Please select a barangay.',
+      );
+      return;
+    }
+
     if (!_isAgreed) {
       ConTrustSnackBar.error(
         context,
@@ -231,7 +312,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 'user_type': "contractor",
                 'firmName': firmNameController.text,
                 'contactNumber': _formatPhone(contactNumberController.text),
-                'address': addressController.text,
+                'address': _composeFullAddress(),
                 'specialization': _selectedSpecializations,
                 'verificationFiles': _verificationFiles,
                 'profilePhoto': _profilePhoto,
@@ -289,7 +370,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           'user_type': "contractor",
           'firmName': firmNameController.text,
           'contactNumber': _formatPhone(contactNumberController.text),
-          'address': addressController.text,
+          'address': _composeFullAddress(),
           'specialization': _selectedSpecializations,
           'verificationFiles': _verificationFiles,
           'profilePhoto': _profilePhoto,
@@ -413,6 +494,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _emailVerified = false;
       }
     });
+  }
+
+  String _composeFullAddress() {
+    final address = addressController.text.trim();
+    final barangay = _selectedBarangay?.trim() ?? '';
+
+    if (address.isEmpty) {
+      return '';
+    }
+
+    if (barangay.isEmpty) {
+      return '$address, SJDM, Bulacan';
+    }
+
+    return '$address, $barangay, SJDM, Bulacan';
   }
 
   @override
@@ -826,6 +922,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
     }
 
+    final sortedBarangays = List<String>.from(_barangays)..sort();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -889,20 +987,68 @@ class _RegisterScreenState extends State<RegisterScreen> {
           },
         ),
         const SizedBox(height: 12),
-        TextFormField(
-          controller: addressController,
-          decoration: InputDecoration(
-            labelText: 'Address',
-            prefixIcon: const Icon(Icons.location_on),
-            filled: true,
-            fillColor: Colors.grey.shade100,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextFormField(
+              controller: addressController,
+              decoration: InputDecoration(
+                labelText: 'Home address / Street / Subdivision',
+                prefixIcon: const Icon(Icons.location_on),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
             ),
-          ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: _selectedBarangay,
+              items: sortedBarangays
+                  .map(
+                    (b) => DropdownMenuItem<String>(
+                      value: b,
+                      child: Text(b),
+                    ),
+                  )
+                  .toList(),
+              decoration: InputDecoration(
+                labelText: 'Select Barangay',
+                prefixIcon: const Icon(Icons.location_city),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _selectedBarangay = value;
+                });
+              },
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              enabled: false,
+              initialValue: 'SJDM, Bulacan',
+              decoration: InputDecoration(
+                labelText: 'City',
+                prefixIcon: const Icon(Icons.location_city),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
+
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

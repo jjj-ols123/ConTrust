@@ -411,7 +411,13 @@ class ContractTypeBuild {
                     ],
                   ),
                 ),
-                if (contract['status'] != 'rejected' && contract['status'] != 'cancelled' && contract['status'] != 'sent' && contract['status'] != 'active')
+                if (contract['status'] != 'rejected' &&
+                    contract['status'] != 'cancelled' &&
+                    contract['status'] != 'sent' &&
+                    contract['status'] != 'active' &&
+                    contract['status'] != 'approved' &&
+                    contract['status'] != 'completed' &&
+                    contract['project_id'] != null)
                   IconButton(
                     icon: const Icon(Icons.more_vert),
                     onPressed: () {

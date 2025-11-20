@@ -162,6 +162,9 @@ class NotificationUIBuildMethods {
       } else if (headline == 'Hiring Request Declined' && createdAt != null) {
         dateStr = _getDateString(createdAt);
         groupType = 'hiring_requests_declined';
+      } else if (headline == 'Payment Received' && createdAt != null) {
+        dateStr = _getDateString(createdAt);
+        groupType = 'payment_received';
       } else if ((headline == 'Contract Signed' ||
                   headline == 'Contract Activated' ||
                   headline == 'Contract Rejected' ||
@@ -415,6 +418,8 @@ class NotificationUIBuildMethods {
         return count == 1 ? 'Cancellation Request' : '$count Cancellation Requests';
       case 'cancellation_declined':
         return count == 1 ? 'Cancellation Declined' : '$count Cancellations Declined';
+      case 'payment_received':
+        return count == 1 ? 'Payment Received' : '$count Payments Received';
       default:
         return count == 1 ? 'Notification' : '$count Notifications';
     }
@@ -442,6 +447,8 @@ class NotificationUIBuildMethods {
         return Icons.monetization_on;
       case 'contract_status':
         return Icons.description_outlined;
+      case 'payment_received':
+        return Icons.payments_outlined;
       default:
         return Icons.notifications_outlined;
     }
@@ -854,23 +861,7 @@ class NotificationUIBuildMethods {
       );
     }
 
-    return Builder(
-      builder: (builderContext) => Wrap(
-        alignment: WrapAlignment.end,
-        spacing: 4.0,
-        runSpacing: 4.0,
-        children: [
-          TextButton(
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              minimumSize: const Size(0, 32),
-            ),
-            onPressed: () => _showProjectDetailsDialog(builderContext, info),
-            child: const Text('More Info', style: TextStyle(fontSize: 12)),
-          ),
-        ],
-      ),
-    );
+    return const SizedBox.shrink();
   }
 
   Widget buildNotificationUI(
@@ -1026,7 +1017,42 @@ class _NotificationButtonState extends State<NotificationButton> {
         final message = rawMessage is String ? rawMessage.trim() : '';
         if (message.isEmpty) continue;
 
-        ConTrustSnackBar.notificationToast(context, message);
+        final isContracteeUser = (_userType ?? '').toLowerCase() == 'contractee';
+
+        bool shouldShowToast = true;
+        if (isContracteeUser) {
+          final headline = (n['headline'] ?? '').toString();
+          final action = (info['action'] ?? '').toString();
+
+          switch (headline) {
+            case 'Project Bids Update':
+            case 'New Bid':
+            case 'Task Completed':
+            case 'Contract Signed':
+            case 'Contract Activated':
+            case 'Contract Rejected':
+            case 'Contract Approved':
+              shouldShowToast = true;
+              break;
+            case 'Hiring Response':
+              shouldShowToast =
+                  action == 'hire_accepted' || action == 'hire_declined';
+              break;
+            case 'Hiring Request Declined':
+              shouldShowToast = true;
+              break;
+            default:
+              shouldShowToast = false;
+          }
+        }
+
+        if (!shouldShowToast) continue;
+
+        ConTrustSnackBar.notificationToast(
+          context,
+          message,
+          belowAppBarOnMobile: isContracteeUser,
+        );
       }
     });
   }

@@ -696,6 +696,9 @@ class _ContracteeShellState extends State<ContracteeShell> {
     final isDesktop = screenWidth >= 1000;
     final showBranding = screenWidth >= 700;
     final showCompactTitle = !showBranding && screenWidth >= 400;
+    final currentPath =
+        GoRouter.of(context).routerDelegate.currentConfiguration.uri.path;
+    final isContractorPage = currentPath.startsWith('/contractor');
 
     return Container(
       color: const Color(0xFFF8F9FA),
@@ -810,7 +813,7 @@ class _ContracteeShellState extends State<ContracteeShell> {
                   ],
                 ),
               ),
-              if (!isDesktop)
+              if (!isDesktop && !isContractorPage)
                 _ContracteeBottomNavigationBar(
                   currentPage: widget.currentPage,
                   onMessagesTap: _navigateToMessages,

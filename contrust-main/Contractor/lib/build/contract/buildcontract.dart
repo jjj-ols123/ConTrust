@@ -576,6 +576,32 @@ class CreateContractBuildMethods {
   final VoidCallback? onLumpSumCalculationTriggered;
   final VoidCallback? onMilestoneDurationCalculationTriggered;
 
+  DateTime? _getProjectStartDate() {
+    final data = projectData;
+    if (data == null) return null;
+    final raw = data['start_date'] as String?;
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final dt = DateTime.parse(raw);
+      return DateTime(dt.year, dt.month, dt.day);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  DateTime? _getProjectEstimatedCompletion() {
+    final data = projectData;
+    if (data == null) return null;
+    final raw = data['estimated_completion'] as String?;
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final dt = DateTime.parse(raw);
+      return DateTime(dt.year, dt.month, dt.day);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Widget buildForm() {
     return Form(
       key: formKey,
@@ -1521,11 +1547,28 @@ class CreateContractBuildMethods {
     if (isDateField && effectivelyEnabled) {
       return GestureDetector(
         onTap: () async {
+          final now = DateTime.now();
+          final existingText = controllers[key]?.text;
+          DateTime? existingDate;
+          if (existingText != null && existingText.trim().isNotEmpty) {
+            existingDate = DateTime.tryParse(existingText.trim());
+          }
+
+          final projectStart = _getProjectStartDate();
+          final projectEnd = _getProjectEstimatedCompletion();
+
+          DateTime firstDate = projectStart ?? now;
+          DateTime lastDate = projectEnd ?? now.add(const Duration(days: 3650));
+
+          if (lastDate.isBefore(firstDate)) {
+            lastDate = firstDate;
+          }
+
           final DateTime? pickedDate = await showDatePicker(
             context: context,
-            initialDate: DateTime.now(),
-            firstDate: DateTime.now(),
-            lastDate: DateTime.now().add(const Duration(days: 3650)),
+            initialDate: existingDate ?? firstDate,
+            firstDate: firstDate,
+            lastDate: lastDate,
             builder: (context, child) {
               return Theme(
                 data: Theme.of(context).copyWith(

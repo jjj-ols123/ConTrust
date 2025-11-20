@@ -2253,11 +2253,13 @@ class DashboardBuildMethods {
                         itemCount: completedProjects.length,
                         itemBuilder: (context, index) {
                           final project = completedProjects[index];
+                          final rawStatus = project['status']?.toString();
+                          final statusLabel = status.getStatusLabel(rawStatus);
                           return Card(
                             margin: const EdgeInsets.only(bottom: 8),
                             child: ListTile(
                               title: Text(project['title'] ?? 'Untitled Project'),
-                              subtitle: Text('Status: ${project['status'] ?? 'Completed'}'),
+                              subtitle: Text('Status: $statusLabel'),
                               trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.amber.shade700),
                               onTap: () {
                                 Navigator.of(dialogContext).pop(project['project_id']);

@@ -421,7 +421,7 @@ class _ProjectDialogState extends State<ProjectDialog> {
   Future<void> _selectStartDate() async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final minStartDate = today.add(const Duration(days: 30));
+    final minStartDate = today.add(const Duration(days: 7));
     final maxStartDate = today.add(const Duration(days: 365));
 
     final DateTime? picked = await showThemedDatePicker(
@@ -446,12 +446,12 @@ class _ProjectDialogState extends State<ProjectDialog> {
 
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
-      final minAllowed = today.add(const Duration(days: 30));
+      final minAllowed = today.add(const Duration(days: 7));
       if (startdate_format.isBefore(minAllowed)) {
         setState(() => _isLoading = false);
         ConTrustSnackBar.error(
           widget.parentContext,
-          'Start date must be at least 30 days from today.',
+          'Start date must be at least 7 days from today.',
         );
         return;
       }
@@ -738,6 +738,7 @@ class _ProjectDialogState extends State<ProjectDialog> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
+    final sortedBarangays = List<String>.from(_barangays)..sort();
     
     return Scaffold(
       backgroundColor: Colors.black.withOpacity(0.5),
@@ -948,7 +949,7 @@ class _ProjectDialogState extends State<ProjectDialog> {
                                     const SizedBox(height: 8),
                                     DropdownButtonFormField<String>(
                                       value: _selectedBarangay,
-                                      items: _barangays
+                                      items: sortedBarangays
                                           .map(
                                             (b) => DropdownMenuItem<String>(
                                               value: b,
@@ -2330,6 +2331,7 @@ class HireModal {
             final hasAutoFilledProject = existingProjectWithContractor != null || 
                                                pendingProject != null || 
                                                pendingHireRequest != null;
+            final sortedBarangays = List<String>.from(_ProjectDialogState._barangays)..sort();
             
             // Check if current type is custom
             final showCustomField = !hasAutoFilledProject && 
@@ -2618,8 +2620,7 @@ class HireModal {
                                             const SizedBox(height: 8),
                                             DropdownButtonFormField<String>(
                                               value: selectedBarangay,
-                                              items: _ProjectDialogState
-                                                  ._barangays
+                                              items: sortedBarangays
                                                   .map(
                                                     (b) =>
                                                         DropdownMenuItem<
@@ -2674,10 +2675,10 @@ class HireModal {
                                         final today =
                                             DateTime(now.year, now.month, now.day);
                                         final minAllowed = today
-                                            .add(const Duration(days: 30));
+                                            .add(const Duration(days: 7));
                                         if (selectedStartDate!
                                             .isBefore(minAllowed)) {
-                                          return 'Start date must be at least 30 days from today';
+                                          return 'Start date must be at least 7 days from today';
                                         }
                                       }
                                       return null;
@@ -2697,7 +2698,7 @@ class HireModal {
                                                         now.day);
                                                     final minStartDate = today
                                                         .add(const Duration(
-                                                            days: 30));
+                                                            days: 7));
                                                     final maxStartDate = today
                                                         .add(const Duration(
                                                             days: 365));

@@ -1,6 +1,7 @@
 // ignore_for_file: file_names
 
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:backend/contract_templates/TimeandMaterialsPDF.dart';
 import 'package:backend/contract_templates/LumpSumPDF.dart';
@@ -257,8 +258,10 @@ class ContractPdfSignatureService {
   }
 
   static Future<void> checkAndGenerateSignedPdf(String contractId) async {
+    debugPrint('[PdfSignatureService] Starting checkAndGenerateSignedPdf for contractId=$contractId');
     try {
       final contractData = await ContractService.getContractById(contractId);
+      debugPrint('[PdfSignatureService] Contract data fetched');
       
       final contractorSigned = contractData['contractor_signature_url'] != null &&
           (contractData['contractor_signature_url'] as String).isNotEmpty;
@@ -267,6 +270,8 @@ class ContractPdfSignatureService {
 
       final hasSignedPdf = contractData['signed_pdf_url'] != null && 
            (contractData['signed_pdf_url'] as String).isNotEmpty;
+
+      debugPrint('[PdfSignatureService] contractorSigned=$contractorSigned, contracteeSigned=$contracteeSigned, hasSignedPdf=$hasSignedPdf');
 
       await _auditService.logAuditEvent(
         action: 'CHECK_SIGNED_PDF_GENERATION',
@@ -282,11 +287,12 @@ class ContractPdfSignatureService {
         },
       );
 
-      if ((contractorSigned || contracteeSigned) && !hasSignedPdf) {
+      if (contractorSigned && contracteeSigned && !hasSignedPdf) {
+        debugPrint('[PdfSignatureService] Both parties signed and no signed PDF exists - creating signed PDF');
 
         await _auditService.logAuditEvent(
           action: 'INITIATING_SIGNED_PDF_CREATION',
-          details: 'At least one party has signed, creating signed PDF - Contractor signed: $contractorSigned, Contractee signed: $contracteeSigned',
+          details: 'Both parties have signed, creating signed PDF - Contractor signed: $contractorSigned, Contractee signed: $contracteeSigned',
           category: 'Contract',
           metadata: {
             'contract_id': contractId,
@@ -294,9 +300,12 @@ class ContractPdfSignatureService {
         );
 
         await createSignedContractPdf(contractId: contractId);
+        debugPrint('[PdfSignatureService] Signed PDF creation completed');
       } else {
+        debugPrint('[PdfSignatureService] Not generating signed PDF - condition not met');
       }
     } catch (e) {
+      debugPrint('[PdfSignatureService] ERROR in checkAndGenerateSignedPdf: $e');
       await _errorService.logError(
         errorMessage: 'Failed to check and generate signed PDF: $e',
         module: 'Contract PDF Signature Service',

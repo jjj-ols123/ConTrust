@@ -42,8 +42,22 @@ class NotificationService {
       if (response.isEmpty) {
         throw Exception('Failed to create notification');
       }
-    } catch (e) {
-      throw Exception('Notification error');
+    } catch (e, st) {
+      await _errorService.logError(
+        errorMessage: 'Failed to create notification: $e',
+        module: 'Notification Service',
+        severity: 'Medium',
+        extraInfo: {
+          'operation': 'createNotification',
+          'receiver_id': receiverId,
+          'receiver_type': receiverType,
+          'sender_id': senderId,
+          'sender_type': senderType,
+          'type': type,
+          'stack': st.toString(),
+        },
+      );
+      // Do not rethrow: notification failures should not break primary flows
     }
   }
 

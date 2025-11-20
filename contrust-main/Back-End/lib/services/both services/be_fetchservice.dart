@@ -825,10 +825,21 @@ class FetchService {
           .from('Projects')
           .stream(primaryKey: ['project_id'])
           .map((List<Map<String, dynamic>> projects) {
-            final filtered = projects.where((project) => 
-              project['status'] == 'pending' ||
-              project['status'] == 'open'
-            ).toList();
+            final filtered = projects.where((project) {
+              final status = project['status'];
+              if (status != 'pending' && status != 'open') {
+                return false;
+              }
+
+              // Only include true bidding projects
+              final projectData = project['projectdata'] as Map<String, dynamic>?;
+              final hiringType = projectData?['hiring_type'] ?? 'bidding';
+              if (hiringType == 'direct_hire') {
+                return false;
+              }
+
+              return true;
+            }).toList();
 
             final withPhotoUrls = filtered.map((p) {
               final project = Map<String, dynamic>.from(p);

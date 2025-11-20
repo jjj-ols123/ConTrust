@@ -8,7 +8,9 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:backend/services/contractor services/cor_ongoingservices.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_payment_service.dart';
+import 'package:backend/services/both services/be_receipt_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
+import 'package:backend/utils/be_status.dart';
 import 'package:contractor/build/buildongoing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
@@ -1467,6 +1469,7 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                               return Card(
                                 margin: const EdgeInsets.only(bottom: 8),
                                 child: ListTile(
+                                  onTap: () => _showPaymentDetailsDialog(payment),
                                   leading: CircleAvatar(
                                     backgroundColor: Colors.amber.shade100,
                                     child: Icon(
@@ -1501,7 +1504,9 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
-                                      color: status == 'COMPLETED' ? Colors.green.shade700 : Colors.orange.shade700,
+                                      color: status == 'COMPLETED'
+                                          ? Colors.green.shade700
+                                          : Colors.orange.shade700,
                                     ),
                                   ),
                                 ),
@@ -1520,6 +1525,225 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
         ConTrustSnackBar.error(context, 'Error loading payment history: $e');
       }
     }
+  }
+
+  void _showPaymentDetailsDialog(Map<String, dynamic> payment) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => _buildPaymentDetailsDialog(dialogContext, payment),
+    );
+  }
+
+  Widget _buildPaymentDetailsDialog(BuildContext dialogContext, Map<String, dynamic> payment) {
+    final receiptPath = payment['receipt_path'] as String?;
+    final hasReceipt = receiptPath != null && receiptPath.isNotEmpty;
+    final amountValue = (payment['amount'] as num?)?.toStringAsFixed(2) ?? '0.00';
+    final reference = (payment['payment_reference'] ?? payment['payment_intent_id'] ?? payment['reference'] ?? 'N/A').toString();
+    final rawDate = payment['paid_at'] ?? payment['payment_date'] ?? payment['date'] ?? payment['created_at'];
+    final paymentDate = _formatPaymentDate(rawDate);
+
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 700, maxHeight: 600),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Colors.black.withOpacity(0.5),
+            width: 0.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 20,
+              spreadRadius: 1,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade700,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(
+                      Icons.payments_outlined,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Payment Details',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (hasReceipt) ...[
+                      Text(
+                        'Receipt',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        constraints: const BoxConstraints(minHeight: 320, maxHeight: 480),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: FutureBuilder<String?>(
+                            future: ReceiptService.getReceiptSignedUrl(receiptPath, expirationSeconds: 3600),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                return const Center(child: CircularProgressIndicator());
+                              }
+
+                              if (snapshot.hasError || snapshot.data == null || snapshot.data!.isEmpty) {
+                                return Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(24),
+                                    child: Text(
+                                      'Unable to load the receipt at this time.',
+                                      style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              return _buildPdfViewer(snapshot.data!);
+                            },
+                          ),
+                        ),
+                      ),
+                    ] else ...[
+                      Text(
+                        'Receipt',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Text(
+                          'No e-receipt was provided for this transaction.',
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    _buildPaymentDetailField('Amount Paid', '₱$amountValue'),
+                    _buildPaymentDetailField('Reference', reference),
+                    _buildPaymentDetailField('Payment Date', paymentDate),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatPaymentDate(dynamic value) {
+    if (value == null) return 'N/A';
+    try {
+      final dt = DateTime.parse(value.toString());
+      return DateFormat('MMM d, yyyy • h:mm a').format(dt);
+    } catch (_) {
+      return value.toString();
+    }
+  }
+
+  Widget _buildPaymentDetailField(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// View Contract Function
@@ -1542,14 +1766,19 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
       final projects = await _fetchService
           .fetchContractorProjectsIncludingCompleted(contractorId);
 
-      if (projects.isEmpty) {
+      final nonCompletedProjects = projects.where((project) {
+        final status = project['status']?.toString().toLowerCase() ?? '';
+        return status != 'completed' && status != 'ended';
+      }).toList();
+
+      if (nonCompletedProjects.isEmpty) {
         if (mounted) {
           ConTrustSnackBar.info(context, 'No projects found.');
         }
         return;
       }
 
-      if (projects.length == 1) {
+      if (nonCompletedProjects.length == 1) {
         if (mounted) {
           ConTrustSnackBar.warning(context, 'You only have one project.');
         }
@@ -1635,11 +1864,15 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                           child: ListView.builder(
                             shrinkWrap: true,
                             padding: const EdgeInsets.all(16),
-                            itemCount: projects.length,
+                            itemCount: nonCompletedProjects.length,
                             itemBuilder: (context, index) {
-                              final project = projects[index];
+                              final project = nonCompletedProjects[index];
                               final isCurrentProject =
                                   project['project_id'] == widget.projectId;
+                              final rawStatus =
+                                  project['status']?.toString() ?? 'unknown';
+                              final statusLabel =
+                                  ProjectStatus().getStatusLabel(rawStatus);
                               return Card(
                                 margin: const EdgeInsets.only(bottom: 8),
                                 color:
@@ -1659,8 +1892,8 @@ class _CorProjectDashboardState extends State<CorProjectDashboard> {
                                   ),
                                   subtitle: Text(
                                     isCurrentProject
-                                        ? 'Current Project • ${project['status'] ?? 'N/A'}'
-                                        : 'Status: ${project['status'] ?? 'N/A'}',
+                                        ? 'Current Project • $statusLabel'
+                                        : 'Status: $statusLabel',
                                   ),
                                   leading:
                                       isCurrentProject

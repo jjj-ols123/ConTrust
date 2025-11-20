@@ -9,6 +9,7 @@ import 'package:backend/services/both services/be_user_service.dart';
 import 'package:backend/services/superadmin services/auditlogs_service.dart';
 import 'package:backend/services/superadmin services/errorlogs_service.dart';
 import 'package:backend/utils/be_snackbar.dart';
+import 'package:backend/utils/be_status.dart';
 import 'package:flutter/material.dart';
 import 'package:contractor/Screen/cor_dashboard.dart';
 import 'package:contractor/Screen/cor_chathistory.dart';
@@ -680,11 +681,12 @@ class _SideDashboardDrawerState extends State<SideDashboardDrawer> {
                         itemCount: activeProjects.length,
                         itemBuilder: (context, index) {
                           final project = activeProjects[index];
+                          final statusLabel = ProjectStatus().getStatusLabel(project['status']?.toString());
                           return Card(
                             margin: const EdgeInsets.only(bottom: 8),
                             child: ListTile(
                               title: Text(project['title'] ?? 'Untitled Project'),
-                              subtitle: Text('Status: ${project['status'] ?? 'N/A'}'),
+                              subtitle: Text('Status: $statusLabel'),
                               trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.amber.shade700),
                               onTap: () {
                                 Navigator.of(dialogContext).pop(project['project_id']);
@@ -1317,11 +1319,12 @@ class _DashboardDrawerState extends State<DashboardDrawer> {
                         itemCount: activeProjects.length,
                         itemBuilder: (context, index) {
                           final project = activeProjects[index];
+                          final statusLabel = ProjectStatus().getStatusLabel(project['status']?.toString());
                           return Card(
                             margin: const EdgeInsets.only(bottom: 8),
                             child: ListTile(
                               title: Text(project['title'] ?? 'Untitled Project'),
-                              subtitle: Text('Status: ${project['status'] ?? 'N/A'}'),
+                              subtitle: Text('Status: $statusLabel'),
                               trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.amber.shade700),
                               onTap: () {
                                 Navigator.of(dialogContext).pop(project['project_id']);

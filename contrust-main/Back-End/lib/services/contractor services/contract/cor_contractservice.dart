@@ -320,7 +320,7 @@ class ContractorContractService {
       return {};
     } catch (e) {
       await _errorService.logError(
-        errorMessage: 'Failed to sign contract: ',
+        errorMessage: 'Failed to sign contract: $e',
         module: 'Contractor Contract Service',
         severity: 'High',
         extraInfo: {

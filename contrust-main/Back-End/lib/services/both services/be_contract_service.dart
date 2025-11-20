@@ -524,6 +524,8 @@ class ContractService {
     required String userType,
   }) async {
     try {
+      debugPrint('[SignContract] Starting signContract for contractId=$contractId, userId=$userId, userType=$userType');
+
       if (contractId.isEmpty || userId.isEmpty || signatureBytes.isEmpty) {
         throw Exception('Invalid signature data provided');
       }
@@ -550,6 +552,14 @@ class ContractService {
       final contractorId = contractData['contractor_id'] as String;
       final contracteeId = contractData['contractee_id'] as String;
 
+      final currentUser = _supabase.auth.currentUser;
+      debugPrint(
+        '[SignContract] Loaded contract. '
+        'status=$contractStatus, contractorId=$contractorId, '
+        'contracteeId=$contracteeId, auth.uid=${currentUser?.id}, '
+        'userId=$userId, userType=$userType',
+      );
+
       if (userType.toLowerCase() == 'contractor' && contractorId != userId) {
         throw Exception('User not authorized to sign as contractor');
       }
@@ -566,6 +576,9 @@ class ContractService {
       String? uploadPath;
       for (int attempt = 0; attempt < 3; attempt++) {
         try {
+          debugPrint(
+            '[SignContract] Upload attempt ${attempt + 1} for fileName=$fileName to bucket "signatures"',
+          );
           final storageResponse = await _supabase.storage
               .from('signatures')
               .uploadBinary(fileName, signatureBytes,
@@ -573,17 +586,26 @@ class ContractService {
 
           if (storageResponse.isNotEmpty) {
             uploadPath = storageResponse;
+            debugPrint(
+              '[SignContract] Upload successful. storageResponse=$storageResponse',
+            );
             break;
           }
         } catch (uploadError) {
+          debugPrint(
+            '[SignContract] Upload error on attempt ${attempt + 1} for fileName=$fileName: $uploadError',
+          );
           if (attempt == 2) rethrow;
           await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
         }
       }
 
       if (uploadPath == null || uploadPath.isEmpty) {
+        debugPrint('[SignContract] Upload failed: uploadPath is null or empty for fileName=$fileName');
         throw Exception("Failed to upload signature after multiple attempts");
       }
+
+      debugPrint('[SignContract] Upload completed. uploadPath=$uploadPath, fileName=$fileName');
 
       final updateData = userType.toLowerCase() == 'contractor'
           ? {

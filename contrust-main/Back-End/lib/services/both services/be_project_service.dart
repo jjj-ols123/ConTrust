@@ -677,13 +677,11 @@ class ProjectService {
 
       await _supabase.from('Projects').update({
         'status': 'completed',
-        'updated_at': DateTimeHelper.getLocalTimeISOString(),
       }).eq('project_id', projectId);
 
       if (contractId != null) {
         await _supabase.from('Contracts').update({
           'status': 'completed',
-          'updated_at': DateTimeHelper.getLocalTimeISOString(),
         }).eq('contract_id', contractId);
       }
 

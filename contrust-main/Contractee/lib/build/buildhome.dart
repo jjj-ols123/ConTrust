@@ -4,6 +4,7 @@ import 'package:backend/models/be_UIapp.dart';
 import 'package:backend/services/both services/be_bidding_service.dart';
 import 'package:backend/services/both services/be_fetchservice.dart';
 import 'package:backend/services/both services/be_message_service.dart';
+import 'package:backend/utils/be_status.dart';
 import 'package:backend/utils/be_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +13,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class HomePageBuilder {
   static const String profileUrl =
       'https://bgihfdqruamnjionhkeq.supabase.co/storage/v1/object/public/profilephotos/defaultpic.png';
+
+  static final ProjectStatus _statusHelper = ProjectStatus();
 
   static Widget buildStatsSection({
     required List<Map<String, dynamic>> projects,
@@ -267,6 +270,8 @@ class HomePageBuilder {
                         itemCount: completedProjects.length,
                         itemBuilder: (context, index) {
                           final project = completedProjects[index];
+                          final rawStatus = project['status']?.toString();
+                          final statusLabel = _statusHelper.getStatusLabel(rawStatus);
                           return Card(
                             margin: const EdgeInsets.only(bottom: 8),
                             child: ListTile(
@@ -276,7 +281,7 @@ class HomePageBuilder {
                                   fontWeight: FontWeight.normal,
                                 ),
                               ),
-                              subtitle: Text('Status: Completed'),
+                              subtitle: Text('Status: $statusLabel'),
                               leading: Icon(Icons.check_circle, color: Colors.green.shade700),
                               trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.green.shade700),
                               onTap: () {

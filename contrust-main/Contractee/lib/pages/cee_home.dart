@@ -598,7 +598,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver, Automa
                                 ),
                               ],
                             ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 16),
                           HomePageBuilder.buildStatsSection(
                             context: context,
                             projects: projects,

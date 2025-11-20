@@ -325,6 +325,7 @@ class ConTrustSnackBar {
     BuildContext context,
     String message, {
     Duration duration = const Duration(seconds: 2),
+    bool belowAppBarOnMobile = false,
   }) {
     final overlay = Overlay.maybeOf(context);
     if (overlay == null) {
@@ -343,11 +344,16 @@ class ConTrustSnackBar {
     final mediaQuery = MediaQuery.of(context);
     final isMobile = mediaQuery.size.width < 700;
 
+    double topOffset = mediaQuery.padding.top + 16;
+    if (belowAppBarOnMobile && isMobile) {
+      topOffset = mediaQuery.padding.top + kToolbarHeight + 8;
+    }
+
     late OverlayEntry entry;
     entry = OverlayEntry(
       builder: (ctx) {
         return Positioned(
-          top: mediaQuery.padding.top + 16,
+          top: topOffset,
           left: isMobile ? 16 : null,
           right: isMobile ? 16 : 16,
           child: Material
