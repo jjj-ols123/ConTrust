@@ -165,6 +165,9 @@ class NotificationUIBuildMethods {
       } else if (headline == 'Payment Received' && createdAt != null) {
         dateStr = _getDateString(createdAt);
         groupType = 'payment_received';
+      } else if (headline == 'Project Completed' && createdAt != null) {
+        dateStr = _getDateString(createdAt);
+        groupType = 'project_completed';
       } else if ((headline == 'Contract Signed' ||
                   headline == 'Contract Activated' ||
                   headline == 'Contract Rejected' ||
@@ -253,7 +256,7 @@ class NotificationUIBuildMethods {
           }
           _initialized = true;
         } else {
-          final List<Map<String, dynamic>> newContractStatusNotifications = [];
+          final List<Map<String, dynamic>> newToastNotifications = [];
           for (final n in sortedNotifications) {
             final id = n['notification_id']?.toString();
             if (id == null || _seenNotificationIds.contains(id)) {
@@ -262,12 +265,14 @@ class NotificationUIBuildMethods {
             _seenNotificationIds.add(id);
 
             final headline = (n['headline'] ?? '').toString();
-            if (headline == 'Contract Approved' || headline == 'Contract Rejected') {
-              newContractStatusNotifications.add(n);
+            if (headline == 'Contract Approved' ||
+                headline == 'Contract Rejected' ||
+                headline == 'New Bid') {
+              newToastNotifications.add(n);
             }
           }
 
-          for (final notif in newContractStatusNotifications) {
+          for (final notif in newToastNotifications) {
             try {
               dynamic rawInfo = notif['information'];
               if (rawInfo is String) {
@@ -276,7 +281,11 @@ class NotificationUIBuildMethods {
               final infoMap = Map<String, dynamic>.from(rawInfo ?? {});
               final message = (infoMap['message'] ?? notif['message'] ?? '').toString();
               if (message.isNotEmpty) {
-                ConTrustSnackBar.notificationToast(context, message);
+                ConTrustSnackBar.notificationToast(
+                  context,
+                  message,
+                  belowAppBarOnMobile: true,
+                );
               }
             } catch (_) {}
           }
@@ -420,6 +429,8 @@ class NotificationUIBuildMethods {
         return count == 1 ? 'Cancellation Declined' : '$count Cancellations Declined';
       case 'payment_received':
         return count == 1 ? 'Payment Received' : '$count Payments Received';
+      case 'project_completed':
+        return count == 1 ? 'Project Completed' : '$count Projects Completed';
       default:
         return count == 1 ? 'Notification' : '$count Notifications';
     }
@@ -449,6 +460,8 @@ class NotificationUIBuildMethods {
         return Icons.description_outlined;
       case 'payment_received':
         return Icons.payments_outlined;
+      case 'project_completed':
+        return Icons.check_circle_outline;
       default:
         return Icons.notifications_outlined;
     }
