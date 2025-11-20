@@ -201,7 +201,8 @@ class _ContractorInfoIconState extends State<ContractorInfoIcon> {
     final headline = (notification['headline'] as String?) ?? '';
     return headline == 'Bid Rejected' ||
         headline == 'Account Verified' ||
-        headline == 'Account Verification Rejected';
+        headline == 'Account Verification Rejected' ||
+        headline == 'Project Completed';
   }
 
   @override
